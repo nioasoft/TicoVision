@@ -110,10 +110,10 @@ export function LoginPage() {
             </CardDescription>
           </CardHeader>
           
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue="register" className="w-full" dir="rtl">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">התחברות</TabsTrigger>
               <TabsTrigger value="register">הרשמה</TabsTrigger>
+              <TabsTrigger value="login">התחברות</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -214,11 +214,12 @@ export function LoginPage() {
                       value={regRole} 
                       onValueChange={(value) => setRegRole(value as UserRole)}
                       disabled={isLoading}
+                      dir="rtl"
                     >
-                      <SelectTrigger id="reg-role">
+                      <SelectTrigger id="reg-role" dir="rtl">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent dir="rtl">
                         <SelectItem value="client">לקוח</SelectItem>
                         <SelectItem value="accountant">רואה חשבון</SelectItem>
                         <SelectItem value="bookkeeper">מנהלת חשבונות</SelectItem>
