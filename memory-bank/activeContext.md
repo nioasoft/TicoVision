@@ -1,0 +1,144 @@
+# Active Context
+
+## Code Changes (2025-09-10 05:51:59)
+
+### Added Files
+- .claude/settings.local.json
+- .mcp.json
+- components.json
+- eslint.config.js
+- index.html
+- package-lock.json
+- package.json
+- postcss.config.js
+- scripts/generate-types.js
+- scripts/test-users-page.js
+- src/App.tsx
+- src/components/auth/ProtectedRoute.tsx
+- src/components/layout/MainLayout.tsx
+- src/components/ui/alert-dialog.tsx
+- src/components/ui/badge.tsx
+- src/components/ui/button.tsx
+- src/components/ui/card.tsx
+- src/components/ui/checkbox.tsx
+- src/components/ui/dialog.tsx
+- src/components/ui/dropdown-menu.tsx
+- src/components/ui/input.tsx
+- src/components/ui/label.tsx
+- src/components/ui/select.tsx
+- src/components/ui/sonner.tsx
+- src/components/ui/table.tsx
+- src/components/ui/textarea.tsx
+- src/components/ui/toaster.tsx
+- src/components/ui/use-toast.tsx
+- src/contexts/AuthContext.tsx
+- src/hooks/use-toast.ts
+- src/index.css
+- src/lib/business-rules.ts
+- src/lib/design-tokens.ts
+- src/lib/supabase.ts
+- src/lib/utils.ts
+- src/main.tsx
+- src/pages/ClientsPage.tsx
+- src/pages/DashboardPage.tsx
+- src/pages/FeesPage.tsx
+- src/pages/LettersPage.tsx
+- src/pages/LoginPage.tsx
+- src/pages/SettingsPage.tsx
+- src/pages/SetupPage.tsx
+- src/pages/UsersPage.tsx
+- src/services/audit.service.ts
+- src/services/base.service.ts
+- src/services/cardcom.service.ts
+- src/services/client.service.ts
+- src/services/fee.service.ts
+- src/services/index.ts
+- src/services/letter.service.ts
+- src/services/user.service.ts
+- src/types/database.types.ts
+- src/types/user-role.ts
+- src/vite-env.d.ts
+- tailwind.config.js
+- test-login.js
+- test-setup.js
+- tsconfig.app.json
+- tsconfig.json
+- tsconfig.node.json
+- vite.config.ts
+
+
+## Current Work Focus
+[Describe what you're currently working on]
+
+## Recent Changes
+[List recent changes to the project]
+
+## Next Steps
+[List next steps for the project]
+
+## Code Changes (2025-09-10 05:51:37)
+
+### Added Files
+- .claude/settings.local.json
+- .mcp.json
+- components.json
+- eslint.config.js
+- index.html
+- package-lock.json
+- package.json
+- postcss.config.js
+- scripts/generate-types.js
+- scripts/test-users-page.js
+- src/App.tsx
+- src/components/auth/ProtectedRoute.tsx
+- src/components/layout/MainLayout.tsx
+- src/components/ui/alert-dialog.tsx
+- src/components/ui/badge.tsx
+- src/components/ui/button.tsx
+- src/components/ui/card.tsx
+- src/components/ui/checkbox.tsx
+- src/components/ui/dialog.tsx
+- src/components/ui/dropdown-menu.tsx
+- src/components/ui/input.tsx
+- src/components/ui/label.tsx
+- src/components/ui/select.tsx
+- src/components/ui/sonner.tsx
+- src/components/ui/table.tsx
+- src/components/ui/textarea.tsx
+- src/components/ui/toaster.tsx
+- src/components/ui/use-toast.tsx
+- src/contexts/AuthContext.tsx
+- src/hooks/use-toast.ts
+- src/index.css
+- src/lib/business-rules.ts
+- src/lib/design-tokens.ts
+- src/lib/supabase.ts
+- src/lib/utils.ts
+- src/main.tsx
+- src/pages/ClientsPage.tsx
+- src/pages/DashboardPage.tsx
+- src/pages/FeesPage.tsx
+- src/pages/LettersPage.tsx
+- src/pages/LoginPage.tsx
+- src/pages/SettingsPage.tsx
+- src/pages/SetupPage.tsx
+- src/pages/UsersPage.tsx
+- src/services/audit.service.ts
+- src/services/base.service.ts
+- src/services/cardcom.service.ts
+- src/services/client.service.ts
+- src/services/fee.service.ts
+- src/services/index.ts
+- src/services/letter.service.ts
+- src/services/user.service.ts
+- src/types/database.types.ts
+- src/types/user-role.ts
+- src/vite-env.d.ts
+- tailwind.config.js
+- test-login.js
+- test-setup.js
+- tsconfig.app.json
+- tsconfig.json
+- tsconfig.node.json
+- vite.config.ts
+

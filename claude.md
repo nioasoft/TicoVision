@@ -1,4 +1,8 @@
-# CRM System - Core Rules for Claude Code
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# TicoVision AI - Core Rules for Claude Code
 
 ## Project Context
 Multi-tenant CRM for Israeli accounting firms. Starting with 10 users, 700 clients.
@@ -98,13 +102,47 @@ Israeli Market:
 8. **ALWAYS** paginate lists (default: 20 items)
 
 ## 🌐 Israeli Market Requirements (MANDATORY)
-1. **Language**: Hebrew UI with RTL support
+1. **Language**: Hebrew UI with RTL support (dir="rtl" in HTML)
 2. **Currency**: ILS (₪) formatting - ₪1,234.56
 3. **Date Format**: DD/MM/YYYY (Israeli standard)
-4. **Tax ID**: 9-digit Israeli tax ID validation with check digit
+4. **Tax ID**: 9-digit Israeli tax ID validation with Luhn check digit
 5. **Payment Gateway**: Cardcom (Israeli credit card processing) - See `/docs/CARDCOM.md`
 6. **Business Letters**: Hebrew correspondence, formal tone - **Templates from Shani & Tiko**
 7. **Typography**: Hebrew fonts (Assistant/Heebo) with RTL layout
+
+### Implemented Israeli Tax ID Validation:
+```typescript
+// In client.service.ts - ALREADY IMPLEMENTED
+private validateTaxId(taxId: string): boolean {
+  if (!/^\d{9}$/.test(taxId)) return false;
+  const digits = taxId.split('').map(Number);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    let num = digits[i] * ((i % 2) + 1);
+    sum += num > 9 ? num - 9 : num;
+  }
+  return sum % 10 === 0; // Luhn algorithm check
+}
+```
+
+### Currency Formatting:
+```typescript
+// Format as Israeli Shekel
+const formatILS = (amount: number): string => {
+  return new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency: 'ILS'
+  }).format(amount); // Returns: ₪1,234.56
+}
+```
+
+### Date Formatting:
+```typescript
+// Israeli date format DD/MM/YYYY
+const formatIsraeliDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('he-IL').format(date);
+}
+```
 
 ## 🌍 Global Configuration Rules
 1. **MANDATORY GLOBALS**: Colors, fonts, sizes, spacing - MUST be defined globally
@@ -137,13 +175,59 @@ src/
 │   ├── clients/          # Client management (CRM base)
 │   ├── user-management/  # User roles & permissions system
 │   └── dashboard/        # Real-time revenue tracking
-├── services/         # Business logic & API calls
-│   ├── cardcom.service.ts # Payment gateway integration
-│   ├── sendgrid.service.ts # Email service
-│   └── cache.service.ts    # Redis/Upstash caching
+├── services/         # Business logic & API calls (EXTENDS BaseService)
+│   ├── base.service.ts     # Base class for all services
+│   ├── client.service.ts   # Client management with Israeli tax ID validation
+│   ├── fee.service.ts      # Fee calculations and management
+│   ├── letter.service.ts   # Letter template generation
+│   ├── cardcom.service.ts  # Payment gateway integration
+│   └── audit.service.ts    # Audit logging for all actions
 ├── hooks/           # Custom React hooks
 ├── lib/            # Utilities & configurations (GLOBAL VALUES HERE)
+│   └── supabase.ts # Supabase client + helper functions
 └── types/          # TypeScript definitions
+```
+
+## 🏗️ Service Architecture Pattern (MANDATORY)
+
+### All services MUST extend BaseService:
+```typescript
+// Every service follows this pattern:
+export class YourService extends BaseService {
+  constructor() {
+    super('table_name'); // Pass the table name
+  }
+  
+  // All methods MUST use tenant isolation:
+  async getAll() {
+    const tenantId = await this.getTenantId(); // REQUIRED
+    // Query with tenant_id filter
+  }
+}
+```
+
+### Service Response Pattern:
+```typescript
+interface ServiceResponse<T> {
+  data: T | null;
+  error: Error | null;
+}
+
+// ALWAYS return this structure from service methods
+```
+
+### Available Helper Functions:
+```typescript
+// In lib/supabase.ts - USE THESE:
+getCurrentTenantId(): Promise<string | null>  // Get current tenant
+getCurrentUserRole(): Promise<string | null>  // Get user role
+
+// In BaseService - INHERITED BY ALL:
+getTenantId(): Promise<string>               // Throws if no tenant
+handleError(error): Error                    // Standardize errors  
+logAction(action, resourceId?, details?)     // Audit logging
+buildPaginationQuery(query, params)          // Pagination helper
+buildFilterQuery(query, filters)             // Filter helper
 ```
 
 ## 💥 User Management & Authentication System
@@ -229,6 +313,29 @@ interface AuditLog {
 - ✅ Multi-tenant with RLS from Day 1 for white-label support
 - ⏸️ Skip: Advanced AI, Tax authority APIs (Phase 2-3)
 
+## 🗄️ Database Migration Guidelines
+
+### CRITICAL: Migration Requirements
+```sql
+-- ALWAYS use gen_random_uuid() NOT uuid_generate_v4()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+
+-- Auth functions MUST be in public schema (permission issues)
+CREATE OR REPLACE FUNCTION public.get_current_tenant_id() 
+RETURNS UUID AS $$
+  SELECT (auth.jwt() -> 'user_metadata' ->> 'tenant_id')::UUID;
+$$ LANGUAGE SQL STABLE;
+
+-- NOT in auth schema - will fail with permission denied
+```
+
+### Table Naming Conventions:
+- **ALWAYS** plural snake_case: `clients`, `fee_calculations`, `letter_templates`
+- **ALWAYS** include `tenant_id UUID NOT NULL` for multi-tenancy
+- **ALWAYS** add RLS policies for tenant isolation
+- **ALWAYS** add table comments for documentation
+
 ## Environment Setup
 ```bash
 # Development setup needed:
@@ -237,10 +344,10 @@ npm install
 npx supabase start
 npm run dev
 
-# Required environment variables (see /docs/CARDCOM.md for payment vars):
-VITE_SUPABASE_URL=your-dev-supabase-url
-VITE_SUPABASE_ANON_KEY=your-dev-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-dev-service-key
+# Required environment variables (ALREADY CONFIGURED):
+VITE_SUPABASE_URL=https://zbqfeebrhberddvfkuhe.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-key
 SENDGRID_API_KEY=your-sendgrid-key
 REDIS_URL=your-redis-url
 CARDCOM_TERMINAL_NUMBER=see-cardcom-docs
@@ -250,14 +357,16 @@ CARDCOM_API_USERNAME=see-cardcom-docs
 ## Quick Commands
 ```bash
 # Development
-npm run dev                    # Start dev server
-npm run test                   # Run Vitest unit tests
-npm run test:e2e              # Run Playwright E2E tests
-npm run lint                   # Check code quality
+npm run dev                    # Start dev server (port 5173)
+npm run build                  # Build for production
+npm run preview                # Preview production build
+npm run lint                   # Check code quality with ESLint
+npm run typecheck              # TypeScript type checking (no emit)
+npm run pre-commit             # Run lint + typecheck before commit
 
 # Database (Supabase already setup)
 npx supabase db reset          # Reset local DB
-npm run generate-types         # Update TypeScript types
+npm run generate-types         # Update TypeScript types from database
 
 # MCP Database Operations (USE THESE FIRST)
 /supabase list-tables          # View all tables
@@ -265,8 +374,9 @@ npm run generate-types         # Update TypeScript types
 /supabase get-schema           # Full schema overview
 /supabase list-functions       # Database functions
 
-# Before commit
-npm run pre-commit             # Run all checks
+# Troubleshooting
+lsof -i :5173                  # Check if port is in use
+kill -9 $(lsof -t -i:5173)    # Kill process on port 5173
 ```
 
 ## MCP & Sub-Agents Usage
@@ -393,14 +503,79 @@ Stages:
 4. **Implement**: Create the global configuration as agreed
 5. **Use everywhere**: Import and use the global value consistently
 
+## 🚀 Development Server & Troubleshooting
+
+### Starting Development:
+```bash
+# Default port: http://localhost:5173
+npm run dev
+
+# Access points:
+http://localhost:5173/setup   # Initial setup page (create admin)
+http://localhost:5173/login   # Login page
+http://localhost:5173/        # Main dashboard (after auth)
+```
+
+### Common Issues & Solutions:
+
+#### Multiple Dev Servers Running:
+```bash
+# Check running processes
+ps aux | grep vite
+lsof -i :5173
+
+# Kill old processes
+kill -9 $(lsof -t -i:5173)
+
+# Or kill all node processes (careful!)
+killall node
+```
+
+#### Import Errors:
+```typescript
+// ❌ Wrong - may cause "does not provide export" error
+import { Session } from '@supabase/supabase-js';
+
+// ✅ Correct - use type imports
+import type { Session } from '@supabase/supabase-js';
+```
+
+#### Component Import Issues:
+```bash
+# shadcn/ui components may install in wrong location
+# If @/components/ui doesn't work, check:
+ls src/components/ui/
+ls "@/components/ui/"  # Wrong location
+
+# Fix by moving:
+mv "@/components/ui/"* src/components/ui/
+```
+
+#### Missing Dependencies:
+```bash
+# Common missing packages after shadcn/ui install:
+npm install class-variance-authority
+npm install @tailwindcss/postcss
+```
+
 ## Where to Find More
 - **Architecture Details**: `/docs/ARCHITECTURE.md`
 - **Product Requirements**: `/docs/PRD.md`
 - **API Documentation**: `/docs/API.md`
 - **Cardcom Integration**: `/docs/CARDCOM.md`
+- **Database Reference**: `/docs/DATABASE_REFERENCE.md` ⭐ **ALWAYS USE THIS FIRST!**
 - **Database Schema**: Auto-generated via MCP tools
 - **Task Management**: `/docs/TASKS.md`
 - **Naming Conventions**: `/docs/DATABASE-SCHEMA.md`
+
+## 🗄️ Database Reference - MANDATORY USE
+**CRITICAL**: Always consult `/docs/DATABASE_REFERENCE.md` BEFORE:
+- Creating any migration
+- Writing any SQL query
+- Using any table or function
+- Adding new database objects
+
+**UPDATE REQUIREMENT**: Any database changes MUST be reflected in DATABASE_REFERENCE.md immediately
 
 ---
 **Remember**: 
@@ -411,3 +586,4 @@ Stages:
 - Hebrew + RTL support is mandatory from day one.
 - Use MCP commands and Sub-Agents - they're already installed and ready to use.
 - Cardcom integration is critical - see `/docs/CARDCOM.md` for full details.
+- Service architecture pattern is MANDATORY - all services must extend BaseService.

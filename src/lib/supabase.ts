@@ -21,6 +21,25 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
 })
 
+// Service role client for admin operations (setup, etc.)
+// Only create if explicitly needed and service role key is available
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+export const supabaseAdmin = null // Disabled to prevent multiple client instances
+// Will be enabled when service role operations are needed
+// export const supabaseAdmin = supabaseServiceRoleKey 
+//   ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+//       auth: {
+//         persistSession: false,
+//         autoRefreshToken: false,
+//       },
+//       global: {
+//         headers: {
+//           'x-application-name': 'ticovision-crm-admin',
+//         },
+//       },
+//     })
+//   : null
+
 // Helper function to get the current user's tenant ID
 export async function getCurrentTenantId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser()

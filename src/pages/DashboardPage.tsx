@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Users, Calculator, FileText, ShekelsSign } from 'lucide-react';
+import { TrendingUp, Users, Calculator, FileText, DollarSign } from 'lucide-react';
 
 export function DashboardPage() {
   // Mock data - will be replaced with real data from Supabase
@@ -8,7 +8,7 @@ export function DashboardPage() {
       title: 'הכנסות החודש',
       value: '₪125,430',
       change: '+12.5%',
-      icon: ShekelsSign,
+      icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-100',
     },

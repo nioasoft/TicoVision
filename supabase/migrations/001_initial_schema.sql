@@ -1,5 +1,5 @@
 -- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto"; -- For gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For text search
 
 -- Create custom types
@@ -26,7 +26,7 @@ CREATE TYPE letter_template_type AS ENUM (
 -- TENANTS TABLE - Core of multi-tenancy
 -- ==============================================
 CREATE TABLE tenants (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   type tenant_type DEFAULT 'internal',
   status tenant_status DEFAULT 'active',
@@ -46,7 +46,7 @@ COMMENT ON COLUMN tenants.settings IS 'Tenant-specific business rules and config
 -- USERS & AUTHENTICATION
 -- ==============================================
 CREATE TABLE tenant_users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role user_role NOT NULL DEFAULT 'bookkeeper',
@@ -66,7 +66,7 @@ COMMENT ON TABLE tenant_users IS 'Links Supabase auth users to tenants with role
 -- CLIENTS TABLE - CRM Core
 -- ==============================================
 CREATE TABLE clients (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   company_name TEXT NOT NULL,
   company_name_hebrew TEXT, -- Hebrew name for letters
@@ -97,7 +97,7 @@ COMMENT ON COLUMN clients.tax_id IS '9-digit Israeli tax ID with validation';
 -- FEE MANAGEMENT
 -- ==============================================
 CREATE TABLE fee_types (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -108,7 +108,7 @@ CREATE TABLE fee_types (
 );
 
 CREATE TABLE fee_calculations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   year INTEGER NOT NULL,
@@ -139,7 +139,7 @@ COMMENT ON TABLE fee_calculations IS 'Automated fee calculation with adjustments
 -- LETTER TEMPLATES
 -- ==============================================
 CREATE TABLE letter_templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   template_type letter_template_type NOT NULL,
   name TEXT NOT NULL,
@@ -165,7 +165,7 @@ COMMENT ON COLUMN letter_templates.variables_schema IS 'JSON schema defining req
 -- LETTER GENERATION & TRACKING
 -- ==============================================
 CREATE TABLE generated_letters (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   template_id UUID NOT NULL REFERENCES letter_templates(id),
@@ -189,7 +189,7 @@ CREATE INDEX idx_generated_letters_sent ON generated_letters(tenant_id, sent_at)
 -- PAYMENT TRACKING (Cardcom Integration)
 -- ==============================================
 CREATE TABLE payment_transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   fee_calculation_id UUID REFERENCES fee_calculations(id),
@@ -216,7 +216,7 @@ CREATE INDEX idx_payment_transactions_cardcom ON payment_transactions(cardcom_de
 -- AUDIT LOGS
 -- ==============================================
 CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   user_id UUID REFERENCES auth.users(id),
   user_email TEXT,
@@ -240,7 +240,7 @@ COMMENT ON TABLE audit_logs IS 'Comprehensive audit trail for compliance';
 -- WEBHOOK LOGS (for Cardcom and other integrations)
 -- ==============================================
 CREATE TABLE webhook_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source TEXT NOT NULL, -- cardcom, sendgrid, etc.
   event_type TEXT NOT NULL,
   payload JSONB NOT NULL,
@@ -268,56 +268,56 @@ ALTER TABLE payment_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Function to get current user's tenant_id
-CREATE OR REPLACE FUNCTION auth.tenant_id() 
+CREATE OR REPLACE FUNCTION public.get_current_tenant_id() 
 RETURNS UUID AS $$
   SELECT (auth.jwt() -> 'user_metadata' ->> 'tenant_id')::UUID;
 $$ LANGUAGE SQL STABLE;
 
 -- Function to get current user's role
-CREATE OR REPLACE FUNCTION auth.user_role() 
+CREATE OR REPLACE FUNCTION public.get_current_user_role() 
 RETURNS TEXT AS $$
   SELECT auth.jwt() -> 'user_metadata' ->> 'role';
 $$ LANGUAGE SQL STABLE;
 
 -- Tenant isolation policy (applies to all tables with tenant_id)
 CREATE POLICY tenant_isolation_policy ON clients
-  FOR ALL USING (tenant_id = auth.tenant_id());
+  FOR ALL USING (tenant_id = public.get_current_tenant_id());
 
 CREATE POLICY tenant_isolation_policy ON fee_types
-  FOR ALL USING (tenant_id = auth.tenant_id());
+  FOR ALL USING (tenant_id = public.get_current_tenant_id());
 
 CREATE POLICY tenant_isolation_policy ON fee_calculations
-  FOR ALL USING (tenant_id = auth.tenant_id());
+  FOR ALL USING (tenant_id = public.get_current_tenant_id());
 
 CREATE POLICY tenant_isolation_policy ON letter_templates
-  FOR ALL USING (tenant_id = auth.tenant_id());
+  FOR ALL USING (tenant_id = public.get_current_tenant_id());
 
 CREATE POLICY tenant_isolation_policy ON generated_letters
-  FOR ALL USING (tenant_id = auth.tenant_id());
+  FOR ALL USING (tenant_id = public.get_current_tenant_id());
 
 CREATE POLICY tenant_isolation_policy ON payment_transactions
-  FOR ALL USING (tenant_id = auth.tenant_id());
+  FOR ALL USING (tenant_id = public.get_current_tenant_id());
 
 CREATE POLICY tenant_isolation_policy ON audit_logs
-  FOR SELECT USING (tenant_id = auth.tenant_id());
+  FOR SELECT USING (tenant_id = public.get_current_tenant_id());
 
 -- Admin-only policies
 CREATE POLICY admin_only_tenants ON tenants
   FOR ALL USING (
-    id = auth.tenant_id() AND 
-    auth.user_role() = 'admin'
+    id = public.get_current_tenant_id() AND 
+    public.get_current_user_role() = 'admin'
   );
 
 CREATE POLICY admin_only_tenant_users ON tenant_users
   FOR ALL USING (
-    tenant_id = auth.tenant_id() AND 
-    auth.user_role() = 'admin'
+    tenant_id = public.get_current_tenant_id() AND 
+    public.get_current_user_role() = 'admin'
   );
 
 -- Audit logs insert policy (anyone can insert their own actions)
 CREATE POLICY audit_logs_insert ON audit_logs
   FOR INSERT WITH CHECK (
-    tenant_id = auth.tenant_id() AND
+    tenant_id = public.get_current_tenant_id() AND
     user_id = auth.uid()
   );
 

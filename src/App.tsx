@@ -1,22 +1,26 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LoginPage } from '@/pages/LoginPage';
+import { SetupPage } from '@/pages/SetupPage';
 import { DashboardPage } from '@/pages/DashboardPage';
-import { ClientsPage } from '@/pages/ClientsPage';
+import ClientsPage from '@/pages/ClientsPage';
 import { FeesPage } from '@/pages/FeesPage';
 import { LettersPage } from '@/pages/LettersPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Toaster } from '@/components/ui/sonner';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
+        <Toaster position="top-center" />
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/setup" element={<SetupPage />} />
           
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>

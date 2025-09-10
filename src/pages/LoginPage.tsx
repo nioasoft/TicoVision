@@ -35,7 +35,7 @@ export function LoginPage() {
       <div className="w-full max-w-md px-4">
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">TicoVision CRM</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">TicoVision AI</CardTitle>
             <CardDescription className="text-center">
               מערכת ניהול משרד רואי חשבון
             </CardDescription>
