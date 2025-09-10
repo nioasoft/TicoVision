@@ -214,6 +214,11 @@ class ClientService extends BaseService {
     }
   }
 
+  async getClients(): Promise<ServiceResponse<ClientsListResponse>> {
+    // Wrapper method for backward compatibility - returns all clients
+    return this.list();
+  }
+
   async search(searchTerm: string): Promise<ServiceResponse<Client[]>> {
     try {
       const tenantId = await this.getTenantId();
