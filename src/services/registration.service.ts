@@ -1,0 +1,373 @@
+import { supabase } from '@/lib/supabase';
+import type { UserRole } from '@/types/user-role';
+
+export interface RegistrationData {
+  email: string;
+  full_name: string;
+  phone?: string;
+  company_name?: string;
+  requested_role: UserRole;
+  tax_id?: string;
+  message?: string;
+}
+
+export interface PendingRegistration extends RegistrationData {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  approved_by?: string;
+  approved_at?: string;
+  created_at: string;
+}
+
+export interface UserClientAssignment {
+  id: string;
+  user_id: string;
+  client_id: string;
+  tenant_id: string;
+  assigned_by?: string;
+  assigned_at: string;
+  is_primary: boolean;
+  notes?: string;
+  client?: {
+    company_name: string;
+    company_name_hebrew?: string;
+    tax_id: string;
+  };
+}
+
+class RegistrationService {
+  /**
+   * Submit a new registration request
+   */
+  async submitRegistration(data: RegistrationData) {
+    try {
+      const { data: registration, error } = await supabase
+        .from('pending_registrations')
+        .insert({
+          email: data.email,
+          full_name: data.full_name,
+          phone: data.phone,
+          company_name: data.company_name,
+          requested_role: data.requested_role,
+          tax_id: data.tax_id,
+          message: data.message
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data: registration, error: null };
+    } catch (error) {
+      console.error('Error submitting registration:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Get all pending registrations (admin only)
+   */
+  async getPendingRegistrations() {
+    try {
+      const { data: registrations, error } = await supabase
+        .from('pending_registrations')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data: registrations as PendingRegistration[], error: null };
+    } catch (error) {
+      console.error('Error fetching pending registrations:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Get all registrations with filters (admin only)
+   */
+  async getAllRegistrations(status?: 'pending' | 'approved' | 'rejected') {
+    try {
+      let query = supabase
+        .from('pending_registrations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (status) {
+        query = query.eq('status', status);
+      }
+
+      const { data: registrations, error } = await query;
+
+      if (error) throw error;
+      return { data: registrations as PendingRegistration[], error: null };
+    } catch (error) {
+      console.error('Error fetching registrations:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Approve a registration request and create user
+   */
+  async approveRegistration(
+    registrationId: string, 
+    password: string,
+    assignedClientIds?: string[]
+  ) {
+    try {
+      // Get registration details
+      const { data: registration, error: fetchError } = await supabase
+        .from('pending_registrations')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!registration) throw new Error('Registration not found');
+
+      // Get current tenant
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error('Not authenticated');
+
+      const { data: tenantUser } = await supabase
+        .from('tenant_users')
+        .select('tenant_id')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (!tenantUser) throw new Error('Tenant not found');
+
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: registration.email,
+        password: password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: registration.full_name,
+          phone: registration.phone,
+          role: registration.requested_role
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user');
+
+      // Create tenant_user record
+      const { error: tenantUserError } = await supabase
+        .from('tenant_users')
+        .insert({
+          user_id: authData.user.id,
+          tenant_id: tenantUser.tenant_id,
+          role: registration.requested_role,
+          is_active: true
+        });
+
+      if (tenantUserError) throw tenantUserError;
+
+      // If client role and tax_id provided, find and assign client
+      if (registration.requested_role === 'client' && registration.tax_id) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('tax_id', registration.tax_id)
+          .eq('tenant_id', tenantUser.tenant_id)
+          .single();
+
+        if (client) {
+          assignedClientIds = [client.id];
+        }
+      }
+
+      // Create client assignments if provided
+      if (assignedClientIds && assignedClientIds.length > 0) {
+        const assignments = assignedClientIds.map((clientId, index) => ({
+          user_id: authData.user.id,
+          client_id: clientId,
+          tenant_id: tenantUser.tenant_id,
+          assigned_by: currentUser.id,
+          is_primary: index === 0 // First client is primary
+        }));
+
+        const { error: assignmentError } = await supabase
+          .from('user_client_assignments')
+          .insert(assignments);
+
+        if (assignmentError) throw assignmentError;
+      }
+
+      // Update registration status
+      const { error: updateError } = await supabase
+        .from('pending_registrations')
+        .update({
+          status: 'approved',
+          approved_by: currentUser.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (updateError) throw updateError;
+
+      return { data: { userId: authData.user.id }, error: null };
+    } catch (error) {
+      console.error('Error approving registration:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Reject a registration request
+   */
+  async rejectRegistration(registrationId: string, reason: string) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('pending_registrations')
+        .update({
+          status: 'rejected',
+          rejection_reason: reason,
+          approved_by: user.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      return { data: true, error: null };
+    } catch (error) {
+      console.error('Error rejecting registration:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Get user's client assignments
+   */
+  async getUserClientAssignments(userId: string) {
+    try {
+      const { data: assignments, error } = await supabase
+        .from('user_client_assignments')
+        .select(`
+          *,
+          client:clients(
+            id,
+            company_name,
+            company_name_hebrew,
+            tax_id
+          )
+        `)
+        .eq('user_id', userId)
+        .order('is_primary', { ascending: false });
+
+      if (error) throw error;
+      return { data: assignments as UserClientAssignment[], error: null };
+    } catch (error) {
+      console.error('Error fetching user assignments:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Assign clients to a user
+   */
+  async assignClientsToUser(
+    userId: string,
+    clientIds: string[],
+    primaryClientId?: string
+  ) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: tenantUser } = await supabase
+        .from('tenant_users')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!tenantUser) throw new Error('Tenant not found');
+
+      // Remove existing assignments
+      await supabase
+        .from('user_client_assignments')
+        .delete()
+        .eq('user_id', userId);
+
+      // Create new assignments
+      const assignments = clientIds.map(clientId => ({
+        user_id: userId,
+        client_id: clientId,
+        tenant_id: tenantUser.tenant_id,
+        assigned_by: user.id,
+        is_primary: clientId === primaryClientId
+      }));
+
+      const { error } = await supabase
+        .from('user_client_assignments')
+        .insert(assignments);
+
+      if (error) throw error;
+      return { data: true, error: null };
+    } catch (error) {
+      console.error('Error assigning clients:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Remove client assignment from user
+   */
+  async removeClientAssignment(userId: string, clientId: string) {
+    try {
+      const { error } = await supabase
+        .from('user_client_assignments')
+        .delete()
+        .eq('user_id', userId)
+        .eq('client_id', clientId);
+
+      if (error) throw error;
+      return { data: true, error: null };
+    } catch (error) {
+      console.error('Error removing assignment:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Check if email is already registered or pending
+   */
+  async checkEmailAvailability(email: string) {
+    try {
+      // Check in pending registrations
+      const { data: pending } = await supabase
+        .from('pending_registrations')
+        .select('id')
+        .eq('email', email)
+        .eq('status', 'pending')
+        .single();
+
+      if (pending) {
+        return { available: false, reason: 'pending_registration' };
+      }
+
+      // Check in auth users
+      const { data: existingUser } = await supabase
+        .from('auth.users')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingUser) {
+        return { available: false, reason: 'user_exists' };
+      }
+
+      return { available: true };
+    } catch (error) {
+      // No results found means email is available
+      return { available: true };
+    }
+  }
+}
+
+export const registrationService = new RegistrationService();

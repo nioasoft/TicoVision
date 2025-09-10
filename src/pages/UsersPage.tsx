@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   UserPlus, 
@@ -38,12 +39,18 @@ import {
   Phone,
   Shield,
   CheckCircle,
-  XCircle
+  XCircle,
+  Link,
+  Building
 } from 'lucide-react';
 import { userService } from '@/services/user.service';
 import type { User, CreateUserData, UpdateUserData } from '@/services/user.service';
 import type { UserRole } from '@/types/user-role';
 import { useAuth } from '@/contexts/AuthContext';
+import { registrationService } from '@/services/registration.service';
+import { clientService } from '@/services/client.service';
+import type { Client } from '@/services/client.service';
+import type { UserClientAssignment } from '@/services/registration.service';
 
 export function UsersPage() {
   const { toast } = useToast();
@@ -57,7 +64,15 @@ export function UsersPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [showAssignClientsDialog, setShowAssignClientsDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Client assignment states
+  const [availableClients, setAvailableClients] = useState<Client[]>([]);
+  const [userAssignments, setUserAssignments] = useState<UserClientAssignment[]>([]);
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [primaryClientId, setPrimaryClientId] = useState<string | undefined>();
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
   
   // Form data
   const [formData, setFormData] = useState<CreateUserData>({
@@ -74,6 +89,7 @@ export function UsersPage() {
 
   useEffect(() => {
     loadUsers();
+    loadClients();
   }, []);
 
   const loadUsers = async () => {
@@ -89,6 +105,23 @@ export function UsersPage() {
       setUsers(response.data.users);
     }
     setLoading(false);
+  };
+
+  const loadClients = async () => {
+    const response = await clientService.getClients();
+    if (response.data) {
+      setAvailableClients(response.data.clients);
+    }
+  };
+
+  const loadUserAssignments = async (userId: string) => {
+    const response = await registrationService.getUserClientAssignments(userId);
+    if (response.data) {
+      setUserAssignments(response.data);
+      setSelectedClients(response.data.map(a => a.client_id));
+      const primary = response.data.find(a => a.is_primary);
+      setPrimaryClientId(primary?.client_id);
+    }
   };
 
   const handleAddUser = async () => {
@@ -208,6 +241,60 @@ export function UsersPage() {
     setSelectedUser(user);
     setNewPassword('');
     setShowResetPasswordDialog(true);
+  };
+
+  const openAssignClientsDialog = async (user: User) => {
+    setSelectedUser(user);
+    setSelectedClients([]);
+    setPrimaryClientId(undefined);
+    setClientSearchTerm('');
+    
+    // Load user's current assignments
+    await loadUserAssignments(user.id);
+    
+    setShowAssignClientsDialog(true);
+  };
+
+  const handleAssignClients = async () => {
+    if (!selectedUser) return;
+
+    const response = await registrationService.assignClientsToUser(
+      selectedUser.id,
+      selectedClients,
+      primaryClientId
+    );
+
+    if (response.error) {
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לעדכן שיוכי לקוחות',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'הצלחה',
+        description: 'שיוכי הלקוחות עודכנו בהצלחה',
+      });
+      setShowAssignClientsDialog(false);
+      setSelectedUser(null);
+      setSelectedClients([]);
+      setPrimaryClientId(undefined);
+    }
+  };
+
+  const toggleClientSelection = (clientId: string) => {
+    setSelectedClients(prev => {
+      const newSelection = prev.includes(clientId)
+        ? prev.filter(id => id !== clientId)
+        : [...prev, clientId];
+      
+      // If unselecting primary client, clear primary
+      if (!newSelection.includes(clientId) && primaryClientId === clientId) {
+        setPrimaryClientId(undefined);
+      }
+      
+      return newSelection;
+    });
   };
 
   // Filter users based on search and role
@@ -350,6 +437,16 @@ export function UsersPage() {
                           >
                             <Key className="h-4 w-4" />
                           </Button>
+                          {user.role !== 'admin' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openAssignClientsDialog(user)}
+                              title="ניהול שיוכי לקוחות"
+                            >
+                              <Link className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
@@ -517,6 +614,127 @@ export function UsersPage() {
               ביטול
             </Button>
             <Button onClick={handleResetPassword}>אפס סיסמה</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Clients Dialog */}
+      <Dialog open={showAssignClientsDialog} onOpenChange={setShowAssignClientsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>ניהול שיוכי לקוחות</DialogTitle>
+            <DialogDescription>
+              בחר לקוחות עבור {selectedUser?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>חיפוש לקוחות</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="חיפוש לפי שם או מספר ח.פ..."
+                  value={clientSearchTerm}
+                  onChange={(e) => setClientSearchTerm(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>לקוחות זמינים</Label>
+              <div className="border rounded-md max-h-80 overflow-y-auto p-2 space-y-2">
+                {availableClients
+                  .filter(client => 
+                    client.company_name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                    client.company_name_hebrew?.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                    client.tax_id.includes(clientSearchTerm)
+                  )
+                  .map((client) => (
+                    <div key={client.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                      <Checkbox
+                        id={`assign-client-${client.id}`}
+                        checked={selectedClients.includes(client.id)}
+                        onCheckedChange={() => toggleClientSelection(client.id)}
+                      />
+                      <Label
+                        htmlFor={`assign-client-${client.id}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <div className="font-medium">
+                              {client.company_name}
+                              {client.company_name_hebrew && (
+                                <span className="text-gray-500 mr-2">({client.company_name_hebrew})</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ח.פ: {client.tax_id}
+                            </div>
+                          </div>
+                        </div>
+                      </Label>
+                      {selectedClients.includes(client.id) && selectedUser?.role === 'accountant' && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="primary-client"
+                            checked={primaryClientId === client.id}
+                            onChange={() => setPrimaryClientId(client.id)}
+                            className="h-4 w-4"
+                          />
+                          <Label className="text-sm">ראשי</Label>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                {availableClients.filter(client => 
+                  client.company_name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+                  client.tax_id.includes(clientSearchTerm)
+                ).length === 0 && (
+                  <p className="text-center text-gray-500 py-4">לא נמצאו לקוחות</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 p-3 rounded-md">
+              <p className="text-sm text-blue-700">
+                <strong>לקוחות נבחרים:</strong> {selectedClients.length}
+                {primaryClientId && (
+                  <span className="mr-2">
+                    (לקוח ראשי: {availableClients.find(c => c.id === primaryClientId)?.company_name})
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {userAssignments.length > 0 && (
+              <div className="bg-gray-50 p-3 rounded-md">
+                <p className="text-sm text-gray-700">
+                  <strong>שיוכים נוכחיים:</strong>
+                </p>
+                <ul className="text-sm text-gray-600 mt-1">
+                  {userAssignments.map(assignment => (
+                    <li key={assignment.id}>
+                      • {assignment.client?.company_name}
+                      {assignment.is_primary && ' (ראשי)'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignClientsDialog(false)}>
+              ביטול
+            </Button>
+            <Button onClick={handleAssignClients}>
+              שמור שיוכים
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

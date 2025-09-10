@@ -7,6 +7,7 @@ import ClientsPage from '@/pages/ClientsPage';
 import { FeesPage } from '@/pages/FeesPage';
 import { LettersPage } from '@/pages/LettersPage';
 import { UsersPage } from '@/pages/UsersPage';
+import { PendingRegistrationsPage } from '@/pages/PendingRegistrationsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -31,6 +32,7 @@ function App() {
               <Route path="/fees" element={<FeesPage />} />
               <Route path="/letters" element={<LettersPage />} />
               <Route path="/users" element={<UsersPage />} />
+              <Route path="/registrations" element={<PendingRegistrationsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

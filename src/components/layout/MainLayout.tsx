@@ -10,10 +10,13 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  UserPlus
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { registrationService } from '@/services/registration.service';
 
 const navigation = [
   { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard },
@@ -21,6 +24,7 @@ const navigation = [
   { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator },
   { name: 'מכתבים', href: '/letters', icon: FileText },
   { name: 'משתמשים', href: '/users', icon: UserCog, adminOnly: true },
+  { name: 'בקשות הרשמה', href: '/registrations', icon: UserPlus, adminOnly: true, showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings },
 ];
 
@@ -28,6 +32,24 @@ export function MainLayout() {
   const { user, signOut, role } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    // Load pending registrations count for admins
+    if (role === 'admin') {
+      loadPendingCount();
+      // Refresh count every 30 seconds
+      const interval = setInterval(loadPendingCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [role]);
+
+  const loadPendingCount = async () => {
+    const response = await registrationService.getPendingRegistrations();
+    if (response.data) {
+      setPendingCount(response.data.length);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -85,7 +107,12 @@ export function MainLayout() {
                     onClick={() => setSidebarOpen(false)}
                   >
                     <item.icon className="h-5 w-5" />
-                    {item.name}
+                    <span className="flex-1">{item.name}</span>
+                    {item.showBadge && pendingCount > 0 && (
+                      <Badge variant="destructive" className="mr-auto">
+                        {pendingCount}
+                      </Badge>
+                    )}
                   </NavLink>
                 </li>
               ))}
