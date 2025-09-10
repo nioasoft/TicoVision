@@ -26,11 +26,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setRole(session?.user?.user_metadata?.role ?? null);
-      setTenantId(session?.user?.user_metadata?.tenant_id ?? null);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      // Handle invalid refresh token error
+      if (error && error.message.includes('Invalid Refresh Token')) {
+        console.log('Invalid refresh token detected, clearing session');
+        // Clear invalid session
+        supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setRole(null);
+        setTenantId(null);
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setRole(session?.user?.user_metadata?.role ?? null);
+        setTenantId(session?.user?.user_metadata?.tenant_id ?? null);
+      }
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Auth initialization error:', error);
       setLoading(false);
     });
 
