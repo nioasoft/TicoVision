@@ -59,7 +59,7 @@ export const BUSINESS_RULES = {
 
   // Israeli Market Specific
   israeli: {
-    vatRate: 17, // Percentage
+    vatRate: 18, // Percentage - Updated December 2024
     taxYearStart: { month: 1, day: 1 },
     taxYearEnd: { month: 12, day: 31 },
     officialHolidays: [

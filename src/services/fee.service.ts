@@ -141,7 +141,7 @@ class FeeService extends BaseService {
     const discountAmount = adjustedAmount * (discountPercentage / 100);
     const finalAmount = adjustedAmount - discountAmount;
     
-    // Step 4: Calculate VAT (18% in Israel)
+    // Step 4: Calculate VAT (18% in Israel - Updated December 2024)
     const vatAmount = finalAmount * 0.18;
     const totalWithVat = finalAmount + vatAmount;
 

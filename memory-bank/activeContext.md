@@ -1,5 +1,94 @@
 # Active Context
 
+## Code Changes (2025-09-11 09:01:44)
+
+### Added Files
+- .claude/settings.local.json
+- .mcp.json
+- .vercel/project.json
+- components.json
+- eslint.config.js
+- index.html
+- package-lock.json
+- package.json
+- postcss.config.js
+- scripts/generate-types.js
+- scripts/test-users-page.js
+- src/App.tsx
+- src/components/TenantSwitcher.tsx
+- src/components/auth/ProtectedRoute.tsx
+- src/components/layout/MainLayout.tsx
+- src/components/ui/alert-dialog.tsx
+- src/components/ui/alert.tsx
+- src/components/ui/avatar.tsx
+- src/components/ui/badge.tsx
+- src/components/ui/button.tsx
+- src/components/ui/card.tsx
+- src/components/ui/checkbox.tsx
+- src/components/ui/dialog.tsx
+- src/components/ui/dropdown-menu.tsx
+- src/components/ui/input.tsx
+- src/components/ui/label.tsx
+- src/components/ui/scroll-area.tsx
+- src/components/ui/select.tsx
+- src/components/ui/sonner.tsx
+- src/components/ui/switch.tsx
+- src/components/ui/table.tsx
+- src/components/ui/tabs.tsx
+- src/components/ui/textarea.tsx
+- src/components/ui/toast.tsx
+- src/components/ui/toaster.tsx
+- src/components/ui/use-toast.tsx
+- src/contexts/AuthContext.tsx
+- src/hooks/use-toast.ts
+- src/index.css
+- src/lib/business-rules.ts
+- src/lib/design-tokens.ts
+- src/lib/supabase.ts
+- src/lib/utils.ts
+- src/main.tsx
+- src/modules/letters/services/template.service.ts
+- src/modules/letters/types/letter.types.ts
+- src/modules/letters/utils/template-importer.ts
+- src/modules/letters/utils/template-parser.ts
+- src/pages/ClientsPage.tsx
+- src/pages/DashboardPage.tsx
+- src/pages/FeesPage.tsx
+- src/pages/LetterTemplatesPage.tsx
+- src/pages/LettersPage.tsx
+- src/pages/LoginPage.tsx
+- src/pages/PendingRegistrationsPage.tsx
+- src/pages/SettingsPage.tsx
+- src/pages/SetupPage.tsx
+- src/pages/SuperAdminDashboard.tsx
+- src/pages/TenantManagementPage.tsx
+- src/pages/UsersPage.tsx
+- src/services/audit.service.ts
+- src/services/auth.service.ts
+- src/services/base.service.ts
+- src/services/cardcom.service.ts
+- src/services/client.service.ts
+- src/services/fee.service.ts
+- src/services/index.ts
+- src/services/letter.service.ts
+- src/services/registration.service.ts
+- src/services/super-admin.service.ts
+- src/services/tenant-management.service.ts
+- src/services/user.service.ts
+- src/types/database.types.ts
+- src/types/supabase.ts
+- src/types/user-role.ts
+- src/vite-env.d.ts
+- tailwind.config.js
+- test-login.js
+- test-setup.js
+- tsconfig.app.json
+- tsconfig.json
+- tsconfig.node.json
+- vercel.json
+- vite.config.ts
+
+
 ## Code Changes (2025-09-10 06:42:44)
 
 ### Added Files

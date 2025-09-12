@@ -230,6 +230,43 @@ buildPaginationQuery(query, params)          // Pagination helper
 buildFilterQuery(query, filters)             // Filter helper
 ```
 
+## 🚨 CRITICAL DATABASE ARCHITECTURE NOTES (DO NOT IGNORE)
+
+### Table Architecture - THERE IS NO `users` TABLE!
+The system uses **`user_tenant_access`** for user-tenant relationships:
+- **auth.users** - Supabase authentication (DO NOT QUERY DIRECTLY)
+- **user_tenant_access** - Links users to tenants with roles
+- **super_admins** - Super admin access control
+- **NO `public.users` TABLE EXISTS** - Any reference to it will fail
+
+### Common Errors and Solutions:
+1. **"column reference is ambiguous"** - Always qualify columns with table alias (e.g., `uta.user_id` not just `user_id`)
+2. **"relation users does not exist"** - You're referencing non-existent `public.users` table, use `user_tenant_access` instead
+3. **RLS infinite recursion** - Use SECURITY DEFINER functions to bypass RLS where needed
+4. **400 Bad Request on RPC calls** - Check function parameter names and column qualifications
+
+### Correct User Query Pattern:
+```sql
+-- CORRECT: Get users for a tenant
+SELECT 
+  uta.user_id,
+  uta.role,
+  au.email
+FROM user_tenant_access uta
+JOIN auth.users au ON uta.user_id = au.id
+WHERE uta.tenant_id = 'tenant-id'
+AND uta.is_active = true;
+
+-- WRONG: This will fail
+SELECT * FROM users; -- NO SUCH TABLE!
+```
+
+### Database Function Best Practices:
+1. **Always qualify columns** in PL/pgSQL functions to avoid ambiguity
+2. **Use table aliases** consistently (uta for user_tenant_access, au for auth.users)
+3. **Declare variables** with different names than column names
+4. **Test functions** directly in SQL before using in application
+
 ## 💥 User Management & Authentication System
 
 ### User Roles & Hierarchy:

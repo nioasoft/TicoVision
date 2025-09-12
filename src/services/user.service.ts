@@ -36,7 +36,7 @@ export interface UpdateUserData {
 
 export class UserService extends BaseService {
   constructor() {
-    super('tenant_users'); // Changed from 'users' to 'tenant_users'
+    super('user_tenant_access'); // Use the correct table
   }
 
   /**
@@ -63,11 +63,11 @@ export class UserService extends BaseService {
         tenant_id: user.tenant_id,
         email: user.email || '',
         full_name: user.email?.split('@')[0] || 'Unknown', // Derive from email temporarily
-        role: user.role,
+        role: user.role as UserRole,
         is_active: user.is_active,
         permissions: user.permissions || {},
         created_at: user.created_at,
-        updated_at: user.updated_at,
+        updated_at: user.updated_at || user.created_at,
         last_login: user.last_sign_in_at || null,
       })) || [];
       
@@ -104,27 +104,31 @@ export class UserService extends BaseService {
       const tenantId = await this.getTenantId();
 
       const { data, error } = await supabase
-        .from('tenant_users')
-        .select('*, auth_user:auth.users!inner(email, last_sign_in_at)')
+        .from('user_tenant_access')
+        .select('*')
         .eq('user_id', userId)
         .eq('tenant_id', tenantId)
+        .eq('is_active', true)
         .single();
 
       if (error) {
         return { data: null, error: this.handleError(error) };
       }
 
+      // Get auth user data
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+
       const user = {
         id: data.user_id,
         tenant_id: data.tenant_id,
-        email: data.auth_user?.email || '',
-        full_name: data.auth_user?.email?.split('@')[0] || 'Unknown',
-        role: data.role,
+        email: authUser?.email || '',
+        full_name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Unknown',
+        role: data.role as UserRole,
         is_active: data.is_active,
         permissions: data.permissions || {},
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        last_login: data.auth_user?.last_sign_in_at || null,
+        created_at: data.granted_at || data.created_at,
+        updated_at: data.last_accessed_at || data.granted_at,
+        last_login: authUser?.last_sign_in_at || null,
       };
 
       await this.logAction('view_user', userId);
@@ -162,14 +166,15 @@ export class UserService extends BaseService {
         return { data: null, error: new Error('Failed to create auth user') };
       }
 
-      // Step 2: Create user record in tenant_users table
+      // Step 2: Create user record in user_tenant_access table
       const { data, error } = await supabase
-        .from('tenant_users')
+        .from('user_tenant_access')
         .insert({
           user_id: authData.user.id,
           tenant_id: tenantId,
           role: userData.role,
           is_active: true,
+          is_primary: true,
           permissions: userData.permissions || {},
         })
         .select()
@@ -216,14 +221,14 @@ export class UserService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Update user record in tenant_users table
+      // Update user record in user_tenant_access table
       const { error } = await supabase
-        .from('tenant_users')
+        .from('user_tenant_access')
         .update({
           role: updates.role,
           is_active: updates.is_active,
           permissions: updates.permissions,
-          updated_at: new Date().toISOString(),
+          last_accessed_at: new Date().toISOString(),
         })
         .eq('user_id', userId)
         .eq('tenant_id', tenantId)
@@ -258,12 +263,13 @@ export class UserService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Soft delete - just deactivate the user in tenant_users
+      // Soft delete - just deactivate the user in user_tenant_access
       const { error } = await supabase
-        .from('tenant_users')
+        .from('user_tenant_access')
         .update({ 
           is_active: false,
-          updated_at: new Date().toISOString(),
+          revoked_at: new Date().toISOString(),
+          revoke_reason: 'User deleted by admin',
         })
         .eq('user_id', userId)
         .eq('tenant_id', tenantId);

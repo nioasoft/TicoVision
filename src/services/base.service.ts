@@ -1,4 +1,5 @@
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
+import { getClientIpAddress, getClientInfo } from '@/lib/utils';
 import { PostgrestError } from '@supabase/supabase-js';
 
 export interface ServiceResponse<T> {
@@ -47,6 +48,13 @@ export abstract class BaseService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const tenantId = await this.getTenantId();
+      const clientInfo = getClientInfo();
+
+      // Merge client info into details for context
+      const enrichedDetails = {
+        ...details,
+        client_info: clientInfo,
+      };
 
       await supabase.from('audit_logs').insert({
         tenant_id: tenantId,
@@ -55,8 +63,8 @@ export abstract class BaseService {
         action,
         module: this.tableName,
         resource_id: resourceId,
-        details,
-        ip_address: window.location.hostname,
+        details: enrichedDetails,
+        ip_address: getClientIpAddress(), // Returns null for browser context
         user_agent: navigator.userAgent,
       });
     } catch (error) {
