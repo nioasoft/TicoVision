@@ -11,20 +11,22 @@ import {
   LogOut,
   Menu,
   X,
-  UserPlus
+  UserPlus,
+  Shield
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { registrationService } from '@/services/registration.service';
+import TenantSwitcher from '@/components/TenantSwitcher';
+import { authService } from '@/services/auth.service';
 
 const navigation = [
   { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard },
   { name: 'לקוחות', href: '/clients', icon: Users },
   { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator },
-  { name: 'מכתבים', href: '/letters', icon: FileText },
-  { name: 'משתמשים', href: '/users', icon: UserCog, adminOnly: true },
-  { name: 'בקשות הרשמה', href: '/registrations', icon: UserPlus, adminOnly: true, showBadge: true },
+  { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, adminOnly: true },
+  { name: 'משתמשים', href: '/users', icon: UserCog, adminOnly: true, showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings },
 ];
 
@@ -33,8 +35,12 @@ export function MainLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
+    // Check if super admin
+    checkSuperAdmin();
+    
     // Load pending registrations count for admins
     if (role === 'admin') {
       loadPendingCount();
@@ -43,6 +49,11 @@ export function MainLayout() {
       return () => clearInterval(interval);
     }
   }, [role]);
+
+  const checkSuperAdmin = async () => {
+    const isSuper = await authService.isSuperAdmin();
+    setIsSuperAdmin(isSuper);
+  };
 
   const loadPendingCount = async () => {
     const response = await registrationService.getPendingRegistrations();
@@ -89,9 +100,38 @@ export function MainLayout() {
             </Button>
           </div>
 
+          {/* Tenant Switcher */}
+          {isSuperAdmin && (
+            <div className="p-4 border-b">
+              <TenantSwitcher />
+            </div>
+          )}
+
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-2">
+              {/* Super Admin Link */}
+              {isSuperAdmin && (
+                <li>
+                  <NavLink
+                    to="/super-admin"
+                    className={({ isActive }) =>
+                      cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-gray-100 text-gray-700"
+                      )
+                    }
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <Shield className="h-5 w-5" />
+                    <span className="flex-1">Super Admin</span>
+                    <Badge variant="secondary">SA</Badge>
+                  </NavLink>
+                </li>
+              )}
+              
               {filteredNavigation.map((item) => (
                 <li key={item.href}>
                   <NavLink
@@ -109,7 +149,7 @@ export function MainLayout() {
                     <item.icon className="h-5 w-5" />
                     <span className="flex-1">{item.name}</span>
                     {item.showBadge && pendingCount > 0 && (
-                      <Badge variant="destructive" className="mr-auto">
+                      <Badge variant="destructive" className="ml-auto">
                         {pendingCount}
                       </Badge>
                     )}
@@ -132,7 +172,7 @@ export function MainLayout() {
               className="w-full"
               onClick={handleSignOut}
             >
-              <LogOut className="h-4 w-4 ml-2" />
+              <LogOut className="h-4 w-4 mr-2" />
               התנתק
             </Button>
           </div>
