@@ -28,24 +28,33 @@ export interface FeeCalculation {
   // Period dates
   period_start?: string;
   period_end?: string;
-  // Previous year data
+  // Previous year data - Enhanced fields
   previous_year_amount?: number;
   previous_year_discount?: number;
   previous_year_base?: number;
+  previous_year_amount_before_discount?: number; // New: Amount before any discounts
+  previous_year_amount_after_discount?: number; // New: After discount, before VAT
+  previous_year_amount_with_vat?: number; // New: Total with VAT
   previous_year_data?: any; // JSONB field
   // Current year calculations
   base_amount: number;
-  base_amount_calculated?: number; // Renamed field in DB
+  apply_inflation_index?: boolean; // New: Control whether to apply inflation
   inflation_adjustment?: number;
   inflation_rate: number; // Default 3.0%
+  calculated_inflation_amount?: number; // New: Calculated inflation amount
   real_adjustment?: number;
   real_adjustments?: any; // JSONB field in DB
   real_adjustment_reason?: string;
   discount_percentage?: number;
   discount_amount?: number;
   final_amount?: number;
+  calculated_before_vat?: number; // New: Current year before VAT
+  calculated_with_vat?: number; // New: Current year with VAT
   vat_amount: number;
   total_amount: number; // This is total_with_vat
+  // Comparison fields
+  year_over_year_change_percent?: number; // New: YoY change %
+  year_over_year_change_amount?: number; // New: YoY change amount
   // Status tracking
   status: FeeStatus;
   due_date?: string;
@@ -82,8 +91,12 @@ export interface CreateFeeCalculationDto {
   previous_year_amount?: number;
   previous_year_discount?: number;
   previous_year_base?: number;
+  previous_year_amount_before_discount?: number;
+  previous_year_amount_after_discount?: number;
+  previous_year_amount_with_vat?: number;
   // Current year calculations
   base_amount: number;
+  apply_inflation_index?: boolean; // Default true
   inflation_rate?: number; // Default 3.0%
   real_adjustment?: number; // Default 0
   real_adjustment_reason?: string;
@@ -114,10 +127,11 @@ class FeeService extends BaseService {
 
   /**
    * Calculate fee with Israeli accounting standards:
-   * 1. Apply inflation adjustment (default 3%)
+   * 1. Apply inflation adjustment (default 3% if enabled)
    * 2. Apply real adjustments 
    * 3. Apply discount percentage
    * 4. Calculate VAT (18%)
+   * 5. Calculate year-over-year changes
    */
   calculateFeeAmounts(data: CreateFeeCalculationDto): {
     inflation_adjustment: number;
@@ -126,13 +140,18 @@ class FeeService extends BaseService {
     final_amount: number;
     vat_amount: number;
     total_with_vat: number;
+    year_over_year_change_percent: number;
+    year_over_year_change_amount: number;
   } {
     const inflationRate = data.inflation_rate || 3.0; // Default 3%
+    const applyInflation = data.apply_inflation_index !== false; // Default true
     const realAdjustment = data.real_adjustment || 0;
     const discountPercentage = data.discount_percentage || 0;
 
-    // Step 1: Apply inflation adjustment
-    const inflationAdjustment = data.base_amount * (inflationRate / 100);
+    // Step 1: Apply inflation adjustment (only if enabled)
+    const inflationAdjustment = applyInflation 
+      ? data.base_amount * (inflationRate / 100)
+      : 0;
     
     // Step 2: Add real adjustment
     const adjustedAmount = data.base_amount + inflationAdjustment + realAdjustment;
@@ -145,13 +164,24 @@ class FeeService extends BaseService {
     const vatAmount = finalAmount * 0.18;
     const totalWithVat = finalAmount + vatAmount;
 
+    // Step 5: Calculate year-over-year changes (if previous year data exists)
+    let yearOverYearChangePercent = 0;
+    let yearOverYearChangeAmount = 0;
+    
+    if (data.previous_year_amount_with_vat) {
+      yearOverYearChangeAmount = totalWithVat - data.previous_year_amount_with_vat;
+      yearOverYearChangePercent = (yearOverYearChangeAmount / data.previous_year_amount_with_vat) * 100;
+    }
+
     return {
       inflation_adjustment: inflationAdjustment,
       real_adjustment: realAdjustment,
       discount_amount: discountAmount,
       final_amount: finalAmount,
       vat_amount: vatAmount,
-      total_with_vat: totalWithVat
+      total_with_vat: totalWithVat,
+      year_over_year_change_percent: yearOverYearChangePercent,
+      year_over_year_change_amount: yearOverYearChangeAmount
     };
   }
 
@@ -168,20 +198,28 @@ class FeeService extends BaseService {
         client_id: data.client_id,
         year: data.year,
         month: data.month,
-        // Store previous year data as JSONB
+        // Store previous year data - enhanced fields
         previous_year_data: {
           amount: data.previous_year_amount,
           discount: data.previous_year_discount,
-          base: data.previous_year_base
+          base: data.previous_year_base,
+          amount_before_discount: data.previous_year_amount_before_discount,
+          amount_after_discount: data.previous_year_amount_after_discount,
+          amount_with_vat: data.previous_year_amount_with_vat
         },
         previous_year_amount: data.previous_year_amount,
         previous_year_discount: data.previous_year_discount,
         previous_year_base: data.previous_year_base,
+        previous_year_amount_before_discount: data.previous_year_amount_before_discount,
+        previous_year_amount_after_discount: data.previous_year_amount_after_discount,
+        previous_year_amount_with_vat: data.previous_year_amount_with_vat,
         // Current year calculations
         base_amount: data.base_amount,
-        base_amount_calculated: data.base_amount, // Match DB column name
+        calculated_base_amount: data.base_amount, // NOT NULL field - same as base_amount
+        apply_inflation_index: data.apply_inflation_index !== false, // Default true
         inflation_adjustment: calculations.inflation_adjustment,
         inflation_rate: data.inflation_rate || 3.0,
+        calculated_inflation_amount: calculations.inflation_adjustment,
         // Store real adjustments as JSONB
         real_adjustments: {
           amount: calculations.real_adjustment,
@@ -191,15 +229,22 @@ class FeeService extends BaseService {
         discount_percentage: data.discount_percentage || 0,
         discount_amount: calculations.discount_amount,
         final_amount: calculations.final_amount,
+        calculated_before_vat: calculations.final_amount,
+        calculated_with_vat: calculations.total_with_vat,
         vat_amount: calculations.vat_amount,
         total_amount: calculations.total_with_vat, // Match DB column name
+        // Year-over-year changes
+        year_over_year_change_percent: calculations.year_over_year_change_percent,
+        year_over_year_change_amount: calculations.year_over_year_change_amount,
+        // Status and metadata
         status: 'draft' as FeeStatus,
         due_date: data.due_date,
         payment_terms: '30 days', // Default payment terms
         notes: data.notes,
         calculation_metadata: {
           calculated_at: new Date().toISOString(),
-          calculation_method: 'standard'
+          calculation_method: 'standard',
+          inflation_applied: data.apply_inflation_index !== false
         },
         created_by: currentUserId
       };
@@ -400,6 +445,47 @@ class FeeService extends BaseService {
       }
 
       return { data: fees || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  async getLatestFeeByClient(
+    clientId: string,
+    year?: number
+  ): Promise<ServiceResponse<FeeCalculation | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('fee_calculations')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId);
+
+      // If year is specified, get the calculation for previous year
+      if (year) {
+        query = query.eq('year', year - 1);
+      }
+
+      // Order by year descending to get the most recent
+      query = query.order('year', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const { data: fees, error } = await query;
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      // If no data found, return null
+      if (!fees || fees.length === 0) {
+        return { data: null, error: null };
+      }
+
+      // Return the first (and only) record
+      return { data: fees[0], error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }

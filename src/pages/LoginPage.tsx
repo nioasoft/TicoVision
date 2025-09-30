@@ -110,10 +110,10 @@ export function LoginPage() {
             </CardDescription>
           </CardHeader>
           
-          <Tabs defaultValue="register" className="w-full" dir="rtl">
+          <Tabs defaultValue="login" className="w-full" dir="rtl">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="register">הרשמה</TabsTrigger>
               <TabsTrigger value="login">התחברות</TabsTrigger>
+              <TabsTrigger value="register">הרשמה</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">

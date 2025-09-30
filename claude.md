@@ -58,6 +58,17 @@ Israeli Market:
 8. **NEVER** hardcode values that could be global (colors, fonts, sizes, business rules)
 
 ## ✅ ALWAYS Rules
+
+### 🔴 RTL Alignment Rule (CRITICAL - BASE LAW)
+**ALL UI COMPONENTS MUST BE RIGHT-ALIGNED FOR HEBREW INTERFACE**
+- **זה חוק בסיס**: Every single text element, dialog, modal, popup, dropdown, and form MUST be right-aligned
+- **Use RTL classes on ALL components**: `rtl:text-right` and `ltr:text-left` classes on all text elements
+- **Headers, descriptions, labels, buttons** - EVERYTHING must be right-aligned in RTL mode
+- **This includes ALL shadcn/ui components**: Dialog, AlertDialog, Popover, DropdownMenu, Sheet, Tooltip, Card, etc.
+- **Button groups**: Use `rtl:space-x-reverse` for proper spacing
+- **Default alignment**: Should ALWAYS be right for Hebrew interface
+- **NO EXCEPTIONS**: If you see ANY text aligned to the left in the Hebrew interface, it's a BUG that must be fixed immediately
+
 1. **ALWAYS** use MCP commands first for database operations:
    ```bash
    # List tables

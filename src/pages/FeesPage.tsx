@@ -6,48 +6,61 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Calculator, 
-  TrendingUp, 
-  DollarSign, 
+import {
+  Calculator,
+  TrendingUp,
+  DollarSign,
   FileText,
   Calendar,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUp,
+  ArrowDown,
+  Info
 } from 'lucide-react';
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
+import { ClientInfoCard } from '@/components/ClientInfoCard';
 
 interface FeeCalculatorForm {
   client_id: string;
   year: number;
   previous_year_amount: number;
   previous_year_discount: number;
+  previous_year_amount_with_vat: number;
   base_amount: number;
   inflation_rate: number;
   real_adjustment: number;
   real_adjustment_reason: string;
   discount_percentage: number;
+  apply_inflation_index: boolean;
   notes: string;
 }
 
 export function FeesPage() {
   const [activeTab, setActiveTab] = useState<'previous' | 'current' | 'results'>('previous');
   const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
+  const [relatedCompanies, setRelatedCompanies] = useState<Client[]>([]);
   const [feeCalculations, setFeeCalculations] = useState<FeeCalculation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previousYearDataSaved, setPreviousYearDataSaved] = useState(false);
+  const [savingPreviousData, setSavingPreviousData] = useState(false);
   const [formData, setFormData] = useState<FeeCalculatorForm>({
     client_id: '',
     year: new Date().getFullYear(),
     previous_year_amount: 0,
     previous_year_discount: 0,
+    previous_year_amount_with_vat: 0,
     base_amount: 0,
     inflation_rate: 3.0,
     real_adjustment: 0,
     real_adjustment_reason: '',
     discount_percentage: 0,
+    apply_inflation_index: true,
     notes: ''
   });
   const [calculationResults, setCalculationResults] = useState<{
@@ -57,6 +70,7 @@ export function FeesPage() {
     final_amount: number;
     vat_amount: number;
     total_with_vat: number;
+    year_over_year_change: number;
   } | null>(null);
   const { toast } = useToast();
 
@@ -65,12 +79,34 @@ export function FeesPage() {
   }, []);
 
   useEffect(() => {
+    // Load previous year data and client details when client is selected
+    if (formData.client_id) {
+      loadPreviousYearData(formData.client_id);
+      loadClientDetails(formData.client_id);
+    } else {
+      setSelectedClientDetails(null);
+      setRelatedCompanies([]);
+    }
+  }, [formData.client_id]);
+
+  useEffect(() => {
+    // Auto-calculate previous year VAT amount
+    if (formData.previous_year_amount && formData.previous_year_amount > 0) {
+      const afterDiscount = formData.previous_year_amount * (1 - (formData.previous_year_discount || 0) / 100);
+      const withVat = afterDiscount * 1.18; // 18% VAT
+      setFormData(prev => ({ ...prev, previous_year_amount_with_vat: parseFloat(withVat.toFixed(2)) }));
+    } else {
+      setFormData(prev => ({ ...prev, previous_year_amount_with_vat: 0 }));
+    }
+  }, [formData.previous_year_amount, formData.previous_year_discount]);
+
+  useEffect(() => {
     // Auto-calculate when form data changes
     if (formData.base_amount > 0) {
       const results = calculateFeeAmounts();
       setCalculationResults(results);
     }
-  }, [formData.base_amount, formData.inflation_rate, formData.real_adjustment, formData.discount_percentage]);
+  }, [formData.base_amount, formData.inflation_rate, formData.real_adjustment, formData.discount_percentage, formData.apply_inflation_index, formData.previous_year_amount_with_vat]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -98,12 +134,112 @@ export function FeesPage() {
     }
   };
 
+  const loadPreviousYearData = async (clientId: string) => {
+    try {
+      const response = await feeService.getLatestFeeByClient(clientId, formData.year);
+      if (response.data) {
+        // Load previous year's data
+        setFormData(prev => ({
+          ...prev,
+          previous_year_amount: response.data.base_amount || 0,
+          previous_year_discount: response.data.discount_percentage || 0,
+          previous_year_amount_with_vat: response.data.total_amount || 0
+        }));
+        setPreviousYearDataSaved(true); // Data exists in DB
+        toast({
+          title: 'נטענו נתוני שנה קודמת',
+          description: 'נתונים משנה קודמת נטענו בהצלחה',
+        });
+      } else {
+        // No previous data found - reset to empty
+        setPreviousYearDataSaved(false);
+      }
+    } catch (error) {
+      console.error('Error loading previous year data:', error);
+    }
+  };
+
+  const loadClientDetails = async (clientId: string) => {
+    try {
+      // Load full client details with group
+      const clientResponse = await clientService.getById(clientId);
+      if (clientResponse.data) {
+        setSelectedClientDetails(clientResponse.data);
+
+        // If client has a group, load related companies
+        if (clientResponse.data.group_id) {
+          const relatedResponse = await clientService.getRelatedCompanies(clientResponse.data.group_id);
+          if (relatedResponse.data) {
+            // Filter out the current client from related companies
+            const others = relatedResponse.data.filter(c => c.id !== clientId);
+            setRelatedCompanies(others);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading client details:', error);
+    }
+  };
+
+  const handleSavePreviousYearData = async () => {
+    if (!formData.client_id) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא לבחור לקוח',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingPreviousData(true);
+    try {
+      // Save the current year data (which becomes "previous year" for next year's calculation)
+      const saveData: CreateFeeCalculationDto = {
+        client_id: formData.client_id,
+        year: formData.year, // 2025 (current year - will be previous year for 2026 calculation)
+        base_amount: formData.previous_year_amount, // Use this amount as the base
+        discount_percentage: formData.previous_year_discount || 0,
+        previous_year_amount_with_vat: formData.previous_year_amount_with_vat,
+        inflation_rate: 0, // No inflation for historical data
+        real_adjustment: 0,
+        apply_inflation_index: false, // Don't apply inflation to historical data
+        notes: 'נתוני שנה קודמת'
+      };
+
+      const response = await feeService.createFeeCalculation(saveData);
+      
+      if (response.error) {
+        toast({
+          title: 'שגיאה',
+          description: response.error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setPreviousYearDataSaved(true);
+      toast({
+        title: 'הצלחה',
+        description: 'נתוני שנה קודמת נשמרו בהצלחה',
+      });
+    } catch (error) {
+      console.error('Error saving previous year data:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'אירעה שגיאה בשמירת הנתונים',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingPreviousData(false);
+    }
+  };
+
   const calculateFeeAmounts = () => {
-    const inflationRate = formData.inflation_rate || 3.0;
+    const inflationRate = formData.apply_inflation_index ? (formData.inflation_rate || 3.0) : 0;
     const realAdjustment = formData.real_adjustment || 0;
     const discountPercentage = formData.discount_percentage || 0;
 
-    // Step 1: Apply inflation adjustment
+    // Step 1: Apply inflation adjustment (only if checkbox is checked)
     const inflationAdjustment = formData.base_amount * (inflationRate / 100);
     
     // Step 2: Add real adjustment
@@ -116,6 +252,11 @@ export function FeesPage() {
     // Step 4: Calculate VAT (18% in Israel)
     const vatAmount = finalAmount * 0.18;
     const totalWithVat = finalAmount + vatAmount;
+    
+    // Calculate year-over-year change
+    const yearOverYearChange = formData.previous_year_amount_with_vat > 0 
+      ? ((totalWithVat - formData.previous_year_amount_with_vat) / formData.previous_year_amount_with_vat * 100)
+      : 0;
 
     return {
       inflation_adjustment: inflationAdjustment,
@@ -123,7 +264,8 @@ export function FeesPage() {
       discount_amount: discountAmount,
       final_amount: finalAmount,
       vat_amount: vatAmount,
-      total_with_vat: totalWithVat
+      total_with_vat: totalWithVat,
+      year_over_year_change: yearOverYearChange
     };
   };
 
@@ -186,15 +328,18 @@ export function FeesPage() {
       year: new Date().getFullYear(),
       previous_year_amount: 0,
       previous_year_discount: 0,
+      previous_year_amount_with_vat: 0,
       base_amount: 0,
       inflation_rate: 3.0,
       real_adjustment: 0,
       real_adjustment_reason: '',
       discount_percentage: 0,
+      apply_inflation_index: true,
       notes: ''
     });
     setCalculationResults(null);
     setActiveTab('previous');
+    setPreviousYearDataSaved(false);
   };
 
   const formatCurrency = (amount: number) => {
@@ -222,7 +367,7 @@ export function FeesPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">מערכת חישוב שכר טרחה</h1>
+          <h1 className="text-3xl font-bold text-gray-900">חישוב שכר טרחה לשנת {formData.year + 1}</h1>
           <p className="text-gray-500 mt-1">חישוב שכר טרחה שנתי עם התאמות מדד ותוספות</p>
         </div>
         <div className="flex gap-2">
@@ -243,9 +388,9 @@ export function FeesPage() {
       <Card className="col-span-full">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 rtl:text-right ltr:text-left">
               <Calculator className="h-5 w-5" />
-              מחשבון שכר טרחה {formData.year}
+              מחשבון שכר טרחה
             </CardTitle>
             {selectedClient && (
               <Badge variant="outline" className="text-sm">
@@ -259,28 +404,28 @@ export function FeesPage() {
           <div className="flex mb-6 border-b">
             <button
               className={`px-4 py-2 font-medium ${
-                activeTab === 'previous' 
-                  ? 'border-b-2 border-primary text-primary' 
+                activeTab === 'previous'
+                  ? 'border-b-2 border-primary text-primary'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('previous')}
             >
-              נתוני שנה קודמת
+              נתוני שנת {formData.year} (שנה קודמת)
             </button>
             <button
               className={`px-4 py-2 font-medium ${
-                activeTab === 'current' 
-                  ? 'border-b-2 border-primary text-primary' 
+                activeTab === 'current'
+                  ? 'border-b-2 border-primary text-primary'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('current')}
             >
-              חישוב שנה נוכחית
+              חישוב לשנת {formData.year + 1}
             </button>
             <button
               className={`px-4 py-2 font-medium ${
-                activeTab === 'results' 
-                  ? 'border-b-2 border-primary text-primary' 
+                activeTab === 'results'
+                  ? 'border-b-2 border-primary text-primary'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setActiveTab('results')}
@@ -293,7 +438,13 @@ export function FeesPage() {
           {/* Tab Content */}
           {activeTab === 'previous' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold mb-4">בחירת לקוח ונתוני שנה קודמת</h3>
+              <div className="rtl:text-right ltr:text-left">
+                <h3 className="text-lg font-semibold mb-2">נתוני שנת {formData.year} (שנה קודמת)</h3>
+                <p className="text-sm text-gray-600 mb-4 flex items-start gap-2">
+                  <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  הזן את הנתונים ששולמו עבור שנת {formData.year}. נתונים אלו ישמשו בסיס לחישוב שכר הטרחה לשנת {formData.year + 1}.
+                </p>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -301,7 +452,10 @@ export function FeesPage() {
                     <Label htmlFor="client">בחירת לקוח *</Label>
                     <Select
                       value={formData.client_id}
-                      onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                      onValueChange={(value) => {
+                        setFormData({ ...formData, client_id: value });
+                        setPreviousYearDataSaved(false); // Reset saved state when changing client
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="בחר לקוח" />
@@ -316,28 +470,23 @@ export function FeesPage() {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label htmlFor="year">שנת החישוב</Label>
-                    <Input
-                      id="year"
-                      type="number"
-                      value={formData.year}
-                      onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-                      min="2020"
-                      max="2030"
+                  {/* Client Info Card */}
+                  {selectedClientDetails && (
+                    <ClientInfoCard
+                      client={selectedClientDetails}
+                      relatedCompanies={relatedCompanies}
                     />
-                  </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="previous_amount">סכום שנה קודמת</Label>
+                    <Label htmlFor="previous_amount">סכום בסיס שנה קודמת (לפני מע״מ ולפני הנחות)</Label>
                     <Input
                       id="previous_amount"
                       type="number"
-                      value={formData.previous_year_amount}
+                      value={formData.previous_year_amount || ''}
                       onChange={(e) => setFormData({ ...formData, previous_year_amount: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
                     />
                   </div>
 
@@ -346,18 +495,54 @@ export function FeesPage() {
                     <Input
                       id="previous_discount"
                       type="number"
-                      value={formData.previous_year_discount}
+                      value={formData.previous_year_discount || ''}
                       onChange={(e) => setFormData({ ...formData, previous_year_discount: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
                       min="0"
                       max="100"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="previous_vat">סכום שנה קודמת כולל מע"מ (מחושב אוטומטית)</Label>
+                    <Input
+                      id="previous_vat"
+                      type="number"
+                      value={formData.previous_year_amount_with_vat || ''}
+                      disabled
+                      className="font-semibold bg-gray-50"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <Button onClick={() => setActiveTab('current')}>
+              <div className="flex justify-between">
+                <Button 
+                  onClick={handleSavePreviousYearData}
+                  disabled={!formData.client_id || savingPreviousData || previousYearDataSaved}
+                  variant={previousYearDataSaved ? "outline" : "default"}
+                >
+                  {savingPreviousData ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
+                      שומר...
+                    </>
+                  ) : previousYearDataSaved ? (
+                    <>
+                      <FileText className="h-4 w-4 ml-2" />
+                      נתונים נשמרו
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 ml-2" />
+                      שמור נתוני שנה קודמת
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  onClick={() => setActiveTab('current')}
+                  disabled={!previousYearDataSaved}
+                  title={!previousYearDataSaved ? "יש לשמור את נתוני השנה הקודמת לפני המשך" : ""}
+                >
                   המשך לחישוב נוכחי
                   <ChevronLeft className="h-4 w-4 mr-2" />
                 </Button>
@@ -367,12 +552,12 @@ export function FeesPage() {
 
           {activeTab === 'current' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold mb-4">חישוב שנה נוכחית</h3>
+              <h3 className="text-lg font-semibold mb-4 rtl:text-right ltr:text-left">חישוב שכר טרחה לשנת {formData.year + 1}</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="base_amount">סכום בסיס *</Label>
+                    <Label htmlFor="base_amount">סכום בסיס לפני הנחה ולפני מע״מ *</Label>
                     <Input
                       id="base_amount"
                       type="number"
@@ -383,7 +568,21 @@ export function FeesPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="inflation_rate">אחוז מדד (%)</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="inflation_rate">אחוז מדד</Label>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="apply_inflation"
+                          checked={formData.apply_inflation_index}
+                          onCheckedChange={(checked) => 
+                            setFormData({ ...formData, apply_inflation_index: checked as boolean })
+                          }
+                        />
+                        <Label htmlFor="apply_inflation" className="text-sm font-normal cursor-pointer">
+                          החל מדד
+                        </Label>
+                      </div>
+                    </div>
                     <Input
                       id="inflation_rate"
                       type="number"
@@ -391,8 +590,12 @@ export function FeesPage() {
                       onChange={(e) => setFormData({ ...formData, inflation_rate: parseFloat(e.target.value) || 3.0 })}
                       step="0.1"
                       placeholder="3.0"
+                      disabled={!formData.apply_inflation_index}
+                      className={!formData.apply_inflation_index ? 'opacity-50' : ''}
                     />
-                    <p className="text-sm text-gray-500 mt-1">ברירת מחדל: 3%</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {formData.apply_inflation_index ? `מדד של ${formData.inflation_rate}% יוחל` : 'מדד לא יוחל'}
+                    </p>
                   </div>
 
                   <div>
@@ -466,12 +669,51 @@ export function FeesPage() {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold mb-4">תוצאות החישוב</h3>
               
+              {/* Previous Year Comparison */}
+              {formData.previous_year_amount_with_vat > 0 && (
+                <Card className="mb-6 bg-blue-50 border-blue-200">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Info className="h-5 w-5 text-blue-600" />
+                      השוואה לשנה קודמת
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">שנה קודמת (כולל מע"מ)</p>
+                        <p className="text-xl font-bold">{formatCurrency(formData.previous_year_amount_with_vat)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">שנה נוכחית (כולל מע"מ)</p>
+                        <p className="text-xl font-bold text-primary">{formatCurrency(calculationResults.total_with_vat)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">שינוי</p>
+                        <div className="flex items-center gap-2">
+                          {calculationResults.year_over_year_change >= 0 ? (
+                            <ArrowUp className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <ArrowDown className="h-5 w-5 text-red-600" />
+                          )}
+                          <p className={`text-xl font-bold ${
+                            calculationResults.year_over_year_change >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {Math.abs(calculationResults.year_over_year_change).toFixed(1)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-500">סכום בסיס</p>
+                        <p className="text-sm text-gray-500">סכום בסיס לפני הנחה ולפני מע״מ</p>
                         <p className="text-lg font-semibold">{formatCurrency(formData.base_amount)}</p>
                       </div>
                       <DollarSign className="h-8 w-8 text-blue-500" />
@@ -483,9 +725,11 @@ export function FeesPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-gray-500">התאמת מדד ({formData.inflation_rate}%)</p>
+                        <p className="text-sm text-gray-500">
+                          התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}
+                        </p>
                         <p className="text-lg font-semibold text-green-600">
-                          +{formatCurrency(calculationResults.inflation_adjustment)}
+                          {formData.apply_inflation_index ? `+${formatCurrency(calculationResults.inflation_adjustment)}` : '₪0'}
                         </p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-green-500" />
@@ -552,12 +796,12 @@ export function FeesPage() {
                 <h4 className="font-semibold mb-2">פירוט החישוב:</h4>
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
-                    <span>סכום בסיס:</span>
+                    <span>סכום בסיס לפני הנחה ולפני מע״מ:</span>
                     <span>{formatCurrency(formData.base_amount)}</span>
                   </div>
                   <div className="flex justify-between text-green-600">
-                    <span>+ התאמת מדד ({formData.inflation_rate}%):</span>
-                    <span>+{formatCurrency(calculationResults.inflation_adjustment)}</span>
+                    <span>+ התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}:</span>
+                    <span>{formData.apply_inflation_index ? `+${formatCurrency(calculationResults.inflation_adjustment)}` : '₪0'}</span>
                   </div>
                   <div className="flex justify-between text-green-600">
                     <span>+ תוספת ריאלית:</span>
@@ -598,31 +842,6 @@ export function FeesPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Recent Calculations */}
-      {feeCalculations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>חישובים אחרונים</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {feeCalculations.map((calc) => (
-                <div key={calc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <div>
-                    <p className="font-medium">{calc.year}</p>
-                    <p className="text-sm text-gray-500">לקוח: {calc.client?.company_name || calc.client?.company_name_hebrew || calc.client_id}</p>
-                  </div>
-                  <div className="text-left">
-                    <p className="font-semibold">{formatCurrency(calc.total_amount || calc.final_amount || 0)}</p>
-                    <Badge variant="outline">{calc.status}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
