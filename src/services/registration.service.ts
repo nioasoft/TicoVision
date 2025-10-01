@@ -339,32 +339,32 @@ class RegistrationService {
    */
   async checkEmailAvailability(email: string) {
     try {
-      // Check in pending registrations
-      const { data: pending } = await supabase
+      // Check in pending registrations only
+      // Note: Cannot check auth.users directly from client-side
+      // Auth check will happen server-side during approval
+      const { data: pending, error } = await supabase
         .from('pending_registrations')
         .select('id')
         .eq('email', email)
         .eq('status', 'pending')
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = no rows returned (which is OK)
+        console.error('Error checking email:', error);
+        return { available: true }; // Allow registration on error
+      }
 
       if (pending) {
         return { available: false, reason: 'pending_registration' };
       }
 
-      // Check in auth users
-      const { data: existingUser } = await supabase
-        .from('auth.users')
-        .select('id')
-        .eq('email', email)
-        .single();
-
-      if (existingUser) {
-        return { available: false, reason: 'user_exists' };
-      }
-
+      // If no pending registration found, allow it
+      // Duplicate email check will happen during approval
       return { available: true };
     } catch (error) {
-      // No results found means email is available
+      // On any error, allow registration (server will validate)
+      console.error('Error in checkEmailAvailability:', error);
       return { available: true };
     }
   }
