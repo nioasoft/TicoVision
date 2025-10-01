@@ -39,7 +39,7 @@ export function ClientInfoCard({ client, relatedCompanies = [] }: ClientInfoCard
       case 'realestate':
         return 'נדל"ן';
       case 'holdings':
-        return 'אחזקות';
+        return 'החזקות';
       default:
         return subtype || '-';
     }

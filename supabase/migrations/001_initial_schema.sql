@@ -412,7 +412,7 @@ CREATE TRIGGER update_payment_transactions_updated_at BEFORE UPDATE ON payment_t
 INSERT INTO tenants (id, name, type, status, settings)
 VALUES (
   'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-  'Tiko Franco Accounting',
+  'Tico Franco Accounting',
   'internal',
   'active',
   '{

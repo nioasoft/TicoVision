@@ -527,7 +527,7 @@ export default function ClientsPage() {
               <SelectItem value="all">כל הסוגים</SelectItem>
               <SelectItem value="company">חברה</SelectItem>
               <SelectItem value="freelancer">עצמאי</SelectItem>
-              <SelectItem value="salary_owner">בעל שכר</SelectItem>
+              <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
             </SelectContent>
           </Select>
 
@@ -541,7 +541,7 @@ export default function ClientsPage() {
               <SelectItem value="commercial_restaurant">מסחרי - מסעדות</SelectItem>
               <SelectItem value="commercial_other">מסחרי - אחר</SelectItem>
               <SelectItem value="realestate">נדל"ן</SelectItem>
-              <SelectItem value="holdings">אחזקות</SelectItem>
+              <SelectItem value="holdings">החזקות</SelectItem>
             </SelectContent>
           </Select>
 
@@ -796,8 +796,8 @@ export default function ClientsPage() {
                 <Select
                   value={formData.client_type}
                   onValueChange={(value: ClientType) => {
-                    setFormData({ 
-                      ...formData, 
+                    setFormData({
+                      ...formData,
                       client_type: value,
                       company_subtype: value === 'company' ? formData.company_subtype : undefined
                     });
@@ -809,7 +809,7 @@ export default function ClientsPage() {
                   <SelectContent>
                     <SelectItem value="company">חברה</SelectItem>
                     <SelectItem value="freelancer">עצמאי</SelectItem>
-                    <SelectItem value="salary_owner">בעל שליטה שכיר</SelectItem>
+                    <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -849,7 +849,7 @@ export default function ClientsPage() {
                     <SelectItem value="commercial_restaurant">מסחרית מסעדה</SelectItem>
                     <SelectItem value="commercial_other">מסחרית אחר</SelectItem>
                     <SelectItem value="realestate">נדל״ן</SelectItem>
-                    <SelectItem value="holdings">אחזקות</SelectItem>
+                    <SelectItem value="holdings">החזקות</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -884,7 +884,7 @@ export default function ClientsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tiko">טיקו</SelectItem>
+                    <SelectItem value="tiko">תיקו</SelectItem>
                     <SelectItem value="shani">שני</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1074,7 +1074,7 @@ export default function ClientsPage() {
                   <SelectContent>
                     <SelectItem value="company">חברה</SelectItem>
                     <SelectItem value="freelancer">עצמאי</SelectItem>
-                    <SelectItem value="salary_owner">בעל שליטה שכיר</SelectItem>
+                    <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1114,7 +1114,7 @@ export default function ClientsPage() {
                     <SelectItem value="commercial_restaurant">מסחרית מסעדה</SelectItem>
                     <SelectItem value="commercial_other">מסחרית אחר</SelectItem>
                     <SelectItem value="realestate">נדל״ן</SelectItem>
-                    <SelectItem value="holdings">אחזקות</SelectItem>
+                    <SelectItem value="holdings">החזקות</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1149,7 +1149,7 @@ export default function ClientsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tiko">טיקו</SelectItem>
+                    <SelectItem value="tiko">תיקו</SelectItem>
                     <SelectItem value="shani">שני</SelectItem>
                   </SelectContent>
                 </Select>

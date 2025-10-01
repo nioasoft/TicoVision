@@ -517,7 +517,7 @@ export function LetterTemplatesPage() {
                 onChange={(e) => setEditingHeaderHtml(e.target.value)}
                 placeholder={`לדוגמה:
 <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px;">
-  <h1>טיקו פרנקו ושות' - רואי חשבון</h1>
+  <h1>תיקו פרנקו ושות' - רואי חשבון</h1>
   <p>רחוב הרצל 123, תל אביב | טלפון: 03-1234567</p>
 </div>`}
                 className="min-h-[200px] font-mono text-sm"
@@ -532,7 +532,7 @@ export function LetterTemplatesPage() {
                 onChange={(e) => setEditingFooterHtml(e.target.value)}
                 placeholder={`לדוגמה:
 <div style="text-align: center; border-top: 1px solid #ccc; padding-top: 20px; margin-top: 40px;">
-  <p>בכבוד רב,<br/>טיקו פרנקו ושות'</p>
+  <p>בכבוד רב,<br/>תיקו פרנקו ושות'</p>
   <p style="font-size: 12px; color: #666;">מסמך זה הופק באמצעות מערכת TicoVision AI</p>
 </div>`}
                 className="min-h-[200px] font-mono text-sm"

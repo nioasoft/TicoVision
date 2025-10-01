@@ -24,7 +24,7 @@ export function SettingsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="office-name">שם המשרד</Label>
-              <Input id="office-name" defaultValue="משרד רו״ח טיקו פרנקו" />
+              <Input id="office-name" defaultValue="משרד רו״ח תיקו פרנקו" />
             </div>
             <div>
               <Label htmlFor="tax-id">מספר עוסק מורשה</Label>
@@ -70,7 +70,7 @@ export function SettingsPage() {
             </div>
             <div>
               <Label htmlFor="sender-name">שם השולח</Label>
-              <Input id="sender-name" defaultValue="משרד רו״ח טיקו פרנקו" />
+              <Input id="sender-name" defaultValue="משרד רו״ח תיקו פרנקו" />
             </div>
             <Button>עדכן הגדרות</Button>
           </CardContent>
