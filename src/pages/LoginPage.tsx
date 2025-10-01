@@ -255,21 +255,7 @@ export function LoginPage() {
                       </div>
                     </>
                   )}
-                  
-                  {(regRole === 'accountant' || regRole === 'bookkeeper') && (
-                    <div className="space-y-2">
-                      <Label htmlFor="reg-company">שם המשרד</Label>
-                      <Input
-                        id="reg-company"
-                        type="text"
-                        placeholder="משרד רואי חשבון"
-                        value={regCompanyName}
-                        onChange={(e) => setRegCompanyName(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                  )}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="reg-message">הודעה למנהל (אופציונלי)</Label>
                     <Textarea
