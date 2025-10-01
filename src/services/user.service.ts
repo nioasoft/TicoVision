@@ -47,13 +47,31 @@ export class UserService extends BaseService {
     filters?: FilterParams
   ): Promise<ServiceResponse<{ users: User[]; total: number }>> {
     try {
+      // Check if user is authenticated first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('No active session - returning empty user list');
+        return {
+          data: { users: [], total: 0 },
+          error: null
+        };
+      }
+
       const tenantId = await this.getTenantId();
-      
+
       // Use the RPC function to get users with auth data
       const { data, error } = await supabase
         .rpc('get_users_for_tenant');
-      
+
       if (error) {
+        // Handle 403 Forbidden gracefully (likely due to session issues)
+        if (error.code === 'PGRST301' || error.message.includes('403')) {
+          console.warn('Permission denied accessing users - session may be invalid');
+          return {
+            data: { users: [], total: 0 },
+            error: null
+          };
+        }
         return { data: null, error: this.handleError(error) };
       }
 

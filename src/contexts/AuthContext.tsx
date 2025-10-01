@@ -27,10 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-      // Handle invalid refresh token error
-      if (error && error.message.includes('Invalid Refresh Token')) {
-        console.log('Invalid refresh token detected, clearing session');
-        // Clear invalid session
+      // Handle any session/refresh token errors
+      if (error) {
+        console.error('Session error:', error.message);
+        // Clear all session data from storage
+        localStorage.removeItem('supabase.auth.token');
+        // Sign out to ensure clean state
         supabase.auth.signOut();
         setSession(null);
         setUser(null);
@@ -45,13 +47,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }).catch((error) => {
       console.error('Auth initialization error:', error);
+      // Clear session on any error
+      localStorage.removeItem('supabase.auth.token');
       setLoading(false);
     });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Handle failed token refresh
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('Token refresh failed - clearing session');
+        localStorage.removeItem('supabase.auth.token');
+      }
+
+      // Handle signed out event
+      if (event === 'SIGNED_OUT') {
+        localStorage.removeItem('supabase.auth.token');
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role ?? null);
