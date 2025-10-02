@@ -96,7 +96,6 @@ export function UsersPage() {
     useState<PendingRegistration | null>(null);
 
   // Approval form state
-  const [tempPassword, setTempPassword] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
   // Client assignment states
@@ -355,14 +354,13 @@ export function UsersPage() {
 
   // Registration handling functions
   const handleApprove = async () => {
-    if (!selectedRegistration || !tempPassword) {
-      toast.error("אנא הזן סיסמה זמנית למשתמש");
+    if (!selectedRegistration) {
+      toast.error("אנא בחר בקשה לאישור");
       return;
     }
 
     const response = await registrationService.approveRegistration(
       selectedRegistration.id,
-      tempPassword,
       selectedClients,
     );
 
@@ -370,10 +368,9 @@ export function UsersPage() {
       toast.error("שגיאה באישור הבקשה");
       console.error(response.error);
     } else {
-      toast.success("הבקשה אושרה בהצלחה! המשתמש יכול כעת להתחבר למערכת");
+      toast.success("הבקשה אושרה בהצלחה! המשתמש יקבל מייל עם קישור להגדרת סיסמה");
       setShowApproveDialog(false);
       setSelectedRegistration(null);
-      setTempPassword("");
       setSelectedClients([]);
       loadRegistrations();
       loadUsers();
@@ -404,7 +401,6 @@ export function UsersPage() {
 
   const openApproveDialog = (registration: PendingRegistration) => {
     setSelectedRegistration(registration);
-    setTempPassword("");
     setSelectedClients([]);
 
     // Auto-select client if tax ID matches
@@ -1174,19 +1170,9 @@ export function UsersPage() {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="temp-password" className="text-right">
-                סיסמה זמנית למשתמש *
-              </Label>
-              <Input
-                id="temp-password"
-                type="text"
-                placeholder="הזן סיסמה זמנית..."
-                value={tempPassword}
-                onChange={(e) => setTempPassword(e.target.value)}
-              />
-              <p className="text-sm text-gray-500 text-right">
-                המשתמש יקבל סיסמה זו במייל ויתבקש לשנות אותה בכניסה הראשונה
+            <div className="bg-blue-50 p-4 rounded-md mb-4">
+              <p className="text-sm text-blue-700 text-right">
+                <strong>שים לב:</strong> המשתמש יקבל מייל עם קישור להגדרת סיסמה. לאחר הגדרת הסיסמה יוכל להתחבר למערכת.
               </p>
             </div>
 
@@ -1261,7 +1247,7 @@ export function UsersPage() {
             >
               ביטול
             </Button>
-            <Button onClick={handleApprove} disabled={!tempPassword}>
+            <Button onClick={handleApprove}>
               אשר בקשה
             </Button>
           </DialogFooter>

@@ -111,8 +111,7 @@ class RegistrationService {
    * Approve a registration request and create user
    */
   async approveRegistration(
-    registrationId: string, 
-    password: string,
+    registrationId: string,
     assignedClientIds?: string[]
   ) {
     try {
@@ -138,11 +137,10 @@ class RegistrationService {
 
       if (!tenantUser) throw new Error('Tenant not found');
 
-      // Create auth user
+      // Create auth user without password - user will set it via email link
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: registration.email,
-        password: password,
-        email_confirm: true,
+        email_confirm: false, // Will be confirmed when user sets password
         user_metadata: {
           full_name: registration.full_name,
           phone: registration.phone,
@@ -152,6 +150,20 @@ class RegistrationService {
 
       if (authError) throw authError;
       if (!authData.user) throw new Error('Failed to create user');
+
+      // Send password setup email
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        registration.email,
+        {
+          redirectTo: `${window.location.origin}/set-password`
+        }
+      );
+
+      if (resetError) {
+        console.error('Failed to send password setup email:', resetError);
+        // Don't fail the whole operation if email fails
+        // User can request password reset manually
+      }
 
       // Create tenant_user record
       const { error: tenantUserError } = await supabase
