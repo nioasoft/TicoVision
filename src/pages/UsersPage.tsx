@@ -69,7 +69,7 @@ import type {
 
 export function UsersPage() {
   const { toast: uiToast } = useToast();
-  const { role: currentUserRole, user } = useAuth();
+  const { role: currentUserRole, user, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<PendingRegistration[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
@@ -122,13 +122,13 @@ export function UsersPage() {
   const canManage = currentUserRole === "admin";
 
   useEffect(() => {
-    // Only load data if user is authenticated
-    if (user) {
+    // Don't load data while auth is loading or if no user
+    if (!authLoading && user) {
       loadUsers();
       loadClients();
       loadRegistrations();
     }
-  }, [statusFilter, user]);
+  }, [statusFilter, user, authLoading]);
 
   const loadUsers = async () => {
     setLoading(true);

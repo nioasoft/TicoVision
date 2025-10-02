@@ -48,8 +48,8 @@ export class UserService extends BaseService {
   ): Promise<ServiceResponse<{ users: User[]; total: number }>> {
     try {
       // Check if user is authenticated first
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (!session || sessionError) {
         console.warn('No active session - returning empty user list');
         return {
           data: { users: [], total: 0 },
