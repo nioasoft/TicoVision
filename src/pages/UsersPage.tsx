@@ -72,7 +72,9 @@ export function UsersPage() {
   const { role: currentUserRole, user, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<PendingRegistration[]>([]);
+  const [rejectedRegistrations, setRejectedRegistrations] = useState<PendingRegistration[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState<UserRole | "all">("all");
@@ -92,6 +94,7 @@ export function UsersPage() {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedRegistration, setSelectedRegistration] =
     useState<PendingRegistration | null>(null);
 
@@ -126,6 +129,7 @@ export function UsersPage() {
       loadUsers();
       loadClients();
       loadRegistrations();
+      loadRejectedRegistrations();
     }
   }, [statusFilter, user, authLoading]);
 
@@ -163,6 +167,16 @@ export function UsersPage() {
     const response = await clientService.getClients();
     if (response.data) {
       setAvailableClients(response.data.clients);
+    }
+  };
+
+  const loadRejectedRegistrations = async () => {
+    const response = await registrationService.getRejectedRegistrations();
+    if (response.error) {
+      toast.error("שגיאה בטעינת בקשות נדחות");
+    } else if (response.data) {
+      setRejectedRegistrations(response.data);
+      setRejectedCount(response.data.length);
     }
   };
 
@@ -427,6 +441,28 @@ export function UsersPage() {
     setShowDetailsDialog(true);
   };
 
+  const openDeleteDialog = (registration: PendingRegistration) => {
+    setSelectedRegistration(registration);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteRegistration = async () => {
+    if (!selectedRegistration) return;
+
+    const response = await registrationService.deleteRegistration(
+      selectedRegistration.id
+    );
+
+    if (response.error) {
+      toast.error("שגיאה במחיקת הבקשה");
+    } else {
+      toast.success("הבקשה נמחקה בהצלחה! המשתמש יכול כעת להירשם מחדש");
+      setShowDeleteDialog(false);
+      setSelectedRegistration(null);
+      loadRejectedRegistrations();
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -520,7 +556,7 @@ export function UsersPage() {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users" className="text-right">
             משתמשים פעילים
           </TabsTrigger>
@@ -532,6 +568,17 @@ export function UsersPage() {
                 className="mr-2 absolute -top-1 -left-1"
               >
                 {pendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="text-right relative">
+            בקשות נדחות
+            {rejectedCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="mr-2 absolute -top-1 -left-1"
+              >
+                {rejectedCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -830,6 +877,94 @@ export function UsersPage() {
                                 </Button>
                               </>
                             )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Rejected Registrations Tab */}
+        <TabsContent value="rejected" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-right">
+                בקשות נדחות ({rejectedRegistrations.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-center py-8 text-gray-500">טוען...</p>
+              ) : rejectedRegistrations.length === 0 ? (
+                <p className="text-center py-8 text-gray-500">
+                  אין בקשות נדחות
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">שם מלא</TableHead>
+                      <TableHead className="text-right">אימייל</TableHead>
+                      <TableHead className="text-right">תפקיד מבוקש</TableHead>
+                      <TableHead className="text-right">תאריך הגשה</TableHead>
+                      <TableHead className="text-right">תאריך דחייה</TableHead>
+                      <TableHead className="text-right">סיבת דחייה</TableHead>
+                      <TableHead className="text-right">פעולות</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rejectedRegistrations.map((reg) => (
+                      <TableRow key={reg.id}>
+                        <TableCell className="font-medium text-right">
+                          {reg.full_name}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            {reg.email}
+                            <Mail className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary">
+                            {getRoleDisplayName(reg.requested_role)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {new Date(reg.created_at).toLocaleDateString("he-IL")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {reg.approved_at
+                            ? new Date(reg.approved_at).toLocaleDateString("he-IL")
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-right max-w-xs">
+                          <div className="truncate" title={reg.rejection_reason || "-"}>
+                            {reg.rejection_reason || "-"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openDetailsDialog(reg)}
+                              title="הצג פרטים"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-600"
+                              onClick={() => openDeleteDialog(reg)}
+                              title="מחק לצמיתות"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1396,6 +1531,40 @@ export function UsersPage() {
               onClick={() => setShowDetailsDialog(false)}
             >
               סגור
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">מחיקת בקשה לצמיתות</DialogTitle>
+            <DialogDescription className="text-right">
+              האם אתה בטוח שברצונך למחוק את הבקשה של {selectedRegistration?.full_name}?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="bg-yellow-50 p-4 rounded-md">
+            <p className="text-sm text-yellow-800 text-right">
+              <strong>שים לב:</strong> פעולה זו תמחק לצמיתות את הבקשה מהמערכת.
+              המשתמש יוכל להירשם מחדש עם כתובת הדוא"ל הזו.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteRegistration}
+            >
+              מחק לצמיתות
             </Button>
           </DialogFooter>
         </DialogContent>

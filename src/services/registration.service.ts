@@ -9,6 +9,7 @@ export interface RegistrationData {
   requested_role: UserRole;
   tax_id?: string;
   message?: string;
+  password?: string; // User's chosen password during registration
 }
 
 export interface PendingRegistration extends RegistrationData {
@@ -42,6 +43,17 @@ class RegistrationService {
    */
   async submitRegistration(data: RegistrationData) {
     try {
+      // Hash password if provided
+      let passwordHash: string | null = null;
+      if (data.password) {
+        const { data: hashResult, error: hashError } = await supabase
+          .rpc('hash_password', { password: data.password })
+          .single();
+
+        if (hashError) throw hashError;
+        passwordHash = hashResult as string;
+      }
+
       const { data: registration, error } = await supabase
         .from('pending_registrations')
         .insert({
@@ -51,7 +63,8 @@ class RegistrationService {
           company_name: data.company_name,
           requested_role: data.requested_role,
           tax_id: data.tax_id,
-          message: data.message
+          message: data.message,
+          password_hash: passwordHash
         })
         .select()
         .single();
@@ -108,6 +121,31 @@ class RegistrationService {
   }
 
   /**
+   * Get rejected registrations (admin only)
+   */
+  async getRejectedRegistrations() {
+    return this.getAllRegistrations('rejected');
+  }
+
+  /**
+   * Permanently delete a registration (allows user to re-register)
+   */
+  async deleteRegistration(registrationId: string) {
+    try {
+      const { error } = await supabase
+        .from('pending_registrations')
+        .delete()
+        .eq('id', registrationId);
+
+      if (error) throw error;
+      return { data: true, error: null };
+    } catch (error) {
+      console.error('Error deleting registration:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
    * Approve a registration request and create user
    */
   async approveRegistration(
@@ -137,45 +175,29 @@ class RegistrationService {
 
       if (!tenantUser) throw new Error('Tenant not found');
 
-      // Create auth user without password - user will set it via email link
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: registration.email,
-        email_confirm: false, // Will be confirmed when user sets password
-        user_metadata: {
-          full_name: registration.full_name,
-          phone: registration.phone,
-          role: registration.requested_role
-        }
-      });
-
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
-
-      // Send password setup email
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        registration.email,
-        {
-          redirectTo: `${window.location.origin}/set-password`
-        }
-      );
-
-      if (resetError) {
-        console.error('Failed to send password setup email:', resetError);
-        // Don't fail the whole operation if email fails
-        // User can request password reset manually
+      // Check if user provided password during registration
+      if (!registration.password_hash) {
+        throw new Error('Registration must include a password. User should have chosen password during registration.');
       }
 
-      // Create tenant_user record
-      const { error: tenantUserError } = await supabase
-        .from('tenant_users')
-        .insert({
-          user_id: authData.user.id,
-          tenant_id: tenantUser.tenant_id,
-          role: registration.requested_role,
-          is_active: true
-        });
+      // Create auth user using RPC function with the user's chosen password hash
+      const { data: authData, error: authError } = await supabase
+        .rpc('create_user_with_role', {
+          p_email: registration.email,
+          p_password: null, // Not used when p_password_hash is provided
+          p_password_hash: registration.password_hash, // Use user's chosen password
+          p_full_name: registration.full_name,
+          p_phone: registration.phone || null,
+          p_role: registration.requested_role,
+          p_permissions: {}
+        })
+        .single();
 
-      if (tenantUserError) throw tenantUserError;
+      if (authError) throw authError;
+      if (!authData) throw new Error('Failed to create user');
+
+      // Note: No password reset email needed - user already chose their password!
+      // In the future, we could send a welcome email here instead
 
       // If client role and tax_id provided, find and assign client
       if (registration.requested_role === 'client' && registration.tax_id) {
@@ -194,7 +216,7 @@ class RegistrationService {
       // Create client assignments if provided
       if (assignedClientIds && assignedClientIds.length > 0) {
         const assignments = assignedClientIds.map((clientId, index) => ({
-          user_id: authData.user.id,
+          user_id: authData.user_id,
           client_id: clientId,
           tenant_id: tenantUser.tenant_id,
           assigned_by: currentUser.id,
@@ -220,7 +242,7 @@ class RegistrationService {
 
       if (updateError) throw updateError;
 
-      return { data: { userId: authData.user.id }, error: null };
+      return { data: { userId: authData.user_id }, error: null };
     } catch (error) {
       console.error('Error approving registration:', error);
       return { data: null, error };
@@ -351,14 +373,13 @@ class RegistrationService {
    */
   async checkEmailAvailability(email: string) {
     try {
-      // Check in pending registrations only
+      // Check in pending registrations (all statuses due to unique constraint)
       // Note: Cannot check auth.users directly from client-side
       // Auth check will happen server-side during approval
-      const { data: pending, error } = await supabase
+      const { data: existing, error } = await supabase
         .from('pending_registrations')
-        .select('id')
+        .select('id, status')
         .eq('email', email)
-        .eq('status', 'pending')
         .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
       if (error && error.code !== 'PGRST116') {
@@ -367,11 +388,18 @@ class RegistrationService {
         return { available: true }; // Allow registration on error
       }
 
-      if (pending) {
-        return { available: false, reason: 'pending_registration' };
+      if (existing) {
+        if (existing.status === 'pending') {
+          return { available: false, reason: 'pending_registration' };
+        } else if (existing.status === 'approved') {
+          return { available: false, reason: 'already_registered' };
+        } else {
+          // status === 'rejected' - allow re-registration
+          return { available: true };
+        }
       }
 
-      // If no pending registration found, allow it
+      // If no existing registration found, allow it
       // Duplicate email check will happen during approval
       return { available: true };
     } catch (error) {

@@ -80,7 +80,8 @@ export class UserService extends BaseService {
         id: user.user_id, // Use user_id as the main id
         tenant_id: user.tenant_id,
         email: user.email || '',
-        full_name: user.email?.split('@')[0] || 'Unknown', // Derive from email temporarily
+        full_name: user.full_name || user.email?.split('@')[0] || 'Unknown',
+        phone: user.phone,
         role: user.role as UserRole,
         is_active: user.is_active,
         permissions: user.permissions || {},
@@ -121,32 +122,32 @@ export class UserService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      const { data, error } = await supabase
-        .from('user_tenant_access')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-        .single();
+      // Use the RPC function to get all users, then filter by userId
+      const { data: usersData, error: usersError } = await supabase
+        .rpc('get_users_for_tenant');
 
-      if (error) {
-        return { data: null, error: this.handleError(error) };
+      if (usersError) {
+        return { data: null, error: this.handleError(usersError) };
       }
 
-      // Get auth user data
-      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      // Find the specific user
+      const userData = usersData?.find(u => u.user_id === userId);
+      if (!userData) {
+        return { data: null, error: new Error('User not found') };
+      }
 
       const user = {
-        id: data.user_id,
-        tenant_id: data.tenant_id,
-        email: authUser?.email || '',
-        full_name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Unknown',
-        role: data.role as UserRole,
-        is_active: data.is_active,
-        permissions: data.permissions || {},
-        created_at: data.granted_at || data.created_at,
-        updated_at: data.last_accessed_at || data.granted_at,
-        last_login: authUser?.last_sign_in_at || null,
+        id: userData.user_id,
+        tenant_id: userData.tenant_id,
+        email: userData.email || '',
+        full_name: userData.full_name || userData.email?.split('@')[0] || 'Unknown',
+        phone: userData.phone,
+        role: userData.role as UserRole,
+        is_active: userData.is_active,
+        permissions: userData.permissions || {},
+        created_at: userData.created_at,
+        updated_at: userData.updated_at || userData.created_at,
+        last_login: userData.last_sign_in_at || null,
       };
 
       await this.logAction('view_user', userId);
@@ -162,65 +163,43 @@ export class UserService extends BaseService {
    */
   async createUser(userData: CreateUserData): Promise<ServiceResponse<User>> {
     try {
-      const tenantId = await this.getTenantId();
-
-      // Step 1: Create auth user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          tenant_id: tenantId,
-          role: userData.role,
-          full_name: userData.full_name,
-        },
-      });
-
-      if (authError) {
-        return { data: null, error: this.handleError(authError) };
-      }
-
-      if (!authData.user) {
-        return { data: null, error: new Error('Failed to create auth user') };
-      }
-
-      // Step 2: Create user record in user_tenant_access table
-      const { data, error } = await supabase
-        .from('user_tenant_access')
-        .insert({
-          user_id: authData.user.id,
-          tenant_id: tenantId,
-          role: userData.role,
-          is_active: true,
-          is_primary: true,
-          permissions: userData.permissions || {},
+      // Use RPC function to create user (handles both auth.users and user_tenant_access)
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('create_user_with_role', {
+          p_email: userData.email,
+          p_password: userData.password,
+          p_full_name: userData.full_name,
+          p_phone: userData.phone || null,
+          p_role: userData.role,
+          p_permissions: userData.permissions || {}
         })
-        .select()
         .single();
 
-      if (error) {
-        // Rollback: Delete the auth user if database insert fails
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        return { data: null, error: this.handleError(error) };
+      if (rpcError) {
+        return { data: null, error: this.handleError(rpcError) };
       }
 
-      await this.logAction('create_user', data.id, { 
+      if (!rpcData) {
+        return { data: null, error: new Error('Failed to create user') };
+      }
+
+      await this.logAction('create_user', rpcData.user_id, {
         email: userData.email,
-        role: userData.role 
+        role: userData.role
       });
 
       return {
         data: {
-          id: data.user_id,
-          tenant_id: data.tenant_id,
-          email: userData.email,
-          full_name: userData.full_name,
+          id: rpcData.user_id,
+          tenant_id: rpcData.tenant_id,
+          email: rpcData.email,
+          full_name: rpcData.full_name,
           phone: userData.phone,
-          role: data.role,
-          is_active: data.is_active,
-          permissions: data.permissions || {},
-          created_at: data.created_at,
-          updated_at: data.updated_at,
+          role: rpcData.role,
+          is_active: true,
+          permissions: userData.permissions || {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
         error: null,
       };
@@ -237,31 +216,18 @@ export class UserService extends BaseService {
     updates: UpdateUserData
   ): Promise<ServiceResponse<User>> {
     try {
-      const tenantId = await this.getTenantId();
+      // Use RPC function to update user (handles both user_tenant_access and auth.users)
+      const { error: rpcError } = await supabase.rpc('update_user_role_and_metadata', {
+        p_user_id: userId,
+        p_role: updates.role || null,
+        p_full_name: updates.full_name || null,
+        p_phone: updates.phone || null,
+        p_is_active: updates.is_active ?? null,
+        p_permissions: updates.permissions || null
+      });
 
-      // Update user record in user_tenant_access table
-      const { error } = await supabase
-        .from('user_tenant_access')
-        .update({
-          role: updates.role,
-          is_active: updates.is_active,
-          permissions: updates.permissions,
-          last_accessed_at: new Date().toISOString(),
-        })
-        .eq('user_id', userId)
-        .eq('tenant_id', tenantId)
-        .select()
-        .single();
-
-      if (error) {
-        return { data: null, error: this.handleError(error) };
-      }
-
-      // If role is updated, also update in auth metadata
-      if (updates.role) {
-        await supabase.auth.admin.updateUserById(userId, {
-          user_metadata: { role: updates.role },
-        });
+      if (rpcError) {
+        return { data: null, error: this.handleError(rpcError) };
       }
 
       await this.logAction('update_user', userId, updates);
@@ -279,27 +245,15 @@ export class UserService extends BaseService {
    */
   async deleteUser(userId: string): Promise<ServiceResponse<void>> {
     try {
-      const tenantId = await this.getTenantId();
-
-      // Soft delete - just deactivate the user in user_tenant_access
-      const { error } = await supabase
-        .from('user_tenant_access')
-        .update({ 
-          is_active: false,
-          revoked_at: new Date().toISOString(),
-          revoke_reason: 'User deleted by admin',
-        })
-        .eq('user_id', userId)
-        .eq('tenant_id', tenantId);
-
-      if (error) {
-        return { data: null, error: this.handleError(error) };
-      }
-
-      // Also disable the auth user
-      await supabase.auth.admin.updateUserById(userId, {
-        ban_duration: 'none', // This effectively disables the user
+      // Use RPC function to deactivate user (handles both user_tenant_access and auth.users)
+      const { error: rpcError } = await supabase.rpc('deactivate_user_account', {
+        p_user_id: userId,
+        p_reason: 'User deleted by admin'
       });
+
+      if (rpcError) {
+        return { data: null, error: this.handleError(rpcError) };
+      }
 
       await this.logAction('delete_user', userId);
 
@@ -314,12 +268,14 @@ export class UserService extends BaseService {
    */
   async resetUserPassword(userId: string, newPassword: string): Promise<ServiceResponse<void>> {
     try {
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        password: newPassword,
+      // Use RPC function to reset password
+      const { error: rpcError } = await supabase.rpc('reset_user_password', {
+        p_user_id: userId,
+        p_new_password: newPassword
       });
 
-      if (error) {
-        return { data: null, error: this.handleError(error) };
+      if (rpcError) {
+        return { data: null, error: this.handleError(rpcError) };
       }
 
       await this.logAction('reset_password', userId);

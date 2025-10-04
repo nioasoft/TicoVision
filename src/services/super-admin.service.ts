@@ -70,7 +70,7 @@ export class SuperAdminService extends BaseService {
         .select('id, is_active')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle(); // Returns null if no row found (not super admin)
 
       return !error && !!data;
     } catch (error) {

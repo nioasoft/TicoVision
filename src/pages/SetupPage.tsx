@@ -6,7 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, CheckCircle } from 'lucide-react';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+
+/**
+ * ⚠️ WARNING: This setup page is currently NOT FUNCTIONAL
+ *
+ * It previously relied on supabaseAdmin (Service Role Key) which has been removed
+ * for security reasons. Initial setup should now be done via:
+ *
+ * 1. Supabase Dashboard - manually create tenant and first admin user
+ * 2. SQL migrations - run setup scripts directly on database
+ * 3. TODO: Create dedicated SECURITY DEFINER RPC functions for setup operations
+ *
+ * @deprecated Use alternative setup methods
+ */
 
 export function SetupPage() {
   const [loading, setLoading] = useState(false);

@@ -62,7 +62,7 @@ export class AuthService {
         .select('id, is_active')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle(); // Returns null if no row found (not super admin)
 
       // Get tenant access
       const { data: tenantAccess } = await supabase
@@ -197,7 +197,7 @@ export class AuthService {
   }> {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: `${window.location.origin}/set-password`
       });
 
       if (error) throw error;

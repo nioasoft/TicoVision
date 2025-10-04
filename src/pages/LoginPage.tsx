@@ -10,18 +10,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { registrationService } from '@/services/registration.service';
+import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
   // Registration form state
   const [regFullName, setRegFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regCompanyName, setRegCompanyName] = useState('');
   const [regRole, setRegRole] = useState<UserRole>('client');
@@ -44,14 +48,50 @@ export function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error('אנא הזן את כתובת הדוא"ל שלך');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/set-password`
+      });
+
+      if (error) throw error;
+
+      toast.success('נשלח קישור לאיפוס סיסמה לכתובת הדוא"ל שלך');
+      setIsForgotPassword(false);
+    } catch (error) {
+      toast.error('שגיאה בשליחת קישור לאיפוס סיסמה');
+      console.error('Forgot password error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       // Validate required fields
-      if (!regFullName || !regEmail) {
+      if (!regFullName || !regEmail || !regPassword) {
         toast.error('אנא מלא את כל השדות החובה');
+        return;
+      }
+
+      // Validate password strength
+      if (regPassword.length < 8) {
+        toast.error('הסיסמה חייבת להכיל לפחות 8 תווים');
+        return;
+      }
+
+      // Validate password confirmation
+      if (regPassword !== regConfirmPassword) {
+        toast.error('הסיסמאות אינן תואמות');
         return;
       }
 
@@ -59,9 +99,11 @@ export function LoginPage() {
       const availability = await registrationService.checkEmailAvailability(regEmail);
       if (!availability.available) {
         if (availability.reason === 'pending_registration') {
-          toast.error('כבר קיימת בקשת הרשמה עם כתובת דוא"ל זו');
-        } else {
+          toast.error('כבר קיימת בקשת הרשמה ממתינה עם כתובת דוא"ל זו');
+        } else if (availability.reason === 'already_registered') {
           toast.error('כתובת הדוא"ל כבר רשומה במערכת');
+        } else {
+          toast.error('כתובת הדוא"ל אינה זמינה');
         }
         return;
       }
@@ -70,6 +112,7 @@ export function LoginPage() {
       const { error } = await registrationService.submitRegistration({
         email: regEmail,
         full_name: regFullName,
+        password: regPassword, // User's chosen password
         phone: regPhone,
         company_name: regCompanyName,
         requested_role: regRole,
@@ -82,17 +125,24 @@ export function LoginPage() {
       }
 
       toast.success('בקשת ההרשמה נשלחה בהצלחה! מנהל המערכת יאשר אותה בקרוב.');
-      
+
       // Clear form
       setRegFullName('');
       setRegEmail('');
+      setRegPassword('');
+      setRegConfirmPassword('');
       setRegPhone('');
       setRegCompanyName('');
       setRegRole('client');
       setRegTaxId('');
       setRegMessage('');
-    } catch (error) {
-      toast.error('שגיאה בשליחת בקשת ההרשמה');
+    } catch (error: any) {
+      // Check for duplicate email error (PostgreSQL unique constraint)
+      if (error?.code === '23505') {
+        toast.error('כתובת הדוא"ל כבר קיימת במערכת');
+      } else {
+        toast.error('שגיאה בשליחת בקשת ההרשמה');
+      }
       console.error('Registration error:', error);
     } finally {
       setIsLoading(false);
@@ -157,7 +207,8 @@ export function LoginPage() {
                     type="button"
                     variant="link"
                     className="text-sm text-muted-foreground"
-                    onClick={() => toast.info('יש ליצור קשר עם מנהל המערכת')}
+                    onClick={handleForgotPassword}
+                    disabled={isLoading}
                   >
                     שכחת סיסמה?
                   </Button>
@@ -194,7 +245,35 @@ export function LoginPage() {
                       dir="ltr"
                     />
                   </div>
-                  
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-password">סיסמה *</Label>
+                    <Input
+                      id="reg-password"
+                      type="password"
+                      placeholder="לפחות 8 תווים"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reg-confirm-password">אימות סיסמה *</Label>
+                    <Input
+                      id="reg-confirm-password"
+                      type="password"
+                      placeholder="הזן שוב את הסיסמה"
+                      value={regConfirmPassword}
+                      onChange={(e) => setRegConfirmPassword(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      dir="ltr"
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="reg-phone">טלפון</Label>
                     <Input

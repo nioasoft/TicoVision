@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Lock, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle, Loader2 } from 'lucide-react';
 
 export function SetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -14,11 +14,80 @@ export function SetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState(false);
   const navigate = useNavigate();
 
+  // Check if user came from password reset link
+  useEffect(() => {
+    let isMounted = true;
+    let sessionChecked = false;
+
+    // Timeout fallback - if no session after 5 seconds, redirect to login
+    const timeout = setTimeout(() => {
+      if (isMounted && !sessionChecked) {
+        console.warn('Password reset session timeout - no valid session found');
+        toast.error('קישור פג תוקף או לא תקין. אנא בקש קישור חדש');
+        setTimeout(() => navigate('/login'), 1500);
+      }
+    }, 5000);
+
+    // Listen for auth state changes - this is crucial for password recovery!
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!isMounted) return;
+
+      // PASSWORD_RECOVERY event is fired when Supabase detects recovery token in URL
+      if (event === 'PASSWORD_RECOVERY') {
+        clearTimeout(timeout);
+        sessionChecked = true;
+        setHasValidSession(true);
+        setIsCheckingSession(false);
+      }
+      // Or if user is already signed in with a valid session
+      else if (event === 'SIGNED_IN' && session) {
+        clearTimeout(timeout);
+        sessionChecked = true;
+        setHasValidSession(true);
+        setIsCheckingSession(false);
+      }
+      // If signed out, redirect to login
+      else if (event === 'SIGNED_OUT') {
+        clearTimeout(timeout);
+        if (!sessionChecked) {
+          toast.error('קישור לא תקין. אנא בקש קישור חדש לאיפוס סיסמה');
+          setTimeout(() => navigate('/login'), 1500);
+        }
+      }
+    });
+
+    // Also check current session as a fallback (in case recovery already processed)
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!isMounted) return;
+
+      if (error) {
+        console.error('Error getting session:', error);
+        return;
+      }
+
+      if (session && !sessionChecked) {
+        clearTimeout(timeout);
+        sessionChecked = true;
+        setHasValidSession(true);
+        setIsCheckingSession(false);
+      }
+    });
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   const validatePassword = () => {
-    if (password.length < 6) {
-      toast.error('הסיסמה חייבת להכיל לפחות 6 תווים');
+    if (password.length < 8) {
+      toast.error('הסיסמה חייבת להכיל לפחות 8 תווים');
       return false;
     }
     if (password !== confirmPassword) {
@@ -59,9 +128,32 @@ export function SetPasswordPage() {
   };
 
   const passwordRequirements = [
-    { met: password.length >= 6, text: 'לפחות 6 תווים' },
+    { met: password.length >= 8, text: 'לפחות 8 תווים' },
     { met: password === confirmPassword && password.length > 0, text: 'הסיסמאות תואמות' },
   ];
+
+  // Show loader while checking session
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100" dir="rtl">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">טוען...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show form if no valid session
+  if (!hasValidSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100" dir="rtl">
+        <div className="text-center">
+          <p className="text-muted-foreground">מעביר להתחברות...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100" dir="rtl">
