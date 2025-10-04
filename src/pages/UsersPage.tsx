@@ -245,10 +245,8 @@ export function UsersPage() {
         <TabsContent value="registrations">
           <RegistrationsTable
             registrations={filteredRegistrations}
+            mode="pending"
             loading={loading}
-            searchTerm={registrationSearchTerm}
-            isRejectedView={false}
-            onSearchChange={setRegistrationSearchTerm}
             onApprove={handleOpenApproveDialog}
             onReject={handleOpenRejectDialog}
             onViewDetails={handleOpenDetailsDialog}
@@ -260,10 +258,8 @@ export function UsersPage() {
         <TabsContent value="rejected">
           <RegistrationsTable
             registrations={rejectedRegistrations}
+            mode="rejected"
             loading={loading}
-            searchTerm={registrationSearchTerm}
-            isRejectedView={true}
-            onSearchChange={setRegistrationSearchTerm}
             onViewDetails={handleOpenDetailsDialog}
             onDelete={handleOpenDeleteRegDialog}
           />

@@ -42,7 +42,7 @@ interface EditUserDialogProps {
   open: boolean;
   user: User | null;
   onClose: () => void;
-  onSubmit: (userId: string, data: UpdateUserData) => Promise<boolean>;
+  onSubmit: (data: UpdateUserData) => Promise<boolean>;
 }
 
 // Reset Password Dialog Props
@@ -50,7 +50,7 @@ interface ResetPasswordDialogProps {
   open: boolean;
   user: User | null;
   onClose: () => void;
-  onSubmit: (userId: string, newPassword: string) => Promise<boolean>;
+  onSubmit: (newPassword: string) => Promise<boolean>;
 }
 
 // Delete User Dialog Props
@@ -58,7 +58,7 @@ interface DeleteUserDialogProps {
   open: boolean;
   user: User | null;
   onClose: () => void;
-  onConfirm: (userId: string) => Promise<boolean>;
+  onConfirm: () => Promise<void>;
 }
 
 const INITIAL_ADD_FORM: CreateUserData = {
@@ -291,7 +291,7 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
     if (!user) return;
     setIsSubmitting(true);
     try {
-      const success = await onSubmit(user.id, formData);
+      const success = await onSubmit(formData);
       if (success) {
         setHasUnsavedChanges(false);
       }
@@ -477,7 +477,7 @@ export const ResetPasswordDialog = React.memo<ResetPasswordDialogProps>(({ open,
     setIsSubmitting(true);
     setError('');
     try {
-      const success = await onSubmit(user.id, newPassword);
+      const success = await onSubmit(newPassword);
       if (success) {
         setNewPassword('');
         setConfirmPassword('');
@@ -552,7 +552,7 @@ export const DeleteUserDialog = React.memo<DeleteUserDialogProps>(({ open, user,
     if (!user) return;
     setIsDeleting(true);
     try {
-      await onConfirm(user.id);
+      await onConfirm();
     } finally {
       setIsDeleting(false);
     }

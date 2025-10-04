@@ -203,15 +203,15 @@ export default function ClientsPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="rtl:text-right ltr:text-left">האם אתה בטוח?</AlertDialogTitle>
+            <AlertDialogDescription className="rtl:text-right ltr:text-left">
               פעולה זו תמחק את הלקוח {selectedClient?.company_name} לצמיתות. לא ניתן לבטל
               פעולה זו.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="rtl:space-x-reverse ltr:space-x-2">
             <AlertDialogCancel onClick={handleCloseDeleteDialog}>ביטול</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteClient}>מחק לקוח</AlertDialogAction>
           </AlertDialogFooter>
