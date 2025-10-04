@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { RoleBasedRoute } from '@/components/auth/RoleBasedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
@@ -43,18 +44,25 @@ function App() {
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
+                  {/* Default redirect to clients for all users */}
+                  <Route path="/" element={<Navigate to="/clients" replace />} />
+
+                  {/* Clients page - accessible to all roles */}
                   <Route path="/clients" element={<ClientsPage />} />
-                  <Route path="/fees" element={<FeesPage />} />
-                  <Route path="/letters" element={<LettersPage />} />
-                  <Route path="/letter-templates" element={<LetterTemplatesPage />} />
-                  <Route path="/users" element={<UsersPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  
-                  {/* Super Admin routes */}
-                  <Route path="/super-admin" element={<SuperAdminDashboard />} />
-                  <Route path="/super-admin/tenants/:id" element={<TenantManagementPage />} />
+
+                  {/* Admin-only routes */}
+                  <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/fees" element={<FeesPage />} />
+                    <Route path="/letters" element={<LettersPage />} />
+                    <Route path="/letter-templates" element={<LetterTemplatesPage />} />
+                    <Route path="/users" element={<UsersPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+
+                    {/* Super Admin routes */}
+                    <Route path="/super-admin" element={<SuperAdminDashboard />} />
+                    <Route path="/super-admin/tenants/:id" element={<TenantManagementPage />} />
+                  </Route>
                 </Route>
               </Route>
             </Routes>

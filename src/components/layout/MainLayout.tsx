@@ -1,13 +1,13 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calculator, 
-  FileText, 
-  UserCog, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Calculator,
+  FileText,
+  UserCog,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -20,15 +20,26 @@ import { Badge } from '@/components/ui/badge';
 import { registrationService } from '@/services/registration.service';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
+import type { UserRole } from '@/types/user-role';
 
 const navigation = [
-  { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'לקוחות', href: '/clients', icon: Users },
-  { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator },
-  { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, adminOnly: true },
-  { name: 'משתמשים', href: '/users', icon: UserCog, adminOnly: true, showBadge: true },
-  { name: 'הגדרות', href: '/settings', icon: Settings },
+  { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard, allowedRoles: ['admin'] as UserRole[] },
+  { name: 'לקוחות', href: '/clients', icon: Users, allowedRoles: ['admin', 'accountant', 'bookkeeper', 'client'] as UserRole[] },
+  { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator, allowedRoles: ['admin'] as UserRole[] },
+  { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, allowedRoles: ['admin'] as UserRole[] },
+  { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
+  { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
 ];
+
+const getRoleDisplayName = (role: UserRole | null): string => {
+  const roleNames: Record<UserRole, string> = {
+    'admin': 'מנהל',
+    'accountant': 'רואה חשבון',
+    'bookkeeper': 'מנהלת חשבונות',
+    'client': 'לקוח',
+  };
+  return role ? roleNames[role] : 'משתמש';
+};
 
 export function MainLayout() {
   const { user, signOut, role } = useAuth();
@@ -68,7 +79,7 @@ export function MainLayout() {
   };
 
   const filteredNavigation = navigation.filter(
-    item => !item.adminOnly || role === 'admin'
+    item => role && item.allowedRoles.includes(role)
   );
 
   return (
@@ -164,7 +175,7 @@ export function MainLayout() {
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm">
                 <p className="font-medium">{user?.email}</p>
-                <p className="text-gray-500 text-xs">{role === 'admin' ? 'מנהל' : 'משתמש'}</p>
+                <p className="text-gray-500 text-xs">{getRoleDisplayName(role)}</p>
               </div>
             </div>
             <Button
