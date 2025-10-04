@@ -117,7 +117,7 @@ export interface SelectionRules {
   conditions?: Array<{
     field: string;
     operator: 'eq' | 'ne' | 'gt' | 'lt' | 'gte' | 'lte' | 'in' | 'not_in';
-    value: any;
+    value: unknown;
   }>;
 }
 

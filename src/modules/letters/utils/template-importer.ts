@@ -257,7 +257,11 @@ export class TemplateImporter {
   /**
    * Get variables schema for the template
    */
-  static getVariablesSchema(definition: TemplateDefinition): any {
+  static getVariablesSchema(definition: TemplateDefinition): {
+    required: string[];
+    optional: string[];
+    conditional: Record<string, unknown>;
+  } {
     const commonRequired = [
       'תאריך',
       'שם',
@@ -275,7 +279,7 @@ export class TemplateImporter {
     const schema = {
       required: commonRequired,
       optional: commonOptional,
-      conditional: {}
+      conditional: {} as Record<string, unknown>
     };
 
     // Add specific requirements based on fee change type
@@ -289,8 +293,8 @@ export class TemplateImporter {
   /**
    * Get selection rules for the template
    */
-  static getSelectionRules(definition: TemplateDefinition): any {
-    const rules: any = {
+  static getSelectionRules(definition: TemplateDefinition): Record<string, string> {
+    const rules: Record<string, string> = {
       fee_change_type: definition.feeChangeType
     };
 

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
+import { logger } from '@/lib/logger';
 
 export interface RegistrationData {
   email: string;
@@ -62,7 +63,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: registration, error: null };
     } catch (error) {
-      console.error('Error submitting registration:', error);
+      logger.error('Error submitting registration:', error);
       return { data: null, error };
     }
   }
@@ -81,7 +82,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: registrations as PendingRegistration[], error: null };
     } catch (error) {
-      console.error('Error fetching pending registrations:', error);
+      logger.error('Error fetching pending registrations:', error);
       return { data: null, error };
     }
   }
@@ -105,7 +106,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: registrations as PendingRegistration[], error: null };
     } catch (error) {
-      console.error('Error fetching registrations:', error);
+      logger.error('Error fetching registrations:', error);
       return { data: null, error };
     }
   }
@@ -130,7 +131,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: true, error: null };
     } catch (error) {
-      console.error('Error deleting registration:', error);
+      logger.error('Error deleting registration:', error);
       return { data: null, error };
     }
   }
@@ -193,7 +194,7 @@ class RegistrationService {
       );
 
       if (resetError) {
-        console.error('Failed to send password reset email:', resetError);
+        logger.error('Failed to send password reset email:', resetError);
         // Don't fail the approval - user was created successfully
         // Admin can manually resend password reset if needed
       }
@@ -243,7 +244,7 @@ class RegistrationService {
 
       return { data: { userId: authData.user_id }, error: null };
     } catch (error) {
-      console.error('Error approving registration:', error);
+      logger.error('Error approving registration:', error);
       return { data: null, error };
     }
   }
@@ -269,7 +270,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: true, error: null };
     } catch (error) {
-      console.error('Error rejecting registration:', error);
+      logger.error('Error rejecting registration:', error);
       return { data: null, error };
     }
   }
@@ -296,7 +297,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: assignments as UserClientAssignment[], error: null };
     } catch (error) {
-      console.error('Error fetching user assignments:', error);
+      logger.error('Error fetching user assignments:', error);
       return { data: null, error };
     }
   }
@@ -343,7 +344,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: true, error: null };
     } catch (error) {
-      console.error('Error assigning clients:', error);
+      logger.error('Error assigning clients:', error);
       return { data: null, error };
     }
   }
@@ -362,7 +363,7 @@ class RegistrationService {
       if (error) throw error;
       return { data: true, error: null };
     } catch (error) {
-      console.error('Error removing assignment:', error);
+      logger.error('Error removing assignment:', error);
       return { data: null, error };
     }
   }
@@ -383,7 +384,7 @@ class RegistrationService {
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows returned (which is OK)
-        console.error('Error checking email:', error);
+        logger.error('Error checking email:', error);
         return { available: true }; // Allow registration on error
       }
 
@@ -403,7 +404,7 @@ class RegistrationService {
       return { available: true };
     } catch (error) {
       // On any error, allow registration (server will validate)
-      console.error('Error in checkEmailAvailability:', error);
+      logger.error('Error in checkEmailAvailability:', error);
       return { available: true };
     }
   }

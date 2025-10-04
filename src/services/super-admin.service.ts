@@ -1,6 +1,7 @@
 import { BaseService } from './base.service';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { logger } from '@/lib/logger';
 
 type Tables = Database['public']['Tables'];
 type Tenant = Tables['tenants']['Row'];
@@ -83,7 +84,7 @@ export class SuperAdminService extends BaseService {
 
       return !error && !!data;
     } catch (error) {
-      console.error('Error checking super admin status:', error);
+      logger.error('Error checking super admin status:', error);
       return false;
     }
   }

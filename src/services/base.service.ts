@@ -3,6 +3,7 @@ import { getClientIpAddress, getClientInfo } from '@/lib/utils';
 import type { PostgrestError } from '@supabase/supabase-js';
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 import type { Database } from '@/types/supabase';
+import { logger } from '@/lib/logger';
 
 export interface ServiceResponse<T> {
   data: T | null;
@@ -77,7 +78,7 @@ export abstract class BaseService {
         user_agent: navigator.userAgent,
       });
     } catch (error) {
-      console.error('Failed to log action:', error);
+      logger.error('Failed to log action:', error);
     }
   }
 

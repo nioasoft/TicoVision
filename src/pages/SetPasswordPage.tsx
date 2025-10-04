@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,7 @@ export function SetPasswordPage() {
     // Timeout fallback - if no session after 5 seconds, redirect to login
     const timeout = setTimeout(() => {
       if (isMounted && !sessionChecked) {
-        console.warn('Password reset session timeout - no valid session found');
+        logger.warn('Password reset session timeout - no valid session found');
         toast.error('קישור פג תוקף או לא תקין. אנא בקש קישור חדש');
         setTimeout(() => navigate('/login'), 1500);
       }
@@ -65,7 +66,7 @@ export function SetPasswordPage() {
       if (!isMounted) return;
 
       if (error) {
-        console.error('Error getting session:', error);
+        logger.error('Error getting session:', error);
         return;
       }
 
@@ -120,7 +121,7 @@ export function SetPasswordPage() {
         navigate('/login');
       }, 1500);
     } catch (error) {
-      console.error('Error setting password:', error);
+      logger.error('Error setting password:', error);
       toast.error('שגיאה בהגדרת הסיסמה. אנא נסה שוב.');
     } finally {
       setIsLoading(false);

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,10 +27,16 @@ import {
   Database,
   Shield
 } from 'lucide-react';
-import { TenantManagementService } from '@/services/tenant-management.service';
-import { SuperAdminService } from '@/services/super-admin.service';
+import { TenantManagementService, type UserAccess } from '@/services/tenant-management.service';
+import { SuperAdminService, type TenantStats } from '@/services/super-admin.service';
 import { authService } from '@/services/auth.service';
 import { formatCurrency } from '@/lib/utils';
+import type { Database } from '@/types/supabase';
+
+type Tenant = Database['public']['Tables']['tenants']['Row'];
+type TenantSettings = Database['public']['Tables']['tenant_settings']['Row'];
+type TenantSubscription = Database['public']['Tables']['tenant_subscriptions']['Row'];
+type TenantActivityLog = Database['public']['Tables']['tenant_activity_logs']['Row'];
 
 const tenantService = new TenantManagementService();
 const superAdminService = new SuperAdminService();
@@ -39,12 +46,12 @@ export default function TenantManagementPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [tenant, setTenant] = useState<any>(null);
-  const [settings, setSettings] = useState<any>(null);
-  const [subscription, setSubscription] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [activityLogs, setActivityLogs] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [settings, setSettings] = useState<TenantSettings | null>(null);
+  const [subscription, setSubscription] = useState<TenantSubscription | null>(null);
+  const [users, setUsers] = useState<UserAccess[]>([]);
+  const [activityLogs, setActivityLogs] = useState<TenantActivityLog[]>([]);
+  const [stats, setStats] = useState<TenantStats | null>(null);
 
   useEffect(() => {
     checkAccess();
@@ -88,7 +95,7 @@ export default function TenantManagementPage() {
       const currentTenant = allTenants.find(t => t.id === id);
       setTenant(currentTenant);
     } catch (error) {
-      console.error('Error loading tenant data:', error);
+      logger.error('Error loading tenant data:', error);
     } finally {
       setLoading(false);
     }
@@ -116,7 +123,7 @@ export default function TenantManagementPage() {
       
       alert('הגדרות נשמרו בהצלחה!');
     } catch (error) {
-      console.error('Error saving settings:', error);
+      logger.error('Error saving settings:', error);
       alert('שגיאה בשמירת ההגדרות');
     } finally {
       setSaving(false);
@@ -132,7 +139,7 @@ export default function TenantManagementPage() {
         await loadTenantData();
         alert('העסק הושהה בהצלחה');
       } catch (error) {
-        console.error('Error suspending tenant:', error);
+        logger.error('Error suspending tenant:', error);
       }
     }
   };
@@ -145,7 +152,7 @@ export default function TenantManagementPage() {
       await loadTenantData();
       alert('העסק הופעל בהצלחה');
     } catch (error) {
-      console.error('Error activating tenant:', error);
+      logger.error('Error activating tenant:', error);
     }
   };
 
@@ -523,7 +530,7 @@ export default function TenantManagementPage() {
                       <span className="text-sm text-muted-foreground">
                         {key.replace(/_/g, ' ')}
                       </span>
-                      <span className="font-medium">{value as any}</span>
+                      <span className="font-medium">{String(value)}</span>
                     </div>
                   ))}
                 </div>

@@ -1,6 +1,7 @@
 import { BaseService } from './base.service';
 import type { ServiceResponse, PaginationParams, FilterParams } from './base.service';
 import { supabase } from '@/lib/supabase';
+import { logger } from '@/lib/logger';
 import type { UserRole } from '@/types/user-role';
 
 export interface User {
@@ -50,7 +51,7 @@ export class UserService extends BaseService {
       // Check if user is authenticated first
       const { data: { session }, error: sessionError} = await supabase.auth.getSession();
       if (!session || sessionError) {
-        console.warn('No active session - returning empty user list');
+        logger.warn('No active session - returning empty user list');
         return {
           data: { users: [], total: 0 },
           error: null
@@ -65,7 +66,7 @@ export class UserService extends BaseService {
       if (error) {
         // Handle 403 Forbidden gracefully (likely due to session issues)
         if (error.code === 'PGRST301' || error.message.includes('403')) {
-          console.warn('Permission denied accessing users - session may be invalid');
+          logger.warn('Permission denied accessing users - session may be invalid');
           return {
             data: { users: [], total: 0 },
             error: null

@@ -59,7 +59,7 @@ class AuditService extends BaseService {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Failed to create audit log:', error);
+      logger.error('Failed to create audit log:', error);
     }
   }
 
@@ -337,7 +337,7 @@ class AuditService extends BaseService {
       });
     } catch (error) {
       // Critical actions should be logged even if there's an error
-      console.error('Failed to log critical action:', { action, module, details, error });
+      logger.error('Failed to log critical action:', { action, module, details, error });
       
       // You might want to send this to an external service
       // or store it locally for later sync

@@ -84,7 +84,7 @@ export function LetterTemplatesPage() {
         setComponentsLoaded(true);
       }
     } catch (error) {
-      console.error('Error loading letter components:', error);
+      logger.error('Error loading letter components:', error);
       setComponentsLoaded(true); // Mark as loaded even on error
     }
   };
@@ -112,7 +112,7 @@ export function LetterTemplatesPage() {
       
       toast.success('הגדרות הכותרת והתחתית נשמרו בהצלחה');
     } catch (error) {
-      console.error('Error saving letter components:', error);
+      logger.error('Error saving letter components:', error);
       toast.error('שגיאה בשמירת הגדרות');
     } finally {
       setIsSavingComponents(false);
@@ -126,7 +126,7 @@ export function LetterTemplatesPage() {
       if (error) throw error;
       setTemplates(data || []);
     } catch (error) {
-      console.error('Error loading templates:', error);
+      logger.error('Error loading templates:', error);
       toast.error('שגיאה בטעינת התבניות');
     } finally {
       setIsLoading(false);
@@ -149,7 +149,7 @@ export function LetterTemplatesPage() {
       toast.success(`${importedCount} תבניות יובאו בהצלחה`);
       await loadTemplates();
     } catch (error) {
-      console.error('Error importing templates:', error);
+      logger.error('Error importing templates:', error);
       toast.error('שגיאה בייבוא התבניות');
     } finally {
       setIsImporting(false);
@@ -182,7 +182,7 @@ export function LetterTemplatesPage() {
         setIsPreviewOpen(true);
       }
     } catch (error) {
-      console.error('Error previewing template:', error);
+      logger.error('Error previewing template:', error);
       toast.error('שגיאה בתצוגה מקדימה');
     }
   };
@@ -196,7 +196,7 @@ export function LetterTemplatesPage() {
       setIsEditing(false);
       await loadTemplates();
     } catch (error) {
-      console.error('Error saving template:', error);
+      logger.error('Error saving template:', error);
       toast.error('שגיאה בשמירת התבנית');
     }
   };

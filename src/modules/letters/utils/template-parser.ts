@@ -39,8 +39,8 @@ export class TemplateParser {
   /**
    * Build a map of Hebrew variable names to values
    */
-  private static buildVariableMap(variables: Partial<LetterVariables>): Map<string, any> {
-    const map = new Map<string, any>();
+  private static buildVariableMap(variables: Partial<LetterVariables>): Map<string, string> {
+    const map = new Map<string, string>();
 
     // Date variables
     if (variables.date) {
@@ -122,22 +122,22 @@ export class TemplateParser {
    */
   private static getVariableValue(
     variableName: string,
-    variableMap: Map<string, any>,
+    variableMap: Map<string, string>,
     variables: Partial<LetterVariables>
-  ): any {
+  ): string | undefined {
     // Try to get from map first
     if (variableMap.has(variableName)) {
       return variableMap.get(variableName);
     }
 
     // Try direct property access
-    const value = (variables as any)[variableName];
+    const value = (variables as Record<string, unknown>)[variableName];
     if (value !== undefined) {
       // Format numbers as currency if they look like amounts
       if (typeof value === 'number' && variableName.includes('amount')) {
         return this.formatCurrency(value);
       }
-      return value;
+      return String(value);
     }
 
     return undefined;
@@ -200,7 +200,7 @@ export class TemplateParser {
     const missing: string[] = [];
 
     for (const reqVar of required) {
-      const value = (variables as any)[reqVar];
+      const value = (variables as Record<string, unknown>)[reqVar];
       if (value === undefined || value === null || value === '') {
         missing.push(reqVar);
       }

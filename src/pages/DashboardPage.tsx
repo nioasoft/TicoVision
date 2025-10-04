@@ -123,7 +123,7 @@ export function DashboardPage() {
       generateChartData();
 
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      logger.error('Error loading dashboard data:', error);
     } finally {
       setIsLoading(false);
     }

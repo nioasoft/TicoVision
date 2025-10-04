@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ export function LoginPage() {
       navigate('/dashboard');
     } catch (error) {
       toast.error('שגיאה בהתחברות. אנא בדוק את הפרטים ונסה שוב.');
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +67,7 @@ export function LoginPage() {
       setIsForgotPassword(false);
     } catch (error) {
       toast.error('שגיאה בשליחת קישור לאיפוס סיסמה');
-      console.error('Forgot password error:', error);
+      logger.error('Forgot password error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -136,14 +137,15 @@ export function LoginPage() {
       setRegRole('client');
       setRegTaxId('');
       setRegMessage('');
-    } catch (error: any) {
+    } catch (error) {
       // Check for duplicate email error (PostgreSQL unique constraint)
-      if (error?.code === '23505') {
+      const err = error as { code?: string; message?: string };
+      if (err?.code === '23505') {
         toast.error('כתובת הדוא"ל כבר קיימת במערכת');
       } else {
         toast.error('שגיאה בשליחת בקשת ההרשמה');
       }
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
     } finally {
       setIsLoading(false);
     }

@@ -116,7 +116,7 @@ export function SetupPage() {
           });
 
           if (userError && !userError.message.includes('duplicate')) {
-            console.error('User error:', userError);
+            logger.error('User error:', userError);
           }
 
           // Step 4: Auto-confirm the user's email using admin client
@@ -129,12 +129,12 @@ export function SetupPage() {
             );
             
             if (confirmError) {
-              console.error('Email confirmation error:', confirmError);
+              logger.error('Email confirmation error:', confirmError);
             } else {
-              console.log('Email auto-confirmed for user:', userId);
+              logger.info('Email auto-confirmed for user:', userId);
             }
           } catch (confirmError) {
-            console.error('Failed to confirm email:', confirmError);
+            logger.error('Failed to confirm email:', confirmError);
           }
         }
 
@@ -153,11 +153,12 @@ export function SetupPage() {
           navigate('/dashboard');
         }, 2000);
       }
-    } catch (error: any) {
-      console.error('Setup error:', error);
+    } catch (error) {
+      logger.error('Setup error:', error);
+      const err = error as Error;
       toast({
         title: 'שגיאה',
-        description: error.message || 'אירעה שגיאה בהגדרת המערכת',
+        description: err.message || 'אירעה שגיאה בהגדרת המערכת',
         variant: 'destructive',
       });
     } finally {
@@ -223,11 +224,11 @@ export function SetupPage() {
         }
       ]);
 
-      console.log('Demo clients added successfully');
+      logger.info('Demo clients added successfully');
 
-      console.log('Demo data added successfully');
+      logger.info('Demo data added successfully');
     } catch (error) {
-      console.error('Error adding demo data:', error);
+      logger.error('Error adding demo data:', error);
     }
   };
 

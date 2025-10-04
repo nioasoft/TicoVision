@@ -943,7 +943,7 @@ class ClientService extends BaseService {
       }
     } catch (error) {
       // Log error but don't throw - this is a sync operation
-      console.error('Failed to sync primary contact to client:', error);
+      logger.error('Failed to sync primary contact to client:', error);
     }
   }
 }

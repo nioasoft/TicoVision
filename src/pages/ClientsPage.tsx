@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Plus, Search, Edit, Trash2, Download, Upload, Filter, CheckSquare, Square, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,7 +135,7 @@ export default function ClientsPage() {
         });
       }
     } catch (error) {
-      console.error('Error loading clients:', error);
+      logger.error('Error loading clients:', error);
       toast({
         title: 'שגיאה',
         description: 'אירעה שגיאה בטעינת הלקוחות',

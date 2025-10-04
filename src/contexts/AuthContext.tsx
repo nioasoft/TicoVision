@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
+import { logger } from '@/lib/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -29,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       // Handle any session/refresh token errors
       if (error) {
-        console.error('Session error:', error.message);
+        logger.error('Session error:', error.message);
         // Clear all session data from storage
         localStorage.removeItem('supabase.auth.token');
         // Sign out to ensure clean state
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setLoading(false);
     }).catch((error) => {
-      console.error('Auth initialization error:', error);
+      logger.error('Auth initialization error:', error);
       // Clear session on any error
       localStorage.removeItem('supabase.auth.token');
       setLoading(false);
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       // Handle failed token refresh
       if (event === 'TOKEN_REFRESHED' && !session) {
-        console.warn('Token refresh failed - clearing session');
+        logger.warn('Token refresh failed - clearing session');
         localStorage.removeItem('supabase.auth.token');
       }
 

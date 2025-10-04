@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -380,7 +381,7 @@ export function UsersPage() {
 
     if (response.error) {
       toast.error("שגיאה באישור הבקשה");
-      console.error(response.error);
+      logger.error(response.error);
     } else {
       toast.success("הבקשה אושרה בהצלחה! המשתמש יקבל מייל עם קישור להגדרת סיסמה");
       setShowApproveDialog(false);

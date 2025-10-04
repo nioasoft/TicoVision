@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,9 @@ import {
   Clock
 } from 'lucide-react';
 import { SuperAdminService, type TenantWithDetails, type GlobalStats } from '@/services/super-admin.service';
+import type { Database } from '@/types/supabase';
+
+type TenantActivityLog = Database['public']['Tables']['tenant_activity_logs']['Row'];
 import { authService } from '@/services/auth.service';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '@/lib/utils';
@@ -32,7 +36,7 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [tenants, setTenants] = useState<TenantWithDetails[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<TenantActivityLog[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -63,7 +67,7 @@ export default function SuperAdminDashboard() {
       const activity = await superAdminService.getGlobalActivityLogs(50);
       setRecentActivity(activity);
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      logger.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
+import { logger } from '@/lib/logger';
 
 type Tables = Database['public']['Tables'];
 type UserRole = 'admin' | 'accountant' | 'bookkeeper' | 'client' | 'super_admin';
@@ -59,7 +60,7 @@ export class AuthService {
   async getSession(): Promise<Session | null> {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
-      console.error('Error getting session:', error);
+      logger.error('Error getting session:', error);
       return null;
     }
     return session;
@@ -100,7 +101,7 @@ export class AuthService {
 
       return authUser;
     } catch (error) {
-      console.error('Error getting current user:', error);
+      logger.error('Error getting current user:', error);
       return null;
     }
   }
@@ -168,7 +169,7 @@ export class AuthService {
           });
 
         if (accessError) {
-          console.error('Error creating tenant access:', accessError);
+          logger.error('Error creating tenant access:', accessError);
         }
       }
 
@@ -200,7 +201,7 @@ export class AuthService {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
     } catch (error) {
-      console.error('Error logging out:', error);
+      logger.error('Error logging out:', error);
       throw error;
     }
   }
@@ -455,7 +456,7 @@ export class AuthService {
       const userPermissions = rolePermissions[user.role || 'client'];
       return userPermissions.includes('all') || userPermissions.includes(permission);
     } catch (error) {
-      console.error('Error checking permission:', error);
+      logger.error('Error checking permission:', error);
       return false;
     }
   }
@@ -493,7 +494,7 @@ export class AuthService {
         details
       });
     } catch (error) {
-      console.error('Error logging activity:', error);
+      logger.error('Error logging activity:', error);
     }
   }
 

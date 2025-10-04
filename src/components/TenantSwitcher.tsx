@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Building2, Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { authService } from '@/services/auth.service';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 
 interface Tenant {
   id: string;
@@ -52,7 +52,7 @@ export default function TenantSwitcher() {
       // Get user's tenants
       const { tenants: userTenants, error } = await authService.getUserTenants();
       if (error) {
-        console.error('Error loading tenants:', error);
+        logger.error('Error loading tenants:', error);
         return;
       }
 
@@ -67,7 +67,7 @@ export default function TenantSwitcher() {
         setCurrentTenant(userTenants[0]);
       }
     } catch (error) {
-      console.error('Error loading tenants:', error);
+      logger.error('Error loading tenants:', error);
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function TenantSwitcher() {
     try {
       const { success, error } = await authService.switchTenant(tenantId);
       if (error) {
-        console.error('Error switching tenant:', error);
+        logger.error('Error switching tenant:', error);
         return;
       }
       
@@ -85,7 +85,7 @@ export default function TenantSwitcher() {
         // The page will reload automatically from authService
       }
     } catch (error) {
-      console.error('Error switching tenant:', error);
+      logger.error('Error switching tenant:', error);
     }
   };
 
@@ -213,7 +213,7 @@ export default function TenantSwitcher() {
                         ראשי
                       </Badge>
                     )}
-                    <Badge variant={plan.variant as any} className="text-xs">
+                    <Badge variant={plan.variant} className="text-xs">
                       {plan.label}
                     </Badge>
                     {currentTenant?.id === tenant.id && (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -123,7 +124,7 @@ export function FeesPage() {
         setFeeCalculations(feesResponse.data.fees || []);
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast({
         title: 'שגיאה',
         description: 'אירעה שגיאה בטעינת הנתונים',
@@ -155,7 +156,7 @@ export function FeesPage() {
         setPreviousYearDataSaved(false);
       }
     } catch (error) {
-      console.error('Error loading previous year data:', error);
+      logger.error('Error loading previous year data:', error);
     }
   };
 
@@ -177,7 +178,7 @@ export function FeesPage() {
         }
       }
     } catch (error) {
-      console.error('Error loading client details:', error);
+      logger.error('Error loading client details:', error);
     }
   };
 
@@ -223,7 +224,7 @@ export function FeesPage() {
         description: 'נתוני שנה קודמת נשמרו בהצלחה',
       });
     } catch (error) {
-      console.error('Error saving previous year data:', error);
+      logger.error('Error saving previous year data:', error);
       toast({
         title: 'שגיאה',
         description: 'אירעה שגיאה בשמירת הנתונים',
@@ -313,7 +314,7 @@ export function FeesPage() {
       resetForm();
       loadInitialData();
     } catch (error) {
-      console.error('Error saving calculation:', error);
+      logger.error('Error saving calculation:', error);
       toast({
         title: 'שגיאה',
         description: 'אירעה שגיאה בשמירת החישוב',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,7 +77,7 @@ export default function ClientGroupsPage() {
         });
       }
     } catch (error) {
-      console.error('Error loading groups:', error);
+      logger.error('Error loading groups:', error);
       toast({
         title: 'שגיאה',
         description: 'אירעה שגיאה בטעינת הקבוצות',

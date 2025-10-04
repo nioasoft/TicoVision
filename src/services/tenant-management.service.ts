@@ -1,6 +1,7 @@
 import { BaseService } from './base.service';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { logger } from '@/lib/logger';
 
 type Tables = Database['public']['Tables'];
 type TenantSettings = Tables['tenant_settings']['Row'];
@@ -599,7 +600,7 @@ export class TenantManagementService extends BaseService {
       await this.logAction('verify_custom_domain', tenantId, { domain });
       return true;
     } catch (error) {
-      console.error('Error verifying custom domain:', error);
+      logger.error('Error verifying custom domain:', error);
       return false;
     }
   }
