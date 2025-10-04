@@ -1,6 +1,8 @@
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
 import { getClientIpAddress, getClientInfo } from '@/lib/utils';
-import { PostgrestError } from '@supabase/supabase-js';
+import type { PostgrestError } from '@supabase/supabase-js';
+import type { PostgrestFilterBuilder } from '@supabase/postgrest-js';
+import type { Database } from '@/types/supabase';
 
 export interface ServiceResponse<T> {
   data: T | null;
@@ -17,6 +19,13 @@ export interface PaginationParams {
 export interface FilterParams {
   [key: string]: unknown;
 }
+
+// Type helper for Supabase query builders
+type QueryBuilder<T = unknown> = PostgrestFilterBuilder<
+  Database['public'],
+  T,
+  T[]
+>;
 
 export abstract class BaseService {
   protected tableName: string;
@@ -72,10 +81,10 @@ export abstract class BaseService {
     }
   }
 
-  protected buildPaginationQuery(
-    query: any,
+  protected buildPaginationQuery<T = unknown>(
+    query: QueryBuilder<T>,
     params: PaginationParams
-  ) {
+  ): QueryBuilder<T> {
     const { page = 1, pageSize = 20, sortBy, sortOrder = 'desc' } = params;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -89,10 +98,10 @@ export abstract class BaseService {
     return query;
   }
 
-  protected buildFilterQuery(
-    query: any,
+  protected buildFilterQuery<T = unknown>(
+    query: QueryBuilder<T>,
     filters: FilterParams
-  ) {
+  ): QueryBuilder<T> {
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'string' && value.includes('%')) {
