@@ -136,7 +136,7 @@ export const RegistrationsTable = React.memo<RegistrationsTableProps>(({
   onDelete,
 }) => {
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg" dir="rtl">
       <Table>
         <TableHeader>
           <TableRow>
@@ -148,7 +148,7 @@ export const RegistrationsTable = React.memo<RegistrationsTableProps>(({
             {mode === 'rejected' && (
               <TableHead className="w-48 text-right">סיבת דחייה</TableHead>
             )}
-            <TableHead className="w-48 text-right">פעולות</TableHead>
+            <TableHead className="w-48 text-left">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

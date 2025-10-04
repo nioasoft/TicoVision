@@ -178,7 +178,7 @@ export const UsersTable = React.memo<UsersTableProps>(({
       </div>
 
       {/* Table */}
-      <div className="border rounded-lg">
+      <div className="border rounded-lg" dir="rtl">
         <Table>
           <TableHeader>
             <TableRow>
@@ -188,7 +188,7 @@ export const UsersTable = React.memo<UsersTableProps>(({
               <TableHead className="w-32 text-right">תפקיד</TableHead>
               <TableHead className="w-24 text-right">סטטוס</TableHead>
               <TableHead className="w-32 text-right">כניסה אחרונה</TableHead>
-              <TableHead className="w-32 text-right">פעולות</TableHead>
+              <TableHead className="w-32 text-left">פעולות</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
