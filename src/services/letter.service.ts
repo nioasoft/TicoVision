@@ -163,7 +163,8 @@ class LetterService extends BaseService {
       const tenantId = await this.getTenantId();
 
       // Re-extract variables if body changed
-      let updateData: any = { ...updates };
+      // Type: Partial includes variables field which may be updated during re-extraction
+      let updateData: Partial<LetterTemplate> = { ...updates };
       if (updates.body_html) {
         updateData.variables = this.extractVariables(updates.body_html);
       }

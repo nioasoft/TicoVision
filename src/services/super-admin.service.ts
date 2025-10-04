@@ -10,6 +10,15 @@ type UserTenantAccess = Tables['user_tenant_access']['Row'];
 type TenantActivityLog = Tables['tenant_activity_logs']['Row'];
 type TenantUsageStats = Tables['tenant_usage_stats']['Row'];
 
+// Address structure for Israeli accounting firms
+export interface TenantAddress {
+  street?: string;
+  city?: string;
+  postal_code?: string;
+  country?: string;
+  [key: string]: string | undefined;
+}
+
 export interface TenantWithDetails extends Tenant {
   settings?: TenantSettings;
   subscription?: TenantSubscription;
@@ -31,7 +40,7 @@ export interface CreateTenantDto {
   nameEnglish?: string;
   email: string;
   phone?: string;
-  address?: any;
+  address?: TenantAddress;
   billingPlan?: string;
   ownerEmail: string;
 }
@@ -97,8 +106,9 @@ export class SuperAdminService extends BaseService {
       if (error) throw error;
 
       // Get client counts for each tenant
+      type TenantWithSettings = Tenant & { tenant_settings?: TenantSettings[] };
       const tenantsWithCounts = await Promise.all(
-        (tenants || []).map(async (tenant: any) => {
+        (tenants || []).map(async (tenant: TenantWithSettings) => {
           const { count: clientCount } = await supabase
             .from('clients')
             .select('*', { count: 'exact', head: true })
@@ -531,7 +541,8 @@ export class SuperAdminService extends BaseService {
 
       if (error) throw error;
 
-      return (tenants || []).map((t: any) => ({
+      type TenantWithSettings = Tenant & { tenant_settings?: TenantSettings[] };
+      return (tenants || []).map((t: TenantWithSettings) => ({
         ...t,
         settings: t.tenant_settings?.[0]
       }));

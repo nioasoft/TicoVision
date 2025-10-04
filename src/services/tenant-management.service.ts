@@ -8,6 +8,7 @@ type TenantSubscription = Tables['tenant_subscriptions']['Row'];
 type UserTenantAccess = Tables['user_tenant_access']['Row'];
 type TenantActivityLog = Tables['tenant_activity_logs']['Row'];
 type TenantUsageStats = Tables['tenant_usage_stats']['Row'];
+type Client = Tables['clients']['Row'];
 
 export interface TenantBranding {
   logoUrl?: string;
@@ -36,11 +37,32 @@ export interface TenantFeatures {
   customDomain?: boolean;
 }
 
+// User permissions structure
+export interface UserPermissions {
+  canManageUsers?: boolean;
+  canManageClients?: boolean;
+  canManageFees?: boolean;
+  canSendLetters?: boolean;
+  canViewReports?: boolean;
+  canManageSettings?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+// Tenant usage metrics
+export interface TenantUsageMetrics {
+  userCount?: number;
+  clientCount?: number;
+  storageUsed?: number;
+  apiCallsToday?: number;
+  emailsThisMonth?: number;
+  [key: string]: number | undefined;
+}
+
 export interface UserAccess {
   userId: string;
   email: string;
   role: string;
-  permissions: any;
+  permissions: UserPermissions;
   isPrimary: boolean;
   isActive: boolean;
   grantedAt: Date;
@@ -208,7 +230,7 @@ export class TenantManagementService extends BaseService {
 
       if (error) throw error;
 
-      return (data || []).map((access: any) => ({
+      return (data || []).map((access: UserTenantAccess) => ({
         userId: access.user_id,
         email: '', // Email will need to be fetched separately if needed
         role: access.role,
@@ -230,7 +252,7 @@ export class TenantManagementService extends BaseService {
     tenantId: string,
     userId: string,
     role: string,
-    permissions?: any
+    permissions?: UserPermissions
   ): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -265,7 +287,7 @@ export class TenantManagementService extends BaseService {
     userId: string,
     updates: {
       role?: string;
-      permissions?: any;
+      permissions?: UserPermissions;
       isActive?: boolean;
     }
   ): Promise<void> {
@@ -433,7 +455,7 @@ export class TenantManagementService extends BaseService {
   async checkTenantLimits(tenantId: string): Promise<{
     withinLimits: boolean;
     exceeded: string[];
-    usage: any;
+    usage: TenantUsageMetrics;
   }> {
     try {
       // Get tenant settings with limits
@@ -449,7 +471,7 @@ export class TenantManagementService extends BaseService {
 
       const limits = settings.limits as TenantLimits;
       const exceeded: string[] = [];
-      const usage: any = {};
+      const usage: TenantUsageMetrics = {};
 
       // Check user limit
       if (limits.maxUsers) {
@@ -521,7 +543,7 @@ export class TenantManagementService extends BaseService {
   async exportTenantData(tenantId: string): Promise<{
     settings: TenantSettings | null;
     users: UserAccess[];
-    clients: any[];
+    clients: Client[];
     activity: TenantActivityLog[];
   }> {
     try {

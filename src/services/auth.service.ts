@@ -5,6 +5,23 @@ import type { Database } from '@/types/supabase';
 type Tables = Database['public']['Tables'];
 type UserRole = 'admin' | 'accountant' | 'bookkeeper' | 'client' | 'super_admin';
 
+// Tenant types from database
+type Tenant = Tables['tenants']['Row'];
+type TenantSettings = Tables['tenant_settings']['Row'];
+
+// Tenant with settings for join queries
+export interface TenantWithSettings extends Tenant {
+  tenant_settings?: TenantSettings[];
+}
+
+// Activity log details
+export interface ActivityLogDetails {
+  action?: string;
+  resource?: string;
+  ip_address?: string;
+  [key: string]: unknown;
+}
+
 export interface AuthUser extends User {
   role?: UserRole;
   tenantId?: string;
@@ -264,7 +281,7 @@ export class AuthService {
    * Get user's tenant information
    */
   async getUserTenant(): Promise<{
-    tenant: any | null;
+    tenant: TenantWithSettings | null;
     error: Error | null;
   }> {
     try {
@@ -311,7 +328,7 @@ export class AuthService {
    * Get user's accessible tenants
    */
   async getUserTenants(): Promise<{
-    tenants: any[];
+    tenants: TenantWithSettings[];
     error: Error | null;
   }> {
     try {
@@ -454,7 +471,7 @@ export class AuthService {
   /**
    * Log activity
    */
-  private async logActivity(action: string, details: any = {}): Promise<void> {
+  private async logActivity(action: string, details: ActivityLogDetails = {}): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
