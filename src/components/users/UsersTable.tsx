@@ -74,17 +74,17 @@ const UserRow = React.memo<UserRowProps>(
 
     return (
       <TableRow key={user.id}>
-        <TableCell className="font-medium min-w-[180px] rtl:text-right ltr:text-left">
+        <TableCell className="font-medium min-w-[180px] text-right">
           {user.full_name}
         </TableCell>
-        <TableCell className="w-48 rtl:text-right ltr:text-left">{user.email}</TableCell>
-        <TableCell className="w-32 rtl:text-right ltr:text-left">{user.phone || '-'}</TableCell>
-        <TableCell className="w-32 rtl:text-right ltr:text-left">{getRoleLabel(user.role)}</TableCell>
-        <TableCell className="w-24 rtl:text-right ltr:text-left">{getStatusBadge(user.is_active)}</TableCell>
-        <TableCell className="w-32 rtl:text-right ltr:text-left">
+        <TableCell className="w-48 text-right">{user.email}</TableCell>
+        <TableCell className="w-32 text-right">{user.phone || '-'}</TableCell>
+        <TableCell className="w-32 text-right">{getRoleLabel(user.role)}</TableCell>
+        <TableCell className="w-24 text-right">{getStatusBadge(user.is_active)}</TableCell>
+        <TableCell className="w-32 text-right">
           {user.last_login ? formatDate(user.last_login) : 'אף פעם'}
         </TableCell>
-        <TableCell className="w-32 rtl:text-right ltr:text-left">
+        <TableCell className="w-32 text-right">
           <div className="flex gap-2 rtl:flex-row-reverse ltr:flex-row">
             <Button
               variant="outline"
@@ -152,7 +152,7 @@ export const UsersTable = React.memo<UsersTableProps>(({
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="flex gap-3 items-center rtl:flex-row-reverse ltr:flex-row">
+      <div className="flex gap-3 items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -164,10 +164,10 @@ export const UsersTable = React.memo<UsersTableProps>(({
           />
         </div>
         <Select value={selectedRole} onValueChange={(value) => onRoleChange(value as UserRole | 'all')}>
-          <SelectTrigger className="w-[180px]" dir="rtl">
+          <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="כל התפקידים" />
           </SelectTrigger>
-          <SelectContent dir="rtl">
+          <SelectContent>
             <SelectItem value="all">כל התפקידים</SelectItem>
             <SelectItem value="admin">מנהל מערכת</SelectItem>
             <SelectItem value="accountant">רואה חשבון</SelectItem>
@@ -182,25 +182,25 @@ export const UsersTable = React.memo<UsersTableProps>(({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[180px] rtl:text-right ltr:text-left">שם מלא</TableHead>
-              <TableHead className="w-48 rtl:text-right ltr:text-left">אימייל</TableHead>
-              <TableHead className="w-32 rtl:text-right ltr:text-left">טלפון</TableHead>
-              <TableHead className="w-32 rtl:text-right ltr:text-left">תפקיד</TableHead>
-              <TableHead className="w-24 rtl:text-right ltr:text-left">סטטוס</TableHead>
-              <TableHead className="w-32 rtl:text-right ltr:text-left">כניסה אחרונה</TableHead>
-              <TableHead className="w-32 rtl:text-right ltr:text-left">פעולות</TableHead>
+              <TableHead className="min-w-[180px] text-right">שם מלא</TableHead>
+              <TableHead className="w-48 text-right">אימייל</TableHead>
+              <TableHead className="w-32 text-right">טלפון</TableHead>
+              <TableHead className="w-32 text-right">תפקיד</TableHead>
+              <TableHead className="w-24 text-right">סטטוס</TableHead>
+              <TableHead className="w-32 text-right">כניסה אחרונה</TableHead>
+              <TableHead className="w-32 text-right">פעולות</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center rtl:text-right ltr:text-left">
+                <TableCell colSpan={7} className="text-center">
                   טוען נתונים...
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center rtl:text-right ltr:text-left">
+                <TableCell colSpan={7} className="text-center">
                   לא נמצאו משתמשים
                 </TableCell>
               </TableRow>
