@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,9 @@ export default function SuperAdminDashboard() {
   const [tenants, setTenants] = useState<TenantWithDetails[]>([]);
   const [recentActivity, setRecentActivity] = useState<TenantActivityLog[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Debounce search query to reduce re-renders
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
     checkAccess();
@@ -82,8 +86,8 @@ export default function SuperAdminDashboard() {
   };
 
   const filteredTenants = tenants.filter(tenant =>
-    tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tenant.settings?.company_email?.toLowerCase().includes(searchQuery.toLowerCase())
+    tenant.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+    tenant.settings?.company_email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
   );
 
   if (loading) {

@@ -14,7 +14,7 @@ import {
   UserPlus,
   Shield
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { registrationService } from '@/services/registration.service';
@@ -48,10 +48,23 @@ export function MainLayout() {
   const [pendingCount, setPendingCount] = useState(0);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
+  // Memoize callbacks to prevent unnecessary re-renders
+  const checkSuperAdmin = useCallback(async () => {
+    const isSuper = await authService.isSuperAdmin();
+    setIsSuperAdmin(isSuper);
+  }, []);
+
+  const loadPendingCount = useCallback(async () => {
+    const response = await registrationService.getPendingRegistrations();
+    if (response.data) {
+      setPendingCount(response.data.length);
+    }
+  }, []);
+
   useEffect(() => {
     // Check if super admin
     checkSuperAdmin();
-    
+
     // Load pending registrations count for admins
     if (role === 'admin') {
       loadPendingCount();
@@ -59,19 +72,7 @@ export function MainLayout() {
       const interval = setInterval(loadPendingCount, 30000);
       return () => clearInterval(interval);
     }
-  }, [role]);
-
-  const checkSuperAdmin = async () => {
-    const isSuper = await authService.isSuperAdmin();
-    setIsSuperAdmin(isSuper);
-  };
-
-  const loadPendingCount = async () => {
-    const response = await registrationService.getPendingRegistrations();
-    if (response.data) {
-      setPendingCount(response.data.length);
-    }
-  };
+  }, [role, checkSuperAdmin, loadPendingCount]);
 
   const handleSignOut = async () => {
     await signOut();

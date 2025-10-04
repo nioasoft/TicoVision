@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Plus, Search, Edit, Trash2, Download, Upload, Filter, CheckSquare, Square, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,17 +96,20 @@ export default function ClientsPage() {
   const pageSize = 20;
   const { toast } = useToast();
 
+  // Debounce search query to reduce API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   useEffect(() => {
     loadClients();
-  }, [searchQuery, companyStatusFilter, clientTypeFilter, companySubtypeFilter, currentPage]);
+  }, [debouncedSearchQuery, companyStatusFilter, clientTypeFilter, companySubtypeFilter, currentPage]);
 
   const loadClients = async () => {
     setLoading(true);
     try {
       let response;
 
-      if (searchQuery) {
-        response = await clientService.search(searchQuery);
+      if (debouncedSearchQuery) {
+        response = await clientService.search(debouncedSearchQuery);
         if (response.data) {
           setClients(response.data);
           setTotalClients(response.data.length);

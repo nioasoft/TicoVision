@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { logger } from "@/lib/logger";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +85,10 @@ export function UsersPage() {
     "pending",
   );
 
+  // Debounce search terms to reduce re-renders
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedRegistrationSearchTerm = useDebounce(registrationSearchTerm, 300);
+
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -110,6 +115,9 @@ export function UsersPage() {
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [primaryClientId, setPrimaryClientId] = useState<string | undefined>();
   const [clientSearchTerm, setClientSearchTerm] = useState("");
+
+  // Debounce client search term
+  const debouncedClientSearchTerm = useDebounce(clientSearchTerm, 300);
 
   // Form data
   const [formData, setFormData] = useState<CreateUserData>({
@@ -505,8 +513,8 @@ export function UsersPage() {
   // Filter users based on search and role
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      user.full_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
     const matchesRole = selectedRole === "all" || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });
@@ -516,12 +524,12 @@ export function UsersPage() {
     const matchesSearch =
       reg.full_name
         .toLowerCase()
-        .includes(registrationSearchTerm.toLowerCase()) ||
-      reg.email.toLowerCase().includes(registrationSearchTerm.toLowerCase()) ||
+        .includes(debouncedRegistrationSearchTerm.toLowerCase()) ||
+      reg.email.toLowerCase().includes(debouncedRegistrationSearchTerm.toLowerCase()) ||
       reg.company_name
         ?.toLowerCase()
-        .includes(registrationSearchTerm.toLowerCase()) ||
-      reg.tax_id?.includes(registrationSearchTerm);
+        .includes(debouncedRegistrationSearchTerm.toLowerCase()) ||
+      reg.tax_id?.includes(debouncedRegistrationSearchTerm);
     return matchesSearch;
   });
 
@@ -530,11 +538,11 @@ export function UsersPage() {
     (client) =>
       client.company_name
         .toLowerCase()
-        .includes(clientSearchTerm.toLowerCase()) ||
+        .includes(debouncedClientSearchTerm.toLowerCase()) ||
       client.company_name_hebrew
         ?.toLowerCase()
-        .includes(clientSearchTerm.toLowerCase()) ||
-      client.tax_id.includes(clientSearchTerm),
+        .includes(debouncedClientSearchTerm.toLowerCase()) ||
+      client.tax_id.includes(debouncedClientSearchTerm),
   );
 
   return (
@@ -1184,11 +1192,11 @@ export function UsersPage() {
                     (client) =>
                       client.company_name
                         .toLowerCase()
-                        .includes(clientSearchTerm.toLowerCase()) ||
+                        .includes(debouncedClientSearchTerm.toLowerCase()) ||
                       client.company_name_hebrew
                         ?.toLowerCase()
-                        .includes(clientSearchTerm.toLowerCase()) ||
-                      client.tax_id.includes(clientSearchTerm),
+                        .includes(debouncedClientSearchTerm.toLowerCase()) ||
+                      client.tax_id.includes(debouncedClientSearchTerm),
                   )
                   .map((client) => (
                     <div
@@ -1240,8 +1248,8 @@ export function UsersPage() {
                   (client) =>
                     client.company_name
                       .toLowerCase()
-                      .includes(clientSearchTerm.toLowerCase()) ||
-                    client.tax_id.includes(clientSearchTerm),
+                      .includes(debouncedClientSearchTerm.toLowerCase()) ||
+                    client.tax_id.includes(debouncedClientSearchTerm),
                 ).length === 0 && (
                   <p className="text-center text-gray-500 py-4">
                     לא נמצאו לקוחות

@@ -4,6 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleBasedRoute } from '@/components/auth/RoleBasedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
 
@@ -30,46 +31,96 @@ const PageLoader = () => (
 
 function App() {
   return (
-    <div dir="rtl" className="min-h-screen">
-      <Router>
-        <AuthProvider>
-          <Toaster position="top-center" />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/setup" element={<SetupPage />} />
-              <Route path="/set-password" element={<SetPasswordPage />} />
+    <ErrorBoundary>
+      <div dir="rtl" className="min-h-screen">
+        <Router>
+          <AuthProvider>
+            <Toaster position="top-center" />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={
+                  <ErrorBoundary>
+                    <LoginPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/setup" element={
+                  <ErrorBoundary>
+                    <SetupPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/set-password" element={
+                  <ErrorBoundary>
+                    <SetPasswordPage />
+                  </ErrorBoundary>
+                } />
 
-              {/* Protected routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<MainLayout />}>
-                  {/* Default redirect to clients for all users */}
-                  <Route path="/" element={<Navigate to="/clients" replace />} />
+                {/* Protected routes */}
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<MainLayout />}>
+                    {/* Default redirect to clients for all users */}
+                    <Route path="/" element={<Navigate to="/clients" replace />} />
 
-                  {/* Clients page - accessible to all roles */}
-                  <Route path="/clients" element={<ClientsPage />} />
+                    {/* Clients page - accessible to all roles */}
+                    <Route path="/clients" element={
+                      <ErrorBoundary>
+                        <ClientsPage />
+                      </ErrorBoundary>
+                    } />
 
-                  {/* Admin-only routes */}
-                  <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/fees" element={<FeesPage />} />
-                    <Route path="/letters" element={<LettersPage />} />
-                    <Route path="/letter-templates" element={<LetterTemplatesPage />} />
-                    <Route path="/users" element={<UsersPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
+                    {/* Admin-only routes */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                      <Route path="/dashboard" element={
+                        <ErrorBoundary>
+                          <DashboardPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/fees" element={
+                        <ErrorBoundary>
+                          <FeesPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/letters" element={
+                        <ErrorBoundary>
+                          <LettersPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/letter-templates" element={
+                        <ErrorBoundary>
+                          <LetterTemplatesPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/users" element={
+                        <ErrorBoundary>
+                          <UsersPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/settings" element={
+                        <ErrorBoundary>
+                          <SettingsPage />
+                        </ErrorBoundary>
+                      } />
 
-                    {/* Super Admin routes */}
-                    <Route path="/super-admin" element={<SuperAdminDashboard />} />
-                    <Route path="/super-admin/tenants/:id" element={<TenantManagementPage />} />
+                      {/* Super Admin routes */}
+                      <Route path="/super-admin" element={
+                        <ErrorBoundary>
+                          <SuperAdminDashboard />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/super-admin/tenants/:id" element={
+                        <ErrorBoundary>
+                          <TenantManagementPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
                   </Route>
                 </Route>
-              </Route>
-            </Routes>
-          </Suspense>
-        </AuthProvider>
-      </Router>
-    </div>
+              </Routes>
+            </Suspense>
+          </AuthProvider>
+        </Router>
+      </div>
+    </ErrorBoundary>
   );
 }
 
