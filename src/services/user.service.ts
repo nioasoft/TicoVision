@@ -48,7 +48,7 @@ export class UserService extends BaseService {
   ): Promise<ServiceResponse<{ users: User[]; total: number }>> {
     try {
       // Check if user is authenticated first
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError} = await supabase.auth.getSession();
       if (!session || sessionError) {
         console.warn('No active session - returning empty user list');
         return {
@@ -57,9 +57,8 @@ export class UserService extends BaseService {
         };
       }
 
-      const tenantId = await this.getTenantId();
-
       // Use the RPC function to get users with auth data
+      // Note: The function handles tenant_id internally via get_current_tenant_id()
       const { data, error } = await supabase
         .rpc('get_users_for_tenant');
 
