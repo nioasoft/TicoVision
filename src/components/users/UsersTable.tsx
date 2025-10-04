@@ -74,7 +74,7 @@ const UserRow = React.memo<UserRowProps>(
 
     return (
       <TableRow key={user.id}>
-        <TableCell className="font-medium min-w-[180px] text-right">
+        <TableCell className="font-medium w-48 text-right">
           {user.full_name}
         </TableCell>
         <TableCell className="w-48 text-right">{user.email}</TableCell>
@@ -152,7 +152,7 @@ export const UsersTable = React.memo<UsersTableProps>(({
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="flex gap-3 items-center">
+      <div className="flex gap-3 items-center flex-row-reverse">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -182,7 +182,7 @@ export const UsersTable = React.memo<UsersTableProps>(({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="min-w-[180px] text-right">שם מלא</TableHead>
+              <TableHead className="w-48 text-right">שם מלא</TableHead>
               <TableHead className="w-48 text-right">אימייל</TableHead>
               <TableHead className="w-32 text-right">טלפון</TableHead>
               <TableHead className="w-32 text-right">תפקיד</TableHead>
