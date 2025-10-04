@@ -18,6 +18,33 @@ export type FeeFrequency = 'monthly' | 'quarterly' | 'annual' | 'one_time';
 //   updated_at: string;
 // }
 
+// JSONB field types (replacing 'any')
+export interface PreviousYearData {
+  base_amount?: number;
+  discount?: number;
+  amount_before_discount?: number;
+  amount_after_discount?: number;
+  amount_with_vat?: number;
+  notes?: string;
+  [key: string]: unknown;
+}
+
+export interface RealAdjustment {
+  amount: number;
+  reason: string;
+  applied_date?: string;
+  approved_by?: string;
+  [key: string]: unknown;
+}
+
+export interface CalculationMetadata {
+  calculation_method?: string;
+  formula_version?: string;
+  system_notes?: string;
+  user_notes?: string;
+  [key: string]: unknown;
+}
+
 export interface FeeCalculation {
   id: string;
   tenant_id: string;
@@ -35,7 +62,7 @@ export interface FeeCalculation {
   previous_year_amount_before_discount?: number; // New: Amount before any discounts
   previous_year_amount_after_discount?: number; // New: After discount, before VAT
   previous_year_amount_with_vat?: number; // New: Total with VAT
-  previous_year_data?: any; // JSONB field
+  previous_year_data?: PreviousYearData; // JSONB field with structured data
   // Current year calculations
   base_amount: number;
   apply_inflation_index?: boolean; // New: Control whether to apply inflation
@@ -43,7 +70,7 @@ export interface FeeCalculation {
   inflation_rate: number; // Default 3.0%
   calculated_inflation_amount?: number; // New: Calculated inflation amount
   real_adjustment?: number;
-  real_adjustments?: any; // JSONB field in DB
+  real_adjustments?: RealAdjustment[]; // JSONB field: array of adjustment records
   real_adjustment_reason?: string;
   discount_percentage?: number;
   discount_amount?: number;
@@ -66,7 +93,7 @@ export interface FeeCalculation {
   approved_at?: string;
   // Metadata
   notes?: string;
-  calculation_metadata?: any; // JSONB field
+  calculation_metadata?: CalculationMetadata; // JSONB field with calculation context
   created_by?: string;
   updated_by?: string;
   created_at: string;
@@ -279,7 +306,8 @@ class FeeService extends BaseService {
       const tenantId = await this.getTenantId();
 
       // Recalculate total if amounts changed
-      let updateData: any = { ...data };
+      // Type: Partial includes all calculation fields that might be added during recalculation
+      let updateData: Partial<FeeCalculation> = { ...data };
       if (data.base_amount !== undefined || data.inflation_rate !== undefined || 
           data.real_adjustment !== undefined || data.discount_percentage !== undefined) {
         const { data: existing } = await this.getById(id);
