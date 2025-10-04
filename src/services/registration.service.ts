@@ -9,7 +9,7 @@ export interface RegistrationData {
   requested_role: UserRole;
   tax_id?: string;
   message?: string;
-  password?: string; // User's chosen password during registration
+  // NOTE: No password field - users set password via email link after approval
 }
 
 export interface PendingRegistration extends RegistrationData {
@@ -43,17 +43,7 @@ class RegistrationService {
    */
   async submitRegistration(data: RegistrationData) {
     try {
-      // Hash password if provided
-      let passwordHash: string | null = null;
-      if (data.password) {
-        const { data: hashResult, error: hashError } = await supabase
-          .rpc('hash_password', { password: data.password })
-          .single();
-
-        if (hashError) throw hashError;
-        passwordHash = hashResult as string;
-      }
-
+      // No password hashing - users will set password via email link after approval
       const { data: registration, error } = await supabase
         .from('pending_registrations')
         .insert({
@@ -63,8 +53,8 @@ class RegistrationService {
           company_name: data.company_name,
           requested_role: data.requested_role,
           tax_id: data.tax_id,
-          message: data.message,
-          password_hash: passwordHash
+          message: data.message
+          // password_hash removed for security - see migration 031
         })
         .select()
         .single();
@@ -175,17 +165,14 @@ class RegistrationService {
 
       if (!tenantUser) throw new Error('Tenant not found');
 
-      // Check if user provided password during registration
-      if (!registration.password_hash) {
-        throw new Error('Registration must include a password. User should have chosen password during registration.');
-      }
+      // Generate a secure random temporary password (will be reset immediately via email)
+      const tempPassword = crypto.randomUUID() + Math.random().toString(36);
 
-      // Create auth user using RPC function with the user's chosen password hash
+      // Create auth user with temporary password
       const { data: authData, error: authError } = await supabase
         .rpc('create_user_with_role', {
           p_email: registration.email,
-          p_password: null, // Not used when p_password_hash is provided
-          p_password_hash: registration.password_hash, // Use user's chosen password
+          p_password: tempPassword, // Temporary password - user will reset via email
           p_full_name: registration.full_name,
           p_phone: registration.phone || null,
           p_role: registration.requested_role,
@@ -196,8 +183,20 @@ class RegistrationService {
       if (authError) throw authError;
       if (!authData) throw new Error('Failed to create user');
 
-      // Note: No password reset email needed - user already chose their password!
-      // In the future, we could send a welcome email here instead
+      // CRITICAL: Immediately send password reset email (secure invitation flow)
+      // This ensures user sets their own password via secure token
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        registration.email,
+        {
+          redirectTo: `${window.location.origin}/set-password`
+        }
+      );
+
+      if (resetError) {
+        console.error('Failed to send password reset email:', resetError);
+        // Don't fail the approval - user was created successfully
+        // Admin can manually resend password reset if needed
+      }
 
       // If client role and tax_id provided, find and assign client
       if (registration.requested_role === 'client' && registration.tax_id) {
