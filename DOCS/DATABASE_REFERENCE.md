@@ -1,6 +1,6 @@
 # 📚 TicoVision AI - Database Reference Guide
-**תאריך עדכון אחרון**: דצמבר 2024  
-**גרסת סכמה**: 3.1
+**תאריך עדכון אחרון**: אוקטובר 2025 (03/10/2025)
+**גרסת סכמה**: 3.2
 
 ---
 
@@ -37,20 +37,41 @@
 
 ---
 
-### 2. **tenant_users**
-**תיאור**: קישור בין משתמשי Supabase Auth לטננטים  
-**שימוש**: מנהל הרשאות ותפקידים של משתמשים בתוך כל משרד
+### 2. **tenant_users** ⚠️ DEPRECATED
+**תיאור**: ~~קישור בין משתמשי Supabase Auth לטננטים~~
+**סטטוס**: ❌ **הטבלה הזו DEPRECATED - אל תשתמשו בה!**
+**שימוש**: השתמשו ב-`user_tenant_access` במקום
+
+**הערה**: טבלה זו הוחלפה ב-`user_tenant_access`. כל המשתמשים הועברו למיגרציה `migrate_tenant_users_to_user_tenant_access`.
+
+---
+
+### 2.1. **user_tenant_access** ✅ הטבלה הנכונה
+**תיאור**: קישור בין משתמשי Supabase Auth לטננטים עם ניהול גישה מתקדם
+**שימוש**: מנהל הרשאות, תפקידים וגישה של משתמשים בתוך כל משרד
 
 | שדה | סוג | תיאור |
 |-----|-----|-------|
 | id | UUID | מזהה ייחודי |
-| tenant_id | UUID | מזהה המשרד |
 | user_id | UUID | מזהה משתמש מ-auth.users |
-| role | user_role | תפקיד (admin/accountant/bookkeeper/client) |
+| tenant_id | UUID | מזהה המשרד |
+| role | VARCHAR | תפקיד (admin/accountant/bookkeeper/client) |
 | permissions | JSONB | הרשאות מותאמות |
+| is_primary | BOOLEAN | האם זה הטננט הראשי של המשתמש |
+| granted_by | UUID | מי הקצה את הגישה |
+| granted_at | TIMESTAMPTZ | מתי הוקצתה הגישה |
+| expires_at | TIMESTAMPTZ | תאריך תפוגה (אופציונלי) |
+| last_accessed_at | TIMESTAMPTZ | כניסה אחרונה לטננט |
 | is_active | BOOLEAN | האם פעיל |
-| created_at | TIMESTAMPTZ | תאריך יצירה |
-| updated_at | TIMESTAMPTZ | תאריך עדכון |
+| revoked_at | TIMESTAMPTZ | תאריך שלילת גישה |
+| revoked_by | UUID | מי שלל את הגישה |
+| revoke_reason | TEXT | סיבת שלילה |
+
+**היררכיית תפקידים**:
+1. **מנהל מערכת** (super_admin) - רואה את כל המשתמשים בכל המשרדים
+2. **מנהל משרד** (admin) - רואה את כל המשתמשים של המשרד שלו בלבד
+3. **רואה חשבון** (accountant) - רואה רק משתמשים של הלקוחות המשוייכים אליו
+4. **לקוח** (client) - אין גישה לדף משתמשים
 
 ---
 
@@ -341,24 +362,172 @@ SELECT * FROM get_client_statistics('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 
 ---
 
-### 4. **get_users_for_tenant()**
-**תיאור**: מחזיר את כל המשתמשים של הטננט עם מידע מ-auth.users  
-**שימוש**: בדף ניהול משתמשים  
-**פרמטרים**: אין (משתמש בטננט הנוכחי)  
+### 4. **get_users_for_tenant()** ✅ עם היררכיה מלאה
+**תיאור**: מחזיר משתמשים לפי היררכיית תפקידים
+**שימוש**: בדף ניהול משתמשים
+**סוג**: SECURITY DEFINER (גישה ל-auth.users)
+**פרמטרים**: אין (משתמש בטננט הנוכחי מה-JWT)
 
 **מחזיר טבלה עם**:
-- `id`, `tenant_id`, `user_id`
-- `role`, `permissions`, `is_active`
-- `email`, `last_sign_in_at`
-- `created_at`, `updated_at`
+- `user_id` UUID - מזהה המשתמש
+- `tenant_id` UUID - מזהה הטננט
+- `email` TEXT - כתובת מייל
+- `full_name` TEXT - שם מלא (מ-raw_user_meta_data)
+- `phone` TEXT - טלפון (מ-raw_user_meta_data)
+- `role` user_role - תפקיד
+- `is_active` BOOLEAN - האם פעיל
+- `permissions` JSONB - הרשאות
+- `created_at` TIMESTAMPTZ - תאריך יצירה
+- `updated_at` TIMESTAMPTZ - תאריך עדכון
+- `last_sign_in_at` TIMESTAMPTZ - כניסה אחרונה
+
+**לוגיקת היררכיה**:
+1. **מנהל מערכת** (super_admin) + **מנהל משרד** (admin):
+   - רואים את **כל המשתמשים** של הטננט הנוכחי
+
+2. **רואה חשבון** (accountant):
+   - רואה **רק משתמשים** של הלקוחות המשוייכים אליו דרך `user_client_assignments`
+
+3. **לקוח/אחר** (client/bookkeeper):
+   - **אין גישה** - מחזיר רשימה ריקה
+
+**הערות חשובות**:
+- ✅ שדות `full_name` ו-`phone` מחולצים מ-`auth.users.raw_user_meta_data` JSONB
+- ✅ הפונקציה משתמשת רק ב-`user_tenant_access` (tenant_users DEPRECATED)
+- ✅ הוענקו הרשאות GRANT EXECUTE ל-authenticated
+- ✅ הפונקציה בודקת `is_super_admin()` עבור מנהל מערכת
 
 ```sql
+-- שליפת משתמשים לפי תפקיד
 SELECT * FROM get_users_for_tenant();
+
+-- Admin/Super Admin: מקבלים את כל המשתמשים
+-- Accountant: מקבלים רק משתמשים מלקוחות משוייכים
+-- Client: מקבלים רשימה ריקה
 ```
 
 ---
 
-### 5. **get_fee_summary(p_tenant_id UUID)**
+### 5. **create_user_with_role()** 🆕
+**תיאור**: יוצר משתמש חדש עם תפקיד (מחליף את auth.admin.createUser)
+**שימוש**: ליצירת משתמשים חדשים במערכת (admin only)
+**סוג**: SECURITY DEFINER (פועל עם הרשאות מלאות)
+**פרמטרים**:
+- `p_email` TEXT - כתובת מייל
+- `p_password` TEXT - סיסמה (מינימום 6 תווים)
+- `p_full_name` TEXT - שם מלא
+- `p_phone` TEXT (אופציונלי) - טלפון
+- `p_role` user_role (ברירת מחדל: 'client') - תפקיד
+- `p_permissions` JSONB (ברירת מחדל: '{}') - הרשאות מותאמות
+
+**מחזיר טבלה עם**:
+- `user_id` UUID - מזהה המשתמש שנוצר
+- `email` TEXT - המייל
+- `full_name` TEXT - שם מלא
+- `role` user_role - התפקיד
+- `tenant_id` UUID - מזהה הטננט
+
+**בדיקות אבטחה**:
+- ✅ בודק שהקורא הוא admin פעיל
+- ✅ בודק תקינות פורמט המייל
+- ✅ בודק שהמייל לא קיים כבר
+- ✅ בודק שהסיסמה לפחות 6 תווים
+- ✅ הצפנת סיסמה עם bcrypt
+
+```sql
+SELECT * FROM create_user_with_role(
+  p_email => 'user@example.com',
+  p_password => 'SecurePass123',
+  p_full_name => 'ישראל ישראלי',
+  p_phone => '050-1234567',
+  p_role => 'accountant'
+);
+```
+
+---
+
+### 6. **update_user_role_and_metadata()** 🆕
+**תיאור**: מעדכן תפקיד ומטא-דאטה של משתמש (מחליף auth.admin.updateUserById)
+**שימוש**: לעדכון פרטי משתמשים (admin only)
+**סוג**: SECURITY DEFINER
+**פרמטרים**:
+- `p_user_id` UUID - מזהה המשתמש לעדכון
+- `p_role` user_role (אופציונלי) - תפקיד חדש
+- `p_full_name` TEXT (אופציונלי) - שם מלא חדש
+- `p_phone` TEXT (אופציונלי) - טלפון חדש
+- `p_is_active` BOOLEAN (אופציונלי) - סטטוס פעיל/לא פעיל
+- `p_permissions` JSONB (אופציונלי) - הרשאות חדשות
+
+**מחזיר**: BOOLEAN (true במקרה של הצלחה)
+
+**בדיקות אבטחה**:
+- ✅ בודק שהקורא הוא admin פעיל
+- ✅ בודק שהמשתמש קיים בטננט הנוכחי
+- ✅ מעדכן גם user_tenant_access וגם auth.users
+
+```sql
+SELECT update_user_role_and_metadata(
+  p_user_id => '550e8400-e29b-41d4-a716-446655440000',
+  p_role => 'admin',
+  p_full_name => 'שרה כהן',
+  p_is_active => true
+);
+```
+
+---
+
+### 7. **reset_user_password()** 🆕
+**תיאור**: מאפס סיסמת משתמש (מחליף auth.admin.updateUserById)
+**שימוש**: לאיפוס סיסמאות משתמשים (admin only)
+**סוג**: SECURITY DEFINER
+**פרמטרים**:
+- `p_user_id` UUID - מזהה המשתמש
+- `p_new_password` TEXT - סיסמה חדשה (מינימום 6 תווים)
+
+**מחזיר**: BOOLEAN (true במקרה של הצלחה)
+
+**בדיקות אבטחה**:
+- ✅ בודק שהקורא הוא admin פעיל
+- ✅ בודק שהמשתמש קיים בטננט הנוכחי
+- ✅ בודק שהסיסמה לפחות 6 תווים
+- ✅ הצפנת סיסמה עם bcrypt
+
+```sql
+SELECT reset_user_password(
+  p_user_id => '550e8400-e29b-41d4-a716-446655440000',
+  p_new_password => 'NewSecurePass123'
+);
+```
+
+---
+
+### 8. **deactivate_user_account()** 🆕
+**תיאור**: מבטל חשבון משתמש (soft delete, מחליף auth.admin.updateUserById)
+**שימוש**: למחיקת משתמשים (admin only)
+**סוג**: SECURITY DEFINER
+**פרמטרים**:
+- `p_user_id` UUID - מזהה המשתמש
+- `p_reason` TEXT (ברירת מחדל: 'User deleted by admin') - סיבת הביטול
+
+**מחזיר**: BOOLEAN (true במקרה של הצלחה)
+
+**בדיקות אבטחה**:
+- ✅ בודק שהקורא הוא admin פעיל
+- ✅ בודק שהמשתמש קיים בטננט הנוכחי
+- ✅ מונע מ-admin למחוק את עצמו
+- ✅ מסמן כ-inactive ב-user_tenant_access
+- ✅ חוסם התחברות ב-auth.users (banned_until)
+
+```sql
+SELECT deactivate_user_account(
+  p_user_id => '550e8400-e29b-41d4-a716-446655440000',
+  p_reason => 'User requested account closure'
+);
+```
+
+---
+
+### 9. **get_fee_summary(p_tenant_id UUID)**
 **תיאור**: מחזיר סיכום חישובי שכ"ט  
 **שימוש**: בדשבורד פיננסי  
 **פרמטרים**: 
@@ -444,15 +613,130 @@ SELECT * FROM get_fee_summary('a1b2c3d4-e5f6-7890-abcd-ef1234567890');
 ### דוגמה למדיניות
 ```sql
 -- Policy for SELECT
-CREATE POLICY "Users can view own tenant data" 
-ON clients FOR SELECT 
+CREATE POLICY "Users can view own tenant data"
+ON clients FOR SELECT
 USING (tenant_id = get_current_tenant_id());
 
 -- Policy for INSERT
-CREATE POLICY "Users can insert to own tenant" 
-ON clients FOR INSERT 
+CREATE POLICY "Users can insert to own tenant"
+ON clients FOR INSERT
 WITH CHECK (tenant_id = get_current_tenant_id());
 ```
+
+---
+
+### 📋 מדיניות RLS לפי טבלה
+
+#### **clients** - 4 מדיניות
+✅ **עודכן לאחרונה**: Migration 026 (03/10/2025) - תוקן fallback clause
+
+| מדיניות | פקודה | תיאור |
+|---------|-------|-------|
+| `users_read_clients_by_role` | SELECT | Super admin רואה הכל, Admin רואה טננט, Accountant/Bookkeeper רק משוייכים, Client רק משוייכים |
+| `users_insert_clients_by_role` | INSERT | Admin/Accountant/Bookkeeper יכולים להוסיף לקוחות |
+| `users_update_clients_by_role` | UPDATE | Admin/Accountant/Bookkeeper יכולים לעדכן לקוחות משוייכים |
+| `users_delete_clients_by_role` | DELETE | רק Admin יכול למחוק לקוחות |
+
+**🔴 תיקון קריטי ב-Migration 026**:
+- תוקן `users_read_clients_by_role` - הוסף בדיקת `role = 'client'` בתנאי הנפילה
+- **לפני**: Accountants עקפו הגבלות דרך תנאי ללא בדיקת role
+- **אחרי**: כל תפקיד נבדק במפורש, אין עקיפות
+
+```sql
+-- הלוגיקה המתוקנת (Migration 026):
+-- 1. Super Admin: רואה הכל
+-- 2. Admin: רואה כל הלקוחות בטננט
+-- 3. Accountant/Bookkeeper: רק לקוחות משוייכים + בדיקת role
+-- 4. Client: רק לקוחות משוייכים + בדיקת role='client'
+```
+
+---
+
+#### **fee_calculations** - 4 מדיניות
+✅ **עודכן לאחרונה**: Migration 027, 029 (03/10/2025)
+
+| מדיניות | פקודה | תיאור |
+|---------|-------|-------|
+| `staff_manage_assigned_fee_calculations` | ALL | Admin/Accountant/Bookkeeper מנהלים חישובים משוייכים |
+| `Bookkeepers can insert fee calculations` | INSERT | Bookkeepers יכולים ליצור חישובים |
+| `users_view_assigned_fee_calculations` | SELECT | Admin + משתמשים משוייכים רואים חישובים |
+| `clients_view_own_fee_calculations` | SELECT | **🆕 Migration 029** - Client role רואה חישובים משוייכים |
+
+**🔴 תיקון ב-Migration 027**:
+- הוסרה מדיניות סותרת: `"Accountants and admins can manage fee calculations"` (ALL)
+- **בעיה**: נתנה גישה בלתי מוגבלת לכל Accountants
+- **פתרון**: השארנו רק `staff_manage_assigned_fee_calculations` עם בדיקות שיוכים
+
+**🆕 תוספת ב-Migration 029**:
+- נוספה תמיכה ב-client role: `clients_view_own_fee_calculations`
+- לקוחות יכולים כעת לצפות בחישובי עמלות שלהם (SELECT בלבד)
+
+---
+
+#### **generated_letters** - 4 מדיניות
+✅ **עודכן לאחרונה**: Migration 028 (03/10/2025)
+
+| מדיניות | פקודה | תיאור |
+|---------|-------|-------|
+| `staff_create_letters_for_assigned` | INSERT | Staff יוצרים מכתבים ללקוחות משוייכים |
+| `users_view_assigned_letters` | SELECT | משתמשים רואים מכתבים משוייכים |
+| `staff_update_assigned_letters` | UPDATE | **🆕** Admin/Accountant/Bookkeeper מעדכנים מכתבים משוייכים |
+| `admins_delete_letters` | DELETE | **🆕** רק Admin יכול למחוק מכתבים |
+
+**🔴 תיקון ב-Migration 028**:
+- הוסרה מדיניות מסוכנת: `tenant_isolation_policy` (ALL)
+- **בעיה**: אפשרה לכל משתמש בטננט למחוק/לעדכן כל מכתב
+- **פתרון**: מדיניות ספציפיות עם בדיקות role ושיוכים
+
+```sql
+-- לפני Migration 028 (מסוכן):
+tenant_isolation_policy (ALL) - רק tenant_id check
+
+-- אחרי Migration 028 (בטוח):
+staff_update_assigned_letters (UPDATE) - בדיקת role + שיוכים
+admins_delete_letters (DELETE) - רק admin
+```
+
+---
+
+#### **user_client_assignments** - 1 מדיניות
+| מדיניות | פקודה | תיאור |
+|---------|-------|-------|
+| `admins_manage_client_assignments` | ALL | רק Admin יכול לנהל שיוכי משתמשים ללקוחות |
+
+---
+
+#### **audit_logs** - 1 מדיניות
+| מדיניות | פקודה | תיאור |
+|---------|-------|-------|
+| `admins_view_audit_logs` | SELECT | רק Admin רואה לוגים |
+
+---
+
+#### **tenants** - 1 מדיניות
+| מדיניות | פקודה | תיאור |
+|---------|-------|-------|
+| `users_read_own_tenant` | SELECT | משתמשים רואים רק את הטננט שלהם |
+
+---
+
+### 🔐 עקרונות אבטחה ב-RLS
+
+1. **Explicit Role Checks** - כל מדיניות בודקת role במפורש (אין עקיפות)
+2. **Assignment-Based Access** - Accountants/Bookkeepers מוגבלים לשיוכים בלבד
+3. **Specific Policies** - הימנעות ממדיניות ALL רחבות, שימוש ב-INSERT/UPDATE/DELETE ספציפיים
+4. **Tenant Isolation** - כל מדיניות כוללת `tenant_id = get_current_tenant_id()`
+5. **Admin Restrictions** - פעולות מסוכנות (DELETE) מוגבלות ל-Admin בלבד
+
+**📊 מטריצת גישה (Access Matrix)**:
+
+| Role | View All | View Assigned | Create | Update | Delete |
+|------|----------|---------------|--------|--------|--------|
+| Super Admin | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Admin | ✅ (tenant) | ✅ | ✅ | ✅ | ✅ |
+| Accountant | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Bookkeeper | ❌ | ✅ | ✅ | ✅ | ❌ |
+| Client | ❌ | ✅ (view only) | ❌ | ❌ | ❌ |
 
 ---
 
@@ -479,9 +763,15 @@ WITH CHECK (tenant_id = get_current_tenant_id());
 ---
 
 ## 🔄 עדכון אחרון
-- **תאריך**: דצמבר 2024
-- **גרסה**: 3.1
+- **תאריך**: אוקטובר 2025 (03/10/2025)
+- **גרסה**: 3.2
 - **מעדכן**: TicoVision AI Development Team
+- **שינויים עיקריים**:
+  - ✅ Migration 026: תוקן באג קריטי ב-`users_read_clients_by_role` (fallback clause)
+  - ✅ Migration 027: הוסרה מדיניות סותרת מ-`fee_calculations`
+  - ✅ Migration 028: תוקנה מדיניות מסוכנת ב-`generated_letters`
+  - ✅ Migration 029: נוספה תמיכה ל-client role ב-`fee_calculations`
+  - ✅ הוספה מטריצת גישה מפורטת ועקרונות אבטחה ב-RLS
 
 ---
 
