@@ -1,7 +1,7 @@
 import React from 'react';
-import { Edit, Trash2, MoreHorizontal, KeyRound, Users } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, KeyRound, Users, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -12,6 +12,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -21,13 +28,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/utils';
 import type { User } from '@/services/user.service';
+import type { UserRole } from '@/types/user-role';
 
 interface UsersTableProps {
   users: User[];
-  selectedUsers: string[];
   loading: boolean;
-  onSelectAll: () => void;
-  onToggleSelect: (userId: string) => void;
+  searchTerm: string;
+  selectedRole: UserRole | 'all';
+  onSearchChange: (term: string) => void;
+  onRoleChange: (role: UserRole | 'all') => void;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onResetPassword: (user: User) => void;
@@ -36,8 +45,6 @@ interface UsersTableProps {
 
 interface UserRowProps {
   user: User;
-  isSelected: boolean;
-  onToggleSelect: (userId: string) => void;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   onResetPassword: (user: User) => void;
@@ -46,7 +53,7 @@ interface UserRowProps {
 
 // Memoized row component to prevent unnecessary re-renders
 const UserRow = React.memo<UserRowProps>(
-  ({ user, isSelected, onToggleSelect, onEdit, onDelete, onResetPassword, onAssignClients }) => {
+  ({ user, onEdit, onDelete, onResetPassword, onAssignClients }) => {
     const getStatusBadge = (isActive: boolean) => {
       return (
         <Badge variant={isActive ? 'default' : 'secondary'}>
@@ -67,12 +74,6 @@ const UserRow = React.memo<UserRowProps>(
 
     return (
       <TableRow key={user.id}>
-        <TableCell className="w-12">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(user.id)}
-          />
-        </TableCell>
         <TableCell className="font-medium min-w-[180px] rtl:text-right ltr:text-left">
           {user.full_name}
         </TableCell>
@@ -138,63 +139,86 @@ UserRow.displayName = 'UserRow';
 
 export const UsersTable = React.memo<UsersTableProps>(({
   users,
-  selectedUsers,
   loading,
-  onSelectAll,
-  onToggleSelect,
+  searchTerm,
+  selectedRole,
+  onSearchChange,
+  onRoleChange,
   onEdit,
   onDelete,
   onResetPassword,
   onAssignClients,
 }) => {
-  const allSelected = selectedUsers.length === users.length && users.length > 0;
-
   return (
-    <div className="border rounded-lg">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">
-              <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
-            </TableHead>
-            <TableHead className="min-w-[180px] rtl:text-right ltr:text-left">שם מלא</TableHead>
-            <TableHead className="w-48 rtl:text-right ltr:text-left">אימייל</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">טלפון</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">תפקיד</TableHead>
-            <TableHead className="w-24 rtl:text-right ltr:text-left">סטטוס</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">כניסה אחרונה</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">פעולות</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loading ? (
+    <div className="space-y-4">
+      {/* Search and Filters */}
+      <div className="flex gap-3 items-center rtl:flex-row-reverse ltr:flex-row">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="חיפוש משתמש..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pr-10"
+            dir="rtl"
+          />
+        </div>
+        <Select value={selectedRole} onValueChange={(value) => onRoleChange(value as UserRole | 'all')}>
+          <SelectTrigger className="w-[180px]" dir="rtl">
+            <SelectValue placeholder="כל התפקידים" />
+          </SelectTrigger>
+          <SelectContent dir="rtl">
+            <SelectItem value="all">כל התפקידים</SelectItem>
+            <SelectItem value="admin">מנהל מערכת</SelectItem>
+            <SelectItem value="accountant">רואה חשבון</SelectItem>
+            <SelectItem value="bookkeeper">מנהלת חשבונות</SelectItem>
+            <SelectItem value="client">לקוח</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center rtl:text-right ltr:text-left">
-                טוען נתונים...
-              </TableCell>
+              <TableHead className="min-w-[180px] rtl:text-right ltr:text-left">שם מלא</TableHead>
+              <TableHead className="w-48 rtl:text-right ltr:text-left">אימייל</TableHead>
+              <TableHead className="w-32 rtl:text-right ltr:text-left">טלפון</TableHead>
+              <TableHead className="w-32 rtl:text-right ltr:text-left">תפקיד</TableHead>
+              <TableHead className="w-24 rtl:text-right ltr:text-left">סטטוס</TableHead>
+              <TableHead className="w-32 rtl:text-right ltr:text-left">כניסה אחרונה</TableHead>
+              <TableHead className="w-32 rtl:text-right ltr:text-left">פעולות</TableHead>
             </TableRow>
-          ) : users.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={8} className="text-center rtl:text-right ltr:text-left">
-                לא נמצאו משתמשים
-              </TableCell>
-            </TableRow>
-          ) : (
-            users.map((user) => (
-              <UserRow
-                key={user.id}
-                user={user}
-                isSelected={selectedUsers.includes(user.id)}
-                onToggleSelect={onToggleSelect}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onResetPassword={onResetPassword}
-                onAssignClients={onAssignClients}
-              />
-            ))
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center rtl:text-right ltr:text-left">
+                  טוען נתונים...
+                </TableCell>
+              </TableRow>
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center rtl:text-right ltr:text-left">
+                  לא נמצאו משתמשים
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((user) => (
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onResetPassword={onResetPassword}
+                  onAssignClients={onAssignClients}
+                />
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 });
