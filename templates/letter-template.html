@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב שכר טרחה - {{client_name}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'David Libre', 'Arial', 'Heebo', sans-serif;
+            background-color: #f3e9e9;
+            direction: rtl;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            padding: 20mm;
+            background-color: #f3e9e9;
+            position: relative;
+        }
+
+        /* Header - Logo */
+        .header-logo {
+            text-align: right;
+            margin-bottom: 10mm;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            direction: ltr;
+        }
+
+        .logo-icons {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .logo-icon {
+            width: 20px;
+            height: 35px;
+        }
+
+        .logo-text {
+            font-family: 'Avenir Next', sans-serif;
+            font-weight: 200;
+            font-size: 20px;
+            color: #000;
+            letter-spacing: 10px;
+        }
+
+        /* Date and Recipient */
+        .document-header {
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #666;
+            padding: 15px 0;
+            margin-bottom: 20px;
+        }
+
+        .date-recipient {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-direction: row-reverse;
+        }
+
+        .date {
+            font-size: 12px;
+            font-weight: normal;
+            text-align: left;
+        }
+
+        .recipient {
+            text-align: right;
+            font-weight: bold;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        /* Subject */
+        .subject {
+            border-bottom: 1px solid #666;
+            padding: 15px 0;
+            margin-bottom: 20px;
+        }
+
+        .subject-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #395bf7;
+            text-align: right;
+            line-height: 1.3;
+        }
+
+        /* Content Sections */
+        .section {
+            margin-bottom: 25px;
+            border-bottom: 1px solid #666;
+            padding-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        .section-content {
+            font-size: 10px;
+            line-height: 1.3;
+            text-align: right;
+        }
+
+        .section-content p {
+            margin-bottom: 10px;
+        }
+
+        .highlight {
+            color: #395bf7;
+            font-weight: bold;
+        }
+
+        .underline {
+            text-decoration: underline;
+        }
+
+        /* Bank Details Box */
+        .bank-box {
+            background-color: #000;
+            color: #fff;
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+
+        .bank-box-title {
+            font-size: 10px;
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        .bank-details {
+            font-size: 10px;
+            font-weight: bold;
+            text-align: right;
+            line-height: 1.4;
+        }
+
+        /* Footer */
+        .footer-section {
+            border-top: 2px solid #000;
+            padding-top: 15px;
+            margin-top: 30px;
+        }
+
+        .contact-info {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: right;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .company-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+            position: relative;
+        }
+
+        .address-contact {
+            text-align: right;
+            font-size: 10px;
+            line-height: 1.6;
+            position: absolute;
+            left: 12.17%;
+            right: 58.17%;
+        }
+
+        .address-contact p {
+            margin: 5px 0;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 3px;
+        }
+
+        .contact-icon {
+            width: 10px;
+            height: 10px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        .company-logo-bottom {
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        .tagline {
+            font-family: 'Avenir Next', sans-serif;
+            font-weight: 200;
+            font-size: 26px;
+            color: #bb0b0b;
+            letter-spacing: 9.36px;
+            text-transform: uppercase;
+            text-align: left;
+            margin-top: 20px;
+            margin-left: 4.83%;
+            margin-right: 27.33%;
+            line-height: 1.43;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: #f3e9e9;
+            }
+
+            .page-container {
+                margin: 0;
+                width: 210mm;
+                height: 297mm;
+            }
+
+            @page {
+                margin: 0;
+            }
+        }
+
+        /* Variable placeholders styling */
+        .variable {
+            background-color: #ffffcc;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Header with Logo -->
+        <div class="header-logo">
+            <img src="../public/brand/tico_logo_240.png" alt="TICO" style="height: 40px;">
+        </div>
+
+        <!-- Date and Recipient Section -->
+        <div class="document-header">
+            <div class="date-recipient">
+                <div class="date">{{date}}</div>
+                <div class="recipient">
+                    לכבוד:<br>
+                    {{client_name}}<br>
+                    {{company_name}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject -->
+        <div class="subject">
+            <p class="subject-text">
+                הנדון: שכר טרחתנו (כמדי תחילת שנה) בעבור שירותי ראיית חשבון ואופן תשלומו לשנת המס {{year}}
+            </p>
+        </div>
+
+        <!-- Section 1: בפתח הדברים -->
+        <div class="section">
+            <h3 class="section-title">בפתח הדברים, ברצוננו:</h3>
+            <div class="section-content">
+                <p>
+                    להודות לכם על הבעת האמון המקצועי אותו הנכם רוחשים למשרדנו – בכך שבחרתם בנו לשמש כרואי החשבון שלכם.
+                </p>
+                <p>
+                    כמו כן, משרדנו נאמן לעיקרון המקודש שלו מזה עשרות שנים, לא לחייב אתכם בחיוב חריג בשום אופן וצורה, למעט שכר הטרחה השנתי המבוקש, כמדי תחילת שנה.
+                </p>
+                <p class="highlight">
+                    שימו לב כי שיעור המע"מ השתנה ל-18 אחוז. אך אין בכך מ"לפגוע" בכם שכן אצלכם מדובר בתשומות מוכרות שיופחתו מתשלום המע"מ החודשי שלכם.
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 2: ולגופו של עניין -->
+        <div class="section">
+            <h3 class="section-title">ולגופו של עניין:</h3>
+            <div class="section-content">
+                <p>
+                    כמדי תחילת שנה, הננו לפרט לכם את גובה שכר טרחתנו ואופן תשלומו בגין מלוא שירותי ראיית חשבון שימסרו לכם ולבעלי המניות של {{client_name}} בשנה הקרובה.
+                </p>
+                <p>
+                    קודם לכן, נדגיש כי שכר הטרחה המבוקש השנה, זהה לשכר הטרחה ששילמתם אשתקד, למעט עדכון המחיר בשיעור עליית המדד (שיעור עליית מדד המחירים לצרכן בשנת המס {{previous_year}} הסתכם בלפחות 4%).
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 3: אופן התשלום -->
+        <div class="section">
+            <h3 class="section-title">אופן התשלום:</h3>
+            <div class="section-content">
+                <p>
+                    נודה, איפה, על הכנת 8 המחאות שסכום כל אחת מהן (הסכום כבר כולל מע"מ) הינו בסה"כ של: <span class="underline">{{amount}}</span> ₪.
+                </p>
+                <p>
+                    תאריכי ההמחאות הינם לחמישי לכל חודש, החל מיום {{payment_start_date}} ועד ליום {{payment_end_date}}.
+                </p>
+                <p>
+                    נבקשכם בכל לשון להקפיד על תאריכי ההמחאות והסכומים המדויקים.
+                </p>
+                <p class="highlight">
+                    הנחה בשיעור של 8 אחוזים תימסר למשלמים את מלוא הסכום מראש (הן בכרטיס אשראי או בהעברה בנקאית).
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 4: הסכומים לאחר הנחה -->
+        <div class="section">
+            <div class="section-content">
+                <p>
+                    הסכום כולל מע"מ לאחר ההנחה לטובת העברה בנקאית מידית ו/או תשלום מלא מידי בכרטיס אשראי הוא <span class="underline">{{amount_after_discount_8}}</span>.
+                </p>
+                <p class="highlight">
+                    הנחה בשיעור של 4 אחוזים תימסר למשלמים בכרטיס אשראי עד 4 תשלומים.
+                </p>
+                <p>
+                    הסכום כולל מע"מ לאחר ההנחה לתשלום בכרטיס האשראי עד 4 תשלומים הוא <span class="underline">{{amount_after_discount_4}}</span>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Bank Details Box -->
+        <div class="bank-box">
+            <p class="bank-box-title">להלן פרטי חשבון הבנק להעברה:</p>
+            <div class="bank-details">
+                בנק הפועלים לישראל בע"מ<br>
+                סניף 532 - דניאל פריש<br>
+                חשבון מספר 539990<br>
+                על שם: פרנקו ושות' רו"ח
+            </div>
+        </div>
+
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <div class="contact-info">
+                להסדרת התשלום יש לפנות לסמנכ"לית הכספים, {{contact_name}}, בטלפון {{contact_phone}}<br>
+                או במייל {{contact_email}}.
+            </div>
+
+            <div class="company-details">
+                <div class="company-logo-bottom">
+                    <div style="font-family: 'Avenir Next', sans-serif; font-weight: 200; font-size: 16px; letter-spacing: 6px; line-height: 1.4;">
+                        TICO<br>FRANKO
+                    </div>
+                </div>
+                <div class="address-contact">
+                    <p>
+                        <svg class="contact-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 2H3C2.45 2 2 2.45 2 3V15C2 15.55 2.45 16 3 16H15C15.55 16 16 15.55 16 15V3C16 2.45 15.55 2 15 2ZM9 9.5L4 6.5V5L9 8L14 5V6.5L9 9.5Z" fill="currentColor"/>
+                        </svg>
+                        שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב
+                    </p>
+                    <p>
+                        <svg class="contact-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3.5 1C2.67 1 2 1.67 2 2.5V15.5C2 16.33 2.67 17 3.5 17H14.5C15.33 17 16 16.33 16 15.5V2.5C16 1.67 15.33 1 14.5 1H3.5ZM4.5 3H13.5V13H4.5V3Z" fill="currentColor"/>
+                        </svg>
+                        03-5666170
+                    </p>
+                    <p>
+                        <svg class="contact-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 3H4C2.9 3 2 3.9 2 5V13C2 14.1 2.9 15 4 15H14C15.1 15 16 14.1 16 13V5C16 3.9 15.1 3 14 3ZM14 7L9 10L4 7V5L9 8L14 5V7Z" fill="currentColor"/>
+                        </svg>
+                        tico@franco.co.il
+                    </p>
+                </div>
+            </div>
+
+            <div class="tagline">
+                DARE TO THINK<br>
+                COMMIT TO DELIVER
+            </div>
+        </div>
+    </div>
+</body>
+</html>

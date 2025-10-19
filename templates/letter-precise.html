@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב שכר טרחה - מסעדת האחים</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'David Libre', 'Arial', 'Heebo', sans-serif;
+            background-color: #f3e9e9;
+            direction: rtl;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page-container {
+            width: 800px;
+            height: 1200px;
+            margin: 0 auto;
+            background-color: #f3e9e9;
+            position: relative;
+        }
+
+        /* Logo - in right column (18% from right) */
+        .logo {
+            position: absolute;
+            top: 63px;  /* 5.25% of 1200px */
+            right: 2%;  /* 2% margin from right */
+            height: 50px;
+            width: 112px;
+        }
+
+        /* Date - top left of content column */
+        .date {
+            position: absolute;
+            top: 7.08%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.09;
+            color: #000;
+            text-align: left;  /* Left aligned in content column */
+        }
+
+        /* Recipient - top right of content column */
+        .recipient {
+            position: absolute;
+            top: 7.08%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.2;
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Top border line - thick 7px, in content column, ends before logo */
+        .top-border {
+            position: absolute;
+            top: 63px;  /* Same as logo top */
+            left: 2%;   /* Starts from left edge of content column */
+            right: 21.2%; /* Ends 1cm before logo column */
+            height: 0;
+            border-top: 7px solid #000;  /* 20% thicker than original 6px */
+        }
+
+        /* Second border line - only in content column */
+        .header-border {
+            position: absolute;
+            top: 11.83%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 1px solid #666;
+        }
+
+        /* Subject */
+        .subject {
+            position: absolute;
+            top: 13%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 18px;
+            line-height: 1.12;
+            font-weight: bold;
+            color: #395bf7;
+            text-align: right;
+        }
+
+        /* Subject border - only in content column */
+        .subject-border {
+            position: absolute;
+            top: 17.5%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 1px solid #666;
+        }
+
+        /* Section 1 */
+        .section-1-title {
+            position: absolute;
+            top: 18.92%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.09;
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-1-content {
+            position: absolute;
+            top: 20.83%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-1-border {
+            position: absolute;
+            top: 29.73%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 1px solid #666;
+        }
+
+        /* Section 2 */
+        .section-2-title {
+            position: absolute;
+            top: 31.13%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.09;
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-2-content {
+            position: absolute;
+            top: 33.03%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-2-border {
+            position: absolute;
+            top: 39.43%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 1px solid #666;
+        }
+
+        /* Section 3 */
+        .section-3-title {
+            position: absolute;
+            top: 40.83%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.09;
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-3-content {
+            position: absolute;
+            top: 42.73%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-3-border {
+            position: absolute;
+            top: 52.13%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 1px solid #666;
+        }
+
+        /* Section 4 */
+        .section-4-content {
+            position: absolute;
+            top: 60.57%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-4-border {
+            position: absolute;
+            top: 66.97%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 1px solid #666;
+        }
+
+        /* Bank box - only in content column */
+        .bank-box {
+            position: absolute;
+            top: 51.5%;
+            left: 2%;
+            right: 21.2%;
+            height: 7.67%;
+            background-color: #000;
+            border-radius: 4px;
+            padding: 10px 20px 15px 20px;  /* top right bottom left - reduced top padding */
+        }
+
+        .bank-box-title {
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.09;
+            color: #fff;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+
+        .bank-details {
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.4;
+            font-weight: bold;
+            color: #fff;
+            text-align: right;
+        }
+
+        /* Footer contact info - aligned right in content column */
+        .footer-contact {
+            position: absolute;
+            top: 68.37%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.09;
+            font-weight: bold;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Footer border - only in content column */
+        .footer-border-top {
+            position: absolute;
+            top: 71.77%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 7px solid #000;
+        }
+
+        /* Footer container - grid layout */
+        .footer-container {
+            position: absolute;
+            top: 73.17%;
+            left: 2%;
+            right: 21.2%;
+            display: grid;
+            grid-template-columns: auto 10% auto 2% 1fr;
+            gap: 0;
+            align-items: start;
+        }
+
+        /* Footer logo - first column (right) */
+        .footer-logo {
+            grid-column: 1;
+            text-align: right;
+        }
+
+        .footer-logo svg {
+            width: 78px;
+            height: 54px;
+        }
+
+        /* Footer icons column - third column */
+        .footer-icons-column {
+            grid-column: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        /* Footer text column - fifth column */
+        .footer-text-column {
+            grid-column: 5;
+            font-family: 'David Libre', Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.6;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Footer address line */
+        .footer-address-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-address-line .footer-icon {
+            margin-left: 0;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        /* Footer bottom border - only in content column */
+        .footer-border-bottom {
+            position: absolute;
+            top: 80%;
+            left: 2%;
+            right: 21.2%;
+            height: 0;
+            border-top: 7px solid #000;
+        }
+
+        /* Tagline - left aligned in content column */
+        .tagline {
+            position: absolute;
+            top: 82%;
+            left: 2%;
+            right: 21.2%;
+            font-family: 'Avenir Next', sans-serif;
+            font-weight: 200;
+            font-size: 27px;
+            line-height: 1.43;
+            letter-spacing: 15.5px;
+            text-transform: uppercase;
+            color: #bb0b0b;
+            text-align: left;
+        }
+
+        .highlight {
+            color: #395bf7;
+            font-weight: bold;
+        }
+
+        .underline {
+            text-decoration: underline;
+        }
+
+        /* Blue bullet points (SVG star inline) */
+        .bullet {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        .bullet svg {
+            width: 100%;
+            height: 100%;
+            fill: #395bf7;  /* Same blue as highlight */
+        }
+
+        /* Footer icons */
+        .footer-icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .footer-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: #000;
+            vertical-align: middle;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: #f3e9e9;
+            }
+
+            .page-container {
+                width: 210mm;
+                height: 297mm;
+            }
+
+            @page {
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Logo -->
+        <svg class="logo" viewBox="0 0 112 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M26.8263 1.34131V9.05446H17.9425V48.9581H8.9338V9.05446H0V1.34131H26.8263Z" fill="black"/>
+            <path d="M34.2036 48.9581V1.34131H43.5928V48.9581H34.2036Z" fill="black"/>
+            <path d="M51.6407 39.4565V10.1723C51.6407 4.31714 57.1528 0.0904705 64.8618 0C71.6129 0 77.7964 3.83652 77.7964 10.1723V15.1679H68.6714V10.9413C68.6714 8.83219 67.4353 7.29419 64.8703 7.29419C62.3053 7.29419 60.7826 8.83219 60.7826 10.9413V38.6875C60.7826 40.7966 62.2069 42.3346 64.8703 42.3346C67.5336 42.3346 68.6714 40.7966 68.6714 38.6875V34.3703H77.7964V39.4565C77.7964 45.4106 72.4726 49.5383 64.8618 49.6287C57.9226 49.6287 51.6407 45.7922 51.6407 39.4565Z" fill="black"/>
+            <path d="M85.8443 39.2678V10.3609C85.8443 4.08556 91.1121 0 99.1126 0C107.113 0 112 4.08836 112 10.3609V39.2678C112 45.5432 106.829 49.6287 99.0153 49.6287C91.6792 49.6287 85.8443 46.0164 85.8443 39.2678ZM102.971 39.2678V10.3609C102.971 8.27192 101.375 6.8466 99.0153 6.74859C96.5662 6.8466 94.8733 8.27192 94.8733 10.3609V39.2678C94.8733 41.3568 96.5662 42.7905 99.0153 42.8802C101.367 42.7821 102.971 41.3568 102.971 39.2678Z" fill="black"/>
+            <path d="M80.479 24.8143C77.0786 24.8143 73.1018 28.7833 73.1018 32.1915C73.1018 28.7915 69.1332 24.8143 65.7245 24.8143C69.125 24.8143 73.1018 20.8453 73.1018 17.437C73.1018 20.8371 77.0704 24.8143 80.479 24.8143Z" fill="#BB0B0B"/>
+        </svg>
+
+        <!-- Top border -->
+        <div class="top-border"></div>
+
+        <!-- Date -->
+        <div class="date">4.10.2025</div>
+
+        <!-- Recipient -->
+        <div class="recipient">
+            לכבוד:<br>
+            מסעדת האחים<br>
+            קבוצת מסעדות ישראליות
+        </div>
+
+        <!-- Header border -->
+        <div class="header-border"></div>
+
+        <!-- Subject -->
+        <div class="subject">
+            הנדון: שכר טרחתנו (כמדי תחילת שנה) בעבור שירותי ראיית חשבון ואופן תשלומו לשנת המס 2025
+        </div>
+
+        <!-- Subject border -->
+        <div class="subject-border"></div>
+
+        <!-- Section 1 -->
+        <div class="section-1-title">בפתח הדברים, ברצוננו:</div>
+        <div class="section-1-content">
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            להודות לכם על הבעת האמון המקצועי אותו הנכם רוחשים למשרדנו – בכך שבחרתם בנו לשמש כרואי החשבון שלכם.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            כמו כן, משרדנו נאמן לעיקרון המקודש שלו מזה עשרות שנים, לא לחייב אתכם בחיוב חריג בשום אופן וצורה, למעט שכר הטרחה השנתי המבוקש, כמדי תחילת שנה.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            <span class="highlight">שימו לב כי שיעור המע"מ השתנה ל-18 אחוז. אך אין בכך מ"לפגוע" בכם שכן אצלכם מדובר בתשומות מוכרות שיופחתו מתשלום המע"מ החודשי שלכם.</span>
+        </div>
+        <div class="section-1-border"></div>
+
+        <!-- Section 2 -->
+        <div class="section-2-title">ולגופו של עניין:</div>
+        <div class="section-2-content">
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            כמדי תחילת שנה, הננו לפרט לכם את גובה שכר טרחתנו ואופן תשלומו בגין מלוא שירותי ראיית חשבון שימסרו לכם ולבעלי המניות של מסעדת האחים בשנה הקרובה.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            קודם לכן, נדגיש כי שכר הטרחה המבוקש השנה, זהה לשכר הטרחה ששילמתם אשתקד, למעט עדכון המחיר בשיעור עליית המדד (שיעור עליית מדד המחירים לצרכן בשנת המס 2024 הסתכם בלפחות 4%).
+        </div>
+        <div class="section-2-border"></div>
+
+        <!-- Section 3 -->
+        <div class="section-3-title">אופן התשלום:</div>
+        <div class="section-3-content">
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            נודה, איפה, על הכנת 8 המחאות שסכום כל אחת מהן (הסכום כבר כולל מע"מ) הינו בסה"כ של: <span class="underline">₪5,900</span> ₪.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            תאריכי ההמחאות הינם לחמישי לכל חודש, החל מיום 5.1.2025 ועד ליום 5.8.2025.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            נבקשכם בכל לשון להקפיד על תאריכי ההמחאות והסכומים המדויקים.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            <span class="highlight">הנחה בשיעור של 8 אחוזים תימסר למשלמים את מלוא הסכום מראש (הן בכרטיס אשראי או בהעברה בנקאית).</span>
+        </div>
+        <div class="section-3-border"></div>
+
+        <!-- Bank Box -->
+        <div class="bank-box">
+            <div class="bank-box-title">להלן פרטי חשבון הבנק להעברה:</div>
+            <div class="bank-details">
+                בנק הפועלים לישראל בע"מ<br>
+                סניף 532 - דניאל פריש<br>
+                חשבון מספר 539990<br>
+                על שם: פרנקו ושות' רו"ח
+            </div>
+        </div>
+
+        <!-- Section 4 -->
+        <div class="section-4-content">
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            הסכום כולל מע"מ לאחר ההנחה לטובת העברה בנקאית מידית ו/או תשלום מלא מידי בכרטיס אשראי הוא <span class="underline">₪43,344</span>.<br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            <span class="highlight">הנחה בשיעור של 4 אחוזים תימסר למשלמים בכרטיס אשראי עד 4 תשלומים.</span><br><br>
+            <span class="bullet"><svg viewBox="0 0 9 9" width="9" height="9"><path d="M9 4.5C6.92578 4.5 4.5 6.92102 4.5 9C4.5 6.92603 2.07924 4.5 0 4.5C2.07422 4.5 4.5 2.07898 4.5 0C4.5 2.07397 6.92076 4.5 9 4.5Z"/></svg></span>
+            הסכום כולל מע"מ לאחר ההנחה לתשלום בכרטיס האשראי עד 4 תשלומים הוא <span class="underline">₪45,216</span>.
+        </div>
+        <div class="section-4-border"></div>
+
+        <!-- Footer contact -->
+        <div class="footer-contact">
+            להסדרת התשלום יש לפנות לסמנכ"לית הכספים, סיגל נגר, בטלפון 050-8620993<br>
+            או במייל sigal@franco.co.il.
+        </div>
+
+        <!-- Footer top border -->
+        <div class="footer-border-top"></div>
+
+        <!-- Footer container with grid layout -->
+        <div class="footer-container">
+            <!-- Column 1: Logo (right side) -->
+            <div class="footer-logo">
+            <svg viewBox="0 0 78 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <mask id="mask0_6_79" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="78" height="54">
+                    <path d="M77.08 0H0V53.0363H77.08V0Z" fill="white"/>
+                </mask>
+                <g mask="url(#mask0_6_79)">
+                    <mask id="mask1_6_79" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="78" height="54">
+                        <path d="M77.08 0H0V53.0363H77.08V0Z" fill="white"/>
+                    </mask>
+                    <g mask="url(#mask1_6_79)">
+                        <g style="mix-blend-mode:multiply">
+                            <mask id="mask2_6_79" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="-15" y="-13" width="107" height="67">
+                                <path d="M91.6696 -12.8389H-14.5896V53.6199H91.6696V-12.8389Z" fill="white"/>
+                            </mask>
+                            <g mask="url(#mask2_6_79)">
+                                <path d="M-1.52588e-05 18.7505H8.50867V22.3454H3.78746V25.1174H8.07681V28.333H3.78746V34.2855H-1.52588e-05V18.7505Z" fill="#231F20"/>
+                                <path d="M14.5371 27.5277C16.2879 27.5277 17.1924 26.4364 17.1924 24.9891C17.1924 23.5418 16.2704 22.468 14.5371 22.468H13.7843V27.5335H14.5371V27.5277ZM16.889 34.2856L15.5876 31.1401C15.2316 31.1984 14.8347 31.2159 14.4204 31.2159H13.7784V34.3031H9.99681V18.7681H13.8777C18.9957 18.7681 20.8982 21.7619 20.8982 24.9833C20.8982 26.8099 20.2738 28.5606 18.9198 29.7278L21.2717 34.2856H16.8831H16.889Z" fill="#231F20"/>
+                                <path d="M31.8754 29.4069L29.8621 23.2851L27.8487 29.4069H31.8754ZM32.8559 32.3598H26.8683L26.2263 34.2798H22.2521L27.9012 18.7856H31.8171L37.3728 34.2798H33.492L32.85 32.3598H32.8559Z" fill="#231F20"/>
+                                <path d="M38.3708 18.7681H42.1932L46.7102 27.3584V18.7681H50.5152V34.2856H46.7452L42.1757 25.6252V34.2856H38.3708V18.7681Z" fill="#231F20"/>
+                                <path d="M52.2834 26.5299C52.2834 22.2172 55.8258 18.6223 60.3427 18.6223V22.4273C57.8742 22.4273 56.0884 24.2714 56.0884 26.5299C56.0884 28.7884 57.88 30.6325 60.3427 30.6325V34.4141C55.8258 34.4141 52.2834 30.8368 52.2834 26.5241" fill="#231F20"/>
+                                <path d="M69.0382 22.2754C66.5696 22.2754 64.7838 24.1954 64.7838 26.5123C64.7838 28.8291 66.5754 30.7666 69.0382 30.7666C71.5009 30.7666 73.275 28.8291 73.275 26.5123C73.275 24.1954 71.4834 22.2754 69.0382 22.2754ZM69.0382 34.5716C64.352 34.5716 60.9789 30.825 60.9789 26.5123C60.9789 22.1996 64.3461 18.4705 69.0382 18.4705C73.7302 18.4705 77.08 22.2171 77.08 26.5064C77.08 30.7958 73.7127 34.5658 69.0382 34.5658" fill="#231F20"/>
+                                <path d="M8.13517 48.5952L6.06344 45.3213C4.37104 45.4906 3.76411 46.3776 3.76411 47.3172C3.76411 48.5602 4.65116 49.2955 5.92921 49.2955C6.53031 49.2955 7.359 49.0855 8.13517 48.6011M12.2786 49.6924L14.1986 52.762H10.7905L10.0727 51.6532C8.6779 52.5578 7.07888 53.048 5.49736 53.048C2.63779 53.048 -1.52588e-05 51.128 -1.52588e-05 47.6265C-1.52588e-05 45.1988 1.50564 43.127 4.21931 42.4501L0.92205 37.2737H10.7671V40.8861H6.73456L10.0668 46.1967C10.3295 45.5197 10.4812 44.7086 10.4812 43.769H14.3387C14.3387 46.1208 13.5275 48.1576 12.267 49.6982" fill="#231F20"/>
+                                <path d="M41.2245 38.464C37.5362 38.464 34.6942 41.3469 34.6942 44.9768C34.6942 48.6067 37.5362 51.5072 41.2245 51.5072C44.9127 51.5072 47.7373 48.6067 47.7373 44.971C47.7373 41.3353 44.8952 38.4582 41.2245 38.4582M41.2245 53.0303C36.5383 53.0303 33.1652 49.2837 33.1652 44.971C33.1652 40.6758 36.5324 36.9292 41.2245 36.9292C45.9165 36.9292 49.2663 40.6758 49.2663 44.9652C49.2663 49.2545 45.8932 53.0245 41.2245 53.0245" fill="#231F20"/>
+                                <path d="M29.7745 47.9999C28.7066 50.0424 26.5123 51.5131 23.9445 51.5131C20.2154 51.5131 17.4142 48.4842 17.4142 45.0002C17.4142 41.5162 20.2212 38.4641 23.9445 38.4641C26.5006 38.4641 28.7007 39.9289 29.7687 41.9773H31.4378C30.2531 39.0827 27.341 36.9409 23.9445 36.9409C19.3867 36.9409 15.8852 40.6875 15.8852 45.0002C15.8852 49.3129 19.3867 53.0362 23.9445 53.0362C27.3468 53.0362 30.2706 50.9003 31.4436 47.9999H29.7745Z" fill="#231F20"/>
+                                <path d="M3.63572 1.75067H-1.52588e-05V0.280029H8.79462V1.75067H5.15888V15.8151H3.63572V1.75067Z" fill="#231F20"/>
+                                <path d="M12.728 0.321045H11.2048V15.8152H12.728V0.321045Z" fill="#231F20"/>
+                                <path d="M41.2245 1.52311C37.5362 1.52311 34.6942 4.40603 34.6942 8.03593C34.6942 11.6658 37.5362 14.5663 41.2245 14.5663C44.9127 14.5663 47.7373 11.6658 47.7373 8.03009C47.7373 4.39435 44.8952 1.51728 41.2245 1.51728M41.2245 16.0894C36.5383 16.0894 33.1652 12.3428 33.1652 8.03009C33.1652 3.71739 36.5324 -0.0117188 41.2245 -0.0117188C45.9165 -0.0117188 49.2663 3.7349 49.2663 8.03009C49.2663 12.3253 45.8932 16.0894 41.2245 16.0894Z" fill="#231F20"/>
+                                <path d="M29.7745 11.059C28.7066 13.1015 26.5123 14.5721 23.9445 14.5721C20.2154 14.5721 17.4142 11.5433 17.4142 8.05932C17.4142 4.57531 20.2212 1.52316 23.9445 1.52316C26.5006 1.52316 28.7007 2.98796 29.7687 5.03634H31.4378C30.2531 2.14176 27.341 0 23.9445 0C19.3867 0 15.8852 3.74662 15.8852 8.05932C15.8852 12.372 19.3867 16.0953 23.9445 16.0953C27.3468 16.0953 30.2706 13.9594 31.4436 11.059H29.7745Z" fill="#231F20"/>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </svg>
+            </div>
+
+            <!-- Column 2: 10% gap (empty) -->
+
+            <!-- Column 3: Icons (aligned right) -->
+            <div class="footer-icons-column">
+                <span class="footer-icon">
+                    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5.92157 17.7018H0V0H13.8154V5.85945H11.8416V1.97155H1.97386V15.7295H5.92157V17.7018Z" fill="black"/>
+                        <path d="M5.92081 3.88721H3.94772V5.85876H5.92081V3.88721Z" fill="black"/>
+                        <path d="M5.92081 7.83496H3.94772V9.80651H5.92081V7.83496Z" fill="black"/>
+                        <path d="M5.92081 11.7827H3.94772V13.7543H5.92081V11.7827Z" fill="black"/>
+                        <path d="M17.7041 17.7019H15.7303V9.80651H9.86776V17.7019H7.89391V7.83496H17.7041V17.7019Z" fill="black"/>
+                        <path d="M13.8155 11.7827H11.8416V13.7543H13.8155V11.7827Z" fill="black"/>
+                        <path d="M13.8155 15.7295H11.8416V17.701H13.8155V15.7295Z" fill="black"/>
+                        <path d="M9.86776 3.88721H7.89391V5.85876H9.86776V3.88721Z" fill="black"/>
+                    </svg>
+                </span>
+                <span class="footer-icon">
+                    <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.7049 17.7041H16.7179C7.50049 17.7041 0 10.2051 0 0.986159V0H5.86328V0.986159C5.86328 2.50374 6.22523 4.08957 6.93916 5.69534L7.34022 6.59485L5.53661 7.39697L5.13555 6.49516C4.45996 4.97528 4.05583 3.45769 3.93161 1.97155H2.00683C2.49377 9.31868 8.38466 15.2096 15.731 15.6973V13.7219C14.1812 13.6099 12.6928 13.228 11.2074 12.5678L10.3064 12.166L11.1093 10.3623L12.0111 10.7642C13.5486 11.4497 15.0884 11.7841 16.7172 11.7841H17.7041V17.7033L17.7049 17.7041Z" fill="black"/>
+                        <path d="M17.7049 7.89312H15.731V6.90696C15.731 4.18543 13.5171 1.97155 10.7964 1.97155H9.80946V0H10.7964C14.6061 0 17.7041 3.09728 17.7041 6.90696V7.89312H17.7049Z" fill="black"/>
+                        <path d="M13.7572 7.89316H11.7833C11.7833 6.80501 10.8984 5.91931 9.80946 5.91931V3.94775C11.9865 3.94775 13.7572 5.71763 13.7572 7.89316Z" fill="black"/>
+                    </svg>
+                </span>
+                <span class="footer-icon">
+                    <svg viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M14.7426 0H2.95925C1.32741 0 0 1.32817 0 2.95925V10.8539C0 12.4857 1.32817 13.8131 2.95925 13.8131H14.7426C16.3476 13.8131 17.7033 12.4574 17.7033 10.8539V2.95925C17.7033 1.35578 16.3476 0 14.7426 0ZM2.95925 1.97155H14.7426C15.0784 1.97155 15.3867 2.1602 15.5669 2.43319L8.87851 5.80347L2.13642 2.43243C2.31587 2.1602 2.62414 1.97155 2.95925 1.97155ZM14.7426 11.8424H2.95925C2.43396 11.8424 1.97309 11.3807 1.97309 10.8547V4.55581L8.88235 8.01121L15.7295 4.56272V10.8554C15.7295 11.3815 15.2686 11.8431 14.7426 11.8431V11.8424Z" fill="black"/>
+                    </svg>
+                </span>
+            </div>
+
+            <!-- Column 4: 2% gap (empty) -->
+
+            <!-- Column 5: Text content -->
+            <div class="footer-text-column">
+                <span>שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב</span>
+                <span>03-5666170</span>
+                <span>tico@franco.co.il</span>
+            </div>
+        </div>
+
+        <!-- Footer bottom border -->
+        <div class="footer-border-bottom"></div>
+
+        <!-- Tagline -->
+        <div class="tagline">
+            DARE TO THINK<br>
+            COMMIT TO DELIVER
+        </div>
+    </div>
+</body>
+</html>

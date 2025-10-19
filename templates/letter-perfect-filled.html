@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב שכר טרחה - מסעדת האחים</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        body {
+            background-color: #f3e9e9;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .page {
+            width: 600px;
+            height: 1200px;
+            margin: 0 auto;
+            background-color: #f3e9e9;
+            position: relative;
+        }
+
+        /* Logo text "TICO" */
+        .logo-text {
+            position: absolute;
+            inset: 5.28% 19.2% 91.25% 76.33%;
+            font-family: 'Avenir Next', Arial, sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            text-align: left;
+            letter-spacing: 2px;
+        }
+
+        /* Date */
+        .date {
+            position: absolute;
+            inset: 7.08% 86.5% 91.83% 5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.09;
+            color: #000;
+        }
+
+        /* Recipient */
+        .recipient {
+            position: absolute;
+            inset: 7.08% 28.67% 89.42% 50.83%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Lines */
+        .line-1 {
+            position: absolute;
+            inset: 5.25% 5% auto 5%;
+            height: 0;
+            border-top: 2px solid #000;
+        }
+
+        .line-2 {
+            position: absolute;
+            inset: 11.83% 5% auto 5%;
+            height: 0;
+            border-top: 0.5px solid #666;
+        }
+
+        .line-3 {
+            position: absolute;
+            inset: 17.5% 5% auto 5%;
+            height: 0;
+            border-top: 0.5px solid #666;
+        }
+
+        .line-4 {
+            position: absolute;
+            inset: 29.5% 5% auto 5%;
+            height: 0;
+            border-top: 0.5px solid #666;
+        }
+
+        .line-5 {
+            position: absolute;
+            inset: 40% 5% auto 5%;
+            height: 0;
+            border-top: 0.5px solid #666;
+        }
+
+        .line-6 {
+            position: absolute;
+            inset: 70.92% 5% auto 5%;
+            height: 0;
+            border-top: 0.5px solid #666;
+        }
+
+        .line-7 {
+            position: absolute;
+            inset: 76.92% 5% auto 5%;
+            height: 0;
+            border-top: 2px solid #000;
+        }
+
+        .line-8 {
+            position: absolute;
+            inset: 87.58% 5% auto 5%;
+            height: 0;
+            border-top: 2px solid #000;
+        }
+
+        /* Subject */
+        .subject {
+            position: absolute;
+            inset: 13% 28.67% 83.67% 5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            line-height: 1.12;
+            color: #395bf7;
+            text-align: right;
+        }
+
+        /* Section 1 */
+        .section-1-title {
+            position: absolute;
+            inset: 18.92% 28.67% 80% 52.5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-1-content {
+            position: absolute;
+            inset: 20.83% 31.33% 71.33% 5.5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Section 2 */
+        .section-2-title {
+            position: absolute;
+            inset: 30.83% 28.67% 68.08% 58.67%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-2-content {
+            position: absolute;
+            inset: 32.75% 31.33% 59.42% 5.5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Section 3 */
+        .section-3-title {
+            position: absolute;
+            inset: 41.42% 28.67% 57.5% 59.67%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        .section-3-content {
+            position: absolute;
+            inset: 43.33% 31.33% 48.42% 5.5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 0;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Bank box */
+        .bank-box {
+            position: absolute;
+            inset: 53.42% 5% 38.75% 5%;
+            background-color: #000;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .bank-title {
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 1.09;
+            color: #fff;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+
+        .bank-details {
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.4;
+            color: #fff;
+            text-align: right;
+        }
+
+        /* Section 4 */
+        .section-4-content {
+            position: absolute;
+            inset: 62.92% 31.33% 30.67% 5.5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Footer contact */
+        .footer-contact {
+            position: absolute;
+            inset: 72.83% 28.67% 22.83% 5%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.09;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Footer address */
+        .footer-address {
+            position: absolute;
+            inset: 79.92% 58.17% 14.67% 12.17%;
+            font-family: 'David Libre', Arial, Heebo, sans-serif;
+            font-size: 10px;
+            font-weight: 400;
+            line-height: 1.26;
+            color: #000;
+            text-align: right;
+        }
+
+        /* Footer logo */
+        .footer-logo {
+            position: absolute;
+            inset: 79.42% 28.65% 16.16% 58.5%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .footer-logo-text {
+            font-family: 'Avenir Next', Arial, sans-serif;
+            font-size: 18px;
+            font-weight: 200;
+            letter-spacing: 6px;
+            line-height: 1.4;
+            color: #000;
+            text-align: center;
+        }
+
+        /* Tagline */
+        .tagline {
+            position: absolute;
+            inset: 90.25% 27.33% 3.58% 4.83%;
+            font-family: 'Avenir Next', Arial, sans-serif;
+            font-size: 26px;
+            font-weight: 200;
+            letter-spacing: 9.36px;
+            line-height: 1.43;
+            color: #bb0b0b;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        .highlight {
+            color: #395bf7;
+            font-weight: 700;
+        }
+
+        .underline {
+            text-decoration: underline;
+        }
+
+        /* Print */
+        @media print {
+            .page {
+                width: 210mm;
+                height: 297mm;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Logo -->
+        <div class="logo-text">TICO</div>
+
+        <!-- Date -->
+        <div class="date">4.10/2025</div>
+
+        <!-- Recipient -->
+        <div class="recipient">
+            לכבוד:<br>
+            מסעדת האחים<br>
+            קבוצת מסעדות ישראליות
+        </div>
+
+        <!-- Lines -->
+        <div class="line-1"></div>
+        <div class="line-2"></div>
+        <div class="line-3"></div>
+        <div class="line-4"></div>
+        <div class="line-5"></div>
+        <div class="line-6"></div>
+        <div class="line-7"></div>
+        <div class="line-8"></div>
+
+        <!-- Subject -->
+        <div class="subject">
+            הנדון: שכר טרחתנו (כמדי תחילת שנה) בעבור שירותי ראיית חשבון ואופן תשלומו לשנת המס 2025
+        </div>
+
+        <!-- Section 1 -->
+        <div class="section-1-title">בפתח הדברים, ברצוננו:</div>
+        <div class="section-1-content">
+            <p style="margin-bottom:10px;">להודות לכם על הבעת האמון המקצועי אותו הנכם רוחשים למשרדנו – בכך שבחרתם בנו לשמש כרואי החשבון שלכם.</p>
+            <p style="margin-bottom:10px;">כמו כן, משרדנו נאמן לעיקרון המקודש שלו מזה עשרות שנים, לא לחייב אתכם בחיוב חריג בשום אופן וצורה, למעט שכר הטרחה השנתי המבוקש, כמדי תחילת שנה.</p>
+            <p class="highlight">שימו לב כי שיעור המע"מ השתנה ל-18 אחוז. אך אין בכך מ"לפגוע" בכם שכן אצלכם מדובר בתשומות מוכרות שיופחתו מתשלום המע"מ החודשי שלכם.</p>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="section-2-title">ולגופו של עניין:</div>
+        <div class="section-2-content">
+            <p style="margin-bottom:10px;">כמדי תחילת שנה, הננו לפרט לכם את גובה שכר טרחתנו ואופן תשלומו בגין מלוא שירותי ראיית חשבון שימסרו לכם ולבעלי המניות של מסעדת האחים בשנה הקרובה.</p>
+            <p>קודם לכן, נדגיש כי שכר הטרחה המבוקש השנה, זהה לשכר הטרחה ששילמתם אשתקד, למעט עדכון המחיר בשיעור עליית המדד (שיעור עליית מדד המחירים לצרכן בשנת המס 2024 הסתכם בלפחות 4%).</p>
+        </div>
+
+        <!-- Section 3 -->
+        <div class="section-3-title">אופן התשלום:</div>
+        <div class="section-3-content">
+            <p style="line-height:1.09;margin-bottom:10px;">נודה, איפה, על הכנת 8 המחאות שסכום כל אחת מהן (הסכום כבר כולל מע"מ) הינו בסה"כ של: <span class="underline">₪5,900</span> ₪.</p>
+            <p style="line-height:1.09;margin-bottom:10px;">תאריכי ההמחאות הינם לחמישי לכל חודש, החל מיום 5.1.2025 ועד ליום 5.8.2025.</p>
+            <p style="line-height:1.09;margin-bottom:10px;">נבקשכם בכל לשון להקפיד על תאריכי ההמחאות והסכומים המדויקים.</p>
+            <p class="highlight" style="line-height:1.09;">הנחה בשיעור של 8 אחוזים תימסר למשלמים את מלוא הסכום מראש (הן בכרטיס אשראי או בהעברה בנקאית).</p>
+        </div>
+
+        <!-- Bank box -->
+        <div class="bank-box">
+            <div class="bank-title">להלן פרטי חשבון הבנק להעברה:</div>
+            <div class="bank-details">
+                בנק הפועלים לישראל בע"מ<br>
+                סניף 532 - דניאל פריש<br>
+                חשבון מספר 539990<br>
+                על שם: פרנקו ושות' רו"ח
+            </div>
+        </div>
+
+        <!-- Section 4 -->
+        <div class="section-4-content">
+            <p style="margin-bottom:10px;">הסכום כולל מע"מ לאחר ההנחה לטובת העברה בנקאית מידית ו/או תשלום מלא מידי בכרטיס אשראי הוא <span class="underline">₪43,344</span>.</p>
+            <p class="highlight" style="margin-bottom:10px;">הנחה בשיעור של 4 אחוזים תימסר למשלמים בכרטיס אשראי עד 4 תשלומים.</p>
+            <p>הסכום כולל מע"מ לאחר ההנחה לתשלום בכרטיס האשראי עד 4 תשלומים הוא <span class="underline">₪45,216</span>.</p>
+        </div>
+
+        <!-- Footer contact -->
+        <div class="footer-contact">
+            להסדרת התשלום יש לפנות לסמנכ"לית הכספים, סיגל נגר, בטלפון 050-8620993<br>
+            או במייל sigal@franco.co.il.
+        </div>
+
+        <!-- Footer address -->
+        <div class="footer-address">
+            שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב<br><br>
+            03-5666170<br><br>
+            tico@franco.co.il
+        </div>
+
+        <!-- Footer logo -->
+        <div class="footer-logo">
+            <div class="footer-logo-text">
+                TICO<br>FRANKO
+            </div>
+        </div>
+
+        <!-- Tagline -->
+        <div class="tagline">
+            DARE TO THINK<br>
+            COMMIT TO DELIVER
+        </div>
+    </div>
+</body>
+</html>
