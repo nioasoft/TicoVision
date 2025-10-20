@@ -315,16 +315,32 @@
 
         // Rebuild the check table with correct number of rows
         function rebuildCheckTable() {
-            const tbody = document.querySelector('table tbody');
-            if (!tbody) return;
+            // Find the check schedule table (the one with border and inside the check schedule section)
+            const tables = document.querySelectorAll('table');
+            let checkTable = null;
 
-            // Clear existing rows (except header)
-            const rows = tbody.querySelectorAll('tr');
-            rows.forEach((row, index) => {
-                if (index > 0) { // Keep header (index 0)
-                    row.remove();
+            // Find the table that contains the header row with "מספר המחאה"
+            for (const table of tables) {
+                const headerCells = table.querySelectorAll('th');
+                for (const th of headerCells) {
+                    if (th.textContent.includes('מספר המחאה')) {
+                        checkTable = table;
+                        break;
+                    }
                 }
-            });
+                if (checkTable) break;
+            }
+
+            if (!checkTable) return;
+
+            // Get all rows in the table
+            const rows = Array.from(checkTable.querySelectorAll('tr'));
+
+            // Keep only the header row (first row with <th> elements)
+            // Remove all data rows (rows 1-9: checks 1-8 + total row)
+            for (let i = rows.length - 1; i >= 1; i--) {
+                rows[i].remove();
+            }
 
             // Generate new rows for numChecks
             const currentYear = new Date().getFullYear();
@@ -341,7 +357,7 @@
                     <td style="padding: 10px 12px; text-align: right; font-size: 13px; color: hsl(222.2 84% 4.9%); ${!isLast ? 'border-bottom: 1px solid hsl(214.3 31.8% 91.4%);' : ''}">${date}</td>
                     <td class="check-amount" style="padding: 10px 12px; text-align: right; font-size: 13px; font-weight: 600; color: hsl(222.2 84% 4.9%); ${!isLast ? 'border-bottom: 1px solid hsl(214.3 31.8% 91.4%);' : ''}">₪${formattedCheckAmount}</td>
                 `;
-                tbody.appendChild(row);
+                checkTable.appendChild(row);
             }
 
             // Add total row
@@ -351,7 +367,7 @@
                 <td colspan="2" style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: hsl(222.2 84% 4.9%); border-top: 2px solid hsl(214.3 31.8% 91.4%);">סה"כ לתשלום:</td>
                 <td class="total-amount" style="padding: 12px; text-align: right; font-size: 14px; font-weight: 700; color: hsl(222.2 84% 4.9%); border-top: 2px solid hsl(214.3 31.8% 91.4%);">₪${formattedTotalAmount}</td>
             `;
-            tbody.appendChild(totalRow);
+            checkTable.appendChild(totalRow);
         }
 
         // Track check details view
