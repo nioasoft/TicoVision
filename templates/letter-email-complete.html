@@ -10,6 +10,23 @@
     body, table, td {font-family: Arial, sans-serif !important;}
     </style>
     <![endif]-->
+    <style type="text/css">
+        /* Mobile styles - stack payment buttons vertically */
+        @media only screen and (max-width: 600px) {
+            .payment-button-container {
+                display: block !important;
+                width: 100% !important;
+            }
+            .payment-button {
+                width: 100% !important;
+                display: block !important;
+                margin-bottom: 12px !important;
+            }
+            .payment-spacer {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'Assistant', 'Heebo', Arial, sans-serif;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
@@ -53,11 +70,9 @@
                     <!-- BODY: Subject -->
                     <tr>
                         <td style="padding-top: 24px;">
-                            <div style="font-size: 19px; line-height: 1.4; font-weight: 600; color: #09090b; text-align: center; letter-spacing: -0.3px;">
+                            <div style="font-size: 19px; line-height: 1.4; font-weight: 600; color: #09090b; text-align: center; letter-spacing: -0.3px; padding-bottom: 12px; border-bottom: 1px solid #e4e4e7;">
                                 הנדון: שכר טרחתנו (כמדי תחילת שנה) בעבור שירותי ראיית חשבון ואופן תשלומו לשנת המס {{year}}
                             </div>
-                            <!-- Subject border -->
-                            <div style="border-top: 1px solid #e4e4e7; margin-top: 20px;"></div>
                         </td>
                     </tr>
 
@@ -134,10 +149,10 @@
                                         </div>
 
                                         <!-- Payment Buttons -->
-                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0" class="payment-button-container">
                                             <tr>
                                                 <!-- Single Payment Button -->
-                                                <td width="49%" style="padding-left: 4px; vertical-align: top;">
+                                                <td width="49%" class="payment-button" style="padding-left: 4px; vertical-align: top;">
                                                     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #e4e4e7; border-radius: 4px; background-color: #f8fafc;">
                                                         <tr>
                                                             <td style="padding: 14px 16px; text-align: center; min-height: 85px; display: table-cell; vertical-align: middle;">
@@ -157,10 +172,10 @@
                                                     </table>
                                                 </td>
 
-                                                <td width="2%"></td>
+                                                <td width="2%" class="payment-spacer"></td>
 
                                                 <!-- Bank Transfer Button -->
-                                                <td width="49%" style="padding-right: 4px; vertical-align: top;">
+                                                <td width="49%" class="payment-button" style="padding-right: 4px; vertical-align: top;">
                                                     <a href="https://ticovision.vercel.app/bank-transfer-details.html?client_id={{client_id}}&amount={{amount_bank}}" style="text-decoration: none; display: block;">
                                                         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #e4e4e7; border-radius: 4px; background-color: #f8fafc;">
                                                             <tr>

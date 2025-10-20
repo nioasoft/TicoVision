@@ -46,6 +46,10 @@ function buildLetterHtml(): string {
   // Read complete email template
   const letterHtml = readTemplate('letter-email-complete.html');
 
+  // Calculate next year (always one year ahead)
+  const currentYear = new Date().getFullYear();
+  const nextYear = currentYear + 1;
+
   // Demo variables
   const variables = {
     // Header
@@ -54,7 +58,7 @@ function buildLetterHtml(): string {
     group_name: 'קבוצת דמו',
 
     // Body
-    year: '2025',
+    year: nextYear.toString(), // Always next year (2026 for 2025)
     inflation_rate: '4.2',
 
     // Footer - Payment
@@ -94,13 +98,16 @@ async function sendTestEmail() {
     const francoLogo = imageToBase64('/tmp/franco_logo.png');
     const bulletStar = imageToBase64('/tmp/bullet_star.png');
 
+    // Calculate next year for subject
+    const nextYear = new Date().getFullYear() + 1;
+
     console.log('📤 Sending test email to:', TEST_EMAIL);
 
     const msg = {
       to: TEST_EMAIL,
       from: 'shani@franco.co.il',
       replyTo: 'sigal@franco.co.il',
-      subject: '[בדיקה] שכר טרחתנו לשנת המס 2025',
+      subject: `[בדיקה] שכר טרחתנו לשנת המס ${nextYear}`,
       html: letterHtml,
       attachments: [
         {
