@@ -3,71 +3,233 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>תשלום באשראי - בבניה</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            padding: 60px 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-        }
-        .icon {
-            font-size: 80px;
-            margin-bottom: 20px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        h1 {
-            color: #2c3e50;
-            font-size: 28px;
-            margin-bottom: 16px;
-            font-weight: 700;
-        }
-        p {
-            color: #6c757d;
-            font-size: 18px;
-            line-height: 1.8;
-            margin-bottom: 12px;
-        }
-        .status {
-            display: inline-block;
-            background: #f8f9fa;
-            padding: 12px 24px;
-            border-radius: 6px;
-            border: 2px solid #e4e4e7;
-            margin-top: 20px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-    </style>
+    <title>תשלום באשראי - 4 תשלומים - TICO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
-        <div class="icon">💳</div>
-        <h1>תשלום באשראי בתשלומים</h1>
-        <p>העמוד בבניה</p>
-        <p>ממשק תשלום באשראי יעלה בקרוב</p>
-        <div class="status">🚧 בפיתוח</div>
-    </div>
+<body style="margin: 0; padding: 20px; font-family: 'Assistant', 'Heebo', Arial, sans-serif; background-color: #f5f5f7; direction: rtl;">
+    <!-- Main container -->
+    <table width="700" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+
+        <!-- Header: Logo -->
+        <tr>
+            <td style="padding: 40px 40px 20px 40px; text-align: center;">
+                <img src="https://ticovision.vercel.app/brand/tico_logo_transparent.png" width="110" height="48" alt="TICO" style="display: inline-block; border: 0;">
+            </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+            <td style="padding: 0 40px 24px 40px;">
+                <div style="font-size: 24px; line-height: 1.4; font-weight: 700; color: #09090b; text-align: center;">
+                    תשלום באשראי - 4 תשלומים
+                </div>
+            </td>
+        </tr>
+
+        <!-- Amount to pay with discount explanation -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="background-color: #f3f4f6; border-radius: 8px; padding: 24px; text-align: center;">
+                    <div style="font-size: 19px; font-weight: 600; color: #09090b; margin-bottom: 16px;">
+                        שמחים שבחרתם בתשלום באשראי ב-4 תשלומים
+                    </div>
+                    <div style="font-size: 18px; font-weight: 600; color: #2c3e50; margin-bottom: 12px;">
+                        בתמורה משרדנו יעניק לכם הנחה של 4%
+                    </div>
+                    <div style="font-size: 17px; color: #09090b; line-height: 1.6; margin-bottom: 8px;">
+                        הסכום כולל מע"מ לפני הנחה הוא ₪<span id="amount-original">52,000</span>
+                    </div>
+                    <div style="font-size: 17px; color: #09090b; line-height: 1.6; margin-bottom: 16px;">
+                        והסכום לאחר ההנחה הוא ₪<span id="amount-after">49,920</span> כולל מע"מ
+                    </div>
+                    <div style="border-top: 2px solid #2c3e50; padding-top: 16px; margin-top: 16px;">
+                        <div style="font-size: 16px; color: #71717a; margin-bottom: 8px;">
+                            סכום לתשלום:
+                        </div>
+                        <div style="font-size: 36px; font-weight: 700; color: #09090b;">
+                            ₪<span id="amount-final">49,920</span>
+                        </div>
+                        <div style="font-size: 15px; color: #71717a; margin-top: 8px;">
+                            (4 תשלומים של ₪<span id="amount-per-installment">12,480</span>)
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Border -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="border-top: 1px solid #e4e4e7;"></div>
+            </td>
+        </tr>
+
+        <!-- Payment explanation -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="font-size: 18px; font-weight: 600; color: #09090b; text-align: right; margin-bottom: 16px;">
+                    איך זה עובד?
+                </div>
+                <div style="font-size: 15px; color: #09090b; line-height: 1.8; text-align: right;">
+                    • לחצו על הכפתור למטה<br>
+                    • תועברו לדף התשלום המאובטח של Cardcom<br>
+                    • מלאו את פרטי כרטיס האשראי<br>
+                    • התשלום יחולק אוטומטית ל-4 תשלומים שווים<br>
+                    • כל תשלום יחוייב בתחילת כל חודש<br>
+                    • קבלה תישלח אליכם אוטומטית למייל
+                </div>
+            </td>
+        </tr>
+
+        <!-- Installments breakdown -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="font-size: 18px; font-weight: 600; color: #09090b; text-align: right; margin-bottom: 16px;">
+                    פירוט התשלומים:
+                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fafafa; border-radius: 6px; padding: 16px;">
+                    <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #e4e4e7;">
+                            <div style="font-size: 15px; color: #71717a; text-align: right;">תשלום 1 (מיידי):</div>
+                        </td>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #e4e4e7; text-align: left;">
+                            <div style="font-size: 16px; font-weight: 600; color: #09090b;">₪<span class="installment-amount">12,480</span></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #e4e4e7;">
+                            <div style="font-size: 15px; color: #71717a; text-align: right;">תשלום 2 (בעוד חודש):</div>
+                        </td>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #e4e4e7; text-align: left;">
+                            <div style="font-size: 16px; font-weight: 600; color: #09090b;">₪<span class="installment-amount">12,480</span></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #e4e4e7;">
+                            <div style="font-size: 15px; color: #71717a; text-align: right;">תשלום 3 (בעוד חודשיים):</div>
+                        </td>
+                        <td style="padding: 10px 0; border-bottom: 1px solid #e4e4e7; text-align: left;">
+                            <div style="font-size: 16px; font-weight: 600; color: #09090b;">₪<span class="installment-amount">12,480</span></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0;">
+                            <div style="font-size: 15px; color: #71717a; text-align: right;">תשלום 4 (בעוד 3 חודשים):</div>
+                        </td>
+                        <td style="padding: 10px 0; text-align: left;">
+                            <div style="font-size: 16px; font-weight: 600; color: #09090b;">₪<span class="installment-amount">12,480</span></div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Important note -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="background-color: #f3f4f6; border: 1px solid #e4e4e7; padding: 20px; border-radius: 6px;">
+                    <div style="font-size: 16px; font-weight: 600; color: #09090b; margin-bottom: 8px; text-align: right;">
+                        🔒 תשלום מאובטח
+                    </div>
+                    <div style="font-size: 15px; color: #09090b; line-height: 1.6; text-align: right;">
+                        התשלום מבוצע דרך מערכת Cardcom המאובטחת והמוסדרת על ידי בנק ישראל. פרטי כרטיס האשראי שלכם מוצפנים ומאובטחים ב-SSL.
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Border -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="border-top: 1px solid #e4e4e7;"></div>
+            </td>
+        </tr>
+
+        <!-- Payment button -->
+        <tr>
+            <td style="padding: 0 40px 40px 40px; text-align: center;">
+                <div style="font-size: 18px; font-weight: 600; color: #09090b; margin-bottom: 20px;">
+                    מוכנים לשלם?
+                </div>
+                <a id="paymentButton" href="#" style="display: inline-block; background-color: #09090b; color: #ffffff; padding: 16px 48px; border-radius: 6px; font-size: 18px; font-weight: 600; text-decoration: none; font-family: 'Assistant', 'Heebo', Arial, sans-serif;">
+                    💳 מעבר לתשלום מאובטח
+                </a>
+                <div id="demoNotice" style="display: none; background-color: #fff3cd; color: #856404; padding: 16px; border-radius: 6px; margin-top: 20px; font-size: 14px; text-align: center;">
+                    🧪 <strong>מצב דמו:</strong> הכפתור מוביל לעמוד הדגמה. בסביבת ייצור, כאן יופיע קישור אמיתי ל-Cardcom.
+                </div>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="padding: 30px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+                <div style="font-size: 14px; color: #71717a; text-align: center; line-height: 1.6;">
+                    לשאלות ובירורים:<br>
+                    <strong>סיגל נגר</strong> | 050-8620993 | sigal@franco.co.il
+                </div>
+            </td>
+        </tr>
+
+    </table>
+
+    <script>
+        // Get client_id and amount from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientId = urlParams.get('client_id') || 'DEMO-2025-001';
+        const amountOriginal = urlParams.get('amount') || '52,000';
+
+        // Calculate discount (4% off)
+        const cleanAmount = parseFloat(amountOriginal.replace(/,/g, ''));
+        const amountAfterDiscount = Math.round(cleanAmount * 0.96);
+        const formattedAmountAfter = amountAfterDiscount.toLocaleString('he-IL');
+        const perInstallment = Math.round(amountAfterDiscount / 4);
+        const formattedPerInstallment = perInstallment.toLocaleString('he-IL');
+
+        // Update all amount displays
+        document.getElementById('amount-original').textContent = amountOriginal;
+        document.getElementById('amount-after').textContent = formattedAmountAfter;
+        document.getElementById('amount-final').textContent = formattedAmountAfter;
+        document.getElementById('amount-per-installment').textContent = formattedPerInstallment;
+
+        // Update installment breakdown
+        const installmentAmounts = document.querySelectorAll('.installment-amount');
+        installmentAmounts.forEach(el => {
+            el.textContent = formattedPerInstallment;
+        });
+
+        // Check if we have real Cardcom credentials or demo mode
+        const isDemo = !window.location.hostname.includes('vercel.app');
+
+        if (isDemo) {
+            // DEMO MODE: Show demo notice and redirect to demo payment page
+            document.getElementById('demoNotice').style.display = 'block';
+            document.getElementById('paymentButton').href = '/payment-demo-cardcom-installments.html?client_id=' + clientId + '&amount=' + formattedAmountAfter + '&installments=4&per_installment=' + formattedPerInstallment;
+        } else {
+            // PRODUCTION: Would call API to generate real Cardcom payment link
+            // For now, also use demo page until real credentials are configured
+            document.getElementById('demoNotice').style.display = 'block';
+            document.getElementById('paymentButton').href = '/payment-demo-cardcom-installments.html?client_id=' + clientId + '&amount=' + formattedAmountAfter + '&installments=4&per_installment=' + formattedPerInstallment;
+
+            // TODO: Replace with real Cardcom link generation:
+            /*
+            fetch('/api/create-cardcom-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    client_id: clientId,
+                    amount: amountAfterDiscount,
+                    max_payments: 4,
+                    description: 'שכר טרחה - 4 תשלומים'
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.payment_url) {
+                    document.getElementById('paymentButton').href = data.payment_url;
+                }
+            });
+            */
+        }
+    </script>
 </body>
 </html>
