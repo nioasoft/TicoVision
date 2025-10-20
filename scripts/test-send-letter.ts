@@ -56,25 +56,29 @@ function calculateDiscounts(originalAmount: number) {
 }
 
 /**
- * Build complete letter HTML
+ * Build complete letter HTML from 4 components
+ * NEW ARCHITECTURE: header + body + payment + footer
  */
 function buildLetterHtml(): string {
-  // Read complete email template
-  const letterHtml = readTemplate('letter-email-complete.html');
+  // Read the 4 components
+  const header = readTemplate('components/header.html');
+  const body = readTemplate('bodies/annual-fee.html');
+  const paymentSection = readTemplate('components/payment-section.html');
+  const footer = readTemplate('components/footer.html');
 
   // Calculate next year (always one year ahead)
   const currentYear = new Date().getFullYear();
   const nextYear = currentYear + 1;
 
   // Original amount (from fee calculation system)
-  const originalAmount = 10000; // Demo amount: ₪10,000
+  const originalAmount = 52000; // Demo amount: ₪52,000
 
   // Calculate all discounted amounts
   const discounts = calculateDiscounts(originalAmount);
 
   // Demo variables
-  const companyName = 'חברת דמו בע"מ';
-  const groupName = 'קבוצת דמו';
+  const companyName = 'מסעדת האחים';
+  const groupName = 'קבוצת מסעדות ישראליות';
 
   const variables = {
     // Header
@@ -84,15 +88,54 @@ function buildLetterHtml(): string {
 
     // Body
     year: nextYear.toString(), // Always next year (2026 for 2025)
-    inflation_rate: '4.2',
+    inflation_rate: '4',
 
-    // Footer - Payment (NEW)
+    // Payment Section
     ...discounts,
     tax_year: nextYear.toString(),
     client_id: 'demo-client-123',
+    num_checks: '8',
+    check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.8.${nextYear}`,
   };
 
-  return replaceVariables(letterHtml, variables);
+  // Build full HTML structure
+  const fullHtml = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב - ${companyName}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style type="text/css">
+    body, table, td {font-family: Arial, sans-serif !important;}
+    </style>
+    <![endif]-->
+    <style type="text/css">
+        /* Mobile tagline - two lines */
+        @media only screen and (max-width: 600px) {
+            .tagline-desktop { display: none !important; }
+            .tagline-mobile { display: inline !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'Assistant', 'Heebo', Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${paymentSection}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+
+  return replaceVariables(fullHtml, variables);
 }
 
 /**

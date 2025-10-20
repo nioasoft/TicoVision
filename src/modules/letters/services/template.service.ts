@@ -422,7 +422,7 @@ export class TemplateService extends BaseService {
         `)
         .eq('tenant_id', tenantId)
         .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false});
 
       if (error) throw error;
 
@@ -430,5 +430,212 @@ export class TemplateService extends BaseService {
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
+  }
+
+  /**
+   * NEW ARCHITECTURE: Load template component from file system
+   * Loads header, footer, payment-section, or body from templates/ directory
+   */
+  private async loadTemplateFile(filePath: string): Promise<string> {
+    try {
+      const response = await fetch(`/templates/${filePath}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load template file: ${filePath}`);
+      }
+      return await response.text();
+    } catch (error) {
+      console.error(`Error loading template file ${filePath}:`, error);
+      return '';
+    }
+  }
+
+  /**
+   * NEW ARCHITECTURE: Check if a template type requires payment section
+   * All 11 current templates require payment
+   */
+  private isPaymentLetter(templateType: LetterTemplateType): boolean {
+    const paymentLetters: LetterTemplateType[] = [
+      'external_index_only',
+      'external_real_change',
+      'external_as_agreed',
+      'internal_audit_index',
+      'internal_audit_real',
+      'internal_audit_agreed',
+      'retainer_index',
+      'retainer_real',
+      'internal_bookkeeping_index',
+      'internal_bookkeeping_real',
+      'internal_bookkeeping_agreed'
+    ];
+
+    return paymentLetters.includes(templateType);
+  }
+
+  /**
+   * NEW ARCHITECTURE: Generate check dates description
+   * Creates text like "החל מיום 5.1.2026 ועד ליום 5.8.2026"
+   */
+  private generateCheckDatesDescription(numChecks: 8 | 12, taxYear: number): string {
+    const endMonth = numChecks; // 8 checks = month 8, 12 checks = month 12
+    return `החל מיום 5.1.${taxYear} ועד ליום 5.${endMonth}.${taxYear}`;
+  }
+
+  /**
+   * NEW ARCHITECTURE: Build full HTML letter from 4 components
+   * Combines header + body + [optional payment] + footer
+   */
+  private buildFullHTML(
+    header: string,
+    body: string,
+    paymentSection: string,
+    footer: string
+  ): string {
+    return `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב - {{company_name}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!--[if mso]>
+    <style type="text/css">
+    body, table, td {font-family: Arial, sans-serif !important;}
+    </style>
+    <![endif]-->
+    <style type="text/css">
+        /* Mobile tagline - two lines */
+        @media only screen and (max-width: 600px) {
+            .tagline-desktop { display: none !important; }
+            .tagline-mobile { display: inline !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'Assistant', 'Heebo', Arial, sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${paymentSection}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+  }
+
+  /**
+   * NEW ARCHITECTURE: Generate letter from new 4-component system
+   * Uses files from templates/components/ and templates/bodies/
+   */
+  async generateLetterFromComponents(
+    templateType: LetterTemplateType,
+    clientId: string,
+    variables: Partial<LetterVariables>,
+    feeCalculationId?: string
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Load the 4 components
+      const header = await this.loadTemplateFile('components/header.html');
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 2. Load body based on template type (for now only annual-fee exists)
+      const bodyFile = this.getBodyFileName(templateType);
+      const body = await this.loadTemplateFile(`bodies/${bodyFile}`);
+
+      // 3. Load payment section if needed
+      const needsPayment = this.isPaymentLetter(templateType);
+      let paymentSection = '';
+      if (needsPayment) {
+        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+      }
+
+      // 4. Add automatic variables
+      const fullVariables: Partial<LetterVariables> = {
+        ...variables,
+        letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
+        year: variables.year || new Date().getFullYear(),
+        tax_year: variables.tax_year || (new Date().getFullYear() + 1),
+        num_checks: variables.num_checks || 8,
+        check_dates_description: this.generateCheckDatesDescription(
+          (variables.num_checks as 8 | 12) || 8,
+          variables.tax_year || (new Date().getFullYear() + 1)
+        )
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildFullHTML(header, body, paymentSection, footer);
+
+      // 6. Replace all variables
+      fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. Save generated letter
+      const { data: generatedLetter, error: saveError } = await supabase
+        .from('generated_letters')
+        .insert({
+          tenant_id: tenantId,
+          client_id: clientId,
+          template_id: null, // No template_id for file-based system
+          fee_calculation_id: feeCalculationId,
+          variables_used: fullVariables,
+          generated_content_html: fullHtml,
+          generated_content_text: plainText,
+          payment_link: fullVariables.payment_link,
+          created_at: new Date().toISOString(),
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (saveError) throw saveError;
+
+      await this.logAction('generate_letter', generatedLetter.id, {
+        template_type: templateType,
+        client_id: clientId
+      });
+
+      return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get body file name from template type
+   */
+  private getBodyFileName(templateType: LetterTemplateType): string {
+    // Map template types to body files
+    const bodyMap: Record<LetterTemplateType, string> = {
+      'external_index_only': 'annual-fee.html',
+      'external_real_change': 'annual-fee-real.html', // TODO: Create this
+      'external_as_agreed': 'annual-fee-agreed.html', // TODO: Create this
+      'internal_audit_index': 'internal-audit-index.html', // TODO: Create this
+      'internal_audit_real': 'internal-audit-real.html', // TODO: Create this
+      'internal_audit_agreed': 'internal-audit-agreed.html', // TODO: Create this
+      'retainer_index': 'retainer-index.html', // TODO: Create this
+      'retainer_real': 'retainer-real.html', // TODO: Create this
+      'internal_bookkeeping_index': 'bookkeeping-index.html', // TODO: Create this
+      'internal_bookkeeping_real': 'bookkeeping-real.html', // TODO: Create this
+      'internal_bookkeeping_agreed': 'bookkeeping-agreed.html' // TODO: Create this
+    };
+
+    return bodyMap[templateType] || 'annual-fee.html';
+  }
+
+  /**
+   * Format date in Israeli format (DD/MM/YYYY)
+   */
+  private formatIsraeliDate(date: Date): string {
+    return new Intl.DateTimeFormat('he-IL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date);
   }
 }
