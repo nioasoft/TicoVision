@@ -73,11 +73,14 @@ function buildLetterHtml(): string {
   const discounts = calculateDiscounts(originalAmount);
 
   // Demo variables
+  const companyName = 'חברת דמו בע"מ';
+  const groupName = 'קבוצת דמו';
+
   const variables = {
     // Header
     letter_date: '20.10.2025',
-    company_name: 'חברת דמו בע"מ',
-    group_name: 'קבוצת דמו',
+    company_name: companyName,
+    group_name: groupName,
 
     // Body
     year: nextYear.toString(), // Always next year (2026 for 2025)

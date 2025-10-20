@@ -41,14 +41,22 @@
         <tr>
             <td style="padding: 0 40px 30px 40px;">
                 <div style="background-color: #f3f4f6; border-radius: 8px; padding: 24px; text-align: center;">
-                    <div style="font-size: 16px; color: #71717a; margin-bottom: 8px;">
-                        סכום לתשלום:
+                    <div style="font-size: 18px; font-weight: 600; color: #2c3e50; margin-bottom: 12px;">
+                        בתמורה משרדנו יעניק לכם הנחה של 9%
                     </div>
-                    <div style="font-size: 36px; font-weight: 700; color: #09090b;">
-                        ₪<span id="amount">10,000</span>
+                    <div style="font-size: 17px; color: #09090b; line-height: 1.6; margin-bottom: 8px;">
+                        הסכום כולל מע"מ לפני הנחה הוא ₪<span id="amount-original">10,000</span>
                     </div>
-                    <div style="font-size: 14px; color: #16a34a; margin-top: 8px; font-weight: 600;">
-                        חיסכון של ₪800 (8%)
+                    <div style="font-size: 17px; color: #09090b; line-height: 1.6; margin-bottom: 16px;">
+                        והסכום לאחר ההנחה הוא ₪<span id="amount-after">9,100</span> כולל מע"מ
+                    </div>
+                    <div style="border-top: 2px solid #2c3e50; padding-top: 16px; margin-top: 16px;">
+                        <div style="font-size: 16px; color: #71717a; margin-bottom: 8px;">
+                            סכום לתשלום:
+                        </div>
+                        <div style="font-size: 36px; font-weight: 700; color: #09090b;">
+                            ₪<span id="amount-final">9,100</span>
+                        </div>
                     </div>
                 </div>
             </td>
@@ -220,10 +228,17 @@
         // Get client_id and amount from URL
         const urlParams = new URLSearchParams(window.location.search);
         const clientId = urlParams.get('client_id') || 'unknown';
-        const amount = urlParams.get('amount') || '10,000';
+        const amountOriginal = urlParams.get('amount') || '10,000';
 
-        // Update amount display
-        document.getElementById('amount').textContent = amount;
+        // Calculate discount (9%)
+        const cleanAmount = parseFloat(amountOriginal.replace(/,/g, ''));
+        const amountAfterDiscount = Math.round(cleanAmount * 0.91);
+        const formattedAmountAfter = amountAfterDiscount.toLocaleString('he-IL');
+
+        // Update all amount displays
+        document.getElementById('amount-original').textContent = amountOriginal;
+        document.getElementById('amount-after').textContent = formattedAmountAfter;
+        document.getElementById('amount-final').textContent = formattedAmountAfter;
 
         // Handle form submission
         document.getElementById('confirmForm').addEventListener('submit', async function(e) {
@@ -231,7 +246,8 @@
 
             const formData = {
                 client_id: clientId,
-                amount: amount,
+                amount: formattedAmountAfter,  // Amount after discount
+                amount_original: amountOriginal,  // Original amount before discount
                 full_name: document.getElementById('fullName').value,
                 email: document.getElementById('email').value,
                 transfer_date: document.getElementById('transferDate').value,
