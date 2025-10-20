@@ -6,6 +6,14 @@
   "installCommand": "npm install",
   "rewrites": [
     {
+      "source": "/check-details.html",
+      "destination": "/check-details.html"
+    },
+    {
+      "source": "/bank-transfer-details.html",
+      "destination": "/bank-transfer-details.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
