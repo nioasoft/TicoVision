@@ -1,0 +1,32 @@
+<!-- Letter Header Component -->
+<!-- Used by all 11 letter templates -->
+<!-- Variables: {{letter_date}}, {{company_name}}, {{group_name}} -->
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+        <!-- Recipient (appears on right side in RTL) -->
+        <td width="50%" style="vertical-align: top; text-align: left;">
+            <div style="font-size: 13px; line-height: 1.6; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right;">
+                לכבוד:<br>
+                {{company_name}}<br>
+                {{group_name}}
+            </div>
+        </td>
+        <!-- Logo and Date (appears on left side in RTL) -->
+        <td width="50%" style="vertical-align: top;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="ltr">
+                <tr>
+                    <td style="text-align: left;">
+                        <img src="https://ticovision.vercel.app/brand/tico_logo_transparent.png" width="90" height="40" alt="TICO" style="display: block; border: 0; margin-bottom: 8px; margin-left: 0;">
+                        <div style="font-size: 12px; line-height: 1.5; color: hsl(215.4 16.3% 46.9%); margin-left: 0; padding-left: 8px;">
+                            {{letter_date}}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Top border -->
+<div style="border-top: 1px solid hsl(214.3 31.8% 91.4%); margin-top: 20px;"></div>

@@ -1,0 +1,160 @@
+<!-- Letter Footer Component -->
+<!-- Used by all 11 letter templates -->
+<!-- Variables: payment amounts, links, client_id, contact details -->
+
+<!-- Border before payment section -->
+<div style="border-top: 1px solid hsl(214.3 31.8% 91.4%);"></div>
+
+<!-- Payment Options Section -->
+<div style="padding-top: 24px;">
+    <div style="font-size: 14px; line-height: 1.5; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right; margin-bottom: 16px;">
+        אופן התשלום:
+    </div>
+
+    <!-- Recommended Payment Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid hsl(214.3 31.8% 91.4%); border-radius: 6px; margin-bottom: 16px;">
+        <tr>
+            <td style="padding: 16px;">
+                <div style="font-size: 13px; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 2px solid hsl(214.3 31.8% 91.4%);">
+                    תשלום מומלץ - חסכו עד 8%
+                </div>
+
+                <!-- Credit Card Buttons Side by Side -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <!-- Single Payment Button -->
+                        <td width="49%" style="padding-left: 4px; vertical-align: top;">
+                            <a href="{{payment_link_single}}" style="text-decoration: none; display: block;">
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid hsl(214.3 31.8% 91.4%); border-radius: 4px; background-color: #f8fafc;">
+                                    <tr>
+                                        <td style="padding: 14px 16px; text-align: center;">
+                                            <div style="color: hsl(222.2 84% 4.9%); font-size: 13px; font-weight: 600;">
+                                                תשלום אחד בכרטיס אשראי
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 700; color: hsl(222.2 84% 4.9%); margin-top: 4px;">
+                                                ₪{{amount_single}}
+                                            </div>
+                                            <div style="font-size: 12px; color: hsl(215.4 16.3% 46.9%); margin-top: 2px;">
+                                                (חסכון ₪{{discount_single}})
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </a>
+                        </td>
+
+                        <td width="2%"></td>
+
+                        <!-- 4 Payments Button -->
+                        <td width="49%" style="padding-right: 4px; vertical-align: top;">
+                            <a href="{{payment_link_4_payments}}" style="text-decoration: none; display: block;">
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid hsl(214.3 31.8% 91.4%); border-radius: 4px; background-color: #f8fafc;">
+                                    <tr>
+                                        <td style="padding: 14px 16px; text-align: center;">
+                                            <div style="color: hsl(222.2 84% 4.9%); font-size: 13px; font-weight: 600;">
+                                                תשלום עד 4 תשלומים
+                                            </div>
+                                            <div style="font-size: 15px; font-weight: 700; color: hsl(222.2 84% 4.9%); margin-top: 4px;">
+                                                ₪{{amount_4_payments}}
+                                            </div>
+                                            <div style="font-size: 12px; color: hsl(215.4 16.3% 46.9%); margin-top: 2px;">
+                                                (חסכון ₪{{discount_4_payments}})
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Additional Payment Options -->
+    <div style="font-size: 13px; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right; margin-bottom: 10px;">
+        אופציות תשלום נוספות:
+    </div>
+
+    <!-- Bank Transfer Button -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px;">
+        <tr>
+            <td style="border: 1px solid hsl(214.3 31.8% 91.4%); border-radius: 4px; padding: 10px 16px; text-align: center; background-color: #fafafa;">
+                <a href="#bank-details" style="color: hsl(222.2 84% 4.9%); font-size: 13px; font-weight: 500; text-decoration: none; display: block;">
+                    העברה בנקאית - ₪{{amount_bank}}
+                </a>
+            </td>
+        </tr>
+    </table>
+
+    <!-- 8 Checks Button -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td style="border: 1px solid hsl(214.3 31.8% 91.4%); border-radius: 4px; padding: 10px 16px; text-align: center; background-color: #fafafa;">
+                <a href="https://ticovision.vercel.app/templates/check-details.html?client_id={{client_id}}&track=checks" target="_blank" style="color: hsl(222.2 84% 4.9%); font-size: 13px; font-weight: 500; text-decoration: none; display: block;">
+                    8 המחאות - ₪{{amount_checks}}
+                </a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- Border before contact -->
+<div style="border-top: 1px solid hsl(214.3 31.8% 91.4%); margin-top: 20px;"></div>
+
+<!-- Footer Contact -->
+<div style="padding-top: 24px;">
+    <div style="font-size: 13px; line-height: 1.6; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right;">
+        להסדרת התשלום יש לפנות לסמנכ"לית הכספים, סיגל נגר, בטלפון 050-8620993<br>
+        או במייל sigal@franco.co.il.
+    </div>
+</div>
+
+<!-- Footer Top Border -->
+<div style="border-top: 2px solid hsl(214.3 31.8% 91.4%); margin-top: 20px;"></div>
+
+<!-- Footer Content -->
+<div style="padding-top: 24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <!-- Logo Column - 30% width, aligned right -->
+            <td width="30%" style="vertical-align: top; text-align: right; padding-left: 0;">
+                <img src="https://ticovision.vercel.app/brand/franco-logo.png" width="100" height="70" alt="TICO FRANCO & CO" style="display: block; margin-left: auto; margin-right: 0; border: 0;">
+            </td>
+            <!-- Gap Column - 12% -->
+            <td width="12%" style="padding: 0;"></td>
+            <!-- Contact Details - 58% -->
+            <td width="58%" style="vertical-align: top; text-align: right;">
+                <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                    <tr>
+                        <td style="font-size: 11px; line-height: 1.8; color: hsl(215.4 16.3% 46.9%); padding-bottom: 4px;">
+                            <img src="https://ticovision.vercel.app/brand/icon-building.png" width="18" height="18" alt="📍" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
+                            שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size: 11px; line-height: 1.8; color: hsl(215.4 16.3% 46.9%); padding-bottom: 4px;">
+                            <img src="https://ticovision.vercel.app/brand/icon-phone.png" width="18" height="18" alt="📞" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
+                            03-5666170
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size: 11px; line-height: 1.8; color: hsl(215.4 16.3% 46.9%);">
+                            <img src="https://ticovision.vercel.app/brand/icon-email.png" width="18" height="14" alt="📧" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
+                            tico@franco.co.il
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<!-- Tagline -->
+<div style="padding-top: 24px;">
+    <div style="border-top: 2px solid #000000; border-bottom: 2px solid #000000; padding: 30px 0;">
+        <div style="font-family: 'Assistant', Arial, sans-serif; font-weight: 500; font-size: 18px; line-height: 1.5; letter-spacing: 5px; text-transform: uppercase; color: #000000; text-align: center;">
+            DARE TO THINK · COMMIT TO DELIVER
+        </div>
+    </div>
+</div>

@@ -4,6 +4,7 @@
  */
 
 import type { LetterVariables } from '../types/letter.types';
+import { formatLetterDate } from './date-formatter';
 
 export class TemplateParser {
   private static readonly VARIABLE_PATTERN = /\[([^\]]+)\]/g; // Matches [variable_name]
@@ -42,15 +43,21 @@ export class TemplateParser {
   private static buildVariableMap(variables: Partial<LetterVariables>): Map<string, string> {
     const map = new Map<string, string>();
 
-    // Date variables
-    if (variables.date) {
-      map.set('תאריך', variables.date);
-      map.set('date', variables.date);
-    }
+    // Date variables - auto-generate letter_date if not provided
+    const currentDate = variables.date || formatLetterDate();
+    map.set('תאריך', currentDate);
+    map.set('date', currentDate);
+    map.set('letter_date', currentDate);
+    map.set('תאריך_מכתב', currentDate);
 
     if (variables.year) {
       map.set('שנה', variables.year);
       map.set('year', variables.year);
+    } else {
+      // Auto-add current year
+      const currentYear = new Date().getFullYear().toString();
+      map.set('שנה', currentYear);
+      map.set('year', currentYear);
     }
 
     // Client information
