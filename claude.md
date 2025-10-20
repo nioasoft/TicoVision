@@ -462,27 +462,96 @@ kill -9 $(lsof -t -i:5173)    # Kill process on port 5173
 2. **SECOND**: Use npx supabase commands for schema changes
 3. **THIRD**: Manual SQL only when needed
 
-## Letter Template System (NOT AI GENERATION)
+## 📧 Letter System - CRITICAL ARCHITECTURE
 
-### How Letter Templates Work:
-1. **Shani & Tiko provide 11 completed letter templates** (HTML/Text)
-2. **System replaces variables**: `{{client_name}}`, `{{amount}}`, `{{date}}`
-3. **Template selection logic**: Based on fee type, client status, etc.
-4. **NO AI generation needed** - simple string replacement
+### ⚠️ IMPORTANT - Database Tables
+**USE ONLY:** `generated_letters` table (via `template.service.ts`)
+**DO NOT USE:** `letter_history` table (deprecated)
 
-### Template Variables:
+### Template Structure (3-Part System)
+All 11 letters share the same Header + Footer, only Body content changes:
+
+1. **Header** (`/templates/letter-header.html`) - Shared by all
+   - Logo TICO + Date
+   - Recipient details (לכבוד)
+   - Variables: `{{letter_date}}`, `{{company_name}}`, `{{group_name}}`
+
+2. **Body** (`/templates/letter-body-[type].html`) - Unique per template
+   - 11 different bodies (one per template type)
+   - Example: `letter-body-annual-fee.html`
+   - Variables: `{{company_name}}`, `{{year}}`, `{{inflation_rate}}`
+
+3. **Footer** (`/templates/letter-footer.html`) - Shared by all
+   - Payment section (4 options: CC single, CC 4 payments, Bank, Checks)
+   - Contact details (Sigal Nagar)
+   - Franco logo + company info
+   - Tagline: "DARE TO THINK · COMMIT TO DELIVER"
+   - Variables: `{{amount_single}}`, `{{payment_link_single}}`, etc.
+
+### How System Merges Components
 ```typescript
-interface LetterVariables {
-  client_name: string;
-  company_name: string;
-  amount: string;        // Formatted in ILS (₪1,234.56)
-  due_date: string;      // DD/MM/YYYY format
-  contact_name: string;
-  previous_amount?: string;
-  adjustment_reason?: string;
-  payment_link?: string;     // Cardcom payment URL
-}
+// System automatically combines:
+final_letter = header + body + footer
+
+// Example flow:
+const variables = {
+  letter_date: '4.10.2025',        // Auto-generated if not provided
+  company_name: 'מסעדת האחים',
+  amount_single: 43344,
+  payment_link_single: 'https://cardcom...'
+};
+
+await templateService.generateLetter(templateId, clientId, variables);
+// → Saves to generated_letters with full HTML
 ```
+
+### Template Variables - COMPLETE LIST
+
+**Auto-Generated (you don't need to provide):**
+- `{{letter_date}}` - Current date in Israeli format (4.10.2025)
+- `{{year}}` - Current year (2025)
+
+**Required in Header:**
+- `{{company_name}}` - Client company name
+- `{{group_name}}` - Company group name (optional)
+
+**Required in Footer (Payment):**
+- `{{amount_single}}` - Single payment amount
+- `{{amount_4_payments}}` - 4 payments amount
+- `{{amount_bank}}` - Bank transfer amount
+- `{{amount_checks}}` - 8 checks amount
+- `{{discount_single}}` - Single payment savings
+- `{{discount_4_payments}}` - 4 payments savings
+- `{{payment_link_single}}` - Cardcom link (single payment)
+- `{{payment_link_4_payments}}` - Cardcom link (4 payments)
+- `{{client_id}}` - Client ID for check details
+
+**Body Variables (vary by template):**
+- `{{inflation_rate}}` - 4% (for annual fee letters)
+- `{{adjustment_reason}}` - Reason for fee change
+- etc. (see `letter.types.ts` for full schema)
+
+### Services Architecture
+
+**USE THIS:** `modules/letters/services/template.service.ts`
+- Advanced system with header/footer support
+- Auto-generates `letter_date` and `year`
+- Saves to `generated_letters` table
+- Tracks opens, clicks, payments
+
+**DO NOT USE:** `services/letter.service.ts`
+- Old/deprecated implementation
+- Saves to `letter_history` (deprecated table)
+- No header/footer support
+
+### Variable Format
+Always use double curly braces: `{{variable_name}}`
+
+**Examples:**
+- ✅ `{{letter_date}}` - Correct
+- ✅ `{{company_name}}` - Correct
+- ❌ `[letter_date]` - Wrong (old format)
+- ❌ `{letter_date}` - Wrong (single braces)
 
 ## API Key Security - Development Phase
 ```env
