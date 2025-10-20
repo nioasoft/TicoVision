@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פרטי תשלום בהמחאות - מסעדת האחים</title>
+    <title id="page-title">פרטי תשלום בהמחאות</title>
     <style>
         @media print {
             body {
@@ -272,6 +272,9 @@
 
         // Update page content dynamically
         document.addEventListener('DOMContentLoaded', function() {
+            // Update page title
+            document.getElementById('page-title').textContent = `פרטי תשלום בהמחאות - ${companyName}`;
+
             // Update company name
             const companyElements = document.querySelectorAll('.company-name');
             companyElements.forEach(el => {
