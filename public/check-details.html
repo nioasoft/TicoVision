@@ -104,7 +104,7 @@
                 <div style="font-size: 14px; line-height: 1.5; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right; margin-bottom: 12px;">
                     לוח תשלומים:
                 </div>
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid hsl(214.3 31.8% 91.4%); border-radius: 6px; overflow: hidden;">
+                <table id="check-schedule-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid hsl(214.3 31.8% 91.4%); border-radius: 6px; overflow: hidden;">
                     <!-- Table Header -->
                     <tr style="background-color: hsl(210 40% 96.1%);">
                         <th style="padding: 12px; text-align: right; font-size: 13px; font-weight: 600; color: hsl(222.2 84% 4.9%); border-bottom: 1px solid hsl(214.3 31.8% 91.4%);">מספר המחאה</th>
@@ -315,31 +315,21 @@
 
         // Rebuild the check table with correct number of rows
         function rebuildCheckTable() {
-            // Find the check schedule table (the one with border and inside the check schedule section)
-            const tables = document.querySelectorAll('table');
-            let checkTable = null;
+            // Find the check schedule table by its ID
+            const checkTable = document.getElementById('check-schedule-table');
 
-            // Find the table that contains the header row with "מספר המחאה"
-            for (const table of tables) {
-                const headerCells = table.querySelectorAll('th');
-                for (const th of headerCells) {
-                    if (th.textContent.includes('מספר המחאה')) {
-                        checkTable = table;
-                        break;
-                    }
-                }
-                if (checkTable) break;
+            if (!checkTable) {
+                console.error('Could not find check schedule table');
+                return;
             }
 
-            if (!checkTable) return;
-
-            // Get all rows in the table
-            const rows = Array.from(checkTable.querySelectorAll('tr'));
+            // Get all TR elements that are DIRECT children of the table
+            const allRows = Array.from(checkTable.querySelectorAll('tr'));
 
             // Keep only the header row (first row with <th> elements)
-            // Remove all data rows (rows 1-9: checks 1-8 + total row)
-            for (let i = rows.length - 1; i >= 1; i--) {
-                rows[i].remove();
+            // Remove all data rows (indices 1-9: checks 1-8 + total row)
+            for (let i = allRows.length - 1; i >= 1; i--) {
+                allRows[i].remove();
             }
 
             // Generate new rows for numChecks
