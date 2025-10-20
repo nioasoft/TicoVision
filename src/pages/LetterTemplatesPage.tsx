@@ -35,6 +35,13 @@ import { TemplateParser } from '@/modules/letters/utils/template-parser';
 import type { LetterTemplate, LetterVariables, TEMPLATE_CATEGORIES } from '@/modules/letters/types/letter.types';
 import { TEMPLATE_CATEGORIES as categories } from '@/modules/letters/types/letter.types';
 
+// Simple logger for errors
+const logger = {
+  error: (message: string, error: unknown) => {
+    console.error(message, error);
+  }
+};
+
 // Create templateService outside component to prevent recreation on each render
 const templateService = new TemplateService();
 
@@ -245,8 +252,9 @@ export function LetterTemplatesPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="settings">הגדרות כותרת ותחתית</TabsTrigger>
+          <TabsTrigger value="builder">בניית מכתב</TabsTrigger>
           <TabsTrigger value="templates">תבניות</TabsTrigger>
         </TabsList>
 
@@ -346,6 +354,187 @@ export function LetterTemplatesPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="builder" className="space-y-4">
+          {/* Letter Builder - Hybrid System */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-right">בניית מכתב מרכיבים קיימים</CardTitle>
+              <CardDescription className="text-right">
+                בחר רכיבים מהמערכת ובנה מכתב מותאם אישית. כל מכתב מורכב מ-4 חלקים: כותרת, תוכן, תשלום ופוטר
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Component Selectors */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {/* Header Selection */}
+                <Card className="border-2 border-primary/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm text-right flex items-center justify-end gap-2">
+                      <FileText className="h-4 w-4" />
+                      כותרת עליונה
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select defaultValue="default">
+                      <SelectTrigger dir="rtl">
+                        <SelectValue placeholder="בחר כותרת" />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="default">כותרת ברירת מחדל</SelectItem>
+                        <SelectItem value="custom">כותרת מותאמת אישית</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-2 text-right">
+                      לוגו TICO + תאריך + פרטי נמען
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Body Selection */}
+                <Card className="border-2 border-blue-500/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm text-right flex items-center justify-end gap-2">
+                      <FileText className="h-4 w-4" />
+                      תוכן המכתב (Body)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select defaultValue="annual-fee">
+                      <SelectTrigger dir="rtl">
+                        <SelectValue placeholder="בחר תוכן" />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="annual-fee">A - שינוי מדד בלבד</SelectItem>
+                        <SelectItem value="real-change" disabled>B - שינוי ריאלי (בקרוב)</SelectItem>
+                        <SelectItem value="as-agreed" disabled>C - כמוסכם (בקרוב)</SelectItem>
+                        <SelectItem value="internal-d1" disabled>D1 - פנימי מדד (בקרוב)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => {
+                        toast.info('פתיחת טופס בקשת Body חדש...');
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      בקש Body חדש
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Payment Selection */}
+                <Card className="border-2 border-green-500/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm text-right flex items-center justify-end gap-2">
+                      <Calculator className="h-4 w-4" />
+                      אופן תשלום
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select defaultValue="with-payment">
+                      <SelectTrigger dir="rtl">
+                        <SelectValue placeholder="בחר אופן תשלום" />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="with-payment">כולל תשלום (4 כפתורים)</SelectItem>
+                        <SelectItem value="no-payment">ללא תשלום</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-2 text-right">
+                      העברה בנקאית + אשראי + המחאות
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Footer Selection */}
+                <Card className="border-2 border-purple-500/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm text-right flex items-center justify-end gap-2">
+                      <FileText className="h-4 w-4" />
+                      כותרת תחתונה
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Select defaultValue="default">
+                      <SelectTrigger dir="rtl">
+                        <SelectValue placeholder="בחר פוטר" />
+                      </SelectTrigger>
+                      <SelectContent dir="rtl">
+                        <SelectItem value="default">פוטר ברירת מחדל</SelectItem>
+                        <SelectItem value="custom">פוטר מותאם אישית</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-2 text-right">
+                      לוגו Franco + פרטי קשר + tagline
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Preview Button */}
+              <div className="flex justify-center pt-4">
+                <Button size="lg" className="px-8">
+                  <Eye className="h-4 w-4 mr-2" />
+                  תצוגה מקדימה של המכתב המורכב
+                </Button>
+              </div>
+
+              {/* Info Box */}
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-right">
+                  <strong>איך זה עובד?</strong>
+                  <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                    <li>בחר כותרת עליונה (Header) - קבועה לכל המכתבים</li>
+                    <li>בחר תוכן (Body) - שונה בין סוגי המכתבים (יש 11 סוגים)</li>
+                    <li>בחר האם להוסיף חלק תשלום - רלוונטי למכתבי שכר טרחה</li>
+                    <li>בחר פוטר (Footer) - קבוע לכל המכתבים</li>
+                    <li>לחץ על תצוגה מקדימה לראות את המכתב המוכן</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
+              {/* Documentation Link */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm text-right flex items-center justify-end gap-2">
+                    <FileText className="h-4 w-4" />
+                    מדריך יצירת Body חדש
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-right mb-3">
+                    כשתרצה ליצור Body חדש, עבור למסמך חוקי העיצוב ובקש ממני לבנות לך אותו לפי הכללים המדויקים.
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        window.open('/DOCS/LETTER-BODY-DESIGN-RULES.md', '_blank');
+                      }}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      פתח מדריך עיצוב
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        toast.info('פתיחת טופס בקשה...');
+                      }}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      בקש Body חדש
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
           <Card>
