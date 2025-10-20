@@ -47,7 +47,7 @@
         <!-- Title -->
         <tr>
             <td style="padding: 0 40px 24px 40px;">
-                <div style="font-size: 18px; line-height: 1.4; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: center;">
+                <div id="main-title" style="font-size: 18px; line-height: 1.4; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: center;">
                     פרטי תשלום ב-8 המחאות
                 </div>
             </td>
@@ -254,8 +254,9 @@
         const totalAmount = urlParams.get('amount');
         const companyName = urlParams.get('company_name') || 'מסעדת האחים';
         const groupName = urlParams.get('group_name') || 'קבוצת מסעדות ישראליות';
+        const numChecks = parseInt(urlParams.get('num_checks')) || 8; // Dynamic: 8 or 12
 
-        // Calculate check amount (total ÷ 8)
+        // Calculate check amount (total ÷ numChecks)
         let checkAmount = 5900; // Default
         let formattedCheckAmount = '5,900';
         let formattedTotalAmount = '47,200';
@@ -264,7 +265,7 @@
             // Remove commas and parse
             const cleanAmount = parseFloat(totalAmount.replace(/,/g, ''));
             if (!isNaN(cleanAmount)) {
-                checkAmount = Math.round(cleanAmount / 8);
+                checkAmount = Math.round(cleanAmount / numChecks);
                 formattedCheckAmount = checkAmount.toLocaleString('he-IL');
                 formattedTotalAmount = cleanAmount.toLocaleString('he-IL');
             }
@@ -272,8 +273,11 @@
 
         // Update page content dynamically
         document.addEventListener('DOMContentLoaded', function() {
-            // Update page title
-            document.getElementById('page-title').textContent = `פרטי תשלום בהמחאות - ${companyName}`;
+            // Update page title (browser tab)
+            document.getElementById('page-title').textContent = `פרטי תשלום ב-${numChecks} המחאות - ${companyName}`;
+
+            // Update main title (in page)
+            document.getElementById('main-title').textContent = `פרטי תשלום ב-${numChecks} המחאות`;
 
             // Update company name
             const companyElements = document.querySelectorAll('.company-name');
@@ -296,19 +300,63 @@
             // Update description text
             const descriptionElement = document.querySelector('.check-description');
             if (descriptionElement) {
-                descriptionElement.innerHTML = `נודה, איפה, על הכנת 8 המחאות שסכום כל אחת מהן (הסכום כבר כולל מע"מ) הינו בסה"כ של: <span style="text-decoration: underline; font-weight: 600;">₪${formattedCheckAmount}</span>.`;
+                descriptionElement.innerHTML = `נודה, איפה, על הכנת ${numChecks} המחאות שסכום כל אחת מהן (הסכום כבר כולל מע"מ) הינו בסה"כ של: <span style="text-decoration: underline; font-weight: 600;">₪${formattedCheckAmount}</span>.`;
             }
 
             // Update calculation text
             const calculationElement = document.querySelector('.check-calculation');
             if (calculationElement) {
-                calculationElement.innerHTML = `<strong>סכום כולל לתשלום: ₪${formattedTotalAmount}</strong> (8 המחאות × ₪${formattedCheckAmount})`;
+                calculationElement.innerHTML = `<strong>סכום כולל לתשלום: ₪${formattedTotalAmount}</strong> (${numChecks} המחאות × ₪${formattedCheckAmount})`;
             }
+
+            // REBUILD TABLE DYNAMICALLY based on numChecks
+            rebuildCheckTable();
         });
+
+        // Rebuild the check table with correct number of rows
+        function rebuildCheckTable() {
+            const tbody = document.querySelector('table tbody');
+            if (!tbody) return;
+
+            // Clear existing rows (except header)
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach((row, index) => {
+                if (index > 0) { // Keep header (index 0)
+                    row.remove();
+                }
+            });
+
+            // Generate new rows for numChecks
+            const currentYear = new Date().getFullYear();
+            const taxYear = currentYear + 1; // 2026 for 2025
+
+            for (let i = 1; i <= numChecks; i++) {
+                const month = i;
+                const date = `5.${month}.${taxYear}`;
+                const isLast = (i === numChecks);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding: 10px 12px; text-align: right; font-size: 13px; color: hsl(222.2 84% 4.9%); ${!isLast ? 'border-bottom: 1px solid hsl(214.3 31.8% 91.4%);' : ''}">${i}</td>
+                    <td style="padding: 10px 12px; text-align: right; font-size: 13px; color: hsl(222.2 84% 4.9%); ${!isLast ? 'border-bottom: 1px solid hsl(214.3 31.8% 91.4%);' : ''}">${date}</td>
+                    <td class="check-amount" style="padding: 10px 12px; text-align: right; font-size: 13px; font-weight: 600; color: hsl(222.2 84% 4.9%); ${!isLast ? 'border-bottom: 1px solid hsl(214.3 31.8% 91.4%);' : ''}">₪${formattedCheckAmount}</td>
+                `;
+                tbody.appendChild(row);
+            }
+
+            // Add total row
+            const totalRow = document.createElement('tr');
+            totalRow.style.backgroundColor = 'hsl(210 40% 96.1%)';
+            totalRow.innerHTML = `
+                <td colspan="2" style="padding: 12px; text-align: right; font-size: 14px; font-weight: 600; color: hsl(222.2 84% 4.9%); border-top: 2px solid hsl(214.3 31.8% 91.4%);">סה"כ לתשלום:</td>
+                <td class="total-amount" style="padding: 12px; text-align: right; font-size: 14px; font-weight: 700; color: hsl(222.2 84% 4.9%); border-top: 2px solid hsl(214.3 31.8% 91.4%);">₪${formattedTotalAmount}</td>
+            `;
+            tbody.appendChild(totalRow);
+        }
 
         // Track check details view
         if (clientId) {
-            console.log('Payment method selected: 8 Checks');
+            console.log(`Payment method selected: ${numChecks} Checks`);
             console.log('Client ID:', clientId);
             console.log('Total Amount:', totalAmount);
             console.log('Check Amount:', formattedCheckAmount);
