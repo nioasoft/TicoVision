@@ -14,6 +14,14 @@
       "destination": "/bank-transfer-details.html"
     },
     {
+      "source": "/payment-credit-single.html",
+      "destination": "/payment-credit-single.html"
+    },
+    {
+      "source": "/payment-credit-installments.html",
+      "destination": "/payment-credit-installments.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -40,6 +40,22 @@ function replaceVariables(html: string, variables: Record<string, string>): stri
 }
 
 /**
+ * Calculate discount amounts
+ */
+function calculateDiscounts(originalAmount: number) {
+  const formatNumber = (num: number): string => {
+    return Math.round(num).toLocaleString('he-IL');
+  };
+
+  return {
+    amount_original: formatNumber(originalAmount),
+    amount_after_bank: formatNumber(originalAmount * 0.91),     // 9% discount
+    amount_after_single: formatNumber(originalAmount * 0.92),   // 8% discount
+    amount_after_payments: formatNumber(originalAmount * 0.96), // 4% discount
+  };
+}
+
+/**
  * Build complete letter HTML
  */
 function buildLetterHtml(): string {
@@ -49,6 +65,12 @@ function buildLetterHtml(): string {
   // Calculate next year (always one year ahead)
   const currentYear = new Date().getFullYear();
   const nextYear = currentYear + 1;
+
+  // Original amount (from fee calculation system)
+  const originalAmount = 10000; // Demo amount: ₪10,000
+
+  // Calculate all discounted amounts
+  const discounts = calculateDiscounts(originalAmount);
 
   // Demo variables
   const variables = {
@@ -61,15 +83,9 @@ function buildLetterHtml(): string {
     year: nextYear.toString(), // Always next year (2026 for 2025)
     inflation_rate: '4.2',
 
-    // Footer - Payment
-    payment_link_single: 'https://ticovision.vercel.app/payment/demo-single',
-    amount_single: '10,000',
-    discount_single: '800',
-    payment_link_4_payments: 'https://ticovision.vercel.app/payment/demo-4payments',
-    amount_4_payments: '10,400',
-    discount_4_payments: '400',
-    amount_bank: '10,000',
-    amount_checks: '10,800',
+    // Footer - Payment (NEW)
+    ...discounts,
+    tax_year: nextYear.toString(),
     client_id: 'demo-client-123',
   };
 

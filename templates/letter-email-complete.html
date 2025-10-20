@@ -10,23 +10,6 @@
     body, table, td {font-family: Arial, sans-serif !important;}
     </style>
     <![endif]-->
-    <style type="text/css">
-        /* Mobile styles - stack payment buttons vertically */
-        @media only screen and (max-width: 600px) {
-            .payment-button-container {
-                display: block !important;
-                width: 100% !important;
-            }
-            .payment-button {
-                width: 100% !important;
-                display: block !important;
-                margin-bottom: 12px !important;
-            }
-            .payment-spacer {
-                display: none !important;
-            }
-        }
-    </style>
 </head>
 <body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'Assistant', 'Heebo', Arial, sans-serif;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
@@ -136,92 +119,101 @@
                     <tr>
                         <td style="padding-top: 24px;">
                             <div style="border-top: 1px solid #e4e4e7;"></div>
-                            <div style="font-size: 17px; line-height: 1.5; font-weight: 600; color: #09090b; text-align: right; margin: 24px 0 16px 0;">
+                            <div style="font-size: 19px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin: 24px 0 20px 0;">
                                 אופן התשלום:
                             </div>
 
-                            <!-- Recommended Payment Box -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #e4e4e7; border-radius: 6px; margin-bottom: 16px;">
+                            <!-- Button 1: Bank Transfer (Most Recommended - 9% discount) -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 3px solid #2c3e50; border-radius: 8px; background-color: #f8f9fa; margin-bottom: 16px;">
                                 <tr>
-                                    <td style="padding: 16px;">
-                                        <div style="font-size: 18px; font-weight: 700; color: #09090b; text-align: center; margin-bottom: 12px; padding: 12px; background-color: #f3f4f6; border-radius: 4px;">
-                                            תשלום מומלץ - חסכו 8%
-                                        </div>
-
-                                        <!-- Payment Buttons -->
-                                        <table width="100%" cellpadding="0" cellspacing="0" border="0" class="payment-button-container">
-                                            <tr>
-                                                <!-- Single Payment Button -->
-                                                <td width="49%" class="payment-button" style="padding-left: 4px; vertical-align: top;">
-                                                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #e4e4e7; border-radius: 4px; background-color: #f8fafc;">
-                                                        <tr>
-                                                            <td style="padding: 14px 16px; text-align: center; min-height: 85px; display: table-cell; vertical-align: middle;">
-                                                                <a href="{{payment_link_single}}" style="text-decoration: none; color: #09090b;">
-                                                                    <div style="font-size: 19px; font-weight: 600;">
-                                                                        אשראי בתשלום אחד
-                                                                    </div>
-                                                                    <div style="font-size: 18px; font-weight: 700; color: #09090b; margin-top: 4px;">
-                                                                        ₪{{amount_single}}
-                                                                    </div>
-                                                                    <div style="font-size: 18px; color: #71717a; margin-top: 2px;">
-                                                                        (חסכון ₪{{discount_single}})
-                                                                    </div>
-                                                                </a>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-
-                                                <td width="2%" class="payment-spacer"></td>
-
-                                                <!-- Bank Transfer Button -->
-                                                <td width="49%" class="payment-button" style="padding-right: 4px; vertical-align: top;">
-                                                    <a href="https://ticovision.vercel.app/bank-transfer-details.html?client_id={{client_id}}&amount={{amount_bank}}" style="text-decoration: none; display: block;">
-                                                        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #e4e4e7; border-radius: 4px; background-color: #f8fafc;">
-                                                            <tr>
-                                                                <td style="padding: 14px 16px; text-align: center; min-height: 85px; display: table-cell; vertical-align: middle;">
-                                                                    <div style="font-size: 19px; font-weight: 600; color: #09090b;">
-                                                                        העברה בנקאית
-                                                                    </div>
-                                                                    <div style="font-size: 18px; font-weight: 700; color: #09090b; margin-top: 4px;">
-                                                                        ₪{{amount_bank}}
-                                                                    </div>
-                                                                    <div style="font-size: 18px; color: #71717a; margin-top: 2px;">
-                                                                        (חסכון ₪{{discount_single}})
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        </table>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Additional Payment Options -->
-                            <div style="font-size: 19px; font-weight: 600; color: #09090b; text-align: right; margin-bottom: 10px;">
-                                אופציות תשלום נוספות:
-                            </div>
-
-                            <!-- 4 Payments Button -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px;">
-                                <tr>
-                                    <td style="border: 1px solid #e4e4e7; border-radius: 4px; padding: 10px 16px; text-align: center; background-color: #fafafa;">
-                                        <a href="{{payment_link_4_payments}}" style="color: #09090b; font-size: 19px; font-weight: 500; text-decoration: none; display: block;">
-                                            אשראי עד 4 תשלומים - ₪{{amount_4_payments}} (חסכון ₪{{discount_4_payments}})
+                                    <td style="padding: 20px;">
+                                        <a href="https://ticovision.vercel.app/bank-transfer-details.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
+                                            <div style="font-size: 20px; font-weight: 700; margin-bottom: 8px; text-align: right;">
+                                                ⭐ תשלום מומלץ - בהעברה בנקאית
+                                            </div>
+                                            <div style="font-size: 18px; font-weight: 600; color: #2c3e50; margin-bottom: 12px; text-align: right;">
+                                                בתמורה משרדנו יעניק לכם הנחה של 9%
+                                            </div>
+                                            <div style="font-size: 17px; line-height: 1.6; color: #09090b; text-align: right;">
+                                                הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}
+                                                <br>
+                                                והסכום לאחר ההנחה הוא ₪{{amount_after_bank}} כולל מע"מ
+                                            </div>
+                                            <div style="margin-top: 16px; text-align: center; padding: 12px; background-color: #2c3e50; border-radius: 4px; color: #ffffff; font-size: 18px; font-weight: 600;">
+                                                לביצוע תשלום ←
+                                            </div>
                                         </a>
                                     </td>
                                 </tr>
                             </table>
 
-                            <!-- 8 Checks Button -->
-                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <!-- Button 2: Credit Card Single Payment (8% discount) -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #6c757d; border-radius: 8px; background-color: #f5f5f0; margin-bottom: 16px;">
                                 <tr>
-                                    <td style="border: 1px solid #e4e4e7; border-radius: 4px; padding: 10px 16px; text-align: center; background-color: #fafafa;">
-                                        <a href="https://ticovision.vercel.app/check-details.html?client_id={{client_id}}" style="color: #09090b; font-size: 19px; font-weight: 500; text-decoration: none; display: block;">
-                                            8 המחאות - ₪{{amount_checks}}
+                                    <td style="padding: 20px;">
+                                        <a href="https://ticovision.vercel.app/payment-credit-single.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
+                                            <div style="font-size: 19px; font-weight: 700; margin-bottom: 8px; text-align: right;">
+                                                💳 אשראי בתשלום אחד
+                                            </div>
+                                            <div style="font-size: 18px; font-weight: 600; color: #6c757d; margin-bottom: 12px; text-align: right;">
+                                                בתמורה משרדנו יעניק לכם הנחה של 8%
+                                            </div>
+                                            <div style="font-size: 17px; line-height: 1.6; color: #09090b; text-align: right;">
+                                                הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}
+                                                <br>
+                                                והסכום לאחר ההנחה הוא ₪{{amount_after_single}} כולל מע"מ
+                                            </div>
+                                            <div style="margin-top: 16px; text-align: center; padding: 12px; background-color: #6c757d; border-radius: 4px; color: #ffffff; font-size: 18px; font-weight: 600;">
+                                                לביצוע תשלום ←
+                                            </div>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Button 3: Credit Card Installments (4% discount) -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 2px solid #9ca3af; border-radius: 8px; background-color: #fafafa; margin-bottom: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <a href="https://ticovision.vercel.app/payment-credit-installments.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
+                                            <div style="font-size: 19px; font-weight: 700; margin-bottom: 8px; text-align: right;">
+                                                💳 אשראי בתשלומים
+                                            </div>
+                                            <div style="font-size: 18px; font-weight: 600; color: #9ca3af; margin-bottom: 12px; text-align: right;">
+                                                בתמורה משרדנו יעניק לכם הנחה של 4%
+                                            </div>
+                                            <div style="font-size: 17px; line-height: 1.6; color: #09090b; text-align: right;">
+                                                הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}
+                                                <br>
+                                                והסכום לאחר ההנחה הוא ₪{{amount_after_payments}} כולל מע"מ
+                                            </div>
+                                            <div style="margin-top: 16px; text-align: center; padding: 12px; background-color: #9ca3af; border-radius: 4px; color: #ffffff; font-size: 18px; font-weight: 600;">
+                                                לביצוע תשלום ←
+                                            </div>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Button 4: 8 Checks (No discount) -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid #d1d5db; border-radius: 8px; background-color: #ffffff; margin-bottom: 16px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <a href="https://ticovision.vercel.app/check-details.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
+                                            <div style="font-size: 19px; font-weight: 700; margin-bottom: 8px; text-align: right;">
+                                                📅 כמדי שנה 8 המחאות שוות
+                                            </div>
+                                            <div style="font-size: 18px; font-weight: 600; color: #09090b; margin-bottom: 12px; text-align: right;">
+                                                בסכום של ₪{{amount_original}}
+                                            </div>
+                                            <div style="font-size: 17px; line-height: 1.6; color: #71717a; text-align: right;">
+                                                תאריכי ההמחאות הינם לחמישי לכל חודש,
+                                                <br>
+                                                החל מיום 5.1.{{tax_year}} ועד ליום 5.8.{{tax_year}}
+                                            </div>
+                                            <div style="margin-top: 16px; text-align: center; padding: 12px; background-color: #d1d5db; border-radius: 4px; color: #09090b; font-size: 18px; font-weight: 600;">
+                                                לביצוע תשלום ←
+                                            </div>
                                         </a>
                                     </td>
                                 </tr>
