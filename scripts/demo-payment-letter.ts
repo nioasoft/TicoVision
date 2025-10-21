@@ -31,63 +31,58 @@ async function createCardcomPaymentLink(
   maxPayments: number,
   description: string
 ): Promise<string> {
-  const params = new URLSearchParams({
+  // API v11 uses JSON format
+  const body = {
     TerminalNumber: CARDCOM_TERMINAL,
-    UserName: CARDCOM_USERNAME,
-    APILevel: '10',
-    codepage: '65001', // UTF-8
-    Operation: '1', // 1=Charge
+    ApiName: CARDCOM_USERNAME,
+    Amount: amount,
+    Operation: 'ChargeOnly',
     Language: 'he',
-    CoinID: '1', // ILS
-    SumToBill: amount.toFixed(2),
+    ISOCoinId: 1, // ILS
     ProductName: description,
-    MaxNumOfPayments: maxPayments.toString(),
-
-    // Success/Error URLs (will redirect to our app)
     SuccessRedirectUrl: 'http://localhost:5173/payment/success',
-    ErrorRedirectUrl: 'http://localhost:5173/payment/error',
-
-    // Customer details (demo)
-    CustomerName: 'שרה לוי',
-    CustomerEmail: TEST_EMAIL,
-    CustomerPhone: '052-6633663',
-
-    // NO CreateInvoice for test environment - it requires real terminal
-  });
+    FailedRedirectUrl: 'http://localhost:5173/payment/error',
+    WebHookUrl: 'https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/cardcom-webhook',
+    ...(maxPayments > 1 && {
+      UIDefinition: {
+        MinNumOfPayments: 1,
+        MaxNumOfPayments: maxPayments,
+      }
+    }),
+  };
 
   console.log(`\n📡 Creating Cardcom payment page (${maxPayments} payments)...`);
   console.log(`   Amount: ₪${amount.toLocaleString('he-IL')}`);
 
-  const response = await fetch('https://secure.cardcom.solutions/Interface/LowProfile.aspx', {
+  const response = await fetch('https://secure.cardcom.solutions/api/v11/LowProfile/Create', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': 'application/json'
     },
-    body: params.toString()
+    body: JSON.stringify(body)
   });
 
   const responseText = await response.text();
   console.log(`   Raw response: ${responseText.substring(0, 200)}...`);
 
-  // Parse response
-  const responseParams = new URLSearchParams(responseText);
-  const returnCode = responseParams.get('ReturnCode');
-  const lowProfileCode = responseParams.get('LowProfileCode');
-  const description_response = responseParams.get('Description');
+  // Parse JSON response
+  const jsonResponse = JSON.parse(responseText);
+  const returnCode = jsonResponse.ResponseCode?.toString() || '';
+  const lowProfileId = jsonResponse.LowProfileId || '';
+  const description_response = jsonResponse.Description || '';
+  const paymentUrl = jsonResponse.Url || '';
 
   if (returnCode !== '0') {
     throw new Error(`Cardcom error: ${description_response} (code: ${returnCode})`);
   }
 
-  if (!lowProfileCode) {
-    throw new Error('No LowProfileCode received from Cardcom');
+  if (!lowProfileId || !paymentUrl) {
+    throw new Error('No payment URL received from Cardcom');
   }
-
-  const paymentUrl = `https://secure.cardcom.solutions/External/LowProfile.aspx?LowProfileCode=${lowProfileCode}`;
 
   console.log(`✅ Payment page created!`);
   console.log(`   URL: ${paymentUrl}`);
-  console.log(`   LowProfileCode: ${lowProfileCode}`);
+  console.log(`   LowProfileId: ${lowProfileId}`);
 
   return paymentUrl;
 }
@@ -174,10 +169,10 @@ async function buildLetterWithRealPaymentLinks(): Promise<string> {
     payment_link_4_payments: paymentLink4Payments,
 
     amount_original: formatCurrency(baseAmount),
-    amount_single: formatCurrency(amountSingle),
-    amount_4_payments: formatCurrency(amount4Payments),
+    amount_after_single: formatCurrency(amountSingle), // 8% discount
+    amount_after_payments: formatCurrency(amount4Payments), // 4% discount
     amount_per_installment: formatCurrency(Math.round(amount4Payments / 4)),
-    amount_bank: formatCurrency(amountSingle),
+    amount_after_bank: formatCurrency(Math.round(baseAmount * 0.91)), // 9% discount
     amount_checks: formatCurrency(baseAmount),
 
     discount_single: formatCurrency(discountSingle),
@@ -242,9 +237,10 @@ async function sendDemoPaymentLetter() {
     const letterHtml = await buildLetterWithRealPaymentLinks();
 
     console.log('\n📤 Preparing email attachments...');
-    const ticoLogo = imageToBase64('/tmp/tico_logo.png');
-    const francoLogo = imageToBase64('/tmp/franco_logo.png');
-    const bulletStar = imageToBase64('/tmp/bullet_star.png');
+    const ticoLogo = imageToBase64(resolve(process.cwd(), 'public/brand/tico_logo_240.png'));
+    const francoLogo = imageToBase64(resolve(process.cwd(), 'public/brand/franco-logo.png'));
+    // Note: bullet_star.png doesn't exist, we'll skip it for now
+    const bulletStar = '';
 
     const nextYear = new Date().getFullYear() + 1;
 

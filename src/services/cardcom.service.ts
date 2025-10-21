@@ -90,64 +90,69 @@ class CardcomService {
       apiKey: import.meta.env.VITE_CARDCOM_API_KEY || '',
     };
 
-    this.baseUrl = 'https://secure.cardcom.solutions/Interface';
+    // Use API v11 (JSON format)
+    this.baseUrl = 'https://secure.cardcom.solutions/api/v11';
   }
 
   async createPaymentPage(
     request: CreatePaymentPageRequest
   ): Promise<ServiceResponse<PaymentPageResponse>> {
     try {
-      const params = new URLSearchParams({
+      // API v11 uses JSON format
+      const body = {
         TerminalNumber: this.config.terminalNumber,
-        UserName: this.config.username,
-        APILevel: '10',
-        codepage: '65001', // UTF-8
-        Operation: request.operation || 'Bill',
+        ApiName: this.config.username,
+        Amount: request.amount,
+        Operation: request.operation || 'ChargeOnly',
         Language: request.language || 'he',
-        CoinID: request.currency === 'USD' ? '2' : '1', // 1=ILS, 2=USD
-        SumToBill: request.amount.toString(),
+        ISOCoinId: request.currency === 'USD' ? 2 : 1, // 1=ILS, 2=USD
         ProductName: request.productName,
         SuccessRedirectUrl: request.successUrl || `${window.location.origin}/payment/success`,
-        ErrorRedirectUrl: request.errorUrl || `${window.location.origin}/payment/error`,
-        NotifyURL: request.notifyUrl || `${window.location.origin}/api/webhooks/cardcom`,
-        MaxNumOfPayments: (request.maxPayments || 1).toString(),
-        ...(request.documentType && { CreateInvoice: 'true', DocumentType: request.documentType.toString() }),
-        ...(request.customerName && { CustomerName: request.customerName }),
-        ...(request.customerEmail && { CustomerEmail: request.customerEmail }),
-        ...(request.customerPhone && { CustomerPhone: request.customerPhone }),
-        ...(request.invoiceHead && { InvoiceHead: request.invoiceHead }),
-        ...(request.invoiceDescription && { InvoiceDescription: request.invoiceDescription }),
-      });
+        FailedRedirectUrl: request.errorUrl || `${window.location.origin}/payment/error`,
+        WebHookUrl: request.notifyUrl || `${window.location.origin}/api/webhooks/cardcom`,
+        ...(request.maxPayments && request.maxPayments > 1 && {
+          UIDefinition: {
+            MinNumOfPayments: 1,
+            MaxNumOfPayments: request.maxPayments,
+          }
+        }),
+        ...(request.documentType && {
+          Document: {
+            DocumentTypeToCreate: this.mapDocumentType(request.documentType),
+            ...(request.customerName && { Name: request.customerName }),
+            ...(request.customerEmail && { Email: request.customerEmail }),
+            ...(request.customerPhone && { Phone: request.customerPhone }),
+            IsSendByEmail: true,
+          }
+        }),
+      };
 
-      const response = await fetch(`${this.baseUrl}/LowProfile.aspx`, {
+      const response = await fetch(`${this.baseUrl}/LowProfile/Create`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: params.toString(),
+        body: JSON.stringify(body),
       });
 
-      const responseText = await response.text();
-      const responseParams = new URLSearchParams(responseText);
+      const jsonResponse = await response.json();
 
-      const returnCode = responseParams.get('ReturnCode') || '';
-      const lowProfileCode = responseParams.get('LowProfileCode') || '';
+      const returnCode = jsonResponse.ResponseCode?.toString() || '';
+      const lowProfileCode = jsonResponse.LowProfileId || '';
 
       if (returnCode !== '0') {
         return {
           data: null,
-          error: new Error(`Cardcom error: ${responseParams.get('Description') || 'Unknown error'} (${returnCode})`),
+          error: new Error(`Cardcom error: ${jsonResponse.Description || 'Unknown error'} (${returnCode})`),
         };
       }
 
-      const paymentUrl = `https://secure.cardcom.solutions/External/LowProfile.aspx?LowProfileCode=${lowProfileCode}`;
-
       return {
         data: {
-          url: paymentUrl,
+          url: jsonResponse.Url || '',
           lowProfileCode,
           returnCode,
-          description: responseParams.get('Description') || 'Success',
+          description: jsonResponse.Description || 'Success',
         },
         error: null,
       };
@@ -159,56 +164,65 @@ class CardcomService {
     }
   }
 
+  private mapDocumentType(type: number): string {
+    const types: Record<number, string> = {
+      1: 'TaxInvoice',
+      2: 'Receipt',
+      3: 'TaxInvoiceAndReceipt',
+    };
+    return types[type] || 'TaxInvoiceAndReceipt';
+  }
+
   async getTransactionDetails(
     dealNumber: string
   ): Promise<ServiceResponse<TransactionDetails>> {
     try {
+      // API v11 uses GET with query params
       const params = new URLSearchParams({
         TerminalNumber: this.config.terminalNumber,
-        UserName: this.config.username,
-        DealNumber: dealNumber,
-        ShowFullDetails: 'true',
+        ApiName: this.config.username,
+        LowProfileId: dealNumber,
       });
 
-      const response = await fetch(`${this.baseUrl}/GetTransaction.aspx`, {
-        method: 'POST',
+      const response = await fetch(`${this.baseUrl}/LowProfile/GetLpResult?${params.toString()}`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: params.toString(),
       });
 
-      const responseText = await response.text();
-      const responseParams = new URLSearchParams(responseText);
+      const jsonResponse = await response.json();
 
-      const returnCode = responseParams.get('ReturnCode') || '';
+      const returnCode = jsonResponse.ResponseCode?.toString() || '';
 
       if (returnCode !== '0') {
         return {
           data: null,
-          error: new Error(`Failed to get transaction: ${responseParams.get('Description') || 'Unknown error'}`),
+          error: new Error(`Failed to get transaction: ${jsonResponse.Description || 'Unknown error'}`),
         };
       }
 
+      const txInfo = jsonResponse.TranzactionInfo || {};
+
       const transaction: TransactionDetails = {
-        dealNumber: responseParams.get('DealNumber') || '',
-        internalDealNumber: responseParams.get('InternalDealNumber') || '',
-        terminalNumber: responseParams.get('TerminalNumber') || '',
-        transactionDate: responseParams.get('TransactionDate') || '',
-        transactionAmount: parseFloat(responseParams.get('TransactionAmount') || '0'),
-        currency: responseParams.get('Currency') || 'ILS',
-        creditCardNumber: responseParams.get('CreditCardNumber') || '',
-        creditCardExpDate: responseParams.get('CreditCardExpDate') || '',
-        transactionType: responseParams.get('TransactionType') || '',
-        creditType: responseParams.get('CreditType') || '',
-        numberOfPayments: parseInt(responseParams.get('NumberOfPayments') || '1'),
-        transactionStatus: responseParams.get('TransactionStatus') || '',
-        statusDescription: responseParams.get('StatusDescription') || '',
-        customerName: responseParams.get('CustomerName') || undefined,
-        customerEmail: responseParams.get('CustomerEmail') || undefined,
-        customerPhone: responseParams.get('CustomerPhone') || undefined,
-        invoiceNumber: responseParams.get('InvoiceNumber') || undefined,
-        token: responseParams.get('Token') || undefined,
+        dealNumber: txInfo.TranzactionId?.toString() || '',
+        internalDealNumber: txInfo.Uid || '',
+        terminalNumber: txInfo.TerminalNumber?.toString() || '',
+        transactionDate: txInfo.CreateDate || '',
+        transactionAmount: txInfo.Amount || 0,
+        currency: txInfo.CoinId === 1 ? 'ILS' : 'USD',
+        creditCardNumber: txInfo.Last4CardDigitsString || '',
+        creditCardExpDate: `${txInfo.CardMonth}/${txInfo.CardYear}`,
+        transactionType: txInfo.DealType || '',
+        creditType: txInfo.PaymentType || '',
+        numberOfPayments: txInfo.NumberOfPayments || 1,
+        transactionStatus: returnCode === '0' ? 'completed' : 'failed',
+        statusDescription: jsonResponse.Description || '',
+        customerName: txInfo.CardOwnerName || undefined,
+        customerEmail: txInfo.CardOwnerEmail || undefined,
+        customerPhone: txInfo.CardOwnerPhone || undefined,
+        invoiceNumber: txInfo.DocumentNumber?.toString() || undefined,
+        token: txInfo.Token || undefined,
       };
 
       return { data: transaction, error: null };
@@ -227,41 +241,40 @@ class CardcomService {
     payments = 1
   ): Promise<ServiceResponse<{ dealNumber: string; approvalNumber: string }>> {
     try {
-      const params = new URLSearchParams({
+      // API v11 uses Transaction endpoint with JSON
+      const body = {
         TerminalNumber: this.config.terminalNumber,
-        UserName: this.config.username,
+        ApiName: this.config.username,
         Token: token,
-        TokenExpDate: '1225', // This will be replaced by actual token exp date
-        SumToBill: amount.toString(),
-        CoinID: '1', // ILS
-        NumOfPayments: payments.toString(),
-        ...(cvv && { CVV: cvv }),
-      });
+        Amount: amount,
+        ISOCoinId: 1, // ILS
+        NumOfPayments: payments,
+        ...(cvv && { CVV2: cvv }),
+      };
 
-      const response = await fetch(`${this.baseUrl}/ChargeToken.aspx`, {
+      const response = await fetch(`${this.baseUrl}/Transactions/Transaction`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: params.toString(),
+        body: JSON.stringify(body),
       });
 
-      const responseText = await response.text();
-      const responseParams = new URLSearchParams(responseText);
+      const jsonResponse = await response.json();
 
-      const returnCode = responseParams.get('ReturnCode') || '';
+      const returnCode = jsonResponse.ResponseCode?.toString() || '';
 
       if (returnCode !== '0') {
         return {
           data: null,
-          error: new Error(`Payment failed: ${responseParams.get('Description') || 'Unknown error'}`),
+          error: new Error(`Payment failed: ${jsonResponse.Description || 'Unknown error'}`),
         };
       }
 
       return {
         data: {
-          dealNumber: responseParams.get('DealNumber') || '',
-          approvalNumber: responseParams.get('ApprovalNumber') || '',
+          dealNumber: jsonResponse.TranzactionId?.toString() || '',
+          approvalNumber: jsonResponse.ApprovalNumber || '',
         },
         error: null,
       };
@@ -278,30 +291,31 @@ class CardcomService {
     amount?: number
   ): Promise<ServiceResponse<boolean>> {
     try {
-      const params = new URLSearchParams({
+      // API v11 uses Refund endpoint
+      const body = {
         TerminalNumber: this.config.terminalNumber,
-        UserName: this.config.username,
-        DealNumber: dealNumber,
-        ...(amount && { RefundTotal: amount.toString() }),
-      });
+        ApiName: this.config.username,
+        ApiPassword: this.config.apiKey, // Required for refund operations
+        TransactionId: dealNumber,
+        ...(amount && { Amount: amount }),
+      };
 
-      const response = await fetch(`${this.baseUrl}/CancelDeal.aspx`, {
+      const response = await fetch(`${this.baseUrl}/Transactions/Refund`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: params.toString(),
+        body: JSON.stringify(body),
       });
 
-      const responseText = await response.text();
-      const responseParams = new URLSearchParams(responseText);
+      const jsonResponse = await response.json();
 
-      const returnCode = responseParams.get('ReturnCode') || '';
+      const returnCode = jsonResponse.ResponseCode?.toString() || '';
 
       if (returnCode !== '0') {
         return {
           data: false,
-          error: new Error(`Failed to cancel transaction: ${responseParams.get('Description') || 'Unknown error'}`),
+          error: new Error(`Failed to cancel transaction: ${jsonResponse.Description || 'Unknown error'}`),
         };
       }
 
@@ -399,8 +413,6 @@ class CardcomService {
       productName: description || `תשלום חשבון #${feeId}`,
       customerName: clientName,
       customerEmail: clientEmail,
-      invoiceHead: clientName,
-      invoiceDescription: description,
       documentType: 3, // Invoice + Receipt
       language: 'he',
       notifyUrl: `${window.location.origin}/api/webhooks/cardcom/${feeId}`,
