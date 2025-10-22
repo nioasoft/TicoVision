@@ -1,0 +1,36 @@
+<!-- Letter Header Component -->
+<!-- Used by all 11 letter templates -->
+<!-- Variables: {{letter_date}}, {{company_name}}, {{group_name}} -->
+<!-- CID Images: cid:tico_logo -->
+
+<tr>
+    <td style="padding-bottom: 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                <!-- Recipient (right side in RTL) -->
+                <td width="50%" style="vertical-align: top; text-align: left;">
+                    <div style="font-size: 19px; line-height: 1.6; font-weight: 600; color: #09090b; text-align: right;">
+                        לכבוד:<br>
+                        {{company_name}}<br>
+                        {{group_name}}
+                    </div>
+                </td>
+                <!-- Logo and Date (left side in RTL) -->
+                <td width="50%" style="vertical-align: top;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="ltr">
+                        <tr>
+                            <td style="text-align: left;">
+                                <img src="cid:tico_logo" width="90" height="40" alt="TICO" style="display: block; border: 0; margin-bottom: 8px; margin-left: 0;">
+                                <div style="font-size: 18px; line-height: 1.5; color: #71717a; margin-left: 0; padding-left: 8px;">
+                                    {{letter_date}}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <!-- Top border -->
+        <div style="border-top: 1px solid #e4e4e7; margin-top: 20px;"></div>
+    </td>
+</tr>

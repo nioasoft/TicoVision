@@ -613,16 +613,16 @@ export class TemplateService extends BaseService {
     // Map template types to body files
     const bodyMap: Record<LetterTemplateType, string> = {
       'external_index_only': 'annual-fee.html',
-      'external_real_change': 'annual-fee-real.html', // TODO: Create this
-      'external_as_agreed': 'annual-fee-agreed.html', // TODO: Create this
-      'internal_audit_index': 'internal-audit-index.html', // TODO: Create this
-      'internal_audit_real': 'internal-audit-real.html', // TODO: Create this
-      'internal_audit_agreed': 'internal-audit-agreed.html', // TODO: Create this
-      'retainer_index': 'retainer-index.html', // TODO: Create this
-      'retainer_real': 'retainer-real.html', // TODO: Create this
-      'internal_bookkeeping_index': 'bookkeeping-index.html', // TODO: Create this
-      'internal_bookkeeping_real': 'bookkeeping-real.html', // TODO: Create this
-      'internal_bookkeeping_agreed': 'bookkeeping-agreed.html' // TODO: Create this
+      'external_real_change': 'annual-fee-real-change.html',
+      'external_as_agreed': 'annual-fee-as-agreed.html',
+      'internal_audit_index': 'internal-audit-index.html',
+      'internal_audit_real': 'internal-audit-real-change.html',
+      'internal_audit_agreed': 'internal-audit-as-agreed.html',
+      'retainer_index': 'retainer-index.html',
+      'retainer_real': 'retainer-real-change.html',
+      'internal_bookkeeping_index': 'bookkeeping-index.html',
+      'internal_bookkeeping_real': 'bookkeeping-real-change.html',
+      'internal_bookkeeping_agreed': 'bookkeeping-as-agreed.html'
     };
 
     return bodyMap[templateType] || 'annual-fee.html';
@@ -637,5 +637,80 @@ export class TemplateService extends BaseService {
       month: '2-digit',
       year: 'numeric'
     }).format(date);
+  }
+
+  /**
+   * Convert CID image references to web paths for browser preview
+   * CID references work in emails but not in browsers
+   */
+  private replaceCidWithWebPaths(html: string): string {
+    const cidMap: Record<string, string> = {
+      'cid:tico_logo': '/brand/tico_logo_240.png',
+      'cid:bullet_star': '/brand/bullet-star.png',
+      'cid:franco_logo': '/brand/franco-logo.png'
+    };
+
+    let result = html;
+    for (const [cid, webPath] of Object.entries(cidMap)) {
+      result = result.replace(new RegExp(cid, 'g'), webPath);
+    }
+    return result;
+  }
+
+  /**
+   * NEW: Preview letter from file-based system (no DB)
+   * Used by LetterBuilder component for live preview
+   */
+  async previewLetterFromFiles(
+    templateType: LetterTemplateType,
+    variables: Partial<LetterVariables>
+  ): Promise<ServiceResponse<{ html: string }>> {
+    try {
+      // 1. Load the 4 components
+      const header = await this.loadTemplateFile('components/header.html');
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 2. Load body based on template type
+      const bodyFile = this.getBodyFileName(templateType);
+      const body = await this.loadTemplateFile(`bodies/${bodyFile}`);
+
+      // 3. Load payment section if needed
+      const needsPayment = this.isPaymentLetter(templateType);
+      let paymentSection = '';
+      if (needsPayment) {
+        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+      }
+
+      // 4. Add automatic variables
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      const previousYear = currentYear;
+
+      const fullVariables: Partial<LetterVariables> = {
+        ...variables,
+        letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
+        year: variables.year || nextYear,
+        previous_year: variables.previous_year || previousYear,
+        tax_year: variables.tax_year || nextYear,
+        num_checks: variables.num_checks || 8,
+        check_dates_description: this.generateCheckDatesDescription(
+          (variables.num_checks as 8 | 12) || 8,
+          variables.tax_year || nextYear
+        )
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildFullHTML(header, body, paymentSection, footer);
+
+      // 6. Replace all variables
+      fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
+
+      // 7. Convert CID images to web paths for browser preview
+      fullHtml = this.replaceCidWithWebPaths(fullHtml);
+
+      return { data: { html: fullHtml }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
   }
 }

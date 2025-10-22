@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פרטי העברה בנקאית - TICO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @media print {
+            body {
+                margin: 0;
+                padding: 20px;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 20px; font-family: 'Assistant', 'Heebo', Arial, sans-serif; background-color: #f5f5f7; direction: rtl;">
+    <!-- Main container -->
+    <table width="700" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);">
+
+        <!-- Header: Logo -->
+        <tr>
+            <td style="padding: 40px 40px 20px 40px; text-align: center;">
+                <img src="https://ticovision.vercel.app/brand/tico_logo_transparent.png" width="110" height="48" alt="TICO" style="display: inline-block; border: 0;">
+            </td>
+        </tr>
+
+        <!-- Title -->
+        <tr>
+            <td style="padding: 0 40px 24px 40px;">
+                <div style="font-size: 24px; line-height: 1.4; font-weight: 700; color: #09090b; text-align: center;">
+                    פרטי העברה בנקאית
+                </div>
+            </td>
+        </tr>
+
+        <!-- Amount to pay -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="background-color: #f3f4f6; border-radius: 8px; padding: 24px; text-align: center;">
+                    <div style="font-size: 18px; font-weight: 600; color: #2c3e50; margin-bottom: 12px;">
+                        בתמורה משרדנו יעניק לכם הנחה של 9%
+                    </div>
+                    <div style="font-size: 17px; color: #09090b; line-height: 1.6; margin-bottom: 8px;">
+                        הסכום כולל מע"מ לפני הנחה הוא ₪<span id="amount-original">10,000</span>
+                    </div>
+                    <div style="font-size: 17px; color: #09090b; line-height: 1.6; margin-bottom: 16px;">
+                        והסכום לאחר ההנחה הוא ₪<span id="amount-after">9,100</span> כולל מע"מ
+                    </div>
+                    <div style="border-top: 2px solid #2c3e50; padding-top: 16px; margin-top: 16px;">
+                        <div style="font-size: 16px; color: #71717a; margin-bottom: 8px;">
+                            סכום לתשלום:
+                        </div>
+                        <div style="font-size: 36px; font-weight: 700; color: #09090b;">
+                            ₪<span id="amount-final">9,100</span>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Border -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="border-top: 1px solid #e4e4e7;"></div>
+            </td>
+        </tr>
+
+        <!-- Bank Details -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="font-size: 18px; font-weight: 600; color: #09090b; text-align: right; margin-bottom: 20px;">
+                    פרטי חשבון הבנק:
+                </div>
+
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fafafa; border-radius: 6px; padding: 20px;">
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid #e4e4e7;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td width="40%" style="font-size: 15px; color: #71717a; text-align: right;">
+                                        שם המוטב:
+                                    </td>
+                                    <td width="60%" style="font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">
+                                        פרנקו ושות' רו"ח
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid #e4e4e7;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td width="40%" style="font-size: 15px; color: #71717a; text-align: right;">
+                                        בנק:
+                                    </td>
+                                    <td width="60%" style="font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">
+                                        בנק הפועלים (12)
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid #e4e4e7;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td width="40%" style="font-size: 15px; color: #71717a; text-align: right;">
+                                        סניף:
+                                    </td>
+                                    <td width="60%" style="font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">
+                                        582
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 12px 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td width="40%" style="font-size: 15px; color: #71717a; text-align: right;">
+                                        מספר חשבון:
+                                    </td>
+                                    <td width="60%" style="font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">
+                                        473832
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Important Note -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="background-color: #f3f4f6; border: 1px solid #e4e4e7; padding: 20px; border-radius: 6px;">
+                    <div style="font-size: 16px; font-weight: 600; color: #09090b; margin-bottom: 8px; text-align: right;">
+                        חשוב!
+                    </div>
+                    <div style="font-size: 15px; color: #09090b; line-height: 1.6; text-align: right;">
+                        יש לציין בהעברה את שם הלקוח ומספר ת.ז / ח.פ להזדהות
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Border -->
+        <tr>
+            <td style="padding: 0 40px 30px 40px;">
+                <div style="border-top: 1px solid #e4e4e7;"></div>
+            </td>
+        </tr>
+
+        <!-- Confirmation Form -->
+        <tr>
+            <td style="padding: 0 40px 40px 40px;">
+                <div style="font-size: 18px; font-weight: 600; color: #09090b; text-align: right; margin-bottom: 20px;">
+                    אישור ביצוע העברה:
+                </div>
+
+                <form id="confirmForm" style="background-color: #fafafa; border-radius: 6px; padding: 24px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 15px; font-weight: 500; color: #09090b; display: block; margin-bottom: 8px; text-align: right;">
+                            שם מלא:
+                        </label>
+                        <input type="text" id="fullName" required style="width: 100%; padding: 12px; border: 1px solid #e4e4e7; border-radius: 4px; font-size: 15px; font-family: 'Assistant', 'Heebo', Arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 15px; font-weight: 500; color: #09090b; display: block; margin-bottom: 8px; text-align: right;">
+                            דוא"ל:
+                        </label>
+                        <input type="email" id="email" required style="width: 100%; padding: 12px; border: 1px solid #e4e4e7; border-radius: 4px; font-size: 15px; font-family: 'Assistant', 'Heebo', Arial, sans-serif; direction: ltr; text-align: left; box-sizing: border-box;">
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="font-size: 15px; font-weight: 500; color: #09090b; display: block; margin-bottom: 8px; text-align: right;">
+                            תאריך העברה:
+                        </label>
+                        <input type="date" id="transferDate" required style="width: 100%; padding: 12px; border: 1px solid #e4e4e7; border-radius: 4px; font-size: 15px; font-family: 'Assistant', 'Heebo', Arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label style="font-size: 15px; font-weight: 500; color: #09090b; display: block; margin-bottom: 8px; text-align: right;">
+                            הערות (אופציונלי):
+                        </label>
+                        <textarea id="notes" rows="3" style="width: 100%; padding: 12px; border: 1px solid #e4e4e7; border-radius: 4px; font-size: 15px; font-family: 'Assistant', 'Heebo', Arial, sans-serif; direction: rtl; resize: vertical; box-sizing: border-box;"></textarea>
+                    </div>
+
+                    <div style="text-align: center;">
+                        <button type="submit" style="background-color: #09090b; color: #ffffff; padding: 14px 40px; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: 'Assistant', 'Heebo', Arial, sans-serif;">
+                            אישור ביצוע העברה
+                        </button>
+                    </div>
+                </form>
+
+                <div id="successMessage" style="display: none; background-color: #f3f4f6; border: 2px solid #09090b; padding: 20px; border-radius: 6px; margin-top: 20px; text-align: center;">
+                    <div style="font-size: 18px; font-weight: 700; color: #09090b;">
+                        ✅ תודה! קיבלנו את האישור
+                    </div>
+                    <div style="font-size: 16px; color: #09090b; margin-top: 8px;">
+                        סיגל תיצור איתך קשר בקרוב לאישור קבלת התשלום
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+            <td style="padding: 30px 40px; background-color: #fafafa; border-top: 1px solid #e4e4e7;">
+                <div style="font-size: 14px; color: #71717a; text-align: center; line-height: 1.6;">
+                    לשאלות ובירורים:<br>
+                    <strong>סיגל נגר</strong> | 050-8620993 | sigal@franco.co.il
+                </div>
+            </td>
+        </tr>
+
+    </table>
+
+    <script>
+        // Get client_id and amount from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const clientId = urlParams.get('client_id') || 'unknown';
+        const amountOriginal = urlParams.get('amount') || '10,000';
+
+        // Calculate discount (9%)
+        const cleanAmount = parseFloat(amountOriginal.replace(/,/g, ''));
+        const amountAfterDiscount = Math.round(cleanAmount * 0.91);
+        const formattedAmountAfter = amountAfterDiscount.toLocaleString('he-IL');
+
+        // Update all amount displays
+        document.getElementById('amount-original').textContent = amountOriginal;
+        document.getElementById('amount-after').textContent = formattedAmountAfter;
+        document.getElementById('amount-final').textContent = formattedAmountAfter;
+
+        // Handle form submission
+        document.getElementById('confirmForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                client_id: clientId,
+                amount: formattedAmountAfter,  // Amount after discount
+                amount_original: amountOriginal,  // Original amount before discount
+                full_name: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                transfer_date: document.getElementById('transferDate').value,
+                notes: document.getElementById('notes').value,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                // Send email to Sigal
+                const response = await fetch('/api/notify-bank-transfer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    // Show success message
+                    document.getElementById('confirmForm').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+
+                    // Log to console (temporary - will be saved to database later)
+                    console.log('Bank transfer confirmation:', formData);
+                } else {
+                    alert('שגיאה בשליחת האישור. אנא נסה שוב או צור קשר עם סיגל.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('שגיאה בשליחת האישור. אנא נסה שוב או צור קשר עם סיגל.');
+            }
+        });
+    </script>
+</body>
+</html>
