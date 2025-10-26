@@ -496,7 +496,7 @@ export class TemplateService extends BaseService {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מכתב - {{company_name}}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&family=David+Libre:wght@400;500;700&family=Montserrat:wght@100&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&family=David+Libre:wght@400;500;700&display=swap" rel="stylesheet">
     <!--[if mso]>
     <style type="text/css">
     body, table, td {font-family: Arial, sans-serif !important;}
