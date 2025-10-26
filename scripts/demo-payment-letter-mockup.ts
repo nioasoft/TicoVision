@@ -91,10 +91,10 @@ async function buildLetterWithMockupLinks(): Promise<string> {
     payment_link_4_payments: paymentLink4Payments,
 
     amount_original: formatCurrency(baseAmount),
-    amount_single: formatCurrency(amountSingle),
-    amount_4_payments: formatCurrency(amount4Payments),
+    amount_after_single: formatCurrency(amountSingle), // 8% discount
+    amount_after_payments: formatCurrency(amount4Payments), // 4% discount
     amount_per_installment: formatCurrency(Math.round(amount4Payments / 4)),
-    amount_bank: formatCurrency(amountSingle),
+    amount_after_bank: formatCurrency(Math.round(baseAmount * 0.91)), // 9% discount
     amount_checks: formatCurrency(baseAmount),
 
     discount_single: formatCurrency(discountSingle),

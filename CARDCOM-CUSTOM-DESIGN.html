@@ -1,0 +1,541 @@
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  TICO - Cardcom Payment Page Custom Design
+
+  Instructions:
+  1. Login to: https://secure.cardcom.solutions
+  2. Navigate to: הגדרות > סליקה בפרופיל נמוך > עיצוב מותאם אישית CSS ו HTML גרסה 5
+  3. Click: "דף תצוגה מקדימה" (opens in new tab)
+  4. Delete all existing code
+  5. Copy and paste THIS ENTIRE FILE
+  6. Check preview - make sure everything looks good
+  7. Click "שמור שינויים" (Save Changes)
+  8. Send email to Cardcom: dev@cardcom.solutions
+     Subject: "בקשה לאישור עיצוב מותאם אישית למסוף 172012"
+
+  IMPORTANT:
+  - Upload TICO logo first in: הגדרות > הגדרות כלליות > העלאת לוגו
+  - Timer: 20 minutes - don't start unless you have time!
+  - All data-bind attributes MUST stay intact
+  - Footer text "הסליקה מתבצעת דרך קארדקום" is REQUIRED by Cardcom
+
+  Design Philosophy:
+  - Clean & Simple
+  - TICO Purple (#667eea) - ONE COLOR ONLY
+  - NO gradients
+  - Professional & Minimal
+
+  Created: January 2025
+  Terminal: 172012
+═══════════════════════════════════════════════════════════════════════════════
+-->
+
+<style>
+/* ===== TICO Colors - Simple & Clean ===== */
+:root {
+    --tico-purple: #667eea;
+    --tico-dark: #1a202c;
+    --text-primary: #2d3748;
+    --text-secondary: #718096;
+    --border-color: #e2e8f0;
+    --bg-white: #ffffff;
+    --bg-gray: #f7fafc;
+}
+
+/* ===== Reset ===== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Assistant', Arial, sans-serif;
+    background: var(--bg-gray);
+    color: var(--text-primary);
+    direction: rtl;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+}
+
+/* ===== Header ===== */
+.header.user-header {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    text-align: center;
+}
+
+.headerIn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.logoDiv img {
+    max-height: 60px;
+    width: auto;
+}
+
+.detailsDiv {
+    text-align: center;
+}
+
+.detailsDiv .title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+h1 {
+    color: var(--text-primary);
+    font-size: 24px;
+    font-weight: 600;
+    margin: 20px 0;
+    text-align: center;
+}
+
+/* ===== Main Container ===== */
+.blockDetails {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.blockDetailsIn {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--tico-purple);
+}
+
+/* ===== Hide Product Tables ===== */
+.showProductsTabs,
+.showProductsTables {
+    display: none !important;
+}
+
+/* ===== Form Fields ===== */
+.formRow {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.fieldName {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.fieldInput {
+    width: 100%;
+}
+
+.fieldInput input[type="text"],
+.fieldInput input[type="tel"],
+.fieldInput input[type="email"],
+.fieldInput input[type="number"],
+.fieldInput select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 15px;
+    transition: border-color 0.2s;
+}
+
+.fieldInput input:focus,
+.fieldInput select:focus {
+    outline: none;
+    border-color: var(--tico-purple);
+}
+
+/* ===== Select Boxes ===== */
+select {
+    background: white;
+    cursor: pointer;
+}
+
+.validityDate {
+    display: flex;
+    gap: 10px;
+}
+
+.validityDate select {
+    flex: 1;
+}
+
+/* ===== CVV Help Icon ===== */
+.WhatIsCvvLightBox {
+    margin-right: 8px;
+}
+
+.WhatIsCvvLightBox img {
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
+
+/* ===== Submit Button ===== */
+.submitDiv {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.buttonDiv input[type="button"] {
+    width: 100%;
+    padding: 16px 32px;
+    background: var(--tico-purple);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.buttonDiv input[type="button"]:hover:not(:disabled) {
+    background: #5a67d8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.buttonDiv input[type="button"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== Payment Methods ===== */
+.paypalDiv,
+.masterPassDiv,
+.ApplePayDiv,
+.GooglePayDiv,
+.BitContainer {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.paypalDiv img,
+.masterPassDiv img {
+    max-width: 200px;
+    cursor: pointer;
+}
+
+/* ===== Error Messages ===== */
+.errorDiv {
+    background: #fff5f5;
+    border-right: 4px solid #f56565;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.errorDivIn ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.errorDivIn li {
+    color: #c53030;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+/* ===== Footer ===== */
+.footer {
+    background: var(--bg-gray);
+    padding: 20px;
+    text-align: center;
+    border-radius: 12px;
+    margin-top: 30px;
+}
+
+.footerIn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.footer-logo img {
+    max-width: 120px;
+    opacity: 0.6;
+}
+
+.footer-text {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* ===== Security Badge ===== */
+.security-info {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-gray);
+    border-radius: 8px;
+    margin: 20px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .blockDetails {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 20px;
+    }
+
+    .buttonDiv input[type="button"] {
+        font-size: 16px;
+        padding: 14px 24px;
+    }
+}
+
+/* ===== Validation Errors ===== */
+.valid-false {
+    border-color: #f56565 !important;
+}
+
+.valid-false .fieldInput input {
+    border-color: #f56565 !important;
+}
+
+/* ===== Loading State ===== */
+.loadMode {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ===== Home Link ===== */
+.homeLink {
+    margin-bottom: 15px;
+}
+
+.homeLink a {
+    color: var(--tico-purple);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.homeLink a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Checkbox & Conditions ===== */
+.checkbox {
+    margin-left: 8px;
+}
+
+/* ===== Hide unwanted elements ===== */
+.htmlCommentsDiv {
+    display: none;
+}
+</style>
+
+<!-- Header -->
+<div class="header user-header">
+    <div class="headerIn">
+        <div class="logoDiv">
+            <img alt="TICO Logo" data-bind="attr: { src: images.companyLogo }" />
+        </div>
+        <div class="detailsDiv user-detailsDiv">
+            <div class="adress company"><span class="title" data-bind="text: labels.CompanyName"></span></div>
+            <div class="Line1"><span class="title" data-bind="text: labels.InfoLine1"></span></div>
+            <div class="Line2"><span class="title" data-bind="text: labels.InfoLine2"></span></div>
+            <div class="Line3"><span class="title" data-bind="text: labels.InfoLine3"></span></div>
+        </div>
+    </div>
+    <div class="clear"></div>
+</div>
+
+<h1 data-bind="text: lph1"></h1>
+
+<!-- Hide Product Tables -->
+<div class="showProductsTabs" style="display: none !important;"></div>
+<div class="showProductsTables" style="display: none !important;"></div>
+
+<!-- Invoice Info -->
+<div class="blockDetails OrderDetails" data-bind="visible: order.showInvoiceHead">
+    <div class="blockDetailsIn">
+        <div class="title"><span data-bind="text: labels.InvoiceInfo"></span></div>
+
+        <div class="formRow cardRow" data-bind="hide:order.custName.hide, css:order.custName.CssValid">
+            <label class="fieldName" data-bind="text:order.custName.label" for="txtCustName"></label>
+            <span class="fieldInput"><input type="text" data-bind="value:order.custName.value" id="txtCustName"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:order.compID.hide, css:order.compID.CssValid">
+            <label class="fieldName" data-bind="text:order.compID.label" for="txtCompID"></label>
+            <span class="fieldInput"><input type="text" data-bind="value:order.compID.value" id="txtCompID"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:order.email.hide, css:order.email.CssValid">
+            <label class="fieldName" data-bind="text:order.email.label" for="txtEmail"></label>
+            <span class="fieldInput"><input type="email" class="directionLTR" data-bind="value:order.email.value" id="txtEmail"></span>
+        </div>
+
+        <div class="formRow cardRow" data-bind="hide:order.custMobilePH.hide, css:order.custMobilePH.CssValid">
+            <label class="fieldName" data-bind="text:order.custMobilePH.label" for="txtCustMobilePH"></label>
+            <span class="fieldInput"><input type="tel" data-bind="value:order.custMobilePH.value" id="txtCustMobilePH"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details -->
+<div class="blockDetails paymentDetails">
+    <div class="blockDetailsIn">
+        <div class="title"><span data-bind="text: labels.MethodsOfPayment"></span></div>
+
+        <!-- PayPal -->
+        <div class="paypalDiv" data-bind="hide: hidePayPal">
+            <a href="#"><img data-bind="attr: { src: images.paypal }, click: sendPayPalData" border="0"></a>
+        </div>
+
+        <!-- Apple Pay -->
+        <div id="ApplePayDivContainer"></div>
+        <div class="ApplePayDiv" data-bind="if: IsApplePayActive">
+            <div id="apple-pay-button-start" class="apple-pay apple-pay-button button-with-text button-color-black"
+                 data-bind="attr: { lang : ApplePay.language }, click: ApplePay.startApplePay, visible: ApplePay.applePayInstance.flagsComputed._PaymentBtn">
+                <span class="logo logo-color-white"></span>
+            </div>
+        </div>
+
+        <!-- Google Pay -->
+        <div class="GooglePayDiv" id="GooglePayDiv"></div>
+
+        <!-- Bit Payment -->
+        <div id="BitDivContainer"></div>
+        <div id="uPayBitDiv" data-bind="ifnot: hideUpayBitBtn">
+            <div class="uPayBitContainer">
+                <button id="bit-payment-button" type="button" data-bind="click: sendData_uPayBit"></button>
+            </div>
+        </div>
+
+        <!-- Credit Card Section -->
+        <div class="title" data-bind="hide: hideCreditCardInputs">
+            <span data-bind="text: labels.PayByCreditCard"></span>
+        </div>
+
+        <div id="CreditCardDiv" data-bind="ifnot: hideCreditCardInputs">
+            <!-- Card Number -->
+            <div class="formRow cardRow" data-bind="hide:cardNumber.hide, css:cardNumber.CssValid">
+                <label class="fieldName" data-bind="text:cardNumber.label" for="txtCardNumber"></label>
+                <span class="fieldInput">
+                    <input type="text" data-bind="value:cardNumber.value" id="txtCardNumber" placeholder="0000-0000-0000-0000">
+                </span>
+            </div>
+
+            <!-- Expiration Date -->
+            <div class="formRow">
+                <label class="fieldName" data-bind="text: lblExpiration"></label>
+                <span class="fieldInput validityDate">
+                    <select id="validityYear" data-bind="options: expirationYear.selectValues, value: expirationYear.value"></select>
+                    <select id="validityMonth" data-bind="value: expirationMonth.value">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                    </select>
+                </span>
+            </div>
+
+            <!-- CVV -->
+            <div class="formRow cvvRow" data-bind="hide:cvv.hide, css:cvv.CssValid">
+                <span class="fieldName">
+                    <label data-bind="text:cvv.label" for="txtCvv"></label>
+                    <a class="WhatIsCvvLightBox" target="_blank" data-bind="attr: { href: '/Images/visamasterpic.gif' }">
+                        <img data-bind="attr: { src: images.questionIcon }">
+                    </a>
+                </span>
+                <span class="fieldInput"><input maxlength="4" data-bind="value:cvv.value" id="txtCvv" placeholder="123"></span>
+            </div>
+
+            <!-- Card Owner ID -->
+            <div class="formRow cardRow" data-bind="hide:cardOwnerID.hide, css:cardOwnerID.CssValid">
+                <label class="fieldName" data-bind="text:cardOwnerID.label" for="txtTZ"></label>
+                <span class="fieldInput"><input type="text" maxlength="20" data-bind="value:cardOwnerID.value" id="txtTZ" placeholder="123456789"></span>
+            </div>
+
+            <!-- Number of Payments -->
+            <div class="formRow cardRow" data-bind="hide:numberOfPayments.hide, css:numberOfPayments.CssValid">
+                <label class="fieldName" data-bind="text:numberOfPayments.label" for="numberOfPaymentsselect"></label>
+                <span class="fieldInput">
+                    <select class="tiny" data-bind="options: numberOfPayments.selectValues, value: numberOfPayments.value" id="numberOfPaymentsselect"></select>
+                </span>
+            </div>
+        </div>
+
+        <!-- Security Info -->
+        <div class="security-info">
+            <div>🔒 התשלום מאובטח בהצפנת SSL</div>
+            <div>✓ תקן אבטחה PCI DSS Level 1</div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="submitDiv">
+            <div class="buttonDiv">
+                <input type="button" value="בצע תשלום מאובטח"
+                       data-bind="value: buttonText, click: sendData, hide: hideCreditCardInputs, enable: !loadMode()" />
+            </div>
+            <div data-bind="visible:showCancelURL" class="homeLink">
+                <a href="#" data-bind="attr: { href : cancelURL }">
+                    <span data-bind="text: labels.LinkBackToSite"></span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Error Messages -->
+        <div class="errorDiv" data-bind="visible: error.hasMessages()">
+            <div class="errorDivIn">
+                <ul>
+                    <!-- ko template: { foreach: error.messages } -->
+                    <li><span data-bind="text: message"></span></li>
+                    <!-- /ko -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+    <div class="footerIn">
+        <div class="footer-text">
+            <span data-bind="html: labels.FooterTextTop"></span><br>
+            <span data-bind="html: labels.FooterTextBottom"></span>
+        </div>
+        <div class="footer-logo">
+            <img alt="Cardcom" data-bind="attr: { src: images.cardcomLogoEn }">
+        </div>
+    </div>
+</div>

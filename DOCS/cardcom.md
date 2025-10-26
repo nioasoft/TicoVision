@@ -36,177 +36,205 @@ CARDCOM_TEST_API_KEY=test_key
 
 ## API Integration
 
+### ⚠️ IMPORTANT: Use API v11 (JSON Format)
+
+We are using **Cardcom API v11** which uses JSON request/response format instead of the older URL-encoded format.
+
 ### Base URLs
 ```typescript
 const CARDCOM_URLS = {
-  production: 'https://secure.cardcom.solutions/Interface',
-  test: 'https://secure.cardcom.solutions/Interface',
-  
-  // API Endpoints
-  lowProfile: '/LowProfile.aspx',
-  createInvoice: '/CreateInvoice.aspx',
-  chargeToken: '/ChargeToken.aspx',
-  getTransaction: '/GetTransaction.aspx'
+  production: 'https://secure.cardcom.solutions/api/v11',
+  test: 'https://secure.cardcom.solutions/api/v11',
+
+  // API v11 Endpoints
+  lowProfileCreate: '/LowProfile/Create',
+  lowProfileGet: '/LowProfile/Get',
+  transaction: '/Transactions/Transaction',
+  refund: '/Transactions/Refund'
 };
 ```
 
-### Low Profile Integration (Recommended)
+### API v11 vs Old API
+| Feature | Old API (Interface) | API v11 (Recommended) |
+|---------|-------------------|----------------------|
+| **Format** | URLSearchParams | JSON |
+| **Endpoint** | `/Interface/LowProfile.aspx` | `/api/v11/LowProfile/Create` |
+| **Content-Type** | `application/x-www-form-urlencoded` | `application/json` |
+| **Response** | URLSearchParams | JSON |
+| **Parameters** | `ErrorRedirectUrl` | `FailedRedirectUrl` |
+| **Auth Field** | `UserName` | `ApiName` |
+
+### Low Profile Integration with API v11
 ```typescript
 // services/cardcom.service.ts
 import { supabase } from '@/lib/supabase';
 
 interface CardcomConfig {
   terminalNumber: string;
-  apiUsername: string;
-  apiLevel: 10 | 11; // 10=Name/Value, 11=JSON
+  username: string; // Note: This is ApiName in API v11
+  apiKey: string;
   language: 'he' | 'en';
 }
 
 export class CardcomService {
   private config: CardcomConfig;
-  private baseUrl = import.meta.env.VITE_CARDCOM_ENV === 'production' 
-    ? 'https://secure.cardcom.solutions/Interface'
-    : 'https://secure.cardcom.solutions/Interface';
-  
+  private baseUrl = 'https://secure.cardcom.solutions/api/v11';
+
   constructor() {
     this.config = {
       terminalNumber: import.meta.env.VITE_CARDCOM_TERMINAL || '1000',
-      apiUsername: import.meta.env.VITE_CARDCOM_USERNAME || 'test9611',
-      apiLevel: 10,
+      username: import.meta.env.VITE_CARDCOM_USERNAME || '',
+      apiKey: import.meta.env.VITE_CARDCOM_API_KEY || '',
       language: 'he'
     };
   }
   
   /**
-   * Create payment link for fee collection letter
+   * Create payment page using API v11 (JSON format)
    */
-  async createPaymentLink(params: {
-    clientId: string;
+  async createPaymentPage(request: {
     amount: number;
     description: string;
-    clientData: {
-      name: string;
-      taxId: string;
-      email: string;
-      phone: string;
-      address?: string;
-      city?: string;
-    };
-    invoiceLines?: Array<{
-      description: string;
-      price: number;
-      quantity: number;
-    }>;
-  }): Promise<{ 
-    paymentUrl: string; 
-    dealId: string;
-    lowProfileCode: string;
+    maxPayments?: number;
+    currency?: 'ILS' | 'USD';
+    successUrl?: string;
+    errorUrl?: string;
+    notifyUrl?: string;
+  }): Promise<{
+    success: boolean;
+    paymentUrl?: string;
+    lowProfileId?: string;
+    error?: string;
   }> {
-    
-    // Build form data
-    const formData = new URLSearchParams({
-      // Basic configuration
-      Operation: '1', // 1=Charge, 2=Credit, 3=Token
+    // Build JSON request body for API v11
+    const body = {
       TerminalNumber: this.config.terminalNumber,
-      UserName: this.config.apiUsername,
-      APILevel: '10',
-      codepage: '65001', // UTF-8
-      
-      // Payment details
-      SumToBill: params.amount.toFixed(2),
-      CoinID: '1', // 1=ILS, 2=USD, 3=EUR
-      Language: this.config.language,
-      ProductName: params.description,
-      
-      // Response URLs
-      SuccessRedirectUrl: `${window.location.origin}/payment/success`,
-      ErrorRedirectUrl: `${window.location.origin}/payment/error`,
-      IndicatorUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cardcom-webhook`,
-      
-      // Invoice generation
-      CreateInvoice: 'true',
-      'InvoiceHead.CustName': params.clientData.name,
-      'InvoiceHead.CompID': params.clientData.taxId,
-      'InvoiceHead.Email': params.clientData.email,
-      'InvoiceHead.CustMobilePH': params.clientData.phone,
-      'InvoiceHead.CustAddresLine1': params.clientData.address || '',
-      'InvoiceHead.CustCity': params.clientData.city || '',
-      
-      // Custom identifier
-      ReturnValue: params.clientId,
-      
-      // Optional: Allow saving card for future use
-      CreateToken: 'true'
-    });
-    
-    // Add invoice lines
-    if (params.invoiceLines) {
-      params.invoiceLines.forEach((line, index) => {
-        formData.append(`InvoiceLines${index}.Description`, line.description);
-        formData.append(`InvoiceLines${index}.Price`, line.price.toFixed(2));
-        formData.append(`InvoiceLines${index}.Quantity`, line.quantity.toString());
-      });
-    } else {
-      // Default single line
-      formData.append('InvoiceLines1.Description', params.description);
-      formData.append('InvoiceLines1.Price', params.amount.toFixed(2));
-      formData.append('InvoiceLines1.Quantity', '1');
-    }
-    
+      ApiName: this.config.username, // Note: ApiName not UserName!
+      Amount: request.amount,
+      Operation: 'ChargeOnly', // ChargeOnly, Token, etc.
+      Language: 'he',
+      ISOCoinId: request.currency === 'USD' ? 2 : 1, // 1=ILS, 2=USD
+      ProductName: request.description,
+
+      // Required URLs (note: FailedRedirectUrl not ErrorRedirectUrl!)
+      SuccessRedirectUrl: request.successUrl || `${window.location.origin}/payment/success`,
+      FailedRedirectUrl: request.errorUrl || `${window.location.origin}/payment/error`,
+      WebHookUrl: request.notifyUrl || `${window.location.origin}/api/webhooks/cardcom`,
+
+      // Optional: Payment installments
+      ...(request.maxPayments && request.maxPayments > 1 && {
+        UIDefinition: {
+          MinNumOfPayments: 1,
+          MaxNumOfPayments: request.maxPayments,
+        }
+      }),
+    };
+
     try {
-      const response = await fetch(`${this.baseUrl}/LowProfile.aspx`, {
+      // API v11 uses JSON format
+      const response = await fetch(`${this.baseUrl}/LowProfile/Create`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/json' // JSON not URL-encoded!
         },
-        body: formData.toString()
+        body: JSON.stringify(body)
       });
-      
+
       const responseText = await response.text();
-      
-      // Parse response
-      const lowProfileCode = responseText.match(/LowProfileCode=([^&]+)/)?.[1];
-      const responseCode = responseText.match(/ResponseCode=(\d+)/)?.[1];
-      const description = responseText.match(/Description=([^&]+)/)?.[1];
-      
-      if (responseCode !== '0' || !lowProfileCode) {
-        throw new Error(decodeURIComponent(description || 'Failed to create payment link'));
+
+      // Parse JSON response
+      const jsonResponse = JSON.parse(responseText);
+      const returnCode = jsonResponse.ResponseCode?.toString() || '';
+      const lowProfileId = jsonResponse.LowProfileId || '';
+      const description = jsonResponse.Description || '';
+      const paymentUrl = jsonResponse.Url || '';
+
+      if (returnCode !== '0') {
+        return {
+          success: false,
+          error: `Cardcom error: ${description} (code: ${returnCode})`
+        };
       }
-      
-      // Build payment URL
-      const paymentUrl = `https://secure.cardcom.solutions/External/LowProfile/Buy.aspx?LowProfileCode=${lowProfileCode}`;
-      
-      // Save transaction to database
-      const { data: transaction } = await supabase
-        .from('payment_transactions')
-        .insert({
-          tenant_id: (await supabase.auth.getUser()).data.user?.user_metadata.tenant_id,
-          client_id: params.clientId,
-          cardcom_deal_id: lowProfileCode,
-          amount: params.amount,
-          currency: 'ILS',
-          status: 'pending',
-          payment_link: paymentUrl,
-          payment_method: 'credit_card',
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
+
+      if (!lowProfileId || !paymentUrl) {
+        return {
+          success: false,
+          error: 'No payment URL received from Cardcom'
+        };
+      }
+
       return {
+        success: true,
         paymentUrl,
-        dealId: transaction.id,
-        lowProfileCode
+        lowProfileId
       };
-      
+
     } catch (error) {
       console.error('Cardcom API Error:', error);
-      throw new Error('Failed to create payment link');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create payment link'
+      };
     }
   }
-  
+}
+```
+
+### Usage Example - Creating Payment Link
+```typescript
+// Example: Generate payment link for annual fee letter
+const cardcomService = new CardcomService();
+
+const result = await cardcomService.createPaymentPage({
+  amount: 47840,
+  description: 'שירותי ראיית חשבון - שנת 2025',
+  maxPayments: 4, // Allow up to 4 installments
+  currency: 'ILS',
+  successUrl: 'https://yourdomain.com/payment/success',
+  errorUrl: 'https://yourdomain.com/payment/error',
+  notifyUrl: 'https://yourdomain.com/api/webhooks/cardcom'
+});
+
+if (result.success) {
+  console.log('✅ Payment page created!');
+  console.log('Payment URL:', result.paymentUrl);
+  console.log('LowProfile ID:', result.lowProfileId);
+
+  // Insert the payment link in your letter template:
+  const paymentButton = `
+    <a href="${result.paymentUrl}"
+       style="background: #0066cc; color: white; padding: 12px 24px;">
+      שלם עכשיו
+    </a>
+  `;
+} else {
+  console.error('❌ Failed:', result.error);
+}
+```
+
+### API v11 Response Format
+```json
+{
+  "ResponseCode": 0,
+  "Description": "OK",
+  "LowProfileId": "4d5e0f27-f078-428b-b65f-de139c1a4bd2",
+  "Url": "https://secure.cardcom.solutions/EA/LPC6/172012/4d5e0f27-f078-428b-b65f-de139c1a4bd2?t=24",
+  "UrlToPayPalExpress": ""
+}
+```
+
+**Response Codes:**
+- `0` = Success
+- `9999` = Unknown error (usually missing required field or module not enabled)
+- `5093` = Missing FailedRedirectUrl
+
+---
+
+## Old API - DO NOT USE
+```typescript
   /**
-   * Create invoice without charging (for bank transfers, etc.)
+   * ⚠️ DEPRECATED - Old API using URL-encoded format
+   * Use createPaymentPage() with API v11 instead!
    */
   async createInvoiceOnly(params: {
     clientData: {
@@ -524,20 +552,43 @@ Page Rules:
 
 ## Testing Guide
 
-### Test Credentials
+### ✅ Verified Test Setup (Working as of Jan 2025)
+
+#### Production Terminal in Demo Mode
+The system is configured with a **real production terminal** that Cardcom automatically puts in demo mode:
+
+```env
+VITE_CARDCOM_TERMINAL=172012
+VITE_CARDCOM_USERNAME=5LJTPpLcw1baDQzZCGwc
+VITE_CARDCOM_API_KEY=eg3u9WciBxIF3CvGkyif
+```
+
+**Important:** When using this terminal, Cardcom displays:
+> 🧪 מצב הדגמה: זהו עמוד דמו - לא יבוצע חיוב אמיתי. השתמש בכרטיס 4580-0000-0000-0000 לבדיקה.
+
+#### Test Credit Cards (Cardcom Sandbox)
 ```typescript
-const TEST_CONFIG = {
-  terminal: '1000',
-  username: 'test9611',
-  // Test credit cards
-  cards: {
-    visa: '4111111111111111',
-    mastercard: '5555555555554444',
-    israelcard: '3700000000000002'
+const TEST_CARDS = {
+  visa: {
+    number: '4580-0000-0000-0000',
+    cvv: '123',
+    expiry: '12/26',
+    id: '123456789'
   },
-  cvv: '123',
-  expiryDate: '12/25'
+  // These also work:
+  mastercard: '5555555555554444',
+  israelcard: '3700000000000002'
 };
+```
+
+#### Quick Test Script
+```bash
+# Test Cardcom API credentials
+npx tsx scripts/test-cardcom-credentials.ts
+
+# Expected output:
+# ✅ Cardcom credentials are valid!
+# Payment URL: https://secure.cardcom.solutions/EA/LPC6/172012/...
 ```
 
 ### Integration Tests

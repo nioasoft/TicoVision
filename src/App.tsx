@@ -21,6 +21,7 @@ const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
 const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
+const PaymentPage = lazy(() => import('@/pages/payment-page'));
 
 // Loading component
 const PageLoader = () => (
@@ -39,6 +40,11 @@ function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
+                <Route path="/payment" element={
+                  <ErrorBoundary>
+                    <PaymentPage />
+                  </ErrorBoundary>
+                } />
                 <Route path="/login" element={
                   <ErrorBoundary>
                     <LoginPage />

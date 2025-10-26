@@ -110,12 +110,28 @@ class CardcomService {
         SuccessRedirectUrl: request.successUrl || `${window.location.origin}/payment/success`,
         FailedRedirectUrl: request.errorUrl || `${window.location.origin}/payment/error`,
         WebHookUrl: request.notifyUrl || `${window.location.origin}/api/webhooks/cardcom`,
-        ...(request.maxPayments && request.maxPayments > 1 && {
-          UIDefinition: {
+        // UI Customization - TICO Branding
+        UIDefinition: {
+          ...(request.maxPayments && request.maxPayments > 1 && {
             MinNumOfPayments: 1,
             MaxNumOfPayments: request.maxPayments,
-          }
-        }),
+          }),
+          // TICO Brand Colors & Design
+          LogoUrl: 'https://ticovision.com/brand/tico_logo_240.png', // TODO: Update with actual URL
+          TopColor: '#667eea', // TICO Purple gradient start
+          BottomColor: '#764ba2', // TICO Purple gradient end
+          ButtonColor: '#667eea',
+          ButtonHoverColor: '#5a67d8',
+          Language: 'he',
+          ShowCompanyNameOnPage: true,
+          CompanyName: 'TICO - מערכת CRM לרואי חשבון',
+          PageTitle: 'תשלום מאובטח',
+          IsShowCardOwnerID: true,
+          IsHideCardOwnerID: false,
+          CreditCardHolderIDtext: 'תעודת זהות',
+          SuccessMessage: 'התשלום בוצע בהצלחה! תודה רבה.',
+          FailedMessage: 'התשלום נכשל. אנא נסה שנית או צור קשר.',
+        },
         ...(request.documentType && {
           Document: {
             DocumentTypeToCreate: this.mapDocumentType(request.documentType),
