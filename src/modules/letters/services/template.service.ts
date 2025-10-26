@@ -496,7 +496,7 @@ export class TemplateService extends BaseService {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מכתב - {{company_name}}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&family=David+Libre:wght@400;500;700&family=Montserrat:wght@100&display=swap" rel="stylesheet">
     <!--[if mso]>
     <style type="text/css">
     body, table, td {font-family: Arial, sans-serif !important;}
@@ -647,7 +647,7 @@ export class TemplateService extends BaseService {
     const cidMap: Record<string, string> = {
       'cid:tico_logo': '/brand/tico_logo_240.png',
       'cid:bullet_star': '/brand/bullet-star.png',
-      'cid:franco_logo': '/brand/franco-logo.png'
+      'cid:franco_logo': '/brand/franco-logo-hires.png'
     };
 
     let result = html;

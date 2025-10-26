@@ -3,34 +3,40 @@
 <!-- Variables: {{letter_date}}, {{company_name}}, {{group_name}} -->
 <!-- CID Images: cid:tico_logo -->
 
+<!-- Row 1: Logo centered -->
 <tr>
-    <td style="padding-bottom: 20px;">
+    <td style="text-align: center; padding-bottom: 10px;">
+        <img src="cid:tico_logo" width="180" height="80" alt="TICO" style="display: block; margin: 0 auto; border: 0;">
+    </td>
+</tr>
+
+<!-- Row 2: Thick black horizontal line -->
+<tr>
+    <td style="padding: 0;">
+        <div style="border-top: 6px solid #000000; margin: 10px 0;"></div>
+    </td>
+</tr>
+
+<!-- Row 3: Recipient (right) and Date (left) -->
+<tr>
+    <td style="padding-bottom: 20px; padding-top: 10px;">
         <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
                 <!-- Recipient (right side in RTL) -->
-                <td width="50%" style="vertical-align: top; text-align: left;">
-                    <div style="font-size: 19px; line-height: 1.6; font-weight: 600; color: #09090b; text-align: right;">
+                <td width="50%" style="vertical-align: top; text-align: right;">
+                    <div style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.6; font-weight: 700; color: #000000;">
                         לכבוד:<br>
                         {{company_name}}<br>
                         {{group_name}}
                     </div>
                 </td>
-                <!-- Logo and Date (left side in RTL) -->
-                <td width="50%" style="vertical-align: top;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="ltr">
-                        <tr>
-                            <td style="text-align: left;">
-                                <img src="cid:tico_logo" width="90" height="40" alt="TICO" style="display: block; border: 0; margin-bottom: 8px; margin-left: 0;">
-                                <div style="font-size: 18px; line-height: 1.5; color: #71717a; margin-left: 0; padding-left: 8px;">
-                                    {{letter_date}}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
+                <!-- Date (left side in RTL) -->
+                <td width="50%" style="vertical-align: top; text-align: left;">
+                    <div style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #000000;">
+                        {{letter_date}}
+                    </div>
                 </td>
             </tr>
         </table>
-        <!-- Top border -->
-        <div style="border-top: 1px solid #e4e4e7; margin-top: 20px;"></div>
     </td>
 </tr>

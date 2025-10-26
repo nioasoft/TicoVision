@@ -27,17 +27,19 @@ interface CorsHeaders {
 
 const corsHeaders: CorsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-application-name',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 /**
- * Fetch HTML template from storage
+ * Fetch HTML template from deployed app (Vercel)
+ * Templates are served from public/templates/ directory
  */
 async function fetchTemplate(path: string): Promise<string> {
-  const response = await fetch(`https://zbqfeebrhberddvfkuhe.supabase.co/storage/v1/object/public/templates/${path}`);
+  const baseUrl = Deno.env.get('APP_URL') || 'https://ticovision.vercel.app';
+  const response = await fetch(`${baseUrl}/templates/${path}`);
   if (!response.ok) {
-    throw new Error(`Failed to fetch template: ${path}`);
+    throw new Error(`Failed to fetch template: ${path} from ${baseUrl}/templates/${path}`);
   }
   return await response.text();
 }
@@ -136,7 +138,7 @@ async function sendEmail(
   const baseUrl = Deno.env.get('APP_URL') || 'https://ticovision.vercel.app';
   const [ticoLogo, francoLogo, bulletStar] = await Promise.all([
     fetchImageBase64(`${baseUrl}/brand/tico_logo_240.png`),
-    fetchImageBase64(`${baseUrl}/brand/franco-logo.png`),
+    fetchImageBase64(`${baseUrl}/brand/franco-logo-hires.png`),
     fetchImageBase64(`${baseUrl}/brand/bullet-star.png`)
   ]);
 
