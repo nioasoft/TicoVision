@@ -648,6 +648,7 @@ export class TemplateService extends BaseService {
       'cid:tico_logo': '/brand/tico_logo_240.png',
       'cid:tico_logo_new': '/brand/Tico_logo_png_new.png',
       'cid:bullet_star': '/brand/bullet-star.png',
+      'cid:bullet_star_blue': '/brand/Bullet_star_blue.png',
       'cid:franco_logo': '/brand/franco-logo-hires.png',
       'cid:franco_logo_new': '/brand/Tico_franco_co.png',
       'cid:tagline': '/brand/tagline.png'
