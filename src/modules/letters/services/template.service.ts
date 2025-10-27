@@ -646,6 +646,7 @@ export class TemplateService extends BaseService {
   private replaceCidWithWebPaths(html: string): string {
     const cidMap: Record<string, string> = {
       'cid:tico_logo': '/brand/tico_logo_240.png',
+      'cid:tico_logo_new': '/brand/Tico_logo_png_new.png',
       'cid:bullet_star': '/brand/bullet-star.png',
       'cid:franco_logo': '/brand/franco-logo-hires.png'
     };

@@ -105,7 +105,8 @@ async function sendTest() {
     console.log('\n📤 Preparing email...');
 
     // Load logos
-    const ticoLogo = imageToBase64(resolve(process.cwd(), 'public/brand/tico_logo_240.png'));
+    const ticoLogoNew = imageToBase64(resolve(process.cwd(), 'public/brand/Tico_logo_png_new.png'));
+    const ticoLogoOld = imageToBase64(resolve(process.cwd(), 'public/brand/tico_logo_240.png'));
     const francoLogo = imageToBase64(resolve(process.cwd(), 'public/brand/franco-logo.png'));
 
     // Build simple Hebrew email
@@ -214,7 +215,14 @@ async function sendTest() {
       html: emailHtml,
       attachments: [
         {
-          content: ticoLogo,
+          content: ticoLogoNew,
+          filename: 'tico_logo_new.png',
+          type: 'image/png',
+          disposition: 'inline',
+          content_id: 'tico_logo_new'
+        },
+        {
+          content: ticoLogoOld,
           filename: 'tico_logo.png',
           type: 'image/png',
           disposition: 'inline',
