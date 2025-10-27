@@ -136,15 +136,14 @@ async function sendEmail(
   // Fetch images as base64 from deployed app
   // These images are served from the Vercel deployment's public folder
   const baseUrl = Deno.env.get('APP_URL') || 'https://ticovision.vercel.app';
-  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue, boxArrow] = await Promise.all([
+  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue] = await Promise.all([
     fetchImageBase64(`${baseUrl}/brand/tico_logo_240.png`),
     fetchImageBase64(`${baseUrl}/brand/Tico_logo_png_new.png`),
     fetchImageBase64(`${baseUrl}/brand/franco-logo-hires.png`),
     fetchImageBase64(`${baseUrl}/brand/Tico_franco_co.png`),
     fetchImageBase64(`${baseUrl}/brand/tagline.png`),
     fetchImageBase64(`${baseUrl}/brand/bullet-star.png`),
-    fetchImageBase64(`${baseUrl}/brand/Bullet_star_blue.png`),
-    fetchImageBase64(`${baseUrl}/brand/box_arrow.png`)
+    fetchImageBase64(`${baseUrl}/brand/Bullet_star_blue.png`)
   ]);
 
   const emailData = {
@@ -217,13 +216,6 @@ async function sendEmail(
         type: 'image/png',
         disposition: 'inline',
         content_id: 'bullet_star_blue'
-      },
-      {
-        content: boxArrow,
-        filename: 'box_arrow.png',
-        type: 'image/png',
-        disposition: 'inline',
-        content_id: 'box_arrow'
       }
     ]
   };

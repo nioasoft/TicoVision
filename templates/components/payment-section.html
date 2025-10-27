@@ -4,14 +4,14 @@
 
 <!-- BODY: Payment Section -->
 <tr>
-    <td style="padding-top: 24px;">
+    <td style="padding-top: 13px;">
         <div style="border-top: 1px solid #000000;"></div>
-        <div style="font-family: 'David Libre', serif; font-size: 28px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin: 24px 0 20px 0;">
+        <div style="font-family: 'David Libre', serif; font-size: 28px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin: 13px 0 13px 0;">
             אופן התשלום:
         </div>
 
         <!-- Button 1: Bank Transfer (Most Recommended - 9% discount) -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 13px;">
             <tr>
                 <td style="padding: 20px;">
                     <a href="https://ticovision.vercel.app/bank-transfer-details.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
@@ -27,17 +27,21 @@
                         <div style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
                             והסכום לאחר ההנחה הוא ₪{{amount_after_bank}} כולל מע"מ.
                         </div>
-                        <div style="position: relative; width: 30%; margin-right: 0; margin-left: auto;">
-                            <img src="cid:box_arrow" width="328" height="48" alt="" style="display: block; border: 0; width: 100%; height: auto;">
-                            <span style="position: absolute; top: 50%; right: 16px; transform: translateY(-50%); color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600;">לחץ לאישור</span>
-                        </div>
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 4px;">
+                            <tr>
+                                <td style="padding: 14px 16px; text-align: right;">
+                                    <span style="color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600; text-decoration: none;">לחץ לאישור</span>
+                                    <span style="color: #ffffff; margin-left: 8px;">←</span>
+                                </td>
+                            </tr>
+                        </table>
                     </a>
                 </td>
             </tr>
         </table>
 
         <!-- Button 2: Credit Card Single Payment (8% discount) -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 13px;">
             <tr>
                 <td style="padding: 20px;">
                     <a href="https://ticovision.vercel.app/payment-credit-single.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
@@ -53,17 +57,21 @@
                         <div style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
                             והסכום לאחר ההנחה הוא ₪{{amount_after_single}} כולל מע"מ.
                         </div>
-                        <div style="position: relative; width: 30%; margin-right: 0; margin-left: auto;">
-                            <img src="cid:box_arrow" width="328" height="48" alt="" style="display: block; border: 0; width: 100%; height: auto;">
-                            <span style="position: absolute; top: 50%; right: 16px; transform: translateY(-50%); color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600;">לביצוע תשלום</span>
-                        </div>
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 4px;">
+                            <tr>
+                                <td style="padding: 14px 16px; text-align: right;">
+                                    <span style="color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600; text-decoration: none;">לביצוע תשלום</span>
+                                    <span style="color: #ffffff; margin-left: 8px;">←</span>
+                                </td>
+                            </tr>
+                        </table>
                     </a>
                 </td>
             </tr>
         </table>
 
         <!-- Button 3: Credit Card Installments (4% discount) -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 13px;">
             <tr>
                 <td style="padding: 20px;">
                     <a href="https://ticovision.vercel.app/payment-credit-installments.html?client_id={{client_id}}&amount={{amount_original}}" style="text-decoration: none; color: #09090b; display: block;">
@@ -79,17 +87,21 @@
                         <div style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
                             והסכום לאחר ההנחה הוא ₪{{amount_after_payments}} כולל מע"מ.
                         </div>
-                        <div style="position: relative; width: 30%; margin-right: 0; margin-left: auto;">
-                            <img src="cid:box_arrow" width="328" height="48" alt="" style="display: block; border: 0; width: 100%; height: auto;">
-                            <span style="position: absolute; top: 50%; right: 16px; transform: translateY(-50%); color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600;">לביצוע תשלום</span>
-                        </div>
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 4px;">
+                            <tr>
+                                <td style="padding: 14px 16px; text-align: right;">
+                                    <span style="color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600; text-decoration: none;">לביצוע תשלום</span>
+                                    <span style="color: #ffffff; margin-left: 8px;">←</span>
+                                </td>
+                            </tr>
+                        </table>
                     </a>
                 </td>
             </tr>
         </table>
 
         <!-- Button 4: Checks (8 or 12) - Dynamic -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 13px;">
             <tr>
                 <td style="padding: 20px;">
                     <a href="https://ticovision.vercel.app/check-details.html?client_id={{client_id}}&amount={{amount_original}}&company_name={{company_name}}&group_name={{group_name}}&num_checks={{num_checks}}" style="text-decoration: none; color: #09090b; display: block;">
@@ -104,10 +116,14 @@
                             <br>
                             {{check_dates_description}}.
                         </div>
-                        <div style="position: relative; width: 30%; margin-right: 0; margin-left: auto;">
-                            <img src="cid:box_arrow" width="328" height="48" alt="" style="display: block; border: 0; width: 100%; height: auto;">
-                            <span style="position: absolute; top: 50%; right: 16px; transform: translateY(-50%); color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600;">לחץ לאישור</span>
-                        </div>
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 4px;">
+                            <tr>
+                                <td style="padding: 14px 16px; text-align: right;">
+                                    <span style="color: #ffffff; font-family: 'David Libre', serif; font-size: 16px; font-weight: 600; text-decoration: none;">לחץ לאישור</span>
+                                    <span style="color: #ffffff; margin-left: 8px;">←</span>
+                                </td>
+                            </tr>
+                        </table>
                     </a>
                 </td>
             </tr>
