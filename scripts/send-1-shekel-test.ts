@@ -107,7 +107,9 @@ async function sendTest() {
     // Load logos
     const ticoLogoNew = imageToBase64(resolve(process.cwd(), 'public/brand/Tico_logo_png_new.png'));
     const ticoLogoOld = imageToBase64(resolve(process.cwd(), 'public/brand/tico_logo_240.png'));
-    const francoLogo = imageToBase64(resolve(process.cwd(), 'public/brand/franco-logo.png'));
+    const francoLogoOld = imageToBase64(resolve(process.cwd(), 'public/brand/franco-logo.png'));
+    const francoLogoNew = imageToBase64(resolve(process.cwd(), 'public/brand/Tico_franco_co.png'));
+    const tagline = imageToBase64(resolve(process.cwd(), 'public/brand/tagline.png'));
 
     // Build simple Hebrew email
     const currentDate = new Date().toLocaleDateString('he-IL');
@@ -229,11 +231,25 @@ async function sendTest() {
           content_id: 'tico_logo'
         },
         {
-          content: francoLogo,
+          content: francoLogoOld,
           filename: 'franco_logo.png',
           type: 'image/png',
           disposition: 'inline',
           content_id: 'franco_logo'
+        },
+        {
+          content: francoLogoNew,
+          filename: 'franco_logo_new.png',
+          type: 'image/png',
+          disposition: 'inline',
+          content_id: 'franco_logo_new'
+        },
+        {
+          content: tagline,
+          filename: 'tagline.png',
+          type: 'image/png',
+          disposition: 'inline',
+          content_id: 'tagline'
         }
       ]
     };
