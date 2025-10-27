@@ -651,7 +651,8 @@ export class TemplateService extends BaseService {
       'cid:bullet_star_blue': '/brand/Bullet_star_blue.png',
       'cid:franco_logo': '/brand/franco-logo-hires.png',
       'cid:franco_logo_new': '/brand/Tico_franco_co.png',
-      'cid:tagline': '/brand/tagline.png'
+      'cid:tagline': '/brand/tagline.png',
+      'cid:box_arrow': '/brand/box_arrow.png'
     };
 
     let result = html;

@@ -111,6 +111,7 @@ async function sendTest() {
     const francoLogoNew = imageToBase64(resolve(process.cwd(), 'public/brand/Tico_franco_co.png'));
     const tagline = imageToBase64(resolve(process.cwd(), 'public/brand/tagline.png'));
     const bulletStarBlue = imageToBase64(resolve(process.cwd(), 'public/brand/Bullet_star_blue.png'));
+    const boxArrow = imageToBase64(resolve(process.cwd(), 'public/brand/box_arrow.png'));
 
     // Build simple Hebrew email
     const currentDate = new Date().toLocaleDateString('he-IL');
@@ -258,6 +259,13 @@ async function sendTest() {
           type: 'image/png',
           disposition: 'inline',
           content_id: 'bullet_star_blue'
+        },
+        {
+          content: boxArrow,
+          filename: 'box_arrow.png',
+          type: 'image/png',
+          disposition: 'inline',
+          content_id: 'box_arrow'
         }
       ]
     };
