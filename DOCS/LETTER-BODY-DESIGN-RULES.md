@@ -11,19 +11,27 @@ This document defines the complete design system for creating new body component
 ## 🎨 Visual Design Rules
 
 ### Typography
-- **Font Size**: 19px (primary content)
-- **Line Height**: 1.6 (for readability)
-- **Font Family**: 'Assistant', 'Heebo', Arial, sans-serif (Hebrew-first)
+- **Font Family**: 'David Libre', serif (primary - Hebrew optimized)
+- **Font Sizes** (by element type):
+  - **Subject title "הנדון"**: 26px (center-aligned, blue #395BF7)
+  - **Section headers** (bold): 20px (right-aligned, black)
+  - **Regular text**: 16px (right-aligned, black)
+  - **Bullet star icon**: 11×11px
+- **Line Heights**:
+  - Subject title: 1.4
+  - Section headers: 1.5
+  - Regular text: 1.6-1.7 (for readability)
 - **Font Weights**:
   - Regular text: 400
-  - Emphasis: 600
-  - Strong emphasis: 700
+  - Section headers: 700 (bold)
+  - Subject title: 700 (bold)
 
 ### Colors
-- **Primary Text**: `#09090b` (hsl(222.2 84% 4.9%))
-- **Secondary Text**: `#71717a` (hsl(215.4 16.3% 46.9%))
-- **Emphasis Text**: `#2c3e50` (dark blue-gray)
-- **Borders**: `#e4e4e7` (light gray)
+- **Subject Title**: `#395BF7` (bright blue - for "הנדון" title only)
+- **Primary Text**: `#09090b` (black - regular body text)
+- **Section Headers**: `#09090b` (black - bold headers)
+- **Secondary Text**: `#71717a` (gray - secondary information)
+- **Borders**: `#e4e4e7` (light gray - section dividers)
 
 ### Spacing
 - **Between sections**: `padding-top: 24px`
@@ -46,11 +54,11 @@ This document defines the complete design system for creating new body component
 
 ### Required Structure
 ```html
-<!-- BODY: Subject (Optional - if letter has subject line) -->
+<!-- BODY: Subject (Mandatory - "הנדון" title) -->
 <tr>
     <td style="padding-top: 24px;">
-        <div style="font-size: 19px; text-align: center;">
-            [Subject text with {{variables}}]
+        <div style="font-family: 'David Libre', serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; letter-spacing: -0.3px; padding-bottom: 12px; border-bottom: 1px solid #e4e4e7;">
+            הנדון: [Subject text with {{variables}}]
         </div>
     </td>
 </tr>
@@ -58,31 +66,45 @@ This document defines the complete design system for creating new body component
 <!-- BODY: Section 1 -->
 <tr>
     <td style="padding-top: 24px;">
-        <div style="font-size: 19px; line-height: 1.6; color: #09090b; text-align: right;">
-            [Opening paragraph text]
+        <!-- Section Header (optional) -->
+        <div style="font-family: 'David Libre', serif; font-size: 20px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin-bottom: 12px;">
+            [Section header title]
         </div>
 
-        <!-- Bullet list (if needed) -->
-        <table cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin-top: 16px;">
+        <!-- Bullet list -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-                <td style="width: 20px; vertical-align: top; padding-top: 4px;">
-                    <img src="cid:bullet_star" width="9" height="9" alt="•" style="display: block; border: 0;">
+                <td width="20" style="vertical-align: top; padding-top: 4px;">
+                    <img src="cid:bullet_star" width="11" height="11" alt="•" style="display: block; border: 0;">
                 </td>
-                <td style="font-size: 19px; line-height: 1.6; color: #09090b; text-align: right; padding-bottom: 12px;">
+                <td style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 10px;">
                     [Bullet point text with {{variables}}]
                 </td>
             </tr>
             <!-- Repeat for more bullet points -->
         </table>
+
+        <!-- Border (optional - between sections) -->
+        <div style="border-top: 1px solid #e4e4e7; margin-top: 20px;"></div>
     </td>
 </tr>
 
 <!-- BODY: Section 2 (if needed) -->
 <tr>
     <td style="padding-top: 24px;">
-        <div style="font-size: 19px; line-height: 1.6; color: #09090b; text-align: right;">
-            [Second section text]
+        <div style="font-family: 'David Libre', serif; font-size: 20px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin-bottom: 12px;">
+            [Second section header]
         </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                <td width="20" style="vertical-align: top; padding-top: 4px;">
+                    <img src="cid:bullet_star" width="11" height="11" alt="•" style="display: block; border: 0;">
+                </td>
+                <td style="font-family: 'David Libre', serif; font-size: 16px; line-height: 1.7; color: #09090b; text-align: right;">
+                    [Second section text with {{variables}}]
+                </td>
+            </tr>
+        </table>
     </td>
 </tr>
 
@@ -192,21 +214,33 @@ These are ALWAYS available - no need to provide:
 
 Before creating a new body component, verify:
 
+**File Structure:**
 - [ ] File name is `kebab-case.html`
-- [ ] Located in `/templates/bodies/`
-- [ ] All text is right-aligned (`text-align: right`)
-- [ ] Font size is 19px for main content
-- [ ] Line height is 1.6 for readability
-- [ ] Variables use `{{variable}}` format
-- [ ] Images use `cid:` attachments
+- [ ] Located in both `/templates/bodies/` AND `/public/templates/bodies/`
 - [ ] No header/footer code included
 - [ ] No payment section code included
+
+**Typography:**
+- [ ] Font family is `'David Libre', serif` on ALL text elements
+- [ ] Subject title "הנדון" is **26px** (blue #395BF7, center-aligned, bold)
+- [ ] Section headers are **20px** (black, right-aligned, bold)
+- [ ] Regular text is **16px** (black, right-aligned)
+- [ ] Bullet star icons are **11×11px**
+- [ ] Line heights: 1.4 (subject), 1.5 (headers), 1.6-1.7 (text)
+
+**Layout & Design:**
+- [ ] All text is right-aligned (`text-align: right`) except subject title
+- [ ] Subject title is center-aligned with bottom border
+- [ ] Colors match design system (#395BF7 subject, #09090b text)
+- [ ] Spacing follows 24px rule between sections
+- [ ] Border dividers use `#e4e4e7` color
+
+**Content:**
 - [ ] Hebrew text is professional and formal
-- [ ] Bullet points use star image
-- [ ] Colors match design system
-- [ ] Spacing follows 24px rule
+- [ ] Variables use `{{variable}}` format (double curly braces)
+- [ ] Images use `cid:` attachments (not external URLs)
 - [ ] Tested with variable replacement
-- [ ] Compatible with email clients
+- [ ] Compatible with email clients (Gmail, Outlook, Apple Mail)
 
 ---
 
@@ -252,6 +286,17 @@ Special: Emphasize real change vs. inflation
 
 ## 🔄 Version History
 
+**v2.0** - 2025-10-26
+- **MAJOR UPDATE**: Complete redesign of body template typography
+- Font family changed: Assistant/Heebo → David Libre serif
+- Subject title "הנדון": 19px → **26px** (blue #395BF7)
+- Section headers: 19px → **20px** (black, bold)
+- Regular text: 19px → **16px** (black)
+- Bullet star icons: 9×9px → **11×11px**
+- Added comprehensive HTML structure examples
+- Updated Pre-Flight Checklist with new requirements
+- All changes tested and deployed to production (commit c851318)
+
 **v1.0** - 2025-10-20
 - Initial design rules document
 - Based on existing annual-fee.html component
@@ -259,6 +304,6 @@ Special: Emphasize real change vs. inflation
 
 ---
 
-**Last Updated**: 2025-10-20
+**Last Updated**: 2025-10-26
 **Document Owner**: Asaf Benatia
 **System**: TicoVision CRM - Letter Template System
