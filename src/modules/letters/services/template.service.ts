@@ -654,7 +654,11 @@ export class TemplateService extends BaseService {
     };
 
     let result = html;
-    for (const [cid, webPath] of Object.entries(cidMap)) {
+    // Sort CIDs by length (longest first) to avoid partial replacements
+    // e.g., replace "cid:tico_logo_new" before "cid:tico_logo"
+    const sortedEntries = Object.entries(cidMap).sort((a, b) => b[0].length - a[0].length);
+
+    for (const [cid, webPath] of sortedEntries) {
       // Only replace CID in src attributes, not in comments or elsewhere
       result = result.replace(new RegExp(`src="${cid}"`, 'g'), `src="${webPath}"`);
     }
