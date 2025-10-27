@@ -659,8 +659,13 @@ export class TemplateService extends BaseService {
     const sortedEntries = Object.entries(cidMap).sort((a, b) => b[0].length - a[0].length);
 
     for (const [cid, webPath] of sortedEntries) {
-      // Only replace CID in src attributes, not in comments or elsewhere
-      result = result.replace(new RegExp(`src="${cid}"`, 'g'), `src="${webPath}"`);
+      // Escape special regex characters in CID (the colon)
+      const escapedCid = cid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Replace CID in src attributes (handles both single and double quotes, with optional spaces)
+      result = result.replace(
+        new RegExp(`src\\s*=\\s*["']${escapedCid}["']`, 'g'),
+        `src="${webPath}"`
+      );
     }
     return result;
   }
