@@ -655,7 +655,8 @@ export class TemplateService extends BaseService {
 
     let result = html;
     for (const [cid, webPath] of Object.entries(cidMap)) {
-      result = result.replace(new RegExp(cid, 'g'), webPath);
+      // Only replace CID in src attributes, not in comments or elsewhere
+      result = result.replace(new RegExp(`src="${cid}"`, 'g'), `src="${webPath}"`);
     }
     return result;
   }
