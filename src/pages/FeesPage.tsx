@@ -25,6 +25,7 @@ import {
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
 import { ClientInfoCard } from '@/components/ClientInfoCard';
+import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewDialog';
 
 interface FeeCalculatorForm {
   client_id: string;
@@ -73,6 +74,8 @@ export function FeesPage() {
     total_with_vat: number;
     year_over_year_change: number;
   } | null>(null);
+  const [letterPreviewOpen, setLetterPreviewOpen] = useState(false);
+  const [currentFeeId, setCurrentFeeId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -295,7 +298,7 @@ export function FeesPage() {
       };
 
       const response = await feeService.createFeeCalculation(createData);
-      
+
       if (response.error) {
         toast({
           title: 'שגיאה',
@@ -305,14 +308,11 @@ export function FeesPage() {
         return;
       }
 
-      toast({
-        title: 'הצלחה',
-        description: 'חישוב שכר הטרחה נשמר בהצלחה',
-      });
-
-      // Reset form and reload data
-      resetForm();
-      loadInitialData();
+      // Open letter preview dialog instead of immediate toast
+      if (response.data) {
+        setCurrentFeeId(response.data.id);
+        setLetterPreviewOpen(true);
+      }
     } catch (error) {
       logger.error('Error saving calculation:', error);
       toast({
@@ -843,6 +843,23 @@ export function FeesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Letter Preview Dialog */}
+      <LetterPreviewDialog
+        open={letterPreviewOpen}
+        onOpenChange={setLetterPreviewOpen}
+        feeId={currentFeeId}
+        clientId={formData.client_id || null}
+        onEmailSent={() => {
+          toast({
+            title: 'הצלחה',
+            description: 'המכתב נשלח בהצלחה ללקוח',
+          });
+          resetForm();
+          loadInitialData();
+          setLetterPreviewOpen(false);
+        }}
+      />
     </div>
   );
 }
