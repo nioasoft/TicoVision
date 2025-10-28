@@ -47,7 +47,7 @@ const DEFAULT_FILTERS: CollectionFilters = {
 };
 
 const DEFAULT_SORT: CollectionSort = {
-  column: 'days_since_sent',
+  column: 'created_at',
   order: 'desc',
 };
 
