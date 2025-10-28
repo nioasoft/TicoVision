@@ -85,15 +85,20 @@ export function FeesPage() {
 
   useEffect(() => {
     // Load previous year data and client details when client is selected
-    if (formData.client_id) {
-      loadPreviousYearData(formData.client_id);
-      loadDraftCalculation(formData.client_id);
-      loadClientDetails(formData.client_id);
-    } else {
-      setSelectedClientDetails(null);
-      setRelatedCompanies([]);
-      setCurrentDraftId(null);
-    }
+    const loadClientData = async () => {
+      if (formData.client_id) {
+        // Run sequentially to avoid race conditions
+        await loadPreviousYearData(formData.client_id);
+        await loadDraftCalculation(formData.client_id);
+        await loadClientDetails(formData.client_id);
+      } else {
+        setSelectedClientDetails(null);
+        setRelatedCompanies([]);
+        setCurrentDraftId(null);
+      }
+    };
+
+    loadClientData();
   }, [formData.client_id]);
 
   useEffect(() => {

@@ -515,14 +515,15 @@ class FeeService extends BaseService {
         .eq('tenant_id', tenantId)
         .eq('client_id', clientId);
 
-      // If year is specified, get the calculation for previous year
+      // If year is specified, get the calculation for that year
+      // "Previous year data" means data saved for the current year (e.g., 2025)
+      // since calculations are done at end of year for the upcoming year
       if (year) {
-        query = query.eq('year', year - 1);
+        query = query.eq('year', year);
       }
 
-      // Order by year descending to get the most recent
-      query = query.order('year', { ascending: false })
-        .order('created_at', { ascending: false })
+      // Order by created_at descending to get the most recent
+      query = query.order('created_at', { ascending: false })
         .limit(1);
 
       const { data: fees, error } = await query;
