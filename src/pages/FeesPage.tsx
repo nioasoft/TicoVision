@@ -175,7 +175,7 @@ export function FeesPage() {
         const draft = response.data;
         setCurrentDraftId(draft.id);
 
-        // Fill form with draft data
+        // Fill form with draft data (preserve previous_year_amount from loadPreviousYearData)
         setFormData(prev => ({
           ...prev,
           base_amount: draft.base_amount || prev.base_amount,
@@ -185,6 +185,10 @@ export function FeesPage() {
           discount_percentage: draft.discount_percentage || 0,
           apply_inflation_index: draft.apply_inflation_index ?? prev.apply_inflation_index,
           notes: draft.notes || '',
+          // Keep previous year data from loadPreviousYearData
+          previous_year_amount: prev.previous_year_amount,
+          previous_year_discount: prev.previous_year_discount,
+          previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
         }));
 
         toast({
