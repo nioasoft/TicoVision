@@ -334,6 +334,7 @@ class FeeService extends BaseService {
         }
       }
 
+      // Update the fee calculation
       const { data: fee, error } = await supabase
         .from('fee_calculations')
         .update({
@@ -342,14 +343,25 @@ class FeeService extends BaseService {
         })
         .eq('id', id)
         .eq('tenant_id', tenantId)
-        .select(`
-          *,
-          client:clients(*)
-        `)
+        .select('*')
         .single();
 
       if (error) {
         return { data: null, error: this.handleError(error) };
+      }
+
+      // Fetch client data separately if client_id exists
+      if (fee?.client_id) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', fee.client_id)
+          .single();
+
+        // Attach client to fee object
+        if (client) {
+          (fee as any).client = client;
+        }
       }
 
       await this.logAction('update_fee_calculation', id, { changes: data });
@@ -379,18 +391,30 @@ class FeeService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
+      // First query: Get the fee calculation
       const { data: fee, error } = await supabase
         .from('fee_calculations')
-        .select(`
-          *,
-          client:clients(*)
-        `)
+        .select('*')
         .eq('id', id)
         .eq('tenant_id', tenantId)
         .single();
 
       if (error) {
         return { data: null, error: this.handleError(error) };
+      }
+
+      // Second query: Get client data if client_id exists
+      if (fee?.client_id) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', fee.client_id)
+          .single();
+
+        // Attach client to fee object
+        if (client) {
+          (fee as any).client = client;
+        }
       }
 
       return { data: fee, error: null };
