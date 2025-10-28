@@ -24,9 +24,9 @@ const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
 const PaymentPage = lazy(() => import('@/pages/payment-page'));
 
 // Collection System pages
-const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard'));
-const NotificationSettings = lazy(() => import('@/modules/collections/pages/NotificationSettings'));
-const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage'));
+const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
+const NotificationSettings = lazy(() => import('@/modules/collections/pages/NotificationSettings').then(m => ({ default: m.NotificationSettings })));
+const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage').then(m => ({ default: m.DisputesPage })));
 
 // Loading component
 const PageLoader = () => (
