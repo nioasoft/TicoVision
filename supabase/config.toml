@@ -1,0 +1,33 @@
+# Supabase Configuration
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+
+[functions]
+# Edge Functions that don't require authentication
+# These functions are publicly accessible without API key
+[functions.track-email-open]
+verify_jwt = false
+
+[functions.track-payment-selection]
+verify_jwt = false

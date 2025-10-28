@@ -23,6 +23,11 @@ const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
 const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
 const PaymentPage = lazy(() => import('@/pages/payment-page'));
 
+// Collection System pages
+const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard'));
+const NotificationSettings = lazy(() => import('@/modules/collections/pages/NotificationSettings'));
+const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage'));
+
 // Loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -104,6 +109,23 @@ function App() {
                       <Route path="/settings" element={
                         <ErrorBoundary>
                           <SettingsPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Collection Management routes */}
+                      <Route path="/collections" element={
+                        <ErrorBoundary>
+                          <CollectionDashboard />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/collections/settings" element={
+                        <ErrorBoundary>
+                          <NotificationSettings />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/collections/disputes" element={
+                        <ErrorBoundary>
+                          <DisputesPage />
                         </ErrorBoundary>
                       } />
 
