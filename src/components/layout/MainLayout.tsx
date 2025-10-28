@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   UserPlus,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ const navigation = [
   { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard, allowedRoles: ['admin'] as UserRole[] },
   { name: 'לקוחות', href: '/clients', icon: Users, allowedRoles: ['admin', 'accountant', 'bookkeeper', 'client'] as UserRole[] },
   { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator, allowedRoles: ['admin'] as UserRole[] },
+  { name: 'גביית תשלומים', href: '/collections', icon: CreditCard, allowedRoles: ['admin'] as UserRole[] },
   { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, allowedRoles: ['admin'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
