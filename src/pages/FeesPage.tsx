@@ -76,6 +76,7 @@ export function FeesPage() {
   } | null>(null);
   const [letterPreviewOpen, setLetterPreviewOpen] = useState(false);
   const [currentFeeId, setCurrentFeeId] = useState<string | null>(null);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -86,10 +87,12 @@ export function FeesPage() {
     // Load previous year data and client details when client is selected
     if (formData.client_id) {
       loadPreviousYearData(formData.client_id);
+      loadDraftCalculation(formData.client_id);
       loadClientDetails(formData.client_id);
     } else {
       setSelectedClientDetails(null);
       setRelatedCompanies([]);
+      setCurrentDraftId(null);
     }
   }, [formData.client_id]);
 
@@ -143,9 +146,10 @@ export function FeesPage() {
       const response = await feeService.getLatestFeeByClient(clientId, formData.year);
       if (response.data) {
         // Load previous year's data
+        // Use final_amount (calculated result) if available, otherwise base_amount (manual entry)
         setFormData(prev => ({
           ...prev,
-          previous_year_amount: response.data.base_amount || 0,
+          previous_year_amount: response.data.final_amount || response.data.base_amount || 0,
           previous_year_discount: response.data.discount_percentage || 0,
           previous_year_amount_with_vat: response.data.total_amount || 0
         }));
@@ -160,6 +164,38 @@ export function FeesPage() {
       }
     } catch (error) {
       logger.error('Error loading previous year data:', error);
+    }
+  };
+
+  const loadDraftCalculation = async (clientId: string) => {
+    try {
+      const response = await feeService.getDraftCalculation(clientId, formData.year);
+
+      if (response.data) {
+        const draft = response.data;
+        setCurrentDraftId(draft.id);
+
+        // Fill form with draft data
+        setFormData(prev => ({
+          ...prev,
+          base_amount: draft.base_amount || prev.base_amount,
+          inflation_rate: draft.inflation_rate || prev.inflation_rate,
+          real_adjustment: draft.real_adjustment || 0,
+          real_adjustment_reason: draft.real_adjustment_reason || '',
+          discount_percentage: draft.discount_percentage || 0,
+          apply_inflation_index: draft.apply_inflation_index ?? prev.apply_inflation_index,
+          notes: draft.notes || '',
+        }));
+
+        toast({
+          title: 'נטען חישוב קודם',
+          description: 'חישוב שטרם נשלח נטען מהמערכת',
+        });
+      } else {
+        setCurrentDraftId(null);
+      }
+    } catch (error) {
+      logger.error('Error loading draft calculation:', error);
     }
   };
 
@@ -297,21 +333,47 @@ export function FeesPage() {
         notes: formData.notes
       };
 
-      const response = await feeService.createFeeCalculation(createData);
+      // Check if updating existing draft or creating new
+      if (currentDraftId) {
+        // Update existing draft instead of creating new one
+        const response = await feeService.updateFeeCalculation(
+          currentDraftId,
+          createData
+        );
 
-      if (response.error) {
-        toast({
-          title: 'שגיאה',
-          description: response.error.message,
-          variant: 'destructive',
-        });
-        return;
-      }
+        if (response.error) {
+          toast({
+            title: 'שגיאה',
+            description: response.error.message,
+            variant: 'destructive',
+          });
+          return;
+        }
 
-      // Open letter preview dialog instead of immediate toast
-      if (response.data) {
-        setCurrentFeeId(response.data.id);
-        setLetterPreviewOpen(true);
+        // Open letter preview dialog
+        if (response.data) {
+          setCurrentFeeId(response.data.id);
+          setLetterPreviewOpen(true);
+        }
+      } else {
+        // Create new calculation (no existing draft)
+        const response = await feeService.createFeeCalculation(createData);
+
+        if (response.error) {
+          toast({
+            title: 'שגיאה',
+            description: response.error.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // Open letter preview dialog and track the new draft
+        if (response.data) {
+          setCurrentFeeId(response.data.id);
+          setCurrentDraftId(response.data.id);
+          setLetterPreviewOpen(true);
+        }
       }
     } catch (error) {
       logger.error('Error saving calculation:', error);
@@ -847,7 +909,16 @@ export function FeesPage() {
       {/* Letter Preview Dialog */}
       <LetterPreviewDialog
         open={letterPreviewOpen}
-        onOpenChange={setLetterPreviewOpen}
+        onOpenChange={(open) => {
+          setLetterPreviewOpen(open);
+          if (!open) {
+            // Dialog closed (with or without sending)
+            // Draft remains in DB, but clear form for clean state
+            setCurrentDraftId(null);
+            resetForm();
+            loadInitialData();
+          }
+        }}
         feeId={currentFeeId}
         clientId={formData.client_id || null}
         onEmailSent={() => {
@@ -855,6 +926,7 @@ export function FeesPage() {
             title: 'הצלחה',
             description: 'המכתב נשלח בהצלחה ללקוח',
           });
+          setCurrentDraftId(null);
           resetForm();
           loadInitialData();
           setLetterPreviewOpen(false);

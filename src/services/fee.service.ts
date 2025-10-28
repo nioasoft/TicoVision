@@ -519,6 +519,37 @@ class FeeService extends BaseService {
     }
   }
 
+  /**
+   * Get most recent draft calculation for client and year
+   * Used to load draft when returning to client
+   */
+  async getDraftCalculation(
+    clientId: string,
+    year: number
+  ): Promise<ServiceResponse<FeeCalculation | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('fee_calculations')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId)
+        .eq('year', year)
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      return { data: data?.[0] || null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
   async getOverdueFees(): Promise<ServiceResponse<FeeCalculation[]>> {
     try {
       const tenantId = await this.getTenantId();
