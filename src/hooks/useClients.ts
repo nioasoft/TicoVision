@@ -15,6 +15,7 @@ export interface ClientFilters {
   companyStatus: string;
   clientType: string;
   companySubtype: string;
+  groupId: string;
 }
 
 export interface UseClientsReturn {
@@ -63,6 +64,7 @@ const DEFAULT_FILTERS: ClientFilters = {
   companyStatus: 'active',
   clientType: 'all',
   companySubtype: 'all',
+  groupId: 'all',
 };
 
 const PAGE_SIZE = 20;
@@ -92,7 +94,7 @@ export function useClients(): UseClientsReturn {
   // Load clients whenever search/filters/page changes
   useEffect(() => {
     loadClients();
-  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, currentPage]);
+  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, currentPage]);
 
   // Load clients
   const loadClients = useCallback(async () => {
@@ -112,6 +114,8 @@ export function useClients(): UseClientsReturn {
         if (filters.companyStatus !== 'all') apiFilters.company_status = filters.companyStatus;
         if (filters.clientType !== 'all') apiFilters.client_type = filters.clientType;
         if (filters.companySubtype !== 'all') apiFilters.company_subtype = filters.companySubtype;
+        if (filters.groupId === 'none') apiFilters.group_id = 'null';
+        else if (filters.groupId !== 'all') apiFilters.group_id = filters.groupId;
 
         response = await clientService.list(
           { page: currentPage, pageSize: PAGE_SIZE, sortBy: 'created_at', sortOrder: 'desc' },

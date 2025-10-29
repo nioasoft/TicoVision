@@ -22,6 +22,7 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ defa
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
 const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
 const PaymentPage = lazy(() => import('@/pages/payment-page'));
+const ClientGroupsPage = lazy(() => import('@/pages/ClientGroupsPage'));
 
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
@@ -76,6 +77,13 @@ function App() {
                     <Route path="/clients" element={
                       <ErrorBoundary>
                         <ClientsPage />
+                      </ErrorBoundary>
+                    } />
+
+                    {/* Client Groups page - accessible to all roles */}
+                    <Route path="/client-groups" element={
+                      <ErrorBoundary>
+                        <ClientGroupsPage />
                       </ErrorBoundary>
                     } />
 

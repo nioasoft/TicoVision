@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,19 +13,43 @@ import {
   X,
   UserPlus,
   Shield,
-  CreditCard
+  CreditCard,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { registrationService } from '@/services/registration.service';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  href?: string;
+  icon: any;
+  allowedRoles: UserRole[];
+  showBadge?: boolean;
+  submenu?: { name: string; href: string }[];
+}
+
+const navigation: NavigationItem[] = [
   { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard, allowedRoles: ['admin'] as UserRole[] },
-  { name: 'לקוחות', href: '/clients', icon: Users, allowedRoles: ['admin', 'accountant', 'bookkeeper', 'client'] as UserRole[] },
+  {
+    name: 'לקוחות',
+    icon: Users,
+    allowedRoles: ['admin', 'accountant', 'bookkeeper', 'client'] as UserRole[],
+    submenu: [
+      { name: 'רשימת לקוחות', href: '/clients' },
+      { name: 'ניהול קבוצות', href: '/client-groups' },
+    ]
+  },
   { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator, allowedRoles: ['admin'] as UserRole[] },
   { name: 'גביית תשלומים', href: '/collections', icon: CreditCard, allowedRoles: ['admin'] as UserRole[] },
   { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, allowedRoles: ['admin'] as UserRole[] },
@@ -46,9 +70,11 @@ const getRoleDisplayName = (role: UserRole | null): string => {
 export function MainLayout() {
   const { user, signOut, role } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
   // Memoize callbacks to prevent unnecessary re-renders
   const checkSuperAdmin = useCallback(async () => {
@@ -75,6 +101,20 @@ export function MainLayout() {
       return () => clearInterval(interval);
     }
   }, [role, checkSuperAdmin, loadPendingCount]);
+
+  // Auto-open submenu if currently on a child page
+  useEffect(() => {
+    navigation.forEach((item) => {
+      if (item.submenu) {
+        const isChildActive = item.submenu.some(
+          (subItem) => location.pathname === subItem.href
+        );
+        if (isChildActive) {
+          setOpenSubmenu(item.name);
+        }
+      }
+    });
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -147,27 +187,77 @@ export function MainLayout() {
               )}
               
               {filteredNavigation.map((item) => (
-                <li key={item.href}>
-                  <NavLink
-                    to={item.href}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-gray-100 text-gray-700"
-                      )
-                    }
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span className="flex-1">{item.name}</span>
-                    {item.showBadge && pendingCount > 0 && (
-                      <Badge variant="destructive" className="ml-auto">
-                        {pendingCount}
-                      </Badge>
-                    )}
-                  </NavLink>
+                <li key={item.href || item.name}>
+                  {item.submenu ? (
+                    // Navigation item with submenu
+                    <Collapsible
+                      open={openSubmenu === item.name}
+                      onOpenChange={(open) => setOpenSubmenu(open ? item.name : null)}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <button
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full",
+                            item.submenu.some((sub) => location.pathname === sub.href)
+                              ? "bg-primary/10 text-primary"
+                              : "hover:bg-gray-100 text-gray-700"
+                          )}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="flex-1 text-right">{item.name}</span>
+                          {openSubmenu === item.name ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pt-1">
+                        <ul className="space-y-1 pr-6">
+                          {item.submenu.map((subItem) => (
+                            <li key={subItem.href}>
+                              <NavLink
+                                to={subItem.href}
+                                className={({ isActive }) =>
+                                  cn(
+                                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                    isActive
+                                      ? "bg-primary text-primary-foreground"
+                                      : "hover:bg-gray-100 text-gray-700"
+                                  )
+                                }
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                <span className="flex-1 text-right">{subItem.name}</span>
+                              </NavLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ) : (
+                    // Regular navigation item (no submenu)
+                    <NavLink
+                      to={item.href!}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-gray-100 text-gray-700"
+                        )
+                      }
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="flex-1">{item.name}</span>
+                      {item.showBadge && pendingCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto">
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </NavLink>
+                  )}
                 </li>
               ))}
             </ul>

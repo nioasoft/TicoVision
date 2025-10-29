@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, MoreHorizontal } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Users, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/utils';
 import type { Client } from '@/services';
+import { PAYMENT_ROLE_LABELS } from '@/lib/labels';
 
 interface ClientsTableProps {
   clients: Client[];
@@ -70,6 +71,16 @@ const ClientRow = React.memo<ClientRowProps>(
       return labels[clientType] || clientType;
     };
 
+    const getPaymentRoleIcon = (paymentRole: string) => {
+      if (paymentRole === 'primary_payer') {
+        return <Star className="h-4 w-4 text-yellow-500 inline mr-1" />;
+      }
+      if (paymentRole === 'member') {
+        return <Users className="h-4 w-4 text-blue-500 inline mr-1" />;
+      }
+      return null;
+    };
+
     return (
       <TableRow key={client.id}>
         <TableCell className="w-12">
@@ -89,6 +100,18 @@ const ClientRow = React.memo<ClientRowProps>(
         <TableCell className="w-32">{client.tax_id}</TableCell>
         <TableCell className="w-32">
           {getClientTypeLabel(client.client_type || 'company')}
+        </TableCell>
+        <TableCell className="w-48">
+          {client.group ? (
+            <div className="flex items-center gap-1">
+              {getPaymentRoleIcon(client.payment_role)}
+              <Badge variant="secondary" className="text-xs">
+                {client.group.group_name_hebrew || client.group.group_name}
+              </Badge>
+            </div>
+          ) : (
+            <span className="text-gray-400">-</span>
+          )}
         </TableCell>
         <TableCell className="w-36">{client.contact_name}</TableCell>
         <TableCell className="w-32">{client.contact_phone || '-'}</TableCell>
@@ -155,6 +178,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
             <TableHead className="min-w-[200px]">שם החברה</TableHead>
             <TableHead className="w-32">ת.ז / ח.פ</TableHead>
             <TableHead className="w-32">סוג לקוח</TableHead>
+            <TableHead className="w-48">קבוצה</TableHead>
             <TableHead className="w-36">איש קשר</TableHead>
             <TableHead className="w-32">טלפון</TableHead>
             <TableHead className="w-48">אימייל</TableHead>
@@ -166,13 +190,13 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center">
+              <TableCell colSpan={11} className="text-center">
                 טוען נתונים...
               </TableCell>
             </TableRow>
           ) : clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center">
+              <TableCell colSpan={11} className="text-center">
                 לא נמצאו לקוחות
               </TableCell>
             </TableRow>

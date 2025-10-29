@@ -180,6 +180,11 @@ const maxClients = 700 // Hardcoded business rule
 src/
 ├── components/        # UI components (shadcn/ui based)
 ├── modules/           # Feature modules
+│   ├── collections/       # ✅ Collection Management System (DEPLOYED)
+│   │   ├── pages/            # 3 pages: Dashboard, Settings, Disputes
+│   │   ├── components/       # 6 components: KPICards, Filters, Table, Dialogs
+│   │   ├── store/            # Zustand store for collection state
+│   │   └── routes.tsx        # Route configuration
 │   ├── fee-management/    # Phase 1: Automated fee collection
 │   ├── letter-templates/  # 11 letter templates from Shani & Tiko
 │   ├── payment-system/    # Cardcom integration (see /docs/CARDCOM.md)
@@ -187,16 +192,22 @@ src/
 │   ├── user-management/  # User roles & permissions system
 │   └── dashboard/        # Real-time revenue tracking
 ├── services/         # Business logic & API calls (EXTENDS BaseService)
-│   ├── base.service.ts     # Base class for all services
-│   ├── client.service.ts   # Client management with Israeli tax ID validation
-│   ├── fee.service.ts      # Fee calculations and management
-│   ├── letter.service.ts   # Letter template generation
-│   ├── cardcom.service.ts  # Payment gateway integration
-│   └── audit.service.ts    # Audit logging for all actions
+│   ├── base.service.ts          # Base class for all services
+│   ├── client.service.ts        # Client management with Israeli tax ID validation
+│   ├── fee.service.ts           # Fee calculations and management
+│   ├── letter.service.ts        # Letter template generation
+│   ├── cardcom.service.ts       # Payment gateway integration
+│   ├── audit.service.ts         # Audit logging for all actions
+│   ├── collection.service.ts    # ✅ Collection tracking & dashboard (DEPLOYED)
+│   ├── reminder.service.ts      # ✅ Reminder rules & history (DEPLOYED)
+│   ├── notification.service.ts  # ✅ Alert settings management (DEPLOYED)
+│   └── email-template.service.ts # ✅ Email template generation (DEPLOYED)
 ├── hooks/           # Custom React hooks
 ├── lib/            # Utilities & configurations (GLOBAL VALUES HERE)
-│   └── supabase.ts # Supabase client + helper functions
+│   ├── supabase.ts # Supabase client + helper functions
+│   └── formatters.ts # ✅ ILS currency, Israeli dates, Hebrew labels (DEPLOYED)
 └── types/          # TypeScript definitions
+    └── collection.types.ts # ✅ Collection system types (DEPLOYED)
 ```
 
 ## 🏗️ Service Architecture Pattern (MANDATORY)
@@ -360,6 +371,91 @@ interface AuditLog {
 - ✅ Letter template system: Simple variable replacement (NO AI GENERATION)
 - ✅ Multi-tenant with RLS from Day 1 for white-label support
 - ⏸️ Skip: Advanced AI, Tax authority APIs (Phase 2-3)
+
+## 💰 Collection Management System (DEPLOYED - Oct 28, 2025)
+
+**Complete system for tracking fee payments and automated client reminders.**
+
+### Quick Reference Documentation
+- **Deployment Summary**: `/DEPLOYMENT_COMPLETE.md` - Full deployment details
+- **Technical Spec**: `/docs/COLLECTION_IMPLEMENTATION_COMPLETE.md` - Complete implementation
+- **System Design**: `/docs/COLLECTION_SYSTEM.md` - Architecture and features
+- **API Reference**: `/docs/COLLECTION_API.md` - Endpoint documentation
+- **Memory Bank**: `/memory-bank/collection-system-summary.md` - Quick reference
+
+### Database (Migrations 032-041)
+**10 migrations deployed to production:**
+- 6 new tables: `payment_method_selections`, `payment_disputes`, `payment_reminders`, `client_interactions`, `notification_settings`, `reminder_rules`
+- Extended `fee_calculations` with 6 payment tracking columns
+- Extended `generated_letters` with 4 email tracking columns
+- 2 helper functions: `get_collection_statistics()`, `get_fees_needing_reminders()`
+- 1 view: `collection_dashboard_view`
+- 2 cron jobs: daily reminders (7AM UTC), hourly alerts
+
+### Edge Functions (7 deployed)
+All deployed to: `https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/`
+
+1. `track-email-open` - Tracking pixel for email opens
+2. `track-payment-selection` - Record payment method choice
+3. `payment-dispute` - Handle "שילמתי" disputes
+4. `cardcom-webhook` - Payment status sync (updated)
+5. `collection-reminder-engine` - Automated daily reminders
+6. `alert-monitor` - Hourly alert checking
+7. `send-letter` - Letter sending (existing)
+
+### Payment Method Discounts (BUSINESS RULES)
+```typescript
+// Defined in collection.types.ts
+const PAYMENT_DISCOUNTS = {
+  bank_transfer: 9,      // 9% discount
+  cc_single: 8,          // 8% discount
+  cc_installments: 4,    // 4% discount
+  checks: 0              // 0% discount
+} as const;
+```
+
+### Frontend Routes
+- `/collections` - Main dashboard (8 KPIs, filters, data table)
+- `/collections/settings` - Alert thresholds and reminder configuration
+- `/collections/disputes` - Payment dispute management
+
+### Key Services
+```typescript
+// Collection tracking and dashboard
+collectionService.getDashboardData(filters, sort, pagination)
+collectionService.getKPIs(dateRange)
+collectionService.markAsPaid(feeId, paymentDetails)
+collectionService.markPartialPayment(feeId, amount, notes)
+
+// Reminder management
+reminderService.getReminderRules(tenantId)
+reminderService.getReminderHistory(feeId)
+reminderService.sendManualReminder(reminderData)
+
+// Alert settings
+notificationService.getSettings(tenantId)
+notificationService.updateSettings(tenantId, settings)
+notificationService.checkAlertsNeeded()
+```
+
+### Verification Queries
+```sql
+-- Check collection tables exist
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+AND table_name IN ('payment_method_selections', 'payment_disputes',
+                   'payment_reminders', 'client_interactions',
+                   'notification_settings', 'reminder_rules');
+
+-- Check cron jobs running
+SELECT * FROM cron.job WHERE active = true;
+
+-- Get collection statistics
+SELECT * FROM get_collection_statistics('your-tenant-id');
+
+-- View dashboard data
+SELECT * FROM collection_dashboard_view LIMIT 10;
+```
 
 ## 🗄️ Database Migration Guidelines
 

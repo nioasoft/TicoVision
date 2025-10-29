@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { ClientFilters as ClientFiltersType } from '@/hooks/useClients';
+import { clientService, type ClientGroup } from '@/services';
 
 interface ClientFiltersProps {
   searchQuery: string;
@@ -26,6 +27,19 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
   onFilterChange,
   onReset,
 }) => {
+  const [groups, setGroups] = useState<ClientGroup[]>([]);
+
+  // Load groups on mount
+  useEffect(() => {
+    const loadGroups = async () => {
+      const response = await clientService.getGroups();
+      if (response.data) {
+        setGroups(response.data);
+      }
+    };
+    loadGroups();
+  }, []);
+
   return (
     <div className="space-y-4">
       {/* Search Bar */}
@@ -87,6 +101,25 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             <SelectItem value="commercial_other">מסחרי - אחר</SelectItem>
             <SelectItem value="realestate">נדל"ן</SelectItem>
             <SelectItem value="holdings">החזקות</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Group Filter */}
+        <Select
+          value={filters.groupId}
+          onValueChange={(value) => onFilterChange({ groupId: value })}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="קבוצה" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל הקבוצות</SelectItem>
+            <SelectItem value="none">ללא קבוצה</SelectItem>
+            {groups.map((group) => (
+              <SelectItem key={group.id} value={group.id}>
+                {group.group_name_hebrew || group.group_name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
