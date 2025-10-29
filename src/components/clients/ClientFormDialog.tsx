@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ContactsManager } from '@/components/ContactsManager';
+import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import type {
   Client,
   CreateClientDto,
@@ -38,6 +39,8 @@ import type {
   CompanySubtype,
   ClientContact,
   CreateClientContactDto,
+  ClientPhone,
+  CreateClientPhoneDto,
 } from '@/services';
 
 interface ClientFormDialogProps {
@@ -45,6 +48,7 @@ interface ClientFormDialogProps {
   mode: 'add' | 'edit';
   client: Client | null;
   contacts: ClientContact[];
+  phones: ClientPhone[];
   onClose: () => void;
   onSubmit: (data: CreateClientDto) => Promise<boolean>;
   onLoadContacts?: (clientId: string) => Promise<void>;
@@ -52,6 +56,11 @@ interface ClientFormDialogProps {
   onUpdateContact?: (contactId: string, contactData: Partial<CreateClientContactDto>) => Promise<boolean>;
   onDeleteContact?: (contactId: string) => Promise<boolean>;
   onSetPrimaryContact?: (contactId: string) => Promise<boolean>;
+  onLoadPhones?: (clientId: string) => Promise<void>;
+  onAddPhone?: (clientId: string, phoneData: CreateClientPhoneDto) => Promise<boolean>;
+  onUpdatePhone?: (phoneId: string, phoneData: Partial<CreateClientPhoneDto>) => Promise<boolean>;
+  onDeletePhone?: (phoneId: string) => Promise<boolean>;
+  onSetPrimaryPhone?: (phoneId: string) => Promise<boolean>;
 }
 
 const INITIAL_FORM_DATA: CreateClientDto = {
@@ -83,6 +92,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     mode,
     client,
     contacts,
+    phones,
     onClose,
     onSubmit,
     onLoadContacts,
@@ -90,6 +100,11 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     onUpdateContact,
     onDeleteContact,
     onSetPrimaryContact,
+    onLoadPhones,
+    onAddPhone,
+    onUpdatePhone,
+    onDeletePhone,
+    onSetPrimaryPhone,
   }) => {
     const [formData, setFormData] = useState<CreateClientDto>(INITIAL_FORM_DATA);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -122,6 +137,11 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         // Load contacts for edit mode
         if (onLoadContacts) {
           onLoadContacts(client.id);
+        }
+
+        // Load phones for edit mode
+        if (onLoadPhones) {
+          onLoadPhones(client.id);
         }
       } else {
         setFormData(INITIAL_FORM_DATA);
@@ -496,6 +516,19 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     onUpdate={onUpdateContact}
                     onDelete={onDeleteContact}
                     onSetPrimary={onSetPrimaryContact}
+                  />
+                </div>
+              )}
+
+              {/* Phone Management (Edit Mode Only) */}
+              {mode === 'edit' && client && onAddPhone && onUpdatePhone && onDeletePhone && onSetPrimaryPhone && (
+                <div className="border-t pt-4 mt-4">
+                  <PhoneNumbersManager
+                    phones={phones}
+                    onAdd={(phoneData) => onAddPhone(client.id, phoneData)}
+                    onUpdate={onUpdatePhone}
+                    onDelete={onDeletePhone}
+                    onSetPrimary={onSetPrimaryPhone}
                   />
                 </div>
               )}
