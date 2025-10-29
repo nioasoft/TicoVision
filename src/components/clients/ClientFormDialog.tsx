@@ -41,7 +41,11 @@ import type {
   CreateClientContactDto,
   ClientPhone,
   CreateClientPhoneDto,
+  ClientGroup,
+  PaymentRole,
 } from '@/services';
+import { clientService } from '@/services';
+import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -84,6 +88,8 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   company_subtype: undefined,
   pays_fees: true, // NEW DEFAULT: true instead of false
   is_retainer: false, // NEW: לקוח ריטיינר - default false
+  group_id: undefined,
+  payment_role: 'independent', // NEW: תפקיד תשלום - default independent
 };
 
 export const ClientFormDialog = React.memo<ClientFormDialogProps>(
@@ -110,6 +116,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [groups, setGroups] = useState<ClientGroup[]>([]); // NEW: רשימת קבוצות
 
     // Load client data when editing
     useEffect(() => {
@@ -131,6 +138,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           company_subtype: client.company_subtype || undefined,
           pays_fees: client.pays_fees || false,
           is_retainer: client.is_retainer || false, // NEW: טעינת סטטוס ריטיינר
+          group_id: client.group_id || undefined, // NEW: טעינת קבוצה
+          payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
         });
         setHasUnsavedChanges(false);
 
@@ -148,6 +157,18 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         setHasUnsavedChanges(false);
       }
     }, [mode, client, onLoadContacts]);
+
+    // Load groups list
+    useEffect(() => {
+      const loadGroups = async () => {
+        const response = await clientService.getGroups();
+        if (response.data) {
+          setGroups(response.data);
+        }
+      };
+
+      loadGroups();
+    }, []);
 
     const handleClose = useCallback(() => {
       if (hasUnsavedChanges) {
@@ -224,6 +245,86 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   onChange={(e) => handleFormChange('commercial_name', e.target.value)}
                   dir="rtl"
                 />
+              </div>
+
+              {/* Group Selection & Payment Role */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="group_id" className="text-right block mb-2">
+                    קבוצה (אופציונלי)
+                  </Label>
+                  <Select
+                    value={formData.group_id || ''}
+                    onValueChange={(value) => {
+                      handleFormChange('group_id', value || undefined);
+                      // אם בוחר קבוצה ועדיין לא הגדיר payment_role → ברירת מחדל 'member'
+                      if (value && !formData.payment_role) {
+                        handleFormChange('payment_role', 'member');
+                      }
+                      // אם מוחק קבוצה → מאפס payment_role ל-independent
+                      if (!value) {
+                        handleFormChange('payment_role', 'independent');
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר קבוצה" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">ללא קבוצה</SelectItem>
+                      {groups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.group_name_hebrew || group.group_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Payment Role - מופיע רק אם נבחרה קבוצה */}
+                {formData.group_id && (
+                  <div>
+                    <Label htmlFor="payment_role" className="text-right block mb-2">
+                      תפקיד תשלום בקבוצה *
+                    </Label>
+                    <Select
+                      value={formData.payment_role || 'member'}
+                      onValueChange={(value: PaymentRole) =>
+                        handleFormChange('payment_role', value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="independent">
+                          <div className="text-right">
+                            <div className="font-medium">{PAYMENT_ROLE_LABELS.independent}</div>
+                            <div className="text-xs text-gray-500">
+                              {PAYMENT_ROLE_DESCRIPTIONS.independent}
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="member">
+                          <div className="text-right">
+                            <div className="font-medium">{PAYMENT_ROLE_LABELS.member}</div>
+                            <div className="text-xs text-gray-500">
+                              {PAYMENT_ROLE_DESCRIPTIONS.member}
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="primary_payer">
+                          <div className="text-right">
+                            <div className="font-medium">{PAYMENT_ROLE_LABELS.primary_payer}</div>
+                            <div className="text-xs text-gray-500">
+                              {PAYMENT_ROLE_DESCRIPTIONS.primary_payer}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               {/* Tax ID & Contact Name */}
