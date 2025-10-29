@@ -10,6 +10,9 @@ export type ActivityLevel = 'minor' | 'significant';
 export type InternalExternal = 'internal' | 'external';
 export type CollectionResponsibility = 'tiko' | 'shani';
 
+// Payment role in group
+export type PaymentRole = 'independent' | 'member' | 'primary_payer';
+
 // Phone types
 export type PhoneType = 'office' | 'mobile' | 'fax';
 
@@ -115,6 +118,7 @@ export interface Client {
   is_retainer: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
   group?: ClientGroup; // For joined queries
+  payment_role: PaymentRole; // NEW: תפקיד תשלום בקבוצה
   shareholders?: string[];
   collection_responsibility: CollectionResponsibility;
   contacts?: ClientContact[]; // For joined queries
@@ -161,6 +165,7 @@ export interface CreateClientDto {
   receives_letters?: boolean;
   is_retainer?: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
+  payment_role?: PaymentRole; // NEW: תפקיד תשלום בקבוצה
   shareholders?: string[];
   collection_responsibility?: CollectionResponsibility;
   // Additional fields
@@ -192,7 +197,7 @@ class ClientService extends BaseService {
   async create(data: CreateClientDto): Promise<ServiceResponse<Client>> {
     try {
       const tenantId = await this.getTenantId();
-      
+
       // Validate Israeli tax ID (9 digits)
       if (!this.validateTaxId(data.tax_id)) {
         return {
@@ -201,10 +206,25 @@ class ClientService extends BaseService {
         };
       }
 
+      // Set default payment_role based on group_id
+      let paymentRole = data.payment_role || 'independent';
+      if (data.group_id && !data.payment_role) {
+        paymentRole = 'member'; // Default to member if group selected but no role specified
+      }
+
+      // Validate primary_payer constraint
+      if (data.group_id && paymentRole === 'primary_payer') {
+        const validationError = await this.validatePrimaryPayer(data.group_id, paymentRole);
+        if (validationError) {
+          return { data: null, error: validationError };
+        }
+      }
+
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
           ...data,
+          payment_role: paymentRole,
           tenant_id: tenantId,
         })
         .select()
@@ -231,6 +251,14 @@ class ClientService extends BaseService {
           data: null,
           error: new Error('Invalid Israeli tax ID. Must be 9 digits.')
         };
+      }
+
+      // Validate primary_payer constraint if updating payment_role or group_id
+      if (data.group_id && data.payment_role === 'primary_payer') {
+        const validationError = await this.validatePrimaryPayer(data.group_id, 'primary_payer', id);
+        if (validationError) {
+          return { data: null, error: validationError };
+        }
       }
 
       const { data: client, error } = await supabase
@@ -1171,6 +1199,177 @@ class ClientService extends BaseService {
       return { data: updatedPhone, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Validate primary_payer constraint - only one primary payer per group
+   * @param groupId - The group ID to check
+   * @param paymentRole - The payment role being set
+   * @param excludeClientId - Optional client ID to exclude from check (for updates)
+   * @returns Error if validation fails, null if valid
+   */
+  private async validatePrimaryPayer(
+    groupId: string,
+    paymentRole: PaymentRole,
+    excludeClientId?: string
+  ): Promise<Error | null> {
+    if (paymentRole !== 'primary_payer') {
+      return null; // No validation needed for other roles
+    }
+
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('clients')
+        .select('id, company_name')
+        .eq('tenant_id', tenantId)
+        .eq('group_id', groupId)
+        .eq('payment_role', 'primary_payer')
+        .eq('status', 'active');
+
+      // Exclude current client when updating
+      if (excludeClientId) {
+        query = query.neq('id', excludeClientId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) {
+        return this.handleError(error);
+      }
+
+      if (data) {
+        return new Error(
+          `הקבוצה כבר יש לה משלם ראשי: ${data.company_name}. ` +
+          `רק לקוח אחד יכול להיות משלם ראשי לכל קבוצה.`
+        );
+      }
+
+      return null; // Valid - no existing primary payer
+    } catch (error) {
+      return this.handleError(error as Error);
+    }
+  }
+
+  /**
+   * Check if a group already has a primary payer
+   * @param groupId - The group ID to check
+   * @param excludeClientId - Optional client ID to exclude from check
+   * @returns true if group has a primary payer, false otherwise
+   */
+  async isPrimaryPayerExists(
+    groupId: string,
+    excludeClientId?: string
+  ): Promise<boolean> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('clients')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('group_id', groupId)
+        .eq('payment_role', 'primary_payer')
+        .eq('status', 'active');
+
+      if (excludeClientId) {
+        query = query.neq('id', excludeClientId);
+      }
+
+      const { data } = await query.maybeSingle();
+      return !!data;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get the primary payer client for a group
+   * @param groupId - The group ID
+   * @returns The primary payer client or null
+   */
+  async getGroupPrimaryPayer(groupId: string): Promise<ServiceResponse<Client | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('group_id', groupId)
+        .eq('payment_role', 'primary_payer')
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Update client's payment role
+   * @param clientId - The client ID
+   * @param paymentRole - The new payment role
+   * @returns Updated client or error
+   */
+  async updatePaymentRole(
+    clientId: string,
+    paymentRole: PaymentRole
+  ): Promise<ServiceResponse<Client>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get client's group_id first
+      const { data: client } = await supabase
+        .from('clients')
+        .select('group_id')
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (!client?.group_id && paymentRole !== 'independent') {
+        return {
+          data: null,
+          error: new Error('לא ניתן להגדיר תפקיד תשלום ללקוח שלא שייך לקבוצה')
+        };
+      }
+
+      // Validate primary_payer if needed
+      if (client?.group_id && paymentRole === 'primary_payer') {
+        const validationError = await this.validatePrimaryPayer(client.group_id, paymentRole, clientId);
+        if (validationError) {
+          return { data: null, error: validationError };
+        }
+      }
+
+      // Update payment role
+      const { data: updated, error } = await supabase
+        .from('clients')
+        .update({
+          payment_role: paymentRole,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      await this.logAction('update_payment_role', clientId, { payment_role: paymentRole });
+
+      return { data: updated, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
     }
   }
 }
