@@ -83,7 +83,6 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   company_status: 'active',
   company_subtype: undefined,
   pays_fees: true, // NEW DEFAULT: true instead of false
-  receives_letters: true,
 };
 
 export const ClientFormDialog = React.memo<ClientFormDialogProps>(
@@ -130,7 +129,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           company_status: client.company_status || 'active',
           company_subtype: client.company_subtype || undefined,
           pays_fees: client.pays_fees || false,
-          receives_letters: client.receives_letters !== false,
         });
         setHasUnsavedChanges(false);
 
@@ -439,7 +437,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               </div>
 
               {/* Checkboxes */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="mt-6">
                 <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -456,18 +454,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   <p className="text-xs text-gray-500 rtl:text-right mt-1 rtl:mr-6">
                     אם לא מסומן, הלקוח לא יקבל מכתבי שכר טרחה אוטומטית
                   </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="receives_letters"
-                    checked={formData.receives_letters}
-                    onCheckedChange={(checked) =>
-                      handleFormChange('receives_letters', checked as boolean)
-                    }
-                  />
-                  <Label htmlFor="receives_letters" className="cursor-pointer">
-                    מקבל מכתבים
-                  </Label>
                 </div>
               </div>
 
@@ -520,8 +506,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </div>
               )}
 
-              {/* Phone Management (Edit Mode Only) */}
-              {mode === 'edit' && client && onAddPhone && onUpdatePhone && onDeletePhone && onSetPrimaryPhone && (
+              {/* Phone Management */}
+              {mode === 'edit' && client && onAddPhone && onUpdatePhone && onDeletePhone && onSetPrimaryPhone ? (
                 <div className="border-t pt-4 mt-4">
                   <PhoneNumbersManager
                     phones={phones}
@@ -531,7 +517,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     onSetPrimary={onSetPrimaryPhone}
                   />
                 </div>
-              )}
+              ) : mode === 'add' ? (
+                <div className="border-t pt-4 mt-4">
+                  <p className="text-sm text-gray-500 rtl:text-right">
+                    הוספת מספרי טלפון תתאפשר לאחר יצירת הלקוח
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             <DialogFooter>
