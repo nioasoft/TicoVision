@@ -199,7 +199,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
             <div className="grid gap-4 py-4">
               {/* Company Name */}
               <div>
-                <Label htmlFor="company_name" className="text-right block">
+                <Label htmlFor="company_name" className="text-right block mb-2">
                   שם החברה פורמלי *
                 </Label>
                 <Input
@@ -213,7 +213,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Commercial Name (NEW) */}
               <div>
-                <Label htmlFor="commercial_name" className="text-right block">
+                <Label htmlFor="commercial_name" className="text-right block mb-2">
                   שם מסחרי
                 </Label>
                 <Input
@@ -227,7 +227,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Tax ID & Contact Name */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="tax_id" className="text-right block">
+                  <Label htmlFor="tax_id" className="text-right block mb-2">
                     מספר מזהה (9 ספרות) *
                   </Label>
                   <Input
@@ -241,7 +241,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contact_name" className="text-right block">
+                  <Label htmlFor="contact_name" className="text-right block mb-2">
                     שם איש קשר *
                   </Label>
                   <Input
@@ -257,7 +257,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Phone & Email */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="contact_phone" className="text-right block">
+                  <Label htmlFor="contact_phone" className="text-right block mb-2">
                     טלפון
                   </Label>
                   <Input
@@ -269,7 +269,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contact_email" className="text-right block">
+                  <Label htmlFor="contact_email" className="text-right block mb-2">
                     אימייל *
                   </Label>
                   <Input
@@ -286,7 +286,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Address & City */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="address_street" className="text-right block">
+                  <Label htmlFor="address_street" className="text-right block mb-2">
                     כתובת
                   </Label>
                   <Input
@@ -302,7 +302,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   />
                 </div>
                 <div>
-                  <Label htmlFor="address_city" className="text-right block">
+                  <Label htmlFor="address_city" className="text-right block mb-2">
                     עיר
                   </Label>
                   <Input
@@ -322,7 +322,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Client Type & Company Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="client_type" className="text-right block">
+                  <Label htmlFor="client_type" className="text-right block mb-2">
                     סוג לקוח *
                   </Label>
                   <Select
@@ -348,7 +348,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </div>
                 {formData.client_type === 'company' && (
                   <div>
-                    <Label htmlFor="company_status" className="text-right block">
+                    <Label htmlFor="company_status" className="text-right block mb-2">
                       סטטוס חברה
                     </Label>
                     <Select
@@ -372,7 +372,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Company Subtype (only for active companies) */}
               {formData.client_type === 'company' && formData.company_status === 'active' && (
                 <div>
-                  <Label htmlFor="company_subtype" className="text-right block">
+                  <Label htmlFor="company_subtype" className="text-right block mb-2">
                     תת סוג חברה
                   </Label>
                   <Select
@@ -397,7 +397,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Internal/External & Collection Responsibility */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="internal_external" className="text-right block">
+                  <Label htmlFor="internal_external" className="text-right block mb-2">
                     הנהלת חשבונות
                   </Label>
                   <Select
@@ -416,7 +416,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="collection_responsibility" className="text-right block">
+                  <Label htmlFor="collection_responsibility" className="text-right block mb-2">
                     אחריות/אמא לתיק
                   </Label>
                   <Select
@@ -459,7 +459,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Status */}
               <div>
-                <Label htmlFor="status" className="text-right block">
+                <Label htmlFor="status" className="text-right block mb-2">
                   סטטוס
                 </Label>
                 <Select
@@ -481,7 +481,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Notes */}
               <div>
-                <Label htmlFor="notes" className="text-right block">
+                <Label htmlFor="notes" className="text-right block mb-2">
                   הערות
                 </Label>
                 <Textarea
