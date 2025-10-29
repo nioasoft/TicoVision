@@ -83,6 +83,7 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   company_status: 'active',
   company_subtype: undefined,
   pays_fees: true, // NEW DEFAULT: true instead of false
+  is_retainer: false, // NEW: לקוח ריטיינר - default false
 };
 
 export const ClientFormDialog = React.memo<ClientFormDialogProps>(
@@ -129,6 +130,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           company_status: client.company_status || 'active',
           company_subtype: client.company_subtype || undefined,
           pays_fees: client.pays_fees || false,
+          is_retainer: client.is_retainer || false, // NEW: טעינת סטטוס ריטיינר
         });
         setHasUnsavedChanges(false);
 
@@ -437,7 +439,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               </div>
 
               {/* Checkboxes */}
-              <div className="mt-6">
+              <div className="grid grid-cols-2 gap-4 mt-6">
                 <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -453,6 +455,23 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   </div>
                   <p className="text-xs text-gray-500 rtl:text-right mt-1 rtl:mr-6">
                     אם לא מסומן, הלקוח לא יקבל מכתבי שכר טרחה אוטומטית
+                  </p>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="is_retainer"
+                      checked={formData.is_retainer || false}
+                      onCheckedChange={(checked) =>
+                        handleFormChange('is_retainer', checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="is_retainer" className="cursor-pointer">
+                      לקוח ריטיינר
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 rtl:text-right mt-1 rtl:mr-6">
+                    לקוחות ריטיינר מקבלים מכתבים מסוג E1/E2
                   </p>
                 </div>
               </div>

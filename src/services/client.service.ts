@@ -112,6 +112,7 @@ export interface Client {
   internal_external: InternalExternal;
   pays_fees: boolean;
   receives_letters: boolean;
+  is_retainer: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
   group?: ClientGroup; // For joined queries
   shareholders?: string[];
@@ -158,6 +159,7 @@ export interface CreateClientDto {
   internal_external?: InternalExternal;
   pays_fees?: boolean;
   receives_letters?: boolean;
+  is_retainer?: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
   shareholders?: string[];
   collection_responsibility?: CollectionResponsibility;
