@@ -56,6 +56,7 @@ interface ClientFormDialogProps {
 
 const INITIAL_FORM_DATA: CreateClientDto = {
   company_name: '',
+  commercial_name: '', // NEW: שם מסחרי
   tax_id: '',
   contact_name: '',
   contact_email: '',
@@ -72,7 +73,7 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   client_type: 'company',
   company_status: 'active',
   company_subtype: undefined,
-  pays_fees: false,
+  pays_fees: true, // NEW DEFAULT: true instead of false
   receives_letters: true,
 };
 
@@ -100,6 +101,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (mode === 'edit' && client) {
         setFormData({
           company_name: client.company_name,
+          commercial_name: client.commercial_name || '', // NEW
           tax_id: client.tax_id,
           contact_name: client.contact_name,
           contact_email: client.contact_email || '',
@@ -180,7 +182,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Company Name */}
               <div>
                 <Label htmlFor="company_name" className="text-right block">
-                  שם החברה *
+                  שם החברה פורמלי *
                 </Label>
                 <Input
                   id="company_name"
@@ -191,11 +193,24 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
+              {/* Commercial Name (NEW) */}
+              <div>
+                <Label htmlFor="commercial_name" className="text-right block">
+                  שם מסחרי
+                </Label>
+                <Input
+                  id="commercial_name"
+                  value={formData.commercial_name || ''}
+                  onChange={(e) => handleFormChange('commercial_name', e.target.value)}
+                  dir="rtl"
+                />
+              </div>
+
               {/* Tax ID & Contact Name */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="tax_id" className="text-right block">
-                    ת.ז / ח.פ (9 ספרות) *
+                    מספר מזהה (9 ספרות) *
                   </Label>
                   <Input
                     id="tax_id"
@@ -237,13 +252,14 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </div>
                 <div>
                   <Label htmlFor="contact_email" className="text-right block">
-                    אימייל
+                    אימייל *
                   </Label>
                   <Input
                     id="contact_email"
                     value={formData.contact_email}
                     onChange={(e) => handleFormChange('contact_email', e.target.value)}
                     type="email"
+                    required
                     dir="ltr"
                   />
                 </div>
@@ -307,6 +323,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       <SelectItem value="company">חברה</SelectItem>
                       <SelectItem value="freelancer">עצמאי</SelectItem>
                       <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
+                      <SelectItem value="partnership">שותפות</SelectItem>
+                      <SelectItem value="nonprofit">עמותה</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -402,17 +420,22 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Checkboxes */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="pays_fees"
-                    checked={formData.pays_fees}
-                    onCheckedChange={(checked) =>
-                      handleFormChange('pays_fees', checked as boolean)
-                    }
-                  />
-                  <Label htmlFor="pays_fees" className="cursor-pointer">
-                    משלם ישירות
-                  </Label>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="pays_fees"
+                      checked={formData.pays_fees}
+                      onCheckedChange={(checked) =>
+                        handleFormChange('pays_fees', checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="pays_fees" className="cursor-pointer">
+                      משלם ישירות
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 rtl:text-right mt-1 rtl:mr-6">
+                    אם לא מסומן, הלקוח לא יקבל מכתבי שכר טרחה אוטומטית
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox

@@ -3,12 +3,39 @@ import type { ServiceResponse, PaginationParams, FilterParams } from './base.ser
 import { supabase } from '@/lib/supabase';
 
 // Client types
-export type ClientType = 'company' | 'freelancer' | 'salary_owner';
+export type ClientType = 'company' | 'freelancer' | 'salary_owner' | 'partnership' | 'nonprofit';
 export type CompanyStatus = 'active' | 'inactive';
 export type CompanySubtype = 'commercial_restaurant' | 'commercial_other' | 'realestate' | 'holdings';
 export type ActivityLevel = 'minor' | 'significant';
 export type InternalExternal = 'internal' | 'external';
 export type CollectionResponsibility = 'tiko' | 'shani';
+
+// Phone types
+export type PhoneType = 'office' | 'mobile' | 'fax';
+
+export interface ClientPhone {
+  id: string;
+  tenant_id: string;
+  client_id: string;
+  phone_type: PhoneType;
+  phone_number: string;
+  is_primary: boolean;
+  is_active: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+}
+
+export interface CreateClientPhoneDto {
+  phone_type: PhoneType;
+  phone_number: string;
+  is_primary?: boolean;
+  is_active?: boolean;
+  notes?: string;
+}
+
+export interface UpdateClientPhoneDto extends Partial<CreateClientPhoneDto> {}
 
 // Contact types
 export type ContactType = 'owner' | 'accountant_manager' | 'secretary' | 'cfo' | 'board_member' | 'legal_counsel' | 'other';
@@ -64,6 +91,7 @@ export interface Client {
   tenant_id: string;
   company_name: string;
   company_name_hebrew?: string;
+  commercial_name?: string; // NEW: שם מסחרי
   tax_id: string;
   contact_name: string;
   contact_email: string;
@@ -89,6 +117,7 @@ export interface Client {
   shareholders?: string[];
   collection_responsibility: CollectionResponsibility;
   contacts?: ClientContact[]; // For joined queries
+  phones?: ClientPhone[]; // For joined queries
   // Additional fields
   business_type?: string;
   incorporation_date?: string;
@@ -108,6 +137,7 @@ export interface Client {
 export interface CreateClientDto {
   company_name: string;
   company_name_hebrew?: string;
+  commercial_name?: string; // NEW: שם מסחרי
   tax_id: string;
   contact_name: string;
   contact_email: string;
@@ -944,6 +974,201 @@ class ClientService extends BaseService {
     } catch (error) {
       // Log error but don't throw - this is a sync operation
       logger.error('Failed to sync primary contact to client:', error);
+    }
+  }
+
+  /**
+   * ================================================
+   * PHONE MANAGEMENT (NEW)
+   * ================================================
+   */
+
+  /**
+   * Get all phones for a client
+   */
+  async getClientPhones(clientId: string): Promise<ServiceResponse<ClientPhone[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('client_phones')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Add a new phone number for a client
+   */
+  async addPhone(clientId: string, data: CreateClientPhoneDto): Promise<ServiceResponse<ClientPhone>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const currentUser = (await supabase.auth.getUser()).data.user;
+
+      const phoneData = {
+        tenant_id: tenantId,
+        client_id: clientId,
+        phone_type: data.phone_type,
+        phone_number: data.phone_number,
+        is_primary: data.is_primary || false,
+        is_active: data.is_active !== false,
+        notes: data.notes || null,
+        created_by: currentUser?.id,
+      };
+
+      const { data: phone, error } = await supabase
+        .from('client_phones')
+        .insert(phoneData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('add_client_phone', phone.id, {
+        client_id: clientId,
+        phone_type: data.phone_type,
+      });
+
+      return { data: phone, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Update an existing phone number
+   */
+  async updatePhone(phoneId: string, data: UpdateClientPhoneDto): Promise<ServiceResponse<ClientPhone>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const updateData = {
+        ...data,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: phone, error } = await supabase
+        .from('client_phones')
+        .update(updateData)
+        .eq('id', phoneId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_client_phone', phoneId, { updates: Object.keys(data) });
+
+      return { data: phone, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Delete a phone number (soft delete by setting is_active = false)
+   */
+  async deletePhone(phoneId: string): Promise<ServiceResponse<void>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Check if this is the primary phone
+      const { data: phone } = await supabase
+        .from('client_phones')
+        .select('is_primary, client_id')
+        .eq('id', phoneId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (!phone) {
+        throw new Error('Phone not found');
+      }
+
+      // Soft delete: set is_active = false
+      const { error } = await supabase
+        .from('client_phones')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', phoneId)
+        .eq('tenant_id', tenantId);
+
+      if (error) throw error;
+
+      // If this was the primary phone, promote another active phone to primary
+      if (phone.is_primary) {
+        const { data: nextPhone } = await supabase
+          .from('client_phones')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .eq('client_id', phone.client_id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (nextPhone) {
+          await this.setPrimaryPhone(nextPhone.id);
+        }
+      }
+
+      await this.logAction('delete_client_phone', phoneId);
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Set a phone as the primary phone for a client
+   */
+  async setPrimaryPhone(phoneId: string): Promise<ServiceResponse<ClientPhone>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get the phone and its client
+      const { data: phone, error: fetchError } = await supabase
+        .from('client_phones')
+        .select('client_id')
+        .eq('id', phoneId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!phone) throw new Error('Phone not found');
+
+      // Unset all other phones as primary for this client
+      await supabase
+        .from('client_phones')
+        .update({ is_primary: false })
+        .eq('tenant_id', tenantId)
+        .eq('client_id', phone.client_id)
+        .neq('id', phoneId);
+
+      // Set this phone as primary
+      const { data: updatedPhone, error: updateError } = await supabase
+        .from('client_phones')
+        .update({ is_primary: true, updated_at: new Date().toISOString() })
+        .eq('id', phoneId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      await this.logAction('set_primary_phone', phoneId, { client_id: phone.client_id });
+
+      return { data: updatedPhone, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
     }
   }
 }
