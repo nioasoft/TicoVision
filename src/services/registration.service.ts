@@ -170,8 +170,9 @@ class RegistrationService {
       const tempPassword = crypto.randomUUID() + Math.random().toString(36);
 
       // Create auth user with temporary password
+      // Using v2 function to bypass PostgREST cache issue
       const { data: authData, error: authError } = await supabase
-        .rpc('create_user_with_role', {
+        .rpc('create_user_with_role_v2', {
           p_email: registration.email,
           p_password: tempPassword, // Temporary password - user will reset via email
           p_full_name: registration.full_name,
