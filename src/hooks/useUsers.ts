@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { logger } from '@/lib/logger';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
@@ -110,6 +111,14 @@ export function useUsers(): UseUsersReturn {
     );
   }, [availableClients, debouncedClientSearchTerm]);
 
+  // Load data on mount
+  useEffect(() => {
+    loadUsers();
+    loadClients();
+    loadRegistrations();
+    loadRejectedRegistrations();
+  }, []);
+
   // Load users
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -125,45 +134,6 @@ export function useUsers(): UseUsersReturn {
     }
     setLoading(false);
   }, [uiToast]);
-
-  // Load clients
-  const loadClients = useCallback(async () => {
-    const response = await clientService.getClients();
-    if (response.data) {
-      setAvailableClients(response.data.clients);
-    }
-  }, []);
-
-  // Load registrations
-  const loadRegistrations = useCallback(async () => {
-    const response = await registrationService.getPendingRegistrations();
-    if (response.error) {
-      toast.error('שגיאה בטעינת בקשות ההרשמה');
-    } else if (response.data) {
-      setRegistrations(response.data);
-      const pending = response.data.filter((r) => r.status === 'pending');
-      setPendingCount(pending.length);
-    }
-  }, []);
-
-  // Load rejected registrations
-  const loadRejectedRegistrations = useCallback(async () => {
-    const response = await registrationService.getRejectedRegistrations();
-    if (response.error) {
-      toast.error('שגיאה בטעינת בקשות נדחות');
-    } else if (response.data) {
-      setRejectedRegistrations(response.data);
-      setRejectedCount(response.data.length);
-    }
-  }, []);
-
-  // Load data on mount
-  useEffect(() => {
-    loadUsers();
-    loadClients();
-    loadRegistrations();
-    loadRejectedRegistrations();
-  }, [loadUsers, loadClients, loadRegistrations, loadRejectedRegistrations]);
 
   // Create user
   const createUser = useCallback(async (data: CreateUserData): Promise<boolean> => {
@@ -248,6 +218,14 @@ export function useUsers(): UseUsersReturn {
     return true;
   }, [uiToast]);
 
+  // Load clients
+  const loadClients = useCallback(async () => {
+    const response = await clientService.getClients();
+    if (response.data) {
+      setAvailableClients(response.data.clients);
+    }
+  }, []);
+
   // Load user client assignments
   const loadUserAssignments = useCallback(async (userId: string) => {
     const response = await registrationService.getUserClientAssignments(userId);
@@ -261,7 +239,13 @@ export function useUsers(): UseUsersReturn {
 
   // Save client assignments
   const saveClientAssignments = useCallback(async (userId: string): Promise<boolean> => {
-    const response = await registrationService.assignClientsToUser(userId, selectedClients, primaryClientId);
+    const assignments = selectedClients.map((clientId) => ({
+      user_id: userId,
+      client_id: clientId,
+      is_primary: clientId === primaryClientId,
+    }));
+
+    const response = await registrationService.assignClientsToUser(userId, assignments);
     if (response.error) {
       toast.error('שגיאה בשמירת שיוך לקוחות');
       return false;
@@ -271,12 +255,32 @@ export function useUsers(): UseUsersReturn {
     return true;
   }, [selectedClients, primaryClientId]);
 
+  // Load registrations
+  const loadRegistrations = useCallback(async () => {
+    const response = await registrationService.getPendingRegistrations();
+    if (response.error) {
+      toast.error('שגיאה בטעינת בקשות ההרשמה');
+    } else if (response.data) {
+      setRegistrations(response.data);
+      const pending = response.data.filter((r) => r.status === 'pending');
+      setPendingCount(pending.length);
+    }
+  }, []);
+
+  // Load rejected registrations
+  const loadRejectedRegistrations = useCallback(async () => {
+    const response = await registrationService.getRejectedRegistrations();
+    if (response.error) {
+      toast.error('שגיאה בטעינת בקשות נדחות');
+    } else if (response.data) {
+      setRejectedRegistrations(response.data);
+      setRejectedCount(response.data.length);
+    }
+  }, []);
+
   // Approve registration
-  const approveRegistration = useCallback(async (regId: string, _role: UserRole): Promise<boolean> => {
-    // Note: approveRegistration in service only accepts assignedClientIds, not role
-    // The role is taken from registration.requested_role in the service
-    // For now, we pass undefined and let the service use the requested_role
-    const response = await registrationService.approveRegistration(regId, undefined);
+  const approveRegistration = useCallback(async (regId: string, role: UserRole): Promise<boolean> => {
+    const response = await registrationService.approveRegistration(regId, role);
     if (response.error) {
       toast.error('שגיאה באישור הבקשה');
       return false;
