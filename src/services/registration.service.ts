@@ -159,7 +159,7 @@ class RegistrationService {
       if (!currentUser) throw new Error('Not authenticated');
 
       const { data: tenantUser } = await supabase
-        .from('tenant_users')
+        .from('user_tenant_access')
         .select('tenant_id')
         .eq('user_id', currentUser.id)
         .single();
@@ -315,7 +315,7 @@ class RegistrationService {
       if (!user) throw new Error('Not authenticated');
 
       const { data: tenantUser } = await supabase
-        .from('tenant_users')
+        .from('user_tenant_access')
         .select('tenant_id')
         .eq('user_id', user.id)
         .single();

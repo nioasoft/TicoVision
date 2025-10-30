@@ -36,7 +36,7 @@ interface ApproveRegistrationDialogProps {
   open: boolean;
   registration: PendingRegistration | null;
   onClose: () => void;
-  onConfirm: (registrationId: string, role: UserRole) => Promise<boolean>;
+  onSubmit: (role: UserRole) => Promise<boolean>;
 }
 
 // Reject Registration Dialog Props
@@ -44,7 +44,7 @@ interface RejectRegistrationDialogProps {
   open: boolean;
   registration: PendingRegistration | null;
   onClose: () => void;
-  onConfirm: (registrationId: string, reason: string) => Promise<boolean>;
+  onSubmit: (reason: string) => Promise<boolean>;
 }
 
 // View Details Dialog Props
@@ -59,12 +59,12 @@ interface DeleteRegistrationDialogProps {
   open: boolean;
   registration: PendingRegistration | null;
   onClose: () => void;
-  onConfirm: (registrationId: string) => Promise<boolean>;
+  onConfirm: () => Promise<void>;
 }
 
 // Approve Registration Dialog
 export const ApproveRegistrationDialog = React.memo<ApproveRegistrationDialogProps>(
-  ({ open, registration, onClose, onConfirm }) => {
+  ({ open, registration, onClose, onSubmit }) => {
     const [selectedRole, setSelectedRole] = useState<UserRole>('client');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,11 +72,11 @@ export const ApproveRegistrationDialog = React.memo<ApproveRegistrationDialogPro
       if (!registration) return;
       setIsSubmitting(true);
       try {
-        await onConfirm(registration.id, selectedRole);
+        await onSubmit(selectedRole);
       } finally {
         setIsSubmitting(false);
       }
-    }, [registration, selectedRole, onConfirm]);
+    }, [registration, selectedRole, onSubmit]);
 
     const getRoleLabel = (role: string) => {
       const labels: Record<string, string> = {
@@ -155,7 +155,7 @@ ApproveRegistrationDialog.displayName = 'ApproveRegistrationDialog';
 
 // Reject Registration Dialog
 export const RejectRegistrationDialog = React.memo<RejectRegistrationDialogProps>(
-  ({ open, registration, onClose, onConfirm }) => {
+  ({ open, registration, onClose, onSubmit }) => {
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -163,14 +163,14 @@ export const RejectRegistrationDialog = React.memo<RejectRegistrationDialogProps
       if (!registration || !reason.trim()) return;
       setIsSubmitting(true);
       try {
-        const success = await onConfirm(registration.id, reason);
+        const success = await onSubmit(reason);
         if (success) {
           setReason('');
         }
       } finally {
         setIsSubmitting(false);
       }
-    }, [registration, reason, onConfirm]);
+    }, [registration, reason, onSubmit]);
 
     return (
       <Dialog open={open} onOpenChange={onClose}>
@@ -357,7 +357,7 @@ export const DeleteRegistrationDialog = React.memo<DeleteRegistrationDialogProps
       if (!registration) return;
       setIsDeleting(true);
       try {
-        await onConfirm(registration.id);
+        await onConfirm();
       } finally {
         setIsDeleting(false);
       }
