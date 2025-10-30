@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import {
   DropdownMenu,
@@ -13,27 +13,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Building2, Check, ChevronsUpDown, Plus } from 'lucide-react';
-import { authService } from '@/services/auth.service';
+import { authService, type TenantWithSettings } from '@/services/auth.service';
 import { useNavigate } from 'react-router-dom';
 
-interface Tenant {
-  id: string;
-  name: string;
-  name_english?: string;
+interface TenantDisplay extends Omit<TenantWithSettings, 'settings'> {
+  userRole?: string;
+  isPrimary?: boolean;
   settings?: {
     logo_url?: string;
     company_name?: string;
     billing_plan?: string;
   };
-  userRole?: string;
-  isPrimary?: boolean;
 }
 
 export default function TenantSwitcher() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [currentTenant, setCurrentTenant] = useState<Tenant | null>(null);
+  const [tenants, setTenants] = useState<TenantDisplay[]>([]);
+  const [currentTenant, setCurrentTenant] = useState<TenantDisplay | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
@@ -56,15 +53,24 @@ export default function TenantSwitcher() {
         return;
       }
 
-      setTenants(userTenants);
+      // Map and transform tenants
+      const mappedTenants: TenantDisplay[] = userTenants.map(tenant => ({
+        ...tenant,
+        settings: tenant.settings as TenantDisplay['settings'] | undefined,
+      }));
+
+      setTenants(mappedTenants);
 
       // Get current tenant
       const { tenant: current } = await authService.getUserTenant();
       if (current) {
-        setCurrentTenant(current);
-      } else if (userTenants.length > 0) {
+        setCurrentTenant({
+          ...current,
+          settings: current.settings as TenantDisplay['settings'] | undefined,
+        });
+      } else if (mappedTenants.length > 0) {
         // Set first tenant as current if none selected
-        setCurrentTenant(userTenants[0]);
+        setCurrentTenant(mappedTenants[0]);
       }
     } catch (error) {
       logger.error('Error loading tenants:', error);
@@ -94,7 +100,7 @@ export default function TenantSwitcher() {
     setOpen(false);
   };
 
-  const getTenantInitials = (tenant: Tenant) => {
+  const getTenantInitials = (tenant: TenantDisplay) => {
     return tenant.name
       .split(' ')
       .map(word => word[0])
@@ -213,8 +219,8 @@ export default function TenantSwitcher() {
                         ראשי
                       </Badge>
                     )}
-                    <Badge variant={plan.variant} className="text-xs">
-                      {plan.label}
+                    <Badge variant={plan?.variant || 'outline'} className="text-xs">
+                      {plan?.label || 'Starter'}
                     </Badge>
                     {currentTenant?.id === tenant.id && (
                       <Check className="h-4 w-4 text-primary" />
