@@ -138,9 +138,13 @@ class RegistrationService {
 
   /**
    * Approve a registration request and create user
+   * @param registrationId - ID of the pending registration
+   * @param role - Role to assign (overrides requested_role if provided)
+   * @param assignedClientIds - Optional client IDs to assign to the user
    */
   async approveRegistration(
     registrationId: string,
+    role?: UserRole,
     assignedClientIds?: string[]
   ) {
     try {
@@ -171,13 +175,16 @@ class RegistrationService {
 
       // Create auth user with temporary password
       // Using v2 function to bypass PostgREST cache issue
+      // Use provided role OR fall back to requested_role from registration
+      const roleToAssign = role || registration.requested_role;
+
       const { data: authData, error: authError } = await supabase
         .rpc('create_user_with_role_v2', {
           p_email: registration.email,
           p_password: tempPassword, // Temporary password - user will reset via email
           p_full_name: registration.full_name,
           p_phone: registration.phone || null,
-          p_role: registration.requested_role,
+          p_role: roleToAssign,
           p_permissions: {}
         })
         .single();
@@ -201,7 +208,8 @@ class RegistrationService {
       }
 
       // If client role and tax_id provided, find and assign client
-      if (registration.requested_role === 'client' && registration.tax_id) {
+      // Use roleToAssign (not requested_role) in case admin changed the role
+      if (roleToAssign === 'client' && registration.tax_id) {
         const { data: client } = await supabase
           .from('clients')
           .select('id')

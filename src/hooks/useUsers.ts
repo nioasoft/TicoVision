@@ -280,6 +280,7 @@ export function useUsers(): UseUsersReturn {
 
   // Approve registration
   const approveRegistration = useCallback(async (regId: string, role: UserRole): Promise<boolean> => {
+    // Pass role to service - it will override requested_role
     const response = await registrationService.approveRegistration(regId, role);
     if (response.error) {
       toast.error('שגיאה באישור הבקשה');
