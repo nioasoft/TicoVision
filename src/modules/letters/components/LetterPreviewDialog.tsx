@@ -98,7 +98,7 @@ export function LetterPreviewDialog({
       const isBookkeeping = currentLetterStage === 'secondary';
       const amountOriginal = isBookkeeping
         ? (fee.bookkeeping_calculation?.total_with_vat || 0)
-        : (fee.total_with_vat || 0);
+        : (fee.total_amount || 0);
 
       const formatNumber = (num: number): string => {
         return Math.round(num).toLocaleString('he-IL');

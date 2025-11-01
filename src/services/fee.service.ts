@@ -355,6 +355,16 @@ class FeeService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
+      // Save bookkeeping fields BEFORE destructuring (we need them later for bookkeeping_calculation)
+      const bookkeepingFields = {
+        bookkeeping_base_amount: data.bookkeeping_base_amount,
+        bookkeeping_inflation_rate: data.bookkeeping_inflation_rate,
+        bookkeeping_real_adjustment: data.bookkeeping_real_adjustment,
+        bookkeeping_real_adjustment_reason: data.bookkeeping_real_adjustment_reason,
+        bookkeeping_discount_percentage: data.bookkeeping_discount_percentage,
+        bookkeeping_apply_inflation_index: data.bookkeeping_apply_inflation_index,
+      };
+
       // Remove bookkeeping_* fields - they don't exist as columns (only in JSONB)
       const {
         bookkeeping_base_amount,
@@ -369,8 +379,9 @@ class FeeService extends BaseService {
       // Recalculate total if amounts changed
       // Type: Partial includes all calculation fields that might be added during recalculation
       let updateData: Partial<FeeCalculation> = cleanData;
-      if (data.base_amount !== undefined || data.inflation_rate !== undefined || 
-          data.real_adjustment !== undefined || data.discount_percentage !== undefined) {
+      if (data.base_amount !== undefined || data.inflation_rate !== undefined ||
+          data.real_adjustment !== undefined || data.discount_percentage !== undefined ||
+          data.apply_inflation_index !== undefined) {
         const { data: existing } = await this.getById(id);
         if (existing) {
           // Recalculate all amounts
@@ -380,7 +391,8 @@ class FeeService extends BaseService {
             base_amount: data.base_amount ?? existing.base_amount,
             inflation_rate: data.inflation_rate ?? existing.inflation_rate,
             real_adjustment: data.real_adjustment ?? existing.real_adjustment,
-            discount_percentage: data.discount_percentage ?? existing.discount_percentage
+            discount_percentage: data.discount_percentage ?? existing.discount_percentage,
+            apply_inflation_index: data.apply_inflation_index ?? existing.apply_inflation_index
           };
           const calculations = this.calculateFeeAmounts(recalcData);
           
@@ -396,30 +408,31 @@ class FeeService extends BaseService {
       }
 
       // Calculate bookkeeping if bookkeeping fields changed (for internal clients)
-      if (data.bookkeeping_base_amount !== undefined ||
-          data.bookkeeping_inflation_rate !== undefined ||
-          data.bookkeeping_real_adjustment !== undefined ||
-          data.bookkeeping_discount_percentage !== undefined ||
-          data.bookkeeping_apply_inflation_index !== undefined) {
+      // Use bookkeepingFields (saved before destructuring) instead of data
+      if (bookkeepingFields.bookkeeping_base_amount !== undefined ||
+          bookkeepingFields.bookkeeping_inflation_rate !== undefined ||
+          bookkeepingFields.bookkeeping_real_adjustment !== undefined ||
+          bookkeepingFields.bookkeeping_discount_percentage !== undefined ||
+          bookkeepingFields.bookkeeping_apply_inflation_index !== undefined) {
 
         const { data: existing } = await this.getById(id);
-        if (existing && data.bookkeeping_base_amount && data.bookkeeping_base_amount > 0) {
+        if (existing && bookkeepingFields.bookkeeping_base_amount && bookkeepingFields.bookkeeping_base_amount > 0) {
           const bookkeepingCalc = this.calculateFeeAmounts({
-            base_amount: data.bookkeeping_base_amount,
-            inflation_rate: data.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
-            real_adjustment: data.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
-            discount_percentage: data.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
-            apply_inflation_index: data.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
+            base_amount: bookkeepingFields.bookkeeping_base_amount,
+            inflation_rate: bookkeepingFields.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
+            real_adjustment: bookkeepingFields.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
+            discount_percentage: bookkeepingFields.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
+            apply_inflation_index: bookkeepingFields.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
           });
 
           updateData.bookkeeping_calculation = {
-            base_amount: data.bookkeeping_base_amount,
-            apply_inflation_index: data.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
-            inflation_rate: data.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
+            base_amount: bookkeepingFields.bookkeeping_base_amount,
+            apply_inflation_index: bookkeepingFields.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
+            inflation_rate: bookkeepingFields.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
             inflation_adjustment: bookkeepingCalc.inflation_adjustment,
-            real_adjustment: data.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
-            real_adjustment_reason: data.bookkeeping_real_adjustment_reason ?? existing.bookkeeping_calculation?.real_adjustment_reason,
-            discount_percentage: data.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
+            real_adjustment: bookkeepingFields.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
+            real_adjustment_reason: bookkeepingFields.bookkeeping_real_adjustment_reason ?? existing.bookkeeping_calculation?.real_adjustment_reason,
+            discount_percentage: bookkeepingFields.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
             discount_amount: bookkeepingCalc.discount_amount,
             final_amount: bookkeepingCalc.final_amount,
             vat_amount: bookkeepingCalc.vat_amount,
@@ -656,6 +669,37 @@ class FeeService extends BaseService {
         .eq('client_id', clientId)
         .eq('year', year)
         .eq('status', 'draft')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      return { data: data?.[0] || null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get latest calculation for client and year (any status)
+   * Used when no draft exists but calculation was already sent
+   */
+  async getLatestCalculationForYear(
+    clientId: string,
+    year: number
+  ): Promise<ServiceResponse<FeeCalculation | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('fee_calculations')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId)
+        .eq('year', year)
+        .in('status', ['draft', 'calculated', 'sent'])
         .order('created_at', { ascending: false })
         .limit(1);
 

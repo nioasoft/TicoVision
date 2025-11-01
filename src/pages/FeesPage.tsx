@@ -212,7 +212,14 @@ export function FeesPage() {
 
   const loadDraftCalculation = async (clientId: string) => {
     try {
-      const response = await feeService.getDraftCalculation(clientId, formData.year);
+      // First try to find draft (unsent calculation)
+      let response = await feeService.getDraftCalculation(clientId, formData.year);
+
+      // If no draft found, try to find any calculation (including sent/calculated)
+      // This handles the case where user sent letters and then returns to the client
+      if (!response.data) {
+        response = await feeService.getLatestCalculationForYear(clientId, formData.year);
+      }
 
       if (response.data) {
         const draft = response.data;
@@ -243,7 +250,7 @@ export function FeesPage() {
 
         toast({
           title: 'נטען חישוב קודם',
-          description: 'חישוב שטרם נשלח נטען מהמערכת',
+          description: draft.status === 'draft' ? 'חישוב שטרם נשלח נטען מהמערכת' : 'חישוב קיים נטען מהמערכת',
         });
       } else {
         setCurrentDraftId(null);
@@ -415,6 +422,7 @@ export function FeesPage() {
         real_adjustment: formData.real_adjustment,
         real_adjustment_reason: formData.real_adjustment_reason,
         discount_percentage: formData.discount_percentage,
+        apply_inflation_index: formData.apply_inflation_index,
         notes: formData.notes,
         // Bookkeeping fields (for internal clients only)
         bookkeeping_base_amount: formData.bookkeeping_base_amount,
