@@ -20,7 +20,9 @@ import {
   ChevronRight,
   ArrowUp,
   ArrowDown,
-  Info
+  Info,
+  CheckCircle2,
+  Edit2
 } from 'lucide-react';
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
@@ -40,6 +42,13 @@ interface FeeCalculatorForm {
   discount_percentage: number;
   apply_inflation_index: boolean;
   notes: string;
+  // Bookkeeping fields (for internal clients only)
+  bookkeeping_base_amount: number;
+  bookkeeping_inflation_rate: number;
+  bookkeeping_real_adjustment: number;
+  bookkeeping_real_adjustment_reason: string;
+  bookkeeping_discount_percentage: number;
+  bookkeeping_apply_inflation_index: boolean;
 }
 
 export function FeesPage() {
@@ -63,7 +72,14 @@ export function FeesPage() {
     real_adjustment_reason: '',
     discount_percentage: 0,
     apply_inflation_index: true,
-    notes: ''
+    notes: '',
+    // Bookkeeping fields (for internal clients only)
+    bookkeeping_base_amount: 0,
+    bookkeeping_inflation_rate: 3.0,
+    bookkeeping_real_adjustment: 0,
+    bookkeeping_real_adjustment_reason: '',
+    bookkeeping_discount_percentage: 0,
+    bookkeeping_apply_inflation_index: true
   });
   const [calculationResults, setCalculationResults] = useState<{
     inflation_adjustment: number;
@@ -73,6 +89,14 @@ export function FeesPage() {
     vat_amount: number;
     total_with_vat: number;
     year_over_year_change: number;
+  } | null>(null);
+  const [bookkeepingCalculationResults, setBookkeepingCalculationResults] = useState<{
+    inflation_adjustment: number;
+    real_adjustment: number;
+    discount_amount: number;
+    final_amount: number;
+    vat_amount: number;
+    total_with_vat: number;
   } | null>(null);
   const [letterPreviewOpen, setLetterPreviewOpen] = useState(false);
   const [currentFeeId, setCurrentFeeId] = useState<string | null>(null);
@@ -118,7 +142,21 @@ export function FeesPage() {
       const results = calculateFeeAmounts();
       setCalculationResults(results);
     }
-  }, [formData.base_amount, formData.inflation_rate, formData.real_adjustment, formData.discount_percentage, formData.apply_inflation_index, formData.previous_year_amount_with_vat]);
+  }, [
+    formData.base_amount,
+    formData.inflation_rate,
+    formData.real_adjustment,
+    formData.discount_percentage,
+    formData.apply_inflation_index,
+    formData.previous_year_amount_with_vat,
+    // Bookkeeping dependencies for internal clients
+    formData.bookkeeping_base_amount,
+    formData.bookkeeping_inflation_rate,
+    formData.bookkeeping_real_adjustment,
+    formData.bookkeeping_discount_percentage,
+    formData.bookkeeping_apply_inflation_index,
+    selectedClientDetails?.internal_external
+  ]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -194,6 +232,13 @@ export function FeesPage() {
           previous_year_amount: prev.previous_year_amount,
           previous_year_discount: prev.previous_year_discount,
           previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
+          // Load bookkeeping data if exists (for internal clients)
+          bookkeeping_base_amount: draft.bookkeeping_calculation?.base_amount || 0,
+          bookkeeping_inflation_rate: draft.bookkeeping_calculation?.inflation_rate || 3.0,
+          bookkeeping_real_adjustment: draft.bookkeeping_calculation?.real_adjustment || 0,
+          bookkeeping_real_adjustment_reason: draft.bookkeeping_calculation?.real_adjustment_reason || '',
+          bookkeeping_discount_percentage: draft.bookkeeping_calculation?.discount_percentage || 0,
+          bookkeeping_apply_inflation_index: draft.bookkeeping_calculation?.apply_inflation_index ?? true,
         }));
 
         toast({
@@ -267,6 +312,10 @@ export function FeesPage() {
       }
 
       setPreviousYearDataSaved(true);
+
+      // Reload previous year data to display it immediately
+      await loadPreviousYearData(formData.client_id);
+
       toast({
         title: 'הצלחה',
         description: 'נתוני שנה קודמת נשמרו בהצלחה',
@@ -290,22 +339,49 @@ export function FeesPage() {
 
     // Step 1: Apply inflation adjustment (only if checkbox is checked)
     const inflationAdjustment = formData.base_amount * (inflationRate / 100);
-    
+
     // Step 2: Add real adjustment
     const adjustedAmount = formData.base_amount + inflationAdjustment + realAdjustment;
-    
+
     // Step 3: Apply discount
     const discountAmount = adjustedAmount * (discountPercentage / 100);
     const finalAmount = adjustedAmount - discountAmount;
-    
+
     // Step 4: Calculate VAT (18% in Israel)
     const vatAmount = finalAmount * 0.18;
     const totalWithVat = finalAmount + vatAmount;
-    
+
     // Calculate year-over-year change
-    const yearOverYearChange = formData.previous_year_amount_with_vat > 0 
+    const yearOverYearChange = formData.previous_year_amount_with_vat > 0
       ? ((totalWithVat - formData.previous_year_amount_with_vat) / formData.previous_year_amount_with_vat * 100)
       : 0;
+
+    // Calculate bookkeeping amounts (for internal clients)
+    let bookkeepingResults = null;
+    if (selectedClientDetails?.internal_external === 'internal' && formData.bookkeeping_base_amount > 0) {
+      const bkInflationRate = formData.bookkeeping_apply_inflation_index ? (formData.bookkeeping_inflation_rate || 3.0) : 0;
+      const bkRealAdjustment = formData.bookkeeping_real_adjustment || 0;
+      const bkDiscountPercentage = formData.bookkeeping_discount_percentage || 0;
+
+      const bkInflationAdjustment = formData.bookkeeping_base_amount * (bkInflationRate / 100);
+      const bkAdjustedAmount = formData.bookkeeping_base_amount + bkInflationAdjustment + bkRealAdjustment;
+      const bkDiscountAmount = bkAdjustedAmount * (bkDiscountPercentage / 100);
+      const bkFinalAmount = bkAdjustedAmount - bkDiscountAmount;
+      const bkVatAmount = bkFinalAmount * 0.18;
+      const bkTotalWithVat = bkFinalAmount + bkVatAmount;
+
+      bookkeepingResults = {
+        inflation_adjustment: bkInflationAdjustment,
+        real_adjustment: bkRealAdjustment,
+        discount_amount: bkDiscountAmount,
+        final_amount: bkFinalAmount,
+        vat_amount: bkVatAmount,
+        total_with_vat: bkTotalWithVat,
+      };
+    }
+
+    // Update bookkeeping state
+    setBookkeepingCalculationResults(bookkeepingResults);
 
     return {
       inflation_adjustment: inflationAdjustment,
@@ -339,7 +415,14 @@ export function FeesPage() {
         real_adjustment: formData.real_adjustment,
         real_adjustment_reason: formData.real_adjustment_reason,
         discount_percentage: formData.discount_percentage,
-        notes: formData.notes
+        notes: formData.notes,
+        // Bookkeeping fields (for internal clients only)
+        bookkeeping_base_amount: formData.bookkeeping_base_amount,
+        bookkeeping_inflation_rate: formData.bookkeeping_inflation_rate,
+        bookkeeping_real_adjustment: formData.bookkeeping_real_adjustment,
+        bookkeeping_real_adjustment_reason: formData.bookkeeping_real_adjustment_reason,
+        bookkeeping_discount_percentage: formData.bookkeeping_discount_percentage,
+        bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index
       };
 
       // Check if updating existing draft or creating new
@@ -625,7 +708,37 @@ export function FeesPage() {
           {activeTab === 'current' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold mb-4 rtl:text-right ltr:text-left">חישוב שכר טרחה לשנת {formData.year + 1}</h3>
-              
+
+              {/* Previous Year Data Indicator */}
+              {previousYearDataSaved && formData.previous_year_amount_with_vat > 0 && (
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between rtl:flex-row-reverse">
+                      <div className="flex items-center gap-3 rtl:flex-row-reverse">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div className="rtl:text-right ltr:text-left">
+                          <p className="font-semibold text-green-900">
+                            נתוני שנת {formData.year} נשמרו בהצלחה
+                          </p>
+                          <p className="text-sm text-green-700">
+                            סכום כולל מע"מ: {formatCurrency(formData.previous_year_amount_with_vat)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveTab('previous')}
+                        className="rtl:ml-0 rtl:mr-auto ltr:mr-0 ltr:ml-auto"
+                      >
+                        <Edit2 className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        ערוך
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
@@ -720,6 +833,102 @@ export function FeesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Bookkeeping Section (Internal Clients Only) */}
+              {selectedClientDetails?.internal_external === 'internal' && (
+                <div className="mt-8 pt-8 border-t-2 border-gray-200">
+                  <div className="mb-4 rtl:text-right ltr:text-left">
+                    <h4 className="text-lg font-semibold text-primary flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      חישוב הנהלת חשבונות (מכתב F)
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      חישוב נפרד עבור שכר טרחה הנהלת חשבונות - 12 המחאות
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="bookkeeping_base_amount">סכום בסיס הנהלת חשבונות *</Label>
+                        <Input
+                          id="bookkeeping_base_amount"
+                          type="number"
+                          value={formData.bookkeeping_base_amount}
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_base_amount: parseFloat(e.target.value) || 0 })}
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="bookkeeping_inflation_rate">אחוז מדד הנהלת חשבונות</Label>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="bookkeeping_apply_inflation"
+                              checked={formData.bookkeeping_apply_inflation_index}
+                              onCheckedChange={(checked) =>
+                                setFormData({ ...formData, bookkeeping_apply_inflation_index: checked as boolean })
+                              }
+                            />
+                            <Label htmlFor="bookkeeping_apply_inflation" className="text-sm font-normal cursor-pointer">
+                              החל מדד
+                            </Label>
+                          </div>
+                        </div>
+                        <Input
+                          id="bookkeeping_inflation_rate"
+                          type="number"
+                          value={formData.bookkeeping_inflation_rate}
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_inflation_rate: parseFloat(e.target.value) || 3.0 })}
+                          step="0.1"
+                          placeholder="3.0"
+                          disabled={!formData.bookkeeping_apply_inflation_index}
+                          className={!formData.bookkeeping_apply_inflation_index ? 'opacity-50' : ''}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="bookkeeping_discount_percentage">אחוז הנחה הנהלת חשבונות (%)</Label>
+                        <Input
+                          id="bookkeeping_discount_percentage"
+                          type="number"
+                          value={formData.bookkeeping_discount_percentage}
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_discount_percentage: parseFloat(e.target.value) || 0 })}
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="bookkeeping_real_adjustment">תוספת ריאלית הנהלת חשבונות</Label>
+                        <Input
+                          id="bookkeeping_real_adjustment"
+                          type="number"
+                          value={formData.bookkeeping_real_adjustment}
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment: parseFloat(e.target.value) || 0 })}
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="bookkeeping_adjustment_reason">סיבת התוספת הריאלית (הנהלת חשבונות)</Label>
+                        <Textarea
+                          id="bookkeeping_adjustment_reason"
+                          value={formData.bookkeeping_real_adjustment_reason}
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment_reason: e.target.value })}
+                          placeholder="תיאור הסיבה לתוספת..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setActiveTab('previous')}>
@@ -899,6 +1108,148 @@ export function FeesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Bookkeeping Results - Internal Clients Only */}
+              {selectedClientDetails?.internal_external === 'internal' && bookkeepingCalculationResults && (
+                <div className="mt-8 pt-8 border-t-2 border-gray-200">
+                  <h4 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    תוצאות חישוב הנהלת חשבונות (מכתב F)
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">סכום בסיס הנהלת חשבונות</p>
+                            <p className="text-lg font-semibold">{formatCurrency(formData.bookkeeping_base_amount)}</p>
+                          </div>
+                          <DollarSign className="h-8 w-8 text-blue-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              התאמת מדד {formData.bookkeeping_apply_inflation_index ? `(${formData.bookkeeping_inflation_rate}%)` : '(לא מוחל)'}
+                            </p>
+                            <p className="text-lg font-semibold text-green-600">
+                              {formData.bookkeeping_apply_inflation_index ? `+${formatCurrency(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}
+                            </p>
+                          </div>
+                          <TrendingUp className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">תוספת ריאלית</p>
+                            <p className="text-lg font-semibold text-green-600">
+                              +{formatCurrency(bookkeepingCalculationResults.real_adjustment)}
+                            </p>
+                          </div>
+                          <Plus className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">הנחה ({formData.bookkeeping_discount_percentage}%)</p>
+                            <p className="text-lg font-semibold text-red-600">
+                              -{formatCurrency(bookkeepingCalculationResults.discount_amount)}
+                            </p>
+                          </div>
+                          <div className="h-8 w-8 text-red-500">%</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">סך הכל לפני מע"מ</p>
+                            <p className="text-lg font-semibold">{formatCurrency(bookkeepingCalculationResults.final_amount)}</p>
+                          </div>
+                          <Calculator className="h-8 w-8 text-orange-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">מע"מ (18%)</p>
+                            <p className="text-lg font-semibold">{formatCurrency(bookkeepingCalculationResults.vat_amount)}</p>
+                          </div>
+                          <FileText className="h-8 w-8 text-blue-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="md:col-span-2 lg:col-span-1">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-500">סך הכל כולל מע"מ</p>
+                            <p className="text-2xl font-bold text-primary">
+                              {formatCurrency(bookkeepingCalculationResults.total_with_vat)}
+                            </p>
+                          </div>
+                          <Calculator className="h-8 w-8 text-primary" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg mt-4">
+                    <h5 className="font-semibold mb-2 text-blue-900">פירוט חישוב הנהלת חשבונות:</h5>
+                    <div className="text-sm space-y-1">
+                      <div className="flex justify-between">
+                        <span>סכום בסיס:</span>
+                        <span>{formatCurrency(formData.bookkeeping_base_amount)}</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>+ התאמת מדד {formData.bookkeeping_apply_inflation_index ? `(${formData.bookkeeping_inflation_rate}%)` : '(לא מוחל)'}:</span>
+                        <span>{formData.bookkeeping_apply_inflation_index ? `+${formatCurrency(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>+ תוספת ריאלית:</span>
+                        <span>+{formatCurrency(bookkeepingCalculationResults.real_adjustment)}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600">
+                        <span>- הנחה ({formData.bookkeeping_discount_percentage}%):</span>
+                        <span>-{formatCurrency(bookkeepingCalculationResults.discount_amount)}</span>
+                      </div>
+                      <hr className="my-2" />
+                      <div className="flex justify-between font-semibold">
+                        <span>סך הכל לפני מע"מ:</span>
+                        <span>{formatCurrency(bookkeepingCalculationResults.final_amount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>+ מע"מ (18%):</span>
+                        <span>+{formatCurrency(bookkeepingCalculationResults.vat_amount)}</span>
+                      </div>
+                      <hr className="my-2" />
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>סך הכל כולל מע"מ:</span>
+                        <span>{formatCurrency(bookkeepingCalculationResults.total_with_vat)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setActiveTab('current')}>

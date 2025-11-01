@@ -254,15 +254,15 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     קבוצה (אופציונלי)
                   </Label>
                   <Select
-                    value={formData.group_id || ''}
+                    value={formData.group_id || 'NO_GROUP'}
                     onValueChange={(value) => {
-                      handleFormChange('group_id', value || undefined);
+                      handleFormChange('group_id', value === 'NO_GROUP' ? undefined : value);
                       // אם בוחר קבוצה ועדיין לא הגדיר payment_role → ברירת מחדל 'member'
-                      if (value && !formData.payment_role) {
+                      if (value && value !== 'NO_GROUP' && !formData.payment_role) {
                         handleFormChange('payment_role', 'member');
                       }
                       // אם מוחק קבוצה → מאפס payment_role ל-independent
-                      if (!value) {
+                      if (!value || value === 'NO_GROUP') {
                         handleFormChange('payment_role', 'independent');
                       }
                     }}
@@ -271,7 +271,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       <SelectValue placeholder="בחר קבוצה" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">ללא קבוצה</SelectItem>
+                      <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
                       {groups.map((group) => (
                         <SelectItem key={group.id} value={group.id}>
                           {group.group_name_hebrew || group.group_name}

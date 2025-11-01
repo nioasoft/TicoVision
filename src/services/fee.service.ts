@@ -45,6 +45,21 @@ export interface CalculationMetadata {
   [key: string]: unknown;
 }
 
+export interface BookkeepingCalculation {
+  base_amount: number;
+  apply_inflation_index: boolean;
+  inflation_rate: number;
+  inflation_adjustment: number;
+  real_adjustment: number;
+  real_adjustment_reason?: string;
+  discount_percentage: number;
+  discount_amount: number;
+  final_amount: number;
+  vat_amount: number;
+  total_with_vat: number;
+  [key: string]: unknown;
+}
+
 export interface FeeCalculation {
   id: string;
   tenant_id: string;
@@ -94,6 +109,7 @@ export interface FeeCalculation {
   // Metadata
   notes?: string;
   calculation_metadata?: CalculationMetadata; // JSONB field with calculation context
+  bookkeeping_calculation?: BookkeepingCalculation; // JSONB field: separate calculation for internal bookkeeping (letter F)
   created_by?: string;
   updated_by?: string;
   created_at: string;
@@ -130,6 +146,13 @@ export interface CreateFeeCalculationDto {
   discount_percentage?: number; // Default 0
   due_date?: string;
   notes?: string;
+  // Bookkeeping calculation (for internal clients only)
+  bookkeeping_base_amount?: number;
+  bookkeeping_inflation_rate?: number;
+  bookkeeping_real_adjustment?: number;
+  bookkeeping_real_adjustment_reason?: string;
+  bookkeeping_discount_percentage?: number;
+  bookkeeping_apply_inflation_index?: boolean;
 }
 
 export interface UpdateFeeCalculationDto extends Partial<CreateFeeCalculationDto> {
@@ -220,6 +243,32 @@ class FeeService extends BaseService {
       // Calculate all fee amounts
       const calculations = this.calculateFeeAmounts(data);
 
+      // Calculate bookkeeping amounts (for internal clients only)
+      let bookkeepingCalc: BookkeepingCalculation | null = null;
+      if (data.bookkeeping_base_amount && data.bookkeeping_base_amount > 0) {
+        const bookkeepingCalculations = this.calculateFeeAmounts({
+          base_amount: data.bookkeeping_base_amount,
+          inflation_rate: data.bookkeeping_inflation_rate || 0,
+          real_adjustment: data.bookkeeping_real_adjustment || 0,
+          discount_percentage: data.bookkeeping_discount_percentage || 0,
+          apply_inflation_index: data.bookkeeping_apply_inflation_index ?? false,
+        });
+
+        bookkeepingCalc = {
+          base_amount: data.bookkeeping_base_amount,
+          apply_inflation_index: data.bookkeeping_apply_inflation_index ?? false,
+          inflation_rate: data.bookkeeping_inflation_rate || 0,
+          inflation_adjustment: bookkeepingCalculations.inflation_adjustment,
+          real_adjustment: data.bookkeeping_real_adjustment || 0,
+          real_adjustment_reason: data.bookkeeping_real_adjustment_reason,
+          discount_percentage: data.bookkeeping_discount_percentage || 0,
+          discount_amount: bookkeepingCalculations.discount_amount,
+          final_amount: bookkeepingCalculations.final_amount,
+          vat_amount: bookkeepingCalculations.vat_amount,
+          total_with_vat: bookkeepingCalculations.total_with_vat,
+        };
+      }
+
       const feeData = {
         tenant_id: tenantId,
         client_id: data.client_id,
@@ -273,6 +322,7 @@ class FeeService extends BaseService {
           calculation_method: 'standard',
           inflation_applied: data.apply_inflation_index !== false
         },
+        bookkeeping_calculation: bookkeepingCalc,
         created_by: currentUserId
       };
 
@@ -305,9 +355,20 @@ class FeeService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
+      // Remove bookkeeping_* fields - they don't exist as columns (only in JSONB)
+      const {
+        bookkeeping_base_amount,
+        bookkeeping_inflation_rate,
+        bookkeeping_real_adjustment,
+        bookkeeping_real_adjustment_reason,
+        bookkeeping_discount_percentage,
+        bookkeeping_apply_inflation_index,
+        ...cleanData
+      } = data;
+
       // Recalculate total if amounts changed
       // Type: Partial includes all calculation fields that might be added during recalculation
-      let updateData: Partial<FeeCalculation> = { ...data };
+      let updateData: Partial<FeeCalculation> = cleanData;
       if (data.base_amount !== undefined || data.inflation_rate !== undefined || 
           data.real_adjustment !== undefined || data.discount_percentage !== undefined) {
         const { data: existing } = await this.getById(id);
@@ -330,6 +391,39 @@ class FeeService extends BaseService {
             final_amount: calculations.final_amount,
             vat_amount: calculations.vat_amount,
             total_amount: calculations.total_with_vat
+          };
+        }
+      }
+
+      // Calculate bookkeeping if bookkeeping fields changed (for internal clients)
+      if (data.bookkeeping_base_amount !== undefined ||
+          data.bookkeeping_inflation_rate !== undefined ||
+          data.bookkeeping_real_adjustment !== undefined ||
+          data.bookkeeping_discount_percentage !== undefined ||
+          data.bookkeeping_apply_inflation_index !== undefined) {
+
+        const { data: existing } = await this.getById(id);
+        if (existing && data.bookkeeping_base_amount && data.bookkeeping_base_amount > 0) {
+          const bookkeepingCalc = this.calculateFeeAmounts({
+            base_amount: data.bookkeeping_base_amount,
+            inflation_rate: data.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
+            real_adjustment: data.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
+            discount_percentage: data.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
+            apply_inflation_index: data.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
+          });
+
+          updateData.bookkeeping_calculation = {
+            base_amount: data.bookkeeping_base_amount,
+            apply_inflation_index: data.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
+            inflation_rate: data.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
+            inflation_adjustment: bookkeepingCalc.inflation_adjustment,
+            real_adjustment: data.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
+            real_adjustment_reason: data.bookkeeping_real_adjustment_reason ?? existing.bookkeeping_calculation?.real_adjustment_reason,
+            discount_percentage: data.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
+            discount_amount: bookkeepingCalc.discount_amount,
+            final_amount: bookkeepingCalc.final_amount,
+            vat_amount: bookkeepingCalc.vat_amount,
+            total_with_vat: bookkeepingCalc.total_with_vat,
           };
         }
       }

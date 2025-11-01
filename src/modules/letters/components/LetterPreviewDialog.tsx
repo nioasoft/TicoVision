@@ -12,8 +12,9 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Mail, Loader2 } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
-import type { LetterVariables } from '../types/letter.types';
+import type { LetterVariables, LetterTemplateType } from '../types/letter.types';
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
+import { selectLetterTemplate, type LetterSelectionResult } from '../utils/letter-selector';
 
 const templateService = new TemplateService();
 
@@ -37,6 +38,8 @@ export function LetterPreviewDialog({
   const [recipientEmail, setRecipientEmail] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [variables, setVariables] = useState<Partial<LetterVariables> | null>(null);
+  const [letterSelection, setLetterSelection] = useState<LetterSelectionResult | null>(null);
+  const [currentLetterStage, setCurrentLetterStage] = useState<'primary' | 'secondary'>('primary');
 
   /**
    * Load fee and client data, then generate variables
@@ -68,8 +71,35 @@ export function LetterPreviewDialog({
       // Set recipient email from client
       setRecipientEmail(client.contact_email || client.email || '');
 
-      // Calculate amounts (from fee.total_with_vat)
-      const amountOriginal = fee.total_with_vat || 0;
+      // Determine which letter template(s) to use
+      const selection = selectLetterTemplate({
+        clientType: client.internal_external,
+        isRetainer: client.is_retainer,
+        applyInflation: fee.apply_inflation_index,
+        hasRealAdjustment: (fee.real_adjustments?.amount || 0) > 0,
+        bookkeepingApplyInflation: fee.bookkeeping_calculation?.apply_inflation_index,
+        bookkeepingHasRealAdjustment: (fee.bookkeeping_calculation?.real_adjustment || 0) > 0,
+      });
+
+      setLetterSelection(selection);
+
+      // Determine which template to use based on current stage
+      const templateType: LetterTemplateType =
+        currentLetterStage === 'primary'
+          ? selection.primaryTemplate
+          : selection.secondaryTemplate!;
+
+      const numChecks =
+        currentLetterStage === 'primary'
+          ? selection.primaryNumChecks
+          : selection.secondaryNumChecks!;
+
+      // Use primary or bookkeeping amounts based on stage
+      const isBookkeeping = currentLetterStage === 'secondary';
+      const amountOriginal = isBookkeeping
+        ? (fee.bookkeeping_calculation?.total_with_vat || 0)
+        : (fee.total_with_vat || 0);
+
       const formatNumber = (num: number): string => {
         return Math.round(num).toLocaleString('he-IL');
       };
@@ -105,21 +135,23 @@ export function LetterPreviewDialog({
         payment_link_4_payments: `http://localhost:5173/payment?fee_id=${feeId}&method=installments`,
 
         // Checks
-        num_checks: '8',
-        check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.8.${nextYear}`,
+        num_checks: numChecks.toString(),
+        check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.${numChecks}.${nextYear}`,
 
         // Client ID for tracking
         client_id: clientId,
 
         // Template-specific
-        inflation_rate: ((fee.inflation_rate || 0) * 100).toFixed(1) + '%',
+        inflation_rate: isBookkeeping
+          ? ((fee.bookkeeping_calculation?.inflation_rate || 0) * 100).toFixed(1) + '%'
+          : ((fee.inflation_rate || 0) * 100).toFixed(1) + '%',
       };
 
       setVariables(letterVariables);
 
       // Generate preview
       const { data, error } = await templateService.previewLetterFromFiles(
-        'external_index_only', // Default to annual fee template
+        templateType,
         letterVariables
       );
 
@@ -139,7 +171,7 @@ export function LetterPreviewDialog({
    * Send email via Supabase Edge Function
    */
   const handleSendEmail = async () => {
-    if (!variables || !feeId || !clientId) {
+    if (!variables || !feeId || !clientId || !letterSelection) {
       toast.error('חסרים נתונים לשליחת המכתב');
       return;
     }
@@ -157,14 +189,20 @@ export function LetterPreviewDialog({
         return;
       }
 
-      console.log('📧 Sending letter via Edge Function...');
+      // Determine current template type
+      const templateType: LetterTemplateType =
+        currentLetterStage === 'primary'
+          ? letterSelection.primaryTemplate
+          : letterSelection.secondaryTemplate!;
+
+      console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) via Edge Function...`);
 
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmail,
           recipientName: variables.company_name || 'לקוח יקר',
-          templateType: 'external_index_only',
+          templateType,
           variables,
           clientId,
           feeCalculationId: feeId,
@@ -177,16 +215,18 @@ export function LetterPreviewDialog({
 
       console.log('✅ Email sent successfully:', data);
 
-      // Update fee_calculations status to 'sent'
-      const { error: statusError } = await supabase
-        .from('fee_calculations')
-        .update({ status: 'sent' })
-        .eq('id', feeId);
+      // Update fee_calculations status to 'sent' (only after all letters sent)
+      if (currentLetterStage === 'secondary' || !letterSelection.secondaryTemplate) {
+        const { error: statusError } = await supabase
+          .from('fee_calculations')
+          .update({ status: 'sent' })
+          .eq('id', feeId);
 
-      if (statusError) {
-        console.error('Error updating fee status:', statusError);
-        toast.error('המייל נשלח אך הסטטוס לא עודכן');
-        return;
+        if (statusError) {
+          console.error('Error updating fee status:', statusError);
+          toast.error('המייל נשלח אך הסטטוס לא עודכן');
+          return;
+        }
       }
 
       // Save to generated_letters
@@ -210,10 +250,20 @@ export function LetterPreviewDialog({
         return;
       }
 
-      toast.success(`מכתב נשלח בהצלחה ל-${recipientEmail}`);
+      const letterName = currentLetterStage === 'primary' ? 'ראשון' : 'שני';
+      toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${recipientEmail}`);
 
-      // Call success callback
-      onEmailSent?.();
+      // Check if there's a secondary letter to send
+      if (currentLetterStage === 'primary' && letterSelection.secondaryTemplate) {
+        // Move to secondary letter
+        setCurrentLetterStage('secondary');
+        toast.info('מעבר למכתב השני (הנהלת חשבונות)...');
+        // Reload preview will happen via useEffect
+      } else {
+        // All letters sent, close dialog
+        onEmailSent?.();
+        onOpenChange(false);
+      }
 
     } catch (error) {
       console.error('❌ Error sending email:', error);
@@ -224,23 +274,40 @@ export function LetterPreviewDialog({
   };
 
   /**
-   * Load preview when dialog opens
+   * Load preview when dialog opens or stage changes
    */
   useEffect(() => {
     if (open && feeId && clientId) {
       loadFeeAndGenerateVariables();
     }
-  }, [open, feeId, clientId]);
+  }, [open, feeId, clientId, currentLetterStage]);
+
+  /**
+   * Reset stage when dialog opens
+   */
+  useEffect(() => {
+    if (open) {
+      setCurrentLetterStage('primary');
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto rtl:text-right ltr:text-left" dir="rtl">
         <DialogHeader>
           <DialogTitle className="rtl:text-right ltr:text-left">
-            תצוגה מקדימה - מכתב שכר טרחה שנתי
+            {currentLetterStage === 'primary' ? 'תצוגה מקדימה - מכתב ראשי' : 'תצוגה מקדימה - מכתב הנהלת חשבונות'}
+            {letterSelection?.secondaryTemplate && (
+              <span className="text-sm text-gray-500 mr-2">
+                ({currentLetterStage === 'primary' ? 'מכתב 1 מתוך 2' : 'מכתב 2 מתוך 2'})
+              </span>
+            )}
           </DialogTitle>
           <DialogDescription className="rtl:text-right ltr:text-left">
-            המכתב המלא כולל: Header, Body, Payment Section, Footer
+            {currentLetterStage === 'primary'
+              ? `המכתב הראשי עם ${letterSelection?.primaryNumChecks} המחאות`
+              : `מכתב הנהלת חשבונות עם ${letterSelection?.secondaryNumChecks} המחאות`
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -292,7 +359,11 @@ export function LetterPreviewDialog({
             ) : (
               <>
                 <Mail className="h-4 w-4 ml-2" />
-                שלח למייל
+                {currentLetterStage === 'primary' && letterSelection?.secondaryTemplate
+                  ? 'שלח מכתב ראשון'
+                  : currentLetterStage === 'secondary'
+                  ? 'שלח מכתב שני'
+                  : 'שלח למייל'}
               </>
             )}
           </Button>
