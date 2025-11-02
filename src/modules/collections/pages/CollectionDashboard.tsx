@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { KPICards } from '../components/KPICards';
+import { KPICards, type KPICardFilter } from '../components/KPICards';
 import { CollectionFilters } from '../components/CollectionFilters';
 import { CollectionTable } from '../components/CollectionTable';
 import { MarkAsPaidDialog } from '../components/MarkAsPaidDialog';
@@ -59,6 +59,9 @@ export const CollectionDashboard: React.FC = () => {
     row: CollectionRow | null;
   }>({ open: false, row: null });
 
+  // KPI Card selection state
+  const [selectedCard, setSelectedCard] = useState<KPICardFilter>('all');
+
   // Fetch data on mount
   useEffect(() => {
     fetchDashboardData();
@@ -89,6 +92,26 @@ export const CollectionDashboard: React.FC = () => {
     await refreshData();
   };
 
+  const handleCardClick = (card: KPICardFilter) => {
+    setSelectedCard(card);
+
+    // Map card click to filter change
+    switch (card) {
+      case 'all':
+        setFilters({ status: 'all' });
+        break;
+      case 'pending':
+        setFilters({ status: 'selected_not_paid' });
+        break;
+      case 'paid':
+        setFilters({ status: 'paid' });
+        break;
+      case 'alerts':
+        setFilters({ alert_type: 'not_opened_7d' }); // Or combine all alerts
+        break;
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
@@ -111,7 +134,14 @@ export const CollectionDashboard: React.FC = () => {
       </div>
 
       {/* KPIs */}
-      {dashboardData && <KPICards kpis={dashboardData.kpis} loading={loading} />}
+      {dashboardData && (
+        <KPICards
+          kpis={dashboardData.kpis}
+          loading={loading}
+          selectedCard={selectedCard}
+          onCardClick={handleCardClick}
+        />
+      )}
 
       {/* Filters */}
       <CollectionFilters filters={filters} onFiltersChange={setFilters} onReset={resetFilters} />

@@ -108,7 +108,7 @@ const CollectionTableRow: React.FC<{
   return (
     <TableRow className={cn('hover:bg-gray-50', isSelected && 'bg-blue-50')}>
       {/* Checkbox */}
-      <TableCell className="w-12">
+      <TableCell className="w-12 py-2 px-3">
         <Checkbox
           checked={isSelected}
           onCheckedChange={() => onToggleSelect(row.fee_calculation_id)}
@@ -116,40 +116,40 @@ const CollectionTableRow: React.FC<{
       </TableCell>
 
       {/* Client Name */}
-      <TableCell className="min-w-[200px]">
+      <TableCell className="min-w-[200px] py-2 px-3">
         <div className="rtl:text-right ltr:text-left">
-          <div className="font-medium">{row.company_name_hebrew || row.client_name}</div>
-          <div className="text-sm text-gray-500">{row.contact_email}</div>
+          <div className="font-medium text-sm">{row.company_name_hebrew || row.client_name}</div>
+          <div className="text-xs text-gray-500">{row.contact_email}</div>
         </div>
       </TableCell>
 
       {/* Send Date */}
-      <TableCell className="w-28 rtl:text-right ltr:text-left">
-        <div>{formatIsraeliDate(row.letter_sent_date)}</div>
+      <TableCell className="w-28 rtl:text-right ltr:text-left py-2 px-3">
+        <div className="text-sm">{formatIsraeliDate(row.letter_sent_date)}</div>
         <div className="text-xs text-gray-500">{row.days_since_sent} ימים</div>
       </TableCell>
 
       {/* Original Amount */}
-      <TableCell className="w-32 rtl:text-right ltr:text-left font-medium">
+      <TableCell className="w-32 rtl:text-right ltr:text-left font-medium py-2 px-3 text-sm">
         {formatILS(row.amount_original)}
       </TableCell>
 
       {/* Payment Method */}
-      <TableCell className="w-40 rtl:text-right ltr:text-left">
+      <TableCell className="w-40 rtl:text-right ltr:text-left py-2 px-3">
         {row.payment_method_selected ? (
-          <Badge variant="outline" className="rtl:text-right ltr:text-left">
+          <Badge variant="outline" className="rtl:text-right ltr:text-left text-[10px] py-0 px-1.5">
             {getPaymentMethodShortLabel(row.payment_method_selected)}
           </Badge>
         ) : (
-          <span className="text-gray-400 text-sm">לא בחר</span>
+          <span className="text-gray-400 text-xs">לא בחר</span>
         )}
       </TableCell>
 
       {/* Amount After Discount */}
-      <TableCell className="w-32 rtl:text-right ltr:text-left">
+      <TableCell className="w-32 rtl:text-right ltr:text-left py-2 px-3">
         {row.payment_method_selected ? (
           <div>
-            <div className="font-medium">{formatILS(row.amount_after_discount)}</div>
+            <div className="font-medium text-sm">{formatILS(row.amount_after_discount)}</div>
             {row.discount_percent > 0 && (
               <div className="text-xs text-green-600">
                 ({row.discount_percent}% הנחה)
@@ -157,34 +157,34 @@ const CollectionTableRow: React.FC<{
             )}
           </div>
         ) : (
-          <span className="text-gray-400">-</span>
+          <span className="text-gray-400 text-xs">-</span>
         )}
       </TableCell>
 
       {/* Status */}
-      <TableCell className="w-32 rtl:text-right ltr:text-left">
-        <Badge variant={getStatusVariant(row.payment_status as any)} className="rtl:text-right ltr:text-left">
+      <TableCell className="w-32 rtl:text-right ltr:text-left py-2 px-3">
+        <Badge variant={getStatusVariant(row.payment_status as any)} className="rtl:text-right ltr:text-left text-[10px] py-0 px-1.5">
           {getStatusLabel(row.payment_status as any)}
         </Badge>
       </TableCell>
 
       {/* Alerts */}
-      <TableCell className="w-24">
+      <TableCell className="w-24 py-2 px-3">
         {row.has_alert && (
           <div className="flex gap-1 rtl:flex-row-reverse">
             {row.alert_types.map((alert) => (
-              <AlertTriangle key={alert} className="h-4 w-4 text-orange-500" />
+              <AlertTriangle key={alert} className="h-3.5 w-3.5 text-orange-500" />
             ))}
           </div>
         )}
       </TableCell>
 
       {/* Actions */}
-      <TableCell className="w-24 rtl:text-right ltr:text-left">
+      <TableCell className="w-24 rtl:text-right ltr:text-left py-2 px-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+            <Button variant="ghost" size="sm" className="h-7 px-2">
+              <MoreHorizontal className="h-3.5 w-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rtl:text-right ltr:text-left">
@@ -255,36 +255,36 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
 
   return (
     <div className="border rounded-lg overflow-x-auto">
-      <Table>
+      <Table className="text-sm">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">
+            <TableHead className="w-12 py-2 px-3">
               <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
             </TableHead>
-            <TableHead className="min-w-[200px] rtl:text-right ltr:text-left">
+            <TableHead className="min-w-[200px] rtl:text-right ltr:text-left py-2 px-3">
               <SortableHeader column="client_name" currentSort={sort} onSort={onSort}>
                 שם לקוח
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-28 rtl:text-right ltr:text-left">
+            <TableHead className="w-28 rtl:text-right ltr:text-left py-2 px-3">
               <SortableHeader column="days_since_sent" currentSort={sort} onSort={onSort}>
                 תאריך משלוח
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">
+            <TableHead className="w-32 rtl:text-right ltr:text-left py-2 px-3">
               <SortableHeader column="amount_original" currentSort={sort} onSort={onSort}>
                 סכום מקורי
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-40 rtl:text-right ltr:text-left">שיטת תשלום</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">סכום אחרי הנחה</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left">
+            <TableHead className="w-40 rtl:text-right ltr:text-left py-2 px-3">שיטת תשלום</TableHead>
+            <TableHead className="w-32 rtl:text-right ltr:text-left py-2 px-3">סכום אחרי הנחה</TableHead>
+            <TableHead className="w-32 rtl:text-right ltr:text-left py-2 px-3">
               <SortableHeader column="payment_status" currentSort={sort} onSort={onSort}>
                 סטטוס
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-24 rtl:text-right ltr:text-left">התראות</TableHead>
-            <TableHead className="w-24 rtl:text-right ltr:text-left">פעולות</TableHead>
+            <TableHead className="w-24 rtl:text-right ltr:text-left py-2 px-3">התראות</TableHead>
+            <TableHead className="w-24 rtl:text-right ltr:text-left py-2 px-3">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
