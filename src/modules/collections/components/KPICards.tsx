@@ -60,12 +60,12 @@ const KPICard: React.FC<KPICardProps> = ({
       onClick={isClickable ? onClick : undefined}
     >
       <CardHeader className="pb-1">
-        <CardTitle className="text-xs text-gray-600 rtl:text-right ltr:text-left flex items-center justify-between rtl:flex-row-reverse">
-          <span className="flex items-center gap-1">
-            <Icon className={cn('h-3.5 w-3.5', iconColor)} />
-            {title}
+        <CardTitle className="text-xs text-gray-600 rtl:text-right ltr:text-left flex items-center justify-between min-w-0">
+          <span className="flex items-center gap-1 min-w-0">
+            <Icon className={cn('h-3.5 w-3.5 flex-shrink-0', iconColor)} />
+            <span className="truncate">{title}</span>
           </span>
-          <span className={cn('text-lg font-bold', valueColor)}>
+          <span className={cn('text-lg font-bold whitespace-nowrap', valueColor)}>
             {value}
           </span>
         </CardTitle>

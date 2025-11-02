@@ -411,7 +411,7 @@ export function FeeTrackingPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center rtl:flex-row-reverse">
+      <div className="flex justify-between items-center">
         <div className="rtl:text-right ltr:text-left">
           <h1 className="text-3xl font-bold rtl:text-right ltr:text-left">מעקב שכר טרחה</h1>
           <p className="text-gray-500 rtl:text-right ltr:text-left">
