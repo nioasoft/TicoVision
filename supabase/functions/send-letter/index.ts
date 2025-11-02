@@ -13,8 +13,14 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 interface SendLetterRequest {
   recipientEmail: string;
   recipientName: string;
-  templateType: string;
-  variables: Record<string, any>;
+  // Template mode (original)
+  templateType?: string;
+  variables?: Record<string, any>;
+  // Custom text mode (new)
+  customText?: string;
+  includesPayment?: boolean;
+  saveAsTemplate?: { name: string; description?: string; subject?: string; };
+  // Common fields
   clientId?: string;
   feeCalculationId?: string;
 }
@@ -54,6 +60,164 @@ function replaceVariables(html: string, variables: Record<string, any>): string 
     result = result.replace(regex, String(value));
   }
   return result;
+}
+
+/**
+ * Parse inline text formatting
+ * Processes: **bold**, ##red bold##, ###blue bold###, __underline__
+ */
+function parseInlineStyles(text: string): string {
+  let result = text;
+
+  // Process ### (blue bold) FIRST - before ## to avoid conflicts
+  result = result.replace(/###(.*?)###/g, '<span style="color: #395BF7; font-weight: bold;">$1</span>');
+
+  // Process ## (red bold) SECOND
+  result = result.replace(/##(.*?)##/g, '<span style="color: #FF0000; font-weight: bold;">$1</span>');
+
+  // Process ** (bold) THIRD
+  result = result.replace(/\*\*(.*?)\*\*/g, '<span style="font-weight: bold;">$1</span>');
+
+  // Process __ (underline) FOURTH
+  result = result.replace(/__(.*?)__/g, '<span style="text-decoration: underline;">$1</span>');
+
+  return result;
+}
+
+/**
+ * Close bullet section with border
+ */
+function closeBulletSection(): string {
+  return '</div><div style="border-top: 1px solid #000000; margin-top: 20px;"></div>';
+}
+
+/**
+ * Parse plain text to HTML (Markdown-like syntax)
+ * Ported from text-to-html-parser.ts
+ */
+function parseTextToHTML(plainText: string): string {
+  const lines = plainText.split('\n');
+  let html = '';
+  let inBulletSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    if (line.length === 0) {
+      // Close bullet section on empty line
+      if (inBulletSection) {
+        html += '</div>';
+        inBulletSection = false;
+      }
+      html += '<div style="height: 20px;"></div>';
+      continue;
+    }
+
+    // Subject line: "הנדון:"
+    if (line.startsWith('הנדון:')) {
+      if (inBulletSection) {
+        html += closeBulletSection();
+        inBulletSection = false;
+      }
+      const subject = line.substring(6).trim();
+      const styledSubject = parseInlineStyles(subject);
+      // קו מעל הנדון
+      html += '<div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>';
+      // הנדון עם קו מתחת
+      html += `<p style="margin: 0; padding: 20px 0; text-align: right; font-family: 'David Libre', serif; font-size: 26px; font-weight: 700; line-height: 1.2; color: #395BF7; direction: rtl; border-bottom: 1px solid #000000;">הנדון: ${styledSubject}</p>`;
+      continue;
+    }
+
+    // Section heading: ends with ":"
+    if (line.endsWith(':') && !line.startsWith('*') && !line.startsWith('-')) {
+      if (inBulletSection) {
+        html += closeBulletSection();
+        inBulletSection = false;
+      }
+      const styledLine = parseInlineStyles(line);
+      html += `<p style="margin: 20px 0 0 0; padding: 0; text-align: right; font-family: 'David Libre', serif; font-size: 20px; font-weight: 700; line-height: 1.2; color: #000000; direction: rtl;">${styledLine}</p>`;
+      continue;
+    }
+
+    // Bullet point (star or dash)
+    if (line.startsWith('* ') || line.startsWith('- ')) {
+      if (!inBulletSection) {
+        html += '<div style="margin: 13px 0; padding: 0;">';
+        inBulletSection = true;
+      }
+      const bulletText = line.substring(2).trim();
+      const styledBulletText = parseInlineStyles(bulletText);
+      const bulletIcon = line.startsWith('* ')
+        ? '<img src="cid:bullet_star_blue" alt="★" style="width: 19px; height: 18px; margin-left: 10px; vertical-align: middle; display: inline-block;">'
+        : '<span style="color: #395BF7; font-size: 20px; margin-left: 10px;">•</span>';
+
+      html += `<div style="display: flex; align-items: start; margin: 10px 0; direction: rtl;">
+        ${bulletIcon}
+        <span style="flex: 1; text-align: right; font-family: 'David Libre', serif; font-size: 16px; font-weight: 400; line-height: 1.4; color: #000000;">${styledBulletText}</span>
+      </div>`;
+      continue;
+    }
+
+    // Regular paragraph
+    if (inBulletSection) {
+      html += closeBulletSection();
+      inBulletSection = false;
+    }
+    const styledLine = parseInlineStyles(line);
+    html += `<p style="margin: 13px 0; padding: 0; text-align: right; font-family: 'David Libre', serif; font-size: 16px; font-weight: 400; line-height: 1.4; color: #000000; direction: rtl;">${styledLine}</p>`;
+  }
+
+  // Close any open bullet section
+  if (inBulletSection) {
+    html += closeBulletSection();
+  }
+
+  return html;
+}
+
+/**
+ * Build custom letter HTML from parsed text
+ */
+async function buildCustomLetterHtml(
+  parsedBodyHtml: string,
+  variables: Record<string, any>,
+  includesPayment: boolean
+): Promise<string> {
+  // Fetch components
+  const header = await fetchTemplate('components/header.html');
+  const footer = await fetchTemplate('components/footer.html');
+  const paymentSection = includesPayment ? await fetchTemplate('components/payment-section.html') : '';
+
+  // Build full HTML
+  const fullHtml = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב - ${variables.company_name || ''}</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    <tr>
+                        <td style="padding: 20px 0; text-align: right;">
+                            ${parsedBodyHtml}
+                        </td>
+                    </tr>
+                    ${paymentSection}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+
+  return replaceVariables(fullHtml, variables);
 }
 
 /**
@@ -252,14 +416,40 @@ serve(async (req) => {
       recipientName,
       templateType,
       variables,
+      customText,
+      includesPayment,
+      saveAsTemplate,
       clientId,
       feeCalculationId
     } = requestData;
 
-    // Validate
-    if (!recipientEmail || !templateType || !variables) {
+    // Validate - must have either templateType OR customText
+    if (!recipientEmail) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing recipientEmail' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const isTemplateMode = !!templateType;
+    const isCustomMode = !!customText;
+
+    if (!isTemplateMode && !isCustomMode) {
+      return new Response(
+        JSON.stringify({ error: 'Must provide either templateType or customText' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    if (isTemplateMode && !variables) {
+      return new Response(
+        JSON.stringify({ error: 'Template mode requires variables' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -268,14 +458,86 @@ serve(async (req) => {
     }
 
     console.log('📧 Sending letter to:', recipientEmail);
-    console.log('   Template:', templateType);
 
-    // Build letter HTML
-    const letterHtml = await buildLetterHtml(templateType, variables);
+    let letterHtml: string;
+    let subject: string;
+    let parsedBodyHtml: string | undefined;
 
-    // Generate subject
-    const year = variables.year || new Date().getFullYear() + 1;
-    const subject = `שכר טרחתנו לשנת המס ${year}`;
+    if (isCustomMode) {
+      // Custom mode: parse plain text to HTML
+      console.log('   Mode: Custom text');
+      console.log('   Includes payment:', includesPayment);
+
+      // Parse the custom text
+      parsedBodyHtml = parseTextToHTML(customText!);
+
+      // Add auto-generated variables (like template mode does)
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      const finalVariables = {
+        letter_date: new Intl.DateTimeFormat('he-IL').format(new Date()),
+        year: nextYear,
+        previous_year: currentYear,
+        tax_year: nextYear,
+        ...(variables || {})  // User variables override defaults
+      };
+
+      // Replace variables in the parsed HTML
+      const bodyWithVariables = replaceVariables(parsedBodyHtml, finalVariables);
+
+      // Build full letter with header + body + optional payment + footer
+      letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false);
+
+      // Generate subject from variables or default
+      subject = finalVariables.subject || `שכר טרחתנו לשנת המס ${finalVariables.year}`;
+
+      // Save as template if requested
+      if (saveAsTemplate && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+        // Get tenant_id from JWT or client
+        const authHeader = req.headers.get('Authorization');
+        let tenantId = null;
+
+        if (authHeader) {
+          const token = authHeader.replace('Bearer ', '');
+          // Decode JWT to get tenant_id (simplified - in production use proper JWT library)
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          const payload = JSON.parse(jsonPayload);
+          tenantId = payload.user_metadata?.tenant_id;
+        }
+
+        if (tenantId) {
+          await supabase.from('custom_letter_bodies').insert({
+            tenant_id: tenantId,
+            name: saveAsTemplate.name,
+            description: saveAsTemplate.description || null,
+            plain_text: customText,
+            parsed_html: parsedBodyHtml,
+            includes_payment: includesPayment || false,
+            subject: saveAsTemplate.subject || null,
+            created_by: payload?.sub || null
+          });
+        }
+      }
+    } else {
+      // Template mode: use existing template system
+      console.log('   Mode: Template');
+      console.log('   Template:', templateType);
+
+      letterHtml = await buildLetterHtml(templateType!, variables!);
+
+      // Generate subject - different for bookkeeping templates
+      const year = variables!.year || new Date().getFullYear() + 1;
+      const isBookkeeping = templateType!.startsWith('internal_bookkeeping');
+      subject = isBookkeeping
+        ? `שכר טרחתנו לשנת המס ${year} - הנהלת חשבונות`
+        : `שכר טרחתנו לשנת המס ${year}`;
+    }
 
     // Send email
     await sendEmail(recipientEmail, subject, letterHtml);
@@ -284,16 +546,55 @@ serve(async (req) => {
     if (clientId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      await supabase.from('generated_letters').insert({
-        client_id: clientId,
-        fee_calculation_id: feeCalculationId,
-        template_type: templateType,
-        variables_used: variables,
-        generated_content_html: letterHtml,
-        recipient_email: recipientEmail,
-        sent_at: new Date().toISOString(),
-        status: 'sent'
-      });
+      if (isCustomMode) {
+        // For custom letters, we need a template_id
+        // First, get or create a "Custom Letter" template
+        const { data: customTemplate } = await supabase
+          .from('letter_templates')
+          .select('id')
+          .eq('name', 'Custom Letter')
+          .single();
+
+        let templateId = customTemplate?.id;
+
+        if (!templateId) {
+          // Create the custom template entry
+          const { data: newTemplate } = await supabase
+            .from('letter_templates')
+            .insert({
+              name: 'Custom Letter',
+              description: 'User-generated custom letter',
+              body_template: ''
+            })
+            .select('id')
+            .single();
+
+          templateId = newTemplate?.id;
+        }
+
+        await supabase.from('generated_letters').insert({
+          client_id: clientId,
+          template_id: templateId,
+          fee_calculation_id: feeCalculationId,
+          variables_used: variables || {},
+          generated_content_html: letterHtml,
+          recipient_email: recipientEmail,
+          sent_at: new Date().toISOString(),
+          status: 'sent'
+        });
+      } else {
+        // Template mode - existing logic
+        await supabase.from('generated_letters').insert({
+          client_id: clientId,
+          fee_calculation_id: feeCalculationId,
+          template_type: templateType,
+          variables_used: variables,
+          generated_content_html: letterHtml,
+          recipient_email: recipientEmail,
+          sent_at: new Date().toISOString(),
+          status: 'sent'
+        });
+      }
     }
 
     console.log('✅ Email sent successfully');

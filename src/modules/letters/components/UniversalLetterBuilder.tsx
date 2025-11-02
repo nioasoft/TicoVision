@@ -42,6 +42,7 @@ interface SavedTemplate {
   description: string | null;
   plain_text: string;
   includes_payment: boolean;
+  subject: string | null;
   created_at: string;
 }
 
@@ -70,6 +71,7 @@ export function UniversalLetterBuilder() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState('Benatia.Asaf@gmail.com');
+  const [emailSubject, setEmailSubject] = useState('');
 
   /**
    * Load saved templates on mount
@@ -124,6 +126,7 @@ export function UniversalLetterBuilder() {
     if (template) {
       setPlainText(template.plain_text);
       setIncludesPayment(template.includes_payment);
+      setEmailSubject(template.subject || '');
       setSelectedTemplateId(templateId);
       toast.success(`תבנית "${template.name}" נטענה`);
     }
@@ -182,8 +185,14 @@ export function UniversalLetterBuilder() {
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: companyName
+        company_name: companyName,
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || ''
       };
+
+      // Add email subject if provided
+      if (emailSubject.trim()) {
+        variables.subject = emailSubject;
+      }
 
       // Add payment variables if needed
       if (includesPayment) {
@@ -224,12 +233,23 @@ export function UniversalLetterBuilder() {
       return;
     }
 
+    if (!emailSubject.trim()) {
+      toast.error('נא להזין נושא למייל');
+      return;
+    }
+
     setIsSendingEmail(true);
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: companyName
+        company_name: companyName,
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || ''
       };
+
+      // Add email subject if provided
+      if (emailSubject.trim()) {
+        variables.subject = emailSubject;
+      }
 
       // Add payment variables if needed
       if (includesPayment) {
@@ -237,29 +257,19 @@ export function UniversalLetterBuilder() {
         Object.assign(variables, discounts);
       }
 
-      // Generate letter
-      const saveParams = {
-        plainText,
-        clientId: selectedClient?.id || null,
-        variables,
-        includesPayment,
-        saveAsTemplate: saveAsTemplate ? {
-          name: templateName,
-          description: templateDescription
-        } : undefined
-      };
-
-      const { data: letter, error: generateError } = await templateService.generateFromCustomText(saveParams);
-
-      if (generateError) throw generateError;
-      if (!letter) throw new Error('Failed to generate letter');
-
-      // Send via Edge Function
+      // Send via Edge Function - it will parse, build, send, and save
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmail,
           recipientName: companyName,
-          letterHtml: letter.generated_content_html,
+          customText: plainText,
+          variables,
+          includesPayment,
+          saveAsTemplate: saveAsTemplate ? {
+            name: templateName,
+            description: templateDescription,
+            subject: emailSubject || undefined
+          } : undefined,
           clientId: selectedClient?.id || null
         }
       });
@@ -365,6 +375,19 @@ export function UniversalLetterBuilder() {
                   dir="rtl"
                 />
               </div>
+              <div>
+                <Label htmlFor="email_subject" className="text-right block">
+                  נושא המייל <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email_subject"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="שכר טרחתנו לשנת המס 2026"
+                  dir="rtl"
+                  required
+                />
+              </div>
             </div>
           </div>
 
@@ -396,7 +419,12 @@ export function UniversalLetterBuilder() {
               <p>• <code>[טקסט]:</code> - כותרת סעיף (שורה שמסתיימת ב-:)</p>
               <p>• <code>* [טקסט]</code> או <code>- [טקסט]</code> - נקודת bullet</p>
               <p>• <code>[טקסט רגיל]</code> - פסקה רגילה</p>
-              <p>• משתנים: <code>{'{{company_name}}'}</code>, <code>{'{{letter_date}}'}</code>, <code>{'{{year}}'}</code></p>
+              <p className="mt-2"><strong>עיצוב טקסט:</strong></p>
+              <p>• <code>**טקסט**</code> - מודגש (בולד)</p>
+              <p>• <code>##טקסט##</code> - אדום מודגש</p>
+              <p>• <code>###טקסט###</code> - כחול מודגש</p>
+              <p>• <code>__טקסט__</code> - קו תחתון</p>
+              <p className="mt-2">• משתנים: <code>{'{{company_name}}'}</code>, <code>{'{{letter_date}}'}</code>, <code>{'{{year}}'}</code></p>
             </div>
           </div>
 
