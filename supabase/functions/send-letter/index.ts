@@ -148,7 +148,7 @@ function parseTextToHTML(plainText: string): string {
       const bulletText = line.substring(2).trim();
       const styledBulletText = parseInlineStyles(bulletText);
       const bulletIcon = line.startsWith('* ')
-        ? '<img src="cid:bullet_star_blue" alt="★" style="width: 19px; height: 18px; margin-left: 10px; vertical-align: middle; display: inline-block;">'
+        ? '<img src="cid:bullet_star_blue" alt="★" style="width: 19px; height: 18px; margin-left: 10px; margin-top: 3px; display: inline-block;">'
         : '<span style="color: #395BF7; font-size: 20px; margin-left: 10px;">•</span>';
 
       html += `<div style="display: flex; align-items: start; margin: 10px 0; direction: rtl;">
