@@ -10,6 +10,8 @@ import { CollectionTable } from '../components/CollectionTable';
 import { MarkAsPaidDialog } from '../components/MarkAsPaidDialog';
 import { PartialPaymentDialog } from '../components/PartialPaymentDialog';
 import { LogInteractionDialog } from '../components/LogInteractionDialog';
+import { SendReminderDialog } from '../components/SendReminderDialog';
+import { HistoryDialog } from '../components/HistoryDialog';
 import { useCollectionStore } from '../store/collectionStore';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -48,6 +50,14 @@ export const CollectionDashboard: React.FC = () => {
     open: boolean;
     row: CollectionRow | null;
   }>({ open: false, row: null });
+  const [sendReminderDialog, setSendReminderDialog] = useState<{
+    open: boolean;
+    row: CollectionRow | null;
+  }>({ open: false, row: null });
+  const [historyDialog, setHistoryDialog] = useState<{
+    open: boolean;
+    row: CollectionRow | null;
+  }>({ open: false, row: null });
 
   // Fetch data on mount
   useEffect(() => {
@@ -64,8 +74,7 @@ export const CollectionDashboard: React.FC = () => {
   };
 
   const handleSendReminder = (row: CollectionRow) => {
-    console.log('Send reminder:', row);
-    // TODO: Implement manual reminder dialog
+    setSendReminderDialog({ open: true, row });
   };
 
   const handleLogInteraction = (row: CollectionRow) => {
@@ -73,8 +82,7 @@ export const CollectionDashboard: React.FC = () => {
   };
 
   const handleViewHistory = (row: CollectionRow) => {
-    console.log('View history:', row);
-    // TODO: Implement history dialog
+    setHistoryDialog({ open: true, row });
   };
 
   const handleDialogSuccess = async () => {
@@ -190,6 +198,17 @@ export const CollectionDashboard: React.FC = () => {
         onOpenChange={(open) => setLogInteractionDialog({ open, row: null })}
         row={logInteractionDialog.row}
         onSuccess={handleDialogSuccess}
+      />
+      <SendReminderDialog
+        open={sendReminderDialog.open}
+        onOpenChange={(open) => setSendReminderDialog({ open, row: null })}
+        row={sendReminderDialog.row}
+        onSuccess={handleDialogSuccess}
+      />
+      <HistoryDialog
+        open={historyDialog.open}
+        onOpenChange={(open) => setHistoryDialog({ open, row: null })}
+        row={historyDialog.row}
       />
     </div>
   );

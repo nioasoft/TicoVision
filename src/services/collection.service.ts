@@ -58,46 +58,18 @@ class CollectionService extends BaseService {
         return { data: null, error: kpisResult.error };
       }
 
-      // Build query for dashboard rows
+      // Build query for dashboard rows using the view
+      // This view handles the 1-to-many generated_letters relationship correctly
       let query = supabase
-        .from('fee_calculations')
-        .select(
-          `
-          id,
-          client_id,
-          status,
-          total_amount,
-          payment_method_selected,
-          payment_method_selected_at,
-          amount_after_selected_discount,
-          partial_payment_amount,
-          payment_date,
-          reminder_count,
-          last_reminder_sent_at,
-          created_at,
-          clients!inner (
-            id,
-            company_name,
-            company_name_hebrew,
-            contact_email,
-            contact_phone
-          ),
-          generated_letters!left (
-            sent_at,
-            opened_at,
-            open_count
-          )
-        `,
-          { count: 'exact' }
-        )
-        .eq('tenant_id', tenantId)
-        .not('status', 'eq', 'draft'); // Only show fees that have been sent
+        .from('collection_dashboard_view')
+        .select('*', { count: 'exact' })
+        .eq('tenant_id', tenantId);
 
       // Apply filters
       query = this.applyFilters(query, filters);
 
-      // Apply sorting
-      const sortColumn = sort?.column || 'created_at';
+      // Apply sorting (default: most recent letters first)
+      const sortColumn = sort?.column || 'letter_sent_date';
       const sortOrder = sort?.order || 'desc';
       query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
 
@@ -528,6 +500,7 @@ class CollectionService extends BaseService {
 
   /**
    * Apply dashboard filters to query
+   * Note: Works with collection_dashboard_view column names
    */
   private applyFilters(query: unknown, filters?: CollectionFilters): unknown {
     if (!filters) return query;
@@ -539,19 +512,22 @@ class CollectionService extends BaseService {
     if (filters.status && filters.status !== 'all') {
       switch (filters.status) {
         case 'sent_not_opened':
-          // Will need to join with generated_letters
+          q = q.is('letter_opened_at', null);
           break;
         case 'opened_not_selected':
-          q = q.is('payment_method_selected', null);
+          q = q.not('letter_opened_at', 'is', null).is('payment_method_selected', null);
           break;
         case 'selected_not_paid':
-          q = q.not('payment_method_selected', 'is', null).neq('status', 'paid');
+          q = q.not('payment_method_selected', 'is', null).neq('payment_status', 'paid');
           break;
         case 'partial_paid':
-          q = q.eq('status', 'partial_paid');
+          q = q.eq('payment_status', 'partial_paid');
           break;
         case 'paid':
-          q = q.eq('status', 'paid');
+          q = q.eq('payment_status', 'paid');
+          break;
+        case 'disputed':
+          q = q.eq('has_dispute', true);
           break;
       }
     }
@@ -565,7 +541,7 @@ class CollectionService extends BaseService {
       }
     }
 
-    // Time range filter
+    // Time range filter (based on letter_sent_date)
     if (filters.time_range && filters.time_range !== 'custom') {
       const now = new Date();
       let daysAgo: number;
@@ -591,81 +567,58 @@ class CollectionService extends BaseService {
       }
 
       const dateThreshold = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      q = q.gte('created_at', dateThreshold.toISOString());
+      q = q.gte('letter_sent_date', dateThreshold.toISOString());
     }
 
     return q;
   }
 
   /**
-   * Transform fee data to collection rows
+   * Transform view data to collection rows
+   * Data comes from collection_dashboard_view which is already flattened and joined
    */
-  private async transformToCollectionRows(feeData: Record<string, unknown>[]): Promise<CollectionRow[]> {
-    const tenantId = await this.getTenantId();
-
+  private async transformToCollectionRows(viewData: Record<string, unknown>[]): Promise<CollectionRow[]> {
     return Promise.all(
-      feeData.map(async (fee) => {
-        const client = fee.clients as Record<string, unknown>;
-        const letters = (fee.generated_letters as Record<string, unknown>[]) || [];
-        const letter = letters[0] || {};
-
-        const sentDate = letter.sent_at ? new Date(letter.sent_at as string) : new Date();
-        const now = new Date();
-        const daysSinceSent = Math.floor((now.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24));
+      viewData.map(async (row) => {
+        const daysSinceSent = Number(row.days_since_sent || 0);
 
         // Calculate alerts
-        const alerts = await this.calculateRowAlerts(fee.id as string, daysSinceSent);
+        const alerts = await this.calculateRowAlerts(row.fee_calculation_id as string, daysSinceSent);
 
-        // Get interaction count
-        const { count: interactionCount } = await supabase
-          .from('client_interactions')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', tenantId)
-          .eq('client_id', fee.client_id as string);
-
-        // Get dispute status
-        const { data: disputes } = await supabase
-          .from('payment_disputes')
-          .select('status')
-          .eq('tenant_id', tenantId)
-          .eq('fee_calculation_id', fee.id as string)
-          .eq('status', 'pending')
-          .limit(1);
-
-        const amountPaid = Number(fee.partial_payment_amount || 0);
-        const totalAmount = Number(fee.total_amount);
-        const amountRemaining = totalAmount - amountPaid;
+        const amountPaid = Number(row.amount_paid || 0);
+        const amountOriginal = Number(row.amount_original || 0);
+        const amountRemaining = Number(row.amount_remaining || 0);
 
         return {
-          client_id: fee.client_id as string,
-          client_name: client.company_name as string,
-          company_name_hebrew: client.company_name_hebrew as string | undefined,
-          contact_email: client.contact_email as string,
-          contact_phone: client.contact_phone as string | undefined,
-          fee_calculation_id: fee.id as string,
-          letter_sent_date: sentDate.toISOString(),
-          letter_opened: !!letter.opened_at,
-          letter_opened_at: letter.opened_at as string | undefined,
-          letter_open_count: Number(letter.open_count || 0),
+          client_id: row.client_id as string,
+          client_name: row.company_name as string,
+          company_name_hebrew: row.company_name_hebrew as string | undefined,
+          contact_email: row.contact_email as string,
+          contact_phone: row.contact_phone as string | undefined,
+          fee_calculation_id: row.fee_calculation_id as string,
+          letter_sent_date: row.letter_sent_date as string,
+          letter_opened: !!row.letter_opened_at,
+          letter_opened_at: row.letter_opened_at as string | undefined,
+          letter_open_count: Number(row.letter_open_count || 0),
           days_since_sent: daysSinceSent,
-          amount_original: totalAmount,
-          payment_method_selected: fee.payment_method_selected as string | undefined,
-          payment_method_selected_at: fee.payment_method_selected_at as string | undefined,
-          discount_percent: fee.payment_method_selected
-            ? (PAYMENT_DISCOUNTS as Record<string, number>)[fee.payment_method_selected as string] || 0
+          amount_original: amountOriginal,
+          payment_method_selected: row.payment_method_selected as string | undefined,
+          payment_method_selected_at: undefined, // Not in view, could be added if needed
+          discount_percent: row.payment_method_selected
+            ? (PAYMENT_DISCOUNTS as Record<string, number>)[row.payment_method_selected as string] || 0
             : 0,
-          amount_after_discount: Number(fee.amount_after_selected_discount || totalAmount),
-          payment_status: fee.status as string,
+          amount_after_discount: Number(row.amount_after_selected_discount || amountOriginal),
+          payment_status: row.payment_status as string,
           amount_paid: amountPaid,
           amount_remaining: amountRemaining,
-          reminder_count: Number(fee.reminder_count || 0),
-          last_reminder_sent: fee.last_reminder_sent_at as string | undefined,
+          reminder_count: Number(row.reminder_count || 0),
+          last_reminder_sent: row.last_reminder_sent_at as string | undefined,
           has_alert: alerts.length > 0,
           alert_types: alerts,
-          has_dispute: (disputes?.length || 0) > 0,
-          dispute_status: disputes?.[0]?.status as string | undefined,
-          last_interaction: undefined, // TODO: Query last interaction
-          interaction_count: interactionCount || 0,
+          has_dispute: row.has_dispute as boolean,
+          dispute_status: row.has_dispute ? 'pending' : undefined,
+          last_interaction: row.last_interaction as string | undefined,
+          interaction_count: Number(row.interaction_count || 0),
         } as CollectionRow;
       })
     );

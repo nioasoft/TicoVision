@@ -50,8 +50,16 @@ const navigation: NavigationItem[] = [
       { name: 'ניהול קבוצות', href: '/client-groups' },
     ]
   },
-  { name: 'ניהול שכר טרחה', href: '/fees', icon: Calculator, allowedRoles: ['admin'] as UserRole[] },
-  { name: 'גביית תשלומים', href: '/collections', icon: CreditCard, allowedRoles: ['admin'] as UserRole[] },
+  {
+    name: 'שכר טרחה',
+    icon: Calculator,
+    allowedRoles: ['admin'] as UserRole[],
+    submenu: [
+      { name: 'מעקב שכר טרחה', href: '/fees/tracking' },
+      { name: 'חישוב שכר טרחה', href: '/fees/calculate' },
+      { name: 'גביית תשלומים', href: '/collections' },
+    ]
+  },
   { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, allowedRoles: ['admin'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
