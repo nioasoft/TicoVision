@@ -47,7 +47,7 @@ const DEFAULT_FILTERS: CollectionFilters = {
 };
 
 const DEFAULT_SORT: CollectionSort = {
-  column: 'created_at',
+  column: 'letter_sent_date',
   order: 'desc',
 };
 
