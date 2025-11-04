@@ -18,7 +18,8 @@ import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2 } from 'lucide-
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
-import type { Client } from '@/services/client.service';
+import { clientService } from '@/services';
+import type { Client, ClientContact } from '@/services/client.service';
 
 const templateService = new TemplateService();
 
@@ -46,6 +47,20 @@ interface SavedTemplate {
   created_at: string;
 }
 
+// Helper function to get contact type label in Hebrew
+const getContactTypeLabel = (contactType: string): string => {
+  const labels: Record<string, string> = {
+    owner: 'בעלים',
+    accountant_manager: 'מנהלת חשבונות',
+    secretary: 'מזכירה',
+    cfo: 'סמנכ"ל כספים',
+    board_member: 'חבר דירקטוריון',
+    legal_counsel: 'יועץ משפטי',
+    other: 'אחר',
+  };
+  return labels[contactType] || contactType;
+};
+
 export function UniversalLetterBuilder() {
   // State - Client selection
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -70,7 +85,11 @@ export function UniversalLetterBuilder() {
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState('Benatia.Asaf@gmail.com');
+
+  // State - Recipients
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [clientContacts, setClientContacts] = useState<ClientContact[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
 
   /**
@@ -97,24 +116,53 @@ export function UniversalLetterBuilder() {
   };
 
   /**
-   * Handle client selection - auto-fill fields
+   * Handle client selection - auto-fill fields and load contacts
    */
-  const handleClientChange = (client: Client | null) => {
+  const handleClientChange = async (client: Client | null) => {
     setSelectedClient(client);
 
     if (client) {
       // Auto-fill fields from selected client
       setCompanyName(client.company_name_hebrew || client.company_name);
 
-      // Set recipient email from client
-      const email = client.contact_email || client.email || '';
-      if (email) {
-        setRecipientEmail(email);
+      // Load contacts for this client
+      setIsLoadingContacts(true);
+      try {
+        const { data: contacts, error } = await clientService.getContacts(client.id);
+
+        if (error) {
+          toast.error('שגיאה בטעינת אנשי קשר');
+          setClientContacts([]);
+          setSelectedRecipients([]);
+          return;
+        }
+
+        // Filter contacts based on email preferences
+        // Fee letters are "important", so include 'all' and 'important_only'
+        const eligibleContacts = (contacts || []).filter(contact =>
+          contact.email &&
+          (contact.email_preference === 'all' || contact.email_preference === 'important_only')
+        );
+
+        setClientContacts(eligibleContacts);
+
+        // Auto-select all eligible recipients
+        const autoSelectedEmails = eligibleContacts.map(c => c.email!);
+        setSelectedRecipients(autoSelectedEmails);
+
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+        toast.error('שגיאה בטעינת אנשי קשר');
+        setClientContacts([]);
+        setSelectedRecipients([]);
+      } finally {
+        setIsLoadingContacts(false);
       }
     } else {
       // Clear auto-filled values when client is deselected
       setCompanyName('');
-      setRecipientEmail('');
+      setClientContacts([]);
+      setSelectedRecipients([]);
     }
   };
 
@@ -228,8 +276,8 @@ export function UniversalLetterBuilder() {
       return;
     }
 
-    if (!recipientEmail || !recipientEmail.includes('@')) {
-      toast.error('נא להזין כתובת מייל תקינה');
+    if (selectedRecipients.length === 0) {
+      toast.error('נא לבחור לפחות נמען אחד');
       return;
     }
 
@@ -260,7 +308,7 @@ export function UniversalLetterBuilder() {
       // Send via Edge Function - it will parse, build, send, and save
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
-          recipientEmail,
+          recipientEmails: selectedRecipients, // Array of emails
           recipientName: companyName,
           customText: plainText,
           variables,
@@ -276,7 +324,7 @@ export function UniversalLetterBuilder() {
 
       if (error) throw error;
 
-      toast.success(`מכתב נשלח בהצלחה ל-${recipientEmail}`);
+      toast.success(`מכתב נשלח בהצלחה ל-${selectedRecipients.length} נמענים`);
 
       // Reload templates if saved
       if (saveAsTemplate) {
@@ -533,24 +581,80 @@ export function UniversalLetterBuilder() {
               )}
             </Button>
 
-            {/* Email Section */}
-            <div className="space-y-2">
-              <Label htmlFor="recipient_email" className="text-right block">
-                מייל נמען
-              </Label>
-              <Input
-                id="recipient_email"
-                type="email"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                placeholder="example@email.com"
-                dir="ltr"
-              />
+            {/* Recipients Section */}
+            <div className="space-y-4">
+              <Label className="text-right block font-semibold">בחר נמענים</Label>
+
+              {!selectedClient ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-right">
+                    נא לבחור לקוח כדי לראות את רשימת אנשי הקשר
+                  </AlertDescription>
+                </Alert>
+              ) : isLoadingContacts ? (
+                <div className="text-center py-8 text-gray-500">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  טוען אנשי קשר...
+                </div>
+              ) : clientContacts.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-right">
+                    לא נמצאו אנשי קשר עבור לקוח זה. נא להוסיף אנשי קשר בטופס הלקוח.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <div className="border rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto bg-gray-50">
+                    {clientContacts.map((contact) => {
+                      const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
+                      const isChecked = selectedRecipients.includes(contact.email!);
+
+                      return (
+                        <div
+                          key={contact.id}
+                          className="flex items-start gap-3 p-3 bg-white hover:bg-gray-50 rounded border"
+                        >
+                          <Checkbox
+                            id={`universal-recipient-${contact.id}`}
+                            checked={isChecked}
+                            disabled={isRequired}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedRecipients([...selectedRecipients, contact.email!]);
+                              } else {
+                                setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
+                              }
+                            }}
+                            className="mt-1"
+                          />
+                          <Label
+                            htmlFor={`universal-recipient-${contact.id}`}
+                            className="flex-1 cursor-pointer text-right"
+                          >
+                            <div className="font-medium text-base">{contact.full_name}</div>
+                            <div className="text-sm text-gray-600 dir-ltr text-right">{contact.email}</div>
+                            <div className="text-xs text-gray-500 flex gap-2 justify-end mt-1">
+                              <span>{getContactTypeLabel(contact.contact_type)}</span>
+                              {isRequired && <span className="font-semibold text-blue-600">(חובה)</span>}
+                            </div>
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-sm text-gray-600 text-right">
+                    <strong>{selectedRecipients.length}</strong> נמענים נבחרו
+                  </p>
+                </>
+              )}
             </div>
 
             <Button
               onClick={handleSendEmail}
-              disabled={isSendingEmail || !plainText.trim() || !recipientEmail}
+              disabled={isSendingEmail || !plainText.trim() || selectedRecipients.length === 0}
               size="lg"
               className="w-full"
             >
@@ -562,7 +666,9 @@ export function UniversalLetterBuilder() {
               ) : (
                 <>
                   <Mail className="h-4 w-4 mr-2" />
-                  {saveAsTemplate ? 'שלח מכתב ושמור תבנית' : 'שלח מכתב למייל'}
+                  {saveAsTemplate
+                    ? `שלח מכתב ושמור תבנית ל-${selectedRecipients.length} נמענים`
+                    : `שלח מכתב ל-${selectedRecipients.length} נמענים`}
                 </>
               )}
             </Button>

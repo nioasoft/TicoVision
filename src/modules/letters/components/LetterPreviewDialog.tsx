@@ -143,8 +143,8 @@ export function LetterPreviewDialog({
 
         // Template-specific
         inflation_rate: isBookkeeping
-          ? ((fee.bookkeeping_calculation?.inflation_rate || 0) * 100).toFixed(1) + '%'
-          : ((fee.inflation_rate || 0) * 100).toFixed(1) + '%',
+          ? (fee.bookkeeping_calculation?.inflation_rate || 0) + '%'
+          : (fee.inflation_rate || 0) + '%',
       };
 
       setVariables(letterVariables);

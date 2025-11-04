@@ -16,6 +16,10 @@ import { Eye, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import type { LetterTemplateType, LetterVariables } from '../types/letter.types';
 import { supabase } from '@/lib/supabase';
+import { ClientSelector } from '@/components/ClientSelector';
+import { Checkbox } from '@/components/ui/checkbox';
+import { clientService } from '@/services';
+import type { Client, ClientContact } from '@/services/client.service';
 
 const templateService = new TemplateService();
 
@@ -34,19 +38,98 @@ const TEMPLATE_OPTIONS: { value: LetterTemplateType; label: string }[] = [
   { value: 'internal_bookkeeping_agreed', label: 'F3 - פנימי הנהלת חשבונות - כמוסכם' },
 ];
 
+// Helper function to get contact type label in Hebrew
+const getContactTypeLabel = (contactType: string): string => {
+  const labels: Record<string, string> = {
+    owner: 'בעלים',
+    accountant_manager: 'מנהלת חשבונות',
+    secretary: 'מזכירה',
+    cfo: 'סמנכ"ל כספים',
+    board_member: 'חבר דירקטוריון',
+    legal_counsel: 'יועץ משפטי',
+    other: 'אחר',
+  };
+  return labels[contactType] || contactType;
+};
+
 export function LetterBuilder() {
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<LetterTemplateType>('external_index_only');
   const [variables, setVariables] = useState<Partial<LetterVariables>>({
-    company_name: 'מסעדת האחים',
-    group_name: 'קבוצת מסעדות ישראליות',
+    company_name: '',
+    group_name: '',
     inflation_rate: 4,
     amount_original: 52000,
   });
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState('Benatia.Asaf@gmail.com');
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [clientContacts, setClientContacts] = useState<ClientContact[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  /**
+   * Handle client selection - auto-fill fields and load contacts
+   */
+  const handleClientChange = async (client: Client | null) => {
+    setSelectedClient(client);
+
+    if (client) {
+      // Auto-fill fields from selected client
+      setVariables(prev => ({
+        ...prev,
+        company_name: client.company_name_hebrew || client.company_name,
+        group_name: client.group?.group_name_hebrew || client.group?.group_name || '',
+      }));
+
+      // Load contacts for this client
+      setIsLoadingContacts(true);
+      try {
+        const { data: contacts, error } = await clientService.getContacts(client.id);
+
+        if (error) {
+          toast.error('שגיאה בטעינת אנשי קשר');
+          setClientContacts([]);
+          setSelectedRecipients([]);
+          return;
+        }
+
+        // Filter contacts based on email preferences
+        // Fee letters are "important", so include 'all' and 'important_only'
+        const eligibleContacts = (contacts || []).filter(contact =>
+          contact.email &&
+          (contact.email_preference === 'all' || contact.email_preference === 'important_only')
+        );
+
+        setClientContacts(eligibleContacts);
+
+        // Auto-select recipients:
+        // - Primary contact (is_primary = true) - always selected
+        // - Accountant (contact_type = 'accountant_manager') - always selected
+        // - All other eligible contacts - selected by default
+        const autoSelectedEmails = eligibleContacts.map(c => c.email!);
+        setSelectedRecipients(autoSelectedEmails);
+
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+        toast.error('שגיאה בטעינת אנשי קשר');
+        setClientContacts([]);
+        setSelectedRecipients([]);
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    } else {
+      // Clear auto-filled values when client is deselected
+      setVariables(prev => ({
+        ...prev,
+        company_name: '',
+        group_name: '',
+      }));
+      setClientContacts([]);
+      setSelectedRecipients([]);
+    }
+  };
 
   /**
    * Calculate discount amounts based on original amount
@@ -102,9 +185,9 @@ export function LetterBuilder() {
   const handleSendEmail = async () => {
     setIsSendingEmail(true);
     try {
-      // Validate email
-      if (!recipientEmail || !recipientEmail.includes('@')) {
-        toast.error('נא להזין כתובת מייל תקינה');
+      // Validate recipients
+      if (selectedRecipients.length === 0) {
+        toast.error('נא לבחור לפחות נמען אחד');
         return;
       }
 
@@ -131,11 +214,11 @@ export function LetterBuilder() {
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
-          recipientEmail,
+          recipientEmails: selectedRecipients, // Array of emails
           recipientName: fullVariables.company_name || 'לקוח יקר',
           templateType: selectedTemplate,
           variables: fullVariables,
-          clientId: null, // TODO: Add client selection
+          clientId: selectedClient?.id || null,
           feeCalculationId: null
         }
       });
@@ -145,7 +228,7 @@ export function LetterBuilder() {
       }
 
       console.log('✅ Email sent successfully:', data);
-      toast.success(`מכתב נשלח בהצלחה ל-${recipientEmail}`);
+      toast.success(`מכתב נשלח בהצלחה ל-${selectedRecipients.length} נמענים`);
 
     } catch (error) {
       console.error('❌ Error sending email:', error);
@@ -171,7 +254,7 @@ export function LetterBuilder() {
               1. בחר סוג מכתב
             </Label>
             <Select value={selectedTemplate} onValueChange={(value) => setSelectedTemplate(value as LetterTemplateType)}>
-              <SelectTrigger id="template" dir="rtl">
+              <SelectTrigger id="template" dir="rtl" className="[&>span]:text-right">
                 <SelectValue placeholder="בחר סוג מכתב" />
               </SelectTrigger>
               <SelectContent dir="rtl">
@@ -188,10 +271,18 @@ export function LetterBuilder() {
           <div className="space-y-4">
             <Label className="text-right block text-base font-semibold">2. הזן פרטים</Label>
 
+            {/* Client Selection */}
+            <ClientSelector
+              value={selectedClient?.id || null}
+              onChange={handleClientChange}
+              label="בחר לקוח"
+              placeholder="בחר לקוח או הקלד ידנית למטה..."
+            />
+
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="company_name" className="text-right block">
-                  שם חברה
+                  שם חברה {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
                 </Label>
                 <Input
                   id="company_name"
@@ -204,7 +295,7 @@ export function LetterBuilder() {
 
               <div>
                 <Label htmlFor="group_name" className="text-right block">
-                  שם קבוצה (אופציונלי)
+                  שם קבוצה (אופציונלי) {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
                 </Label>
                 <Input
                   id="group_name"
@@ -266,25 +357,79 @@ export function LetterBuilder() {
             </Button>
           </div>
 
-          {/* Step 4: Send Email */}
+          {/* Step 4: Select Recipients */}
           <div className="space-y-4">
-            <Label className="text-right block text-base font-semibold">4. שליחת מייל</Label>
-            <div>
-              <Label htmlFor="recipient_email" className="text-right block">
-                מייל נמען
-              </Label>
-              <Input
-                id="recipient_email"
-                type="email"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                placeholder="example@email.com"
-                dir="ltr"
-              />
-            </div>
+            <Label className="text-right block text-base font-semibold">4. בחר נמענים</Label>
+
+            {!selectedClient ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-right">
+                  נא לבחור לקוח כדי לראות את רשימת אנשי הקשר
+                </AlertDescription>
+              </Alert>
+            ) : isLoadingContacts ? (
+              <div className="text-center py-8 text-gray-500">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                טוען אנשי קשר...
+              </div>
+            ) : clientContacts.length === 0 ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-right">
+                  לא נמצאו אנשי קשר עבור לקוח זה. נא להוסיף אנשי קשר בטופס הלקוח.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <div className="border rounded-lg p-4 space-y-2 max-h-80 overflow-y-auto bg-gray-50">
+                  {clientContacts.map((contact) => {
+                    const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
+                    const isChecked = selectedRecipients.includes(contact.email!);
+
+                    return (
+                      <div
+                        key={contact.id}
+                        className="flex items-start gap-3 p-3 bg-white hover:bg-gray-50 rounded border"
+                      >
+                        <Checkbox
+                          id={`recipient-${contact.id}`}
+                          checked={isChecked}
+                          disabled={isRequired}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedRecipients([...selectedRecipients, contact.email!]);
+                            } else {
+                              setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
+                            }
+                          }}
+                          className="mt-1"
+                        />
+                        <Label
+                          htmlFor={`recipient-${contact.id}`}
+                          className="flex-1 cursor-pointer text-right"
+                        >
+                          <div className="font-medium text-base">{contact.full_name}</div>
+                          <div className="text-sm text-gray-600 dir-ltr text-right">{contact.email}</div>
+                          <div className="text-xs text-gray-500 flex gap-2 justify-end mt-1">
+                            <span>{getContactTypeLabel(contact.contact_type)}</span>
+                            {isRequired && <span className="font-semibold text-blue-600">(חובה - לא ניתן לביטול)</span>}
+                          </div>
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-sm text-gray-600 text-right">
+                  <strong>{selectedRecipients.length}</strong> נמענים נבחרו
+                </p>
+              </>
+            )}
+
             <Button
               onClick={handleSendEmail}
-              disabled={isSendingEmail || !recipientEmail}
+              disabled={isSendingEmail || selectedRecipients.length === 0}
               size="lg"
               variant="default"
               className="w-full"
@@ -297,7 +442,7 @@ export function LetterBuilder() {
               ) : (
                 <>
                   <Mail className="h-4 w-4 mr-2" />
-                  שלח מכתב למייל
+                  שלח מכתב ל-{selectedRecipients.length} נמענים
                 </>
               )}
             </Button>

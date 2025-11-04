@@ -14,6 +14,7 @@ import type {
   LetterPreviewRequest
 } from '../types/letter.types';
 import { TemplateParser } from '../utils/template-parser';
+import { parseTextToHTML as parseMarkdownToHTML, replaceVariables as replaceVarsInText } from '../utils/text-to-html-parser';
 
 export class TemplateService extends BaseService {
   constructor() {
@@ -718,6 +719,285 @@ export class TemplateService extends BaseService {
 
       // 6. Replace all variables
       fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
+
+      // 7. Convert CID images to web paths for browser preview
+      fullHtml = this.replaceCidWithWebPaths(fullHtml);
+
+      return { data: { html: fullHtml }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  // ============================================================================
+  // UNIVERSAL LETTER BUILDER - Custom Letter Bodies (Non-fee letters)
+  // ============================================================================
+
+  /**
+   * Parse plain text with Markdown syntax to HTML
+   * Wrapper for text-to-html-parser utility
+   */
+  parseTextToHTML(plainText: string): string {
+    return parseMarkdownToHTML(plainText);
+  }
+
+  /**
+   * Save custom letter body template
+   * Used when user wants to save their custom letter as a reusable template
+   */
+  async saveCustomBody(params: {
+    name: string;
+    description?: string;
+    plainText: string;
+    includesPayment: boolean;
+  }): Promise<ServiceResponse<{ id: string; name: string; parsed_html: string }>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+
+      // Parse plain text to HTML
+      const parsedHtml = this.parseTextToHTML(params.plainText);
+
+      // Save to database
+      const { data, error } = await supabase
+        .from('custom_letter_bodies')
+        .insert({
+          tenant_id: tenantId,
+          name: params.name,
+          description: params.description || null,
+          plain_text: params.plainText,
+          parsed_html: parsedHtml,
+          includes_payment: params.includesPayment,
+          created_by: userId
+        })
+        .select('id, name, parsed_html')
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('create_custom_letter_body', data.id, {
+        name: params.name,
+        includes_payment: params.includesPayment
+      });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get all custom letter bodies for tenant
+   * Returns list of saved custom templates
+   */
+  async getCustomBodies(): Promise<ServiceResponse<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    plain_text: string;
+    parsed_html: string;
+    includes_payment: boolean;
+    created_at: string;
+    updated_at: string;
+  }>>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('custom_letter_bodies')
+        .select('id, name, description, plain_text, parsed_html, includes_payment, created_at, updated_at')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get custom letter body by ID
+   */
+  async getCustomBodyById(bodyId: string): Promise<ServiceResponse<{
+    id: string;
+    name: string;
+    description: string | null;
+    plain_text: string;
+    parsed_html: string;
+    includes_payment: boolean;
+  }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('custom_letter_bodies')
+        .select('id, name, description, plain_text, parsed_html, includes_payment')
+        .eq('id', bodyId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Delete custom letter body
+   */
+  async deleteCustomBody(bodyId: string): Promise<ServiceResponse<void>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { error } = await supabase
+        .from('custom_letter_bodies')
+        .delete()
+        .eq('id', bodyId)
+        .eq('tenant_id', tenantId);
+
+      if (error) throw error;
+
+      await this.logAction('delete_custom_letter_body', bodyId);
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Generate full letter from custom plain text
+   * Combines Header + Custom Body + [Optional Payment] + Footer
+   */
+  async generateFromCustomText(params: {
+    plainText: string;
+    clientId: string;
+    variables: Record<string, string | number>;
+    includesPayment: boolean;
+    saveAsTemplate?: {
+      name: string;
+      description?: string;
+    };
+  }): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Load header and footer components
+      const header = await this.loadTemplateFile('components/header.html');
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 2. Parse custom text to HTML
+      const bodyHtml = this.parseTextToHTML(params.plainText);
+
+      // 3. Load payment section if needed
+      let paymentSection = '';
+      if (params.includesPayment) {
+        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+      }
+
+      // 4. Add automatic variables
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+
+      const fullVariables: Record<string, string | number> = {
+        ...params.variables,
+        letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
+        year: params.variables.year || nextYear,
+        tax_year: params.variables.tax_year || nextYear
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer);
+
+      // 6. Replace variables in full HTML
+      fullHtml = replaceVarsInText(fullHtml, fullVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. Save as custom template if requested
+      if (params.saveAsTemplate) {
+        await this.saveCustomBody({
+          name: params.saveAsTemplate.name,
+          description: params.saveAsTemplate.description,
+          plainText: params.plainText,
+          includesPayment: params.includesPayment
+        });
+      }
+
+      // 8. Save generated letter
+      const { data: generatedLetter, error: saveError } = await supabase
+        .from('generated_letters')
+        .insert({
+          tenant_id: tenantId,
+          client_id: params.clientId,
+          template_id: null, // No template_id for custom letters
+          fee_calculation_id: null,
+          variables_used: fullVariables,
+          generated_content_html: fullHtml,
+          generated_content_text: plainText,
+          payment_link: fullVariables.payment_link as string | undefined,
+          created_at: new Date().toISOString(),
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (saveError) throw saveError;
+
+      await this.logAction('generate_custom_letter', generatedLetter.id, {
+        client_id: params.clientId,
+        includes_payment: params.includesPayment,
+        saved_as_template: !!params.saveAsTemplate
+      });
+
+      return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Preview custom letter from plain text (without saving)
+   * Used for live preview in UniversalLetterBuilder
+   */
+  async previewCustomLetter(params: {
+    plainText: string;
+    variables: Record<string, string | number>;
+    includesPayment: boolean;
+  }): Promise<ServiceResponse<{ html: string }>> {
+    try {
+      // 1. Load header and footer
+      const header = await this.loadTemplateFile('components/header.html');
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 2. Parse custom text to HTML
+      const bodyHtml = this.parseTextToHTML(params.plainText);
+
+      // 3. Load payment section if needed
+      let paymentSection = '';
+      if (params.includesPayment) {
+        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+      }
+
+      // 4. Add automatic variables
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+
+      const fullVariables: Record<string, string | number> = {
+        ...params.variables,
+        letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
+        year: params.variables.year || nextYear,
+        tax_year: params.variables.tax_year || nextYear
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer);
+
+      // 6. Replace variables
+      fullHtml = replaceVarsInText(fullHtml, fullVariables);
 
       // 7. Convert CID images to web paths for browser preview
       fullHtml = this.replaceCidWithWebPaths(fullHtml);
