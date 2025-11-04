@@ -11,7 +11,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 interface SendLetterRequest {
-  recipientEmail: string;
+  recipientEmails: string[];
   recipientName: string;
   // Template mode (original)
   templateType?: string;
@@ -289,7 +289,7 @@ async function fetchImageBase64(url: string): Promise<string> {
  * Send email via SendGrid
  */
 async function sendEmail(
-  recipientEmail: string,
+  recipientEmails: string[],
   subject: string,
   htmlContent: string
 ): Promise<void> {
@@ -313,7 +313,7 @@ async function sendEmail(
   const emailData = {
     personalizations: [
       {
-        to: [{ email: recipientEmail }],
+        to: recipientEmails.map(email => ({ email })),
         subject: subject
       }
     ],
@@ -412,7 +412,7 @@ serve(async (req) => {
     // Parse request
     const requestData: SendLetterRequest = await req.json();
     const {
-      recipientEmail,
+      recipientEmails,
       recipientName,
       templateType,
       variables,
@@ -424,9 +424,9 @@ serve(async (req) => {
     } = requestData;
 
     // Validate - must have either templateType OR customText
-    if (!recipientEmail) {
+    if (!recipientEmails || !Array.isArray(recipientEmails) || recipientEmails.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Missing recipientEmail' }),
+        JSON.stringify({ error: 'Missing or invalid recipientEmails array' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -457,7 +457,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('📧 Sending letter to:', recipientEmail);
+    console.log('📧 Sending letter to:', recipientEmails.join(', '));
 
     let letterHtml: string;
     let subject: string;
@@ -540,7 +540,7 @@ serve(async (req) => {
     }
 
     // Send email
-    await sendEmail(recipientEmail, subject, letterHtml);
+    await sendEmail(recipientEmails, subject, letterHtml);
 
     // Log to database if client ID provided
     if (clientId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
@@ -578,7 +578,7 @@ serve(async (req) => {
           fee_calculation_id: feeCalculationId,
           variables_used: variables || {},
           generated_content_html: letterHtml,
-          recipient_email: recipientEmail,
+          recipient_emails: recipientEmails,
           sent_at: new Date().toISOString(),
           status: 'sent'
         });
@@ -590,7 +590,7 @@ serve(async (req) => {
           template_type: templateType,
           variables_used: variables,
           generated_content_html: letterHtml,
-          recipient_email: recipientEmail,
+          recipient_emails: recipientEmails,
           sent_at: new Date().toISOString(),
           status: 'sent'
         });
@@ -603,7 +603,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: 'Letter sent successfully',
-        recipient: recipientEmail
+        recipients: recipientEmails
       }),
       {
         status: 200,
