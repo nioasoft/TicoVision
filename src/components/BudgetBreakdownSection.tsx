@@ -16,6 +16,22 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
     setExpandedColumn(expandedColumn === column ? null : column);
   };
 
+  // חישוב סכומים לפני מע"מ לכל קטגוריה
+  const auditBeforeVat =
+    breakdown.audit_external.before_vat +
+    breakdown.audit_internal.before_vat +
+    breakdown.audit_retainer.before_vat;
+
+  const bookkeepingBeforeVat =
+    breakdown.bookkeeping_internal.before_vat +
+    breakdown.bookkeeping_retainer.before_vat;
+
+  const grandTotalBeforeVat =
+    auditBeforeVat +
+    bookkeepingBeforeVat +
+    breakdown.freelancers.before_vat +
+    breakdown.exceptions.before_vat;
+
   return (
     <div className="space-y-6 mt-8">
       {/* כותרת */}
@@ -41,9 +57,9 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-bold text-blue-700 mb-1">
-              {formatILS(breakdown.audit_total)}
+              {formatILS(auditBeforeVat)}
             </div>
-            <p className="text-xs text-gray-500">כולל מע"מ 18%</p>
+            <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.audit_total)}</p>
 
             <button
               onClick={() => toggleExpand('audit')}
@@ -118,9 +134,9 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-bold text-purple-700 mb-1">
-              {formatILS(breakdown.bookkeeping_total)}
+              {formatILS(bookkeepingBeforeVat)}
             </div>
-            <p className="text-xs text-gray-500">כולל מע"מ 18%</p>
+            <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.bookkeeping_total)}</p>
 
             <button
               onClick={() => toggleExpand('bookkeeping')}
@@ -203,9 +219,9 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
           </CardHeader>
           <CardContent className="pt-4">
             <div className="text-3xl font-bold text-green-700 mb-1">
-              {formatILS(breakdown.freelancers.with_vat)}
+              {formatILS(breakdown.freelancers.before_vat)}
             </div>
-            <p className="text-xs text-gray-500">כולל מע"מ 18%</p>
+            <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.freelancers.with_vat)}</p>
 
             <button
               onClick={() => toggleExpand('freelancers')}
@@ -252,11 +268,11 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                 סה"כ תקציב המשרד לשנת {taxYear}
               </h3>
               <p className="text-sm text-gray-600">
-                כולל כל הקטגוריות + מע"מ 18%
+                כולל מע"מ: {formatILS(breakdown.grand_total)}
               </p>
             </div>
             <div className="text-4xl font-bold text-blue-700">
-              {formatILS(breakdown.grand_total)}
+              {formatILS(grandTotalBeforeVat)}
             </div>
           </div>
         </CardContent>
