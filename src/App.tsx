@@ -15,6 +15,7 @@ const SetPasswordPage = lazy(() => import('@/pages/SetPasswordPage').then(m => (
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
 const FeesPage = lazy(() => import('@/pages/FeesPage').then(m => ({ default: m.FeesPage })));
+const FeeTrackingPage = lazy(() => import('@/pages/FeeTrackingPage').then(m => ({ default: m.FeeTrackingPage })));
 const LettersPage = lazy(() => import('@/pages/LettersPage').then(m => ({ default: m.LettersPage })));
 const LetterTemplatesPage = lazy(() => import('@/pages/LetterTemplatesPage').then(m => ({ default: m.LetterTemplatesPage })));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })));
@@ -94,11 +95,20 @@ function App() {
                           <DashboardPage />
                         </ErrorBoundary>
                       } />
-                      <Route path="/fees" element={
+
+                      {/* Fee Management Routes */}
+                      <Route path="/fees/tracking" element={
+                        <ErrorBoundary>
+                          <FeeTrackingPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/fees/calculate" element={
                         <ErrorBoundary>
                           <FeesPage />
                         </ErrorBoundary>
                       } />
+                      {/* Legacy redirect: /fees → /fees/tracking */}
+                      <Route path="/fees" element={<Navigate to="/fees/tracking" replace />} />
                       <Route path="/letters" element={
                         <ErrorBoundary>
                           <LettersPage />

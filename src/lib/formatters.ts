@@ -6,17 +6,17 @@
 import type { PaymentMethod, PaymentStatus } from '@/types/collection.types';
 
 /**
- * Format amount as Israeli Shekel (ILS)
+ * Format amount as Israeli Shekel (ILS) - rounded to nearest shekel
  * @param amount - Amount to format
- * @returns Formatted string like "₪1,234.56"
+ * @returns Formatted string like "₪1,234" (no decimals)
  */
 export function formatILS(amount: number): string {
   return new Intl.NumberFormat('he-IL', {
     style: 'currency',
     currency: 'ILS',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(amount));
 }
 
 /**
