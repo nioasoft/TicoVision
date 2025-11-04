@@ -74,6 +74,10 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   contact_name: '',
   contact_email: '',
   contact_phone: '',
+  // Accountant fields (required)
+  accountant_name: '',
+  accountant_email: '',
+  accountant_phone: '',
   address: {
     street: '',
     city: '',
@@ -128,6 +132,10 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           contact_name: client.contact_name,
           contact_email: client.contact_email || '',
           contact_phone: client.contact_phone || '',
+          // Accountant fields - will be populated from contacts if available
+          accountant_name: '',
+          accountant_email: '',
+          accountant_phone: '',
           address: client.address || { street: '', city: '', postal_code: '' },
           status: client.status,
           internal_external: client.internal_external || 'internal',
@@ -209,7 +217,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     return (
       <>
         <Dialog open={open} onOpenChange={handleClose}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
             <DialogHeader>
               <DialogTitle>
                 {mode === 'add' ? 'הוספת לקוח חדש' : 'עריכת פרטי לקוח'}
@@ -219,8 +227,23 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid gap-4 py-4">
-              {/* Company Name */}
+            <div className="grid grid-cols-3 gap-4 py-4">
+              {/* Row 1: Tax ID, Company Name, Commercial Name (3 cols) */}
+              <div>
+                <Label htmlFor="tax_id" className="text-right block mb-2">
+                  מספר מזהה (9 ספרות) *
+                </Label>
+                <Input
+                  id="tax_id"
+                  value={formData.tax_id}
+                  onChange={(e) => handleFormChange('tax_id', e.target.value)}
+                  maxLength={9}
+                  pattern="\d{9}"
+                  required
+                  dir="ltr"
+                />
+              </div>
+
               <div>
                 <Label htmlFor="company_name" className="text-right block mb-2">
                   שם החברה פורמלי *
@@ -234,7 +257,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Commercial Name (NEW) */}
               <div>
                 <Label htmlFor="commercial_name" className="text-right block mb-2">
                   שם מסחרי
@@ -247,233 +269,249 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Group Selection & Payment Role */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 2: Contact Name, Phone, Email (3 cols) */}
+              <div>
+                <Label htmlFor="contact_name" className="text-right block mb-2">
+                  שם איש קשר *
+                </Label>
+                <Input
+                  id="contact_name"
+                  value={formData.contact_name}
+                  onChange={(e) => handleFormChange('contact_name', e.target.value)}
+                  required
+                  dir="rtl"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="contact_phone" className="text-right block mb-2">
+                  טלפון
+                </Label>
+                <Input
+                  id="contact_phone"
+                  value={formData.contact_phone}
+                  onChange={(e) => handleFormChange('contact_phone', e.target.value)}
+                  type="tel"
+                  dir="ltr"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="contact_email" className="text-right block mb-2">
+                  אימייל *
+                </Label>
+                <Input
+                  id="contact_email"
+                  value={formData.contact_email}
+                  onChange={(e) => handleFormChange('contact_email', e.target.value)}
+                  type="email"
+                  required
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Row 3: Address, City, Postal Code (3 cols) */}
+              <div>
+                <Label htmlFor="address_street" className="text-right block mb-2">
+                  כתובת
+                </Label>
+                <Input
+                  id="address_street"
+                  value={formData.address?.street || ''}
+                  onChange={(e) =>
+                    handleFormChange('address', {
+                      ...formData.address,
+                      street: e.target.value
+                    })
+                  }
+                  dir="rtl"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="address_city" className="text-right block mb-2">
+                  עיר
+                </Label>
+                <Input
+                  id="address_city"
+                  value={formData.address?.city || ''}
+                  onChange={(e) =>
+                    handleFormChange('address', {
+                      ...formData.address,
+                      city: e.target.value
+                    })
+                  }
+                  dir="rtl"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="address_postal_code" className="text-right block mb-2">
+                  מיקוד
+                </Label>
+                <Input
+                  id="address_postal_code"
+                  value={formData.address?.postal_code || ''}
+                  onChange={(e) =>
+                    handleFormChange('address', {
+                      ...formData.address,
+                      postal_code: e.target.value
+                    })
+                  }
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Row 4: Group, Payment Role (if selected), Accounting Management (3 cols) */}
+              <div>
+                <Label htmlFor="group_id" className="text-right block mb-2">
+                  קבוצה (אופציונלי)
+                </Label>
+                <Select
+                  value={formData.group_id || 'NO_GROUP'}
+                  onValueChange={(value) => {
+                    handleFormChange('group_id', value === 'NO_GROUP' ? undefined : value);
+                    if (value && value !== 'NO_GROUP' && !formData.payment_role) {
+                      handleFormChange('payment_role', 'member');
+                    }
+                    if (!value || value === 'NO_GROUP') {
+                      handleFormChange('payment_role', 'independent');
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר קבוצה" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
+                    {groups.map((group) => (
+                      <SelectItem key={group.id} value={group.id}>
+                        {group.group_name_hebrew || group.group_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Payment Role - conditional if group selected */}
+              {formData.group_id ? (
                 <div>
-                  <Label htmlFor="group_id" className="text-right block mb-2">
-                    קבוצה (אופציונלי)
+                  <Label htmlFor="payment_role" className="text-right block mb-2">
+                    תפקיד תשלום בקבוצה *
                   </Label>
                   <Select
-                    value={formData.group_id || 'NO_GROUP'}
-                    onValueChange={(value) => {
-                      handleFormChange('group_id', value === 'NO_GROUP' ? undefined : value);
-                      // אם בוחר קבוצה ועדיין לא הגדיר payment_role → ברירת מחדל 'member'
-                      if (value && value !== 'NO_GROUP' && !formData.payment_role) {
-                        handleFormChange('payment_role', 'member');
-                      }
-                      // אם מוחק קבוצה → מאפס payment_role ל-independent
-                      if (!value || value === 'NO_GROUP') {
-                        handleFormChange('payment_role', 'independent');
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="בחר קבוצה" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.group_name_hebrew || group.group_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Payment Role - מופיע רק אם נבחרה קבוצה */}
-                {formData.group_id && (
-                  <div>
-                    <Label htmlFor="payment_role" className="text-right block mb-2">
-                      תפקיד תשלום בקבוצה *
-                    </Label>
-                    <Select
-                      value={formData.payment_role || 'member'}
-                      onValueChange={(value: PaymentRole) =>
-                        handleFormChange('payment_role', value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="independent">
-                          <div className="text-right">
-                            <div className="font-medium">{PAYMENT_ROLE_LABELS.independent}</div>
-                            <div className="text-xs text-gray-500">
-                              {PAYMENT_ROLE_DESCRIPTIONS.independent}
-                            </div>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="member">
-                          <div className="text-right">
-                            <div className="font-medium">{PAYMENT_ROLE_LABELS.member}</div>
-                            <div className="text-xs text-gray-500">
-                              {PAYMENT_ROLE_DESCRIPTIONS.member}
-                            </div>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="primary_payer">
-                          <div className="text-right">
-                            <div className="font-medium">{PAYMENT_ROLE_LABELS.primary_payer}</div>
-                            <div className="text-xs text-gray-500">
-                              {PAYMENT_ROLE_DESCRIPTIONS.primary_payer}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              {/* Tax ID & Contact Name */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="tax_id" className="text-right block mb-2">
-                    מספר מזהה (9 ספרות) *
-                  </Label>
-                  <Input
-                    id="tax_id"
-                    value={formData.tax_id}
-                    onChange={(e) => handleFormChange('tax_id', e.target.value)}
-                    maxLength={9}
-                    pattern="\d{9}"
-                    required
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contact_name" className="text-right block mb-2">
-                    שם איש קשר *
-                  </Label>
-                  <Input
-                    id="contact_name"
-                    value={formData.contact_name}
-                    onChange={(e) => handleFormChange('contact_name', e.target.value)}
-                    required
-                    dir="rtl"
-                  />
-                </div>
-              </div>
-
-              {/* Phone & Email */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="contact_phone" className="text-right block mb-2">
-                    טלפון
-                  </Label>
-                  <Input
-                    id="contact_phone"
-                    value={formData.contact_phone}
-                    onChange={(e) => handleFormChange('contact_phone', e.target.value)}
-                    type="tel"
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contact_email" className="text-right block mb-2">
-                    אימייל *
-                  </Label>
-                  <Input
-                    id="contact_email"
-                    value={formData.contact_email}
-                    onChange={(e) => handleFormChange('contact_email', e.target.value)}
-                    type="email"
-                    required
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-
-              {/* Address & City */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="address_street" className="text-right block mb-2">
-                    כתובת
-                  </Label>
-                  <Input
-                    id="address_street"
-                    value={formData.address?.street || ''}
-                    onChange={(e) =>
-                      handleFormChange('address', {
-                        ...formData.address,
-                        street: e.target.value
-                      })
+                    value={formData.payment_role || 'member'}
+                    onValueChange={(value: PaymentRole) =>
+                      handleFormChange('payment_role', value)
                     }
-                    dir="rtl"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address_city" className="text-right block mb-2">
-                    עיר
-                  </Label>
-                  <Input
-                    id="address_city"
-                    value={formData.address?.city || ''}
-                    onChange={(e) =>
-                      handleFormChange('address', {
-                        ...formData.address,
-                        city: e.target.value
-                      })
-                    }
-                    dir="rtl"
-                  />
-                </div>
-              </div>
-
-              {/* Client Type & Company Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="client_type" className="text-right block mb-2">
-                    סוג לקוח *
-                  </Label>
-                  <Select
-                    value={formData.client_type}
-                    onValueChange={(value: ClientType) => {
-                      handleFormChange('client_type', value);
-                      if (value !== 'company') {
-                        handleFormChange('company_subtype', undefined);
-                      }
-                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="company">חברה</SelectItem>
-                      <SelectItem value="freelancer">עצמאי</SelectItem>
-                      <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
-                      <SelectItem value="partnership">שותפות</SelectItem>
-                      <SelectItem value="nonprofit">עמותה</SelectItem>
+                      <SelectItem value="independent">
+                        <div className="text-right">
+                          <div className="font-medium">{PAYMENT_ROLE_LABELS.independent}</div>
+                          <div className="text-xs text-gray-500">
+                            {PAYMENT_ROLE_DESCRIPTIONS.independent}
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="member">
+                        <div className="text-right">
+                          <div className="font-medium">{PAYMENT_ROLE_LABELS.member}</div>
+                          <div className="text-xs text-gray-500">
+                            {PAYMENT_ROLE_DESCRIPTIONS.member}
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="primary_payer">
+                        <div className="text-right">
+                          <div className="font-medium">{PAYMENT_ROLE_LABELS.primary_payer}</div>
+                          <div className="text-xs text-gray-500">
+                            {PAYMENT_ROLE_DESCRIPTIONS.primary_payer}
+                          </div>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {formData.client_type === 'company' && (
-                  <div>
-                    <Label htmlFor="company_status" className="text-right block mb-2">
-                      סטטוס חברה
-                    </Label>
-                    <Select
-                      value={formData.company_status}
-                      onValueChange={(value: CompanyStatus) =>
-                        handleFormChange('company_status', value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">פעילה</SelectItem>
-                        <SelectItem value="inactive">רדומה</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+              ) : (
+                <div></div>
+              )}
+
+              <div>
+                <Label htmlFor="internal_external" className="text-right block mb-2">
+                  הנהלת חשבונות
+                </Label>
+                <Select
+                  value={formData.internal_external}
+                  onValueChange={(value: 'internal' | 'external') =>
+                    handleFormChange('internal_external', value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="internal">פנימי</SelectItem>
+                    <SelectItem value="external">חיצוני</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Company Subtype (only for active companies) */}
-              {formData.client_type === 'company' && formData.company_status === 'active' && (
+              {/* Row 5: Client Type, Company Status (conditional), Company Subtype (conditional) - 3 cols */}
+              <div>
+                <Label htmlFor="client_type" className="text-right block mb-2">
+                  סוג לקוח *
+                </Label>
+                <Select
+                  value={formData.client_type}
+                  onValueChange={(value: ClientType) => {
+                    handleFormChange('client_type', value);
+                    if (value !== 'company') {
+                      handleFormChange('company_subtype', undefined);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="company">חברה</SelectItem>
+                    <SelectItem value="freelancer">עצמאי</SelectItem>
+                    <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
+                    <SelectItem value="partnership">שותפות</SelectItem>
+                    <SelectItem value="nonprofit">עמותה</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.client_type === 'company' ? (
+                <div>
+                  <Label htmlFor="company_status" className="text-right block mb-2">
+                    סטטוס חברה
+                  </Label>
+                  <Select
+                    value={formData.company_status}
+                    onValueChange={(value: CompanyStatus) =>
+                      handleFormChange('company_status', value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">פעילה</SelectItem>
+                      <SelectItem value="inactive">רדומה</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div></div>
+              )}
+
+              {formData.client_type === 'company' && formData.company_status === 'active' ? (
                 <div>
                   <Label htmlFor="company_subtype" className="text-right block mb-2">
                     תת סוג חברה
@@ -495,29 +533,12 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     </SelectContent>
                   </Select>
                 </div>
+              ) : (
+                <div></div>
               )}
 
-              {/* Internal/External & Collection Responsibility */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="internal_external" className="text-right block mb-2">
-                    הנהלת חשבונות
-                  </Label>
-                  <Select
-                    value={formData.internal_external}
-                    onValueChange={(value: 'internal' | 'external') =>
-                      handleFormChange('internal_external', value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="internal">פנימי</SelectItem>
-                      <SelectItem value="external">חיצוני</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Row 6: Folder Responsibility, Status, Checkboxes (4 cols in one row) */}
+              <div className="col-span-3 grid grid-cols-4 gap-4">
                 <div>
                   <Label htmlFor="collection_responsibility" className="text-right block mb-2">
                     אחריות/אמא לתיק
@@ -537,10 +558,28 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              {/* Checkboxes */}
-              <div className="grid grid-cols-2 gap-4 mt-6">
+                <div>
+                  <Label htmlFor="status" className="text-right block mb-2">
+                    סטטוס
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: 'active' | 'inactive' | 'pending') =>
+                      handleFormChange('status', value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">פעיל</SelectItem>
+                      <SelectItem value="inactive">לא פעיל</SelectItem>
+                      <SelectItem value="pending">ממתין</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -551,13 +590,14 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       }
                     />
                     <Label htmlFor="pays_fees" className="cursor-pointer">
-                      משלם ישירות
+                      משלם
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500 rtl:text-right mt-1 rtl:mr-6">
+                  <p className="text-xs text-gray-500 rtl:text-right mt-1">
                     אם לא מסומן, הלקוח לא יקבל מכתבי שכר טרחה אוטומטית
                   </p>
                 </div>
+
                 <div>
                   <div className="flex items-center gap-2">
                     <Checkbox
@@ -571,36 +611,65 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       לקוח ריטיינר
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500 rtl:text-right mt-1 rtl:mr-6">
+                  <p className="text-xs text-gray-500 rtl:text-right mt-1">
                     לקוחות ריטיינר מקבלים מכתבים מסוג E1/E2
                   </p>
                 </div>
               </div>
 
-              {/* Status */}
-              <div>
-                <Label htmlFor="status" className="text-right block mb-2">
-                  סטטוס
-                </Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: 'active' | 'inactive' | 'pending') =>
-                    handleFormChange('status', value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">פעיל</SelectItem>
-                    <SelectItem value="inactive">לא פעיל</SelectItem>
-                    <SelectItem value="pending">ממתין</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Row 8: Accountant Details - REQUIRED SECTION (full width with border) */}
+              <div className="col-span-3 border-t pt-4 mt-4">
+                <h3 className="text-lg font-semibold mb-4 text-right">מנהלת חשבונות (חובה)</h3>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="accountant_name" className="text-right block mb-2">
+                      שם מלא *
+                    </Label>
+                    <Input
+                      id="accountant_name"
+                      value={formData.accountant_name}
+                      onChange={(e) => handleFormChange('accountant_name', e.target.value)}
+                      required
+                      dir="rtl"
+                      placeholder="שם מלא"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="accountant_email" className="text-right block mb-2">
+                      אימייל *
+                    </Label>
+                    <Input
+                      id="accountant_email"
+                      value={formData.accountant_email}
+                      onChange={(e) => handleFormChange('accountant_email', e.target.value)}
+                      type="email"
+                      required
+                      dir="ltr"
+                      placeholder="accountant@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="accountant_phone" className="text-right block mb-2">
+                      טלפון *
+                    </Label>
+                    <Input
+                      id="accountant_phone"
+                      value={formData.accountant_phone}
+                      onChange={(e) => handleFormChange('accountant_phone', e.target.value)}
+                      type="tel"
+                      required
+                      dir="ltr"
+                      placeholder="050-1234567"
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* Notes */}
-              <div>
+              {/* Row 9: Notes (full width) */}
+              <div className="col-span-3">
                 <Label htmlFor="notes" className="text-right block mb-2">
                   הערות
                 </Label>
@@ -615,7 +684,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Contact Management (Edit Mode Only) */}
               {mode === 'edit' && client && onAddContact && onUpdateContact && onDeleteContact && onSetPrimaryContact && (
-                <div className="border-t pt-4 mt-4">
+                <div className="col-span-3 border-t pt-4 mt-4">
                   <ContactsManager
                     contacts={contacts}
                     onAdd={(contactData) => onAddContact(client.id, contactData)}
@@ -628,7 +697,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Phone Management */}
               {mode === 'edit' && client && onAddPhone && onUpdatePhone && onDeletePhone && onSetPrimaryPhone ? (
-                <div className="border-t pt-4 mt-4">
+                <div className="col-span-3 border-t pt-4 mt-4">
                   <PhoneNumbersManager
                     phones={phones}
                     onAdd={(phoneData) => onAddPhone(client.id, phoneData)}
@@ -638,7 +707,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   />
                 </div>
               ) : mode === 'add' ? (
-                <div className="border-t pt-4 mt-4">
+                <div className="col-span-3 border-t pt-4 mt-4">
                   <p className="text-sm text-gray-500 rtl:text-right">
                     הוספת מספרי טלפון תתאפשר לאחר יצירת הלקוח
                   </p>
