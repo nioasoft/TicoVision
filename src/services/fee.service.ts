@@ -143,7 +143,7 @@ export interface CreateFeeCalculationDto {
   inflation_rate?: number; // Default 3.0%
   real_adjustment?: number; // Default 0
   real_adjustment_reason?: string;
-  discount_percentage?: number; // Default 0
+  discount_percentage?: number; // Default 0 - DEPRECATED: Kept for backwards compatibility
   due_date?: string;
   notes?: string;
   // Bookkeeping calculation (for internal clients only)
@@ -151,7 +151,7 @@ export interface CreateFeeCalculationDto {
   bookkeeping_inflation_rate?: number;
   bookkeeping_real_adjustment?: number;
   bookkeeping_real_adjustment_reason?: string;
-  bookkeeping_discount_percentage?: number;
+  bookkeeping_discount_percentage?: number; // DEPRECATED: Kept for backwards compatibility
   bookkeeping_apply_inflation_index?: boolean;
 }
 
@@ -170,6 +170,15 @@ export interface FeeSummary {
   count_overdue: number;
 }
 
+/**
+ * Fee Service
+ * Manages fee calculations with inflation adjustments and real changes
+ *
+ * IMPORTANT: The 'year' field in fee_calculations represents TAX YEAR (שנת מס)
+ * - This is the fiscal year FOR WHICH the fee is calculated
+ * - Example: Calculating in 2025 FOR tax year 2026 → year = 2026
+ * - NOT the year when the calculation was performed
+ */
 class FeeService extends BaseService {
   constructor() {
     super('fee_calculations');
@@ -178,10 +187,11 @@ class FeeService extends BaseService {
   /**
    * Calculate fee with Israeli accounting standards:
    * 1. Apply inflation adjustment (default 3% if enabled)
-   * 2. Apply real adjustments 
-   * 3. Apply discount percentage
-   * 4. Calculate VAT (18%)
-   * 5. Calculate year-over-year changes
+   * 2. Apply real adjustments
+   * 3. Calculate VAT (18%)
+   * 4. Calculate year-over-year changes
+   *
+   * Note: Discounts are no longer applied in fee calculations
    */
   calculateFeeAmounts(data: CreateFeeCalculationDto): {
     inflation_adjustment: number;
@@ -196,20 +206,21 @@ class FeeService extends BaseService {
     const inflationRate = data.inflation_rate || 3.0; // Default 3%
     const applyInflation = data.apply_inflation_index !== false; // Default true
     const realAdjustment = data.real_adjustment || 0;
-    const discountPercentage = data.discount_percentage || 0;
+    // Discounts are no longer applied - always 0
+    const discountPercentage = 0;
 
     // Step 1: Apply inflation adjustment (only if enabled)
-    const inflationAdjustment = applyInflation 
+    const inflationAdjustment = applyInflation
       ? data.base_amount * (inflationRate / 100)
       : 0;
-    
+
     // Step 2: Add real adjustment
     const adjustedAmount = data.base_amount + inflationAdjustment + realAdjustment;
-    
-    // Step 3: Apply discount
-    const discountAmount = adjustedAmount * (discountPercentage / 100);
-    const finalAmount = adjustedAmount - discountAmount;
-    
+
+    // Step 3: No discount applied
+    const discountAmount = 0;
+    const finalAmount = adjustedAmount;
+
     // Step 4: Calculate VAT (18% in Israel - Updated December 2024)
     const vatAmount = finalAmount * 0.18;
     const totalWithVat = finalAmount + vatAmount;
@@ -217,7 +228,7 @@ class FeeService extends BaseService {
     // Step 5: Calculate year-over-year changes (if previous year data exists)
     let yearOverYearChangePercent = 0;
     let yearOverYearChangeAmount = 0;
-    
+
     if (data.previous_year_amount_with_vat) {
       yearOverYearChangeAmount = totalWithVat - data.previous_year_amount_with_vat;
       yearOverYearChangePercent = (yearOverYearChangeAmount / data.previous_year_amount_with_vat) * 100;
@@ -302,8 +313,8 @@ class FeeService extends BaseService {
           reason: data.real_adjustment_reason
         },
         real_adjustment_reason: data.real_adjustment_reason,
-        discount_percentage: data.discount_percentage || 0,
-        discount_amount: calculations.discount_amount,
+        discount_percentage: 0, // Discounts no longer applied
+        discount_amount: 0, // Discounts no longer applied
         final_amount: calculations.final_amount,
         calculated_before_vat: calculations.final_amount,
         calculated_with_vat: calculations.total_with_vat,
@@ -380,8 +391,7 @@ class FeeService extends BaseService {
       // Type: Partial includes all calculation fields that might be added during recalculation
       let updateData: Partial<FeeCalculation> = cleanData;
       if (data.base_amount !== undefined || data.inflation_rate !== undefined ||
-          data.real_adjustment !== undefined || data.discount_percentage !== undefined ||
-          data.apply_inflation_index !== undefined) {
+          data.real_adjustment !== undefined || data.apply_inflation_index !== undefined) {
         const { data: existing } = await this.getById(id);
         if (existing) {
           // Recalculate all amounts
@@ -391,15 +401,15 @@ class FeeService extends BaseService {
             base_amount: data.base_amount ?? existing.base_amount,
             inflation_rate: data.inflation_rate ?? existing.inflation_rate,
             real_adjustment: data.real_adjustment ?? existing.real_adjustment,
-            discount_percentage: data.discount_percentage ?? existing.discount_percentage,
             apply_inflation_index: data.apply_inflation_index ?? existing.apply_inflation_index
           };
           const calculations = this.calculateFeeAmounts(recalcData);
-          
+
           updateData = {
             ...updateData,
             inflation_adjustment: calculations.inflation_adjustment,
-            discount_amount: calculations.discount_amount,
+            discount_amount: 0, // Discounts no longer applied
+            discount_percentage: 0, // Discounts no longer applied
             final_amount: calculations.final_amount,
             vat_amount: calculations.vat_amount,
             total_amount: calculations.total_with_vat
@@ -412,7 +422,6 @@ class FeeService extends BaseService {
       if (bookkeepingFields.bookkeeping_base_amount !== undefined ||
           bookkeepingFields.bookkeeping_inflation_rate !== undefined ||
           bookkeepingFields.bookkeeping_real_adjustment !== undefined ||
-          bookkeepingFields.bookkeeping_discount_percentage !== undefined ||
           bookkeepingFields.bookkeeping_apply_inflation_index !== undefined) {
 
         const { data: existing } = await this.getById(id);
@@ -421,7 +430,6 @@ class FeeService extends BaseService {
             base_amount: bookkeepingFields.bookkeeping_base_amount,
             inflation_rate: bookkeepingFields.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
             real_adjustment: bookkeepingFields.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
-            discount_percentage: bookkeepingFields.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
             apply_inflation_index: bookkeepingFields.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
           });
 
@@ -432,8 +440,8 @@ class FeeService extends BaseService {
             inflation_adjustment: bookkeepingCalc.inflation_adjustment,
             real_adjustment: bookkeepingFields.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
             real_adjustment_reason: bookkeepingFields.bookkeeping_real_adjustment_reason ?? existing.bookkeeping_calculation?.real_adjustment_reason,
-            discount_percentage: bookkeepingFields.bookkeeping_discount_percentage ?? existing.bookkeeping_calculation?.discount_percentage ?? 0,
-            discount_amount: bookkeepingCalc.discount_amount,
+            discount_percentage: 0, // Discounts no longer applied
+            discount_amount: 0, // Discounts no longer applied
             final_amount: bookkeepingCalc.final_amount,
             vat_amount: bookkeepingCalc.vat_amount,
             total_with_vat: bookkeepingCalc.total_with_vat,
@@ -622,9 +630,9 @@ class FeeService extends BaseService {
         .eq('tenant_id', tenantId)
         .eq('client_id', clientId);
 
-      // If year is specified, get the calculation for that year
-      // "Previous year data" means data saved for the current year (e.g., 2025)
-      // since calculations are done at end of year for the upcoming year
+      // If year is specified, get the calculation for that TAX YEAR
+      // year = Tax year (שנת מס) - the fiscal year FOR WHICH fees were calculated
+      // Example: year=2025 returns calculations calculated FOR tax year 2025
       if (year) {
         query = query.eq('year', year);
       }
@@ -654,6 +662,9 @@ class FeeService extends BaseService {
   /**
    * Get most recent draft calculation for client and year
    * Used to load draft when returning to client
+   *
+   * @param clientId - Client ID
+   * @param year - Tax year (שנת מס) - the fiscal year FOR WHICH the calculation is made
    */
   async getDraftCalculation(
     clientId: string,
@@ -685,6 +696,9 @@ class FeeService extends BaseService {
   /**
    * Get latest calculation for client and year (any status)
    * Used when no draft exists but calculation was already sent
+   *
+   * @param clientId - Client ID
+   * @param year - Tax year (שנת מס) - the fiscal year FOR WHICH the calculation was made
    */
   async getLatestCalculationForYear(
     clientId: string,
