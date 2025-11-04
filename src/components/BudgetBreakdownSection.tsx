@@ -83,11 +83,11 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-gray-700">לקוחות חיצוניים</span>
                     <span className="text-blue-700 font-bold">
-                      {formatILS(breakdown.audit_external.with_vat)}
+                      {formatILS(breakdown.audit_external.before_vat)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>לפני מע"מ: {formatILS(breakdown.audit_external.before_vat)}</span>
+                    <span>כולל מע"מ: {formatILS(breakdown.audit_external.with_vat)}</span>
                     <span>{formatNumber(breakdown.audit_external.client_count)} לקוחות</span>
                   </div>
                 </div>
@@ -97,11 +97,11 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-gray-700">לקוחות פנימיים</span>
                     <span className="text-blue-700 font-bold">
-                      {formatILS(breakdown.audit_internal.with_vat)}
+                      {formatILS(breakdown.audit_internal.before_vat)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>לפני מע"מ: {formatILS(breakdown.audit_internal.before_vat)}</span>
+                    <span>כולל מע"מ: {formatILS(breakdown.audit_internal.with_vat)}</span>
                     <span>{formatNumber(breakdown.audit_internal.client_count)} לקוחות</span>
                   </div>
                 </div>
@@ -111,11 +111,11 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-gray-700">ריטיינר (1/3)</span>
                     <span className="text-blue-700 font-bold">
-                      {formatILS(breakdown.audit_retainer.with_vat)}
+                      {formatILS(breakdown.audit_retainer.before_vat)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>לפני מע"מ: {formatILS(breakdown.audit_retainer.before_vat)}</span>
+                    <span>כולל מע"מ: {formatILS(breakdown.audit_retainer.with_vat)}</span>
                     <span>{formatNumber(breakdown.audit_retainer.client_count)} לקוחות</span>
                   </div>
                 </div>
@@ -159,11 +159,11 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-gray-700">לקוחות פנימיים</span>
                     <span className="text-purple-700 font-bold">
-                      {formatILS(breakdown.bookkeeping_internal.with_vat)}
+                      {formatILS(breakdown.bookkeeping_internal.before_vat)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>לפני מע"מ: {formatILS(breakdown.bookkeeping_internal.before_vat)}</span>
+                    <span>כולל מע"מ: {formatILS(breakdown.bookkeeping_internal.with_vat)}</span>
                     <span>{formatNumber(breakdown.bookkeeping_internal.client_count)} לקוחות</span>
                   </div>
                 </div>
@@ -173,11 +173,11 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-gray-700">ריטיינר (2/3)</span>
                     <span className="text-purple-700 font-bold">
-                      {formatILS(breakdown.bookkeeping_retainer.with_vat)}
+                      {formatILS(breakdown.bookkeeping_retainer.before_vat)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>לפני מע"מ: {formatILS(breakdown.bookkeeping_retainer.before_vat)}</span>
+                    <span>כולל מע"מ: {formatILS(breakdown.bookkeeping_retainer.with_vat)}</span>
                     <span>{formatNumber(breakdown.bookkeeping_retainer.client_count)} לקוחות</span>
                   </div>
                 </div>
@@ -240,13 +240,13 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-semibold text-gray-700">סה"כ הכנסות</span>
                     <span className="text-green-700 font-bold">
-                      {formatILS(breakdown.freelancers.with_vat)}
+                      {formatILS(breakdown.freelancers.before_vat)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-600 space-y-1">
                     <div className="flex justify-between">
-                      <span>לפני מע"מ:</span>
-                      <span>{formatILS(breakdown.freelancers.before_vat)}</span>
+                      <span>כולל מע"מ:</span>
+                      <span>{formatILS(breakdown.freelancers.with_vat)}</span>
                     </div>
                     <p className="text-gray-500 mt-2">
                       כולל ראיית חשבון + הנהלת חשבונות
