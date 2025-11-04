@@ -6,6 +6,7 @@ import type {
   LetterStats,
   PaymentStats,
   DashboardData,
+  BudgetByCategory,
 } from '@/types/dashboard.types';
 
 /**
@@ -273,6 +274,91 @@ class DashboardService extends BaseService {
       await this.logAction('get_dashboard_data', undefined, { tax_year: taxYear });
 
       return { data: dashboardData, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * קבלת פירוט תקציב לפי קטגוריות
+   * מחזיר חלוקה מפורטת של התקציב: חיצוניים, פנימיים, ריטיינר, עצמאים
+   *
+   * @param taxYear - שנת מס
+   * @returns פירוט תקציב מלא לפי קטגוריות
+   */
+  async getBudgetByCategory(taxYear: number): Promise<ServiceResponse<BudgetByCategory>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .rpc('get_budget_by_category', {
+          p_tenant_id: tenantId,
+          p_tax_year: taxYear,
+        })
+        .single();
+
+      if (error) throw this.handleError(error);
+
+      // חשב סכומים מרכזיים
+      const auditTotal =
+        (data.audit_external_with_vat || 0) +
+        (data.audit_internal_with_vat || 0) +
+        (data.audit_retainer_with_vat || 0);
+
+      const bookkeepingTotal =
+        (data.bookkeeping_internal_with_vat || 0) +
+        (data.bookkeeping_retainer_with_vat || 0);
+
+      const freelancersTotal = data.freelancers_with_vat || 0;
+      const exceptionsTotal = 0; // בקרוב
+
+      const breakdown: BudgetByCategory = {
+        audit_external: {
+          before_vat: data.audit_external_before_vat || 0,
+          with_vat: data.audit_external_with_vat || 0,
+          client_count: data.audit_external_count || 0,
+        },
+        audit_internal: {
+          before_vat: data.audit_internal_before_vat || 0,
+          with_vat: data.audit_internal_with_vat || 0,
+          client_count: data.audit_internal_count || 0,
+        },
+        audit_retainer: {
+          before_vat: data.audit_retainer_before_vat || 0,
+          with_vat: data.audit_retainer_with_vat || 0,
+          client_count: data.audit_retainer_count || 0,
+        },
+        audit_total: auditTotal,
+
+        bookkeeping_internal: {
+          before_vat: data.bookkeeping_internal_before_vat || 0,
+          with_vat: data.bookkeeping_internal_with_vat || 0,
+          client_count: data.bookkeeping_internal_count || 0,
+        },
+        bookkeeping_retainer: {
+          before_vat: data.bookkeeping_retainer_before_vat || 0,
+          with_vat: data.bookkeeping_retainer_with_vat || 0,
+          client_count: data.bookkeeping_retainer_count || 0,
+        },
+        bookkeeping_total: bookkeepingTotal,
+
+        freelancers: {
+          before_vat: data.freelancers_before_vat || 0,
+          with_vat: data.freelancers_with_vat || 0,
+          client_count: data.freelancers_count || 0,
+        },
+        exceptions: {
+          before_vat: 0,
+          with_vat: 0,
+          client_count: 0,
+        },
+
+        grand_total: auditTotal + bookkeepingTotal + freelancersTotal + exceptionsTotal,
+      };
+
+      await this.logAction('get_budget_by_category', undefined, { tax_year: taxYear });
+
+      return { data: breakdown, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
