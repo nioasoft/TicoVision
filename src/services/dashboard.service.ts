@@ -1,0 +1,349 @@
+import { BaseService } from './base.service';
+import type { ServiceResponse } from './base.service';
+import { supabase } from '@/lib/supabase';
+import type {
+  BudgetStandard,
+  LetterStats,
+  PaymentStats,
+  DashboardData,
+} from '@/types/dashboard.types';
+
+/**
+ * Client budget breakdown row
+ * Used for detailed budget breakdown by client
+ */
+export interface ClientBudgetRow {
+  client_id: string;
+  client_name: string;
+  amount_before_vat: number;
+  amount_with_vat: number;
+}
+
+/**
+ * Dashboard Service
+ * מנהל את כל הנתונים עבור לוח הבקרה הראשי
+ */
+class DashboardService extends BaseService {
+  constructor() {
+    super('fee_calculations');
+  }
+
+  /**
+   * קבלת תקן תקציב לשנה מסוימת
+   * מחזיר סכומי שכר טרחה + הנהלת חשבונות לפני ואחרי מע"מ 18%
+   *
+   * @param taxYear - שנת מס (Tax Year) - השנה עבורה מבוצע החישוב (לדוגמה: 2026)
+   *                  NOT the year when calculation was performed
+   * @returns תקן תקציב מפורט
+   */
+  async getBudgetStandard(taxYear: number): Promise<ServiceResponse<BudgetStandard>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Query to sum all fee calculations for the given year
+      const { data, error } = await supabase
+        .from('fee_calculations')
+        .select(`
+          final_amount,
+          total_amount,
+          vat_amount,
+          bookkeeping_calculation
+        `)
+        .eq('tenant_id', tenantId)
+        .eq('year', taxYear);
+
+      if (error) {
+        throw this.handleError(error);
+      }
+
+      // Calculate totals
+      let audit_before_vat = 0;
+      let audit_with_vat = 0;
+      let bookkeeping_before_vat = 0;
+      let bookkeeping_with_vat = 0;
+
+      if (data) {
+        for (const row of data) {
+          // שכר טרחה (Audit fees)
+          // Use final_amount (before VAT) and total_amount (with VAT)
+          audit_before_vat += row.final_amount || 0;
+          audit_with_vat += row.total_amount || (row.final_amount || 0) + (row.vat_amount || 0);
+
+          // הנהלת חשבונות (Bookkeeping) - from JSONB field
+          if (row.bookkeeping_calculation) {
+            const bookkeeping = row.bookkeeping_calculation as {
+              final_amount?: number;
+              total_with_vat?: number;
+            };
+            bookkeeping_before_vat += bookkeeping.final_amount || 0;
+            bookkeeping_with_vat += bookkeeping.total_with_vat || 0;
+          }
+        }
+      }
+
+      const budget: BudgetStandard = {
+        audit_before_vat,
+        audit_with_vat,
+        bookkeeping_before_vat,
+        bookkeeping_with_vat,
+        total_before_vat: audit_before_vat + bookkeeping_before_vat,
+        total_with_vat: audit_with_vat + bookkeeping_with_vat,
+      };
+
+      await this.logAction('get_budget_standard', undefined, { tax_year: taxYear });
+
+      return { data: budget, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * קבלת סטטיסטיקת מכתבים לשנה מסוימת
+   * מחזיר מספר לקוחות ששולחו להם מכתבים
+   *
+   * @param taxYear - שנת מס (Tax Year) - השנה עבורה נשלחו המכתבים
+   * @returns סטטיסטיקת מכתבים
+   */
+  async getLetterStats(taxYear: number): Promise<ServiceResponse<LetterStats>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Count distinct clients who received letters for this year
+      // Using a simple approach: get all fee calculations for the year that have sent letters
+      const { data, error } = await supabase
+        .from('generated_letters')
+        .select('fee_calculation_id')
+        .not('sent_at', 'is', null);
+
+      if (error) {
+        throw this.handleError(error);
+      }
+
+      // Get fee_calculation_ids that have sent letters
+      const sentFeeIds = data?.map((row) => row.fee_calculation_id) || [];
+
+      if (sentFeeIds.length === 0) {
+        const stats: LetterStats = { clients_sent_count: 0 };
+        await this.logAction('get_letter_stats', undefined, { tax_year: taxYear });
+        return { data: stats, error: null };
+      }
+
+      // Now get distinct client_ids from fee_calculations for this year
+      const { data: feeData, error: feeError } = await supabase
+        .from('fee_calculations')
+        .select('client_id')
+        .eq('tenant_id', tenantId)
+        .eq('year', taxYear)
+        .in('id', sentFeeIds);
+
+      if (feeError) {
+        throw this.handleError(feeError);
+      }
+
+      // Count unique client_ids
+      const uniqueClients = new Set(feeData?.map((row) => row.client_id) || []);
+
+      const stats: LetterStats = {
+        clients_sent_count: uniqueClients.size,
+      };
+
+      await this.logAction('get_letter_stats', undefined, { tax_year: taxYear });
+
+      return { data: stats, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * קבלת סטטיסטיקת תשלומים לשנה מסוימת
+   * מחזיר מספר לקוחות ששילמו/ממתינים + סכומים + אחוז גביה
+   *
+   * @param taxYear - שנת מס (Tax Year) - השנה עבורה התבצעו התשלומים
+   * @returns סטטיסטיקת תשלומים
+   */
+  async getPaymentStats(taxYear: number): Promise<ServiceResponse<PaymentStats>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get all fee calculations for the year
+      const { data, error } = await supabase
+        .from('fee_calculations')
+        .select('status, total_amount, final_amount, vat_amount')
+        .eq('tenant_id', tenantId)
+        .eq('year', taxYear);
+
+      if (error) {
+        throw this.handleError(error);
+      }
+
+      // Calculate statistics
+      let clients_paid_count = 0;
+      let clients_pending_count = 0;
+      let amount_collected = 0;
+      let amount_pending = 0;
+
+      if (data) {
+        for (const row of data) {
+          // Calculate total amount (use total_amount if available, otherwise calculate)
+          const totalAmount = row.total_amount || (row.final_amount || 0) + (row.vat_amount || 0);
+
+          if (row.status === 'paid') {
+            clients_paid_count++;
+            amount_collected += totalAmount;
+          } else if (['sent', 'overdue', 'partial_paid'].includes(row.status)) {
+            clients_pending_count++;
+            amount_pending += totalAmount;
+          }
+        }
+      }
+
+      // Calculate collection rate
+      const total_amount = amount_collected + amount_pending;
+      const collection_rate_percent =
+        total_amount > 0 ? (amount_collected / total_amount) * 100 : 0;
+
+      const stats: PaymentStats = {
+        clients_paid_count,
+        clients_pending_count,
+        amount_collected,
+        amount_pending,
+        collection_rate_percent,
+      };
+
+      await this.logAction('get_payment_stats', undefined, { tax_year: taxYear });
+
+      return { data: stats, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * קבלת כל נתוני Dashboard בבת אחת (OPTIMIZED)
+   * משתמש ב-SQL function אחד במקום 3 queries נפרדות
+   *
+   * @param taxYear - שנת מס (Tax Year) - השנה עבורה מוצגים הנתונים
+   *                  Example: For tax year 2026, shows all fees calculated FOR 2026
+   * @returns נתוני Dashboard מלאים
+   */
+  async getDashboardData(taxYear: number): Promise<ServiceResponse<DashboardData>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Single RPC call instead of 3 separate queries (OPTIMIZED!)
+      const { data, error } = await supabase
+        .rpc('get_dashboard_summary', {
+          p_tenant_id: tenantId,
+          p_tax_year: taxYear,
+        })
+        .single();
+
+      if (error) throw this.handleError(error);
+
+      // Transform SQL function result to DashboardData format
+      const dashboardData: DashboardData = {
+        tax_year: taxYear,
+        budget_standard: {
+          audit_before_vat: data.audit_before_vat || 0,
+          audit_with_vat: data.audit_with_vat || 0,
+          bookkeeping_before_vat: data.bookkeeping_before_vat || 0,
+          bookkeeping_with_vat: data.bookkeeping_with_vat || 0,
+          total_before_vat: (data.audit_before_vat || 0) + (data.bookkeeping_before_vat || 0),
+          total_with_vat: (data.audit_with_vat || 0) + (data.bookkeeping_with_vat || 0),
+        },
+        letter_stats: {
+          clients_sent_count: data.clients_sent_count || 0,
+        },
+        payment_stats: {
+          clients_paid_count: data.clients_paid_count || 0,
+          clients_pending_count: data.clients_pending_count || 0,
+          amount_collected: data.amount_collected || 0,
+          amount_pending: data.amount_pending || 0,
+          collection_rate_percent:
+            (data.amount_collected || 0) + (data.amount_pending || 0) > 0
+              ? ((data.amount_collected || 0) /
+                  ((data.amount_collected || 0) + (data.amount_pending || 0))) *
+                100
+              : 0,
+        },
+      };
+
+      await this.logAction('get_dashboard_data', undefined, { tax_year: taxYear });
+
+      return { data: dashboardData, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * קבלת פירוט תקציב לפי לקוחות
+   * מחזיר רשימת לקוחות עם סכומי שכר טרחה או הנהלת חשבונות
+   *
+   * @param taxYear - שנת מס
+   * @param type - 'audit' לשכר טרחה, 'bookkeeping' להנהלת חשבונות
+   * @returns רשימת לקוחות עם סכומים
+   */
+  async getBudgetBreakdown(
+    taxYear: number,
+    type: 'audit' | 'bookkeeping'
+  ): Promise<ServiceResponse<ClientBudgetRow[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('fee_calculations')
+        .select(
+          `
+          client_id,
+          client:clients!inner(company_name),
+          final_amount,
+          total_amount,
+          bookkeeping_calculation
+        `
+        )
+        .eq('tenant_id', tenantId)
+        .eq('year', taxYear);
+
+      if (error) throw this.handleError(error);
+
+      // Transform data based on type
+      const breakdown: ClientBudgetRow[] = (data || [])
+        .map((row) => {
+          if (type === 'audit') {
+            return {
+              client_id: row.client_id,
+              client_name: row.client?.company_name || 'Unknown',
+              amount_before_vat: row.final_amount || 0,
+              amount_with_vat: row.total_amount || 0,
+            };
+          } else {
+            // bookkeeping
+            const bk = row.bookkeeping_calculation as { final_amount?: number; total_with_vat?: number } | null;
+            return {
+              client_id: row.client_id,
+              client_name: row.client?.company_name || 'Unknown',
+              amount_before_vat: bk?.final_amount || 0,
+              amount_with_vat: bk?.total_with_vat || 0,
+            };
+          }
+        })
+        .filter((row) => row.amount_with_vat > 0); // Only clients with amounts
+
+      await this.logAction('get_budget_breakdown', undefined, {
+        tax_year: taxYear,
+        type,
+        count: breakdown.length,
+      });
+
+      return { data: breakdown, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+}
+
+// Export singleton instance
+export const dashboardService = new DashboardService();
