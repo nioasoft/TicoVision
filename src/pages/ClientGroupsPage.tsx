@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { clientService, type ClientGroup, type Client } from '@/services';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AddClientsToGroupDialog } from '@/components/groups/AddClientsToGroupDialog';
 
 export default function ClientGroupsPage() {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
@@ -46,7 +47,9 @@ export default function ClientGroupsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAddClientsDialogOpen, setIsAddClientsDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
+  const [selectedGroupForAdding, setSelectedGroupForAdding] = useState<ClientGroup | null>(null);
   const [formData, setFormData] = useState({
     group_name: '',
     group_name_hebrew: '',
@@ -217,6 +220,20 @@ export default function ClientGroupsPage() {
     setFormData({ ...formData, secondary_owners: owners });
   };
 
+  const openAddClientsDialog = (group: ClientGroup) => {
+    setSelectedGroupForAdding(group);
+    setIsAddClientsDialogOpen(true);
+  };
+
+  const handleAddClientsSuccess = () => {
+    setIsAddClientsDialogOpen(false);
+    // Refresh the clients for this group
+    if (selectedGroupForAdding) {
+      loadGroupClients(selectedGroupForAdding.id);
+    }
+    setSelectedGroupForAdding(null);
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -351,8 +368,17 @@ export default function ClientGroupsPage() {
                       )}
                       
                       <div className="mt-4">
-                        <div className="text-sm font-medium mb-2">
-                          חברות בקבוצה ({clients.length})
+                        <div className="flex justify-between items-center mb-4">
+                          <div className="text-sm font-medium">
+                            חברות בקבוצה ({clients.length})
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => openAddClientsDialog(group)}
+                          >
+                            <Plus className="ml-2 h-4 w-4" />
+                            הוסף לקוחות לקבוצה
+                          </Button>
                         </div>
                         {clients.length > 0 ? (
                           <Table>
@@ -636,6 +662,20 @@ export default function ClientGroupsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Add Clients to Group Dialog */}
+      {selectedGroupForAdding && (
+        <AddClientsToGroupDialog
+          open={isAddClientsDialogOpen}
+          groupId={selectedGroupForAdding.id}
+          groupName={selectedGroupForAdding.group_name}
+          onClose={() => {
+            setIsAddClientsDialogOpen(false);
+            setSelectedGroupForAdding(null);
+          }}
+          onSuccess={handleAddClientsSuccess}
+        />
+      )}
     </div>
   );
 }

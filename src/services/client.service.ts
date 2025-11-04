@@ -147,6 +147,10 @@ export interface CreateClientDto {
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
+  // Accountant fields (required from client creation)
+  accountant_name: string;
+  accountant_email: string;
+  accountant_phone: string;
   email?: string;
   phone?: string;
   address?: {
@@ -189,7 +193,7 @@ export interface ClientsListResponse {
   pageSize: number;
 }
 
-class ClientService extends BaseService {
+export class ClientService extends BaseService {
   constructor() {
     super('clients');
   }
@@ -232,6 +236,27 @@ class ClientService extends BaseService {
 
       if (error) {
         return { data: null, error: this.handleError(error) };
+      }
+
+      // Auto-create accountant contact if provided
+      if (data.accountant_name && data.accountant_email) {
+        const { error: contactError } = await supabase
+          .from('client_contacts')
+          .insert({
+            tenant_id: tenantId,
+            client_id: client.id,
+            contact_type: 'accountant_manager',
+            full_name: data.accountant_name,
+            email: data.accountant_email,
+            phone: data.accountant_phone || null,
+            is_primary: false, // Accountant is parallel to primary, not primary itself
+            email_preference: 'all', // Default: receives all emails
+          });
+
+        if (contactError) {
+          console.error('Failed to create accountant contact:', contactError);
+          // Don't fail client creation if contact creation fails
+        }
       }
 
       await this.logAction('create_client', client.id, { company_name: data.company_name });
@@ -1368,6 +1393,129 @@ class ClientService extends BaseService {
       await this.logAction('update_payment_role', clientId, { payment_role: paymentRole });
 
       return { data: updated, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Assign client to a group with payment role
+   * Handles group assignment, role validation, and updating both fields atomically
+   */
+  async assignClientToGroup(
+    clientId: string,
+    groupId: string | null,
+    paymentRole: PaymentRole = 'member'
+  ): Promise<ServiceResponse<Client>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get client's current state
+      const { data: client } = await supabase
+        .from('clients')
+        .select('group_id, payment_role')
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (!client) {
+        return {
+          data: null,
+          error: new Error('לקוח לא נמצא')
+        };
+      }
+
+      // If removing from group, set to independent
+      if (groupId === null) {
+        const { data: updated, error } = await supabase
+          .from('clients')
+          .update({
+            group_id: null,
+            payment_role: 'independent',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', clientId)
+          .eq('tenant_id', tenantId)
+          .select()
+          .single();
+
+        if (error) {
+          return { data: null, error: this.handleError(error) };
+        }
+
+        await this.logAction('remove_from_group', clientId, {
+          previous_group_id: client.group_id
+        });
+
+        return { data: updated, error: null };
+      }
+
+      // Validate payment role for group assignment
+      if (paymentRole === 'independent') {
+        return {
+          data: null,
+          error: new Error('לקוח בקבוצה לא יכול להיות עצמאי. בחר "חבר קבוצה" או "משלם ראשי"')
+        };
+      }
+
+      // Validate primary_payer if needed
+      if (paymentRole === 'primary_payer') {
+        const validationError = await this.validatePrimaryPayer(groupId, paymentRole, clientId);
+        if (validationError) {
+          return { data: null, error: validationError };
+        }
+      }
+
+      // Assign to group with payment role
+      const { data: updated, error } = await supabase
+        .from('clients')
+        .update({
+          group_id: groupId,
+          payment_role: paymentRole,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      await this.logAction('assign_to_group', clientId, {
+        group_id: groupId,
+        payment_role: paymentRole,
+        previous_group_id: client.group_id
+      });
+
+      return { data: updated, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get all clients not assigned to any group
+   * Useful for adding clients to groups
+   */
+  async getUnassignedClients(): Promise<ServiceResponse<Client[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data: clients, error } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .is('group_id', null)
+        .eq('status', 'active')
+        .order('company_name');
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      return { data: clients || [], error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
