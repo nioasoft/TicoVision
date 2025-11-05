@@ -60,7 +60,15 @@ const navigation: NavigationItem[] = [
       { name: 'גביית תשלומים', href: '/collections' },
     ]
   },
-  { name: 'תבניות מכתבים', href: '/letter-templates', icon: FileText, allowedRoles: ['admin'] as UserRole[] },
+  {
+    name: 'מכתבים',
+    icon: FileText,
+    allowedRoles: ['admin'] as UserRole[],
+    submenu: [
+      { name: 'שליחת מכתבים', href: '/letter-templates' },
+      { name: 'היסטוריית מכתבים', href: '/letter-history' },
+    ]
+  },
   { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
 ];
@@ -83,6 +91,7 @@ export function MainLayout() {
   const [pendingCount, setPendingCount] = useState(0);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
 
   // Memoize callbacks to prevent unnecessary re-renders
   const checkSuperAdmin = useCallback(async () => {
@@ -91,9 +100,26 @@ export function MainLayout() {
   }, []);
 
   const loadPendingCount = useCallback(async () => {
-    const response = await registrationService.getPendingRegistrations();
+    // Skip if tab is not visible (Page Visibility API)
+    if (document.hidden) {
+      return;
+    }
+
+    // Skip if offline (Network Status API)
+    if (!navigator.onLine) {
+      return;
+    }
+
+    // Use silent mode for background polling to reduce console noise
+    const response = await registrationService.getPendingRegistrations(true);
+
     if (response.data) {
       setPendingCount(response.data.length);
+      // Reset error counter on success
+      setConsecutiveErrors(0);
+    } else if (response.error) {
+      // Increment error counter for exponential backoff
+      setConsecutiveErrors(prev => prev + 1);
     }
   }, []);
 
@@ -104,11 +130,36 @@ export function MainLayout() {
     // Load pending registrations count for admins
     if (role === 'admin') {
       loadPendingCount();
-      // Refresh count every 30 seconds
-      const interval = setInterval(loadPendingCount, 30000);
-      return () => clearInterval(interval);
+
+      // Calculate interval with exponential backoff
+      // Start: 30s, then 1m, 2m, 4m, max 5m
+      const baseInterval = 30000; // 30 seconds
+      const maxInterval = 300000; // 5 minutes
+      const currentInterval = Math.min(
+        maxInterval,
+        baseInterval * Math.pow(2, consecutiveErrors)
+      );
+
+      // Set up polling with dynamic interval
+      const interval = setInterval(loadPendingCount, currentInterval);
+
+      // Resume polling when tab becomes visible
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          // Tab is now visible, load immediately
+          loadPendingCount();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      // Cleanup
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
-  }, [role, checkSuperAdmin, loadPendingCount]);
+  }, [role, checkSuperAdmin, loadPendingCount, consecutiveErrors]);
 
   // Auto-open submenu if currently on a child page
   useEffect(() => {

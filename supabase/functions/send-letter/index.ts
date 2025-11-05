@@ -314,6 +314,10 @@ async function sendEmail(
     personalizations: [
       {
         to: recipientEmails.map(email => ({ email })),
+        cc: [
+          { email: 'shani@franco.co.il' },
+          { email: 'sigal@franco.co.il' }
+        ],
         subject: subject
       }
     ],
@@ -533,10 +537,11 @@ serve(async (req) => {
 
       // Generate subject - different for bookkeeping templates
       const year = variables!.year || new Date().getFullYear() + 1;
-      const isBookkeeping = templateType!.startsWith('internal_bookkeeping');
+      const companyName = variables!.company_name || 'לקוח יקר';
+      const isBookkeeping = templateType!.includes('bookkeeping');
       subject = isBookkeeping
-        ? `שכר טרחתנו לשנת המס ${year} - הנהלת חשבונות`
-        : `שכר טרחתנו לשנת המס ${year}`;
+        ? `שלום רב ${companyName} - הודעת חיוב הנהלת חשבונות לשנת המס ${year} כמדי שנה 😊`
+        : `שלום רב ${companyName} - הודעת חיוב לשנת המס ${year} כמדי שנה 😊`;
     }
 
     // Send email
@@ -579,6 +584,8 @@ serve(async (req) => {
           variables_used: variables || {},
           generated_content_html: letterHtml,
           recipient_emails: recipientEmails,
+          subject: subject,
+          template_type: 'custom',
           sent_at: new Date().toISOString(),
           status: 'sent'
         });
@@ -588,6 +595,7 @@ serve(async (req) => {
           client_id: clientId,
           fee_calculation_id: feeCalculationId,
           template_type: templateType,
+          subject: subject,
           variables_used: variables,
           generated_content_html: letterHtml,
           recipient_emails: recipientEmails,

@@ -636,7 +636,7 @@ export class ClientService extends BaseService {
         .from('client_groups')
         .select('*')
         .eq('tenant_id', tenantId)
-        .order('group_name', { ascending: true });
+        .order('group_name_hebrew', { ascending: true });
 
       if (error) {
         return { data: null, error: this.handleError(error) };

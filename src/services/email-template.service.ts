@@ -73,9 +73,11 @@ export class EmailTemplateService extends BaseService {
           client:clients (
             company_name,
             company_name_hebrew,
-            group_name,
             contact_email,
-            contact_phone
+            contact_phone,
+            group:client_groups (
+              group_name_hebrew
+            )
           ),
           generated_letter:generated_letters (
             id,
@@ -113,7 +115,7 @@ export class EmailTemplateService extends BaseService {
       // Prepare template data
       const emailData: ReminderEmailData = {
         company_name: fee.client.company_name_hebrew || fee.client.company_name,
-        group_name: fee.client.group_name,
+        group_name: fee.client.group?.group_name_hebrew,
         amount_original: fee.total_amount,
         amount_after_discount: fee.amount_after_selected_discount || fee.total_amount,
         days_since_sent: daysSinceSent,

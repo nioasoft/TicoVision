@@ -70,8 +70,9 @@ class RegistrationService {
 
   /**
    * Get all pending registrations (admin only)
+   * @param silent - If true, suppress error logging (useful for background polling)
    */
-  async getPendingRegistrations() {
+  async getPendingRegistrations(silent = false) {
     try {
       const { data: registrations, error } = await supabase
         .from('pending_registrations')
@@ -82,7 +83,10 @@ class RegistrationService {
       if (error) throw error;
       return { data: registrations as PendingRegistration[], error: null };
     } catch (error) {
-      logger.error('Error fetching pending registrations:', error);
+      // Only log errors if not in silent mode (to reduce console noise during polling)
+      if (!silent) {
+        logger.error('Error fetching pending registrations:', error);
+      }
       return { data: null, error };
     }
   }

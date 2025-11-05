@@ -128,7 +128,7 @@ export default function ClientGroupsPage() {
 
     toast({
       title: 'קבוצה נוספה בהצלחה',
-      description: `${formData.group_name} נוספה למערכת`,
+      description: `${formData.group_name_hebrew} נוספה למערכת`,
     });
 
     setIsAddDialogOpen(false);
@@ -152,7 +152,7 @@ export default function ClientGroupsPage() {
 
     toast({
       title: 'קבוצה עודכנה בהצלחה',
-      description: `הפרטים של ${formData.group_name} עודכנו`,
+      description: `הפרטים של ${formData.group_name_hebrew} עודכנו`,
     });
 
     setIsEditDialogOpen(false);
@@ -177,7 +177,7 @@ export default function ClientGroupsPage() {
 
     toast({
       title: 'קבוצה נמחקה',
-      description: `${selectedGroup.group_name} הוסרה מהמערכת`,
+      description: `${selectedGroup.group_name_hebrew} הוסרה מהמערכת`,
     });
 
     setIsDeleteDialogOpen(false);
@@ -698,7 +698,7 @@ export default function ClientGroupsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>האם אתה בטוח?</AlertDialogTitle>
             <AlertDialogDescription>
-              פעולה זו תמחק את הקבוצה {selectedGroup?.group_name} לצמיתות.
+              פעולה זו תמחק את הקבוצה {selectedGroup?.group_name_hebrew} לצמיתות.
               כל החברות שמשויכות לקבוצה יישארו במערכת אך לא יהיו משויכות לקבוצה.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -721,7 +721,7 @@ export default function ClientGroupsPage() {
         <AddClientsToGroupDialog
           open={isAddClientsDialogOpen}
           groupId={selectedGroupForAdding.id}
-          groupName={selectedGroupForAdding.group_name}
+          groupName={selectedGroupForAdding.group_name_hebrew}
           onClose={() => {
             setIsAddClientsDialogOpen(false);
             setSelectedGroupForAdding(null);

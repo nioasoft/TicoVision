@@ -62,7 +62,12 @@ export function LetterPreviewDialog({
       // Fetch client
       const { data: client, error: clientError } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+          *,
+          group:client_groups (
+            group_name_hebrew
+          )
+        `)
         .eq('id', clientId)
         .single();
 
@@ -122,7 +127,7 @@ export function LetterPreviewDialog({
 
         // Client info
         company_name: client.company_name_hebrew || client.company_name,
-        group_name: client.group_name || '',
+        group_name: client.group?.group_name_hebrew || '',
 
         // Amounts (formatted as strings with commas)
         amount_original: formatNumber(amountOriginal),
@@ -200,7 +205,7 @@ export function LetterPreviewDialog({
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
-          recipientEmail,
+          recipientEmails: [recipientEmail],
           recipientName: variables.company_name || 'לקוח יקר',
           templateType,
           variables,
@@ -237,11 +242,15 @@ export function LetterPreviewDialog({
           client_id: clientId,
           fee_calculation_id: feeId,
           template_id: null, // File-based templates don't have DB template_id
+          template_type: templateType,
+          subject: `שלום רב ${variables.company_name} - הודעת חיוב ${templateType.includes('bookkeeping') ? 'הנהלת חשבונות ' : ''}לשנת המס ${variables.tax_year} כמדי שנה 😊`,
           variables_used: variables,
           generated_content_html: previewHtml,
           payment_link: variables.payment_link_single,
+          recipient_emails: [recipientEmail],
           sent_at: new Date().toISOString(),
           created_by: (await supabase.auth.getUser()).data.user?.id,
+          status: 'sent',
         });
 
       if (letterError) {

@@ -564,40 +564,93 @@ kill -9 $(lsof -t -i:5173)    # Kill process on port 5173
 **USE ONLY:** `generated_letters` table (via `template.service.ts`)
 **DO NOT USE:** `letter_history` table (deprecated)
 
-### Template Structure (3-Part System)
-All 11 letters share the same Header + Footer, only Body content changes:
+### Template Structure (4-Part System)
+**מכתב = Header (קבוע) + Body (1 מ-11) + Payment Section (קבוע) + Footer (קבוע)**
 
-1. **Header** (`/templates/letter-header.html`) - Shared by all
-   - Logo TICO + Date
-   - Recipient details (לכבוד)
-   - Variables: `{{letter_date}}`, `{{company_name}}`, `{{group_name}}`
+All 11 letters are assembled from 4 components. Only the Body changes between letter types:
 
-2. **Body** (`/templates/letter-body-[type].html`) - Unique per template
-   - 11 different bodies (one per template type)
-   - Example: `letter-body-annual-fee.html`
-   - Variables: `{{company_name}}`, `{{year}}`, `{{inflation_rate}}`
+#### 1. **Header** (`templates/components/header.html`) - Shared by ALL
+   - Logo TICO centered (180×80px) - `cid:tico_logo_new`
+   - Thick black line (13px)
+   - Recipient: "לכבוד:" + company name (right) and date (left)
+   - **Variables:** `{{letter_date}}`, `{{company_name}}`, `{{group_name}}`
 
-3. **Footer** (`/templates/letter-footer.html`) - Shared by all
-   - Payment section (4 options: CC single, CC 4 payments, Bank, Checks)
-   - Contact details (Sigal Nagar)
-   - Franco logo + company info
-   - Tagline: "DARE TO THINK · COMMIT TO DELIVER"
-   - Variables: `{{amount_single}}`, `{{payment_link_single}}`, etc.
+#### 2. **Body** (`templates/bodies/[file].html`) - 11 Different Types
+   **All 11 Bodies:**
+
+   | # | File | Letter Type | Code |
+   |---|------|-------------|------|
+   | 1 | `annual-fee.html` | חיצוניים - מדד בלבד | A |
+   | 2 | `annual-fee-as-agreed.html` | חיצוניים - כפי שסוכם | B |
+   | 3 | `annual-fee-real-change.html` | חיצוניים - ריאלי | C |
+   | 4 | `internal-audit-index.html` | ביקורת פנימית - מדד | D1 |
+   | 5 | `internal-audit-real-change.html` | ביקורת פנימית - ריאלי | D2 |
+   | 6 | `internal-audit-as-agreed.html` | ביקורת פנימית - כפי שסוכם | D3 |
+   | 7 | `bookkeeping-index.html` | הנהלת חשבונות - מדד | F1 |
+   | 8 | `bookkeeping-real-change.html` | הנהלת חשבונות - ריאלי | F2 |
+   | 9 | `bookkeeping-as-agreed.html` | הנהלת חשבונות - כפי שסוכם | F3 |
+   | 10 | `retainer-index.html` | רטיינר - מדד | E1 |
+   | 11 | `retainer-real-change.html` | רטיינר - ריאלי | E2 |
+
+   **Common body structure:**
+   - Subject line: "הנדון:" (blue #395BF7, 26px)
+   - "בפתח הדברים, ברצוננו:" section with blue bullets
+   - "ולגופו של עניין:" section
+   - **Variables:** `{{company_name}}`, `{{year}}`, `{{inflation_rate}}`, `{{tax_year}}`, etc.
+
+#### 3. **Payment Section** (`templates/components/payment-section.html`) - Shared by ALL
+   Title: "אופן התשלום:"
+
+   **4 Payment Buttons (in this order):**
+   1. **העברה בנקאית** - 9% discount - "לחץ לאישור" (recommended)
+   2. **כרטיס אשראי תשלום אחד** - 8% discount - "לביצוע תשלום"
+   3. **כרטיס אשראי בתשלומים** - 4% discount - "לביצוע תשלום"
+   4. **המחאות (8 או 12)** - 0% discount - "לחץ לאישור"
+
+   **Contact info:** Sigal Nagar (050-8620993, sigal@franco.co.il)
+
+   **Variables:**
+   - `{{amount_original}}` - Original amount before discount
+   - `{{amount_after_bank}}` - After 9% discount
+   - `{{amount_after_single}}` - After 8% discount
+   - `{{amount_after_payments}}` - After 4% discount
+   - `{{client_id}}`, `{{num_checks}}`, `{{check_dates_description}}`
+
+#### 4. **Footer** (`templates/components/footer.html`) - Shared by ALL
+   - Thick black line (13px)
+   - Franco logo (`cid:franco_logo_new`, 135×95px) + contact details
+   - Address: שד"ל 3, מגדל אלרוב, תל אביב
+   - Phone: 03-5666170 | Email: tico@franco.co.il
+   - Thick black line (13px)
+   - Tagline image: "DARE TO THINK · COMMIT TO DELIVER" (`cid:tagline`)
+   - **Variables:** None (static content)
 
 ### How System Merges Components
 ```typescript
-// System automatically combines:
-final_letter = header + body + footer
+// In template.service.ts → generateLetterFromComponents()
+// System automatically combines 4 parts:
+final_letter = header + body + payment_section + footer
 
 // Example flow:
 const variables = {
   letter_date: '4.10.2025',        // Auto-generated if not provided
   company_name: 'מסעדת האחים',
-  amount_single: 43344,
-  payment_link_single: 'https://cardcom...'
+  year: 2026,
+  tax_year: 2026,
+  amount_original: 50000,
+  amount_after_bank: 45500,        // 9% discount
+  amount_after_single: 46000,      // 8% discount
+  amount_after_payments: 48000,    // 4% discount
+  num_checks: 8,
+  check_dates_description: 'החל מיום 5.1.2026 ועד ליום 5.8.2026'
 };
 
-await templateService.generateLetter(templateId, clientId, variables);
+await templateService.generateLetterFromComponents(
+  'external_index_only',  // Maps to annual-fee.html
+  clientId,
+  variables
+);
+// → Loads 4 files, merges them, replaces variables
 // → Saves to generated_letters with full HTML
 ```
 
@@ -605,40 +658,52 @@ await templateService.generateLetter(templateId, clientId, variables);
 
 **Auto-Generated (you don't need to provide):**
 - `{{letter_date}}` - Current date in Israeli format (4.10.2025)
-- `{{year}}` - Current year (2025)
+- `{{year}}` - Current/next year (2026)
+- `{{tax_year}}` - Tax year (usually next year)
+- `{{num_checks}}` - Default: 8
+- `{{check_dates_description}}` - Calculated from num_checks + tax_year
 
 **Required in Header:**
 - `{{company_name}}` - Client company name
 - `{{group_name}}` - Company group name (optional)
 
-**Required in Footer (Payment):**
-- `{{amount_single}}` - Single payment amount
-- `{{amount_4_payments}}` - 4 payments amount
-- `{{amount_bank}}` - Bank transfer amount
-- `{{amount_checks}}` - 8 checks amount
-- `{{discount_single}}` - Single payment savings
-- `{{discount_4_payments}}` - 4 payments savings
-- `{{payment_link_single}}` - Cardcom link (single payment)
-- `{{payment_link_4_payments}}` - Cardcom link (4 payments)
-- `{{client_id}}` - Client ID for check details
+**Required in Payment Section:**
+- `{{amount_original}}` - Original amount before any discount
+- `{{amount_after_bank}}` - After 9% discount (bank transfer)
+- `{{amount_after_single}}` - After 8% discount (CC single payment)
+- `{{amount_after_payments}}` - After 4% discount (CC installments)
+- `{{client_id}}` - Client ID for tracking
 
-**Body Variables (vary by template):**
-- `{{inflation_rate}}` - 4% (for annual fee letters)
-- `{{adjustment_reason}}` - Reason for fee change
+**Body Variables (vary by template type):**
+- `{{inflation_rate}}` - "4%" (for index-based letters)
+- `{{real_adjustment_reason}}` - Reason for real change (for real_change letters)
+- `{{previous_year}}` - Previous year (for bookkeeping letters)
 - etc. (see `letter.types.ts` for full schema)
 
 ### Services Architecture
 
-**USE THIS:** `modules/letters/services/template.service.ts`
-- Advanced system with header/footer support
-- Auto-generates `letter_date` and `year`
+**USE THIS:** `src/modules/letters/services/template.service.ts`
+- Modern 4-component system (Header + Body + Payment + Footer)
+- Function: `generateLetterFromComponents(templateType, clientId, variables)`
+- Loads from `templates/components/` and `templates/bodies/`
+- Auto-generates `letter_date`, `year`, `tax_year`, `check_dates_description`
 - Saves to `generated_letters` table
 - Tracks opens, clicks, payments
 
 **DO NOT USE:** `services/letter.service.ts`
 - Old/deprecated implementation
 - Saves to `letter_history` (deprecated table)
-- No header/footer support
+- No component-based system
+
+### Payment Discount Rules (BUSINESS RULES)
+```typescript
+const PAYMENT_DISCOUNTS = {
+  bank_transfer: 9,      // 9% discount - most recommended
+  cc_single: 8,          // 8% discount
+  cc_installments: 4,    // 4% discount
+  checks: 0              // 0% discount (no discount)
+} as const;
+```
 
 ### Variable Format
 Always use double curly braces: `{{variable_name}}`
@@ -648,6 +713,32 @@ Always use double curly braces: `{{variable_name}}`
 - ✅ `{{company_name}}` - Correct
 - ❌ `[letter_date]` - Wrong (old format)
 - ❌ `{letter_date}` - Wrong (single braces)
+
+### Key Files Reference
+```
+templates/
+├── components/
+│   ├── header.html           (Header - shared)
+│   ├── payment-section.html  (Payment - shared)
+│   └── footer.html           (Footer - shared)
+└── bodies/
+    ├── annual-fee.html                    (#1)
+    ├── annual-fee-as-agreed.html          (#2)
+    ├── annual-fee-real-change.html        (#3)
+    ├── internal-audit-index.html          (#4)
+    ├── internal-audit-real-change.html    (#5)
+    ├── internal-audit-as-agreed.html      (#6)
+    ├── bookkeeping-index.html             (#7)
+    ├── bookkeeping-real-change.html       (#8)
+    ├── bookkeeping-as-agreed.html         (#9)
+    ├── retainer-index.html                (#10)
+    └── retainer-real-change.html          (#11)
+
+Service: src/modules/letters/services/template.service.ts
+Database: generated_letters (NOT letter_history!)
+
+For complete details: /memory-bank/letter-system-structure.md
+```
 
 ## API Key Security - Development Phase
 ```env
