@@ -86,7 +86,7 @@ export function LetterBuilder() {
       // Load contacts for this client
       setIsLoadingContacts(true);
       try {
-        const { data: contacts, error } = await clientService.getContacts(client.id);
+        const { data: contacts, error } = await clientService.getClientContacts(client.id);
 
         if (error) {
           toast.error('שגיאה בטעינת אנשי קשר');
