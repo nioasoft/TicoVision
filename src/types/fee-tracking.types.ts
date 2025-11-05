@@ -4,6 +4,7 @@
  */
 
 import type { FeeStatus } from '@/services/fee.service';
+import type { PaymentMethod } from '@/types/collection.types';
 
 /**
  * Payment status - derived from fee calculation status and letter status
@@ -42,6 +43,11 @@ export interface FeeTrackingRow {
   payment_status: PaymentStatus;
   payment_amount?: number;
   payment_date?: Date;
+
+  // Payment method selection (from fee_calculations)
+  payment_method_selected?: PaymentMethod | null;
+  amount_after_selected_discount?: number | null;
+  payment_method_selected_at?: Date | null;
 }
 
 /**

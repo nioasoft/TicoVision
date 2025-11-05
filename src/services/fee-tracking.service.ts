@@ -57,6 +57,11 @@ class FeeTrackingService extends BaseService {
         payment_status: row.payment_status as PaymentStatus,
         payment_amount: row.payment_amount,
         payment_date: row.payment_date ? new Date(row.payment_date) : undefined,
+        payment_method_selected: row.payment_method_selected || null,
+        amount_after_selected_discount: row.amount_after_selected_discount || null,
+        payment_method_selected_at: row.payment_method_selected_at
+          ? new Date(row.payment_method_selected_at)
+          : null,
       }));
 
       // Calculate KPIs from client data

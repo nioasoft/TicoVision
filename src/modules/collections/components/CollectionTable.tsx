@@ -42,6 +42,7 @@ import {
   getStatusVariant,
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { PaymentMethodBadge, DiscountBadge } from '@/components/payments/PaymentMethodBadge';
 
 interface CollectionTableProps {
   rows: CollectionRow[];
@@ -136,24 +137,16 @@ const CollectionTableRow: React.FC<{
 
       {/* Payment Method */}
       <TableCell className="w-40 rtl:text-right ltr:text-left py-2 px-3">
-        {row.payment_method_selected ? (
-          <Badge variant="outline" className="rtl:text-right ltr:text-left text-[10px] py-0 px-1.5">
-            {getPaymentMethodShortLabel(row.payment_method_selected)}
-          </Badge>
-        ) : (
-          <span className="text-gray-400 text-xs">לא בחר</span>
-        )}
+        <PaymentMethodBadge method={row.payment_method_selected || null} className="text-[10px]" />
       </TableCell>
 
       {/* Amount After Discount */}
       <TableCell className="w-32 rtl:text-right ltr:text-left py-2 px-3">
         {row.payment_method_selected ? (
           <div>
-            <div className="font-medium text-sm">{formatILS(row.amount_after_discount)}</div>
+            <div className="font-medium text-sm text-blue-600">{formatILS(row.amount_after_discount)}</div>
             {row.discount_percent > 0 && (
-              <div className="text-xs text-green-600">
-                ({row.discount_percent}% הנחה)
-              </div>
+              <DiscountBadge discountPercent={row.discount_percent} className="text-[10px] mt-1" />
             )}
           </div>
         ) : (

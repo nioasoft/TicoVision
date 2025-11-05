@@ -55,6 +55,12 @@ import type {
 } from '@/types/fee-tracking.types';
 import { formatILS, formatNumber, formatPercentage } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog';
+import {
+  PaymentMethodBadge,
+  DiscountBadge,
+  PaymentAmountDisplay,
+} from '@/components/payments/PaymentMethodBadge';
 
 export function FeeTrackingPage() {
   const navigate = useNavigate();
@@ -75,6 +81,10 @@ export function FeeTrackingPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+
+  // Letter view dialog
+  const [viewLetterDialogOpen, setViewLetterDialogOpen] = useState(false);
+  const [selectedLetterId, setSelectedLetterId] = useState<string | null>(null);
 
   // Available years
   const currentYear = new Date().getFullYear();
@@ -297,11 +307,8 @@ export function FeeTrackingPage() {
   };
 
   const handleViewLetter = (letterId: string) => {
-    // TODO: View sent letter
-    toast({
-      title: 'צפייה במכתב',
-      description: 'פונקציה זו תיושם בשלב הבא',
-    });
+    setSelectedLetterId(letterId);
+    setViewLetterDialogOpen(true);
   };
 
   const handleMarkAsPaid = (calculationId: string) => {
@@ -632,7 +639,10 @@ export function FeeTrackingPage() {
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שם לקוח</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">ח.פ</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סטטוס</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום מקורי</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שיטת תשלום</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">הנחה</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום סופי</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -646,6 +656,41 @@ export function FeeTrackingPage() {
                       <TableCell className="py-2 px-3">{getStatusBadge(client.payment_status)}</TableCell>
                       <TableCell className="py-2 px-3 text-sm">
                         {client.calculation_amount ? formatILS(client.calculation_amount) : '-'}
+                      </TableCell>
+                      <TableCell className="py-2 px-3">
+                        <PaymentMethodBadge method={client.payment_method_selected || null} />
+                      </TableCell>
+                      <TableCell className="py-2 px-3">
+                        {client.payment_method_selected && client.calculation_amount && client.amount_after_selected_discount ? (
+                          <DiscountBadge
+                            discountPercent={
+                              Math.round(
+                                ((client.calculation_amount - client.amount_after_selected_discount) /
+                                  client.calculation_amount) *
+                                  100
+                              )
+                            }
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-2 px-3 text-sm">
+                        {client.amount_after_selected_discount ? (
+                          <div className="rtl:text-right ltr:text-left">
+                            <div className="font-semibold text-blue-600">
+                              {formatILS(client.amount_after_selected_discount)}
+                            </div>
+                            {client.calculation_amount &&
+                              client.amount_after_selected_discount < client.calculation_amount && (
+                                <div className="text-xs text-green-600">
+                                  חיסכון: {formatILS(client.calculation_amount - client.amount_after_selected_discount)}
+                                </div>
+                              )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-2 px-3">{renderActions(client)}</TableCell>
                     </TableRow>
@@ -751,6 +796,20 @@ export function FeeTrackingPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Letter View Dialog */}
+      <LetterViewDialog
+        open={viewLetterDialogOpen}
+        onOpenChange={setViewLetterDialogOpen}
+        letterId={selectedLetterId}
+        onResend={() => {
+          // TODO: Implement resend functionality
+          toast({
+            title: 'שליחה מחדש',
+            description: 'פונקציה זו תיושם בשלב הבא',
+          });
+        }}
+      />
     </div>
   );
 }
