@@ -386,7 +386,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
-                        {group.group_name_hebrew || group.group_name}
+                        {group.group_name_hebrew}
                       </SelectItem>
                     ))}
                   </SelectContent>

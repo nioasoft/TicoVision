@@ -77,12 +77,13 @@ export interface UpdateClientContactDto extends Partial<CreateClientContactDto> 
 export interface ClientGroup {
   id: string;
   tenant_id: string;
-  group_name: string;
-  group_name_hebrew?: string;
+  group_name_hebrew: string; // Hebrew name only (required)
   primary_owner: string;
   secondary_owners?: string[];
   combined_billing: boolean;
   combined_letters: boolean;
+  company_structure_link?: string; // Link to company structure (optional)
+  canva_link?: string; // Link to Canva (optional)
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -555,12 +556,13 @@ export class ClientService extends BaseService {
 
   // Client Groups Management
   async createGroup(data: {
-    group_name: string;
-    group_name_hebrew?: string;
+    group_name_hebrew: string; // Hebrew name only (required)
     primary_owner: string;
     secondary_owners?: string[];
     combined_billing?: boolean;
     combined_letters?: boolean;
+    company_structure_link?: string; // Link to company structure
+    canva_link?: string; // Link to Canva
     notes?: string;
   }): Promise<ServiceResponse<ClientGroup>> {
     try {
@@ -579,7 +581,7 @@ export class ClientService extends BaseService {
         return { data: null, error: this.handleError(error) };
       }
 
-      await this.logAction('create_client_group', group.id, { group_name: data.group_name });
+      await this.logAction('create_client_group', group.id, { group_name_hebrew: data.group_name_hebrew });
 
       return { data: group, error: null };
     } catch (error) {
@@ -590,12 +592,13 @@ export class ClientService extends BaseService {
   async updateGroup(
     id: string,
     data: Partial<{
-      group_name: string;
-      group_name_hebrew?: string;
+      group_name_hebrew: string; // Hebrew name only (required)
       primary_owner: string;
       secondary_owners?: string[];
       combined_billing?: boolean;
       combined_letters?: boolean;
+      company_structure_link?: string; // Link to company structure
+      canva_link?: string; // Link to Canva
       notes?: string;
     }>
   ): Promise<ServiceResponse<ClientGroup>> {

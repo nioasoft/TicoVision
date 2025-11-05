@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,12 +51,13 @@ export default function ClientGroupsPage() {
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
   const [selectedGroupForAdding, setSelectedGroupForAdding] = useState<ClientGroup | null>(null);
   const [formData, setFormData] = useState({
-    group_name: '',
     group_name_hebrew: '',
     primary_owner: '',
     secondary_owners: [] as string[],
     combined_billing: true,
     combined_letters: true,
+    company_structure_link: '',
+    canva_link: '',
     notes: '',
   });
   const { toast } = useToast();
@@ -186,12 +187,13 @@ export default function ClientGroupsPage() {
 
   const resetForm = () => {
     setFormData({
-      group_name: '',
       group_name_hebrew: '',
       primary_owner: '',
       secondary_owners: [],
       combined_billing: true,
       combined_letters: true,
+      company_structure_link: '',
+      canva_link: '',
       notes: '',
     });
   };
@@ -199,12 +201,13 @@ export default function ClientGroupsPage() {
   const openEditDialog = (group: ClientGroup) => {
     setSelectedGroup(group);
     setFormData({
-      group_name: group.group_name,
-      group_name_hebrew: group.group_name_hebrew || '',
+      group_name_hebrew: group.group_name_hebrew,
       primary_owner: group.primary_owner,
       secondary_owners: group.secondary_owners || [],
       combined_billing: group.combined_billing,
       combined_letters: group.combined_letters,
+      company_structure_link: group.company_structure_link || '',
+      canva_link: group.canva_link || '',
       notes: group.notes || '',
     });
     setIsEditDialogOpen(true);
@@ -309,12 +312,7 @@ export default function ClientGroupsPage() {
                             )}
                             <Users className="h-4 w-4" />
                             <div className="text-right">
-                              <div className="font-medium">{group.group_name}</div>
-                              {group.group_name_hebrew && (
-                                <div className="text-sm text-muted-foreground">
-                                  {group.group_name_hebrew}
-                                </div>
-                              )}
+                              <div className="font-medium">{group.group_name_hebrew}</div>
                             </div>
                           </div>
                         </Button>
@@ -333,7 +331,32 @@ export default function ClientGroupsPage() {
                         <div className="text-sm text-muted-foreground">
                           בעל שליטה: {group.primary_owner}
                         </div>
-                        
+
+                        {/* Link buttons */}
+                        <div className="flex gap-1">
+                          {group.company_structure_link && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => window.open(group.company_structure_link, '_blank')}
+                              title="מבנה החברה"
+                            >
+                              <Building2 className="h-4 w-4 text-blue-500" />
+                            </Button>
+                          )}
+                          {group.canva_link && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => window.open(group.canva_link, '_blank')}
+                              title="קנבה"
+                            >
+                              <FileImage className="h-4 w-4 text-purple-500" />
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Action buttons */}
                         <div className="flex gap-1">
                           <Button
                             size="sm"
@@ -442,23 +465,38 @@ export default function ClientGroupsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="group_name_hebrew">שם הקבוצה (עברית) *</Label>
+              <Input
+                id="group_name_hebrew"
+                value={formData.group_name_hebrew}
+                onChange={(e) => setFormData({ ...formData, group_name_hebrew: e.target.value })}
+                dir="rtl"
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="group_name">שם הקבוצה (אנגלית) *</Label>
+                <Label htmlFor="company_structure_link">לינק למבנה החברה (אופציונלי)</Label>
                 <Input
-                  id="group_name"
-                  value={formData.group_name}
-                  onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
-                  required
+                  id="company_structure_link"
+                  type="url"
+                  value={formData.company_structure_link}
+                  onChange={(e) => setFormData({ ...formData, company_structure_link: e.target.value })}
+                  placeholder="https://..."
+                  dir="ltr"
                 />
               </div>
               <div>
-                <Label htmlFor="group_name_hebrew">שם הקבוצה (עברית)</Label>
+                <Label htmlFor="canva_link">לינק לקנבה (אופציונלי)</Label>
                 <Input
-                  id="group_name_hebrew"
-                  value={formData.group_name_hebrew}
-                  onChange={(e) => setFormData({ ...formData, group_name_hebrew: e.target.value })}
-                  dir="rtl"
+                  id="canva_link"
+                  type="url"
+                  value={formData.canva_link}
+                  onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
+                  placeholder="https://..."
+                  dir="ltr"
                 />
               </div>
             </div>
@@ -545,23 +583,38 @@ export default function ClientGroupsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="edit_group_name_hebrew">שם הקבוצה (עברית) *</Label>
+              <Input
+                id="edit_group_name_hebrew"
+                value={formData.group_name_hebrew}
+                onChange={(e) => setFormData({ ...formData, group_name_hebrew: e.target.value })}
+                dir="rtl"
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit_group_name">שם הקבוצה (אנגלית) *</Label>
+                <Label htmlFor="edit_company_structure_link">לינק למבנה החברה (אופציונלי)</Label>
                 <Input
-                  id="edit_group_name"
-                  value={formData.group_name}
-                  onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
-                  required
+                  id="edit_company_structure_link"
+                  type="url"
+                  value={formData.company_structure_link}
+                  onChange={(e) => setFormData({ ...formData, company_structure_link: e.target.value })}
+                  placeholder="https://..."
+                  dir="ltr"
                 />
               </div>
               <div>
-                <Label htmlFor="edit_group_name_hebrew">שם הקבוצה (עברית)</Label>
+                <Label htmlFor="edit_canva_link">לינק לקנבה (אופציונלי)</Label>
                 <Input
-                  id="edit_group_name_hebrew"
-                  value={formData.group_name_hebrew}
-                  onChange={(e) => setFormData({ ...formData, group_name_hebrew: e.target.value })}
-                  dir="rtl"
+                  id="edit_canva_link"
+                  type="url"
+                  value={formData.canva_link}
+                  onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
+                  placeholder="https://..."
+                  dir="ltr"
                 />
               </div>
             </div>
