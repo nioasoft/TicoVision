@@ -209,21 +209,21 @@ class FeeService extends BaseService {
     // Discounts are no longer applied - always 0
     const discountPercentage = 0;
 
-    // Step 1: Apply inflation adjustment (only if enabled)
+    // Step 1: Apply inflation adjustment (only if enabled) - ROUND UP
     const inflationAdjustment = applyInflation
-      ? data.base_amount * (inflationRate / 100)
+      ? Math.ceil(data.base_amount * (inflationRate / 100))
       : 0;
 
-    // Step 2: Add real adjustment
-    const adjustedAmount = data.base_amount + inflationAdjustment + realAdjustment;
+    // Step 2: Add real adjustment - ROUND UP
+    const adjustedAmount = Math.ceil(data.base_amount + inflationAdjustment + realAdjustment);
 
     // Step 3: No discount applied
     const discountAmount = 0;
     const finalAmount = adjustedAmount;
 
-    // Step 4: Calculate VAT (18% in Israel - Updated December 2024)
-    const vatAmount = finalAmount * 0.18;
-    const totalWithVat = finalAmount + vatAmount;
+    // Step 4: Calculate VAT (18% in Israel - Updated December 2024) - ROUND UP
+    const vatAmount = Math.ceil(finalAmount * 0.18);
+    const totalWithVat = Math.ceil(finalAmount + vatAmount);
 
     // Step 5: Calculate year-over-year changes (if previous year data exists)
     let yearOverYearChangePercent = 0;

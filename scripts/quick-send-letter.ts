@@ -34,7 +34,7 @@ function replaceVariables(html: string, variables: Record<string, string>): stri
 
 function calculateDiscounts(originalAmount: number) {
   const formatNumber = (num: number): string => {
-    return Math.round(num).toLocaleString('he-IL');
+    return Math.ceil(num).toLocaleString('he-IL');
   };
 
   return {

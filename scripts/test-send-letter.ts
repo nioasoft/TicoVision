@@ -40,11 +40,11 @@ function replaceVariables(html: string, variables: Record<string, string>): stri
 }
 
 /**
- * Calculate discount amounts
+ * Calculate discount amounts - ALWAYS ROUND UP
  */
 function calculateDiscounts(originalAmount: number) {
   const formatNumber = (num: number): string => {
-    return Math.round(num).toLocaleString('he-IL');
+    return Math.ceil(num).toLocaleString('he-IL');
   };
 
   return {

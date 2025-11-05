@@ -379,22 +379,22 @@ export class EmailTemplateService extends BaseService {
           <div style="margin: 30px 0;">
             <div style="margin: 15px 0;">
               <a href="${data.payment_link_bank}" style="background: #28a745; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; width: 80%;">
-                העברה בנקאית (9% הנחה) - ₪${((data.amount_original || 0) * 0.91).toLocaleString('he-IL')}
+                העברה בנקאית (9% הנחה) - ₪${Math.ceil((data.amount_original || 0) * 0.91).toLocaleString('he-IL')}
               </a>
             </div>
             <div style="margin: 15px 0;">
               <a href="${data.payment_link_cc_single}" style="background: #007bff; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; width: 80%;">
-                כרטיס אשראי תשלום אחד (8% הנחה) - ₪${((data.amount_original || 0) * 0.92).toLocaleString('he-IL')}
+                כרטיס אשראי תשלום אחד (8% הנחה) - ₪${Math.ceil((data.amount_original || 0) * 0.92).toLocaleString('he-IL')}
               </a>
             </div>
             <div style="margin: 15px 0;">
               <a href="${data.payment_link_cc_installments}" style="background: #17a2b8; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; width: 80%;">
-                כרטיס אשראי 4 תשלומים (4% הנחה) - ₪${((data.amount_original || 0) * 0.96).toLocaleString('he-IL')}
+                כרטיס אשראי 4 תשלומים (4% הנחה) - ₪${Math.ceil((data.amount_original || 0) * 0.96).toLocaleString('he-IL')}
               </a>
             </div>
             <div style="margin: 15px 0;">
               <a href="${data.payment_link_checks}" style="background: #6c757d; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; width: 80%;">
-                8 המחאות - ₪${(data.amount_original || 0).toLocaleString('he-IL')}
+                8 המחאות - ₪${Math.ceil(data.amount_original || 0).toLocaleString('he-IL')}
               </a>
             </div>
           </div>

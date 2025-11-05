@@ -126,12 +126,12 @@ async function buildLetterWithRealPaymentLinks(): Promise<string> {
   const paymentSection = readTemplate('components/payment-section.html');
   const footer = readTemplate('components/footer.html');
 
-  // Calculate amounts (demo: ₪52,000 base)
+  // Calculate amounts (demo: ₪52,000 base) - ALWAYS ROUND UP
   const baseAmount = 52000;
-  const amountSingle = Math.round(baseAmount * 0.92); // 8% discount: ₪47,840
-  const amount4Payments = Math.round(baseAmount * 0.96); // 4% discount: ₪49,920
-  const discountSingle = baseAmount - amountSingle; // ₪4,160
-  const discount4Payments = baseAmount - amount4Payments; // ₪2,080
+  const amountSingle = Math.ceil(baseAmount * 0.92); // 8% discount - rounded up
+  const amount4Payments = Math.ceil(baseAmount * 0.96); // 4% discount - rounded up
+  const discountSingle = baseAmount - amountSingle;
+  const discount4Payments = baseAmount - amount4Payments;
 
   console.log('\n💳 Creating REAL payment links on Cardcom Sandbox...');
   console.log('   This may take a few seconds...');
@@ -171,8 +171,8 @@ async function buildLetterWithRealPaymentLinks(): Promise<string> {
     amount_original: formatCurrency(baseAmount),
     amount_after_single: formatCurrency(amountSingle), // 8% discount
     amount_after_payments: formatCurrency(amount4Payments), // 4% discount
-    amount_per_installment: formatCurrency(Math.round(amount4Payments / 4)),
-    amount_after_bank: formatCurrency(Math.round(baseAmount * 0.91)), // 9% discount
+    amount_per_installment: formatCurrency(Math.ceil(amount4Payments / 4)),
+    amount_after_bank: formatCurrency(Math.ceil(baseAmount * 0.91)), // 9% discount
     amount_checks: formatCurrency(baseAmount),
 
     discount_single: formatCurrency(discountSingle),

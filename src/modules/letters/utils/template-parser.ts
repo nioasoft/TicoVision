@@ -151,7 +151,7 @@ export class TemplateParser {
   }
 
   /**
-   * Format number as Israeli currency
+   * Format number as Israeli currency - ALWAYS rounded UP to whole shekel
    */
   static formatCurrency(amount: number): string {
     return new Intl.NumberFormat('he-IL', {
@@ -159,7 +159,7 @@ export class TemplateParser {
       currency: 'ILS',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(Math.ceil(amount));
   }
 
   /**
