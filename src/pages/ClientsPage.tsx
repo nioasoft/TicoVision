@@ -122,6 +122,10 @@ export default function ClientsPage() {
   const handleBulkActivate = () => bulkUpdateStatus('active');
   const handleBulkDeactivate = () => bulkUpdateStatus('inactive');
 
+  const handleGroupFilter = (groupId: string) => {
+    setFilters({ groupId });
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -159,6 +163,7 @@ export default function ClientsPage() {
         onToggleSelect={toggleClientSelection}
         onEdit={handleOpenEditDialog}
         onDelete={handleOpenDeleteDialog}
+        onGroupFilter={handleGroupFilter}
       />
 
       {/* Pagination */}

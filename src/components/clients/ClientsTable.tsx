@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, MoreHorizontal, Users, Star, MessageCircle, Mail } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, MessageCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,7 @@ interface ClientsTableProps {
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  onGroupFilter?: (groupId: string) => void;
 }
 
 interface ClientRowProps {
@@ -39,11 +40,12 @@ interface ClientRowProps {
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  onGroupFilter?: (groupId: string) => void;
 }
 
 // Memoized row component to prevent unnecessary re-renders
 const ClientRow = React.memo<ClientRowProps>(
-  ({ client, isSelected, onToggleSelect, onEdit, onDelete }) => {
+  ({ client, isSelected, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
     const getStatusBadge = (status: string) => {
       const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
         active: 'default',
@@ -71,16 +73,6 @@ const ClientRow = React.memo<ClientRowProps>(
       return labels[clientType] || clientType;
     };
 
-    const getPaymentRoleIcon = (paymentRole: string) => {
-      if (paymentRole === 'primary_payer') {
-        return <Star className="h-4 w-4 text-yellow-500 inline mr-1" />;
-      }
-      if (paymentRole === 'member') {
-        return <Users className="h-4 w-4 text-blue-500 inline mr-1" />;
-      }
-      return null;
-    };
-
     return (
       <TableRow key={client.id}>
         <TableCell className="w-12">
@@ -90,7 +82,10 @@ const ClientRow = React.memo<ClientRowProps>(
           />
         </TableCell>
         <TableCell className="font-medium min-w-[200px]">
-          <div>
+          <div
+            onClick={() => onEdit(client)}
+            className="cursor-pointer hover:text-blue-600 transition-colors"
+          >
             <div>{client.company_name}</div>
             {client.company_name_hebrew && (
               <div className="text-sm text-gray-500">{client.company_name_hebrew}</div>
@@ -103,12 +98,13 @@ const ClientRow = React.memo<ClientRowProps>(
         </TableCell>
         <TableCell className="w-48">
           {client.group ? (
-            <div className="flex items-center gap-1">
-              {getPaymentRoleIcon(client.payment_role)}
-              <Badge variant="secondary" className="text-xs">
-                {client.group.group_name_hebrew || client.group.group_name}
-              </Badge>
-            </div>
+            <Badge
+              variant="secondary"
+              className="text-xs cursor-pointer hover:bg-gray-300 transition-colors"
+              onClick={() => onGroupFilter?.(client.group_id!)}
+            >
+              {client.group.group_name_hebrew || client.group.group_name}
+            </Badge>
           ) : (
             <span className="text-gray-400">-</span>
           )}
@@ -147,37 +143,29 @@ const ClientRow = React.memo<ClientRowProps>(
           )}
         </TableCell>
         <TableCell className="w-24">{getStatusBadge(client.status)}</TableCell>
-        <TableCell className="w-32">{formatDate(client.created_at)}</TableCell>
-        <TableCell className="w-32 text-left">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(client)}
-              className="flex items-center gap-1"
-            >
-              <Edit className="h-3 w-3" />
-              ערוך
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>פעולות נוספות</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => onDelete(client)}
-                >
-                  <Trash2 className="ml-2 h-4 w-4" />
-                  מחק
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        <TableCell className="w-20 text-left">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>פעולות</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onEdit(client)}>
+                <Edit className="ml-2 h-4 w-4" />
+                ערוך
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => onDelete(client)}
+              >
+                <Trash2 className="ml-2 h-4 w-4" />
+                מחק
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TableCell>
       </TableRow>
     );
@@ -194,6 +182,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   onToggleSelect,
   onEdit,
   onDelete,
+  onGroupFilter,
 }) => {
   const allSelected = selectedClients.length === clients.length && clients.length > 0;
 
@@ -213,20 +202,19 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
             <TableHead className="w-44">טלפון</TableHead>
             <TableHead className="w-60">אימייל</TableHead>
             <TableHead className="w-24">סטטוס</TableHead>
-            <TableHead className="w-32">תאריך הוספה</TableHead>
-            <TableHead className="w-32 text-left">פעולות</TableHead>
+            <TableHead className="w-20 text-left">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center">
+              <TableCell colSpan={10} className="text-center">
                 טוען נתונים...
               </TableCell>
             </TableRow>
           ) : clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center">
+              <TableCell colSpan={10} className="text-center">
                 לא נמצאו לקוחות
               </TableCell>
             </TableRow>
@@ -239,6 +227,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
                 onToggleSelect={onToggleSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onGroupFilter={onGroupFilter}
               />
             ))
           )}
