@@ -367,7 +367,7 @@ export class ClientService extends BaseService {
       // Build base query with group join
       let query = supabase
         .from('clients')
-        .select('*, group:client_groups(id, group_name, group_name_hebrew)', { count: 'exact' })
+        .select('*, group:client_groups(*)', { count: 'exact' })
         .eq('tenant_id', tenantId);
 
       // Apply filters
@@ -411,7 +411,7 @@ export class ClientService extends BaseService {
 
       const { data: clients, error } = await supabase
         .from('clients')
-        .select('*, group:client_groups(id, group_name, group_name_hebrew)')
+        .select('*, group:client_groups(*)')
         .eq('tenant_id', tenantId)
         .or(`company_name.ilike.%${searchTerm}%,company_name_hebrew.ilike.%${searchTerm}%,tax_id.ilike.%${searchTerm}%,contact_name.ilike.%${searchTerm}%`)
         .limit(20);
