@@ -46,6 +46,10 @@ import type {
 } from '@/services';
 import { clientService } from '@/services';
 import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
+import {
+  validateIsraeliPostalCode,
+  formatIsraeliPhone,
+} from '@/lib/validators';
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -207,6 +211,36 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       setHasUnsavedChanges(true);
     }, []);
 
+    // Handle Enter key press - move to next field
+    const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+
+        // Find the dialog container (no form wrapper in this component)
+        const dialogContent = e.currentTarget.closest('[role="dialog"]');
+        if (!dialogContent) return;
+
+        // Find all focusable elements (Input, Select/Combobox, Textarea)
+        const focusableElements = Array.from(
+          dialogContent.querySelectorAll<HTMLElement>(
+            'input:not([disabled]):not([type="hidden"]), button[role="combobox"]:not([disabled]), textarea:not([disabled])'
+          )
+        );
+
+        const currentIndex = focusableElements.indexOf(e.currentTarget as HTMLElement);
+        const nextElement = focusableElements[currentIndex + 1];
+
+        if (nextElement) {
+          nextElement.focus();
+
+          // If it's a shadcn/ui Select (combobox), click to open dropdown
+          if (nextElement.getAttribute('role') === 'combobox') {
+            nextElement.click();
+          }
+        }
+      }
+    }, []);
+
     const handleExitConfirm = useCallback(() => {
       setFormData(INITIAL_FORM_DATA);
       setHasUnsavedChanges(false);
@@ -237,6 +271,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   id="tax_id"
                   value={formData.tax_id}
                   onChange={(e) => handleFormChange('tax_id', e.target.value)}
+                  onKeyDown={handleKeyDown}
                   maxLength={9}
                   pattern="\d{9}"
                   required
@@ -252,6 +287,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   id="company_name"
                   value={formData.company_name}
                   onChange={(e) => handleFormChange('company_name', e.target.value)}
+                  onKeyDown={handleKeyDown}
                   required
                   dir="rtl"
                 />
@@ -259,12 +295,14 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               <div>
                 <Label htmlFor="commercial_name" className="text-right block mb-2">
-                  שם מסחרי
+                  שם מסחרי <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="commercial_name"
                   value={formData.commercial_name || ''}
                   onChange={(e) => handleFormChange('commercial_name', e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  required
                   dir="rtl"
                 />
               </div>
@@ -278,6 +316,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   id="contact_name"
                   value={formData.contact_name}
                   onChange={(e) => handleFormChange('contact_name', e.target.value)}
+                  onKeyDown={handleKeyDown}
                   required
                   dir="rtl"
                 />
@@ -285,14 +324,20 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               <div>
                 <Label htmlFor="contact_phone" className="text-right block mb-2">
-                  טלפון
+                  טלפון <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="contact_phone"
                   value={formData.contact_phone}
-                  onChange={(e) => handleFormChange('contact_phone', e.target.value)}
+                  onChange={(e) => {
+                    const formatted = formatIsraeliPhone(e.target.value);
+                    handleFormChange('contact_phone', formatted);
+                  }}
+                  onKeyDown={handleKeyDown}
                   type="tel"
+                  required
                   dir="ltr"
+                  placeholder="050-1234567"
                 />
               </div>
 
@@ -304,6 +349,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   id="contact_email"
                   value={formData.contact_email}
                   onChange={(e) => handleFormChange('contact_email', e.target.value)}
+                  onKeyDown={handleKeyDown}
                   type="email"
                   required
                   dir="ltr"
@@ -313,7 +359,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Row 3: Address, City, Postal Code (3 cols) */}
               <div>
                 <Label htmlFor="address_street" className="text-right block mb-2">
-                  כתובת
+                  כתובת <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="address_street"
@@ -324,13 +370,15 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       street: e.target.value
                     })
                   }
+                  onKeyDown={handleKeyDown}
+                  required
                   dir="rtl"
                 />
               </div>
 
               <div>
                 <Label htmlFor="address_city" className="text-right block mb-2">
-                  עיר
+                  עיר <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="address_city"
@@ -341,31 +389,45 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       city: e.target.value
                     })
                   }
+                  onKeyDown={handleKeyDown}
+                  required
                   dir="rtl"
                 />
               </div>
 
               <div>
                 <Label htmlFor="address_postal_code" className="text-right block mb-2">
-                  מיקוד
+                  מיקוד (7 ספרות) <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="address_postal_code"
                   value={formData.address?.postal_code || ''}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // Only digits
                     handleFormChange('address', {
                       ...formData.address,
-                      postal_code: e.target.value
-                    })
-                  }
+                      postal_code: value
+                    });
+                  }}
+                  onKeyDown={handleKeyDown}
+                  maxLength={7}
+                  pattern="\d{7}"
+                  required
                   dir="ltr"
+                  placeholder="1234567"
                 />
+                {formData.address?.postal_code &&
+                 !validateIsraeliPostalCode(formData.address.postal_code) && (
+                  <p className="text-xs text-red-500 mt-1 rtl:text-right">
+                    מיקוד ישראלי חייב להכיל 7 ספרות בדיוק
+                  </p>
+                )}
               </div>
 
               {/* Row 4: Group, Payment Role (if selected), Accounting Management (3 cols) */}
               <div>
                 <Label htmlFor="group_id" className="text-right block mb-2">
-                  קבוצה (אופציונלי)
+                  קבוצה <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.group_id || 'NO_GROUP'}
@@ -378,6 +440,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       handleFormChange('payment_role', 'independent');
                     }
                   }}
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="בחר קבוצה" />
@@ -630,6 +693,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       id="accountant_name"
                       value={formData.accountant_name}
                       onChange={(e) => handleFormChange('accountant_name', e.target.value)}
+                      onKeyDown={handleKeyDown}
                       required
                       dir="rtl"
                       placeholder="שם מלא"
@@ -644,6 +708,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       id="accountant_email"
                       value={formData.accountant_email}
                       onChange={(e) => handleFormChange('accountant_email', e.target.value)}
+                      onKeyDown={handleKeyDown}
                       type="email"
                       required
                       dir="ltr"
@@ -658,7 +723,11 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     <Input
                       id="accountant_phone"
                       value={formData.accountant_phone}
-                      onChange={(e) => handleFormChange('accountant_phone', e.target.value)}
+                      onChange={(e) => {
+                        const formatted = formatIsraeliPhone(e.target.value);
+                        handleFormChange('accountant_phone', formatted);
+                      }}
+                      onKeyDown={handleKeyDown}
                       type="tel"
                       required
                       dir="ltr"

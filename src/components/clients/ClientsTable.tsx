@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, MoreHorizontal, Users, Star } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Users, Star, MessageCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -114,8 +114,38 @@ const ClientRow = React.memo<ClientRowProps>(
           )}
         </TableCell>
         <TableCell className="w-36">{client.contact_name}</TableCell>
-        <TableCell className="w-32">{client.contact_phone || '-'}</TableCell>
-        <TableCell className="w-48">{client.contact_email || '-'}</TableCell>
+        <TableCell className="w-32">
+          {client.contact_phone ? (
+            <a
+              href={`https://wa.me/972${client.contact_phone.replace(/^0/, '').replace(/-/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline flex items-center gap-1"
+              dir="ltr"
+              title="שלח הודעת וואטסאפ"
+            >
+              <MessageCircle className="h-4 w-4" />
+              {client.contact_phone}
+            </a>
+          ) : (
+            '-'
+          )}
+        </TableCell>
+        <TableCell className="w-48">
+          {client.contact_email ? (
+            <a
+              href={`mailto:${client.contact_email}`}
+              className="text-blue-600 hover:underline flex items-center gap-1"
+              dir="ltr"
+              title="שלח מייל"
+            >
+              <Mail className="h-4 w-4" />
+              {client.contact_email}
+            </a>
+          ) : (
+            '-'
+          )}
+        </TableCell>
         <TableCell className="w-24">{getStatusBadge(client.status)}</TableCell>
         <TableCell className="w-32">{formatDate(client.created_at)}</TableCell>
         <TableCell className="w-32 text-left">
