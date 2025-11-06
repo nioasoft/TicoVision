@@ -75,13 +75,13 @@ const ClientRow = React.memo<ClientRowProps>(
 
     return (
       <TableRow key={client.id}>
-        <TableCell className="w-12">
+        <TableCell className="w-10">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelect(client.id)}
           />
         </TableCell>
-        <TableCell className="font-medium min-w-[200px]">
+        <TableCell className="font-medium flex-1 min-w-[150px]">
           <div
             onClick={() => onEdit(client)}
             className="cursor-pointer hover:text-blue-600 transition-colors"
@@ -92,11 +92,11 @@ const ClientRow = React.memo<ClientRowProps>(
             )}
           </div>
         </TableCell>
-        <TableCell className="w-32">{client.tax_id}</TableCell>
-        <TableCell className="w-32">
+        <TableCell className="w-24">{client.tax_id}</TableCell>
+        <TableCell className="w-32 hidden">
           {getClientTypeLabel(client.client_type || 'company')}
         </TableCell>
-        <TableCell className="w-48">
+        <TableCell className="w-32">
           {client.group ? (
             <Badge
               variant="secondary"
@@ -109,8 +109,8 @@ const ClientRow = React.memo<ClientRowProps>(
             <span className="text-gray-400">-</span>
           )}
         </TableCell>
-        <TableCell className="w-36">{client.contact_name}</TableCell>
-        <TableCell className="w-44">
+        <TableCell className="w-28">{client.contact_name}</TableCell>
+        <TableCell className="w-32">
           {client.contact_phone ? (
             <a
               href={`https://wa.me/972${client.contact_phone.replace(/^0/, '').replace(/-/g, '')}`}
@@ -127,7 +127,7 @@ const ClientRow = React.memo<ClientRowProps>(
             '-'
           )}
         </TableCell>
-        <TableCell className="w-60">
+        <TableCell className="flex-1 min-w-[180px]">
           {client.contact_email ? (
             <a
               href={`mailto:${client.contact_email}`}
@@ -142,8 +142,8 @@ const ClientRow = React.memo<ClientRowProps>(
             '-'
           )}
         </TableCell>
-        <TableCell className="w-24">{getStatusBadge(client.status)}</TableCell>
-        <TableCell className="w-20 text-left">
+        <TableCell className="w-20">{getStatusBadge(client.status)}</TableCell>
+        <TableCell className="w-16 text-left">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm">
@@ -188,33 +188,33 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
 
   return (
     <div className="border rounded-lg">
-      <Table>
+      <Table className="[&_td]:px-1 [&_th]:px-1">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">
+            <TableHead className="w-10">
               <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
             </TableHead>
-            <TableHead className="min-w-[200px]">שם החברה</TableHead>
-            <TableHead className="w-32">ת.ז / ח.פ</TableHead>
-            <TableHead className="w-32">סוג לקוח</TableHead>
-            <TableHead className="w-48">קבוצה</TableHead>
-            <TableHead className="w-36">איש קשר</TableHead>
-            <TableHead className="w-44">טלפון</TableHead>
-            <TableHead className="w-60">אימייל</TableHead>
-            <TableHead className="w-24">סטטוס</TableHead>
-            <TableHead className="w-20 text-left">פעולות</TableHead>
+            <TableHead className="flex-1 min-w-[150px]">שם החברה</TableHead>
+            <TableHead className="w-24">ת.ז / ח.פ</TableHead>
+            <TableHead className="w-32 hidden">סוג לקוח</TableHead>
+            <TableHead className="w-32">קבוצה</TableHead>
+            <TableHead className="w-28">איש קשר</TableHead>
+            <TableHead className="w-32">טלפון</TableHead>
+            <TableHead className="flex-1 min-w-[180px]">אימייל</TableHead>
+            <TableHead className="w-20">סטטוס</TableHead>
+            <TableHead className="w-16 text-left">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center">
+              <TableCell colSpan={9} className="text-center">
                 טוען נתונים...
               </TableCell>
             </TableRow>
           ) : clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={10} className="text-center">
+              <TableCell colSpan={9} className="text-center">
                 לא נמצאו לקוחות
               </TableCell>
             </TableRow>
