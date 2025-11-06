@@ -316,16 +316,22 @@ class DashboardService extends BaseService {
         audit_external: {
           before_vat: data.audit_external_before_vat || 0,
           with_vat: data.audit_external_with_vat || 0,
+          actual_before_vat: data.audit_external_actual_before_vat || 0,
+          actual_with_vat: data.audit_external_actual_with_vat || 0,
           client_count: data.audit_external_count || 0,
         },
         audit_internal: {
           before_vat: data.audit_internal_before_vat || 0,
           with_vat: data.audit_internal_with_vat || 0,
+          actual_before_vat: data.audit_internal_actual_before_vat || 0,
+          actual_with_vat: data.audit_internal_actual_with_vat || 0,
           client_count: data.audit_internal_count || 0,
         },
         audit_retainer: {
           before_vat: data.audit_retainer_before_vat || 0,
           with_vat: data.audit_retainer_with_vat || 0,
+          actual_before_vat: data.audit_retainer_actual_before_vat || 0,
+          actual_with_vat: data.audit_retainer_actual_with_vat || 0,
           client_count: data.audit_retainer_count || 0,
         },
         audit_total: auditTotal,
@@ -333,11 +339,15 @@ class DashboardService extends BaseService {
         bookkeeping_internal: {
           before_vat: data.bookkeeping_internal_before_vat || 0,
           with_vat: data.bookkeeping_internal_with_vat || 0,
+          actual_before_vat: data.bookkeeping_internal_actual_before_vat || 0,
+          actual_with_vat: data.bookkeeping_internal_actual_with_vat || 0,
           client_count: data.bookkeeping_internal_count || 0,
         },
         bookkeeping_retainer: {
           before_vat: data.bookkeeping_retainer_before_vat || 0,
           with_vat: data.bookkeeping_retainer_with_vat || 0,
+          actual_before_vat: data.bookkeeping_retainer_actual_before_vat || 0,
+          actual_with_vat: data.bookkeeping_retainer_actual_with_vat || 0,
           client_count: data.bookkeeping_retainer_count || 0,
         },
         bookkeeping_total: bookkeepingTotal,
@@ -345,11 +355,15 @@ class DashboardService extends BaseService {
         freelancers: {
           before_vat: data.freelancers_before_vat || 0,
           with_vat: data.freelancers_with_vat || 0,
+          actual_before_vat: data.freelancers_actual_before_vat || 0,
+          actual_with_vat: data.freelancers_actual_with_vat || 0,
           client_count: data.freelancers_count || 0,
         },
         exceptions: {
           before_vat: 0,
           with_vat: 0,
+          actual_before_vat: 0,
+          actual_with_vat: 0,
           client_count: 0,
         },
 
@@ -423,6 +437,63 @@ class DashboardService extends BaseService {
         type,
         count: breakdown.length,
       });
+
+      return { data: breakdown, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * קבלת פירוט אמצעי תשלום
+   * מחזיר כמה לקוחות בחרו כל אמצעי תשלום וסכומים
+   *
+   * @param taxYear - שנת מס
+   * @returns פירוט אמצעי תשלום
+   */
+  async getPaymentMethodBreakdown(
+    taxYear: number
+  ): Promise<ServiceResponse<PaymentMethodBreakdown>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .rpc('get_payment_method_breakdown', {
+          p_tenant_id: tenantId,
+          p_tax_year: taxYear,
+        })
+        .single();
+
+      if (error) throw this.handleError(error);
+
+      const breakdown: PaymentMethodBreakdown = {
+        bank_transfer: {
+          count: data.bank_transfer_count || 0,
+          amount: data.bank_transfer_amount || 0,
+          discount: 9,
+        },
+        cc_single: {
+          count: data.cc_single_count || 0,
+          amount: data.cc_single_amount || 0,
+          discount: 8,
+        },
+        cc_installments: {
+          count: data.cc_installments_count || 0,
+          amount: data.cc_installments_amount || 0,
+          discount: 4,
+        },
+        checks: {
+          count: data.checks_count || 0,
+          amount: data.checks_amount || 0,
+          discount: 0,
+        },
+        not_selected: {
+          count: data.not_selected_count || 0,
+          amount: data.not_selected_amount || 0,
+        },
+      };
+
+      await this.logAction('get_payment_method_breakdown', undefined, { tax_year: taxYear });
 
       return { data: breakdown, error: null };
     } catch (error) {

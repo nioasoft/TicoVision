@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { formatILS, formatNumber } from '@/lib/formatters';
 import type { BudgetByCategory } from '@/types/dashboard.types';
 
@@ -11,12 +11,29 @@ interface Props {
 
 export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
   const [expandedColumn, setExpandedColumn] = useState<string | null>(null);
+  const [showStandard, setShowStandard] = useState(true); // Toggle for showing standard amounts
 
   const toggleExpand = (column: string) => {
     setExpandedColumn(expandedColumn === column ? null : column);
   };
 
-  // חישוב סכומים לפני מע"מ לכל קטגוריה
+  // חישוב סכומים בפועל (ACTUAL - after discounts) לכל קטגוריה
+  const auditActualBeforeVat =
+    breakdown.audit_external.actual_before_vat +
+    breakdown.audit_internal.actual_before_vat +
+    breakdown.audit_retainer.actual_before_vat;
+
+  const bookkeepingActualBeforeVat =
+    breakdown.bookkeeping_internal.actual_before_vat +
+    breakdown.bookkeeping_retainer.actual_before_vat;
+
+  const grandTotalActualBeforeVat =
+    auditActualBeforeVat +
+    bookkeepingActualBeforeVat +
+    breakdown.freelancers.actual_before_vat +
+    breakdown.exceptions.actual_before_vat;
+
+  // חישוב סכומים תקן (STANDARD - before discounts) לכל קטגוריה
   const auditBeforeVat =
     breakdown.audit_external.before_vat +
     breakdown.audit_internal.before_vat +
@@ -56,9 +73,29 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
+            {/* סכום בפועל - בולט */}
             <div className="text-3xl font-bold text-blue-700 mb-1">
-              {formatILS(auditBeforeVat)}
+              {formatILS(auditActualBeforeVat)}
             </div>
+            {/* סכום תקן - קטן עם toggle */}
+            {showStandard && (
+              <button
+                onClick={() => setShowStandard(false)}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1"
+              >
+                <Eye className="w-3 h-3" />
+                <span>תקן: {formatILS(auditBeforeVat)}</span>
+              </button>
+            )}
+            {!showStandard && (
+              <button
+                onClick={() => setShowStandard(true)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-1"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span>הצג תקן</span>
+              </button>
+            )}
             <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.audit_total)}</p>
 
             <button
@@ -133,9 +170,29 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
+            {/* סכום בפועל - בולט */}
             <div className="text-3xl font-bold text-purple-700 mb-1">
-              {formatILS(bookkeepingBeforeVat)}
+              {formatILS(bookkeepingActualBeforeVat)}
             </div>
+            {/* סכום תקן - קטן עם toggle */}
+            {showStandard && (
+              <button
+                onClick={() => setShowStandard(false)}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1"
+              >
+                <Eye className="w-3 h-3" />
+                <span>תקן: {formatILS(bookkeepingBeforeVat)}</span>
+              </button>
+            )}
+            {!showStandard && (
+              <button
+                onClick={() => setShowStandard(true)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-1"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span>הצג תקן</span>
+              </button>
+            )}
             <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.bookkeeping_total)}</p>
 
             <button
@@ -218,9 +275,29 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
+            {/* סכום בפועל - בולט */}
             <div className="text-3xl font-bold text-green-700 mb-1">
-              {formatILS(breakdown.freelancers.before_vat)}
+              {formatILS(breakdown.freelancers.actual_before_vat)}
             </div>
+            {/* סכום תקן - קטן עם toggle */}
+            {showStandard && (
+              <button
+                onClick={() => setShowStandard(false)}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1"
+              >
+                <Eye className="w-3 h-3" />
+                <span>תקן: {formatILS(breakdown.freelancers.before_vat)}</span>
+              </button>
+            )}
+            {!showStandard && (
+              <button
+                onClick={() => setShowStandard(true)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-1"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span>הצג תקן</span>
+              </button>
+            )}
             <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.freelancers.with_vat)}</p>
 
             <button
@@ -271,8 +348,30 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
                 כולל מע"מ: {formatILS(breakdown.grand_total)}
               </p>
             </div>
-            <div className="text-4xl font-bold text-blue-700">
-              {formatILS(grandTotalBeforeVat)}
+            <div className="flex flex-col items-center gap-2">
+              {/* סכום בפועל - בולט */}
+              <div className="text-4xl font-bold text-blue-700">
+                {formatILS(grandTotalActualBeforeVat)}
+              </div>
+              {/* סכום תקן - קטן עם toggle */}
+              {showStandard && (
+                <button
+                  onClick={() => setShowStandard(false)}
+                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>תקן: {formatILS(grandTotalBeforeVat)}</span>
+                </button>
+              )}
+              {!showStandard && (
+                <button
+                  onClick={() => setShowStandard(true)}
+                  className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600"
+                >
+                  <EyeOff className="w-4 h-4" />
+                  <span>הצג תקן</span>
+                </button>
+              )}
             </div>
           </div>
         </CardContent>

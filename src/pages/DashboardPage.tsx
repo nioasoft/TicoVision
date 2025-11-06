@@ -15,13 +15,15 @@ import {
 } from '@/components/ui/select';
 import { dashboardService } from '@/services/dashboard.service';
 import { BudgetBreakdownSection } from '@/components/BudgetBreakdownSection';
-import type { BudgetByCategory } from '@/types/dashboard.types';
+import { PaymentMethodBreakdownCard } from '@/components/PaymentMethodBreakdownCard';
+import type { BudgetByCategory, PaymentMethodBreakdown } from '@/types/dashboard.types';
 
 export function DashboardPage() {
   // State management
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() + 1); // Default: next year (tax year)
   const [budgetBreakdown, setBudgetBreakdown] = useState<BudgetByCategory | null>(null);
+  const [paymentMethodBreakdown, setPaymentMethodBreakdown] = useState<PaymentMethodBreakdown | null>(null);
 
   // Available years for selection (current year - 1 to current year + 2)
   const currentYear = new Date().getFullYear();
@@ -47,6 +49,14 @@ export function DashboardPage() {
         console.error('Error loading budget breakdown:', breakdownResponse.error);
       } else {
         setBudgetBreakdown(breakdownResponse.data);
+      }
+
+      // טעינת פירוט אמצעי תשלום
+      const paymentMethodResponse = await dashboardService.getPaymentMethodBreakdown(selectedYear);
+      if (paymentMethodResponse.error) {
+        console.error('Error loading payment method breakdown:', paymentMethodResponse.error);
+      } else {
+        setPaymentMethodBreakdown(paymentMethodResponse.data);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -100,6 +110,14 @@ export function DashboardPage() {
       {!isLoading && budgetBreakdown && (
         <BudgetBreakdownSection
           breakdown={budgetBreakdown}
+          taxYear={selectedYear}
+        />
+      )}
+
+      {/* פירוט אמצעי תשלום */}
+      {!isLoading && paymentMethodBreakdown && (
+        <PaymentMethodBreakdownCard
+          breakdown={paymentMethodBreakdown}
           taxYear={selectedYear}
         />
       )}

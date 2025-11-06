@@ -44,10 +44,17 @@ export interface PaymentStats {
 /**
  * קטגוריית תקציב
  * סכום + מספר לקוחות לכל קטגוריה
+ * כולל סכומים תקן (Standard) ובפועל (Actual)
  */
 export interface BudgetCategory {
+  // Standard amounts (theoretical max - before discounts)
   before_vat: number;
   with_vat: number;
+
+  // NEW: Actual amounts (what's really coming in - after discounts)
+  actual_before_vat: number;
+  actual_with_vat: number;
+
   client_count: number;
 }
 
@@ -76,6 +83,37 @@ export interface BudgetByCategory {
 }
 
 /**
+ * פירוט אמצעי תשלום
+ * כמה לקוחות בחרו כל שיטת תשלום וסכום כולל
+ */
+export interface PaymentMethodBreakdown {
+  bank_transfer: {
+    count: number;
+    amount: number;
+    discount: 9; // 9% הנחה
+  };
+  cc_single: {
+    count: number;
+    amount: number;
+    discount: 8; // 8% הנחה
+  };
+  cc_installments: {
+    count: number;
+    amount: number;
+    discount: 4; // 4% הנחה
+  };
+  checks: {
+    count: number;
+    amount: number;
+    discount: 0; // 0% הנחה
+  };
+  not_selected: {
+    count: number;
+    amount: number;
+  };
+}
+
+/**
  * נתוני Dashboard מלאים
  * כל הנתונים הדרושים לדף הראשי
  */
@@ -83,6 +121,7 @@ export interface DashboardData {
   tax_year: number; // Tax year (שנת מס) - the fiscal year FOR WHICH data is displayed
   budget_standard: BudgetStandard;
   budget_by_category?: BudgetByCategory; // פירוט תקציב מפורט (אופציונלי)
+  payment_method_breakdown?: PaymentMethodBreakdown; // פירוט אמצעי תשלום (אופציונלי)
   letter_stats: LetterStats;
   payment_stats: PaymentStats;
 }
