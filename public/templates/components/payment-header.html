@@ -1,0 +1,42 @@
+<!-- Payment Page Header Component -->
+<!-- Used by all 4 payment landing pages -->
+<!-- Variables: {{letter_date}}, {{company_name}}, {{group_name}} -->
+<!-- Images loaded from URL: https://ticovision.vercel.app/brand/ -->
+
+<!-- Row 1: Logo centered -->
+<tr>
+    <td style="text-align: center; padding-bottom: 10px;">
+        <img src="https://ticovision.vercel.app/brand/Tico_logo_png_new.png" width="180" height="80" alt="TICO" style="display: block; margin: 0 auto; border: 0;">
+    </td>
+</tr>
+
+<!-- Row 2: Thick black horizontal line -->
+<tr>
+    <td style="padding: 0;">
+        <div style="border-top: 13px solid #000000; margin: 20px 0;"></div>
+    </td>
+</tr>
+
+<!-- Row 3: Recipient (right) and Date (left) -->
+<tr>
+    <td style="padding-bottom: 0px; padding-top: 0px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                <!-- Recipient (right side in RTL) -->
+                <td width="50%" style="vertical-align: top; text-align: right;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.2; font-weight: 700; color: #000000;">
+                        לכבוד:<br>
+                        {{company_name}}<br>
+                        {{group_name}}
+                    </div>
+                </td>
+                <!-- Date (left side in RTL) -->
+                <td width="50%" style="vertical-align: top; text-align: left;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.2; font-weight: 700; color: #000000;">
+                        {{letter_date}}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>

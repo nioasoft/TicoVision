@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="page-title">פרטי תשלום בהמחאות</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Assistant:wght@400;500;600;700&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         @media print {
             body {
@@ -20,27 +21,41 @@
     <!-- Main container table (Card style) -->
     <table width="700" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid hsl(214.3 31.8% 91.4%); box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); font-family: 'Heebo', 'Assistant', Arial, sans-serif;">
 
-        <!-- Header: Logo centered on top -->
+        <!-- Header Component (matches letter templates) -->
+        <!-- Row 1: Logo centered -->
         <tr>
-            <td style="padding: 40px 40px 20px 40px; text-align: center;">
-                <img src="https://ticovision.vercel.app/brand/tico_logo_transparent.png" width="90" height="40" alt="TICO" style="display: inline-block; border: 0;">
+            <td style="text-align: center; padding: 40px 40px 10px 40px;">
+                <img src="https://ticovision.vercel.app/brand/Tico_logo_png_new.png" width="180" height="80" alt="TICO" style="display: block; margin: 0 auto; border: 0;">
             </td>
         </tr>
 
-        <!-- Recipient Info -->
+        <!-- Row 2: Thick black horizontal line -->
         <tr>
-            <td style="padding: 0 40px 20px 40px;">
-                <div style="font-size: 13px; line-height: 1.6; font-weight: 600; color: hsl(222.2 84% 4.9%); text-align: right;">
-                    לכבוד:<br>
-                    <span class="company-name">מסעדת האחים<br>קבוצת מסעדות ישראליות</span>
-                </div>
+            <td style="padding: 0 40px;">
+                <div style="border-top: 13px solid #000000; margin: 20px 0;"></div>
             </td>
         </tr>
 
-        <!-- Top border -->
+        <!-- Row 3: Recipient (right) and Date (left) -->
         <tr>
             <td style="padding: 0 40px 20px 40px;">
-                <div style="border-top: 1px solid hsl(214.3 31.8% 91.4%);"></div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                        <!-- Recipient (right side in RTL) -->
+                        <td width="50%" style="vertical-align: top; text-align: right;">
+                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.2; font-weight: 700; color: #000000;">
+                                לכבוד:<br>
+                                <span id="company-name-header" class="company-name">מסעדת האחים<br>קבוצת מסעדות ישראליות</span>
+                            </div>
+                        </td>
+                        <!-- Date (left side in RTL) -->
+                        <td width="50%" style="vertical-align: top; text-align: left;">
+                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.2; font-weight: 700; color: #000000;">
+                                <span id="letter-date"></span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
 
@@ -188,60 +203,50 @@
             </td>
         </tr>
 
-        <!-- Footer Top Border -->
+        <!-- Footer Component (matches letter templates) -->
+        <!-- FOOTER: Logo & Contact Details -->
         <tr>
-            <td style="padding: 0 40px 0 40px;">
-                <div style="border-top: 2px solid hsl(214.3 31.8% 91.4%);"></div>
-            </td>
-        </tr>
-
-        <!-- Footer Content -->
-        <tr>
-            <td style="padding: 24px 40px 40px 40px;">
-                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <td style="padding: 20px 40px 0 40px;">
+                <div style="border-top: 13px solid #000000; margin-bottom: 25px;"></div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding-top: 0px; padding-bottom: 20px;">
                     <tr>
-                        <!-- Logo Column - 30% width, enlarged logo, aligned right -->
-                        <td width="30%" style="vertical-align: top; text-align: right; padding-left: 0;">
-                            <img src="https://ticovision.vercel.app/brand/franco-logo.png" width="100" height="70" alt="TICO FRANCO & CO" style="display: block; margin-left: auto; margin-right: 0; border: 0;">
+                        <!-- Logo Column - 30% -->
+                        <td width="30%" style="vertical-align: middle; text-align: right; padding-left: 0;">
+                            <img src="https://ticovision.vercel.app/brand/Tico_franco_co.png" width="135" height="95" alt="TICO FRANCO & CO" style="display: block; margin-left: auto; margin-right: 0; border: 0;">
                         </td>
-                        <!-- Gap Column - 12% -->
-                        <td width="12%" style="padding: 0;"></td>
-                        <!-- Contact Details - 58% -->
-                        <td width="58%" style="vertical-align: top; text-align: right;">
-                            <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                                <tr>
-                                    <td style="font-size: 11px; line-height: 1.8; color: hsl(215.4 16.3% 46.9%); padding-bottom: 4px;">
-                                        <img src="https://ticovision.vercel.app/brand/icon-building.png" width="18" height="18" alt="📍" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
-                                        שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="font-size: 11px; line-height: 1.8; color: hsl(215.4 16.3% 46.9%); padding-bottom: 4px;">
-                                        <img src="https://ticovision.vercel.app/brand/icon-phone.png" width="18" height="18" alt="📞" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
-                                        03-5666170
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="font-size: 11px; line-height: 1.8; color: hsl(215.4 16.3% 46.9%);">
-                                        <img src="https://ticovision.vercel.app/brand/icon-email.png" width="18" height="14" alt="📧" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
-                                        tico@franco.co.il
-                                    </td>
-                                </tr>
-                            </table>
+                        <!-- Gap -->
+                        <td width="24.5%"></td>
+                        <!-- Contact Details - 45.5% -->
+                        <td width="45.5%" style="vertical-align: middle; text-align: right;">
+                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.8; color: #71717a; padding-bottom: 4px;">
+                                <img src="https://ticovision.vercel.app/brand/icon-building.png" width="22" height="22" alt="📍" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
+                                שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב
+                            </div>
+                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.8; color: #71717a; padding-bottom: 4px;">
+                                <img src="https://ticovision.vercel.app/brand/icon-phone.png" width="22" height="22" alt="📞" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
+                                03-5666170
+                            </div>
+                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.8; color: #71717a;">
+                                <img src="https://ticovision.vercel.app/brand/icon-email.png" width="22" height="17" alt="📧" style="display: inline-block; vertical-align: middle; margin-left: 6px; border: 0;">
+                                tico@franco.co.il
+                            </div>
                         </td>
                     </tr>
                 </table>
             </td>
         </tr>
 
-        <!-- Tagline -->
+        <!-- FOOTER: Bottom Border -->
         <tr>
-            <td style="padding: 0 40px 40px 40px;">
-                <div style="border-top: 2px solid #000000; border-bottom: 2px solid #000000; padding: 30px 0;">
-                    <div style="font-family: 'Assistant', Arial, sans-serif; font-weight: 500; font-size: 18px; line-height: 1.5; letter-spacing: 5px; text-transform: uppercase; color: #000000; text-align: center;">
-                        DARE TO THINK · COMMIT TO DELIVER
-                    </div>
-                </div>
+            <td style="padding: 0 40px;">
+                <div style="border-top: 13px solid #000000; margin-top: 20px;"></div>
+            </td>
+        </tr>
+
+        <!-- FOOTER: Tagline -->
+        <tr>
+            <td style="padding: 30px 40px 40px 40px;">
+                <img src="https://ticovision.vercel.app/brand/tagline.png" width="800" height="113" alt="DARE TO THINK · COMMIT TO DELIVER" style="display: block; width: 100%; max-width: 800px; height: auto; border: 0;">
             </td>
         </tr>
 
@@ -255,6 +260,14 @@
         const companyName = urlParams.get('company_name') || 'מסעדת האחים';
         const groupName = urlParams.get('group_name') || 'קבוצת מסעדות ישראליות';
         const numChecks = parseInt(urlParams.get('num_checks')) || 8; // Dynamic: 8 or 12
+
+        // Set current date in Israeli format (DD.MM.YYYY)
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, '0');
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const year = today.getFullYear();
+        const formattedDate = `${day}.${month}.${year}`;
+        document.getElementById('letter-date').textContent = formattedDate;
 
         // Calculate check amount (total ÷ numChecks)
         let checkAmount = 5900; // Default
