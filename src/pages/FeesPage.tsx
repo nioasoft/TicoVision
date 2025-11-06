@@ -8,6 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   Calculator,
@@ -35,6 +45,7 @@ interface FeeCalculatorForm {
   isNewClient: boolean;
   previous_year_amount: number;
   previous_year_discount: number;
+  previous_year_amount_after_discount: number;
   previous_year_amount_with_vat: number;
   base_amount: number;
   inflation_rate: number;
@@ -61,12 +72,14 @@ export function FeesPage() {
   const [loading, setLoading] = useState(true);
   const [previousYearDataSaved, setPreviousYearDataSaved] = useState(false);
   const [savingPreviousData, setSavingPreviousData] = useState(false);
+  const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
   const [formData, setFormData] = useState<FeeCalculatorForm>({
     client_id: '',
     year: new Date().getFullYear() + 1, // Default: next year (tax year being calculated)
     isNewClient: false,
     previous_year_amount: 0,
     previous_year_discount: 0,
+    previous_year_amount_after_discount: 0,
     previous_year_amount_with_vat: 0,
     base_amount: 0,
     inflation_rate: 3.0,
@@ -128,13 +141,21 @@ export function FeesPage() {
   }, [formData.client_id, formData.year]); // Re-load when tax year changes
 
   useEffect(() => {
-    // Auto-calculate previous year VAT amount
+    // Auto-calculate previous year amounts after discount
     if (formData.previous_year_amount && formData.previous_year_amount > 0) {
       const afterDiscount = formData.previous_year_amount * (1 - (formData.previous_year_discount || 0) / 100);
       const withVat = afterDiscount * 1.18; // 18% VAT
-      setFormData(prev => ({ ...prev, previous_year_amount_with_vat: parseFloat(withVat.toFixed(2)) }));
+      setFormData(prev => ({
+        ...prev,
+        previous_year_amount_after_discount: parseFloat(afterDiscount.toFixed(2)),
+        previous_year_amount_with_vat: parseFloat(withVat.toFixed(2))
+      }));
     } else {
-      setFormData(prev => ({ ...prev, previous_year_amount_with_vat: 0 }));
+      setFormData(prev => ({
+        ...prev,
+        previous_year_amount_after_discount: 0,
+        previous_year_amount_with_vat: 0
+      }));
     }
   }, [formData.previous_year_amount, formData.previous_year_discount]);
 
@@ -193,15 +214,20 @@ export function FeesPage() {
       if (response.data) {
         // Load previous year's data
         // Use final_amount (calculated result) if available, otherwise base_amount (manual entry)
+        const baseAmount = response.data.final_amount || response.data.base_amount || 0;
+        const discountPercent = response.data.discount_percentage || 0;
+        const afterDiscount = baseAmount * (1 - discountPercent / 100);
+
         setFormData(prev => ({
           ...prev,
-          previous_year_amount: response.data.final_amount || response.data.base_amount || 0,
-          previous_year_discount: response.data.discount_percentage || 0,
+          previous_year_amount: baseAmount,
+          previous_year_discount: discountPercent,
+          previous_year_amount_after_discount: parseFloat(afterDiscount.toFixed(2)),
           previous_year_amount_with_vat: response.data.total_amount || 0,
           // Auto-populate base amount for current year calculation
           // This provides a starting point - user can modify if needed
           // If a draft exists, loadDraftCalculation will override this value
-          base_amount: response.data.final_amount || response.data.base_amount || 0,
+          base_amount: baseAmount,
           // Auto-populate bookkeeping base amount if exists (for internal clients)
           bookkeeping_base_amount: response.data.bookkeeping_calculation?.final_amount || 0
         }));
@@ -590,6 +616,7 @@ export function FeesPage() {
       isNewClient: false,
       previous_year_amount: 0,
       previous_year_discount: 0,
+      previous_year_amount_after_discount: 0,
       previous_year_amount_with_vat: 0,
       base_amount: 0,
       inflation_rate: 3.0,
@@ -790,6 +817,7 @@ export function FeesPage() {
                                 isNewClient: true,
                                 previous_year_amount: 0,
                                 previous_year_discount: 0,
+                                previous_year_amount_after_discount: 0,
                                 previous_year_amount_with_vat: 0
                               }));
                               setPreviousYearDataSaved(true); // Allow progression
@@ -823,17 +851,37 @@ export function FeesPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="previous_discount">הנחה שנה קודמת (%)</Label>
+                    <Label htmlFor="previous_discount">הנחה שנה קודמת</Label>
+                    <div className="relative">
+                      <Input
+                        id="previous_discount"
+                        type="number"
+                        value={formData.previous_year_discount || ''}
+                        onChange={(e) => setFormData({ ...formData, previous_year_discount: parseFloat(e.target.value) || 0 })}
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        disabled={formData.isNewClient}
+                        className={`${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
+                      />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
+                        %
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="previous_after_discount">סכום אחרי הנחה לפני מע"מ (מחושב אוטומטית)</Label>
                     <Input
-                      id="previous_discount"
+                      id="previous_after_discount"
                       type="number"
-                      value={formData.previous_year_discount || ''}
-                      onChange={(e) => setFormData({ ...formData, previous_year_discount: parseFloat(e.target.value) || 0 })}
-                      min="0"
-                      max="100"
-                      disabled={formData.isNewClient}
-                      className={formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}
+                      value={formData.previous_year_amount_after_discount || ''}
+                      disabled
+                      className="font-semibold bg-blue-50 text-blue-900"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formatCurrency(formData.previous_year_amount_after_discount)}
+                    </p>
                   </div>
 
                   <div>
@@ -851,8 +899,16 @@ export function FeesPage() {
 
               <div className="flex justify-between">
                 <Button
-                  onClick={handleSavePreviousYearData}
-                  disabled={!formData.client_id || savingPreviousData || previousYearDataSaved || formData.isNewClient}
+                  onClick={() => {
+                    if (previousYearDataSaved) {
+                      // Show warning for overwrite
+                      setShowOverwriteWarning(true);
+                    } else {
+                      // First save - no warning
+                      handleSavePreviousYearData();
+                    }
+                  }}
+                  disabled={!formData.client_id || savingPreviousData || formData.isNewClient}
                   variant={previousYearDataSaved ? "outline" : "default"}
                 >
                   {savingPreviousData ? (
@@ -862,8 +918,8 @@ export function FeesPage() {
                     </>
                   ) : previousYearDataSaved ? (
                     <>
-                      <FileText className="h-4 w-4 ml-2" />
-                      נתונים נשמרו
+                      <Edit2 className="h-4 w-4 ml-2" />
+                      עדכן נתונים
                     </>
                   ) : (
                     <>
@@ -1414,6 +1470,32 @@ export function FeesPage() {
           setLetterPreviewOpen(false);
         }}
       />
+
+      {/* Overwrite Warning Dialog */}
+      <AlertDialog open={showOverwriteWarning} onOpenChange={setShowOverwriteWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="rtl:text-right ltr:text-left">
+              עדכון נתוני שנה קודמת
+            </AlertDialogTitle>
+            <AlertDialogDescription className="rtl:text-right ltr:text-left">
+              נתוני שנת {formData.year - 1} כבר קיימים במערכת.
+              האם אתה בטוח שברצונך לדרוס אותם?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => setShowOverwriteWarning(false)}>
+              ביטול
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setShowOverwriteWarning(false);
+              handleSavePreviousYearData();
+            }}>
+              כן, עדכן נתונים
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
