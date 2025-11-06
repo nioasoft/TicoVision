@@ -272,7 +272,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Row 2: Contact Name, Phone, Email (3 cols) */}
               <div>
                 <Label htmlFor="contact_name" className="text-right block mb-2">
-                  שם איש קשר *
+                  שם איש קשר מהותי *
                 </Label>
                 <Input
                   id="contact_name"
