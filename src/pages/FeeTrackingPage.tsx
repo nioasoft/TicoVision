@@ -45,13 +45,17 @@ import {
   FileText,
   Users,
   TrendingUp,
+  ChevronDown,
+  ChevronLeft,
 } from 'lucide-react';
 import { feeTrackingService } from '@/services/fee-tracking.service';
 import type {
   FeeTrackingRow,
   FeeTrackingKPIs,
+  FeeTrackingEnhancedRow,
   TrackingFilter,
   PaymentStatus,
+  FeeTrackingFilters,
 } from '@/types/fee-tracking.types';
 import { formatILS, formatNumber, formatPercentage } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -61,6 +65,11 @@ import {
   DiscountBadge,
   PaymentAmountDisplay,
 } from '@/components/payments/PaymentMethodBadge';
+import { DeviationBadge } from '@/components/payments/DeviationBadge';
+import { FileAttachmentBadge } from '@/components/payments/FileAttachmentList';
+import { FeeTrackingExpandedRow } from '@/components/fee-tracking/FeeTrackingExpandedRow';
+import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
+import { PAYMENT_DISCOUNTS } from '@/types/payment.types';
 
 export function FeeTrackingPage() {
   const navigate = useNavigate();
@@ -73,10 +82,15 @@ export function FeeTrackingPage() {
   const [clients, setClients] = useState<FeeTrackingRow[]>([]);
   const [filteredClients, setFilteredClients] = useState<FeeTrackingRow[]>([]);
 
+  // Enhanced data for expandable rows
+  const [enhancedData, setEnhancedData] = useState<FeeTrackingEnhancedRow[]>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<TrackingFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCard, setSelectedCard] = useState<TrackingFilter>('all');
+  const [advancedFilters, setAdvancedFilters] = useState<FeeTrackingFilters>({});
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,6 +121,7 @@ export function FeeTrackingPage() {
   const loadTrackingData = async () => {
     setLoading(true);
     try {
+      // Load regular tracking data for KPIs and basic view
       const response = await feeTrackingService.getTrackingData(selectedYear);
 
       if (response.error) {
@@ -122,6 +137,16 @@ export function FeeTrackingPage() {
         setKpis(response.data.kpis);
         setClients(response.data.clients);
       }
+
+      // Load enhanced data for expandable rows
+      const enhancedResponse = await feeTrackingService.getEnhancedTrackingData(
+        selectedYear,
+        advancedFilters
+      );
+
+      if (enhancedResponse.data) {
+        setEnhancedData(enhancedResponse.data);
+      }
     } catch (error) {
       console.error('Error loading tracking data:', error);
       toast({
@@ -132,6 +157,27 @@ export function FeeTrackingPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Toggle expanded row
+   */
+  const toggleRow = (feeId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(feeId)) {
+      newExpanded.delete(feeId);
+    } else {
+      newExpanded.add(feeId);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  /**
+   * Get enhanced row data by calculation ID
+   */
+  const getEnhancedRow = (calculationId: string | undefined): FeeTrackingEnhancedRow | null => {
+    if (!calculationId) return null;
+    return enhancedData.find((row) => row.fee_calculation_id === calculationId) || null;
   };
 
   /**
@@ -593,28 +639,126 @@ export function FeeTrackingPage() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={(v) => handleFilterChange(v as TrackingFilter)}>
-              <SelectTrigger className="w-full md:w-[250px]">
-                <SelectValue placeholder="סינון לפי סטטוס" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">🔵 הכל ({kpis?.total_clients || 0})</SelectItem>
-                <SelectItem value="not_calculated">❌ לא חושב ({kpis?.not_calculated || 0})</SelectItem>
-                <SelectItem value="calculated_not_sent">⚠️ חושב ולא נשלח ({kpis?.calculated_not_sent || 0})</SelectItem>
-                <SelectItem value="sent_not_paid">⏳ ממתין לתשלום ({kpis?.sent_not_paid || 0})</SelectItem>
-                <SelectItem value="paid">✅ שולם ({kpis?.paid || 0})</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-4">
+            {/* Basic Filters Row */}
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Status Filter */}
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => handleFilterChange(v as TrackingFilter)}
+              >
+                <SelectTrigger className="w-full md:w-[250px]">
+                  <SelectValue placeholder="סינון לפי סטטוס" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">🔵 הכל ({kpis?.total_clients || 0})</SelectItem>
+                  <SelectItem value="not_calculated">
+                    ❌ לא חושב ({kpis?.not_calculated || 0})
+                  </SelectItem>
+                  <SelectItem value="calculated_not_sent">
+                    ⚠️ חושב ולא נשלח ({kpis?.calculated_not_sent || 0})
+                  </SelectItem>
+                  <SelectItem value="sent_not_paid">
+                    ⏳ ממתין לתשלום ({kpis?.sent_not_paid || 0})
+                  </SelectItem>
+                  <SelectItem value="paid">✅ שולם ({kpis?.paid || 0})</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Search */}
-            <Input
-              placeholder="חיפוש לפי שם או ח.פ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1"
-            />
+              {/* Search */}
+              <Input
+                placeholder="חיפוש לפי שם או ח.פ..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+
+            {/* Advanced Filters Row */}
+            <div className="flex flex-wrap gap-2">
+              {/* Deviation Filter */}
+              <Select
+                value={advancedFilters.deviationLevel || 'all'}
+                onValueChange={(v) =>
+                  setAdvancedFilters({
+                    ...advancedFilters,
+                    deviationLevel: v === 'all' ? undefined : (v as AlertLevel),
+                  })
+                }
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="סטייה" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הסטיות</SelectItem>
+                  <SelectItem value="info">ℹ️ תקין</SelectItem>
+                  <SelectItem value="warning">⚠️ אזהרה</SelectItem>
+                  <SelectItem value="critical">🚨 קריטי</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Has Files Filter */}
+              <Select
+                value={
+                  advancedFilters.hasFiles === undefined
+                    ? 'all'
+                    : advancedFilters.hasFiles
+                    ? 'yes'
+                    : 'no'
+                }
+                onValueChange={(v) =>
+                  setAdvancedFilters({
+                    ...advancedFilters,
+                    hasFiles: v === 'all' ? undefined : v === 'yes',
+                  })
+                }
+              >
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="קבצים" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">הכל</SelectItem>
+                  <SelectItem value="yes">עם קבצים</SelectItem>
+                  <SelectItem value="no">ללא קבצים</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Payment Method Filter */}
+              <Select
+                value={advancedFilters.paymentMethod || 'all'}
+                onValueChange={(v) =>
+                  setAdvancedFilters({
+                    ...advancedFilters,
+                    paymentMethod: v === 'all' ? undefined : (v as PaymentMethod),
+                  })
+                }
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="אמצעי תשלום" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל האמצעים</SelectItem>
+                  <SelectItem value="bank_transfer">העברה בנקאית</SelectItem>
+                  <SelectItem value="cc_single">כ"א תשלום אחד</SelectItem>
+                  <SelectItem value="cc_installments">כ"א תשלומים</SelectItem>
+                  <SelectItem value="checks">המחאות</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Clear Filters Button */}
+              {(advancedFilters.deviationLevel ||
+                advancedFilters.hasFiles !== undefined ||
+                advancedFilters.paymentMethod) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAdvancedFilters({})}
+                  className="rtl:text-right"
+                >
+                  נקה סינונים
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -636,65 +780,167 @@ export function FeeTrackingPage() {
               <Table className="text-sm">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3 w-4"></TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שם לקוח</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">ח.פ</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סטטוס</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום מקורי</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום לפני מע"מ</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום כולל מע"מ</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סטייה</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שיטת תשלום</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">הנחה</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום סופי</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">קבצים</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">תשלומים</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedClients.map((client) => (
-                    <TableRow key={client.client_id}>
-                      <TableCell className="font-medium py-2 px-3 text-sm">
-                        {client.client_name_hebrew || client.client_name}
-                      </TableCell>
-                      <TableCell className="text-gray-600 py-2 px-3 text-xs">{client.tax_id}</TableCell>
-                      <TableCell className="py-2 px-3">{getStatusBadge(client.payment_status)}</TableCell>
-                      <TableCell className="py-2 px-3 text-sm">
-                        {client.calculation_amount ? formatILS(client.calculation_amount) : '-'}
-                      </TableCell>
-                      <TableCell className="py-2 px-3">
-                        <PaymentMethodBadge method={client.payment_method_selected || null} />
-                      </TableCell>
-                      <TableCell className="py-2 px-3">
-                        {client.payment_method_selected && client.calculation_amount && client.amount_after_selected_discount ? (
-                          <DiscountBadge
-                            discountPercent={
-                              Math.round(
-                                ((client.calculation_amount - client.amount_after_selected_discount) /
-                                  client.calculation_amount) *
-                                  100
+                  {paginatedClients.map((client) => {
+                    const enhancedRow = getEnhancedRow(client.calculation_id);
+                    const isExpanded = client.calculation_id && expandedRows.has(client.calculation_id);
+
+                    return (
+                      <>
+                        <TableRow
+                          key={client.client_id}
+                          className={cn(
+                            'cursor-pointer hover:bg-muted/50 transition-colors',
+                            isExpanded && 'bg-muted/30'
+                          )}
+                          onClick={() =>
+                            client.calculation_id && toggleRow(client.calculation_id)
+                          }
+                        >
+                          {/* Expand Icon */}
+                          <TableCell className="py-2 px-3">
+                            {client.calculation_id ? (
+                              isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-gray-600" />
+                              ) : (
+                                <ChevronLeft className="h-4 w-4 text-gray-600" />
                               )
-                            }
-                          />
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
+                            ) : null}
+                          </TableCell>
+
+                          {/* Client Name */}
+                          <TableCell className="font-medium py-2 px-3 text-sm">
+                            {client.client_name_hebrew || client.client_name}
+                          </TableCell>
+
+                          {/* Tax ID */}
+                          <TableCell className="text-gray-600 py-2 px-3 text-xs">
+                            {client.tax_id}
+                          </TableCell>
+
+                          {/* Status */}
+                          <TableCell className="py-2 px-3">
+                            {getStatusBadge(client.payment_status)}
+                          </TableCell>
+
+                          {/* Amount Before VAT */}
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right">
+                            {enhancedRow?.actual_before_vat
+                              ? formatILS(enhancedRow.actual_before_vat)
+                              : enhancedRow?.original_before_vat
+                              ? formatILS(enhancedRow.original_before_vat)
+                              : '-'}
+                          </TableCell>
+
+                          {/* Amount With VAT */}
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right font-medium">
+                            {enhancedRow?.actual_with_vat
+                              ? formatILS(enhancedRow.actual_with_vat)
+                              : enhancedRow?.original_with_vat
+                              ? formatILS(enhancedRow.original_with_vat)
+                              : '-'}
+                          </TableCell>
+
+                          {/* Deviation */}
+                          <TableCell className="py-2 px-3 rtl:text-right">
+                            {enhancedRow?.deviation_amount &&
+                            enhancedRow.deviation_percent !== null &&
+                            enhancedRow.deviation_alert_level ? (
+                              <DeviationBadge
+                                deviationAmount={enhancedRow.deviation_amount}
+                                deviationPercent={enhancedRow.deviation_percent}
+                                alertLevel={enhancedRow.deviation_alert_level}
+                                showTooltip={false}
+                              />
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </TableCell>
+
+                          {/* Payment Method */}
+                          <TableCell className="py-2 px-3">
+                            <PaymentMethodBadge
+                              method={
+                                enhancedRow?.actual_payment_method ||
+                                client.payment_method_selected ||
+                                null
+                              }
+                            />
+                          </TableCell>
+
+                          {/* Discount */}
+                          <TableCell className="py-2 px-3 rtl:text-right">
+                            {(() => {
+                              const method = enhancedRow?.actual_payment_method || client.payment_method_selected;
+                              if (method && PAYMENT_DISCOUNTS[method as PaymentMethod] > 0) {
+                                return (
+                                  <DiscountBadge
+                                    discountPercent={PAYMENT_DISCOUNTS[method as PaymentMethod]}
+                                    className="text-xs"
+                                  />
+                                );
+                              }
+                              return <span className="text-xs text-gray-400">-</span>;
+                            })()}
+                          </TableCell>
+
+                          {/* Files */}
+                          <TableCell className="py-2 px-3 rtl:text-right">
+                            {enhancedRow && enhancedRow.attachment_count > 0 ? (
+                              <FileAttachmentBadge count={enhancedRow.attachment_count} />
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </TableCell>
+
+                          {/* Installments */}
+                          <TableCell className="py-2 px-3 rtl:text-right">
+                            {enhancedRow && enhancedRow.installment_count > 0 ? (
+                              <span className="text-xs">
+                                {enhancedRow.installments_paid}/{enhancedRow.installment_count}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </TableCell>
+
+                          {/* Actions */}
+                          <TableCell
+                            className="py-2 px-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {renderActions(client)}
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expandable Row Content */}
+                        {isExpanded && client.calculation_id && (
+                          <TableRow>
+                            <TableCell colSpan={11} className="p-0">
+                              <FeeTrackingExpandedRow
+                                feeCalculationId={client.calculation_id}
+                                clientName={client.client_name_hebrew || client.client_name}
+                              />
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </TableCell>
-                      <TableCell className="py-2 px-3 text-sm">
-                        {client.amount_after_selected_discount ? (
-                          <div className="rtl:text-right ltr:text-left">
-                            <div className="font-semibold text-blue-600">
-                              {formatILS(client.amount_after_selected_discount)}
-                            </div>
-                            {client.calculation_amount &&
-                              client.amount_after_selected_discount < client.calculation_amount && (
-                                <div className="text-xs text-green-600">
-                                  חיסכון: {formatILS(client.calculation_amount - client.amount_after_selected_discount)}
-                                </div>
-                              )}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-2 px-3">{renderActions(client)}</TableCell>
-                    </TableRow>
-                  ))}
+                      </>
+                    );
+                  })}
                 </TableBody>
               </Table>
 

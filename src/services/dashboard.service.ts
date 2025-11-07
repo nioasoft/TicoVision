@@ -500,6 +500,177 @@ class DashboardService extends BaseService {
       return { data: null, error: this.handleError(error) };
     }
   }
+
+  /**
+   * Get budget with actual payments
+   * - Combines budget standard (from fee_calculations)
+   * - With actual payments (from actual_payments)
+   *
+   * @param year - Tax year
+   * @returns Budget with actuals comparison
+   */
+  async getBudgetWithActuals(
+    year: number
+  ): Promise<ServiceResponse<{
+    budgetStandard: { beforeVat: number; withVat: number };
+    actualPayments: { beforeVat: number; withVat: number };
+    remaining: { beforeVat: number; withVat: number };
+    completionRate: number;
+  }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get budget standard
+      const { data: budgetData, error: budgetError } = await supabase
+        .from('fee_calculations')
+        .select('final_amount, total_amount')
+        .eq('tenant_id', tenantId)
+        .eq('year', year);
+
+      if (budgetError) throw budgetError;
+
+      // Get actual payments
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('actual_payments')
+        .select('amount_before_vat, amount_with_vat')
+        .eq('tenant_id', tenantId)
+        .gte('payment_date', `${year}-01-01`)
+        .lte('payment_date', `${year}-12-31`);
+
+      if (paymentsError) throw paymentsError;
+
+      // Calculate budget standard
+      const budgetStandard = {
+        beforeVat: budgetData?.reduce((sum, f) => sum + (f.final_amount || 0), 0) || 0,
+        withVat: budgetData?.reduce((sum, f) => sum + (f.total_amount || 0), 0) || 0,
+      };
+
+      // Calculate actual payments
+      const actualPayments = {
+        beforeVat: paymentsData?.reduce((sum, p) => sum + (p.amount_before_vat || 0), 0) || 0,
+        withVat: paymentsData?.reduce((sum, p) => sum + (p.amount_with_vat || 0), 0) || 0,
+      };
+
+      // Calculate remaining
+      const remaining = {
+        beforeVat: budgetStandard.beforeVat - actualPayments.beforeVat,
+        withVat: budgetStandard.withVat - actualPayments.withVat,
+      };
+
+      // Calculate completion rate
+      const completionRate =
+        budgetStandard.beforeVat > 0
+          ? (actualPayments.beforeVat / budgetStandard.beforeVat) * 100
+          : 0;
+
+      await this.logAction('get_budget_with_actuals', undefined, { year });
+
+      return {
+        data: {
+          budgetStandard,
+          actualPayments,
+          remaining,
+          completionRate,
+        },
+        error: null,
+      };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get payment method breakdown with client details
+   *
+   * @param year - Tax year
+   * @returns Payment method breakdown with client list
+   */
+  async getPaymentMethodBreakdownWithClients(
+    year: number
+  ): Promise<ServiceResponse<
+    Array<{
+      method: string;
+      count: number;
+      clients: Array<{
+        clientId: string;
+        clientName: string;
+        originalAmount: number;
+        expectedAmount: number;
+        actualAmount: number;
+      }>;
+      totalBeforeVat: number;
+      totalWithVat: number;
+    }>
+  >> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('actual_payments')
+        .select(`
+          *,
+          clients (id, company_name),
+          fee_calculations (final_amount, amount_after_selected_discount)
+        `)
+        .eq('tenant_id', tenantId)
+        .gte('payment_date', `${year}-01-01`)
+        .lte('payment_date', `${year}-12-31`)
+        .order('payment_method');
+
+      if (error) throw error;
+
+      // Group by payment method
+      const breakdown: Record<string, {
+        method: string;
+        count: number;
+        clients: Array<{
+          clientId: string;
+          clientName: string;
+          originalAmount: number;
+          expectedAmount: number;
+          actualAmount: number;
+        }>;
+        totalBeforeVat: number;
+        totalWithVat: number;
+      }> = {};
+
+      data?.forEach((payment: Record<string, unknown>) => {
+        const method = payment.payment_method as string;
+        if (!breakdown[method]) {
+          breakdown[method] = {
+            method,
+            count: 0,
+            clients: [],
+            totalBeforeVat: 0,
+            totalWithVat: 0,
+          };
+        }
+
+        const client = payment.clients as { id: string; company_name: string };
+        const feeCalc = payment.fee_calculations as {
+          final_amount?: number;
+          amount_after_selected_discount?: number;
+        };
+
+        breakdown[method].count++;
+        breakdown[method].clients.push({
+          clientId: client.id,
+          clientName: client.company_name,
+          originalAmount: feeCalc?.final_amount || 0,
+          expectedAmount: feeCalc?.amount_after_selected_discount || 0,
+          actualAmount: payment.amount_paid as number,
+        });
+        breakdown[method].totalBeforeVat += (payment.amount_before_vat as number) || 0;
+        breakdown[method].totalWithVat += (payment.amount_with_vat as number) || 0;
+      });
+
+      await this.logAction('get_payment_method_breakdown_with_clients', undefined, { year });
+
+      return { data: Object.values(breakdown), error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
 }
 
 // Export singleton instance

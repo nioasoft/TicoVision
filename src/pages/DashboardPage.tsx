@@ -15,15 +15,25 @@ import {
 } from '@/components/ui/select';
 import { dashboardService } from '@/services/dashboard.service';
 import { BudgetBreakdownSection } from '@/components/BudgetBreakdownSection';
-import { PaymentMethodBreakdownCard } from '@/components/PaymentMethodBreakdownCard';
-import type { BudgetByCategory, PaymentMethodBreakdown } from '@/types/dashboard.types';
+import { BudgetWithActualsCard } from '@/components/dashboard/BudgetWithActualsCard';
+import { PaymentMethodBreakdownEnhanced } from '@/components/dashboard/PaymentMethodBreakdownEnhanced';
+import { ClientListPopup } from '@/components/dashboard/ClientListPopup';
+import type { BudgetByCategory } from '@/types/dashboard.types';
 
 export function DashboardPage() {
   // State management
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() + 1); // Default: next year (tax year)
   const [budgetBreakdown, setBudgetBreakdown] = useState<BudgetByCategory | null>(null);
-  const [paymentMethodBreakdown, setPaymentMethodBreakdown] = useState<PaymentMethodBreakdown | null>(null);
+  const [budgetPopupType, setBudgetPopupType] = useState<'standard' | 'actuals' | 'remaining' | null>(null);
+  const [budgetClients, setBudgetClients] = useState<Array<{
+    clientId: string;
+    clientName: string;
+    originalAmount: number;
+    expectedAmount?: number;
+    actualAmount?: number;
+  }>>([]);
+  const [budgetTotals, setBudgetTotals] = useState({ beforeVat: 0, withVat: 0 });
 
   // Available years for selection (current year - 1 to current year + 2)
   const currentYear = new Date().getFullYear();
@@ -50,18 +60,49 @@ export function DashboardPage() {
       } else {
         setBudgetBreakdown(breakdownResponse.data);
       }
-
-      // טעינת פירוט אמצעי תשלום
-      const paymentMethodResponse = await dashboardService.getPaymentMethodBreakdown(selectedYear);
-      if (paymentMethodResponse.error) {
-        console.error('Error loading payment method breakdown:', paymentMethodResponse.error);
-      } else {
-        setPaymentMethodBreakdown(paymentMethodResponse.data);
-      }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBudgetClick = async (type: 'standard' | 'actuals' | 'remaining') => {
+    // Fetch client list for the selected type
+    try {
+      if (type === 'standard') {
+        // Get all clients with their budget standard
+        const { data: auditClients } = await dashboardService.getBudgetBreakdown(selectedYear, 'audit');
+        const { data: bookkeepingClients } = await dashboardService.getBudgetBreakdown(selectedYear, 'bookkeeping');
+
+        const allClients = [
+          ...(auditClients || []).map(c => ({
+            clientId: c.client_id,
+            clientName: c.client_name,
+            originalAmount: c.amount_before_vat,
+          })),
+          ...(bookkeepingClients || []).map(c => ({
+            clientId: c.client_id,
+            clientName: c.client_name,
+            originalAmount: c.amount_before_vat,
+          }))
+        ];
+
+        const totalBeforeVat = allClients.reduce((sum, c) => sum + c.originalAmount, 0);
+        const totalWithVat = totalBeforeVat * 1.18;
+
+        setBudgetClients(allClients);
+        setBudgetTotals({ beforeVat: totalBeforeVat, withVat: totalWithVat });
+        setBudgetPopupType(type);
+      } else {
+        // For actuals and remaining, we'll need to fetch actual payments
+        // This will be implemented when we have the actual_payments data
+        setBudgetClients([]);
+        setBudgetTotals({ beforeVat: 0, withVat: 0 });
+        setBudgetPopupType(type);
+      }
+    } catch (error) {
+      console.error('Error loading client list:', error);
     }
   };
 
@@ -106,18 +147,23 @@ export function DashboardPage() {
         </div>
       )}
 
+      {/* Budget with Actuals Card - NEW */}
+      {!isLoading && (
+        <BudgetWithActualsCard
+          year={selectedYear}
+          onClientListClick={handleBudgetClick}
+        />
+      )}
+
+      {/* Payment Method Breakdown - ENHANCED */}
+      {!isLoading && (
+        <PaymentMethodBreakdownEnhanced year={selectedYear} />
+      )}
+
       {/* פירוט תקציב לפי קטגוריות */}
       {!isLoading && budgetBreakdown && (
         <BudgetBreakdownSection
           breakdown={budgetBreakdown}
-          taxYear={selectedYear}
-        />
-      )}
-
-      {/* פירוט אמצעי תשלום */}
-      {!isLoading && paymentMethodBreakdown && (
-        <PaymentMethodBreakdownCard
-          breakdown={paymentMethodBreakdown}
           taxYear={selectedYear}
         />
       )}
@@ -146,6 +192,22 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Budget client list popup */}
+      {budgetPopupType && (
+        <ClientListPopup
+          open={true}
+          onOpenChange={() => setBudgetPopupType(null)}
+          title={
+            budgetPopupType === 'standard' ? 'תקציב תקן - כל הלקוחות' :
+            budgetPopupType === 'actuals' ? 'גביה בפועל - לקוחות ששילמו' :
+            'יתרה לגביה - לקוחות שטרם שילמו'
+          }
+          clients={budgetClients}
+          totalBeforeVat={budgetTotals.beforeVat}
+          totalWithVat={budgetTotals.withVat}
+        />
       )}
     </div>
   );

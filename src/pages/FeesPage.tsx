@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FileUploadSection } from '@/components/files';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -771,6 +772,24 @@ export function FeesPage() {
                     </p>
                   </div>
 
+                  {/* File Upload for Previous Year */}
+                  {formData.client_id && (
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                      <Label className="text-base font-semibold text-blue-900 mb-2 block rtl:text-right">
+                        קבצים לשנת {formData.year - 1}
+                      </Label>
+                      <FileUploadSection
+                        clientId={formData.client_id}
+                        yearContext={formData.year - 1}
+                        uploadContext="fee_calculation"
+                        compact
+                      />
+                      <p className="text-xs text-blue-700 mt-2 rtl:text-right">
+                        העלה קבצים רלוונטיים עבור שנת {formData.year - 1}
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor="client">בחירת לקוח *</Label>
                     <Select
@@ -883,6 +902,21 @@ export function FeesPage() {
                       {formatCurrency(formData.previous_year_amount_after_discount)}
                     </p>
                   </div>
+
+                  {/* Bookkeeping Files Upload */}
+                  {formData.client_id && selectedClientDetails?.internal_external === 'internal' && (
+                    <div className="col-span-2 bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                      <Label className="text-base font-semibold text-purple-900 mb-2 block rtl:text-right">
+                        כרטסת הנהלת חשבונות
+                      </Label>
+                      <FileUploadSection
+                        clientId={formData.client_id}
+                        uploadContext="bookkeeping"
+                        compact
+                        showLastLetterOnly
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <Label htmlFor="previous_vat">סכום שנה קודמת כולל מע"מ (מחושב אוטומטית)</Label>

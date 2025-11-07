@@ -7,8 +7,8 @@ import React, { useEffect, useState } from 'react';
 import { KPICards, type KPICardFilter } from '../components/KPICards';
 import { CollectionFilters } from '../components/CollectionFilters';
 import { CollectionTable } from '../components/CollectionTable';
-import { MarkAsPaidDialog } from '../components/MarkAsPaidDialog';
-import { PartialPaymentDialog } from '../components/PartialPaymentDialog';
+import { ActualPaymentEntryDialog } from '../components/ActualPaymentEntryDialog';
+import { InstallmentDetailsDialog } from '../components/InstallmentDetailsDialog';
 import { LogInteractionDialog } from '../components/LogInteractionDialog';
 import { SendReminderDialog } from '../components/SendReminderDialog';
 import { HistoryDialog } from '../components/HistoryDialog';
@@ -38,14 +38,15 @@ export const CollectionDashboard: React.FC = () => {
   } = useCollectionStore();
 
   // Dialog states
-  const [markPaidDialog, setMarkPaidDialog] = useState<{ open: boolean; row: CollectionRow | null }>({
+  const [paymentEntryDialog, setPaymentEntryDialog] = useState<{ open: boolean; row: CollectionRow | null }>({
     open: false,
     row: null,
   });
-  const [partialPaymentDialog, setPartialPaymentDialog] = useState<{
+  const [installmentDetailsDialog, setInstallmentDetailsDialog] = useState<{
     open: boolean;
-    row: CollectionRow | null;
-  }>({ open: false, row: null });
+    actualPaymentId: string | null;
+    clientName: string | null;
+  }>({ open: false, actualPaymentId: null, clientName: null });
   const [logInteractionDialog, setLogInteractionDialog] = useState<{
     open: boolean;
     row: CollectionRow | null;
@@ -62,18 +63,29 @@ export const CollectionDashboard: React.FC = () => {
   // KPI Card selection state
   const [selectedCard, setSelectedCard] = useState<KPICardFilter>('all');
 
+  // Expandable rows state
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
   // Fetch data on mount
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
   // Handlers
-  const handleMarkAsPaid = (row: CollectionRow) => {
-    setMarkPaidDialog({ open: true, row });
+  const handlePaymentEntry = (row: CollectionRow) => {
+    setPaymentEntryDialog({ open: true, row });
   };
 
-  const handleMarkPartialPayment = (row: CollectionRow) => {
-    setPartialPaymentDialog({ open: true, row });
+  const handleToggleExpand = (feeId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(feeId)) {
+        next.delete(feeId);
+      } else {
+        next.add(feeId);
+      }
+      return next;
+    });
   };
 
   const handleSendReminder = (row: CollectionRow) => {
@@ -165,13 +177,15 @@ export const CollectionDashboard: React.FC = () => {
           <CollectionTable
             rows={dashboardData.rows}
             selectedRows={selectedRows}
+            expandedRows={expandedRows}
             loading={loading}
             sort={sort}
             onSort={setSort}
             onSelectAll={selectAll}
             onToggleSelect={toggleRowSelection}
-            onMarkAsPaid={handleMarkAsPaid}
-            onMarkPartialPayment={handleMarkPartialPayment}
+            onToggleExpand={handleToggleExpand}
+            onMarkAsPaid={handlePaymentEntry}
+            onMarkPartialPayment={handlePaymentEntry}
             onSendReminder={handleSendReminder}
             onLogInteraction={handleLogInteraction}
             onViewHistory={handleViewHistory}
@@ -211,17 +225,28 @@ export const CollectionDashboard: React.FC = () => {
       )}
 
       {/* Dialogs */}
-      <MarkAsPaidDialog
-        open={markPaidDialog.open}
-        onOpenChange={(open) => setMarkPaidDialog({ open, row: null })}
-        row={markPaidDialog.row}
-        onSuccess={handleDialogSuccess}
-      />
-      <PartialPaymentDialog
-        open={partialPaymentDialog.open}
-        onOpenChange={(open) => setPartialPaymentDialog({ open, row: null })}
-        row={partialPaymentDialog.row}
-        onSuccess={handleDialogSuccess}
+      {paymentEntryDialog.row && (
+        <ActualPaymentEntryDialog
+          open={paymentEntryDialog.open}
+          onOpenChange={(open) => setPaymentEntryDialog({ open, row: null })}
+          feeCalculationId={paymentEntryDialog.row.fee_calculation_id}
+          clientName={paymentEntryDialog.row.company_name_hebrew || paymentEntryDialog.row.client_name}
+          clientId={paymentEntryDialog.row.client_id}
+          originalAmount={paymentEntryDialog.row.amount_original}
+          expectedAmount={paymentEntryDialog.row.amount_after_discount || paymentEntryDialog.row.amount_original}
+          expectedDiscount={paymentEntryDialog.row.discount_percent}
+          paymentMethodSelected={paymentEntryDialog.row.payment_method_selected}
+          onSuccess={handleDialogSuccess}
+        />
+      )}
+      <InstallmentDetailsDialog
+        open={installmentDetailsDialog.open}
+        onOpenChange={(open) =>
+          setInstallmentDetailsDialog({ open, actualPaymentId: null, clientName: null })
+        }
+        actualPaymentId={installmentDetailsDialog.actualPaymentId || ''}
+        clientName={installmentDetailsDialog.clientName || ''}
+        onUpdate={handleDialogSuccess}
       />
       <LogInteractionDialog
         open={logInteractionDialog.open}

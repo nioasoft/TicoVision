@@ -496,6 +496,118 @@ class CollectionService extends BaseService {
     }
   }
 
+  /**
+   * Record actual payment from collection page
+   * - Wrapper around ActualPaymentService
+   * - Updates collection dashboard
+   *
+   * @param data - Payment data
+   * @returns Success status
+   */
+  async recordActualPayment(
+    data: {
+      clientId: string;
+      feeCalculationId: string;
+      amountPaid: number;
+      paymentDate: Date;
+      paymentMethod: string;
+      paymentReference?: string;
+      numInstallments?: number;
+      attachmentIds?: string[];
+      notes?: string;
+    }
+  ): Promise<ServiceResponse<boolean>> {
+    try {
+      const { actualPaymentService } = await import('./actual-payment.service');
+
+      const result = await actualPaymentService.recordPayment(data);
+
+      if (result.error) {
+        return { data: false, error: result.error };
+      }
+
+      // Log action
+      await this.logAction('record_actual_payment_from_collection', data.feeCalculationId, {
+        client_id: data.clientId,
+        amount: data.amountPaid,
+      });
+
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: false, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get payment with deviations for collection dashboard
+   *
+   * @param feeCalculationId - Fee calculation ID
+   * @returns Payment with deviation info
+   */
+  async getPaymentWithDeviations(
+    feeCalculationId: string
+  ): Promise<ServiceResponse<Record<string, unknown>>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('fee_tracking_enhanced_view')
+        .select('*')
+        .eq('fee_calculation_id', feeCalculationId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (error) throw error;
+
+      return { data: data || {}, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get deviation alerts for collection page
+   *
+   * @param filters - Optional filters
+   * @returns List of deviation alerts
+   */
+  async getDeviationAlerts(
+    filters?: {
+      alertLevel?: string;
+      reviewed?: boolean;
+    }
+  ): Promise<ServiceResponse<Record<string, unknown>[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('payment_deviations')
+        .select(`
+          *,
+          clients (company_name),
+          fee_calculations (year, final_amount)
+        `)
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (filters?.alertLevel) {
+        query = query.eq('alert_level', filters.alertLevel);
+      }
+
+      if (filters?.reviewed !== undefined) {
+        query = query.eq('reviewed', filters.reviewed);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
   // ==================== Private Helper Methods ====================
 
   /**

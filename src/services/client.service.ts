@@ -211,6 +211,40 @@ export class ClientService extends BaseService {
         };
       }
 
+      // Validate required fields
+      const requiredFields: Array<{ key: keyof CreateClientDto | string; label: string }> = [
+        { key: 'company_name', label: 'שם החברה' },
+        { key: 'commercial_name', label: 'שם מסחרי' },
+        { key: 'contact_name', label: 'שם איש קשר' },
+        { key: 'contact_email', label: 'אימייל איש קשר' },
+        { key: 'contact_phone', label: 'טלפון איש קשר' },
+        { key: 'accountant_name', label: 'שם מנהלת חשבונות' },
+        { key: 'accountant_email', label: 'אימייל מנהלת חשבונות' },
+        { key: 'accountant_phone', label: 'טלפון מנהלת חשבונות' },
+      ];
+
+      const missingFields = requiredFields.filter(({ key }) => {
+        const value = data[key as keyof CreateClientDto];
+        return !value || (typeof value === 'string' && !value.trim());
+      });
+
+      if (missingFields.length > 0) {
+        return {
+          data: null,
+          error: new Error(
+            `שדות חובה חסרים: ${missingFields.map(f => f.label).join(', ')}`
+          ),
+        };
+      }
+
+      // Validate address fields
+      if (!data.address?.street?.trim() || !data.address?.city?.trim() || !data.address?.postal_code?.trim()) {
+        return {
+          data: null,
+          error: new Error('שדות כתובת חובה: רחוב, עיר ומיקוד'),
+        };
+      }
+
       // Set default payment_role based on group_id
       let paymentRole = data.payment_role || 'independent';
       if (data.group_id && !data.payment_role) {

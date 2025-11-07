@@ -32,6 +32,8 @@ import {
   MessageSquare,
   History,
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import type { CollectionRow, CollectionSort } from '@/types/collection.types';
 import {
@@ -43,15 +45,18 @@ import {
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { PaymentMethodBadge, DiscountBadge } from '@/components/payments/PaymentMethodBadge';
+import { CollectionExpandableRow } from './CollectionExpandableRow';
 
 interface CollectionTableProps {
   rows: CollectionRow[];
   selectedRows: string[];
+  expandedRows: Set<string>;
   loading?: boolean;
   sort: CollectionSort;
   onSort: (sort: CollectionSort) => void;
   onSelectAll: () => void;
   onToggleSelect: (feeId: string) => void;
+  onToggleExpand: (feeId: string) => void;
   onMarkAsPaid: (row: CollectionRow) => void;
   onMarkPartialPayment: (row: CollectionRow) => void;
   onSendReminder: (row: CollectionRow) => void;
@@ -90,7 +95,9 @@ const SortableHeader: React.FC<{
 const CollectionTableRow: React.FC<{
   row: CollectionRow;
   isSelected: boolean;
+  isExpanded: boolean;
   onToggleSelect: (feeId: string) => void;
+  onToggleExpand: (feeId: string) => void;
   onMarkAsPaid: (row: CollectionRow) => void;
   onMarkPartialPayment: (row: CollectionRow) => void;
   onSendReminder: (row: CollectionRow) => void;
@@ -99,7 +106,9 @@ const CollectionTableRow: React.FC<{
 }> = ({
   row,
   isSelected,
+  isExpanded,
   onToggleSelect,
+  onToggleExpand,
   onMarkAsPaid,
   onMarkPartialPayment,
   onSendReminder,
@@ -107,14 +116,31 @@ const CollectionTableRow: React.FC<{
   onViewHistory,
 }) => {
   return (
-    <TableRow className={cn('hover:bg-gray-50', isSelected && 'bg-blue-50')}>
-      {/* Checkbox */}
-      <TableCell className="w-12 py-2 px-3">
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleSelect(row.fee_calculation_id)}
-        />
-      </TableCell>
+    <>
+      <TableRow className={cn('hover:bg-gray-50', isSelected && 'bg-blue-50', isExpanded && 'border-b-0')}>
+        {/* Expand Icon */}
+        <TableCell className="w-10 py-2 px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => onToggleExpand(row.fee_calculation_id)}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+        </TableCell>
+
+        {/* Checkbox */}
+        <TableCell className="w-12 py-2 px-3">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(row.fee_calculation_id)}
+          />
+        </TableCell>
 
       {/* Client Name */}
       <TableCell className="min-w-[200px] py-2 px-3">
@@ -208,6 +234,20 @@ const CollectionTableRow: React.FC<{
         </DropdownMenu>
       </TableCell>
     </TableRow>
+
+      {/* Expandable Row Content */}
+      {isExpanded && (
+        <TableRow>
+          <TableCell colSpan={10} className="p-0 bg-muted/30">
+            <CollectionExpandableRow
+              feeCalculationId={row.fee_calculation_id}
+              actualPaymentId={undefined} // Will be fetched from within component
+              clientName={row.company_name_hebrew || row.client_name}
+            />
+          </TableCell>
+        </TableRow>
+      )}
+    </>
   );
 };
 
@@ -217,11 +257,13 @@ const CollectionTableRow: React.FC<{
 export const CollectionTable: React.FC<CollectionTableProps> = ({
   rows,
   selectedRows,
+  expandedRows,
   loading = false,
   sort,
   onSort,
   onSelectAll,
   onToggleSelect,
+  onToggleExpand,
   onMarkAsPaid,
   onMarkPartialPayment,
   onSendReminder,
@@ -251,6 +293,7 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
       <Table className="text-sm">
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10 py-2 px-2"></TableHead>
             <TableHead className="w-12 py-2 px-3">
               <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
             </TableHead>
@@ -286,7 +329,9 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
               key={row.fee_calculation_id}
               row={row}
               isSelected={selectedRows.includes(row.fee_calculation_id)}
+              isExpanded={expandedRows.has(row.fee_calculation_id)}
               onToggleSelect={onToggleSelect}
+              onToggleExpand={onToggleExpand}
               onMarkAsPaid={onMarkAsPaid}
               onMarkPartialPayment={onMarkPartialPayment}
               onSendReminder={onSendReminder}

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FileUploadSection } from '@/components/files';
 import {
   Dialog,
   DialogContent,
@@ -190,7 +191,61 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       }
     }, [hasUnsavedChanges, onClose]);
 
+    // Validate form before submission
+    const validateForm = useCallback((): { valid: boolean; errors: string[] } => {
+      const errors: string[] = [];
+
+      // Required fields validation
+      if (!formData.tax_id?.trim()) errors.push('מספר מזהה');
+      if (!formData.company_name?.trim()) errors.push('שם החברה');
+      if (!formData.commercial_name?.trim()) errors.push('שם מסחרי');
+      if (!formData.contact_name?.trim()) errors.push('שם איש קשר');
+      if (!formData.contact_email?.trim()) errors.push('אימייל איש קשר');
+      if (!formData.contact_phone?.trim()) errors.push('טלפון איש קשר');
+      if (!formData.address?.street?.trim()) errors.push('כתובת');
+      if (!formData.address?.city?.trim()) errors.push('עיר');
+      if (!formData.address?.postal_code?.trim()) errors.push('מיקוד');
+
+      // Accountant validation - ONLY in add mode
+      if (mode === 'add') {
+        if (!formData.accountant_name?.trim()) errors.push('שם מנהלת חשבונות');
+        if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
+        if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
+      }
+
+      // Format validation
+      if (formData.tax_id && !/^\d{9}$/.test(formData.tax_id)) {
+        errors.push('מספר מזהה חייב להכיל 9 ספרות בדיוק');
+      }
+
+      if (formData.address?.postal_code && !validateIsraeliPostalCode(formData.address.postal_code)) {
+        errors.push('מיקוד חייב להכיל 7 ספרות בדיוק');
+      }
+
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (formData.contact_email && !emailRegex.test(formData.contact_email)) {
+        errors.push('אימייל איש קשר לא תקין');
+      }
+      if (mode === 'add' && formData.accountant_email && !emailRegex.test(formData.accountant_email)) {
+        errors.push('אימייל מנהלת חשבונות לא תקין');
+      }
+
+      return { valid: errors.length === 0, errors };
+    }, [formData, mode]);
+
     const handleSubmit = useCallback(async () => {
+      // Validate form first
+      const { valid, errors } = validateForm();
+
+      if (!valid) {
+        // Show error alert with missing fields
+        alert(
+          `❌ לא ניתן לשמור - שדות חובה חסרים או לא תקינים:\n\n${errors.map(e => `• ${e}`).join('\n')}`
+        );
+        return;
+      }
+
       setIsSubmitting(true);
       try {
         const success = await onSubmit(formData);
@@ -201,7 +256,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       } finally {
         setIsSubmitting(false);
       }
-    }, [formData, onSubmit]);
+    }, [formData, onSubmit, validateForm]);
 
     const handleFormChange = useCallback(<K extends keyof CreateClientDto>(
       field: K,
@@ -680,62 +735,76 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </div>
               </div>
 
-              {/* Row 8: Accountant Details - REQUIRED SECTION (full width with border) */}
-              <div className="col-span-3 border-t pt-4 mt-4">
-                <h3 className="text-lg font-semibold mb-4 text-right">מנהלת חשבונות (חובה)</h3>
+              {/* Row 8: Accountant Details - ONLY IN ADD MODE */}
+              {mode === 'add' && (
+                <div className="col-span-3 border-t pt-4 mt-4">
+                  <h3 className="text-lg font-semibold mb-4 text-right">מנהלת חשבונות (חובה)</h3>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="accountant_name" className="text-right block mb-2">
-                      שם מלא *
-                    </Label>
-                    <Input
-                      id="accountant_name"
-                      value={formData.accountant_name}
-                      onChange={(e) => handleFormChange('accountant_name', e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      required
-                      dir="rtl"
-                      placeholder="שם מלא"
-                    />
-                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="accountant_name" className="text-right block mb-2">
+                        שם מלא *
+                      </Label>
+                      <Input
+                        id="accountant_name"
+                        value={formData.accountant_name}
+                        onChange={(e) => handleFormChange('accountant_name', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        required
+                        dir="rtl"
+                        placeholder="שם מלא"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="accountant_email" className="text-right block mb-2">
-                      אימייל *
-                    </Label>
-                    <Input
-                      id="accountant_email"
-                      value={formData.accountant_email}
-                      onChange={(e) => handleFormChange('accountant_email', e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      type="email"
-                      required
-                      dir="ltr"
-                      placeholder="accountant@example.com"
-                    />
-                  </div>
+                    <div>
+                      <Label htmlFor="accountant_email" className="text-right block mb-2">
+                        אימייל *
+                      </Label>
+                      <Input
+                        id="accountant_email"
+                        value={formData.accountant_email}
+                        onChange={(e) => handleFormChange('accountant_email', e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        type="email"
+                        required
+                        dir="ltr"
+                        placeholder="accountant@example.com"
+                      />
+                    </div>
 
-                  <div>
-                    <Label htmlFor="accountant_phone" className="text-right block mb-2">
-                      טלפון *
-                    </Label>
-                    <Input
-                      id="accountant_phone"
-                      value={formData.accountant_phone}
-                      onChange={(e) => {
-                        const formatted = formatIsraeliPhone(e.target.value);
-                        handleFormChange('accountant_phone', formatted);
-                      }}
-                      onKeyDown={handleKeyDown}
-                      type="tel"
-                      required
-                      dir="ltr"
-                      placeholder="050-1234567"
-                    />
+                    <div>
+                      <Label htmlFor="accountant_phone" className="text-right block mb-2">
+                        טלפון *
+                      </Label>
+                      <Input
+                        id="accountant_phone"
+                        value={formData.accountant_phone}
+                        onChange={(e) => {
+                          const formatted = formatIsraeliPhone(e.target.value);
+                          handleFormChange('accountant_phone', formatted);
+                        }}
+                        onKeyDown={handleKeyDown}
+                        type="tel"
+                        required
+                        dir="ltr"
+                        placeholder="050-1234567"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Explanation in edit mode - where to edit accountant */}
+              {mode === 'edit' && (
+                <div className="col-span-3 border-t pt-4 mt-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800 rtl:text-right">
+                      💡 <strong>עריכת פרטי מנהלת חשבונות:</strong> לעריכת פרטי מנהלת החשבונות,
+                      גלול למטה לסקשן "אנשי קשר". מנהלת החשבונות מופיעה שם עם תג "מנהלת חשבונות".
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Row 9: Notes (full width) */}
               <div className="col-span-3">
@@ -748,6 +817,17 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   onChange={(e) => handleFormChange('notes', e.target.value)}
                   rows={3}
                   dir="rtl"
+                />
+              </div>
+
+              {/* Row 10: File Attachments (full width) */}
+              <div className="col-span-3 border-t pt-4 mt-4">
+                <Label className="text-base font-semibold mb-3 block rtl:text-right">
+                  קבצים מצורפים
+                </Label>
+                <FileUploadSection
+                  clientId={mode === 'edit' ? client?.id : undefined}
+                  uploadContext="client_form"
                 />
               </div>
 

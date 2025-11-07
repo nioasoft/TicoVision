@@ -4,7 +4,7 @@
  */
 
 import type { FeeStatus } from '@/services/fee.service';
-import type { PaymentMethod } from '@/types/collection.types';
+import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
 
 /**
  * Payment status - derived from fee calculation status and letter status
@@ -76,6 +76,82 @@ export type TrackingFilter =
   | 'calculated_not_sent'
   | 'sent_not_paid'
   | 'paid';
+
+/**
+ * Advanced filters for enhanced tracking view
+ */
+export interface FeeTrackingFilters {
+  status?: FeeStatus;
+  search?: string;
+  deviationLevel?: AlertLevel;
+  hasFiles?: boolean;
+  paymentMethod?: PaymentMethod;
+  minAmount?: number;
+  maxAmount?: number;
+}
+
+/**
+ * Enhanced tracking row from fee_tracking_enhanced_view
+ * Includes all payment details, deviations, and installments
+ */
+export interface FeeTrackingEnhancedRow {
+  // Basic info
+  fee_calculation_id: string;
+  tenant_id: string;
+  client_id: string;
+  company_name: string;
+  tax_id: string;
+  year: number;
+
+  // Original amounts
+  original_amount: number;
+  original_before_vat: number;
+  original_with_vat: number;
+
+  // Expected payment
+  payment_method_selected: PaymentMethod | null;
+  expected_amount: number | null;
+  expected_discount_percent: number;
+
+  // Actual payment
+  actual_payment_id: string | null;
+  actual_amount_paid: number | null;
+  actual_before_vat: number | null;
+  actual_with_vat: number | null;
+  actual_payment_date: string | null;
+  actual_payment_method: PaymentMethod | null;
+  payment_reference: string | null;
+  num_installments: number | null;
+  attachment_ids: string[] | null;
+
+  // Deviation
+  deviation_id: string | null;
+  deviation_amount: number | null;
+  deviation_percent: number | null;
+  deviation_alert_level: AlertLevel | null;
+  deviation_alert_message: string | null;
+  deviation_reviewed: boolean | null;
+  deviation_reviewed_by: string | null;
+  deviation_reviewed_at: string | null;
+  deviation_review_notes: string | null;
+
+  // Status
+  status: FeeStatus;
+  fee_payment_date: string | null;
+  has_deviation: boolean;
+
+  // Counts
+  installment_count: number;
+  installments_paid: number;
+  installments_overdue: number;
+  attachment_count: number;
+
+  // Timestamps
+  created_at: string;
+  updated_at: string;
+  payment_created_at: string | null;
+  payment_updated_at: string | null;
+}
 
 /**
  * Complete data returned from the tracking service

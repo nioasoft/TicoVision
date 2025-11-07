@@ -5,12 +5,17 @@
 
 import { BaseService, type ServiceResponse } from './base.service';
 import { supabase } from '@/lib/supabase';
+import { actualPaymentService } from './actual-payment.service';
+import type { ActualPaymentDetails } from './actual-payment.service';
 import type {
   FeeTrackingRow,
   FeeTrackingKPIs,
   FeeTrackingData,
   PaymentStatus,
+  FeeTrackingFilters,
+  FeeTrackingEnhancedRow,
 } from '@/types/fee-tracking.types';
+import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
 
 class FeeTrackingService extends BaseService {
   constructor() {
@@ -203,6 +208,100 @@ class FeeTrackingService extends BaseService {
       }
 
       return { data: response.data.kpis, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get enhanced fee tracking data with payment details, deviations, and installments
+   * Uses fee_tracking_enhanced_view for comprehensive data
+   *
+   * @param year - Tax year to track
+   * @param filters - Optional filters for data
+   * @returns Enhanced tracking data
+   */
+  async getEnhancedTrackingData(
+    year: number,
+    filters?: FeeTrackingFilters
+  ): Promise<ServiceResponse<FeeTrackingEnhancedRow[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Start with base query on enhanced view
+      let query = supabase
+        .from('fee_tracking_enhanced_view')
+        .select('*')
+        .eq('year', year)
+        .order('company_name', { ascending: true });
+
+      // Apply filters
+      if (filters?.status) {
+        query = query.eq('status', filters.status);
+      }
+
+      if (filters?.search) {
+        const searchTerm = filters.search.toLowerCase();
+        query = query.or(
+          `company_name.ilike.%${searchTerm}%,tax_id.ilike.%${searchTerm}%`
+        );
+      }
+
+      if (filters?.deviationLevel) {
+        query = query.eq('deviation_alert_level', filters.deviationLevel);
+      }
+
+      if (filters?.hasFiles !== undefined) {
+        if (filters.hasFiles) {
+          query = query.gt('attachment_count', 0);
+        } else {
+          query = query.eq('attachment_count', 0);
+        }
+      }
+
+      if (filters?.paymentMethod) {
+        query = query.eq('actual_payment_method', filters.paymentMethod);
+      }
+
+      if (filters?.minAmount !== undefined) {
+        query = query.gte('actual_amount_paid', filters.minAmount);
+      }
+
+      if (filters?.maxAmount !== undefined) {
+        query = query.lte('actual_amount_paid', filters.maxAmount);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      await this.logAction('get_enhanced_tracking_data', undefined, {
+        year,
+        filters,
+        row_count: data?.length || 0,
+      });
+
+      return {
+        data: (data || []) as FeeTrackingEnhancedRow[],
+        error: null,
+      };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get payment details for a specific fee calculation
+   * Returns complete payment information including installments and files
+   *
+   * @param feeCalculationId - Fee calculation ID
+   * @returns Payment details
+   */
+  async getPaymentDetails(
+    feeCalculationId: string
+  ): Promise<ServiceResponse<ActualPaymentDetails | null>> {
+    try {
+      return await actualPaymentService.getPaymentDetails(feeCalculationId);
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
