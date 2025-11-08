@@ -148,6 +148,9 @@ export interface GeneratedLetter {
   clicked_at?: Date;
   created_at: Date;
   created_by: string;
+  // Version tracking fields
+  parent_letter_id?: string | null;
+  version_number: number;
 }
 
 export interface LetterPreviewRequest {
@@ -175,6 +178,31 @@ export interface TemplateCategory {
   templates: LetterTemplateType[];
   icon?: string;
   order: number;
+}
+
+// Custom header lines for Universal Builder
+export type CustomHeaderLineType = 'text' | 'line';
+
+export interface CustomHeaderLine {
+  id: string;
+  type: CustomHeaderLineType;
+  content?: string; // Text content (only for type='text')
+  formatting?: {
+    bold: boolean;
+    color: 'red' | 'blue' | 'black';
+    underline: boolean;
+  };
+  order: number; // Display order (0, 1, 2, ...)
+}
+
+export interface CustomLetterData {
+  plainText: string;
+  companyName: string;
+  customHeaderLines: CustomHeaderLine[];
+  includesPayment: boolean;
+  amount?: number;
+  emailSubject: string;
+  clientId?: string | null;
 }
 
 export const TEMPLATE_CATEGORIES: TemplateCategory[] = [

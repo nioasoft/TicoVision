@@ -65,7 +65,7 @@ const navigation: NavigationItem[] = [
     icon: FileText,
     allowedRoles: ['admin'] as UserRole[],
     submenu: [
-      { name: 'שליחת מכתבים', href: '/letter-templates' },
+      { name: 'כתיבת מכתבים', href: '/letter-templates' },
       { name: 'היסטוריית מכתבים', href: '/letter-history' },
     ]
   },

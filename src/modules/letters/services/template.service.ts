@@ -489,8 +489,18 @@ export class TemplateService extends BaseService {
     header: string,
     body: string,
     paymentSection: string,
-    footer: string
+    footer: string,
+    customHeaderLinesHtml?: string
   ): string {
+    // Debug logging
+    console.log('🔍 [Build] אורך HTML שורות מותאמות:', customHeaderLinesHtml?.length || 0);
+    console.log('🔍 [Build] יש placeholder בheader?', header.includes('{{custom_header_lines}}'));
+
+    // Replace {{custom_header_lines}} placeholder in header
+    const headerWithCustomLines = header.replace('{{custom_header_lines}}', customHeaderLinesHtml || '');
+
+    console.log('🔍 [Build] האם placeholder הוחלף?', !headerWithCustomLines.includes('{{custom_header_lines}}'));
+
     return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -516,7 +526,7 @@ export class TemplateService extends BaseService {
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
-                    ${header}
+                    ${headerWithCustomLines}
                     ${body}
                     ${paymentSection}
                     ${footer}
@@ -878,6 +888,7 @@ export class TemplateService extends BaseService {
     clientId: string;
     variables: Record<string, string | number>;
     includesPayment: boolean;
+    customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
     saveAsTemplate?: {
       name: string;
       description?: string;
@@ -899,7 +910,18 @@ export class TemplateService extends BaseService {
         paymentSection = await this.loadTemplateFile('components/payment-section.html');
       }
 
-      // 4. Add automatic variables
+      // 4. Generate custom header lines HTML if provided
+      let customHeaderLinesHtml = '';
+      if (params.customHeaderLines && params.customHeaderLines.length > 0) {
+        console.log('🔍 [Service] מייצר שורות מותאמות:', params.customHeaderLines);
+        customHeaderLinesHtml = this.generateCustomHeaderLinesHtml(params.customHeaderLines);
+        console.log('🔍 [Service] HTML שנוצר (200 תווים):', customHeaderLinesHtml.substring(0, 200));
+        console.log('🔍 [Service] אורך HTML מלא:', customHeaderLinesHtml.length);
+      } else {
+        console.log('🔍 [Service] אין שורות מותאמות');
+      }
+
+      // 5. Add automatic variables
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
 
@@ -910,8 +932,8 @@ export class TemplateService extends BaseService {
         tax_year: params.variables.tax_year || nextYear
       };
 
-      // 5. Build full HTML
-      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer);
+      // 6. Build full HTML with custom header lines
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml);
 
       // 6. Replace variables in full HTML
       fullHtml = replaceVarsInText(fullHtml, fullVariables);
@@ -967,6 +989,7 @@ export class TemplateService extends BaseService {
     plainText: string;
     variables: Record<string, string | number>;
     includesPayment: boolean;
+    customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
   }): Promise<ServiceResponse<{ html: string }>> {
     try {
       // 1. Load header and footer
@@ -982,7 +1005,18 @@ export class TemplateService extends BaseService {
         paymentSection = await this.loadTemplateFile('components/payment-section.html');
       }
 
-      // 4. Add automatic variables
+      // 4. Generate custom header lines HTML if provided
+      let customHeaderLinesHtml = '';
+      if (params.customHeaderLines && params.customHeaderLines.length > 0) {
+        console.log('🔍 [Service] מייצר שורות מותאמות:', params.customHeaderLines);
+        customHeaderLinesHtml = this.generateCustomHeaderLinesHtml(params.customHeaderLines);
+        console.log('🔍 [Service] HTML שנוצר (200 תווים):', customHeaderLinesHtml.substring(0, 200));
+        console.log('🔍 [Service] אורך HTML מלא:', customHeaderLinesHtml.length);
+      } else {
+        console.log('🔍 [Service] אין שורות מותאמות');
+      }
+
+      // 5. Add automatic variables
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
 
@@ -993,16 +1027,244 @@ export class TemplateService extends BaseService {
         tax_year: params.variables.tax_year || nextYear
       };
 
-      // 5. Build full HTML
-      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer);
+      // 6. Build full HTML with custom header lines
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml);
 
-      // 6. Replace variables
+      // 7. Replace variables
       fullHtml = replaceVarsInText(fullHtml, fullVariables);
 
-      // 7. Convert CID images to web paths for browser preview
+      // 8. Convert CID images to web paths for browser preview
       fullHtml = this.replaceCidWithWebPaths(fullHtml);
 
       return { data: { html: fullHtml }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Generate HTML for custom header lines (for Universal Builder)
+   * Converts CustomHeaderLine[] to HTML to be inserted after company name in header table
+   */
+  generateCustomHeaderLinesHtml(lines: import('../types/letter.types').CustomHeaderLine[]): string {
+    if (!lines || lines.length === 0) {
+      return '';
+    }
+
+    // Sort by order
+    const sortedLines = [...lines].sort((a, b) => a.order - b.order);
+
+    return sortedLines.map(line => {
+      if (line.type === 'line') {
+        // Separator line - thin black line (1px solid) in table row
+        return `
+<tr>
+    <td style="padding: 0;">
+        <div style="border-top: 1px solid #000000; margin: 3px 0;"></div>
+    </td>
+</tr>`;
+      }
+
+      // Text line with formatting in table row
+      // Default to bold unless explicitly set to false
+      const isBold = line.formatting?.bold !== false;
+      const color = line.formatting?.color || 'black';
+      const isUnderline = line.formatting?.underline || false;
+
+      const styles: string[] = [
+        'font-family: \'David Libre\', \'Heebo\', \'Assistant\', sans-serif',
+        'font-size: 18px',
+        'text-align: right',
+        'direction: rtl',
+        'margin: 0',
+        'padding: 0'
+      ];
+
+      // Bold by default
+      styles.push(isBold ? 'font-weight: 700' : 'font-weight: 400');
+
+      // Color
+      switch (color) {
+        case 'red':
+          styles.push('color: #FF0000');
+          break;
+        case 'blue':
+          styles.push('color: #395BF7');
+          break;
+        default:
+          styles.push('color: #000000');
+      }
+
+      if (isUnderline) {
+        styles.push('text-decoration: underline');
+      }
+
+      return `
+<tr>
+    <td style="padding: 2px 0; text-align: right;">
+        <div style="${styles.join('; ')};">${line.content || ''}</div>
+    </td>
+</tr>`;
+    }).join('');
+  }
+
+  /**
+   * Create a new version of an existing letter
+   * Used when editing a letter from history
+   */
+  async createLetterVersion(params: {
+    originalLetterId: string;
+    updates: {
+      plainText?: string;
+      companyName?: string;
+      customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
+      includesPayment?: boolean;
+      amount?: number;
+      emailSubject?: string;
+    };
+  }): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Fetch original letter
+      const { data: originalLetter, error: fetchError } = await supabase
+        .from('generated_letters')
+        .select('*')
+        .eq('id', params.originalLetterId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!originalLetter) throw new Error('Original letter not found');
+
+      // 2. Calculate next version number
+      const parentId = originalLetter.parent_letter_id || originalLetter.id;
+
+      const { data: versions, error: versionsError } = await supabase
+        .from('generated_letters')
+        .select('version_number')
+        .or(`id.eq.${parentId},parent_letter_id.eq.${parentId}`)
+        .eq('tenant_id', tenantId)
+        .order('version_number', { ascending: false })
+        .limit(1);
+
+      if (versionsError) throw versionsError;
+
+      const nextVersion = versions && versions.length > 0
+        ? (versions[0].version_number || 1) + 1
+        : 2; // If this is first edit, it's version 2
+
+      // 3. Merge updates with original data
+      const variables = originalLetter.variables_used || {};
+      if (params.updates.companyName) variables.company_name = params.updates.companyName;
+      if (params.updates.customHeaderLines) variables.customHeaderLines = params.updates.customHeaderLines;
+
+      // 4. Generate new letter HTML if content changed
+      let generatedHtml = originalLetter.generated_content_html;
+
+      if (params.updates.plainText) {
+        const header = await this.loadTemplateFile('components/header.html');
+        const footer = await this.loadTemplateFile('components/footer.html');
+        const bodyHtml = this.parseTextToHTML(params.updates.plainText);
+
+        let paymentSection = '';
+        if (params.updates.includesPayment !== undefined ? params.updates.includesPayment : originalLetter.variables_used?.includesPayment) {
+          paymentSection = await this.loadTemplateFile('components/payment-section.html');
+        }
+
+        generatedHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer);
+        generatedHtml = replaceVarsInText(generatedHtml, variables);
+      }
+
+      // 5. Create new letter as a version
+      const { data: newLetter, error: createError } = await supabase
+        .from('generated_letters')
+        .insert({
+          tenant_id: tenantId,
+          client_id: originalLetter.client_id,
+          template_id: originalLetter.template_id,
+          template_type: originalLetter.template_type || 'custom',
+          fee_calculation_id: originalLetter.fee_calculation_id,
+          parent_letter_id: parentId, // Link to original
+          version_number: nextVersion,
+          variables_used: variables,
+          generated_content_html: generatedHtml,
+          generated_content_text: params.updates.plainText || originalLetter.generated_content_text,
+          subject: params.updates.emailSubject || originalLetter.subject,
+          recipient_emails: originalLetter.recipient_emails,
+          status: 'draft',
+          created_by: (await supabase.auth.getUser()).data.user?.id || ''
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      await this.logAction('create_letter_version', newLetter.id, {
+        original_letter_id: params.originalLetterId,
+        version_number: nextVersion,
+        parent_letter_id: parentId
+      });
+
+      return { data: newLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get all versions of a letter (including original)
+   * Returns versions sorted by version_number
+   */
+  async getLetterVersions(letterId: string): Promise<ServiceResponse<GeneratedLetter[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Get the letter to find parent ID
+      const { data: letter, error: fetchError } = await supabase
+        .from('generated_letters')
+        .select('id, parent_letter_id')
+        .eq('id', letterId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!letter) throw new Error('Letter not found');
+
+      // 2. Determine parent ID (if this letter is a version, use parent_letter_id, otherwise use its own id)
+      const parentId = letter.parent_letter_id || letter.id;
+
+      // 3. Get all versions (original + all edits)
+      const { data: versions, error: versionsError } = await supabase
+        .from('generated_letters')
+        .select('*')
+        .or(`id.eq.${parentId},parent_letter_id.eq.${parentId}`)
+        .eq('tenant_id', tenantId)
+        .order('version_number', { ascending: true });
+
+      if (versionsError) throw versionsError;
+
+      return { data: versions || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get the latest version of a letter
+   */
+  async getLatestVersion(letterId: string): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const versionsResponse = await this.getLetterVersions(letterId);
+
+      if (versionsResponse.error || !versionsResponse.data || versionsResponse.data.length === 0) {
+        throw new Error('No versions found');
+      }
+
+      // Return last version (highest version_number)
+      const latestVersion = versionsResponse.data[versionsResponse.data.length - 1];
+
+      return { data: latestVersion, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }

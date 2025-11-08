@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2 } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -68,6 +68,7 @@ export function UniversalLetterBuilder() {
   // State - Text content
   const [plainText, setPlainText] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [customHeaderLines, setCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
 
   // State - Configuration
   const [includesPayment, setIncludesPayment] = useState(false);
@@ -229,6 +230,10 @@ export function UniversalLetterBuilder() {
       return;
     }
 
+    // Debug logging
+    console.log('🔍 [Preview Debug] customHeaderLines:', customHeaderLines);
+    console.log('🔍 [Preview Debug] מספר שורות:', customHeaderLines.length);
+
     setIsLoadingPreview(true);
     try {
       // Build variables
@@ -251,7 +256,8 @@ export function UniversalLetterBuilder() {
       const { data, error } = await templateService.previewCustomLetter({
         plainText,
         variables,
-        includesPayment
+        includesPayment,
+        customHeaderLines // Pass custom header lines to preview
       });
 
       if (error) throw error;
@@ -313,6 +319,7 @@ export function UniversalLetterBuilder() {
           customText: plainText,
           variables,
           includesPayment,
+          customHeaderLines, // Pass custom header lines to Edge Function
           saveAsTemplate: saveAsTemplate ? {
             name: templateName,
             description: templateDescription,
@@ -345,6 +352,107 @@ export function UniversalLetterBuilder() {
   const handleLoadExample = () => {
     setPlainText(EXAMPLE_TEXT);
     toast.success('טקסט לדוגמה נטען');
+  };
+
+  /**
+   * Custom Header Lines Handlers
+   */
+  const handleAddTextLine = () => {
+    const newLine: import('../types/letter.types').CustomHeaderLine = {
+      id: `line-${Date.now()}`,
+      type: 'text',
+      content: '',
+      formatting: {
+        bold: true,
+        color: 'black',
+        underline: false
+      },
+      order: customHeaderLines.length
+    };
+    setCustomHeaderLines([...customHeaderLines, newLine]);
+  };
+
+  const handleAddSeparatorLine = () => {
+    const newLine: import('../types/letter.types').CustomHeaderLine = {
+      id: `line-${Date.now()}`,
+      type: 'line',
+      order: customHeaderLines.length
+    };
+    setCustomHeaderLines([...customHeaderLines, newLine]);
+  };
+
+  const handleDeleteLine = (id: string) => {
+    const updated = customHeaderLines
+      .filter(line => line.id !== id)
+      .map((line, index) => ({ ...line, order: index })); // Re-index
+    setCustomHeaderLines(updated);
+  };
+
+  const handleMoveLineUp = (id: string) => {
+    const index = customHeaderLines.findIndex(line => line.id === id);
+    if (index <= 0) return; // Already at top
+
+    const updated = [...customHeaderLines];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+
+    // Re-index
+    updated.forEach((line, i) => {
+      line.order = i;
+    });
+
+    setCustomHeaderLines(updated);
+  };
+
+  const handleMoveLineDown = (id: string) => {
+    const index = customHeaderLines.findIndex(line => line.id === id);
+    if (index >= customHeaderLines.length - 1) return; // Already at bottom
+
+    const updated = [...customHeaderLines];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+
+    // Re-index
+    updated.forEach((line, i) => {
+      line.order = i;
+    });
+
+    setCustomHeaderLines(updated);
+  };
+
+  const handleUpdateLineContent = (id: string, content: string) => {
+    setCustomHeaderLines(customHeaderLines.map(line =>
+      line.id === id ? { ...line, content } : line
+    ));
+  };
+
+  const handleUpdateLineFormatting = (
+    id: string,
+    key: 'bold' | 'underline',
+    value: boolean
+  ) => {
+    setCustomHeaderLines(customHeaderLines.map(line => {
+      if (line.id === id && line.formatting) {
+        return {
+          ...line,
+          formatting: { ...line.formatting, [key]: value }
+        };
+      }
+      return line;
+    }));
+  };
+
+  const handleUpdateLineColor = (
+    id: string,
+    color: 'red' | 'blue' | 'black'
+  ) => {
+    setCustomHeaderLines(customHeaderLines.map(line => {
+      if (line.id === id && line.formatting) {
+        return {
+          ...line,
+          formatting: { ...line.formatting, color }
+        };
+      }
+      return line;
+    }));
   };
 
   return (
@@ -436,6 +544,168 @@ export function UniversalLetterBuilder() {
                   required
                 />
               </div>
+            </div>
+
+            {/* Custom Header Lines - Optional Section */}
+            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+              <div className="flex justify-between items-center mb-3">
+                <Label className="text-right block font-semibold">
+                  שורות נוספות מתחת לשם הלקוח (אופציונלי)
+                </Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddTextLine}
+                  >
+                    <Plus className="h-4 w-4 ml-1" />
+                    הוסף שורת טקסט
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddSeparatorLine}
+                  >
+                    <Minus className="h-4 w-4 ml-1" />
+                    הוסף קו מפריד
+                  </Button>
+                </div>
+              </div>
+
+              {customHeaderLines.length === 0 ? (
+                <p className="text-sm text-gray-500 text-right">
+                  לחץ על "הוסף שורת טקסט" או "הוסף קו מפריד" כדי להוסיף שורות מותאמות שיופיעו במכתב אחרי שם החברה
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {customHeaderLines.map((line, index) => (
+                    <div
+                      key={line.id}
+                      className="flex items-center gap-2 p-3 bg-white border rounded"
+                    >
+                      {/* Move Up/Down Buttons */}
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMoveLineUp(line.id)}
+                          disabled={index === 0}
+                          title="הזז למעלה"
+                          className="h-6 w-6 p-0"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMoveLineDown(line.id)}
+                          disabled={index === customHeaderLines.length - 1}
+                          title="הזז למטה"
+                          className="h-6 w-6 p-0"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      {/* Line Content */}
+                      <div className="flex-1">
+                        {line.type === 'line' ? (
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Minus className="h-4 w-4" />
+                            <span className="text-sm">קו מפריד (שחור דק)</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Input
+                              value={line.content || ''}
+                              onChange={(e) => handleUpdateLineContent(line.id, e.target.value)}
+                              placeholder="הזן טקסט..."
+                              dir="rtl"
+                              className="text-right"
+                            />
+
+                            {/* Formatting Options */}
+                            <div className="flex gap-3 items-center">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`${line.id}-bold`}
+                                  checked={line.formatting?.bold || false}
+                                  onCheckedChange={(checked) =>
+                                    handleUpdateLineFormatting(line.id, 'bold', !!checked)
+                                  }
+                                />
+                                <Label htmlFor={`${line.id}-bold`} className="text-sm cursor-pointer">
+                                  בולד
+                                </Label>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`${line.id}-underline`}
+                                  checked={line.formatting?.underline || false}
+                                  onCheckedChange={(checked) =>
+                                    handleUpdateLineFormatting(line.id, 'underline', !!checked)
+                                  }
+                                />
+                                <Label htmlFor={`${line.id}-underline`} className="text-sm cursor-pointer">
+                                  קו תחתון
+                                </Label>
+                              </div>
+
+                              {/* Color Selection */}
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={line.formatting?.color === 'black' ? 'default' : 'outline'}
+                                  onClick={() => handleUpdateLineColor(line.id, 'black')}
+                                  className="h-7 px-2"
+                                >
+                                  שחור
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={line.formatting?.color === 'red' ? 'default' : 'outline'}
+                                  onClick={() => handleUpdateLineColor(line.id, 'red')}
+                                  className="h-7 px-2 text-red-600"
+                                >
+                                  אדום
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={line.formatting?.color === 'blue' ? 'default' : 'outline'}
+                                  onClick={() => handleUpdateLineColor(line.id, 'blue')}
+                                  className="h-7 px-2 text-blue-600"
+                                >
+                                  כחול
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Delete Button */}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteLine(line.id)}
+                        title="מחק שורה"
+                        className="h-8 w-8 p-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
