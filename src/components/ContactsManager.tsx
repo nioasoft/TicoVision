@@ -1,8 +1,13 @@
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, Star, Mail, MailX, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Edit2, Trash2, Star, Mail, MailX, AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
+import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
+import TenantContactService from '@/services/tenant-contact.service';
+import type { TenantContact } from '@/types/tenant-contact.types';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -69,6 +74,65 @@ export function ContactsManager({
     notes: '',
   });
 
+  // Autocomplete state for Add dialog
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchContacts, setSearchContacts] = useState<TenantContact[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [selectedFromList, setSelectedFromList] = useState(false);
+
+  // Debounced search for contacts
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchContacts([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await TenantContactService.searchContacts({
+          query: searchQuery,
+          limit: 10,
+        });
+        setSearchContacts(results);
+      } catch (error) {
+        console.error('Error searching contacts:', error);
+        setSearchContacts([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Handle contact selection from autocomplete
+  const handleSelectContact = useCallback((contact: TenantContact) => {
+    setFormData({
+      ...formData,
+      full_name: contact.full_name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      contact_type: contact.contact_type,
+    });
+    setSelectedFromList(true);
+    setAutocompleteOpen(false);
+    setSearchQuery('');
+  }, [formData]);
+
+  // Handle manual name change
+  const handleNameChange = useCallback((value: string) => {
+    setFormData({ ...formData, full_name: value });
+    setSearchQuery(value);
+    setSelectedFromList(false);
+
+    // Open autocomplete if typing
+    if (value.length >= 2) {
+      setAutocompleteOpen(true);
+    }
+  }, [formData]);
+
   const resetForm = () => {
     setFormData({
       contact_type: 'other',
@@ -79,6 +143,10 @@ export function ContactsManager({
       is_primary: false,
       notes: '',
     });
+    setSearchQuery('');
+    setSearchContacts([]);
+    setAutocompleteOpen(false);
+    setSelectedFromList(false);
   };
 
   const handleAdd = async () => {
@@ -230,15 +298,16 @@ export function ContactsManager({
 
       {/* Add Contact Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-2xl" dir="rtl">
+        <DialogContent className="max-w-4xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle>הוספת איש קשר חדש</DialogTitle>
-            <DialogDescription>הזן את פרטי איש הקשר החדש</DialogDescription>
+            <DialogTitle className="rtl:text-right">הוספת איש קשר חדש</DialogTitle>
+            <DialogDescription className="rtl:text-right">הזן את פרטי איש הקשר החדש</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Row 1: Contact Type, Name with Autocomplete, Email, Phone */}
+            <div className="grid grid-cols-4 gap-3">
               <div>
-                <Label htmlFor="add_contact_type" className="text-right block">
+                <Label htmlFor="add_contact_type" className="text-right block mb-2">
                   סוג איש קשר *
                 </Label>
                 <Select
@@ -260,24 +329,72 @@ export function ContactsManager({
                 </Select>
               </div>
               <div>
-                <Label htmlFor="add_full_name" className="text-right block">
+                <Label htmlFor="add_full_name" className="text-right block mb-2">
                   שם מלא *
+                  {selectedFromList && (
+                    <span className="mr-2 text-sm text-green-600 font-normal">
+                      <Check className="inline h-3 w-3 ml-1" />
+                      נבחר מהמאגר
+                    </span>
+                  )}
                 </Label>
-                <Input
-                  id="add_full_name"
-                  value={formData.full_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, full_name: e.target.value })
-                  }
-                  required
-                  dir="rtl"
-                />
+                <div className="relative">
+                  <Input
+                    id="add_full_name"
+                    value={formData.full_name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    onFocus={() => {
+                      if (formData.full_name.length >= 2) {
+                        setAutocompleteOpen(true);
+                      }
+                    }}
+                    required
+                    dir="rtl"
+                    className="rtl:text-right"
+                  />
+                  {/* Autocomplete dropdown */}
+                  {autocompleteOpen && searchContacts.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 rounded-md border bg-popover text-popover-foreground shadow-md">
+                      <Command shouldFilter={false}>
+                        <CommandEmpty className="py-6 text-center text-sm rtl:text-right">
+                          {searchLoading ? 'טוען...' : 'לא נמצאו אנשי קשר'}
+                        </CommandEmpty>
+                        <CommandGroup className="max-h-[300px] overflow-y-auto">
+                          {searchContacts.map((contact) => (
+                            <CommandItem
+                              key={contact.id}
+                              value={`${contact.full_name} ${contact.email || ''} ${contact.phone || ''}`}
+                              onSelect={() => handleSelectContact(contact)}
+                              className="flex items-center gap-2 cursor-pointer rtl:flex-row-reverse"
+                            >
+                              <Check
+                                className={cn(
+                                  'h-4 w-4',
+                                  formData.full_name === contact.full_name && formData.email === (contact.email || '')
+                                    ? 'opacity-100'
+                                    : 'opacity-0'
+                                )}
+                              />
+                              <div className="flex-1 rtl:text-right">
+                                <div className="font-medium">{contact.full_name}</div>
+                                <div className="flex gap-2 text-xs text-muted-foreground rtl:flex-row-reverse rtl:justify-end">
+                                  {contact.email && <span>{contact.email}</span>}
+                                  {contact.phone && <span>{contact.phone}</span>}
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground rtl:text-right">
+                  התחל להקליד לבחירה מהמאגר או מלא ידנית
+                </p>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="add_email" className="text-right block">
+                <Label htmlFor="add_email" className="text-right block mb-2">
                   אימייל
                 </Label>
                 <Input
@@ -291,7 +408,7 @@ export function ContactsManager({
                 />
               </div>
               <div>
-                <Label htmlFor="add_phone" className="text-right block">
+                <Label htmlFor="add_phone" className="text-right block mb-2">
                   טלפון
                 </Label>
                 <Input
@@ -306,56 +423,62 @@ export function ContactsManager({
               </div>
             </div>
 
-            <div>
-              <Label className="text-right block mb-3">העדפות מייל</Label>
-              <RadioGroup
-                value={formData.email_preference}
-                onValueChange={(value: EmailPreference) =>
-                  setFormData({ ...formData, email_preference: value })
-                }
-                className="space-y-2"
-              >
-                {Object.entries(emailPreferenceLabels).map(([value, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <div key={value} className="flex items-center gap-2">
-                      <RadioGroupItem value={value} id={`add-email-${value}`} />
-                      <Label htmlFor={`add-email-${value}`} className="cursor-pointer flex items-center gap-2">
-                        <Icon className={`h-4 w-4 ${config.color}`} />
-                        {config.label}
-                      </Label>
-                    </div>
-                  );
-                })}
-              </RadioGroup>
+            {/* Row 2: Email Preferences (span full width), Primary Contact Checkbox */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="col-span-3">
+                <Label className="text-right block mb-3">העדפות מייל</Label>
+                <RadioGroup
+                  value={formData.email_preference}
+                  onValueChange={(value: EmailPreference) =>
+                    setFormData({ ...formData, email_preference: value })
+                  }
+                  className="flex gap-6"
+                >
+                  {Object.entries(emailPreferenceLabels).map(([value, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <div key={value} className="flex items-center gap-2">
+                        <RadioGroupItem value={value} id={`add-email-${value}`} />
+                        <Label htmlFor={`add-email-${value}`} className="cursor-pointer flex items-center gap-2">
+                          <Icon className={`h-4 w-4 ${config.color}`} />
+                          {config.label}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="add_is_primary"
+                  checked={formData.is_primary}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_primary: checked as boolean })
+                  }
+                />
+                <Label htmlFor="add_is_primary" className="cursor-pointer">
+                  איש קשר ראשי
+                </Label>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="add_is_primary"
-                checked={formData.is_primary}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_primary: checked as boolean })
-                }
-              />
-              <Label htmlFor="add_is_primary" className="cursor-pointer">
-                איש קשר ראשי
-              </Label>
-            </div>
-
-            <div>
-              <Label htmlFor="add_notes" className="text-right block">
-                הערות
-              </Label>
-              <Textarea
-                id="add_notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                rows={3}
-                dir="rtl"
-              />
+            {/* Row 3: Notes (span full width) */}
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <Label htmlFor="add_notes" className="text-right block mb-2">
+                  הערות
+                </Label>
+                <Textarea
+                  id="add_notes"
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  rows={3}
+                  dir="rtl"
+                  className="rtl:text-right"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -378,15 +501,16 @@ export function ContactsManager({
 
       {/* Edit Contact Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl" dir="rtl">
+        <DialogContent className="max-w-4xl" dir="rtl">
           <DialogHeader>
-            <DialogTitle>עריכת איש קשר</DialogTitle>
-            <DialogDescription>עדכן את פרטי איש הקשר</DialogDescription>
+            <DialogTitle className="rtl:text-right">עריכת איש קשר</DialogTitle>
+            <DialogDescription className="rtl:text-right">עדכן את פרטי איש הקשר</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Row 1: Contact Type, Name, Email, Phone */}
+            <div className="grid grid-cols-4 gap-3">
               <div>
-                <Label htmlFor="edit_contact_type" className="text-right block">
+                <Label htmlFor="edit_contact_type" className="text-right block mb-2">
                   סוג איש קשר *
                 </Label>
                 <Select
@@ -408,7 +532,7 @@ export function ContactsManager({
                 </Select>
               </div>
               <div>
-                <Label htmlFor="edit_full_name" className="text-right block">
+                <Label htmlFor="edit_full_name" className="text-right block mb-2">
                   שם מלא *
                 </Label>
                 <Input
@@ -419,13 +543,11 @@ export function ContactsManager({
                   }
                   required
                   dir="rtl"
+                  className="rtl:text-right"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit_email" className="text-right block">
+                <Label htmlFor="edit_email" className="text-right block mb-2">
                   אימייל
                 </Label>
                 <Input
@@ -439,7 +561,7 @@ export function ContactsManager({
                 />
               </div>
               <div>
-                <Label htmlFor="edit_phone" className="text-right block">
+                <Label htmlFor="edit_phone" className="text-right block mb-2">
                   טלפון
                 </Label>
                 <Input
@@ -454,56 +576,62 @@ export function ContactsManager({
               </div>
             </div>
 
-            <div>
-              <Label className="text-right block mb-3">העדפות מייל</Label>
-              <RadioGroup
-                value={formData.email_preference}
-                onValueChange={(value: EmailPreference) =>
-                  setFormData({ ...formData, email_preference: value })
-                }
-                className="space-y-2"
-              >
-                {Object.entries(emailPreferenceLabels).map(([value, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <div key={value} className="flex items-center gap-2">
-                      <RadioGroupItem value={value} id={`edit-email-${value}`} />
-                      <Label htmlFor={`edit-email-${value}`} className="cursor-pointer flex items-center gap-2">
-                        <Icon className={`h-4 w-4 ${config.color}`} />
-                        {config.label}
-                      </Label>
-                    </div>
-                  );
-                })}
-              </RadioGroup>
+            {/* Row 2: Email Preferences (span full width), Primary Contact Checkbox */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="col-span-3">
+                <Label className="text-right block mb-3">העדפות מייל</Label>
+                <RadioGroup
+                  value={formData.email_preference}
+                  onValueChange={(value: EmailPreference) =>
+                    setFormData({ ...formData, email_preference: value })
+                  }
+                  className="flex gap-6"
+                >
+                  {Object.entries(emailPreferenceLabels).map(([value, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <div key={value} className="flex items-center gap-2">
+                        <RadioGroupItem value={value} id={`edit-email-${value}`} />
+                        <Label htmlFor={`edit-email-${value}`} className="cursor-pointer flex items-center gap-2">
+                          <Icon className={`h-4 w-4 ${config.color}`} />
+                          {config.label}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit_is_primary"
+                  checked={formData.is_primary}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, is_primary: checked as boolean })
+                  }
+                />
+                <Label htmlFor="edit_is_primary" className="cursor-pointer">
+                  איש קשר ראשי
+                </Label>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="edit_is_primary"
-                checked={formData.is_primary}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, is_primary: checked as boolean })
-                }
-              />
-              <Label htmlFor="edit_is_primary" className="cursor-pointer">
-                איש קשר ראשי
-              </Label>
-            </div>
-
-            <div>
-              <Label htmlFor="edit_notes" className="text-right block">
-                הערות
-              </Label>
-              <Textarea
-                id="edit_notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                rows={3}
-                dir="rtl"
-              />
+            {/* Row 3: Notes (span full width) */}
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <Label htmlFor="edit_notes" className="text-right block mb-2">
+                  הערות
+                </Label>
+                <Textarea
+                  id="edit_notes"
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  rows={3}
+                  dir="rtl"
+                  className="rtl:text-right"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
