@@ -19,7 +19,9 @@ import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
 import { clientService } from '@/services';
-import type { Client, ClientContact } from '@/services/client.service';
+import type { Client } from '@/services/client.service';
+import { TenantContactService } from '@/services/tenant-contact.service';
+import type { AssignedContact } from '@/types/tenant-contact.types';
 
 const templateService = new TemplateService();
 
@@ -89,7 +91,7 @@ export function UniversalLetterBuilder() {
 
   // State - Recipients
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
-  const [clientContacts, setClientContacts] = useState<ClientContact[]>([]);
+  const [clientContacts, setClientContacts] = useState<AssignedContact[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
 
@@ -129,26 +131,14 @@ export function UniversalLetterBuilder() {
       // Load contacts for this client
       setIsLoadingContacts(true);
       try {
-        const { data: contacts, error } = await clientService.getClientContacts(client.id);
+        // Load all contacts and auto-select emails using centralized function
+        const contacts = await TenantContactService.getClientContacts(client.id);
+        const autoSelectedEmails = await TenantContactService.getClientEmails(client.id, 'important');
 
-        if (error) {
-          toast.error('שגיאה בטעינת אנשי קשר');
-          setClientContacts([]);
-          setSelectedRecipients([]);
-          return;
-        }
-
-        // Filter contacts based on email preferences
-        // Fee letters are "important", so include 'all' and 'important_only'
-        const eligibleContacts = (contacts || []).filter(contact =>
-          contact.email &&
-          (contact.email_preference === 'all' || contact.email_preference === 'important_only')
-        );
+        // Filter contacts to show only those included in auto-selection
+        const eligibleContacts = contacts.filter(c => autoSelectedEmails.includes(c.email!));
 
         setClientContacts(eligibleContacts);
-
-        // Auto-select all eligible recipients
-        const autoSelectedEmails = eligibleContacts.map(c => c.email!);
         setSelectedRecipients(autoSelectedEmails);
 
       } catch (error) {

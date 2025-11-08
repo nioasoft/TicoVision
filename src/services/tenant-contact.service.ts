@@ -297,6 +297,54 @@ export class TenantContactService {
   }
 
   /**
+   * Get all email addresses for a client based on letter importance
+   *
+   * This is the SINGLE centralized function for retrieving contact emails.
+   * Everyone should use this instead of manually filtering contacts!
+   *
+   * @param clientId - Client ID
+   * @param letterType - 'important' for fee letters (sends to 'all' + 'important_only')
+   *                     'all' for general letters (sends only to 'all')
+   * @returns Array of email addresses ready to send
+   *
+   * @example
+   * // For fee letters (שכר טרחה):
+   * const emails = await TenantContactService.getClientEmails(clientId, 'important');
+   *
+   * // For general letters:
+   * const emails = await TenantContactService.getClientEmails(clientId, 'all');
+   */
+  static async getClientEmails(
+    clientId: string,
+    letterType: 'important' | 'all' = 'all'
+  ): Promise<string[]> {
+    try {
+      const contacts = await this.getClientContacts(clientId);
+
+      return contacts
+        .filter(contact => {
+          // Must have email
+          if (!contact.email) return false;
+
+          // Fee letters (important) = send to 'all' OR 'important_only'
+          if (letterType === 'important') {
+            return (
+              contact.email_preference === 'all' ||
+              contact.email_preference === 'important_only'
+            );
+          }
+
+          // General letters = send only to 'all'
+          return contact.email_preference === 'all';
+        })
+        .map(contact => contact.email!);
+    } catch (error) {
+      console.error('Error getting client emails:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get all clients this contact is assigned to
    */
   static async getContactClients(contactId: string): Promise<any[]> {

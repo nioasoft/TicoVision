@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FileUploadSection } from '@/components/files';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -792,24 +793,20 @@ export function FeesPage() {
 
                   <div>
                     <Label htmlFor="client">בחירת לקוח *</Label>
-                    <Select
+                    <Combobox
+                      options={clients.map((client) => ({
+                        value: client.id,
+                        label: `${client.company_name} - ${client.tax_id}`,
+                      }))}
                       value={formData.client_id}
                       onValueChange={(value) => {
                         setFormData({ ...formData, client_id: value });
                         setPreviousYearDataSaved(false); // Reset saved state when changing client
                       }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="בחר לקוח" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.company_name} - {client.tax_id}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="בחר לקוח"
+                      searchPlaceholder="חיפוש לפי שם או ח.פ..."
+                      emptyText="לא נמצא לקוח"
+                    />
                   </div>
 
                   {/* Client Info Card */}
