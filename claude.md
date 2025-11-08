@@ -289,6 +289,87 @@ SELECT * FROM users; -- NO SUCH TABLE!
 3. **Declare variables** with different names than column names
 4. **Test functions** directly in SQL before using in application
 
+## 📞 Shared Contacts System Architecture (Migration 083)
+
+### Overview - Unified Contact Management
+**המערכת מנהלת מאגר משותף של אנשי קשר עבור כל הדיירים:**
+- **tenant_contacts** - מאגר משותף לכל אנשי הקשר (owner, accountant_manager, secretary, etc.)
+- **client_contact_assignments** - קישור many-to-many בין לקוחות לאנשי קשר
+- **איש קשר אחד יכול להיות משוייך למספר לקוחות** (חיסכון בכפילויות)
+
+### Contact Architecture:
+```typescript
+// אנשי קשר במאגר המשותף
+interface TenantContact {
+  id: string;
+  tenant_id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  contact_type: ContactType; // 'owner' | 'accountant_manager' | 'secretary' | ...
+  job_title: string | null;
+  notes: string | null;
+}
+
+// קישור לקוח-איש קשר
+interface ClientContactAssignment {
+  id: string;
+  client_id: string;
+  contact_id: string;
+  is_primary: boolean; // רק איש קשר אחד ראשי לכל לקוח
+  email_preference: 'all' | 'important_only' | 'none';
+  role_at_client: string | null; // תפקיד ספציפי אצל הלקוח
+  notes: string | null;
+}
+```
+
+### How Email Distribution Works:
+```typescript
+// כשיוצר מכתב שכר טרחה, המערכת:
+// 1. טוענת את כל אנשי הקשר של הלקוח
+const contacts = await clientService.getClientContacts(clientId);
+
+// 2. מסננת לפי העדפות מייל (fee letters = "important")
+const eligible = contacts.filter(c =>
+  c.email &&
+  (c.email_preference === 'all' || c.email_preference === 'important_only')
+);
+
+// 3. שולחת לכל המיילים שנבחרו
+const recipientEmails = eligible.map(c => c.email!);
+await sendEmail(recipientEmails, subject, htmlContent);
+```
+
+### Contact Creation Flow:
+```typescript
+// בעת יצירת לקוח חדש:
+// 1. בעלים (owner) ומנהלת חשבונות (accountant_manager) נשמרים ב-tenant_contacts
+const owner = await TenantContactService.createOrGet({
+  full_name: data.contact_name,
+  email: data.contact_email,
+  phone: data.contact_phone,
+  contact_type: 'owner',
+  job_title: 'איש קשר מהותי'
+});
+
+// 2. נוצר קישור ב-client_contact_assignments
+await TenantContactService.assignToClient({
+  client_id: client.id,
+  contact_id: owner.id,
+  is_primary: true, // הבעלים הוא איש הקשר הראשי
+  email_preference: 'all'
+});
+
+// 3. אנשי קשר נוספים מתווספים דרך ContactsManager
+// כל אנשי הקשר נשמרים באותו אופן במאגר המשותף
+```
+
+### Key Points:
+- **אין** שדה `group_id` או `contact_group_id` ב-`tenant_contacts` - זה רק עבור `clients`
+- **בעלים ומנהלת חשבונות** מופיעים בטופס היצירה של לקוח רק ל-UX - אחר כך מנוהלים כמו שאר אנשי הקשר
+- **שליחת מיילים** תמיד מסננת לפי `email_preference` - מכתבי שכר טרחה נשלחים ל-'all' ו-'important_only'
+- **חיפוש אנשי קשר** משתמש ב-full-text search עם תמיכה בעברית (search_vector)
+
 ## 💥 User Management & Authentication System
 
 ### User Roles & Hierarchy:
