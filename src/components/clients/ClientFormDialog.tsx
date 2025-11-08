@@ -46,9 +46,8 @@ import type {
   ClientGroup,
   PaymentRole,
 } from '@/services';
-import { clientService } from '@/services';
+import { clientService, TenantContactService } from '@/services';
 import type { TenantContact } from '@/types/tenant-contact.types';
-import TenantContactService from '@/services/tenant-contact.service';
 import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 import {
   validateIsraeliPostalCode,

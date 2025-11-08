@@ -4,6 +4,7 @@ export { letterService } from './letter.service';
 export { cardcomService } from './cardcom.service';
 export { auditService } from './audit.service';
 export { userService } from './user.service';
+export { default as TenantContactService } from './tenant-contact.service';
 
 export type {
   Client,
