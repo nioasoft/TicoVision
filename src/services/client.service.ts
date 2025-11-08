@@ -277,6 +277,8 @@ export class ClientService extends BaseService {
       // Auto-create primary contact (owner) using shared contacts system
       if (data.contact_name && data.contact_email) {
         try {
+          console.log('📧 Creating primary contact for client:', client.company_name);
+
           // Create or find owner in tenant_contacts
           const owner = await TenantContactService.createOrGet({
             full_name: data.contact_name,
@@ -287,24 +289,42 @@ export class ClientService extends BaseService {
           });
 
           if (owner) {
+            console.log('✅ Owner contact created/found:', owner.full_name);
+
             // Assign owner to client via client_contact_assignments
-            await TenantContactService.assignToClient({
+            const assignment = await TenantContactService.assignToClient({
               client_id: client.id,
               contact_id: owner.id,
               is_primary: true, // Owner is the primary contact
               email_preference: 'all', // Default: receives all emails
               role_at_client: 'בעל הבית',
             });
+
+            if (assignment) {
+              console.log('✅ Owner assigned to client successfully');
+            } else {
+              console.warn('⚠️ Owner contact created but assignment failed');
+            }
+          } else {
+            console.error('❌ Failed to create/find owner contact - returned null');
           }
         } catch (contactError) {
-          console.error('Failed to create/assign primary contact:', contactError);
+          console.error('💥 CRITICAL: Failed to create/assign primary contact for client:', {
+            client_id: client.id,
+            company_name: client.company_name,
+            contact_email: data.contact_email,
+            error: contactError instanceof Error ? contactError.message : contactError,
+          });
           // Don't fail client creation if contact creation fails
+          // But log it prominently so we can debug
         }
       }
 
       // Auto-create accountant contact using shared contacts system
       if (data.accountant_name && data.accountant_email) {
         try {
+          console.log('📧 Creating accountant contact for client:', client.company_name);
+
           // Create or find accountant in tenant_contacts
           const accountant = await TenantContactService.createOrGet({
             full_name: data.accountant_name,
@@ -315,18 +335,34 @@ export class ClientService extends BaseService {
           });
 
           if (accountant) {
+            console.log('✅ Accountant contact created/found:', accountant.full_name);
+
             // Assign accountant to client via client_contact_assignments
-            await TenantContactService.assignToClient({
+            const assignment = await TenantContactService.assignToClient({
               client_id: client.id,
               contact_id: accountant.id,
               is_primary: false, // Accountant is parallel to primary, not primary itself
               email_preference: 'all', // Default: receives all emails
               role_at_client: 'מנהלת חשבונות',
             });
+
+            if (assignment) {
+              console.log('✅ Accountant assigned to client successfully');
+            } else {
+              console.warn('⚠️ Accountant contact created but assignment failed');
+            }
+          } else {
+            console.error('❌ Failed to create/find accountant contact - returned null');
           }
         } catch (contactError) {
-          console.error('Failed to create/assign accountant contact:', contactError);
+          console.error('💥 CRITICAL: Failed to create/assign accountant contact for client:', {
+            client_id: client.id,
+            company_name: client.company_name,
+            accountant_email: data.accountant_email,
+            error: contactError instanceof Error ? contactError.message : contactError,
+          });
           // Don't fail client creation if contact creation fails
+          // But log it prominently so we can debug
         }
       }
 

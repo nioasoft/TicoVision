@@ -3,7 +3,7 @@
  * Manages shared contact pool and client-contact assignments
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase, getCurrentTenantId } from '../lib/supabase';
 import type {
   TenantContact,
   ClientContactAssignment,
@@ -113,11 +113,18 @@ export class TenantContactService {
     contactData: CreateTenantContactDto
   ): Promise<TenantContact | null> {
     try {
+      // Get tenant_id from current session
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) {
+        console.error('❌ Cannot create contact: No tenant_id in session');
+        throw new Error('No tenant_id found in session');
+      }
+
       // Try to find existing by email
       if (contactData.email) {
         const existing = await this.findByEmail(contactData.email);
         if (existing) {
-          console.log('Found existing contact by email:', existing.full_name);
+          console.log('✅ Found existing contact by email:', existing.full_name);
           return existing;
         }
       }
@@ -126,25 +133,40 @@ export class TenantContactService {
       if (contactData.phone) {
         const existing = await this.findByPhone(contactData.phone);
         if (existing) {
-          console.log('Found existing contact by phone:', existing.full_name);
+          console.log('✅ Found existing contact by phone:', existing.full_name);
           return existing;
         }
       }
 
-      // Create new contact
+      // Create new contact with tenant_id
+      const contactWithTenant = {
+        ...contactData,
+        tenant_id: tenantId,
+      };
+
+      console.log('📝 Creating new contact:', {
+        name: contactWithTenant.full_name,
+        email: contactWithTenant.email,
+        tenant_id: tenantId,
+      });
+
       const { data: newContact, error } = await supabase
         .from('tenant_contacts')
-        .insert([contactData])
+        .insert([contactWithTenant])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Failed to insert contact:', error);
+        throw error;
+      }
 
-      console.log('Created new contact:', newContact.full_name);
+      console.log('✅ Created new contact:', newContact.full_name);
       return newContact;
     } catch (error) {
-      console.error('Error creating/getting contact:', error);
-      return null;
+      console.error('💥 Error in createOrGet:', error);
+      // Re-throw instead of returning null for better error tracking
+      throw error;
     }
   }
 

@@ -15,6 +15,7 @@ import { TemplateService } from '../services/template.service';
 import type { LetterVariables, LetterTemplateType } from '../types/letter.types';
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
 import { selectLetterTemplate, type LetterSelectionResult } from '../utils/letter-selector';
+import { TenantContactService } from '@/services/tenant-contact.service';
 
 const templateService = new TemplateService();
 
@@ -35,7 +36,7 @@ export function LetterPreviewDialog({
 }: LetterPreviewDialogProps) {
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientEmails, setRecipientEmails] = useState<string[]>([]);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [variables, setVariables] = useState<Partial<LetterVariables> | null>(null);
   const [letterSelection, setLetterSelection] = useState<LetterSelectionResult | null>(null);
@@ -73,8 +74,9 @@ export function LetterPreviewDialog({
 
       if (clientError) throw clientError;
 
-      // Set recipient email from client
-      setRecipientEmail(client.contact_email || client.email || '');
+      // Load all eligible emails for fee letters using centralized function
+      const emails = await TenantContactService.getClientEmails(clientId, 'important');
+      setRecipientEmails(emails);
 
       // Determine which letter template(s) to use
       const selection = selectLetterTemplate({
@@ -181,8 +183,8 @@ export function LetterPreviewDialog({
       return;
     }
 
-    if (!recipientEmail || !recipientEmail.includes('@')) {
-      toast.error('נא להזין כתובת מייל תקינה');
+    if (!recipientEmails || recipientEmails.length === 0) {
+      toast.error('לא נמצאו אנשי קשר עם מייל פעיל');
       return;
     }
 
@@ -205,7 +207,7 @@ export function LetterPreviewDialog({
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
-          recipientEmails: [recipientEmail],
+          recipientEmails: recipientEmails,
           recipientName: variables.company_name || 'לקוח יקר',
           templateType,
           variables,
@@ -247,7 +249,7 @@ export function LetterPreviewDialog({
           variables_used: variables,
           generated_content_html: previewHtml,
           payment_link: variables.payment_link_single,
-          recipient_emails: [recipientEmail],
+          recipient_emails: recipientEmails,
           sent_at: new Date().toISOString(),
           created_by: (await supabase.auth.getUser()).data.user?.id,
           status: 'sent',
@@ -260,7 +262,7 @@ export function LetterPreviewDialog({
       }
 
       const letterName = currentLetterStage === 'primary' ? 'ראשון' : 'שני';
-      toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${recipientEmail}`);
+      toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${recipientEmails.length} נמענים`);
 
       // Check if there's a secondary letter to send
       if (currentLetterStage === 'primary' && letterSelection.secondaryTemplate) {
@@ -336,19 +338,25 @@ export function LetterPreviewDialog({
           </div>
         )}
 
-        {/* Email Input */}
+        {/* Recipients List */}
         <div className="space-y-2">
-          <Label htmlFor="recipient_email" className="rtl:text-right ltr:text-left block">
-            מייל נמען
+          <Label className="rtl:text-right ltr:text-left block">
+            נמענים ({recipientEmails.length})
           </Label>
-          <Input
-            id="recipient_email"
-            type="email"
-            value={recipientEmail}
-            onChange={(e) => setRecipientEmail(e.target.value)}
-            placeholder="example@email.com"
-            dir="ltr"
-          />
+          {recipientEmails.length > 0 ? (
+            <div className="border rounded-lg p-3 bg-gray-50 space-y-1">
+              {recipientEmails.map((email, index) => (
+                <div key={index} className="text-sm text-gray-700 flex items-center gap-2">
+                  <Mail className="h-3 w-3 text-primary" />
+                  {email}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-red-600 rtl:text-right">
+              לא נמצאו אנשי קשר עם מייל פעיל. יש לערוך את הלקוח ולהוסיף אנשי קשר.
+            </p>
+          )}
         </div>
 
         {/* Actions */}
@@ -358,7 +366,7 @@ export function LetterPreviewDialog({
           </Button>
           <Button
             onClick={handleSendEmail}
-            disabled={isSendingEmail || !recipientEmail || isLoadingPreview}
+            disabled={isSendingEmail || recipientEmails.length === 0 || isLoadingPreview}
           >
             {isSendingEmail ? (
               <>
