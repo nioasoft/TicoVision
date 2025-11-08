@@ -1,6 +1,7 @@
 import { BaseService } from './base.service';
 import type { ServiceResponse, PaginationParams, FilterParams } from './base.service';
 import { supabase } from '@/lib/supabase';
+import TenantContactService from './tenant-contact.service';
 
 // Client types
 export type ClientType = 'company' | 'freelancer' | 'salary_owner' | 'partnership' | 'nonprofit';
@@ -273,23 +274,58 @@ export class ClientService extends BaseService {
         return { data: null, error: this.handleError(error) };
       }
 
-      // Auto-create accountant contact if provided
+      // Auto-create primary contact (owner) using shared contacts system
+      if (data.contact_name && data.contact_email) {
+        try {
+          // Create or find owner in tenant_contacts
+          const owner = await TenantContactService.createOrGet({
+            full_name: data.contact_name,
+            email: data.contact_email,
+            phone: data.contact_phone || null,
+            contact_type: 'owner',
+            job_title: 'איש קשר מהותי',
+          });
+
+          if (owner) {
+            // Assign owner to client via client_contact_assignments
+            await TenantContactService.assignToClient({
+              client_id: client.id,
+              contact_id: owner.id,
+              is_primary: true, // Owner is the primary contact
+              email_preference: 'all', // Default: receives all emails
+              role_at_client: 'בעל הבית',
+            });
+          }
+        } catch (contactError) {
+          console.error('Failed to create/assign primary contact:', contactError);
+          // Don't fail client creation if contact creation fails
+        }
+      }
+
+      // Auto-create accountant contact using shared contacts system
       if (data.accountant_name && data.accountant_email) {
-        const { error: contactError } = await supabase
-          .from('client_contacts')
-          .insert({
-            tenant_id: tenantId,
-            client_id: client.id,
-            contact_type: 'accountant_manager',
+        try {
+          // Create or find accountant in tenant_contacts
+          const accountant = await TenantContactService.createOrGet({
             full_name: data.accountant_name,
             email: data.accountant_email,
             phone: data.accountant_phone || null,
-            is_primary: false, // Accountant is parallel to primary, not primary itself
-            email_preference: 'all', // Default: receives all emails
+            contact_type: 'accountant_manager',
+            job_title: 'מנהלת חשבונות',
           });
 
-        if (contactError) {
-          console.error('Failed to create accountant contact:', contactError);
+          if (accountant) {
+            // Assign accountant to client via client_contact_assignments
+            await TenantContactService.assignToClient({
+              client_id: client.id,
+              contact_id: accountant.id,
+              is_primary: false, // Accountant is parallel to primary, not primary itself
+              email_preference: 'all', // Default: receives all emails
+              role_at_client: 'מנהלת חשבונות',
+            });
+          }
+        } catch (contactError) {
+          console.error('Failed to create/assign accountant contact:', contactError);
           // Don't fail client creation if contact creation fails
         }
       }
