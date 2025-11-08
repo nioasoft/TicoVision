@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ContactsManager } from '@/components/ContactsManager';
 import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
+import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import type {
   Client,
   CreateClientDto,
@@ -46,6 +47,8 @@ import type {
   PaymentRole,
 } from '@/services';
 import { clientService } from '@/services';
+import type { TenantContact } from '@/types/tenant-contact.types';
+import TenantContactService from '@/services/tenant-contact.service';
 import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 import {
   validateIsraeliPostalCode,
@@ -97,7 +100,7 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   company_subtype: undefined,
   pays_fees: true, // NEW DEFAULT: true instead of false
   is_retainer: false, // NEW: לקוח ריטיינר - default false
-  group_id: undefined,
+  group_id: null,
   payment_role: 'independent', // NEW: תפקיד תשלום - default independent
 };
 
@@ -206,12 +209,10 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (!formData.address?.city?.trim()) errors.push('עיר');
       if (!formData.address?.postal_code?.trim()) errors.push('מיקוד');
 
-      // Accountant validation - ONLY in add mode
-      if (mode === 'add') {
-        if (!formData.accountant_name?.trim()) errors.push('שם מנהלת חשבונות');
-        if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
-        if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
-      }
+      // Accountant validation - required fields
+      if (!formData.accountant_name?.trim()) errors.push('שם מנהלת חשבונות');
+      if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
+      if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
 
       // Format validation
       if (formData.tax_id && !/^\d{9}$/.test(formData.tax_id)) {
@@ -227,12 +228,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (formData.contact_email && !emailRegex.test(formData.contact_email)) {
         errors.push('אימייל איש קשר לא תקין');
       }
-      if (mode === 'add' && formData.accountant_email && !emailRegex.test(formData.accountant_email)) {
-        errors.push('אימייל מנהלת חשבונות לא תקין');
-      }
 
       return { valid: errors.length === 0, errors };
-    }, [formData, mode]);
+    }, [formData]);
 
     const handleSubmit = useCallback(async () => {
       // Validate form first
@@ -248,7 +246,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
       setIsSubmitting(true);
       try {
+        // Submit the client data (contact fields will be auto-saved by client.service)
         const success = await onSubmit(formData);
+
         if (success) {
           setFormData(INITIAL_FORM_DATA);
           setHasUnsavedChanges(false);
@@ -362,52 +362,24 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Row 2: Contact Name, Phone, Email (3 cols) */}
-              <div>
-                <Label htmlFor="contact_name" className="text-right block mb-2">
-                  שם איש קשר מהותי *
-                </Label>
-                <Input
-                  id="contact_name"
-                  value={formData.contact_name}
-                  onChange={(e) => handleFormChange('contact_name', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  required
-                  dir="rtl"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="contact_phone" className="text-right block mb-2">
-                  טלפון <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="contact_phone"
-                  value={formData.contact_phone}
-                  onChange={(e) => {
-                    const formatted = formatIsraeliPhone(e.target.value);
+              {/* Row 2: Primary Contact (Owner) with Autocomplete (3 cols) */}
+              <div className="col-span-3">
+                <ContactAutocompleteInput
+                  label="איש קשר מהותי (בעל הבית)"
+                  nameValue={formData.contact_name}
+                  emailValue={formData.contact_email}
+                  phoneValue={formData.contact_phone}
+                  onNameChange={(value) => handleFormChange('contact_name', value)}
+                  onEmailChange={(value) => handleFormChange('contact_email', value)}
+                  onPhoneChange={(value) => {
+                    const formatted = formatIsraeliPhone(value);
                     handleFormChange('contact_phone', formatted);
                   }}
-                  onKeyDown={handleKeyDown}
-                  type="tel"
-                  required
-                  dir="ltr"
-                  placeholder="050-1234567"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="contact_email" className="text-right block mb-2">
-                  אימייל *
-                </Label>
-                <Input
-                  id="contact_email"
-                  value={formData.contact_email}
-                  onChange={(e) => handleFormChange('contact_email', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  type="email"
-                  required
-                  dir="ltr"
+                  contactType="owner"
+                  required={true}
+                  namePlaceholder="שם מלא"
+                  emailPlaceholder="דוא״ל"
+                  phonePlaceholder="050-1234567"
                 />
               </div>
 
@@ -487,7 +459,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <Select
                   value={formData.group_id || 'NO_GROUP'}
                   onValueChange={(value) => {
-                    handleFormChange('group_id', value === 'NO_GROUP' ? undefined : value);
+                    handleFormChange('group_id', value === 'NO_GROUP' ? null : value);
                     if (value && value !== 'NO_GROUP' && !formData.payment_role) {
                       handleFormChange('payment_role', 'member');
                     }
@@ -734,74 +706,26 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </div>
               </div>
 
-              {/* Row 8: Accountant Details - ONLY IN ADD MODE */}
+              {/* Row 8: Accountant Contact with Autocomplete (Add mode only) */}
               {mode === 'add' && (
                 <div className="col-span-3 border-t pt-4 mt-4">
-                  <h3 className="text-lg font-semibold mb-4 text-right">מנהלת חשבונות (חובה)</h3>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="accountant_name" className="text-right block mb-2">
-                        שם מלא *
-                      </Label>
-                      <Input
-                        id="accountant_name"
-                        value={formData.accountant_name}
-                        onChange={(e) => handleFormChange('accountant_name', e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        required
-                        dir="rtl"
-                        placeholder="שם מלא"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="accountant_email" className="text-right block mb-2">
-                        אימייל *
-                      </Label>
-                      <Input
-                        id="accountant_email"
-                        value={formData.accountant_email}
-                        onChange={(e) => handleFormChange('accountant_email', e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        type="email"
-                        required
-                        dir="ltr"
-                        placeholder="accountant@example.com"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="accountant_phone" className="text-right block mb-2">
-                        טלפון *
-                      </Label>
-                      <Input
-                        id="accountant_phone"
-                        value={formData.accountant_phone}
-                        onChange={(e) => {
-                          const formatted = formatIsraeliPhone(e.target.value);
-                          handleFormChange('accountant_phone', formatted);
-                        }}
-                        onKeyDown={handleKeyDown}
-                        type="tel"
-                        required
-                        dir="ltr"
-                        placeholder="050-1234567"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Explanation in edit mode - where to edit accountant */}
-              {mode === 'edit' && (
-                <div className="col-span-3 border-t pt-4 mt-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800 rtl:text-right">
-                      💡 <strong>עריכת פרטי מנהלת חשבונות:</strong> לעריכת פרטי מנהלת החשבונות,
-                      גלול למטה לסקשן "אנשי קשר". מנהלת החשבונות מופיעה שם עם תג "מנהלת חשבונות".
-                    </p>
-                  </div>
+                  <ContactAutocompleteInput
+                    label="מנהלת חשבונות"
+                    nameValue={formData.accountant_name}
+                    emailValue={formData.accountant_email}
+                    phoneValue={formData.accountant_phone}
+                    onNameChange={(value) => handleFormChange('accountant_name', value)}
+                    onEmailChange={(value) => handleFormChange('accountant_email', value)}
+                    onPhoneChange={(value) => {
+                      const formatted = formatIsraeliPhone(value);
+                      handleFormChange('accountant_phone', formatted);
+                    }}
+                    contactType="accountant_manager"
+                    required={true}
+                    namePlaceholder="שם מנהלת חשבונות"
+                    emailPlaceholder="דוא״ל"
+                    phonePlaceholder="050-1234567"
+                  />
                 </div>
               )}
 
