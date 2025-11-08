@@ -482,7 +482,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Row 4: Group, Payment Role (if selected), Accounting Management (3 cols) */}
               <div>
                 <Label htmlFor="group_id" className="text-right block mb-2">
-                  קבוצה <span className="text-red-500">*</span>
+                  קבוצה
                 </Label>
                 <Select
                   value={formData.group_id || 'NO_GROUP'}
@@ -495,7 +495,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       handleFormChange('payment_role', 'independent');
                     }
                   }}
-                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="בחר קבוצה" />
