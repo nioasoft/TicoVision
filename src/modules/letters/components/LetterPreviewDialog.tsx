@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Mail, Loader2, Printer, Download, CheckCircle2 } from 'lucide-react';
@@ -71,6 +72,16 @@ export function LetterPreviewDialog({
   const [secondarySent, setSecondarySent] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  // Recipient management per letter
+  const [primaryEnabledEmails, setPrimaryEnabledEmails] = useState<Set<string>>(new Set());
+  const [primaryManualEmails, setPrimaryManualEmails] = useState<string[]>([]);
+  const [secondaryEnabledEmails, setSecondaryEnabledEmails] = useState<Set<string>>(new Set());
+  const [secondaryManualEmails, setSecondaryManualEmails] = useState<string[]>([]);
+  const [newManualEmail, setNewManualEmail] = useState('');
+
+  // Send to Sigal and Shani for review
+  const [sendToReviewers, setSendToReviewers] = useState(true); // Default: true (always send to them)
+
   /**
    * Load fee and client data, then generate variables
    */
@@ -106,6 +117,11 @@ export function LetterPreviewDialog({
       // Load all eligible emails for fee letters using centralized function
       const emails = await TenantContactService.getClientEmails(clientId, 'important');
       setRecipientEmails(emails);
+
+      // Initialize ALL emails as enabled by default
+      setPrimaryEnabledEmails(new Set(emails));
+      // Initialize secondary enabled emails (will be used if there's a secondary letter)
+      setSecondaryEnabledEmails(new Set(emails));
 
       // Load full contact details (not just emails)
       const contacts = await TenantContactService.getClientContacts(clientId);
@@ -229,6 +245,86 @@ export function LetterPreviewDialog({
   };
 
   /**
+   * Recipient Management Helper Functions
+   */
+  // Get current enabled/manual emails based on stage
+  const getCurrentEnabledEmails = () => {
+    return currentLetterStage === 'primary' ? primaryEnabledEmails : secondaryEnabledEmails;
+  };
+
+  const getCurrentManualEmails = () => {
+    return currentLetterStage === 'primary' ? primaryManualEmails : secondaryManualEmails;
+  };
+
+  const setCurrentEnabledEmails = (emails: Set<string>) => {
+    if (currentLetterStage === 'primary') {
+      setPrimaryEnabledEmails(emails);
+    } else {
+      setSecondaryEnabledEmails(emails);
+    }
+  };
+
+  const setCurrentManualEmails = (emails: string[]) => {
+    if (currentLetterStage === 'primary') {
+      setPrimaryManualEmails(emails);
+    } else {
+      setSecondaryManualEmails(emails);
+    }
+  };
+
+  // Get final recipient list for sending
+  const getFinalRecipients = () => {
+    const enabled = Array.from(getCurrentEnabledEmails());
+    const manual = getCurrentManualEmails();
+    const reviewers = sendToReviewers ? ['sigal@franco.co.il', 'shano@franco.co.il'] : [];
+
+    // Combine all recipients and remove duplicates
+    const allRecipients = [...enabled, ...manual, ...reviewers];
+    return [...new Set(allRecipients)]; // Remove duplicates using Set
+  };
+
+  // Toggle contact email
+  const handleToggleEmail = (email: string, checked: boolean) => {
+    const current = new Set(getCurrentEnabledEmails());
+    if (checked) {
+      current.add(email);
+    } else {
+      current.delete(email);
+    }
+    setCurrentEnabledEmails(current);
+  };
+
+  // Add manual email
+  const handleAddManualEmail = () => {
+    const email = newManualEmail.trim();
+    if (!email) return;
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('כתובת מייל לא תקינה');
+      return;
+    }
+
+    // Check if already exists
+    const current = getCurrentManualEmails();
+    if (current.includes(email) || getCurrentEnabledEmails().has(email)) {
+      toast.error('כתובת מייל זו כבר קיימת ברשימה');
+      return;
+    }
+
+    setCurrentManualEmails([...current, email]);
+    setNewManualEmail('');
+    toast.success('מייל נוסף בהצלחה');
+  };
+
+  // Remove manual email
+  const handleRemoveManualEmail = (index: number) => {
+    const current = getCurrentManualEmails();
+    setCurrentManualEmails(current.filter((_, i) => i !== index));
+  };
+
+  /**
    * Print letter using browser's native print dialog
    * User can choose "Save as PDF" from the print dialog
    */
@@ -290,8 +386,11 @@ export function LetterPreviewDialog({
       return;
     }
 
-    if (!recipientEmails || recipientEmails.length === 0) {
-      toast.error('לא נמצאו אנשי קשר עם מייל פעיל');
+    // Get final recipients (enabled contacts + manual emails)
+    const finalRecipients = getFinalRecipients();
+
+    if (finalRecipients.length === 0) {
+      toast.error('לא נבחרו נמענים. יש לבחור לפחות מייל אחד.');
       return;
     }
 
@@ -313,12 +412,12 @@ export function LetterPreviewDialog({
           ? effectivePrimaryTemplate
           : effectiveSecondaryTemplate!;
 
-      console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) via Edge Function...`);
+      console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) to ${finalRecipients.length} recipients...`);
 
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
-          recipientEmails: recipientEmails,
+          recipientEmails: finalRecipients,
           recipientName: variables.company_name || 'לקוח יקר',
           templateType,
           variables,
@@ -414,6 +513,13 @@ export function LetterPreviewDialog({
       setActiveTab('primary');
       setPrimarySent(false);
       setSecondarySent(false);
+      // Reset recipient management
+      setPrimaryEnabledEmails(new Set());
+      setPrimaryManualEmails([]);
+      setSecondaryEnabledEmails(new Set());
+      setSecondaryManualEmails([]);
+      setNewManualEmail('');
+      setSendToReviewers(true); // Default: always send to reviewers
     }
   }, [open]);
 
@@ -443,28 +549,111 @@ export function LetterPreviewDialog({
         </div>
       )}
 
-      {/* Recipients List */}
-      <div className="space-y-2">
-        <Label className="rtl:text-right ltr:text-left block">
-          נמענים ({recipientEmails.length})
-        </Label>
-        {recipientEmails.length > 0 ? (
-          <div className="border rounded-lg p-3 bg-gray-50">
-            <div className="grid grid-cols-4 gap-2">
+      {/* Recipients Management */}
+      <div className="space-y-4">
+        {/* Contact List with Checkboxes */}
+        <div className="space-y-2">
+          <Label className="rtl:text-right block">
+            אנשי קשר של הלקוח ({Array.from(getCurrentEnabledEmails()).length} מתוך {contactsDetails.length} נבחרו)
+          </Label>
+          {contactsDetails.length > 0 ? (
+            <div className="border rounded-lg p-3 bg-gray-50 space-y-2 max-h-60 overflow-y-auto">
               {contactsDetails.map((contact) => (
-                <div key={contact.id} className="p-2 bg-white rounded border hover:bg-gray-50">
-                  <div className="text-xs font-medium truncate rtl:text-right">{contact.full_name}</div>
-                  <div className="text-[10px] text-gray-500 truncate dir-ltr rtl:text-right">{contact.email}</div>
-                  <div className="text-[10px] text-blue-600 rtl:text-right">{getContactTypeLabel(contact.contact_type)}</div>
+                <div key={contact.id} className="flex items-center gap-3 p-2 bg-white rounded border hover:bg-gray-50">
+                  <Checkbox
+                    checked={getCurrentEnabledEmails().has(contact.email!)}
+                    onCheckedChange={(checked) => handleToggleEmail(contact.email!, checked as boolean)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate rtl:text-right">{contact.full_name}</div>
+                    <div className="text-xs text-gray-500 truncate dir-ltr rtl:text-right">{contact.email}</div>
+                    <div className="text-xs text-blue-600 rtl:text-right">{getContactTypeLabel(contact.contact_type)}</div>
+                  </div>
                 </div>
               ))}
             </div>
+          ) : (
+            <p className="text-sm text-gray-500 rtl:text-right">
+              לא נמצאו אנשי קשר עם מייל פעיל
+            </p>
+          )}
+        </div>
+
+        {/* Manual Email Input */}
+        <div className="space-y-2">
+          <Label className="rtl:text-right block">הוסף מייל נוסף (לא מרשימת אנשי הקשר)</Label>
+          <div className="flex gap-2 rtl:flex-row-reverse">
+            <Input
+              type="email"
+              placeholder="example@company.com"
+              value={newManualEmail}
+              onChange={(e) => setNewManualEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddManualEmail();
+                }
+              }}
+              className="flex-1"
+              dir="ltr"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddManualEmail}
+              disabled={!newManualEmail.trim()}
+            >
+              הוסף
+            </Button>
           </div>
-        ) : (
-          <p className="text-sm text-red-600 rtl:text-right">
-            לא נמצאו אנשי קשר עם מייל פעיל. יש לערוך את הלקוח ולהוסיף אנשי קשר.
-          </p>
+
+          {/* Display manual emails */}
+          {getCurrentManualEmails().length > 0 && (
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-600 rtl:text-right">מיילים נוספים:</Label>
+              {getCurrentManualEmails().map((email, index) => (
+                <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded rtl:flex-row-reverse">
+                  <Mail className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm flex-1 dir-ltr rtl:text-right">{email}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveManualEmail(index)}
+                    className="h-6 w-6 p-0"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Final Recipients Summary */}
+        {getFinalRecipients().length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded p-3">
+            <div className="flex items-center gap-2 text-green-900 font-semibold rtl:flex-row-reverse">
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="rtl:text-right">המכתב יישלח ל-{getFinalRecipients().length} נמענים</span>
+            </div>
+            <div className="text-sm text-green-700 mt-1 rtl:text-right">
+              {Array.from(getCurrentEnabledEmails()).length} מאנשי קשר + {getCurrentManualEmails().length} מיילים נוספים
+              {sendToReviewers && ' + 2 (שני וסיגל לבדיקה)'}
+            </div>
+          </div>
         )}
+      </div>
+
+      {/* Send to Reviewers Checkbox */}
+      <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded rtl:flex-row-reverse">
+        <Checkbox
+          checked={sendToReviewers}
+          onCheckedChange={(checked) => setSendToReviewers(checked as boolean)}
+          id="send-to-reviewers"
+        />
+        <Label htmlFor="send-to-reviewers" className="cursor-pointer rtl:text-right flex-1">
+          שלח לשני וסיגל לבדיקה (sigal@franco.co.il, shano@franco.co.il)
+        </Label>
       </div>
 
       {/* Actions for this letter */}
@@ -488,7 +677,7 @@ export function LetterPreviewDialog({
         </Button>
         <Button
           onClick={handleSendEmail}
-          disabled={isSendingEmail || recipientEmails.length === 0 || isLoadingPreview || isSent}
+          disabled={isSendingEmail || getFinalRecipients().length === 0 || isLoadingPreview || isSent}
         >
           {isSendingEmail && currentLetterStage === stage ? (
             <>
