@@ -483,17 +483,19 @@ export class TemplateService extends BaseService {
 
   /**
    * NEW ARCHITECTURE: Build full HTML letter from 4 components
-   * Combines header + body + [optional payment] + footer
+   * Combines header + body + [optional payment] + footer + subject lines
    */
   private buildFullHTML(
     header: string,
     body: string,
     paymentSection: string,
     footer: string,
-    customHeaderLinesHtml?: string
+    customHeaderLinesHtml?: string,
+    subjectLinesHtml?: string
   ): string {
     // Debug logging
     console.log('🔍 [Build] אורך HTML שורות מותאמות:', customHeaderLinesHtml?.length || 0);
+    console.log('🔍 [Build] אורך HTML שורות הנדון:', subjectLinesHtml?.length || 0);
     console.log('🔍 [Build] יש placeholder בheader?', header.includes('{{custom_header_lines}}'));
 
     // Replace {{custom_header_lines}} placeholder in header
@@ -527,6 +529,7 @@ export class TemplateService extends BaseService {
             <td align="center" style="padding: 40px 20px;">
                 <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
                     ${headerWithCustomLines}
+                    ${subjectLinesHtml || ''}
                     ${body}
                     ${paymentSection}
                     ${footer}
@@ -999,6 +1002,7 @@ export class TemplateService extends BaseService {
     variables: Record<string, string | number>;
     includesPayment: boolean;
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
+    subjectLines?: import('../types/letter.types').SubjectLine[];
   }): Promise<ServiceResponse<{ html: string }>> {
     try {
       // 1. Load header and footer
@@ -1025,7 +1029,15 @@ export class TemplateService extends BaseService {
         console.log('🔍 [Service] אין שורות מותאמות');
       }
 
-      // 5. Add automatic variables
+      // 5. Generate subject lines HTML if provided
+      let subjectLinesHtml = '';
+      if (params.subjectLines && params.subjectLines.length > 0) {
+        console.log('🔍 [Service] מייצר שורות הנדון:', params.subjectLines);
+        subjectLinesHtml = this.buildSubjectLinesHTML(params.subjectLines);
+        console.log('🔍 [Service] HTML שורות הנדון נוצר:', subjectLinesHtml.length, 'תווים');
+      }
+
+      // 6. Add automatic variables
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
 
@@ -1039,19 +1051,71 @@ export class TemplateService extends BaseService {
         fee_id: params.variables.fee_id // If provided in variables
       };
 
-      // 6. Build full HTML with custom header lines
-      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml);
+      // 7. Build full HTML with custom header lines and subject lines
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml, subjectLinesHtml);
 
-      // 7. Replace variables
+      // 8. Replace variables
       fullHtml = replaceVarsInText(fullHtml, fullVariables);
 
-      // 8. Convert CID images to web paths for browser preview
+      // 9. Convert CID images to web paths for browser preview
       fullHtml = this.replaceCidWithWebPaths(fullHtml);
 
       return { data: { html: fullHtml }, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
+  }
+
+  /**
+   * Build HTML for subject lines (הנדון)
+   * Converts SubjectLine[] to styled HTML with blue color (#395BF7), 26px font, and borders
+   */
+  buildSubjectLinesHTML(lines: import('../types/letter.types').SubjectLine[]): string {
+    if (!lines || lines.length === 0) {
+      return '';
+    }
+
+    // Sort by order
+    const sortedLines = [...lines].sort((a, b) => a.order - b.order);
+
+    const linesHtml = sortedLines.map((line, index) => {
+      const isFirstLine = index === 0;
+
+      // Build inline styles for each line
+      const styles: string[] = [];
+
+      if (line.formatting?.bold) {
+        styles.push('font-weight: 700');
+      }
+
+      if (line.formatting?.underline) {
+        styles.push('text-decoration: underline');
+      }
+
+      const styleStr = styles.length > 0 ? ` style="${styles.join('; ')};"` : '';
+
+      // שורה ראשונה: "הנדון: {טקסט}"
+      if (isFirstLine) {
+        return `      <div${styleStr}>הנדון: ${line.content || ''}</div>`;
+      }
+
+      // שורות נוספות: "הנדון: " invisible + טקסט
+      // זה גורם ליישור מושלם - הטקסט מתחיל בדיוק באותו מקום
+      return `      <div${styleStr}><span style="opacity: 0;">הנדון: </span>${line.content || ''}</div>`;
+    }).join('\n');
+
+    // Return complete subject lines section with borders
+    return `<!-- Subject Lines (הנדון) -->
+<tr>
+    <td style="padding-top: 20px;">
+        <!-- Top border -->
+        <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
+        <!-- Subject lines container -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; color: #395BF7; text-align: right; line-height: 1.2; padding-bottom: 20px; border-bottom: 1px solid #000000;">
+${linesHtml}
+        </div>
+    </td>
+</tr>`;
   }
 
   /**

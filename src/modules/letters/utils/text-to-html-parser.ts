@@ -3,12 +3,13 @@
  * Converts plain text with Markdown-like syntax to styled HTML for letter templates
  *
  * Parsing Rules:
- * - "הנדון: [text]"    → Subject (26px, bold, blue #395BF7, borders)
  * - "[text]:"          → Section heading (20px, bold, black)
  * - "* [text]"         → Bullet point (16px + blue icon)
  * - "- [text]"         → Bullet point
  * - "[text]"           → Paragraph (16px, regular)
  * - Empty line         → New paragraph block
+ *
+ * Note: "הנדון:" (subject lines) are now handled separately as dynamic SubjectLine components
  */
 
 /**
@@ -17,18 +18,6 @@
 const DESIGN_TOKENS = {
   fonts: {
     family: "'David Libre', 'Heebo', 'Assistant', sans-serif"
-  },
-  subject: {
-    fontSize: '26px',
-    fontWeight: '700',
-    color: '#395BF7',
-    lineHeight: '1.2',
-    letterSpacing: '-0.3px',
-    borderTop: '1px solid #000000',
-    borderBottom: '1px solid #000000',
-    paddingTop: '20px',
-    paddingBottom: '20px',
-    marginBottom: '20px'
   },
   heading: {
     fontSize: '20px',
@@ -41,8 +30,7 @@ const DESIGN_TOKENS = {
     fontSize: '16px',
     fontWeight: '400',
     color: '#09090b',
-    lineHeight: '1.2',
-    paddingBottom: '20px'
+    lineHeight: '1.2'
   },
   bullet: {
     fontSize: '16px',
@@ -64,7 +52,7 @@ const DESIGN_TOKENS = {
 /**
  * Line type identification
  */
-type LineType = 'subject' | 'heading' | 'bullet' | 'paragraph' | 'empty';
+type LineType = 'heading' | 'bullet' | 'paragraph' | 'empty';
 
 interface ParsedLine {
   type: LineType;
@@ -81,12 +69,6 @@ export function parseLineType(line: string): ParsedLine {
   // Empty line
   if (!trimmed) {
     return { type: 'empty', content: '', rawLine: line };
-  }
-
-  // Subject line: "הנדון: [text]"
-  if (trimmed.startsWith('הנדון:')) {
-    const content = trimmed.substring('הנדון:'.length).trim();
-    return { type: 'subject', content: `הנדון: ${content}`, rawLine: line };
   }
 
   // Heading: line ending with ":"
@@ -106,55 +88,56 @@ export function parseLineType(line: string): ParsedLine {
 
 /**
  * Parse inline text formatting
- * Processes: **bold**, ##red bold##, ###blue bold###, __underline__
+ * Processes: **bold**, ##red bold##, ###blue bold###, __underline__, ===double underline===, ~~strikethrough~~
+ *
+ * Processing order (innermost to outermost) to support nesting:
+ * 1. __ (underline) - innermost
+ * 2. === (double underline)
+ * 3. ~~ (strikethrough)
+ * 4. ** (bold) - can wrap previous ones
+ * 5. ## (red bold) - can wrap all
+ * 6. ### (blue bold) - outermost
+ *
+ * Supported combinations:
+ * - **__text__** → bold + underline
+ * - **===text===** → bold + double underline
+ * - ##__text__## → red bold + underline
+ * - ###__text__### → blue bold + underline
  */
 function parseInlineStyles(text: string): string {
   let result = text;
 
-  // Process ### (blue bold) FIRST - before ## to avoid conflicts
-  result = result.replace(/###(.*?)###/g, '<span style="color: #395BF7; font-weight: bold;">$1</span>');
-
-  // Process ## (red bold) SECOND
-  result = result.replace(/##(.*?)##/g, '<span style="color: #FF0000; font-weight: bold;">$1</span>');
-
-  // Process ** (bold) THIRD
-  result = result.replace(/\*\*(.*?)\*\*/g, '<span style="font-weight: bold;">$1</span>');
-
-  // Process __ (underline) FOURTH
+  // Process __ (underline) FIRST - innermost layer
   result = result.replace(/__(.*?)__/g, '<span style="text-decoration: underline;">$1</span>');
 
-  return result;
-}
+  // Process === (double underline) SECOND
+  result = result.replace(/===(.*?)===/g, '<span style="text-decoration: underline; text-decoration-style: double;">$1</span>');
 
-/**
- * Build HTML for subject line
- */
-function buildSubject(content: string): string {
-  const { subject, fonts } = DESIGN_TOKENS;
-  const styledContent = parseInlineStyles(content);
-  return `<!-- Subject -->
-<tr>
-    <td style="padding-top: ${subject.paddingTop};">
-        <!-- Top border above subject -->
-        <div style="border-top: ${subject.borderTop}; margin-bottom: ${subject.marginBottom};"></div>
-        <!-- Subject line -->
-        <div style="font-family: ${fonts.family}; font-size: ${subject.fontSize}; line-height: ${subject.lineHeight}; font-weight: ${subject.fontWeight}; color: ${subject.color}; text-align: right; letter-spacing: ${subject.letterSpacing}; border-bottom: ${subject.borderBottom}; padding-bottom: ${subject.paddingBottom};">
-            ${styledContent}
-        </div>
-    </td>
-</tr>`;
+  // Process ~~ (strikethrough) THIRD
+  result = result.replace(/~~(.*?)~~/g, '<span style="text-decoration: line-through;">$1</span>');
+
+  // Process ** (bold) FOURTH - can wrap underlines/strikethroughs
+  result = result.replace(/\*\*(.*?)\*\*/g, '<span style="font-weight: bold;">$1</span>');
+
+  // Process ## (red bold) FIFTH - can wrap everything inside
+  result = result.replace(/##(.*?)##/g, '<span style="color: #FF0000; font-weight: bold;">$1</span>');
+
+  // Process ### (blue bold) LAST - outermost layer, before ## to avoid conflicts
+  result = result.replace(/###(.*?)###/g, '<span style="color: #395BF7; font-weight: bold;">$1</span>');
+
+  return result;
 }
 
 /**
  * Build HTML for section heading
  */
 function buildHeading(content: string): string {
-  const { heading, fonts, spacing } = DESIGN_TOKENS;
+  const { heading, fonts } = DESIGN_TOKENS;
   const styledContent = parseInlineStyles(content);
   return `<!-- Section Heading -->
 <tr>
-    <td style="padding-top: ${spacing.sectionMarginTop};">
-        <div style="font-family: ${fonts.family}; font-size: ${heading.fontSize}; line-height: ${heading.lineHeight}; font-weight: ${heading.fontWeight}; color: ${heading.color}; text-align: right; margin-bottom: ${heading.marginBottom};">
+    <td>
+        <div style="font-family: ${fonts.family}; font-size: ${heading.fontSize}; line-height: ${heading.lineHeight}; font-weight: ${heading.fontWeight}; color: ${heading.color}; text-align: right;">
             ${styledContent}
         </div>`;
 }
@@ -186,7 +169,7 @@ function buildParagraph(content: string): string {
   return `<!-- Paragraph -->
 <tr>
     <td style="padding-top: 20px;">
-        <div style="font-family: ${fonts.family}; font-size: ${paragraph.fontSize}; line-height: ${paragraph.lineHeight}; color: ${paragraph.color}; text-align: right; padding-bottom: ${paragraph.paddingBottom};">
+        <div style="font-family: ${fonts.family}; font-size: ${paragraph.fontSize}; line-height: ${paragraph.lineHeight}; color: ${paragraph.color}; text-align: right;">
             ${styledContent}
         </div>
     </td>
@@ -197,10 +180,9 @@ function buildParagraph(content: string): string {
  * Close bullet section with border
  */
 function closeBulletSection(): string {
-  const { spacing } = DESIGN_TOKENS;
   return `        </table>
         <!-- Border -->
-        <div style="border-top: 1px solid #000000; margin-top: ${spacing.borderMarginTop};"></div>
+        <div style="border-top: 1px solid #000000;"></div>
     </td>
 </tr>`;
 }
@@ -222,16 +204,6 @@ export function parseTextToHTML(plainText: string): string {
     const nextParsed = parsedLines[i + 1];
 
     switch (parsed.type) {
-      case 'subject':
-        // Close bullet section if open
-        if (inBulletSection) {
-          html += closeBulletSection();
-          inBulletSection = false;
-          bulletBuffer = [];
-        }
-        html += buildSubject(parsed.content);
-        break;
-
       case 'heading':
         // Close bullet section if open
         if (inBulletSection) {
@@ -245,7 +217,7 @@ export function parseTextToHTML(plainText: string): string {
       case 'bullet':
         // Start bullet section if not already in one
         if (!inBulletSection) {
-          html += `        <table width="100%" cellpadding="0" cellspacing="0" border="0">\n`;
+          html += `        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">\n`;
           inBulletSection = true;
         }
 

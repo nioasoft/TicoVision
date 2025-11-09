@@ -2,6 +2,7 @@
  * Letter Preview Dialog Component
  * Shows preview of letter generated from fee calculation
  * Allows user to send letter via email and updates database
+ * Now supports: Tabs for multiple letters, PDF download, Print functionality
  */
 
 import { useState, useEffect } from 'react';
@@ -9,8 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Mail, Loader2 } from 'lucide-react';
+import { Mail, Loader2, Printer, Download, CheckCircle2 } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import type { LetterVariables, LetterTemplateType } from '../types/letter.types';
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
@@ -53,6 +55,7 @@ export function LetterPreviewDialog({
   manualPrimaryOverride,
   manualSecondaryOverride,
 }: LetterPreviewDialogProps) {
+  // Existing state
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [recipientEmails, setRecipientEmails] = useState<string[]>([]);
@@ -61,6 +64,12 @@ export function LetterPreviewDialog({
   const [variables, setVariables] = useState<Partial<LetterVariables> | null>(null);
   const [letterSelection, setLetterSelection] = useState<LetterSelectionResult | null>(null);
   const [currentLetterStage, setCurrentLetterStage] = useState<'primary' | 'secondary'>('primary');
+
+  // New state for tabs and sent tracking
+  const [activeTab, setActiveTab] = useState<'primary' | 'secondary'>('primary');
+  const [primarySent, setPrimarySent] = useState(false);
+  const [secondarySent, setSecondarySent] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   /**
    * Load fee and client data, then generate variables
@@ -204,6 +213,91 @@ export function LetterPreviewDialog({
   };
 
   /**
+   * Convert CID images to web paths for browser display and PDF
+   */
+  const convertHtmlForDisplay = (html: string): string => {
+    const baseUrl = import.meta.env.VITE_APP_URL || 'https://ticovision.vercel.app';
+
+    return html
+      .replace(/cid:tico_logo_new/g, `${baseUrl}/brand/Tico_logo_png_new.png`)
+      .replace(/cid:tico_logo/g, `${baseUrl}/brand/tico_logo_240.png`)
+      .replace(/cid:franco_logo_new/g, `${baseUrl}/brand/Tico_franco_co.png`)
+      .replace(/cid:franco_logo/g, `${baseUrl}/brand/franco-logo-hires.png`)
+      .replace(/cid:tagline/g, `${baseUrl}/brand/tagline.png`)
+      .replace(/cid:bullet_star/g, `${baseUrl}/brand/bullet-star.png`)
+      .replace(/cid:bullet_star_blue/g, `${baseUrl}/brand/Bullet_star_blue.png`);
+  };
+
+  /**
+   * Download as PDF using Edge Function (Puppeteer + Browserless.io)
+   * Generates professional PDF with perfect Hebrew RTL support
+   */
+  const handleDownloadPdf = async () => {
+    if (!previewHtml || !variables) return;
+
+    setIsPrinting(true);
+
+    try {
+      const displayHtml = convertHtmlForDisplay(previewHtml);
+
+      // Build filename: CompanyName_Year.pdf
+      const companyName = (variables.company_name || 'letter')
+        .replace(/[^א-תa-zA-Z0-9]/g, '_') // Remove special chars
+        .substring(0, 50); // Limit length
+      const year = variables.year || new Date().getFullYear();
+      const letterType = currentLetterStage === 'secondary' ? 'bookkeeping' : 'audit';
+      const filename = `${companyName}_${letterType}_${year}.pdf`;
+
+      console.log('📄 Requesting PDF generation:', filename);
+
+      // Get Supabase URL and API key
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      // Call Edge Function using fetch() to handle binary response correctly
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          html: displayHtml,
+          filename: filename,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'שגיאה לא ידועה' }));
+        console.error('Edge Function error:', errorData);
+        throw new Error(errorData.error || 'שגיאה ביצירת PDF');
+      }
+
+      // Get blob directly from response - handles binary data correctly
+      const blob = await response.blob();
+
+      // Download the PDF
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success(`PDF הורד בהצלחה: ${filename}`);
+    } catch (error) {
+      console.error('❌ PDF download error:', error);
+      toast.error(error instanceof Error ? error.message : 'שגיאה בהורדת PDF');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  /**
    * Send email via Supabase Edge Function
    */
   const handleSendEmail = async () => {
@@ -297,14 +391,15 @@ export function LetterPreviewDialog({
       const letterName = currentLetterStage === 'primary' ? 'ראשון' : 'שני';
       toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${recipientEmails.length} נמענים`);
 
-      // Check if there's a secondary letter to send
-      if (currentLetterStage === 'primary' && effectiveSecondaryTemplate) {
-        // Move to secondary letter
-        setCurrentLetterStage('secondary');
-        toast.info('מעבר למכתב השני (הנהלת חשבונות)...');
-        // Reload preview will happen via useEffect
+      // Mark letter as sent (don't auto-navigate or close)
+      if (currentLetterStage === 'primary') {
+        setPrimarySent(true);
       } else {
-        // All letters sent, close dialog
+        setSecondarySent(true);
+      }
+
+      // If there's no secondary letter, close after primary sent
+      if (currentLetterStage === 'primary' && !effectiveSecondaryTemplate) {
         onEmailSent?.();
         onOpenChange(false);
       }
@@ -327,98 +422,158 @@ export function LetterPreviewDialog({
   }, [open, feeId, clientId, currentLetterStage]);
 
   /**
-   * Reset stage when dialog opens
+   * Reset state when dialog opens
    */
   useEffect(() => {
     if (open) {
       setCurrentLetterStage('primary');
+      setActiveTab('primary');
+      setPrimarySent(false);
+      setSecondarySent(false);
     }
   }, [open]);
+
+  /**
+   * Sync currentLetterStage with activeTab changes
+   */
+  useEffect(() => {
+    setCurrentLetterStage(activeTab);
+  }, [activeTab]);
+
+  // Helper to render letter content (preview + recipients + actions)
+  const renderLetterContent = (stage: 'primary' | 'secondary', isSent: boolean) => (
+    <div className="space-y-4">
+      {/* Preview */}
+      {isLoadingPreview ? (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="mr-3 rtl:text-right ltr:text-left">טוען תצוגה מקדימה...</span>
+        </div>
+      ) : (
+        <div className="border rounded-lg p-4 bg-white" style={{ minHeight: '400px' }} dir="rtl">
+          <div
+            dangerouslySetInnerHTML={{ __html: convertHtmlForDisplay(previewHtml) }}
+            className="select-text"
+            style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+          />
+        </div>
+      )}
+
+      {/* Recipients List */}
+      <div className="space-y-2">
+        <Label className="rtl:text-right ltr:text-left block">
+          נמענים ({recipientEmails.length})
+        </Label>
+        {recipientEmails.length > 0 ? (
+          <div className="border rounded-lg p-3 bg-gray-50">
+            <div className="grid grid-cols-4 gap-2">
+              {contactsDetails.map((contact) => (
+                <div key={contact.id} className="p-2 bg-white rounded border hover:bg-gray-50">
+                  <div className="text-xs font-medium truncate rtl:text-right">{contact.full_name}</div>
+                  <div className="text-[10px] text-gray-500 truncate dir-ltr rtl:text-right">{contact.email}</div>
+                  <div className="text-[10px] text-blue-600 rtl:text-right">{getContactTypeLabel(contact.contact_type)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-red-600 rtl:text-right">
+            לא נמצאו אנשי קשר עם מייל פעיל. יש לערוך את הלקוח ולהוסיף אנשי קשר.
+          </p>
+        )}
+      </div>
+
+      {/* Actions for this letter */}
+      <div className="flex justify-end gap-2 rtl:flex-row-reverse">
+        <Button
+          variant="outline"
+          onClick={handleDownloadPdf}
+          disabled={isPrinting || isLoadingPreview || !previewHtml}
+        >
+          {isPrinting ? (
+            <>
+              <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              מכין PDF...
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4 ml-2" />
+              שמור כ-PDF
+            </>
+          )}
+        </Button>
+        <Button
+          onClick={handleSendEmail}
+          disabled={isSendingEmail || recipientEmails.length === 0 || isLoadingPreview || isSent}
+        >
+          {isSendingEmail && currentLetterStage === stage ? (
+            <>
+              <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              שולח...
+            </>
+          ) : isSent ? (
+            <>
+              <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+              נשלח בהצלחה
+            </>
+          ) : (
+            <>
+              <Mail className="h-4 w-4 ml-2" />
+              שלח מכתב זה למייל
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto rtl:text-right ltr:text-left" dir="rtl">
         <DialogHeader>
           <DialogTitle className="rtl:text-right ltr:text-left">
-            {currentLetterStage === 'primary' ? 'תצוגה מקדימה - מכתב ראשי' : 'תצוגה מקדימה - מכתב הנהלת חשבונות'}
-            {letterSelection?.secondaryTemplate && (
-              <span className="text-sm text-gray-500 mr-2">
-                ({currentLetterStage === 'primary' ? 'מכתב 1 מתוך 2' : 'מכתב 2 מתוך 2'})
-              </span>
-            )}
+            תצוגה מקדימה - מכתבי שכר טרחה
           </DialogTitle>
           <DialogDescription className="rtl:text-right ltr:text-left">
-            {currentLetterStage === 'primary'
-              ? `המכתב הראשי עם ${letterSelection?.primaryNumChecks} המחאות`
-              : `מכתב הנהלת חשבונות עם ${letterSelection?.secondaryNumChecks} המחאות`
-            }
+            {letterSelection?.secondaryTemplate
+              ? 'לקוח פנימי - שני מכתבים (ביקורת + הנהלת חשבונות)'
+              : 'לקוח חיצוני - מכתב אחד'}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Preview */}
-        {isLoadingPreview ? (
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="mr-3 rtl:text-right ltr:text-left">טוען תצוגה מקדימה...</span>
-          </div>
+        {letterSelection?.secondaryTemplate ? (
+          /* Multiple letters - show tabs */
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'primary' | 'secondary')} className="mt-4">
+            <TabsList className="grid w-full grid-cols-2 rtl:text-right">
+              <TabsTrigger value="primary" className="rtl:text-right flex items-center gap-2">
+                מכתב ביקורת פנימית
+                {primarySent && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+              </TabsTrigger>
+              <TabsTrigger value="secondary" className="rtl:text-right flex items-center gap-2">
+                מכתב הנהלת חשבונות
+                {secondarySent && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="primary" className="mt-4">
+              {renderLetterContent('primary', primarySent)}
+            </TabsContent>
+
+            <TabsContent value="secondary" className="mt-4">
+              {renderLetterContent('secondary', secondarySent)}
+            </TabsContent>
+          </Tabs>
         ) : (
-          <div className="border rounded-lg p-4 bg-white" style={{ minHeight: '400px' }}>
-            <div
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-              className="select-text"
-              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-            />
+          /* Single letter - no tabs */
+          <div className="mt-4">
+            {renderLetterContent('primary', primarySent)}
           </div>
         )}
 
-        {/* Recipients List */}
-        <div className="space-y-2">
-          <Label className="rtl:text-right ltr:text-left block">
-            נמענים ({recipientEmails.length})
-          </Label>
-          {recipientEmails.length > 0 ? (
-            <div className="border rounded-lg p-3 bg-gray-50">
-              <div className="grid grid-cols-4 gap-2">
-                {contactsDetails.map((contact) => (
-                  <div key={contact.id} className="p-2 bg-white rounded border hover:bg-gray-50">
-                    <div className="text-xs font-medium truncate rtl:text-right">{contact.full_name}</div>
-                    <div className="text-[10px] text-gray-500 truncate dir-ltr rtl:text-right">{contact.email}</div>
-                    <div className="text-[10px] text-blue-600 rtl:text-right">{getContactTypeLabel(contact.contact_type)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-red-600 rtl:text-right">
-              לא נמצאו אנשי קשר עם מייל פעיל. יש לערוך את הלקוח ולהוסיף אנשי קשר.
-            </p>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-2 rtl:flex-row-reverse">
+        {/* Close button at bottom */}
+        <div className="flex justify-start gap-2 mt-4 pt-4 border-t rtl:flex-row-reverse">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             סגור
-          </Button>
-          <Button
-            onClick={handleSendEmail}
-            disabled={isSendingEmail || recipientEmails.length === 0 || isLoadingPreview}
-          >
-            {isSendingEmail ? (
-              <>
-                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                שולח...
-              </>
-            ) : (
-              <>
-                <Mail className="h-4 w-4 ml-2" />
-                {currentLetterStage === 'primary' && letterSelection?.secondaryTemplate
-                  ? 'שלח מכתב ראשון'
-                  : currentLetterStage === 'secondary'
-                  ? 'שלח מכתב שני'
-                  : 'שלח למייל'}
-              </>
-            )}
           </Button>
         </div>
       </DialogContent>

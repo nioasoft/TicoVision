@@ -13,8 +13,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -27,9 +28,7 @@ import type { AssignedContact } from '@/types/tenant-contact.types';
 const templateService = new TemplateService();
 
 // Example Markdown text for guidance
-const EXAMPLE_TEXT = `הנדון: עדכון חשבונאות שנתי לשנת {{year}}
-
-בפתח הדברים:
+const EXAMPLE_TEXT = `בפתח הדברים:
 * אנו מודים לכם על אמונכם במשרדנו
 * שמחנו לשרת אותכם בשנה האחרונה
 
@@ -38,7 +37,9 @@ const EXAMPLE_TEXT = `הנדון: עדכון חשבונאות שנתי לשנת 
 המשרד שלנו ממשיך לעמוד לרשותך בכל עת.
 
 בברכה,
-צוות המשרד`;
+צוות המשרד
+
+הערה: שורות ההנדון (נושא המכתב) מנוהלות בסקשן הנפרד למעלה`;
 
 interface SavedTemplate {
   id: string;
@@ -76,6 +77,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [plainText, setPlainText] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [customHeaderLines, setCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
+  const [subjectLines, setSubjectLines] = useState<import('../types/letter.types').SubjectLine[]>([
+    {
+      id: 'subject-default',
+      content: '',
+      formatting: {
+        bold: true,
+        underline: false
+      },
+      order: 0
+    }
+  ]);
 
   // State - Configuration
   const [includesPayment, setIncludesPayment] = useState(false);
@@ -93,6 +105,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
 
   // State - Recipients
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -290,7 +303,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         plainText,
         variables,
         includesPayment,
-        customHeaderLines // Pass custom header lines to preview
+        customHeaderLines, // Pass custom header lines to preview
+        subjectLines // Pass subject lines to preview
       });
 
       if (error) throw error;
@@ -381,6 +395,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           variables,
           includesPayment,
           customHeaderLines, // Pass custom header lines to Edge Function
+          subjectLines, // Pass subject lines to Edge Function
           saveAsTemplate: saveAsTemplate ? {
             name: templateName,
             description: templateDescription,
@@ -611,6 +626,88 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         return {
           ...line,
           formatting: { ...line.formatting, color }
+        };
+      }
+      return line;
+    }));
+  };
+
+  /**
+   * Subject Lines Handlers (הנדון)
+   */
+  const handleAddSubjectLine = () => {
+    const newLine: import('../types/letter.types').SubjectLine = {
+      id: `subject-${Date.now()}`,
+      content: '',
+      formatting: {
+        bold: true,
+        underline: false
+      },
+      order: subjectLines.length
+    };
+    setSubjectLines([...subjectLines, newLine]);
+  };
+
+  const handleDeleteSubjectLine = (id: string) => {
+    // מניעת מחיקת השורה הראשונה
+    const lineToDelete = subjectLines.find(line => line.id === id);
+    if (lineToDelete && lineToDelete.order === 0) {
+      toast.error('לא ניתן למחוק את שורת ההנדון הראשונה');
+      return;
+    }
+
+    const updated = subjectLines
+      .filter(line => line.id !== id)
+      .map((line, index) => ({ ...line, order: index })); // Re-index
+    setSubjectLines(updated);
+  };
+
+  const handleMoveSubjectLineUp = (id: string) => {
+    const index = subjectLines.findIndex(line => line.id === id);
+    if (index <= 0) return; // Already at top
+
+    const updated = [...subjectLines];
+    [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+
+    // Re-index
+    updated.forEach((line, i) => {
+      line.order = i;
+    });
+
+    setSubjectLines(updated);
+  };
+
+  const handleMoveSubjectLineDown = (id: string) => {
+    const index = subjectLines.findIndex(line => line.id === id);
+    if (index >= subjectLines.length - 1) return; // Already at bottom
+
+    const updated = [...subjectLines];
+    [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+
+    // Re-index
+    updated.forEach((line, i) => {
+      line.order = i;
+    });
+
+    setSubjectLines(updated);
+  };
+
+  const handleUpdateSubjectLineContent = (id: string, content: string) => {
+    setSubjectLines(subjectLines.map(line =>
+      line.id === id ? { ...line, content } : line
+    ));
+  };
+
+  const handleUpdateSubjectLineFormatting = (
+    id: string,
+    key: 'bold' | 'underline',
+    value: boolean
+  ) => {
+    setSubjectLines(subjectLines.map(line => {
+      if (line.id === id && line.formatting) {
+        return {
+          ...line,
+          formatting: { ...line.formatting, [key]: value }
         };
       }
       return line;
@@ -880,6 +977,144 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 </div>
               )}
             </div>
+
+            {/* Subject Lines Section (הנדון) */}
+            <div className="mt-4 p-4 border rounded-lg bg-blue-50">
+              <div className="flex justify-between items-center mb-3">
+                <Label className="text-right block font-semibold">
+                  שורות הנדון (26px, כחול #395BF7)
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddSubjectLine}
+                >
+                  <Plus className="h-4 w-4 ml-1" />
+                  הוסף שורת הנדון
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {subjectLines.map((line, index) => {
+                  const isFirstLine = line.order === 0;
+
+                  return (
+                    <div
+                      key={line.id}
+                      className={`flex items-center gap-2 p-3 bg-white border rounded ${!isFirstLine ? 'pr-20' : ''}`}
+                    >
+                      {/* Move Up/Down Buttons */}
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMoveSubjectLineUp(line.id)}
+                          disabled={index === 0}
+                          title="הזז למעלה"
+                          className="h-6 w-6 p-0"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleMoveSubjectLineDown(line.id)}
+                          disabled={index === subjectLines.length - 1}
+                          title="הזז למטה"
+                          className="h-6 w-6 p-0"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      {/* Line Content */}
+                      <div className="flex-1">
+                        <div className="space-y-2">
+                          {/* שורה ראשונה עם Label "הנדון:" */}
+                          {isFirstLine && (
+                            <div className="flex items-center gap-2">
+                              <Label className="font-bold text-blue-600 text-lg whitespace-nowrap">
+                                הנדון:
+                              </Label>
+                              <Input
+                                value={line.content}
+                                onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
+                                placeholder="הזן נושא המכתב (דוגמה: עדכון שכר טרחה לשנת 2026)"
+                                dir="rtl"
+                                className="flex-1 text-right"
+                              />
+                            </div>
+                          )}
+
+                          {/* שורות נוספות - ללא Label */}
+                          {!isFirstLine && (
+                            <Input
+                              value={line.content}
+                              onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
+                              placeholder="שורה נוספת (תתיישר מתחת לטקסט)"
+                              dir="rtl"
+                              className="text-right"
+                            />
+                          )}
+
+                          {/* Formatting Options - Bold & Underline only */}
+                          <div className="flex gap-3 items-center">
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`${line.id}-bold`}
+                                checked={line.formatting?.bold || false}
+                                onCheckedChange={(checked) =>
+                                  handleUpdateSubjectLineFormatting(line.id, 'bold', !!checked)
+                                }
+                              />
+                              <Label htmlFor={`${line.id}-bold`} className="text-sm cursor-pointer">
+                                בולד
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id={`${line.id}-underline`}
+                                checked={line.formatting?.underline || false}
+                                onCheckedChange={(checked) =>
+                                  handleUpdateSubjectLineFormatting(line.id, 'underline', !!checked)
+                                }
+                              />
+                              <Label htmlFor={`${line.id}-underline`} className="text-sm cursor-pointer">
+                                קו תחתון
+                              </Label>
+                            </div>
+
+                            <span className="text-xs text-gray-500">(צבע קבוע: כחול #395BF7)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Delete Button */}
+                      <Button
+                        type="button"
+                        variant={isFirstLine ? "ghost" : "destructive"}
+                        size="sm"
+                        onClick={() => handleDeleteSubjectLine(line.id)}
+                        disabled={isFirstLine}
+                        title={isFirstLine ? "לא ניתן למחוק את שורת ההנדון הראשונה" : "מחק שורה"}
+                        className={`h-8 w-8 p-0 ${isFirstLine ? 'opacity-30 cursor-not-allowed' : ''}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+
+                {/* Tip for users */}
+                <p className="text-xs text-blue-600 text-right mt-2">
+                  💡 <strong>טיפ:</strong> השורה הראשונה תתחיל עם "הנדון:" אוטומטית. שורות נוספות יתיישרו מתחת לטקסט.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Step 2: Write Content */}
@@ -897,6 +1132,171 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 טען דוגמה
               </Button>
             </div>
+
+            {/* Instructions Collapsible Panel */}
+            <Collapsible
+              open={isInstructionsOpen}
+              onOpenChange={setIsInstructionsOpen}
+              className="w-full"
+            >
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="w-full mb-2"
+                  type="button"
+                >
+                  <HelpCircle className="h-4 w-4 ml-2" />
+                  📝 הוראות עיצוב והדרכה
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4" dir="rtl">
+                  {/* Table 1: Text Formatting */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-bold mb-3 text-right">עיצוב טקסט</h3>
+                    <table className="w-full text-right border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-blue-100">
+                          <th className="border border-gray-300 p-2">תחביר</th>
+                          <th className="border border-gray-300 p-2">דוגמה</th>
+                          <th className="border border-gray-300 p-2">תוצאה</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">**טקסט**</td>
+                          <td className="border border-gray-300 p-2 font-mono">**חשוב**</td>
+                          <td className="border border-gray-300 p-2"><strong>חשוב</strong> (בולד)</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">##טקסט##</td>
+                          <td className="border border-gray-300 p-2 font-mono">##אדום##</td>
+                          <td className="border border-gray-300 p-2"><span style={{color: '#FF0000', fontWeight: 'bold'}}>אדום</span> (אדום בולד)</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">###טקסט###</td>
+                          <td className="border border-gray-300 p-2 font-mono">###כחול###</td>
+                          <td className="border border-gray-300 p-2"><span style={{color: '#395BF7', fontWeight: 'bold'}}>כחול</span> (כחול בולד)</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">__טקסט__</td>
+                          <td className="border border-gray-300 p-2 font-mono">__קו תחתון__</td>
+                          <td className="border border-gray-300 p-2"><span style={{textDecoration: 'underline'}}>קו תחתון</span></td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">===טקסט===</td>
+                          <td className="border border-gray-300 p-2 font-mono">===קו כפול===</td>
+                          <td className="border border-gray-300 p-2"><span style={{textDecoration: 'underline', textDecorationStyle: 'double'}}>קו כפול</span> (קו תחתון כפול)</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">~~טקסט~~</td>
+                          <td className="border border-gray-300 p-2 font-mono">~~מבוטל~~</td>
+                          <td className="border border-gray-300 p-2"><span style={{textDecoration: 'line-through'}}>מבוטל</span> (קו חוצה)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Table 2: Combining Formats */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-bold mb-3 text-right">שילוב עיצובים</h3>
+                    <table className="w-full text-right border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-blue-100">
+                          <th className="border border-gray-300 p-2">תחביר</th>
+                          <th className="border border-gray-300 p-2">תוצאה</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">**__טקסט__**</td>
+                          <td className="border border-gray-300 p-2"><strong><span style={{textDecoration: 'underline'}}>בולד + קו תחתון</span></strong></td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">**===טקסט===**</td>
+                          <td className="border border-gray-300 p-2"><strong><span style={{textDecoration: 'underline', textDecorationStyle: 'double'}}>בולד + קו כפול</span></strong></td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">##__טקסט__##</td>
+                          <td className="border border-gray-300 p-2"><span style={{color: '#FF0000', fontWeight: 'bold', textDecoration: 'underline'}}>אדום בולד + קו תחתון</span></td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">###__טקסט__###</td>
+                          <td className="border border-gray-300 p-2"><span style={{color: '#395BF7', fontWeight: 'bold', textDecoration: 'underline'}}>כחול בולד + קו תחתון</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Table 3: Letter Structure */}
+                  <div>
+                    <h3 className="text-lg font-bold mb-3 text-right">מבנה מכתב</h3>
+                    <table className="w-full text-right border-collapse border border-gray-300">
+                      <thead>
+                        <tr className="bg-blue-100">
+                          <th className="border border-gray-300 p-2">תחביר</th>
+                          <th className="border border-gray-300 p-2">תוצאה</th>
+                          <th className="border border-gray-300 p-2">הסבר</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">טקסט:</td>
+                          <td className="border border-gray-300 p-2"><strong>כותרת סעיף</strong></td>
+                          <td className="border border-gray-300 p-2">שורה שמסתיימת ב-: (20px, שחור, בולד)</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">* טקסט</td>
+                          <td className="border border-gray-300 p-2">• טקסט</td>
+                          <td className="border border-gray-300 p-2">bullet עם אייקון כחול</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">- טקסט</td>
+                          <td className="border border-gray-300 p-2">• טקסט</td>
+                          <td className="border border-gray-300 p-2">bullet עם אייקון כחול (זהה)</td>
+                        </tr>
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-2 font-mono">טקסט רגיל</td>
+                          <td className="border border-gray-300 p-2">פסקה</td>
+                          <td className="border border-gray-300 p-2">פסקה רגילה (16px)</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-gray-300 p-2 font-mono">שורה ריקה</td>
+                          <td className="border border-gray-300 p-2">-</td>
+                          <td className="border border-gray-300 p-2">רווח בין פסקאות (20px)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Practical Example */}
+                  <div className="mt-6 p-4 bg-white border border-gray-300 rounded">
+                    <h4 className="font-bold mb-2 text-right">דוגמה מעשית:</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-semibold mb-2 text-right">קלט:</p>
+                        <pre className="text-xs bg-gray-100 p-2 rounded font-mono whitespace-pre-wrap text-right">
+{`בפתח הדברים:
+* אנו **שמחים** __לעדכן__ אתכם
+* המחיר החדש: ##1,000 ש"ח##
+* תאריך: ###1.1.2026###`}
+                        </pre>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold mb-2 text-right">תוצאה:</p>
+                        <div className="text-sm bg-gray-100 p-2 rounded text-right">
+                          <p><strong>בפתח הדברים:</strong></p>
+                          <p>• אנו <strong>שמחים</strong> <span style={{textDecoration: 'underline'}}>לעדכן</span> אתכם</p>
+                          <p>• המחיר החדש: <span style={{color: '#FF0000', fontWeight: 'bold'}}>1,000 ש"ח</span></p>
+                          <p>• תאריך: <span style={{color: '#395BF7', fontWeight: 'bold'}}>1.1.2026</span></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
             <Textarea
               value={plainText}
               onChange={(e) => setPlainText(e.target.value)}
@@ -904,19 +1304,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               className="min-h-[300px] font-mono text-sm"
               dir="rtl"
             />
-            <div className="text-xs text-gray-500 text-right space-y-1">
-              <p><strong>חוקי עיצוב:</strong></p>
-              <p>• <code>הנדון: [טקסט]</code> - נושא המכתב (כחול, גדול)</p>
-              <p>• <code>[טקסט]:</code> - כותרת סעיף (שורה שמסתיימת ב-:)</p>
-              <p>• <code>* [טקסט]</code> או <code>- [טקסט]</code> - נקודת bullet</p>
-              <p>• <code>[טקסט רגיל]</code> - פסקה רגילה</p>
-              <p className="mt-2"><strong>עיצוב טקסט:</strong></p>
-              <p>• <code>**טקסט**</code> - מודגש (בולד)</p>
-              <p>• <code>##טקסט##</code> - אדום מודגש</p>
-              <p>• <code>###טקסט###</code> - כחול מודגש</p>
-              <p>• <code>__טקסט__</code> - קו תחתון</p>
-              <p className="mt-2">• משתנים: <code>{'{{company_name}}'}</code>, <code>{'{{letter_date}}'}</code>, <code>{'{{year}}'}</code></p>
-            </div>
           </div>
 
           {/* Step 3: Payment Section */}

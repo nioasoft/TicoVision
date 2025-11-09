@@ -195,10 +195,23 @@ export interface CustomHeaderLine {
   order: number; // Display order (0, 1, 2, ...)
 }
 
+// Subject lines for Universal Builder (הנדון)
+export interface SubjectLine {
+  id: string;
+  content: string; // Free text content
+  formatting?: {
+    bold: boolean;
+    underline: boolean;
+    // Color is always #395BF7 (blue) - no selection needed
+  };
+  order: number; // Display order (0, 1, 2, ...)
+}
+
 export interface CustomLetterData {
   plainText: string;
   companyName: string;
   customHeaderLines: CustomHeaderLine[];
+  subjectLines: SubjectLine[]; // Dynamic subject lines (הנדון)
   includesPayment: boolean;
   amount?: number;
   emailSubject: string;
