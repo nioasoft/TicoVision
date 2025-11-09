@@ -6,9 +6,8 @@
 
 import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Loader2, Search } from 'lucide-react';
+import { Combobox } from '@/components/ui/combobox';
+import { Loader2 } from 'lucide-react';
 import { ClientService, type Client } from '@/services/client.service';
 
 const clientService = new ClientService();
@@ -29,9 +28,7 @@ export function ClientSelector({
   className = ''
 }: ClientSelectorProps) {
   const [clients, setClients] = useState<Client[]>([]);
-  const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -40,29 +37,6 @@ export function ClientSelector({
   useEffect(() => {
     loadClients();
   }, []);
-
-  /**
-   * Filter clients when search query changes
-   */
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredClients(clients);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = clients.filter(client => {
-      const name = (client.company_name_hebrew || client.company_name || '').toLowerCase();
-      const commercial = (client.commercial_name || '').toLowerCase();
-      const taxId = (client.tax_id || '').toLowerCase();
-
-      return name.includes(query) ||
-             commercial.includes(query) ||
-             taxId.includes(query);
-    });
-
-    setFilteredClients(filtered);
-  }, [searchQuery, clients]);
 
   /**
    * Load all active clients
@@ -87,7 +61,6 @@ export function ClientSelector({
         });
 
         setClients(sorted);
-        setFilteredClients(sorted);
       }
     } catch (err) {
       console.error('Error loading clients:', err);
@@ -101,24 +74,17 @@ export function ClientSelector({
    * Handle client selection
    */
   const handleValueChange = (clientId: string) => {
-    if (clientId === 'none') {
-      onChange(null);
-      return;
-    }
-
     const selectedClient = clients.find(c => c.id === clientId);
-    if (selectedClient) {
-      onChange(selectedClient);
-    }
+    onChange(selectedClient || null);
   };
 
   /**
-   * Get display name for a client
+   * Get display name for a client (used in Combobox options)
    */
   const getClientDisplayName = (client: Client): string => {
     const name = client.company_name_hebrew || client.company_name;
-    const commercial = client.commercial_name ? ` (${client.commercial_name})` : '';
-    return `${name}${commercial}`;
+    const taxId = client.tax_id ? ` - ${client.tax_id}` : '';
+    return `${name}${taxId}`;
   };
 
   return (
@@ -139,57 +105,17 @@ export function ClientSelector({
           {error}
         </div>
       ) : (
-        <Select value={value || 'none'} onValueChange={handleValueChange}>
-          <SelectTrigger dir="rtl" className="w-full [&>span]:text-right">
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent dir="rtl">
-            {/* Search input */}
-            <div className="p-2 border-b sticky top-0 bg-white z-10">
-              <div className="relative">
-                <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="חפש לקוח..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-8"
-                  dir="rtl"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
-
-            {/* Clear selection option */}
-            <SelectItem value="none" className="text-right">
-              <span className="text-gray-500 italic">ללא בחירה (הקלד ידנית)</span>
-            </SelectItem>
-
-            {/* Client list */}
-            {filteredClients.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 text-sm">
-                לא נמצאו לקוחות
-              </div>
-            ) : (
-              filteredClients.map((client) => (
-                <SelectItem key={client.id} value={client.id} className="text-right">
-                  <div className="flex flex-col items-end">
-                    <span className="font-medium">{getClientDisplayName(client)}</span>
-                    {client.tax_id && (
-                      <span className="text-xs text-gray-500">ח.פ: {client.tax_id}</span>
-                    )}
-                  </div>
-                </SelectItem>
-              ))
-            )}
-
-            {/* Show count */}
-            {searchQuery && filteredClients.length > 0 && (
-              <div className="p-2 text-xs text-gray-500 text-center border-t">
-                נמצאו {filteredClients.length} תוצאות
-              </div>
-            )}
-          </SelectContent>
-        </Select>
+        <Combobox
+          options={clients.map((client) => ({
+            value: client.id,
+            label: getClientDisplayName(client),
+          }))}
+          value={value || undefined}
+          onValueChange={handleValueChange}
+          placeholder={placeholder}
+          searchPlaceholder="חיפוש לפי שם או ח.פ..."
+          emptyText="לא נמצא לקוח"
+        />
       )}
     </div>
   );

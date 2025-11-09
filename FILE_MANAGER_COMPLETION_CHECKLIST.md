@@ -42,7 +42,7 @@
 ### Gradual Integration in Other Pages
 
 #### Priority 1: High Value Integrations
-- [ ] **Client Details Page** - Show company registry files
+- [x] **Client Details Page** - Show company registry files ✅
   ```tsx
   <FileDisplayWidget
     clientId={client.id}
@@ -50,36 +50,41 @@
     variant="compact"
   />
   ```
-  **Location**: Wherever client details are displayed (card/modal/page)
+  **Location**: ClientFormDialog.tsx (Edit Mode)
   **Benefit**: Instant access to company documents when viewing client
+  **Status**: ✅ COMPLETED - Shows company registry files in edit mode
 
-- [ ] **Fee Tracking Page** - Show quotes and invoices
+- [x] **Fee Tracking Page** - Show quotes and invoices ✅
   ```tsx
   <FileDisplayWidget
-    clientId={row.client_id}
+    clientId={paymentDetails.payment.client_id}
     category="quote_invoice"
-    variant="buttons"
+    variant="compact"
   />
   ```
-  **Location**: Expanded row or sidebar in fee tracking table
+  **Location**: FeeTrackingExpandedRow.tsx - New "מסמכי לקוח" tab (6th tab)
   **Benefit**: Quick access to relevant quotes when reviewing fees
+  **Status**: ✅ COMPLETED - Added as 6th tab in expanded row with grid-cols-6
 
-- [ ] **Letter Builder Pages** - Show relevant documents
+- [x] **Letter Builder Pages** - Show relevant documents ✅
   ```tsx
   // Financial reports section
   <FileDisplayWidget
     clientId={selectedClient.id}
     category="financial_report"
+    variant="compact"
   />
 
   // Quotes section
   <FileDisplayWidget
     clientId={selectedClient.id}
     category="quote_invoice"
+    variant="compact"
   />
   ```
-  **Location**: LetterBuilder.tsx and UniversalLetterBuilder.tsx sidebars
+  **Location**: LetterBuilder.tsx and UniversalLetterBuilder.tsx
   **Benefit**: Reference documents while writing letters
+  **Status**: ✅ COMPLETED - Added "מסמכי לקוח רלוונטיים" section with both categories
 
 #### Priority 2: Additional Integrations
 - [ ] **Dashboard** - Recent uploads widget

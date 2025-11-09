@@ -308,7 +308,7 @@ async function buildCustomLetterHtml(
  */
 async function buildLetterHtml(templateType: string, variables: Record<string, any>): Promise<string> {
   // Fetch components
-  const header = await fetchTemplate('components/header.html');
+  let header = await fetchTemplate('components/header.html');
   const footer = await fetchTemplate('components/footer.html');
   const paymentSection = await fetchTemplate('components/payment-section.html');
 
@@ -329,6 +329,10 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
 
   const bodyFile = bodyFileMap[templateType] || 'annual-fee.html';
   const body = await fetchTemplate(`bodies/${bodyFile}`);
+
+  // Replace {{custom_header_lines}} with empty string for fee calculation letters
+  // (custom_header_lines is only used in Universal Letter Builder)
+  header = header.replace('{{custom_header_lines}}', '');
 
   // Build full HTML
   const fullHtml = `<!DOCTYPE html>

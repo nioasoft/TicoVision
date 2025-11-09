@@ -143,11 +143,32 @@ export function getFileExtension(filename: string): string {
 
 /**
  * Generate unique filename with timestamp
+ * Cleans problematic characters for Supabase Storage (non-Latin chars, special chars)
  */
 export function generateUniqueFilename(originalName: string): string {
   const timestamp = Date.now();
   const extension = getFileExtension(originalName);
-  const nameWithoutExt = originalName.slice(0, originalName.lastIndexOf('.'));
+  let nameWithoutExt = originalName.slice(0, originalName.lastIndexOf('.'));
+
+  // Remove all non-Latin characters (Hebrew, Arabic, etc.) - Supabase Storage only accepts Latin + numbers + - _ .
+  nameWithoutExt = nameWithoutExt.replace(/[^\x00-\x7F]/g, ''); // Remove all non-ASCII
+
+  // Remove leading/trailing underscores, spaces, and hyphens
+  nameWithoutExt = nameWithoutExt.replace(/^[_\s-]+|[_\s-]+$/g, '');
+
+  // Replace spaces and special characters with hyphens
+  nameWithoutExt = nameWithoutExt.replace(/[^a-zA-Z0-9]+/g, '-');
+
+  // Remove consecutive hyphens
+  nameWithoutExt = nameWithoutExt.replace(/-+/g, '-');
+
+  // Remove leading/trailing hyphens again after replacements
+  nameWithoutExt = nameWithoutExt.replace(/^-+|-+$/g, '');
+
+  // If name is empty after cleaning, use a default
+  if (!nameWithoutExt) {
+    nameWithoutExt = 'file';
+  }
 
   return `${nameWithoutExt}-${timestamp}${extension}`;
 }

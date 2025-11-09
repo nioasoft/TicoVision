@@ -80,8 +80,8 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
       return;
     }
 
-    if (uploadDescription.length > 100) {
-      toast.error('התיאור חייב להיות עד 100 תווים');
+    if (uploadDescription.length > 50) {
+      toast.error('התיאור חייב להיות עד 50 תווים');
       return;
     }
 
@@ -168,8 +168,8 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
   };
 
   const saveEditDescription = async (fileId: string) => {
-    if (editingDescription.length > 100) {
-      toast.error('התיאור חייב להיות עד 100 תווים');
+    if (editingDescription.length > 50) {
+      toast.error('התיאור חייב להיות עד 50 תווים');
       return;
     }
 
@@ -200,14 +200,14 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
       <div className="space-y-3">
         <Label className="rtl:text-right block">העלאת קובץ חדש</Label>
         <Input
-          placeholder="תיאור הקובץ (עד 100 תווים)"
+          placeholder="תיאור הקובץ (עד 50 תווים)"
           value={uploadDescription}
           onChange={(e) => setUploadDescription(e.target.value)}
-          maxLength={100}
+          maxLength={50}
           className="rtl:text-right"
         />
         <p className="text-xs text-gray-500 rtl:text-right">
-          {uploadDescription.length}/100 תווים
+          {uploadDescription.length}/50 תווים
         </p>
         <FileUploadZone
           onFileSelect={handleFileSelect}
@@ -253,12 +253,12 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
                         <Input
                           value={editingDescription}
                           onChange={(e) => setEditingDescription(e.target.value)}
-                          maxLength={100}
+                          maxLength={50}
                           placeholder="תיאור הקובץ"
                           className="rtl:text-right"
                         />
                         <p className="text-xs text-gray-500 rtl:text-right">
-                          {editingDescription.length}/100 תווים
+                          {editingDescription.length}/50 תווים
                         </p>
                         <div className="flex gap-2 rtl:space-x-reverse">
                           <Button

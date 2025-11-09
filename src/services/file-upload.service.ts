@@ -388,9 +388,9 @@ export class FileUploadService extends BaseService {
         throw new Error(validation.error);
       }
 
-      // Validate description length (100 chars max)
-      if (description.length > 100) {
-        throw new Error('התיאור חייב להיות עד 100 תווים');
+      // Validate description length (50 chars max)
+      if (description.length > 50) {
+        throw new Error('התיאור חייב להיות עד 50 תווים');
       }
 
       const tenantId = await this.getTenantId();
@@ -479,9 +479,9 @@ export class FileUploadService extends BaseService {
     description: string
   ): Promise<ServiceResponse<ClientAttachment>> {
     try {
-      // Validate description length (100 chars max)
-      if (description.length > 100) {
-        throw new Error('התיאור חייב להיות עד 100 תווים');
+      // Validate description length (50 chars max)
+      if (description.length > 50) {
+        throw new Error('התיאור חייב להיות עד 50 תווים');
       }
 
       const tenantId = await this.getTenantId();

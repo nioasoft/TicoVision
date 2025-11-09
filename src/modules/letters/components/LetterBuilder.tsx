@@ -17,6 +17,7 @@ import { TemplateService } from '../services/template.service';
 import type { LetterTemplateType, LetterVariables } from '../types/letter.types';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
+import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { Checkbox } from '@/components/ui/checkbox';
 import { clientService } from '@/services';
 import type { Client } from '@/services/client.service';
@@ -369,43 +370,47 @@ export function LetterBuilder() {
               </Alert>
             ) : (
               <>
-                <div className="border rounded-lg p-4 space-y-2 max-h-80 overflow-y-auto bg-gray-50">
-                  {clientContacts.map((contact) => {
-                    const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
-                    const isChecked = selectedRecipients.includes(contact.email!);
+                <div className="border rounded-lg p-4 max-h-80 overflow-y-auto bg-gray-50">
+                  <div className="grid grid-cols-4 gap-3">
+                    {clientContacts.map((contact) => {
+                      const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
+                      const isChecked = selectedRecipients.includes(contact.email!);
 
-                    return (
-                      <div
-                        key={contact.id}
-                        className="flex items-start gap-3 p-3 bg-white hover:bg-gray-50 rounded border"
-                      >
-                        <Checkbox
-                          id={`recipient-${contact.id}`}
-                          checked={isChecked}
-                          disabled={isRequired}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedRecipients([...selectedRecipients, contact.email!]);
-                            } else {
-                              setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
-                            }
-                          }}
-                          className="mt-1"
-                        />
-                        <Label
-                          htmlFor={`recipient-${contact.id}`}
-                          className="flex-1 cursor-pointer text-right"
+                      return (
+                        <div
+                          key={contact.id}
+                          className="flex flex-col gap-2 p-2 bg-white hover:bg-gray-50 rounded border"
                         >
-                          <div className="font-medium text-base">{contact.full_name}</div>
-                          <div className="text-sm text-gray-600 dir-ltr text-right">{contact.email}</div>
-                          <div className="text-xs text-gray-500 flex gap-2 justify-end mt-1">
-                            <span>{getContactTypeLabel(contact.contact_type)}</span>
-                            {isRequired && <span className="font-semibold text-blue-600">(חובה - לא ניתן לביטול)</span>}
+                          <div className="flex items-start gap-2">
+                            <Checkbox
+                              id={`recipient-${contact.id}`}
+                              checked={isChecked}
+                              disabled={isRequired}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedRecipients([...selectedRecipients, contact.email!]);
+                                } else {
+                                  setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
+                                }
+                              }}
+                              className="mt-0.5"
+                            />
+                            <Label
+                              htmlFor={`recipient-${contact.id}`}
+                              className="flex-1 cursor-pointer text-right"
+                            >
+                              <div className="font-medium text-sm truncate">{contact.full_name}</div>
+                            </Label>
                           </div>
-                        </Label>
-                      </div>
-                    );
-                  })}
+                          <div className="text-xs text-gray-600 dir-ltr text-right truncate">{contact.email}</div>
+                          <div className="text-xs text-gray-500 flex gap-1 justify-end flex-wrap">
+                            <span>{getContactTypeLabel(contact.contact_type)}</span>
+                            {isRequired && <span className="font-semibold text-blue-600">(חובה)</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <p className="text-sm text-gray-600 text-right">
@@ -448,6 +453,33 @@ export function LetterBuilder() {
               </ul>
             </AlertDescription>
           </Alert>
+
+          {/* Client Documents Section */}
+          {selectedClient && (
+            <div className="space-y-4 border-t pt-6 mt-6">
+              <h3 className="text-lg font-semibold rtl:text-right">מסמכי לקוח רלוונטיים</h3>
+
+              {/* Financial Reports */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700 rtl:text-right">דוחות כספיים</h4>
+                <FileDisplayWidget
+                  clientId={selectedClient.id}
+                  category="financial_report"
+                  variant="compact"
+                />
+              </div>
+
+              {/* Quotes and Invoices */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700 rtl:text-right">הצעות מחיר וחשבוניות</h4>
+                <FileDisplayWidget
+                  clientId={selectedClient.id}
+                  category="quote_invoice"
+                  variant="compact"
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

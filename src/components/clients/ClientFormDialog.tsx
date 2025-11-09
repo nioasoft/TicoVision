@@ -32,6 +32,7 @@ import {
 import { ContactsManager } from '@/components/ContactsManager';
 import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
+import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import type {
   Client,
   CreateClientDto,
@@ -783,6 +784,18 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   </p>
                 </div>
               ) : null}
+
+              {/* Company Registry Files (Edit Mode Only) */}
+              {mode === 'edit' && client && (
+                <div className="col-span-3 border-t pt-4 mt-4">
+                  <h3 className="text-lg font-semibold mb-3 rtl:text-right">מסמכי רשם החברות</h3>
+                  <FileDisplayWidget
+                    clientId={client.id}
+                    category="company_registry"
+                    variant="compact"
+                  />
+                </div>
+              )}
             </div>
 
             <DialogFooter>

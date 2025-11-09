@@ -25,6 +25,7 @@ import { DeviationBadge } from '@/components/payments/DeviationBadge';
 import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
 import { InstallmentStatusBadge, InstallmentProgress } from '@/components/payments/InstallmentStatusBadge';
 import { FileAttachmentList } from '@/components/payments/FileAttachmentList';
+import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { feeTrackingService } from '@/services/fee-tracking.service';
 import type { ActualPaymentDetails } from '@/services/actual-payment.service';
 import { formatILS } from '@/lib/payment-utils';
@@ -105,7 +106,7 @@ export function FeeTrackingExpandedRow({
   return (
     <div className="p-4 bg-muted/50 border-t" dir="rtl">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="rtl:text-right">
             סקירה
           </TabsTrigger>
@@ -114,6 +115,9 @@ export function FeeTrackingExpandedRow({
           </TabsTrigger>
           <TabsTrigger value="files" className="rtl:text-right">
             קבצים ({paymentDetails.attachments?.length || 0})
+          </TabsTrigger>
+          <TabsTrigger value="client-docs" className="rtl:text-right">
+            מסמכי לקוח
           </TabsTrigger>
           <TabsTrigger value="installments" className="rtl:text-right">
             תשלומים
@@ -291,6 +295,26 @@ export function FeeTrackingExpandedRow({
               אין קבצים מצורפים
             </div>
           )}
+        </TabsContent>
+
+        {/* Client Documents Tab - Quote/Invoice Files */}
+        <TabsContent value="client-docs" className="mt-4">
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 rtl:text-right mb-3">
+              הצעות מחיר וחשבוניות של הלקוח מהמערכת המרכזית
+            </p>
+            {paymentDetails.payment?.client_id ? (
+              <FileDisplayWidget
+                clientId={paymentDetails.payment.client_id}
+                category="quote_invoice"
+                variant="compact"
+              />
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                אין מידע על לקוח
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* Installments Tab */}

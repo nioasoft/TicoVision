@@ -18,6 +18,7 @@ import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, A
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
+import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { clientService } from '@/services';
 import type { Client } from '@/services/client.service';
 import { TenantContactService } from '@/services/tenant-contact.service';
@@ -1145,6 +1146,33 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               </ul>
             </AlertDescription>
           </Alert>
+
+          {/* Client Documents Section */}
+          {selectedClient && (
+            <div className="space-y-4 border-t pt-6 mt-6">
+              <h3 className="text-lg font-semibold rtl:text-right">מסמכי לקוח רלוונטיים</h3>
+
+              {/* Financial Reports */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700 rtl:text-right">דוחות כספיים</h4>
+                <FileDisplayWidget
+                  clientId={selectedClient.id}
+                  category="financial_report"
+                  variant="compact"
+                />
+              </div>
+
+              {/* Quotes and Invoices */}
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-gray-700 rtl:text-right">הצעות מחיר וחשבוניות</h4>
+                <FileDisplayWidget
+                  clientId={selectedClient.id}
+                  category="quote_invoice"
+                  variant="compact"
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

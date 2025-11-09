@@ -888,6 +888,209 @@ Stages:
 4. **Implement**: Create the global configuration as agreed
 5. **Use everywhere**: Import and use the global value consistently
 
+## 📁 File Manager System (Migration 087 - Deployed)
+
+### Architecture Overview
+**Centralized file management for client documents with 7 fixed categories**
+
+#### System Purpose:
+- **Replaces**: Scattered file uploads across client forms
+- **Provides**: Single source of truth for client documents
+- **Separates**: Client-level documents from transaction-specific attachments
+
+### 7 Fixed Categories (קטגוריות קבועות)
+
+```typescript
+export type FileCategory =
+  | 'company_registry'          // רשם החברות
+  | 'financial_report'          // דוח כספי מבוקר אחרון
+  | 'bookkeeping_card'          // כרטיס הנהח"ש
+  | 'quote_invoice'             // הצעת מחיר / תעודת חיוב
+  | 'payment_proof_2026'        // אסמכתאות תשלום 2026
+  | 'holdings_presentation'     // מצגת החזקות
+  | 'general';                  // כללי
+```
+
+### Database Schema (Migration 087)
+
+**Table**: `client_attachments` (extended with new columns)
+```sql
+-- New columns added:
+file_category file_category NOT NULL DEFAULT 'general'  -- ENUM type
+description TEXT CHECK (char_length(description) <= 50)  -- Optional, max 50 chars
+```
+
+**Indexes** (optimized for category queries):
+```sql
+idx_client_attachments_category_latest (client_id, file_category, tenant_id) WHERE is_latest = true
+idx_tenant_attachments_category_date (tenant_id, file_category, created_at DESC) WHERE is_latest = true
+```
+
+### TypeScript Types (`src/types/file-attachment.types.ts`)
+
+```typescript
+// Category configuration with Hebrew labels
+export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
+  company_registry: {
+    key: 'company_registry',
+    label: 'רשם החברות',
+    description: 'תעודת רישום חברה, תקנון, פרוטוקולים מאסיפות',
+  },
+  // ... 6 more categories
+};
+
+// Helper functions
+getCategoryLabel(category: FileCategory): string
+getCategoryDescription(category: FileCategory): string
+getAllCategories(): CategoryConfig[]
+```
+
+### Service Methods (`src/services/file-upload.service.ts`)
+
+**New methods added to FileUploadService:**
+
+```typescript
+// Get files by category
+getFilesByCategory(clientId: string, category: FileCategory): Promise<ServiceResponse<FileAttachment[]>>
+
+// Upload with category and description
+uploadFileToCategory(
+  file: File,
+  clientId: string,
+  category: FileCategory,
+  description: string  // Max 100 chars
+): Promise<ServiceResponse<FileAttachment>>
+
+// Update file description
+updateFileDescription(fileId: string, description: string): Promise<ServiceResponse<FileAttachment>>
+
+// Get statistics per category
+getCategoryStats(clientId: string): Promise<ServiceResponse<CategoryStats[]>>
+```
+
+### UI Components
+
+#### 1. **FilesManagerPage** (`src/pages/FilesManagerPage.tsx`)
+- **Route**: `/files`
+- **Access**: admin, accountant, bookkeeper
+- **Features**:
+  - ClientSelector at top
+  - 7 tabs (one per category)
+  - Each tab shows FileCategorySection
+  - RTL layout
+
+#### 2. **FileCategorySection** (`src/components/files/FileCategorySection.tsx`)
+- **Props**: clientId, category
+- **Features**:
+  - Category title + description
+  - Upload zone with description input (max 100 chars)
+  - File list with:
+    - File name, description (editable), size, date
+    - Download and delete actions
+  - Empty/loading states
+
+#### 3. **FileDisplayWidget** (`src/components/files/FileDisplayWidget.tsx`)
+- **Props**: clientId, category, variant ('buttons' | 'cards' | 'compact')
+- **Purpose**: Reusable widget for displaying files in other pages
+- **Usage Example**:
+```tsx
+// In client details page - show company registry files
+<FileDisplayWidget
+  clientId={client.id}
+  category="company_registry"
+  variant="compact"
+/>
+```
+
+### Navigation
+**Menu item added BEFORE "משתמשים":**
+```typescript
+{
+  name: 'מנהל הקבצים',
+  href: '/files',
+  icon: FolderOpen,
+  allowedRoles: ['admin', 'accountant', 'bookkeeper']
+}
+```
+
+### Important Distinctions
+
+#### ✅ **USE File Manager FOR**:
+- Client-level documents (company registry, financial reports, etc.)
+- Documents that belong to the client, not to specific transactions
+- Files that should be organized by category
+
+#### ❌ **DO NOT USE File Manager FOR**:
+- **Payment attachments** (receipts, bank confirmations) → Stay in ActualPaymentEntryDialog
+- **Fee calculation attachments** (year-specific docs) → Stay in FeesPage
+- **Transaction-specific files** → Keep where they belong to the transaction
+
+**Why?** Payment/calculation attachments are tied to specific actions, not to the client in general.
+
+### Adding New Categories (Future)
+
+To add a new category:
+```sql
+-- 1. Add to ENUM (migration)
+ALTER TYPE file_category ADD VALUE 'new_category';
+```
+
+```typescript
+// 2. Update FILE_CATEGORIES constant
+export const FILE_CATEGORIES = {
+  // ... existing
+  new_category: {
+    key: 'new_category',
+    label: 'קטגוריה חדשה',
+    description: 'תיאור הקטגוריה',
+  },
+};
+```
+
+**Note**: New categories appear in File Manager automatically. To integrate in other pages, manually add FileDisplayWidget.
+
+### Integration Examples
+
+```tsx
+// Client details page - show company registry
+<FileDisplayWidget clientId={client.id} category="company_registry" />
+
+// Fee tracking - show quotes
+<FileDisplayWidget clientId={row.client_id} category="quote_invoice" variant="buttons" />
+
+// Letter builder - show financial reports
+<FileDisplayWidget clientId={selectedClient.id} category="financial_report" />
+```
+
+### Files Modified/Created
+
+**Created**:
+- `supabase/migrations/087_file_manager_categories.sql`
+- `src/pages/FilesManagerPage.tsx`
+- `src/components/files/FileCategorySection.tsx`
+- `src/components/files/FileDisplayWidget.tsx`
+
+**Modified**:
+- `src/types/file-attachment.types.ts` - Added FileCategory + FILE_CATEGORIES
+- `src/services/file-upload.service.ts` - Added 4 new methods
+- `src/components/layout/MainLayout.tsx` - Added navigation item
+- `src/App.tsx` - Added /files route
+- `src/components/clients/ClientFormDialog.tsx` - Removed FileUploadSection
+
+**Kept (with explanatory comments)**:
+- `src/modules/collections/components/ActualPaymentEntryDialog.tsx` - Payment attachments
+- `src/components/fee-tracking/FeeTrackingExpandedRow.tsx` - Payment display
+- `src/pages/FeesPage.tsx` - Calculation-specific files
+
+### Key Principles
+
+1. **7 Fixed Categories**: Defined in code, can be extended but requires migration
+2. **Description Limit**: 100 characters maximum per file
+3. **Tenant Isolation**: All methods use `getTenantId()` for security
+4. **Category Organization**: Each file must have a category
+5. **Reusable Widget**: Use FileDisplayWidget for integrating in other pages
+6. **Hebrew Interface**: All labels and descriptions in Hebrew, RTL layout
+
 ## 🚀 Development Server & Troubleshooting
 
 ### Starting Development:
