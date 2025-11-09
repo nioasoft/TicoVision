@@ -229,72 +229,56 @@ export function LetterPreviewDialog({
   };
 
   /**
-   * Download as PDF using Edge Function (Puppeteer + Browserless.io)
-   * Generates professional PDF with perfect Hebrew RTL support
+   * Print letter using browser's native print dialog
+   * User can choose "Save as PDF" from the print dialog
    */
-  const handleDownloadPdf = async () => {
-    if (!previewHtml || !variables) return;
+  const handlePrint = () => {
+    if (!previewHtml) return;
 
     setIsPrinting(true);
 
-    try {
-      const displayHtml = convertHtmlForDisplay(previewHtml);
+    // Create a hidden iframe for printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
 
-      // Build filename: CompanyName_Year.pdf
-      const companyName = (variables.company_name || 'letter')
-        .replace(/[^א-תa-zA-Z0-9]/g, '_') // Remove special chars
-        .substring(0, 50); // Limit length
-      const year = variables.year || new Date().getFullYear();
-      const letterType = currentLetterStage === 'secondary' ? 'bookkeeping' : 'audit';
-      const filename = `${companyName}_${letterType}_${year}.pdf`;
+    document.body.appendChild(iframe);
 
-      console.log('📄 Requesting PDF generation:', filename);
+    // Convert CID images to web URLs for browser display
+    const displayHtml = convertHtmlForDisplay(previewHtml);
 
-      // Get Supabase URL and API key
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    // Write HTML to iframe with proper RTL and Hebrew support
+    iframe.contentDocument?.open();
+    iframe.contentDocument?.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          @media print {
+            body { margin: 0; padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        ${displayHtml}
+      </body>
+      </html>
+    `);
+    iframe.contentDocument?.close();
 
-      // Call Edge Function using fetch() to handle binary response correctly
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-pdf`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          html: displayHtml,
-          filename: filename,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'שגיאה לא ידועה' }));
-        console.error('Edge Function error:', errorData);
-        throw new Error(errorData.error || 'שגיאה ביצירת PDF');
-      }
-
-      // Get blob directly from response - handles binary data correctly
-      const blob = await response.blob();
-
-      // Download the PDF
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success(`PDF הורד בהצלחה: ${filename}`);
-    } catch (error) {
-      console.error('❌ PDF download error:', error);
-      toast.error(error instanceof Error ? error.message : 'שגיאה בהורדת PDF');
-    } finally {
-      setIsPrinting(false);
-    }
+    // Wait for content to load, then open print dialog
+    iframe.onload = () => {
+      iframe.contentWindow?.print();
+      // Cleanup after print dialog closes
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        setIsPrinting(false);
+      }, 100);
+    };
   };
 
   /**
@@ -487,18 +471,18 @@ export function LetterPreviewDialog({
       <div className="flex justify-end gap-2 rtl:flex-row-reverse">
         <Button
           variant="outline"
-          onClick={handleDownloadPdf}
+          onClick={handlePrint}
           disabled={isPrinting || isLoadingPreview || !previewHtml}
         >
           {isPrinting ? (
             <>
               <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-              מכין PDF...
+              מכין להדפסה...
             </>
           ) : (
             <>
-              <Download className="h-4 w-4 ml-2" />
-              שמור כ-PDF
+              <Printer className="h-4 w-4 ml-2" />
+              הדפסה / שמור כ-PDF
             </>
           )}
         </Button>
