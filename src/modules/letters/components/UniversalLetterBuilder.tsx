@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -63,7 +63,11 @@ const getContactTypeLabel = (contactType: string): string => {
   return labels[contactType] || contactType;
 };
 
-export function UniversalLetterBuilder() {
+interface UniversalLetterBuilderProps {
+  editLetterId?: string | null;
+}
+
+export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderProps) {
   // State - Client selection
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
@@ -94,6 +98,12 @@ export function UniversalLetterBuilder() {
   const [clientContacts, setClientContacts] = useState<AssignedContact[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [emailSubject, setEmailSubject] = useState('');
+  const [manualEmails, setManualEmails] = useState(''); // For general letters without client
+
+  // State - Edit mode
+  const [editMode, setEditMode] = useState(false);
+  const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
+  const [parentLetterId, setParentLetterId] = useState<string | null>(null)
 
   /**
    * Load saved templates on mount
@@ -101,6 +111,15 @@ export function UniversalLetterBuilder() {
   useEffect(() => {
     loadSavedTemplates();
   }, []);
+
+  /**
+   * Load letter for editing when editLetterId prop is provided
+   */
+  useEffect(() => {
+    if (editLetterId) {
+      loadLetterForEdit(editLetterId);
+    }
+  }, [editLetterId]);
 
   /**
    * Load saved custom templates
@@ -212,6 +231,29 @@ export function UniversalLetterBuilder() {
   };
 
   /**
+   * Validate and parse manual emails (comma or space separated)
+   */
+  const parseManualEmails = (emailsString: string): string[] => {
+    if (!emailsString.trim()) return [];
+
+    // Split by comma, semicolon, or multiple spaces
+    const emails = emailsString
+      .split(/[,;\s]+/)
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
+
+    return emails;
+  };
+
+  /**
+   * Validate email format
+   */
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  /**
    * Preview letter
    */
   const handlePreview = async () => {
@@ -272,9 +314,37 @@ export function UniversalLetterBuilder() {
       return;
     }
 
-    if (selectedRecipients.length === 0) {
-      toast.error('נא לבחור לפחות נמען אחד');
-      return;
+    // Determine recipient emails - either from client contacts or manual input
+    let recipientEmails: string[] = [];
+
+    if (selectedClient) {
+      // Has client - use selected contacts
+      if (selectedRecipients.length === 0) {
+        toast.error('נא לבחור לפחות נמען אחד מרשימת אנשי הקשר');
+        return;
+      }
+      recipientEmails = selectedRecipients;
+    } else {
+      // No client - use manual emails
+      if (!manualEmails.trim()) {
+        toast.error('נא להזין לפחות כתובת מייל אחת');
+        return;
+      }
+
+      // Parse and validate manual emails
+      recipientEmails = parseManualEmails(manualEmails);
+
+      if (recipientEmails.length === 0) {
+        toast.error('נא להזין כתובת מייל תקינה');
+        return;
+      }
+
+      // Validate each email
+      const invalidEmails = recipientEmails.filter(email => !isValidEmail(email));
+      if (invalidEmails.length > 0) {
+        toast.error(`כתובות מייל לא תקינות: ${invalidEmails.join(', ')}`);
+        return;
+      }
     }
 
     if (!emailSubject.trim()) {
@@ -304,7 +374,7 @@ export function UniversalLetterBuilder() {
       // Send via Edge Function - it will parse, build, send, and save
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
-          recipientEmails: selectedRecipients, // Array of emails
+          recipientEmails, // Array of emails (from client or manual)
           recipientName: companyName,
           customText: plainText,
           variables,
@@ -321,7 +391,7 @@ export function UniversalLetterBuilder() {
 
       if (error) throw error;
 
-      toast.success(`מכתב נשלח בהצלחה ל-${selectedRecipients.length} נמענים`);
+      toast.success(`מכתב נשלח בהצלחה ל-${recipientEmails.length} נמענים`);
 
       // Reload templates if saved
       if (saveAsTemplate) {
@@ -333,6 +403,107 @@ export function UniversalLetterBuilder() {
       toast.error(error instanceof Error ? error.message : 'שגיאה בשליחת מייל');
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  /**
+   * Print/Save as PDF from preview dialog
+   */
+  const handlePrintPreview = () => {
+    if (!previewHtml) return;
+
+    // Create a hidden iframe for printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+
+    document.body.appendChild(iframe);
+
+    iframe.contentDocument?.open();
+    iframe.contentDocument?.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="he">
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          @media print {
+            body { margin: 0; padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        ${previewHtml}
+      </body>
+      </html>
+    `);
+    iframe.contentDocument?.close();
+
+    // Wait for content to load, then print
+    iframe.onload = () => {
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 100);
+    };
+  };
+
+  /**
+   * Load existing letter for editing
+   */
+  const loadLetterForEdit = async (letterId: string) => {
+    try {
+      // Fetch letter from generated_letters table
+      const { data: letter, error } = await supabase
+        .from('generated_letters')
+        .select('*')
+        .eq('id', letterId)
+        .single();
+
+      if (error) throw error;
+      if (!letter) {
+        toast.error('מכתב לא נמצא');
+        return;
+      }
+
+      // Set edit mode
+      setEditMode(true);
+      setEditingLetterId(letterId);
+      setParentLetterId(letter.parent_letter_id || letterId);
+
+      // Load basic fields
+      setEmailSubject(letter.subject || '');
+      setCompanyName(letter.client?.company_name || '');
+
+      // TODO: Parse HTML back to plain text
+      // For now, use generated_content_text if available
+      if (letter.generated_content_text) {
+        setPlainText(letter.generated_content_text);
+      } else {
+        toast.warning('לא ניתן לטעון את התוכן המקורי של המכתב. ניתן להתחיל מחדש.');
+      }
+
+      // Load client if exists
+      if (letter.client_id) {
+        const client = await clientService.getClientById(letter.client_id);
+        setSelectedClient(client);
+      }
+
+      // Load recipients
+      if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
+        if (letter.client_id) {
+          setSelectedRecipients(letter.recipient_emails);
+        } else {
+          setManualEmails(letter.recipient_emails.join(', '));
+        }
+      }
+
+      toast.success('מכתב נטען לעריכה');
+    } catch (error) {
+      console.error('Error loading letter for edit:', error);
+      toast.error('שגיאה בטעינת המכתב לעריכה');
     }
   };
 
@@ -447,6 +618,17 @@ export function UniversalLetterBuilder() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Edit Mode Banner */}
+      {editMode && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-right text-blue-800">
+            <strong>מצב עריכה:</strong> אתה עורך גרסה חדשה של מכתב קיים.
+            {parentLetterId && ' שמירה תיצור גרסה חדשה (version) ותשמור את המקור.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Saved Templates Section */}
       {savedTemplates.length > 0 && (
         <Card>
@@ -846,12 +1028,23 @@ export function UniversalLetterBuilder() {
               <Label className="text-right block font-semibold">בחר נמענים</Label>
 
               {!selectedClient ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-right">
-                    נא לבחור לקוח כדי לראות את רשימת אנשי הקשר
-                  </AlertDescription>
-                </Alert>
+                <div className="space-y-2">
+                  <Label htmlFor="manual-emails" className="text-right block">
+                    כתובות מייל (הפרד בפסיקים)
+                  </Label>
+                  <Textarea
+                    id="manual-emails"
+                    value={manualEmails}
+                    onChange={(e) => setManualEmails(e.target.value)}
+                    placeholder="example1@email.com, example2@email.com"
+                    dir="ltr"
+                    rows={3}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-gray-500 text-right">
+                    ניתן להזין מספר כתובות מייל מופרדות בפסיקים, נקודה-פסיק או רווחים
+                  </p>
+                </div>
               ) : isLoadingContacts ? (
                 <div className="text-center py-8 text-gray-500">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
@@ -866,43 +1059,47 @@ export function UniversalLetterBuilder() {
                 </Alert>
               ) : (
                 <>
-                  <div className="border rounded-lg p-4 space-y-2 max-h-60 overflow-y-auto bg-gray-50">
-                    {clientContacts.map((contact) => {
-                      const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
-                      const isChecked = selectedRecipients.includes(contact.email!);
+                  <div className="border rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
+                    <div className="grid grid-cols-4 gap-3">
+                      {clientContacts.map((contact) => {
+                        const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
+                        const isChecked = selectedRecipients.includes(contact.email!);
 
-                      return (
-                        <div
-                          key={contact.id}
-                          className="flex items-start gap-3 p-3 bg-white hover:bg-gray-50 rounded border"
-                        >
-                          <Checkbox
-                            id={`universal-recipient-${contact.id}`}
-                            checked={isChecked}
-                            disabled={isRequired}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedRecipients([...selectedRecipients, contact.email!]);
-                              } else {
-                                setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
-                              }
-                            }}
-                            className="mt-1"
-                          />
-                          <Label
-                            htmlFor={`universal-recipient-${contact.id}`}
-                            className="flex-1 cursor-pointer text-right"
+                        return (
+                          <div
+                            key={contact.id}
+                            className="flex flex-col gap-2 p-2 bg-white hover:bg-gray-50 rounded border"
                           >
-                            <div className="font-medium text-base">{contact.full_name}</div>
-                            <div className="text-sm text-gray-600 dir-ltr text-right">{contact.email}</div>
-                            <div className="text-xs text-gray-500 flex gap-2 justify-end mt-1">
+                            <div className="flex items-start gap-2">
+                              <Checkbox
+                                id={`universal-recipient-${contact.id}`}
+                                checked={isChecked}
+                                disabled={isRequired}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedRecipients([...selectedRecipients, contact.email!]);
+                                  } else {
+                                    setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
+                                  }
+                                }}
+                                className="mt-0.5"
+                              />
+                              <Label
+                                htmlFor={`universal-recipient-${contact.id}`}
+                                className="flex-1 cursor-pointer text-right"
+                              >
+                                <div className="font-medium text-sm truncate">{contact.full_name}</div>
+                              </Label>
+                            </div>
+                            <div className="text-xs text-gray-600 dir-ltr text-right truncate">{contact.email}</div>
+                            <div className="text-xs text-gray-500 flex gap-1 justify-end flex-wrap">
                               <span>{getContactTypeLabel(contact.contact_type)}</span>
                               {isRequired && <span className="font-semibold text-blue-600">(חובה)</span>}
                             </div>
-                          </Label>
-                        </div>
-                      );
-                    })}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <p className="text-sm text-gray-600 text-right">
@@ -967,9 +1164,13 @@ export function UniversalLetterBuilder() {
               style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
             />
           </div>
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 rtl:flex-row-reverse">
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
               סגור
+            </Button>
+            <Button variant="outline" onClick={handlePrintPreview}>
+              <Printer className="h-4 w-4 ml-2" />
+              הדפסה/שמירה ל-PDF
             </Button>
             <Button onClick={handleSendEmail} disabled={isSendingEmail}>
               {isSendingEmail ? (

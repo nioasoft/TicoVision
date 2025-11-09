@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,8 @@ import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog'
 import { ResendLetterDialog } from '@/modules/letters/components/ResendLetterDialog';
 
 export function LetterHistoryPage() {
+  const navigate = useNavigate();
+
   // State
   const [activeTab, setActiveTab] = useState<'sent' | 'drafts'>('sent');
   const [loading, setLoading] = useState(true);
@@ -188,6 +191,19 @@ export function LetterHistoryPage() {
   const handlePrintLetter = (letterId: string) => {
     // Open view dialog - it has print functionality
     handleViewLetter(letterId);
+  };
+
+  /**
+   * Handle edit letter
+   */
+  const handleEditLetter = (letterId: string) => {
+    // Navigate to letter templates page with edit state
+    navigate('/letter-templates', {
+      state: {
+        editLetterId: letterId,
+        activeTab: 'universal-builder'
+      }
+    });
   };
 
   /**
@@ -365,6 +381,7 @@ export function LetterHistoryPage() {
                   letters={currentLetters}
                   onViewLetter={handleViewLetter}
                   onResendLetter={handleResendLetter}
+                  onEditLetter={handleEditLetter}
                   onPrintLetter={handlePrintLetter}
                   isDraftsMode={false}
                 />
@@ -381,6 +398,7 @@ export function LetterHistoryPage() {
                   letters={currentLetters}
                   onViewLetter={handleViewLetter}
                   onResendLetter={handleResendLetter}
+                  onEditLetter={handleEditLetter}
                   onDeleteDraft={handleDeleteDraft}
                   isDraftsMode={true}
                 />

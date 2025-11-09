@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Clock,
   Send,
+  Edit,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ export interface LetterHistoryTableProps {
   letters: LetterHistoryItem[];
   onViewLetter: (letterId: string) => void;
   onResendLetter: (letterId: string, recipients: string[]) => void;
+  onEditLetter?: (letterId: string) => void;
   onDeleteDraft?: (letterId: string) => void;
   onPrintLetter?: (letterId: string) => void;
   isDraftsMode?: boolean;
@@ -47,6 +49,7 @@ export function LetterHistoryTable({
   letters,
   onViewLetter,
   onResendLetter,
+  onEditLetter,
   onDeleteDraft,
   onPrintLetter,
   isDraftsMode = false,
@@ -124,6 +127,7 @@ export function LetterHistoryTable({
             <TableHead className="rtl:text-right ltr:text-left">סוג מכתב</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">לקוח</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">תאריך</TableHead>
+            <TableHead className="rtl:text-right ltr:text-left w-[80px]">גרסה</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -151,6 +155,13 @@ export function LetterHistoryTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="rtl:text-right ltr:text-left">
+                      {onEditLetter && (
+                        <DropdownMenuItem onClick={() => onEditLetter(letter.id)}>
+                          <Edit className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                          ערוך
+                        </DropdownMenuItem>
+                      )}
+
                       {letter.status !== 'draft' && (
                         <>
                           <DropdownMenuItem
@@ -253,6 +264,19 @@ export function LetterHistoryTable({
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
+                </div>
+              </TableCell>
+
+              {/* Version */}
+              <TableCell className="rtl:text-right ltr:text-left">
+                <div className="flex items-center gap-1">
+                  {letter.version_number && letter.version_number > 1 ? (
+                    <Badge variant="outline" className="text-xs">
+                      v{letter.version_number}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">v1</span>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
