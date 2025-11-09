@@ -27,6 +27,9 @@ import type { AssignedContact } from '@/types/tenant-contact.types';
 
 const templateService = new TemplateService();
 
+// Constant ID for auto-managed commercial name line
+const COMMERCIAL_NAME_LINE_ID = 'commercial-name-auto-line';
+
 // Example Markdown text for guidance
 const EXAMPLE_TEXT = `בפתח הדברים:
 * אנו מודים לכם על אמונכם במשרדנו
@@ -140,6 +143,69 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       loadLetterForEdit(editLetterId);
     }
   }, [editLetterId]);
+
+  /**
+   * Auto-manage commercial name line in customHeaderLines
+   * - When checkbox is checked + name exists: inject as first line
+   * - When checkbox is unchecked or name is empty: remove the line
+   * - When name changes: update the line content
+   */
+  useEffect(() => {
+    setCustomHeaderLines(prevLines => {
+      const shouldShowCommercialName = showCommercialName && commercialName.trim();
+      const existingLineIndex = prevLines.findIndex(
+        line => line.id === COMMERCIAL_NAME_LINE_ID
+      );
+
+      if (shouldShowCommercialName) {
+        // Create or update commercial name line
+        const commercialLine: import('../types/letter.types').CustomHeaderLine = {
+          id: COMMERCIAL_NAME_LINE_ID,
+          type: 'text',
+          content: commercialName,
+          formatting: {
+            bold: true,
+            color: 'black',
+            underline: false
+          },
+          order: 0
+        };
+
+        if (existingLineIndex === -1) {
+          // Line doesn't exist - add it as first line
+          const reindexedLines = prevLines.map(line => ({
+            ...line,
+            order: line.order + 1
+          }));
+          return [commercialLine, ...reindexedLines];
+        } else {
+          // Line exists - check if content changed
+          if (prevLines[existingLineIndex].content !== commercialName) {
+            const updatedLines = [...prevLines];
+            updatedLines[existingLineIndex] = {
+              ...updatedLines[existingLineIndex],
+              content: commercialName
+            };
+            return updatedLines;
+          }
+          // No change needed
+          return prevLines;
+        }
+      } else if (existingLineIndex !== -1) {
+        // Commercial name should not be shown but line exists - remove it
+        const filteredLines = prevLines
+          .filter(line => line.id !== COMMERCIAL_NAME_LINE_ID)
+          .map(line => ({
+            ...line,
+            order: line.order > 0 ? line.order - 1 : line.order
+          }));
+        return filteredLines;
+      }
+
+      // No change needed
+      return prevLines;
+    });
+  }, [showCommercialName, commercialName]);
 
   /**
    * Load saved custom templates
@@ -295,6 +361,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     // Debug logging
     console.log('🔍 [Preview Debug] customHeaderLines:', customHeaderLines);
     console.log('🔍 [Preview Debug] מספר שורות:', customHeaderLines.length);
+    console.log('🔍 [Preview Debug] showCommercialName:', showCommercialName);
+    console.log('🔍 [Preview Debug] commercialName:', commercialName);
 
     setIsLoadingPreview(true);
     try {
@@ -304,6 +372,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
+
+      console.log('🔍 [Preview Debug] variables.commercial_name:', variables.commercial_name);
 
       // Add email subject if provided
       if (emailSubject.trim()) {
@@ -514,7 +584,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         clientId: letterData.clientId!,
         variables,
         includesPayment: letterData.includesPayment,
-        customHeaderLines: letterData.customHeaderLines
+        customHeaderLines: letterData.customHeaderLines,
+        saveAsTemplate: undefined
       });
 
       if (result.error || !result.data) {

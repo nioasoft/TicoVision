@@ -941,9 +941,7 @@ export class TemplateService extends BaseService {
         tax_year: params.variables.tax_year || nextYear,
         // Add client_id and fee_id for payment tracking links
         client_id: params.clientId || params.variables.client_id,
-        fee_id: params.variables.fee_id, // If provided in variables
-        // Add commercial_name_line: name + <br> if exists, empty otherwise
-        commercial_name_line: params.variables.commercial_name ? `${params.variables.commercial_name}<br>` : ''
+        fee_id: params.variables.fee_id // If provided in variables
       };
 
       // 6. Build full HTML with custom header lines
@@ -1050,9 +1048,7 @@ export class TemplateService extends BaseService {
         tax_year: params.variables.tax_year || nextYear,
         // Add client_id and fee_id for payment tracking links
         client_id: params.clientId || params.variables.client_id,
-        fee_id: params.variables.fee_id, // If provided in variables
-        // Add commercial_name_line: name + <br> if exists, empty otherwise
-        commercial_name_line: params.variables.commercial_name ? `${params.variables.commercial_name}<br>` : ''
+        fee_id: params.variables.fee_id // If provided in variables
       };
 
       // 7. Build full HTML with custom header lines and subject lines
