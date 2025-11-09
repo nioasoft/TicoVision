@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileUploadSection } from '@/components/files';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
 import { Textarea } from '@/components/ui/textarea';
@@ -811,28 +810,7 @@ export function FeesPage() {
                     </p>
                   </div>
 
-                  {/* File Upload for Previous Year - Calculation-Specific Attachments
-                      NOTE: These are calculation-specific files tied to this fee calculation (yearContext).
-                      They are NOT general client documents - they're calculation attachments.
-                      This is CORRECT - keep here, do NOT move to File Manager (/files).
-                      Similar to payment attachments, these belong to the calculation action.
-                  */}
-                  {formData.client_id && (
-                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                      <Label className="text-base font-semibold text-blue-900 mb-2 block rtl:text-right">
-                        קבצים לשנת {formData.year - 1}
-                      </Label>
-                      <FileUploadSection
-                        clientId={formData.client_id}
-                        yearContext={formData.year - 1}
-                        uploadContext="fee_calculation"
-                        compact
-                      />
-                      <p className="text-xs text-blue-700 mt-2 rtl:text-right">
-                        העלה קבצים רלוונטיים עבור שנת {formData.year - 1}
-                      </p>
-                    </div>
-                  )}
+                  {/* File uploads removed - all file management done in File Manager (/files) */}
 
                   <div>
                     <Label htmlFor="client">בחירת לקוח *</Label>
@@ -943,25 +921,7 @@ export function FeesPage() {
                     </p>
                   </div>
 
-                  {/* Bookkeeping Files Upload - Calculation-Specific Attachments
-                      NOTE: These are calculation-specific files for internal clients (bookkeeping context).
-                      They are NOT general client documents - they're specific to this calculation.
-                      This is CORRECT - keep here, do NOT move to File Manager (/files).
-                      Similar to payment/fee attachments, these belong to the calculation action.
-                  */}
-                  {formData.client_id && selectedClientDetails?.internal_external === 'internal' && (
-                    <div className="col-span-2 bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
-                      <Label className="text-base font-semibold text-purple-900 mb-2 block rtl:text-right">
-                        כרטסת הנהלת חשבונות
-                      </Label>
-                      <FileUploadSection
-                        clientId={formData.client_id}
-                        uploadContext="bookkeeping"
-                        compact
-                        showLastLetterOnly
-                      />
-                    </div>
-                  )}
+                  {/* Bookkeeping files upload removed - all file management done in File Manager (/files) */}
 
                   <div>
                     <Label htmlFor="previous_vat">סכום שנה קודמת כולל מע"מ (מחושב אוטומטית)</Label>
