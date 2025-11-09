@@ -254,7 +254,7 @@ export function FeesPage() {
         // Load previous year's data
         // Use final_amount (calculated result) if available, otherwise base_amount (manual entry)
         const baseAmount = response.data.final_amount || response.data.base_amount || 0;
-        const discountPercent = response.data.discount_percentage || 0;
+        const discountPercent = response.data.previous_year_discount || 0;
         const afterDiscount = baseAmount * (1 - discountPercent / 100);
 
         setFormData(prev => ({
@@ -373,7 +373,7 @@ export function FeesPage() {
         client_id: formData.client_id,
         year: formData.year - 1, // Save as previous year (e.g., saving 2025 data for tax year 2026 calculation)
         base_amount: formData.previous_year_amount, // Use this amount as the base
-        discount_percentage: formData.previous_year_discount || 0,
+        previous_year_discount: formData.previous_year_discount || 0,
         previous_year_amount_with_vat: formData.previous_year_amount_with_vat,
         inflation_rate: 0, // No inflation for historical data
         real_adjustment: 0,

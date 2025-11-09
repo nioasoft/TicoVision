@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -126,7 +126,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
   // State - WhatsApp
   const [whatsappPhone, setWhatsappPhone] = useState('');
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSaving, setIsSaving] = useState(false);
+
+  // State - Manual email input
+  const [manualEmailInput, setManualEmailInput] = useState('');
+  const [showManualEmailInput, setShowManualEmailInput] = useState(false);
 
   /**
    * Load saved templates on mount
@@ -619,6 +623,45 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     } finally {
       setIsSaving(false);
     }
+  };
+
+  /**
+   * Add manual email to recipients list
+   */
+  const handleAddManualEmail = () => {
+    const trimmedEmail = manualEmailInput.trim();
+
+    if (!trimmedEmail) {
+      toast.error('נא להזין כתובת מייל');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error('כתובת מייל לא תקינה');
+      return;
+    }
+
+    // Check if already exists
+    if (selectedRecipients.includes(trimmedEmail)) {
+      toast.error('כתובת מייל כבר קיימת ברשימה');
+      return;
+    }
+
+    // Add to selectedRecipients
+    setSelectedRecipients([...selectedRecipients, trimmedEmail]);
+    setManualEmailInput('');
+    setShowManualEmailInput(false);
+    toast.success(`נוסף: ${trimmedEmail}`);
+  };
+
+  /**
+   * Remove email from recipients list
+   */
+  const handleRemoveRecipient = (email: string) => {
+    setSelectedRecipients(selectedRecipients.filter(e => e !== email));
+    toast.success('מייל הוסר מהרשימה');
   };
 
   /**
@@ -1682,7 +1725,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   <div className="border rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
                     <div className="grid grid-cols-4 gap-3">
                       {clientContacts.map((contact) => {
-                        const isRequired = contact.is_primary || contact.contact_type === 'accountant_manager';
                         const isChecked = selectedRecipients.includes(contact.email!);
 
                         return (
@@ -1694,7 +1736,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               <Checkbox
                                 id={`universal-recipient-${contact.id}`}
                                 checked={isChecked}
-                                disabled={isRequired}
                                 onCheckedChange={(checked) => {
                                   if (checked) {
                                     setSelectedRecipients([...selectedRecipients, contact.email!]);
@@ -1712,9 +1753,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               </Label>
                             </div>
                             <div className="text-xs text-gray-600 dir-ltr text-right truncate">{contact.email}</div>
-                            <div className="text-xs text-gray-500 flex gap-1 justify-end flex-wrap">
-                              <span>{getContactTypeLabel(contact.contact_type)}</span>
-                              {isRequired && <span className="font-semibold text-blue-600">(חובה)</span>}
+                            <div className="text-xs text-gray-500 text-right">
+                              {getContactTypeLabel(contact.contact_type)}
                             </div>
                           </div>
                         );
@@ -1725,6 +1765,93 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   <p className="text-sm text-gray-600 text-right">
                     <strong>{selectedRecipients.length}</strong> נמענים נבחרו
                   </p>
+
+                  {/* Manual Email Addition */}
+                  <div className="mt-4 space-y-3">
+                    {/* Add Email Button */}
+                    {!showManualEmailInput ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowManualEmailInput(true)}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 ml-2" />
+                        הוסף מייל ידני
+                      </Button>
+                    ) : (
+                      // Input for manual email
+                      <div className="flex gap-2">
+                        <Input
+                          type="email"
+                          value={manualEmailInput}
+                          onChange={(e) => setManualEmailInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddManualEmail();
+                            }
+                          }}
+                          placeholder="example@email.com"
+                          dir="ltr"
+                          className="flex-1 text-left"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleAddManualEmail}
+                        >
+                          הוסף
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setShowManualEmailInput(false);
+                            setManualEmailInput('');
+                          }}
+                        >
+                          ביטול
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Display manually added emails */}
+                    {selectedRecipients.length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <Label className="text-sm font-semibold text-blue-900 mb-2 block text-right">
+                          נמענים שנבחרו ({selectedRecipients.length}):
+                        </Label>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedRecipients.map((email) => {
+                            // Check if this email is from clientContacts
+                            const isFromContacts = clientContacts.some(c => c.email === email);
+
+                            return (
+                              <div
+                                key={email}
+                                className="inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border text-sm"
+                              >
+                                <span className="text-gray-700">{email}</span>
+                                {!isFromContacts && (
+                                  <span className="text-xs text-blue-600">(ידני)</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRecipient(email)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
