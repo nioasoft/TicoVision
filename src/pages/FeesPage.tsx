@@ -40,6 +40,23 @@ import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
 import { ClientInfoCard } from '@/components/ClientInfoCard';
 import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewDialog';
+import { selectLetterTemplate, type LetterSelectionResult } from '@/modules/letters/utils/letter-selector';
+import type { LetterTemplateType } from '@/modules/letters/types/letter.types';
+
+// 11 Template options (for manual letter selection)
+const TEMPLATE_OPTIONS: { value: LetterTemplateType; label: string }[] = [
+  { value: 'external_index_only', label: 'A - חיצוניים - שינוי מדד בלבד' },
+  { value: 'external_real_change', label: 'B - חיצוניים - שינוי ריאלי' },
+  { value: 'external_as_agreed', label: 'C - חיצוניים - כמוסכם' },
+  { value: 'internal_audit_index', label: 'D1 - פנימי ראיית חשבון - שינוי מדד' },
+  { value: 'internal_audit_real', label: 'D2 - פנימי ראיית חשבון - שינוי ריאלי' },
+  { value: 'internal_audit_agreed', label: 'D3 - פנימי ראיית חשבון - כמוסכם' },
+  { value: 'retainer_index', label: 'E1 - ריטיינר - שינוי מדד' },
+  { value: 'retainer_real', label: 'E2 - ריטיינר - שינוי ריאלי' },
+  { value: 'internal_bookkeeping_index', label: 'F1 - פנימי הנהלת חשבונות - שינוי מדד' },
+  { value: 'internal_bookkeeping_real', label: 'F2 - פנימי הנהלת חשבונות - שינוי ריאלי' },
+  { value: 'internal_bookkeeping_agreed', label: 'F3 - פנימי הנהלת חשבונות - כמוסכם' },
+];
 
 interface FeeCalculatorForm {
   client_id: string;
@@ -118,6 +135,9 @@ export function FeesPage() {
   const [letterPreviewOpen, setLetterPreviewOpen] = useState(false);
   const [currentFeeId, setCurrentFeeId] = useState<string | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [autoSelectedLetters, setAutoSelectedLetters] = useState<LetterSelectionResult | null>(null);
+  const [selectedPrimaryTemplate, setSelectedPrimaryTemplate] = useState<LetterTemplateType | null>(null);
+  const [selectedSecondaryTemplate, setSelectedSecondaryTemplate] = useState<LetterTemplateType | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -182,6 +202,24 @@ export function FeesPage() {
     formData.bookkeeping_apply_inflation_index,
     selectedClientDetails?.internal_external
   ]);
+
+  useEffect(() => {
+    // Auto-calculate letter selection when calculation completes
+    if (calculationResults && selectedClientDetails) {
+      const autoSelection = selectLetterTemplate({
+        clientType: selectedClientDetails.internal_external,
+        isRetainer: selectedClientDetails.is_retainer,
+        applyInflation: formData.apply_inflation_index,
+        hasRealAdjustment: formData.real_adjustment > 0,
+        bookkeepingApplyInflation: formData.bookkeeping_apply_inflation_index,
+        bookkeepingHasRealAdjustment: formData.bookkeeping_real_adjustment > 0,
+      });
+
+      setAutoSelectedLetters(autoSelection);
+      setSelectedPrimaryTemplate(autoSelection.primaryTemplate);
+      setSelectedSecondaryTemplate(autoSelection.secondaryTemplate || null);
+    }
+  }, [calculationResults, selectedClientDetails, formData.apply_inflation_index, formData.real_adjustment, formData.bookkeeping_apply_inflation_index, formData.bookkeeping_real_adjustment]);
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -1454,6 +1492,95 @@ export function FeesPage() {
                 </div>
               )}
 
+              {/* Letter Selection */}
+              {autoSelectedLetters && (
+                <div className="mb-6">
+                  {autoSelectedLetters.secondaryTemplate ? (
+                    // Internal client - 2 letters
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                        <Label className="text-base font-semibold mb-2 block text-right">
+                          מכתב ראשי - ראיית חשבון
+                        </Label>
+                        <Select
+                          value={selectedPrimaryTemplate || autoSelectedLetters.primaryTemplate}
+                          onValueChange={(value) => setSelectedPrimaryTemplate(value as LetterTemplateType)}
+                        >
+                          <SelectTrigger className="text-right">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TEMPLATE_OPTIONS
+                              .filter(opt => opt.value.startsWith('internal_audit'))
+                              .map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-purple-700 mt-2 text-right">
+                          ברירת מחדל: <strong>{TEMPLATE_OPTIONS.find(t => t.value === autoSelectedLetters.primaryTemplate)?.label}</strong>
+                        </p>
+                      </div>
+
+                      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                        <Label className="text-base font-semibold mb-2 block text-right">
+                          מכתב שני - הנהלת חשבונות
+                        </Label>
+                        <Select
+                          value={selectedSecondaryTemplate || autoSelectedLetters.secondaryTemplate}
+                          onValueChange={(value) => setSelectedSecondaryTemplate(value as LetterTemplateType)}
+                        >
+                          <SelectTrigger className="text-right">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TEMPLATE_OPTIONS
+                              .filter(opt => opt.value.startsWith('internal_bookkeeping'))
+                              .map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-green-700 mt-2 text-right">
+                          ברירת מחדל: <strong>{TEMPLATE_OPTIONS.find(t => t.value === autoSelectedLetters.secondaryTemplate)?.label}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    // External or retainer client - 1 letter
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                      <Label className="text-base font-semibold mb-2 block text-right">
+                        בחירת מכתב
+                      </Label>
+                      <Select
+                        value={selectedPrimaryTemplate || autoSelectedLetters.primaryTemplate}
+                        onValueChange={(value) => setSelectedPrimaryTemplate(value as LetterTemplateType)}
+                      >
+                        <SelectTrigger className="text-right">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TEMPLATE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-blue-700 mt-2 text-right">
+                        ברירת מחדל: <strong>{TEMPLATE_OPTIONS.find(t => t.value === autoSelectedLetters.primaryTemplate)?.label}</strong>
+                        <br />
+                        המערכת בחרה אוטומטית לפי סוג הלקוח והחישוב. ניתן לבחור מכתב אחר.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-between items-center">
                 <Button variant="outline" onClick={() => setActiveTab('current')}>
                   <ChevronRight className="h-4 w-4 ml-2" />
@@ -1490,6 +1617,8 @@ export function FeesPage() {
         }}
         feeId={currentFeeId}
         clientId={formData.client_id || null}
+        manualPrimaryOverride={selectedPrimaryTemplate}
+        manualSecondaryOverride={selectedSecondaryTemplate}
         onEmailSent={() => {
           toast({
             title: 'הצלחה',

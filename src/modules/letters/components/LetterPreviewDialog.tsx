@@ -16,8 +16,23 @@ import type { LetterVariables, LetterTemplateType } from '../types/letter.types'
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
 import { selectLetterTemplate, type LetterSelectionResult } from '../utils/letter-selector';
 import { TenantContactService } from '@/services/tenant-contact.service';
+import type { AssignedContact } from '@/types/tenant-contact.types';
 
 const templateService = new TemplateService();
+
+// Helper function to get contact type label in Hebrew
+const getContactTypeLabel = (contactType: string): string => {
+  const labels: Record<string, string> = {
+    owner: 'בעלים',
+    accountant_manager: 'מנהלת חשבונות',
+    secretary: 'מזכירה',
+    cfo: 'סמנכ"ל כספים',
+    board_member: 'חבר דירקטוריון',
+    legal_counsel: 'יועץ משפטי',
+    other: 'אחר',
+  };
+  return labels[contactType] || contactType;
+};
 
 export interface LetterPreviewDialogProps {
   open: boolean;
@@ -25,6 +40,8 @@ export interface LetterPreviewDialogProps {
   feeId: string | null;
   clientId: string | null;
   onEmailSent?: () => void;
+  manualPrimaryOverride?: LetterTemplateType | null;
+  manualSecondaryOverride?: LetterTemplateType | null;
 }
 
 export function LetterPreviewDialog({
@@ -33,10 +50,13 @@ export function LetterPreviewDialog({
   feeId,
   clientId,
   onEmailSent,
+  manualPrimaryOverride,
+  manualSecondaryOverride,
 }: LetterPreviewDialogProps) {
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [recipientEmails, setRecipientEmails] = useState<string[]>([]);
+  const [contactsDetails, setContactsDetails] = useState<AssignedContact[]>([]);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [variables, setVariables] = useState<Partial<LetterVariables> | null>(null);
   const [letterSelection, setLetterSelection] = useState<LetterSelectionResult | null>(null);
@@ -78,6 +98,11 @@ export function LetterPreviewDialog({
       const emails = await TenantContactService.getClientEmails(clientId, 'important');
       setRecipientEmails(emails);
 
+      // Load full contact details (not just emails)
+      const contacts = await TenantContactService.getClientContacts(clientId);
+      const eligibleContacts = contacts.filter(c => emails.includes(c.email!));
+      setContactsDetails(eligibleContacts);
+
       // Determine which letter template(s) to use
       const selection = selectLetterTemplate({
         clientType: client.internal_external,
@@ -90,11 +115,15 @@ export function LetterPreviewDialog({
 
       setLetterSelection(selection);
 
+      // Use manual override if provided, otherwise use auto-selected template
+      const effectivePrimaryTemplate = manualPrimaryOverride || selection.primaryTemplate;
+      const effectiveSecondaryTemplate = manualSecondaryOverride || selection.secondaryTemplate;
+
       // Determine which template to use based on current stage
       const templateType: LetterTemplateType =
         currentLetterStage === 'primary'
-          ? selection.primaryTemplate
-          : selection.secondaryTemplate!;
+          ? effectivePrimaryTemplate
+          : effectiveSecondaryTemplate!;
 
       const numChecks =
         currentLetterStage === 'primary'
@@ -150,8 +179,8 @@ export function LetterPreviewDialog({
 
         // Template-specific
         inflation_rate: isBookkeeping
-          ? (fee.bookkeeping_calculation?.inflation_rate || 0) + '%'
-          : (fee.inflation_rate || 0) + '%',
+          ? (fee.bookkeeping_calculation?.inflation_rate || 0).toString()
+          : (fee.inflation_rate || 0).toString(),
       };
 
       setVariables(letterVariables);
@@ -196,11 +225,15 @@ export function LetterPreviewDialog({
         return;
       }
 
+      // Use manual override if provided, otherwise use auto-selected template
+      const effectivePrimaryTemplate = manualPrimaryOverride || letterSelection.primaryTemplate;
+      const effectiveSecondaryTemplate = manualSecondaryOverride || letterSelection.secondaryTemplate;
+
       // Determine current template type
       const templateType: LetterTemplateType =
         currentLetterStage === 'primary'
-          ? letterSelection.primaryTemplate
-          : letterSelection.secondaryTemplate!;
+          ? effectivePrimaryTemplate
+          : effectiveSecondaryTemplate!;
 
       console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) via Edge Function...`);
 
@@ -223,7 +256,7 @@ export function LetterPreviewDialog({
       console.log('✅ Email sent successfully:', data);
 
       // Update fee_calculations status to 'sent' (only after all letters sent)
-      if (currentLetterStage === 'secondary' || !letterSelection.secondaryTemplate) {
+      if (currentLetterStage === 'secondary' || !effectiveSecondaryTemplate) {
         const { error: statusError } = await supabase
           .from('fee_calculations')
           .update({ status: 'sent' })
@@ -265,7 +298,7 @@ export function LetterPreviewDialog({
       toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${recipientEmails.length} נמענים`);
 
       // Check if there's a secondary letter to send
-      if (currentLetterStage === 'primary' && letterSelection.secondaryTemplate) {
+      if (currentLetterStage === 'primary' && effectiveSecondaryTemplate) {
         // Move to secondary letter
         setCurrentLetterStage('secondary');
         toast.info('מעבר למכתב השני (הנהלת חשבונות)...');
@@ -344,13 +377,16 @@ export function LetterPreviewDialog({
             נמענים ({recipientEmails.length})
           </Label>
           {recipientEmails.length > 0 ? (
-            <div className="border rounded-lg p-3 bg-gray-50 space-y-1">
-              {recipientEmails.map((email, index) => (
-                <div key={index} className="text-sm text-gray-700 flex items-center gap-2">
-                  <Mail className="h-3 w-3 text-primary" />
-                  {email}
-                </div>
-              ))}
+            <div className="border rounded-lg p-3 bg-gray-50">
+              <div className="grid grid-cols-4 gap-2">
+                {contactsDetails.map((contact) => (
+                  <div key={contact.id} className="p-2 bg-white rounded border hover:bg-gray-50">
+                    <div className="text-xs font-medium truncate rtl:text-right">{contact.full_name}</div>
+                    <div className="text-[10px] text-gray-500 truncate dir-ltr rtl:text-right">{contact.email}</div>
+                    <div className="text-[10px] text-blue-600 rtl:text-right">{getContactTypeLabel(contact.contact_type)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
             <p className="text-sm text-red-600 rtl:text-right">
