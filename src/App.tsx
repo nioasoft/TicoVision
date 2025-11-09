@@ -25,6 +25,7 @@ const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
 const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
 const PaymentPage = lazy(() => import('@/pages/payment-page'));
 const ClientGroupsPage = lazy(() => import('@/pages/ClientGroupsPage'));
+const FilesManagerPage = lazy(() => import('@/pages/FilesManagerPage'));
 
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
@@ -88,6 +89,15 @@ function App() {
                         <ClientGroupsPage />
                       </ErrorBoundary>
                     } />
+
+                    {/* Files Manager - accessible to admin, accountant, bookkeeper */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
+                      <Route path="/files" element={
+                        <ErrorBoundary>
+                          <FilesManagerPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
 
                     {/* Admin-only routes */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>

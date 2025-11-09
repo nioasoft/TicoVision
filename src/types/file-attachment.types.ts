@@ -22,6 +22,10 @@ export interface ClientAttachment {
   upload_context: UploadContext;
   year_context?: number;
 
+  // Category system
+  file_category: FileCategory;
+  description: string | null;
+
   // Version tracking
   version: number;
   is_latest: boolean;
@@ -147,3 +151,73 @@ export function generateUniqueFilename(originalName: string): string {
 
   return `${nameWithoutExt}-${timestamp}${extension}`;
 }
+
+// ===================================
+// File Categories (7 Fixed Categories)
+// ===================================
+
+export type FileCategory =
+  | 'company_registry'          // רשם החברות
+  | 'financial_report'          // דוח כספי מבוקר אחרון
+  | 'bookkeeping_card'          // כרטיס הנהח"ש
+  | 'quote_invoice'             // הצעת מחיר / תעודת חיוב
+  | 'payment_proof_2026'        // אסמכתאות תשלום 2026
+  | 'holdings_presentation'     // מצגת החזקות
+  | 'general';                  // כללי
+
+export interface CategoryConfig {
+  key: FileCategory;
+  label: string;
+  description: string;
+  icon?: string;
+}
+
+export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
+  company_registry: {
+    key: 'company_registry',
+    label: 'רשם החברות',
+    description: 'תעודת רישום חברה, תקנון, פרוטוקולים מאסיפות',
+  },
+  financial_report: {
+    key: 'financial_report',
+    label: 'דוח כספי מבוקר אחרון',
+    description: 'דוח ביקורת שנתי, דוחות כספיים מבוקרים',
+  },
+  bookkeeping_card: {
+    key: 'bookkeeping_card',
+    label: 'כרטיס הנהח"ש',
+    description: 'כרטיס הנהלת חשבונות מפורט לפי שנת מס',
+  },
+  quote_invoice: {
+    key: 'quote_invoice',
+    label: 'הצעת מחיר / תעודת חיוב',
+    description: 'הצעות מחיר, תעודות חיוב, חשבוניות רלוונטיות',
+  },
+  payment_proof_2026: {
+    key: 'payment_proof_2026',
+    label: 'אסמכתאות תשלום 2026',
+    description: 'אישורי העברה בנקאית, קבלות אשראי, צילומי המחאות',
+  },
+  holdings_presentation: {
+    key: 'holdings_presentation',
+    label: 'מצגת החזקות',
+    description: 'מצגות להחזקות, תרשימי מבנה ארגוני, דיאגרמות',
+  },
+  general: {
+    key: 'general',
+    label: 'כללי',
+    description: 'מסמכים נוספים שאינם משויכים לקטגוריה ספציפית',
+  },
+};
+
+export const getCategoryLabel = (category: FileCategory): string => {
+  return FILE_CATEGORIES[category]?.label || category;
+};
+
+export const getCategoryDescription = (category: FileCategory): string => {
+  return FILE_CATEGORIES[category]?.description || '';
+};
+
+export const getAllCategories = (): CategoryConfig[] => {
+  return Object.values(FILE_CATEGORIES);
+};

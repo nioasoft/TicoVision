@@ -9,9 +9,10 @@ import type {
   ClientAttachment,
   FileUploadOptions,
   FileType,
-  UploadContext
+  UploadContext,
+  FileCategory
 } from '@/types/file-attachment.types';
-import { generateUniqueFilename, validateFile } from '@/types/file-attachment.types';
+import { generateUniqueFilename, validateFile, FILE_CATEGORIES } from '@/types/file-attachment.types';
 
 interface ServiceResponse<T> {
   data: T | null;
@@ -336,6 +337,240 @@ export class FileUploadService extends BaseService {
     parts.push(filename);
 
     return parts.join('/');
+  }
+
+  // ===================================
+  // Category-Based File Management
+  // ===================================
+
+  /**
+   * Get all files for a specific category
+   */
+  async getFilesByCategory(
+    clientId: string,
+    category: FileCategory
+  ): Promise<ServiceResponse<ClientAttachment[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId)
+        .eq('file_category', category)
+        .eq('is_latest', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Upload file with category assignment
+   */
+  async uploadFileToCategory(
+    file: File,
+    clientId: string,
+    category: FileCategory,
+    description: string
+  ): Promise<ServiceResponse<ClientAttachment>> {
+    try {
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+
+      // Validate description length (100 chars max)
+      if (description.length > 100) {
+        throw new Error('התיאור חייב להיות עד 100 תווים');
+      }
+
+      const tenantId = await this.getTenantId();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+
+      if (!userId) {
+        throw new Error('משתמש לא מחובר');
+      }
+
+      // Validate category exists
+      if (!FILE_CATEGORIES[category]) {
+        throw new Error('קטגוריה לא חוקית');
+      }
+
+      // Generate unique filename
+      const uniqueFilename = generateUniqueFilename(file.name);
+
+      // Build storage path with category: {tenant_id}/{client_id}/{category}/{filename}
+      const storagePath = `${tenantId}/${clientId}/${category}/${uniqueFilename}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from(this.STORAGE_BUCKET)
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Create database record
+      const attachmentData = {
+        tenant_id: tenantId,
+        client_id: clientId,
+        file_name: file.name,
+        file_type: file.type as FileType,
+        file_size: file.size,
+        storage_path: storagePath,
+        file_category: category,
+        description: description,
+        upload_context: 'client_form' as UploadContext, // Default context
+        version: 1,
+        is_latest: true,
+        uploaded_by: userId
+      };
+
+      const { data, error: dbError } = await supabase
+        .from(this.tableName)
+        .insert(attachmentData)
+        .select()
+        .single();
+
+      if (dbError) {
+        // Rollback: delete uploaded file if database insert fails
+        await supabase.storage
+          .from(this.STORAGE_BUCKET)
+          .remove([storagePath]);
+
+        throw dbError;
+      }
+
+      // Log action
+      await this.logAction(
+        'upload_file_category',
+        data.id,
+        {
+          file_name: file.name,
+          category: category,
+          description: description
+        }
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Update file description
+   */
+  async updateFileDescription(
+    fileId: string,
+    description: string
+  ): Promise<ServiceResponse<ClientAttachment>> {
+    try {
+      // Validate description length (100 chars max)
+      if (description.length > 100) {
+        throw new Error('התיאור חייב להיות עד 100 תווים');
+      }
+
+      const tenantId = await this.getTenantId();
+
+      // Check file exists and belongs to tenant
+      const { data: existing, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('id', fileId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError || !existing) {
+        throw new Error('קובץ לא נמצא');
+      }
+
+      // Update description
+      const { data, error: updateError } = await supabase
+        .from(this.tableName)
+        .update({ description: description })
+        .eq('id', fileId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Log action
+      await this.logAction(
+        'update_file_description',
+        fileId,
+        {
+          old_description: existing.description,
+          new_description: description
+        }
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get statistics of files per category for a client
+   */
+  async getCategoryStats(clientId: string): Promise<ServiceResponse<Record<FileCategory, number>>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get all latest files for the client
+      const { data: files, error } = await supabase
+        .from(this.tableName)
+        .select('file_category')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId)
+        .eq('is_latest', true);
+
+      if (error) {
+        throw error;
+      }
+
+      // Initialize stats with all categories at 0
+      const stats: Record<FileCategory, number> = {
+        company_registry: 0,
+        financial_report: 0,
+        bookkeeping_card: 0,
+        quote_invoice: 0,
+        payment_proof_2026: 0,
+        holdings_presentation: 0,
+        general: 0
+      };
+
+      // Count files per category
+      if (files) {
+        files.forEach((file) => {
+          const category = file.file_category as FileCategory;
+          if (stats[category] !== undefined) {
+            stats[category]++;
+          }
+        });
+      }
+
+      return { data: stats, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
   }
 }
 

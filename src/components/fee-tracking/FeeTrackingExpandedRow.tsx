@@ -274,7 +274,11 @@ export function FeeTrackingExpandedRow({
           )}
         </TabsContent>
 
-        {/* Files Tab */}
+        {/* Files Tab - Payment Attachments Display
+            NOTE: This displays transaction-specific attachments (payment receipts, confirmations).
+            These files belong to the specific payment action, not to client-level documents.
+            This is CORRECT - payment attachments are separate from File Manager (/files).
+        */}
         <TabsContent value="files" className="mt-4">
           {paymentDetails.payment?.attachment_ids &&
           paymentDetails.payment.attachment_ids.length > 0 ? (

@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FileUploadSection } from '@/components/files';
 import {
   Dialog,
   DialogContent,
@@ -742,16 +741,16 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Row 10: File Attachments (full width) */}
-              <div className="col-span-3 border-t pt-4 mt-4">
-                <Label className="text-base font-semibold mb-3 block rtl:text-right">
-                  קבצים מצורפים
-                </Label>
-                <FileUploadSection
-                  clientId={mode === 'edit' ? client?.id : undefined}
-                  uploadContext="client_form"
-                />
-              </div>
+              {/* File uploads are now managed through the centralized File Manager (/files)
+                  This keeps all client documents organized in one place with 7 categories:
+                  - רשם החברות (company_registry)
+                  - דוח כספי מבוקר (financial_report)
+                  - כרטיס הנהח"ש (bookkeeping_card)
+                  - הצעת מחיר / תעודת חיוב (quote_invoice)
+                  - אסמכתאות תשלום 2026 (payment_proof_2026)
+                  - מצגת החזקות (holdings_presentation)
+                  - כללי (general)
+              */}
 
               {/* Contact Management (Edit Mode Only) */}
               {mode === 'edit' && client && onAddContact && onUpdateContact && onDeleteContact && onSetPrimaryContact && (

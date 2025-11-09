@@ -267,7 +267,12 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
             </div>
           </div>
 
-          {/* File Upload */}
+          {/* File Upload - Payment Attachments
+              NOTE: Payment attachments are transaction-specific, not client-level documents.
+              They belong to this specific payment action (receipts, bank confirmations, invoices).
+              This is CORRECT - do NOT move to centralized File Manager (/files).
+              The File Manager is for client-level documents with categories, not payment proofs.
+          */}
           <div className="space-y-2">
             <Label className="rtl:text-right ltr:text-left block">📎 קבצים מצורפים</Label>
             <FileAttachmentList

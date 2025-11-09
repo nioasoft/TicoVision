@@ -15,7 +15,8 @@ import {
   Shield,
   CreditCard,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FolderOpen
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
@@ -69,6 +70,7 @@ const navigation: NavigationItem[] = [
       { name: 'היסטוריית מכתבים', href: '/letter-history' },
     ]
   },
+  { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
 ];
