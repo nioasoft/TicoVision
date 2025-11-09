@@ -269,7 +269,7 @@ class FeeService extends BaseService {
         });
 
         bookkeepingCalc = {
-          base_amount: annualBookkeepingAmount,
+          base_amount: data.bookkeeping_base_amount, // Store MONTHLY amount (user input)
           apply_inflation_index: data.bookkeeping_apply_inflation_index ?? false,
           inflation_rate: data.bookkeeping_inflation_rate || 0,
           inflation_adjustment: bookkeepingCalculations.inflation_adjustment,
@@ -277,7 +277,7 @@ class FeeService extends BaseService {
           real_adjustment_reason: data.bookkeeping_real_adjustment_reason,
           discount_percentage: data.bookkeeping_discount_percentage || 0,
           discount_amount: bookkeepingCalculations.discount_amount,
-          final_amount: bookkeepingCalculations.final_amount,
+          final_amount: bookkeepingCalculations.final_amount, // Calculated from annual amount
           vat_amount: bookkeepingCalculations.vat_amount,
           total_with_vat: bookkeepingCalculations.total_with_vat,
         };
@@ -440,7 +440,7 @@ class FeeService extends BaseService {
           });
 
           updateData.bookkeeping_calculation = {
-            base_amount: annualBookkeepingAmount,
+            base_amount: bookkeepingFields.bookkeeping_base_amount, // Store MONTHLY amount (user input)
             apply_inflation_index: bookkeepingFields.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
             inflation_rate: bookkeepingFields.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
             inflation_adjustment: bookkeepingCalc.inflation_adjustment,
@@ -448,7 +448,7 @@ class FeeService extends BaseService {
             real_adjustment_reason: bookkeepingFields.bookkeeping_real_adjustment_reason ?? existing.bookkeeping_calculation?.real_adjustment_reason,
             discount_percentage: 0, // Discounts no longer applied
             discount_amount: 0, // Discounts no longer applied
-            final_amount: bookkeepingCalc.final_amount,
+            final_amount: bookkeepingCalc.final_amount, // Calculated from annual amount (monthly × 12)
             vat_amount: bookkeepingCalc.vat_amount,
             total_with_vat: bookkeepingCalc.total_with_vat,
           };
