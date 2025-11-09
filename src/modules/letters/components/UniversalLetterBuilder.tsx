@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -76,6 +76,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   // State - Text content
   const [plainText, setPlainText] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [commercialName, setCommercialName] = useState('');
+  const [showCommercialName, setShowCommercialName] = useState(false);
   const [customHeaderLines, setCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
   const [subjectLines, setSubjectLines] = useState<import('../types/letter.types').SubjectLine[]>([
     {
@@ -117,7 +119,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   // State - Edit mode
   const [editMode, setEditMode] = useState(false);
   const [editingLetterId, setEditingLetterId] = useState<string | null>(null);
-  const [parentLetterId, setParentLetterId] = useState<string | null>(null)
+  const [parentLetterId, setParentLetterId] = useState<string | null>(null);
+
+  // State - WhatsApp
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [isSaving, setIsSaving] = useState(false)
 
   /**
    * Load saved templates on mount
@@ -160,6 +166,16 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     if (client) {
       // Auto-fill fields from selected client
       setCompanyName(client.company_name_hebrew || client.company_name);
+
+      // Auto-fill commercial name if exists
+      if (client.commercial_name) {
+        setCommercialName(client.commercial_name);
+      }
+
+      // Auto-fill phone if exists
+      if (client.contact_phone) {
+        setWhatsappPhone(client.contact_phone);
+      }
 
       // Load contacts for this client
       setIsLoadingContacts(true);
@@ -285,7 +301,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Build variables
       const variables: Record<string, string | number> = {
         company_name: companyName,
-        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || ''
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
+        commercial_name: showCommercialName ? commercialName : ''
       };
 
       // Add email subject if provided
@@ -372,7 +389,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Build variables
       const variables: Record<string, string | number> = {
         company_name: companyName,
-        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || ''
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
+        commercial_name: showCommercialName ? commercialName : ''
       };
 
       // Add email subject if provided
@@ -419,6 +437,116 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       toast.error(error instanceof Error ? error.message : 'שגיאה בשליחת מייל');
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  /**
+   * Validate Israeli phone number format
+   * Accepts: 050-1234567, 0501234567, 050 123 4567, etc.
+   * Must be 10 digits starting with 05X
+   */
+  const validateIsraeliPhone = (phone: string): boolean => {
+    // הסרת רווחים, מקפים, סוגריים
+    const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+
+    // ולידציה: 05X-XXXXXXX (10 ספרות)
+    const regex = /^05[0-9]{8}$/;
+    return regex.test(cleaned);
+  };
+
+  /**
+   * Send letter via WhatsApp
+   * Saves letter to database, generates public link, opens WhatsApp with message
+   */
+  const handleSendWhatsApp = async () => {
+    // 1. Validate inputs
+    if (!plainText.trim()) {
+      toast.error('נא להזין טקסט למכתב');
+      return;
+    }
+
+    if (!whatsappPhone) {
+      toast.error('נא להזין מספר טלפון');
+      return;
+    }
+
+    if (!validateIsraeliPhone(whatsappPhone)) {
+      toast.error('מספר טלפון לא תקין. יש להזין מספר ישראלי (050/052/053/054/055)');
+      return;
+    }
+
+    if (!companyName.trim()) {
+      toast.error('נא להזין שם חברה');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // 2. Build letter data
+      const letterData = {
+        plainText,
+        companyName,
+        commercialName: showCommercialName ? commercialName : '',
+        customHeaderLines,
+        subjectLines,
+        includesPayment,
+        amount,
+        emailSubject: emailSubject || 'מכתב ממשרד רו״ח פרנקו',
+        clientId: selectedClient?.id || null
+      };
+
+      // Build variables
+      const variables: Record<string, string | number> = {
+        company_name: companyName,
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
+        commercial_name: showCommercialName ? commercialName : ''
+      };
+
+      // Add payment variables if needed
+      if (includesPayment) {
+        const discounts = calculateDiscounts(amount);
+        Object.assign(variables, discounts);
+      }
+
+      // 3. Generate and save letter
+      const result = await templateService.generateFromCustomText({
+        plainText: letterData.plainText,
+        clientId: letterData.clientId!,
+        variables,
+        includesPayment: letterData.includesPayment,
+        customHeaderLines: letterData.customHeaderLines
+      });
+
+      if (result.error || !result.data) {
+        toast.error('שגיאה בשמירת המכתב');
+        return;
+      }
+
+      const letterId = result.data.id;
+
+      // 4. Generate public link to view letter
+      const letterUrl = `${window.location.origin}/letters/view/${letterId}`;
+
+      // 5. Format phone for WhatsApp (972508620993)
+      const cleanPhone = whatsappPhone.replace(/[\s\-\(\)]/g, '').replace(/^0/, '');
+      const whatsappNumber = `972${cleanPhone}`;
+
+      // 6. Create WhatsApp message
+      const message = encodeURIComponent(
+        `שלום,\n\nשלחנו לך מכתב חשוב ממשרד רו"ח פרנקו.\n\nלצפייה במכתב: ${letterUrl}\n\nבברכה,\nצוות פרנקו`
+      );
+
+      // 7. Open WhatsApp
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+      window.open(whatsappUrl, '_blank');
+
+      toast.success('המכתב נשמר והוואטסאפ נפתח');
+
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      toast.error('שגיאה בשליחת המכתב');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -814,6 +942,39 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   required
                 />
               </div>
+            </div>
+
+            {/* Commercial Name Section */}
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="show_commercial_name"
+                  checked={showCommercialName}
+                  onCheckedChange={(checked) => setShowCommercialName(checked as boolean)}
+                />
+                <Label htmlFor="show_commercial_name" className="text-right cursor-pointer">
+                  הוסף שם מסחרי
+                </Label>
+              </div>
+
+              {showCommercialName && (
+                <div>
+                  <Label htmlFor="commercial_name" className="text-right block">
+                    שם מסחרי {selectedClient?.commercial_name && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
+                  </Label>
+                  <Input
+                    id="commercial_name"
+                    value={commercialName}
+                    onChange={(e) => setCommercialName(e.target.value)}
+                    placeholder="הזן שם מסחרי (אופציונלי)"
+                    dir="rtl"
+                    className="text-right"
+                  />
+                  <p className="text-xs text-gray-500 mt-1 text-right">
+                    השם המסחרי יופיע כשורה נוספת מתחת לשם החברה
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Custom Header Lines - Optional Section */}
@@ -1517,6 +1678,49 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 </>
               )}
             </Button>
+
+            {/* WhatsApp Section */}
+            <div className="border-t pt-6 space-y-4">
+              <Label className="text-right block text-base font-semibold">שליחה בוואטסאפ 📱</Label>
+
+              <div>
+                <Label htmlFor="whatsapp_phone" className="text-right block">
+                  מספר טלפון {selectedClient?.contact_phone && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
+                </Label>
+                <Input
+                  id="whatsapp_phone"
+                  type="tel"
+                  value={whatsappPhone}
+                  onChange={(e) => setWhatsappPhone(e.target.value)}
+                  placeholder="050-1234567"
+                  dir="ltr"
+                  className="text-left font-mono"
+                />
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  פורמט: 050-XXXXXXX או 050XXXXXXXX
+                </p>
+              </div>
+
+              <Button
+                onClick={handleSendWhatsApp}
+                disabled={isSaving || !whatsappPhone || !plainText.trim()}
+                size="lg"
+                variant="default"
+                className="w-full"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    שומר מכתב...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="h-4 w-4 ml-2" />
+                    שלח בוואטסאפ
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Info Box */}

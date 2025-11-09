@@ -789,9 +789,16 @@ export function FeesPage() {
                     </Label>
                     <Select
                       value={formData.year.toString()}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, year: parseInt(value) });
-                        setPreviousYearDataSaved(false);
+                      onValueChange={async (value) => {
+                        const newYear = parseInt(value);
+                        setFormData({ ...formData, year: newYear });
+
+                        // Reload previous year data if client is selected
+                        if (formData.client_id) {
+                          await loadPreviousYearData(formData.client_id);
+                        } else {
+                          setPreviousYearDataSaved(false);
+                        }
                       }}
                     >
                       <SelectTrigger className="mt-2 bg-white">
@@ -1111,7 +1118,7 @@ export function FeesPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="bookkeeping_base_amount">סכום בסיס הנהלת חשבונות *</Label>
+                        <Label htmlFor="bookkeeping_base_amount">סכום חודשי הנהלת חשבונות (יוכפל ב-12) *</Label>
                         <Input
                           id="bookkeeping_base_amount"
                           type="number"

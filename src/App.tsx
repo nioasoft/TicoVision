@@ -26,6 +26,7 @@ const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
 const PaymentPage = lazy(() => import('@/pages/payment-page'));
 const ClientGroupsPage = lazy(() => import('@/pages/ClientGroupsPage'));
 const FilesManagerPage = lazy(() => import('@/pages/FilesManagerPage'));
+const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
 
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
@@ -52,6 +53,11 @@ function App() {
                 <Route path="/payment" element={
                   <ErrorBoundary>
                     <PaymentPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/letters/view/:id" element={
+                  <ErrorBoundary>
+                    <LetterViewer />
                   </ErrorBoundary>
                 } />
                 <Route path="/login" element={
