@@ -115,8 +115,18 @@ serve(async (req) => {
     const method = url.searchParams.get('method') as PaymentMethod;
     const clientId = url.searchParams.get('client_id');
 
+    console.log('📥 [Debug] Payment Selection Request:');
+    console.log('  - Full URL:', req.url);
+    console.log('  - fee_id:', feeId || 'MISSING');
+    console.log('  - method:', method || 'MISSING');
+    console.log('  - client_id:', clientId || 'MISSING');
+
     // Validate required parameters
     if (!feeId || !method || !clientId) {
+      console.error('❌ Missing required parameters');
+      console.error('  - fee_id:', feeId ? '✓' : '✗');
+      console.error('  - method:', method ? '✓' : '✗');
+      console.error('  - client_id:', clientId ? '✓' : '✗');
       return new Response(
         JSON.stringify({ error: 'Missing required parameters: fee_id, method, client_id' }),
         {
@@ -137,12 +147,19 @@ serve(async (req) => {
       );
     }
 
+    console.log('🔧 [Debug] Environment Check:');
+    console.log('  - SUPABASE_URL:', SUPABASE_URL ? 'SET' : 'MISSING');
+    console.log('  - SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
+
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Missing Supabase configuration');
       throw new Error('Supabase configuration missing');
     }
 
+    console.log('✅ Initializing Supabase client with service role key');
     // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    console.log('✅ Supabase client initialized successfully');
 
     // Get fee calculation details
     const { data: feeData, error: feeError } = await supabase
@@ -255,11 +272,23 @@ serve(async (req) => {
       },
     });
   } catch (error) {
-    console.error('❌ Error in track-payment-selection:', error);
+    console.error('❌ Error in track-payment-selection:');
+    console.error('  - Error type:', error?.constructor?.name);
+    console.error('  - Error message:', error instanceof Error ? error.message : String(error));
+    console.error('  - Error stack:', error instanceof Error ? error.stack : 'N/A');
+
+    // Check if this is an auth/permission error
+    if (error?.message?.includes('401') || error?.message?.includes('authorization')) {
+      console.error('🚨 This appears to be an authorization error!');
+      console.error('  - Edge Functions should use SERVICE_ROLE_KEY to bypass RLS');
+      console.error('  - Check that env vars are set correctly');
+    }
 
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Internal server error',
+        code: 500,
+        message: 'Failed to track payment selection. Check Edge Function logs for details.'
       }),
       {
         status: 500,

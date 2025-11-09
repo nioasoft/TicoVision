@@ -567,7 +567,10 @@ serve(async (req) => {
         year: nextYear,
         previous_year: currentYear,
         tax_year: nextYear,
-        ...(variables || {})  // User variables override defaults
+        ...(variables || {}),  // User variables override defaults
+        // Add fee_id and client_id for payment tracking links
+        fee_id: feeCalculationId || (variables && variables.fee_id),
+        client_id: clientId || (variables && variables.client_id)
       };
 
       // Replace variables in the parsed HTML
@@ -617,7 +620,14 @@ serve(async (req) => {
       console.log('   Mode: Template');
       console.log('   Template:', templateType);
 
-      letterHtml = await buildLetterHtml(templateType!, variables!);
+      // Add fee_id and client_id to variables for payment tracking links
+      const enrichedVariables = {
+        ...variables!,
+        fee_id: feeCalculationId || variables!.fee_id,
+        client_id: clientId || variables!.client_id
+      };
+
+      letterHtml = await buildLetterHtml(templateType!, enrichedVariables);
 
       // Generate subject - different for bookkeeping templates
       const year = variables!.year || new Date().getFullYear() + 1;

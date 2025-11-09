@@ -576,7 +576,10 @@ export class TemplateService extends BaseService {
         check_dates_description: this.generateCheckDatesDescription(
           (variables.num_checks as 8 | 12) || 8,
           variables.tax_year || (new Date().getFullYear() + 1)
-        )
+        ),
+        // Add fee_id and client_id for payment tracking links
+        fee_id: feeCalculationId || variables.fee_id,
+        client_id: clientId || variables.client_id
       };
 
       // 5. Build full HTML
@@ -721,7 +724,10 @@ export class TemplateService extends BaseService {
         check_dates_description: this.generateCheckDatesDescription(
           (variables.num_checks as 8 | 12) || 8,
           variables.tax_year || nextYear
-        )
+        ),
+        // Preserve fee_id and client_id if provided in variables (for preview with payment links)
+        fee_id: variables.fee_id,
+        client_id: variables.client_id
       };
 
       // 5. Build full HTML
@@ -929,7 +935,10 @@ export class TemplateService extends BaseService {
         ...params.variables,
         letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
         year: params.variables.year || nextYear,
-        tax_year: params.variables.tax_year || nextYear
+        tax_year: params.variables.tax_year || nextYear,
+        // Add client_id and fee_id for payment tracking links
+        client_id: params.clientId || params.variables.client_id,
+        fee_id: params.variables.fee_id // If provided in variables
       };
 
       // 6. Build full HTML with custom header lines
@@ -1024,7 +1033,10 @@ export class TemplateService extends BaseService {
         ...params.variables,
         letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
         year: params.variables.year || nextYear,
-        tax_year: params.variables.tax_year || nextYear
+        tax_year: params.variables.tax_year || nextYear,
+        // Add client_id and fee_id for payment tracking links
+        client_id: params.clientId || params.variables.client_id,
+        fee_id: params.variables.fee_id // If provided in variables
       };
 
       // 6. Build full HTML with custom header lines
