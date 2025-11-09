@@ -43,6 +43,19 @@ async function createCardcomPaymentPage(
   clientEmail?: string
 ): Promise<string | null> {
   try {
+    console.log('💳 [Cardcom] Creating payment page:');
+    console.log('  - Amount:', amount);
+    console.log('  - Max payments:', maxPayments);
+    console.log('  - Terminal:', CARDCOM_TERMINAL ? 'SET' : 'MISSING');
+    console.log('  - Username:', CARDCOM_USERNAME ? 'SET' : 'MISSING');
+
+    if (!CARDCOM_TERMINAL || !CARDCOM_USERNAME) {
+      console.error('❌ [Cardcom] Missing required env variables!');
+      console.error('  - CARDCOM_TERMINAL:', CARDCOM_TERMINAL || 'NOT SET');
+      console.error('  - CARDCOM_USERNAME:', CARDCOM_USERNAME || 'NOT SET');
+      return null;
+    }
+
     const baseUrl = 'https://secure.cardcom.solutions/api/v11';
 
     const body = {
@@ -82,6 +95,8 @@ async function createCardcomPaymentPage(
       },
     };
 
+    console.log('📤 [Cardcom] Sending request to:', `${baseUrl}/LowProfile/Create`);
+
     const response = await fetch(`${baseUrl}/LowProfile/Create`, {
       method: 'POST',
       headers: {
@@ -90,13 +105,21 @@ async function createCardcomPaymentPage(
       body: JSON.stringify(body),
     });
 
+    console.log('📥 [Cardcom] Response status:', response.status);
+
     const jsonResponse = await response.json();
+    console.log('📥 [Cardcom] Response:', JSON.stringify(jsonResponse, null, 2));
 
     if (jsonResponse.ResponseCode?.toString() === '0') {
+      console.log('✅ [Cardcom] Payment page created successfully!');
+      console.log('  - URL:', jsonResponse.Url);
       return jsonResponse.Url || null;
     }
 
-    console.error('Cardcom error:', jsonResponse);
+    console.error('❌ [Cardcom] API returned error:');
+    console.error('  - ResponseCode:', jsonResponse.ResponseCode);
+    console.error('  - ResponseMessage:', jsonResponse.ResponseMessage);
+    console.error('  - Full response:', JSON.stringify(jsonResponse, null, 2));
     return null;
   } catch (error) {
     console.error('Error creating Cardcom payment page:', error);
