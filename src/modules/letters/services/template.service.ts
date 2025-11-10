@@ -446,7 +446,7 @@ export class TemplateService extends BaseService {
       return await response.text();
     } catch (error) {
       console.error(`Error loading template file ${filePath}:`, error);
-      return '';
+      throw error; // Re-throw the error to be caught by the calling function
     }
   }
 
@@ -678,7 +678,7 @@ export class TemplateService extends BaseService {
 
     for (const [cid, webPath] of sortedEntries) {
       // Escape special regex characters in CID (the colon)
-      const escapedCid = cid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedCid = cid.replace(/[.*+?^${}()|[\\]/g, '\\$&');
       // Replace CID in src attributes (handles both single and double quotes, with optional spaces)
       result = result.replace(
         new RegExp(`src\\s*=\\s*["']${escapedCid}["']`, 'g'),
