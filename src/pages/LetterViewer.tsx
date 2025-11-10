@@ -12,6 +12,95 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 
+// Print styles for clean printing
+const printStyles = `
+  @media print {
+    /* Remove background colors */
+    body {
+      background-color: white !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Remove page margins and padding */
+    .min-h-screen {
+      min-height: auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Remove shadows, rounded corners, and borders */
+    .shadow-xl {
+      box-shadow: none !important;
+    }
+
+    .rounded-lg {
+      border-radius: 0 !important;
+    }
+
+    /* Remove backgrounds */
+    .bg-gray-100 {
+      background-color: white !important;
+    }
+
+    .bg-white {
+      background-color: white !important;
+    }
+
+    .bg-gray-50 {
+      background-color: white !important;
+    }
+
+    /* Remove borders */
+    .border-t {
+      border-top: none !important;
+    }
+
+    /* Optimize padding for print */
+    .p-8 {
+      padding: 1cm !important;
+    }
+
+    .px-6 {
+      padding-left: 1cm !important;
+      padding-right: 1cm !important;
+    }
+
+    .py-4 {
+      padding-top: 0.5cm !important;
+      padding-bottom: 0.5cm !important;
+    }
+
+    /* Hide footer completely */
+    .bg-gray-50 {
+      display: none !important;
+    }
+
+    /* Ensure text is black for printing */
+    * {
+      color: black !important;
+    }
+
+    /* Remove any remaining shadows */
+    * {
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    /* Optimize for page breaks */
+    .max-w-4xl {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* Ensure proper page breaks */
+    .overflow-hidden {
+      overflow: visible !important;
+    }
+  }
+`;
+
 interface GeneratedLetter {
   id: string;
   generated_content_html: string;
@@ -130,8 +219,10 @@ export default function LetterViewer() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
+    <>
+      <style>{printStyles}</style>
+      <div className="min-h-screen bg-gray-100 py-8">
+        <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
         {/* Letter Content */}
         <div
           className="p-8"
@@ -145,5 +236,6 @@ export default function LetterViewer() {
         </div>
       </div>
     </div>
+    </>
   );
 }
