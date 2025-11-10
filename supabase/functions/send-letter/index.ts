@@ -405,10 +405,6 @@ async function sendEmail(
     personalizations: [
       {
         to: recipientEmails.map(email => ({ email })),
-        cc: [
-          { email: 'shani@franco.co.il' },
-          { email: 'sigal@franco.co.il' }
-        ],
         subject: subject
       }
     ],

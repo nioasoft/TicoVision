@@ -276,7 +276,7 @@ export function LetterPreviewDialog({
   const getFinalRecipients = () => {
     const enabled = Array.from(getCurrentEnabledEmails());
     const manual = getCurrentManualEmails();
-    const reviewers = sendToReviewers ? ['sigal@franco.co.il', 'shano@franco.co.il'] : [];
+    const reviewers = sendToReviewers ? ['sigal@franco.co.il', 'shani@franco.co.il'] : [];
 
     // Combine all recipients and remove duplicates
     const allRecipients = [...enabled, ...manual, ...reviewers];
@@ -459,7 +459,7 @@ export function LetterPreviewDialog({
           variables_used: variables,
           generated_content_html: previewHtml,
           payment_link: variables.payment_link_single,
-          recipient_emails: recipientEmails,
+          recipient_emails: finalRecipients,
           sent_at: new Date().toISOString(),
           created_by: (await supabase.auth.getUser()).data.user?.id,
           status: 'sent',
@@ -472,7 +472,7 @@ export function LetterPreviewDialog({
       }
 
       const letterName = currentLetterStage === 'primary' ? 'ראשון' : 'שני';
-      toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${recipientEmails.length} נמענים`);
+      toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${finalRecipients.length} נמענים`);
 
       // Mark letter as sent (don't auto-navigate or close)
       if (currentLetterStage === 'primary') {
@@ -652,7 +652,7 @@ export function LetterPreviewDialog({
           id="send-to-reviewers"
         />
         <Label htmlFor="send-to-reviewers" className="cursor-pointer rtl:text-right flex-1">
-          שלח לשני וסיגל לבדיקה (sigal@franco.co.il, shano@franco.co.il)
+          שלח לשני וסיגל לבדיקה (sigal@franco.co.il, shani@franco.co.il)
         </Label>
       </div>
 
