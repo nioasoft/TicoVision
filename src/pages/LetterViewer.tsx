@@ -132,24 +132,6 @@ export default function LetterViewer() {
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
-        {/* Header Bar */}
-        <div className="bg-blue-600 text-white px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📄</span>
-              <div>
-                <h1 className="text-xl font-bold">מכתב</h1>
-                {letter.subject && (
-                  <p className="text-sm text-blue-100">{letter.subject}</p>
-                )}
-              </div>
-            </div>
-            <div className="text-sm text-blue-100" dir="rtl">
-              {new Date(letter.created_at).toLocaleDateString('he-IL')}
-            </div>
-          </div>
-        </div>
-
         {/* Letter Content */}
         <div
           className="p-8"
