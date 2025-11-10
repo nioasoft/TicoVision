@@ -423,6 +423,8 @@ export function LetterPreviewDialog({
           variables,
           clientId,
           feeCalculationId: feeId,
+          customHeaderLines: [],
+          subjectLines: [],
         },
       });
 
