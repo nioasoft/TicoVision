@@ -26,6 +26,20 @@ export default function LetterViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Convert CID references to web URLs for proper image display
+  const convertHtmlForDisplay = (html: string): string => {
+    const baseUrl = import.meta.env.VITE_APP_URL || 'https://ticovision.vercel.app';
+
+    return html
+      .replace(/cid:tico_logo_new/g, `${baseUrl}/brand/Tico_logo_png_new.png`)
+      .replace(/cid:franco_logo_new/g, `${baseUrl}/brand/Tico_franco_co.png`)
+      .replace(/cid:tagline/g, `${baseUrl}/brand/tagline.png`)
+      .replace(/cid:bullet_star_blue/g, `${baseUrl}/brand/Bullet_star_blue.png`)
+      .replace(/cid:tico_logo/g, `${baseUrl}/brand/tico_logo_240.png`)
+      .replace(/cid:franco_logo/g, `${baseUrl}/brand/franco-logo-hires.png`)
+      .replace(/cid:bullet_star/g, `${baseUrl}/brand/bullet-star.png`);
+  };
+
   useEffect(() => {
     if (!id) {
       setError('מזהה מכתב חסר');
@@ -140,7 +154,7 @@ export default function LetterViewer() {
         <div
           className="p-8"
           dir="rtl"
-          dangerouslySetInnerHTML={{ __html: letter.generated_content_html }}
+          dangerouslySetInnerHTML={{ __html: letter.generated_content_html ? convertHtmlForDisplay(letter.generated_content_html) : '' }}
         />
 
         {/* Footer */}
