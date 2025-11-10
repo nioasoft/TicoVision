@@ -10,6 +10,18 @@ const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+interface CustomHeaderLine {
+  id: string;
+  type: 'text' | 'line';
+  content?: string;
+  formatting?: {
+    bold: boolean;
+    color: 'red' | 'blue' | 'black';
+    underline: boolean;
+  };
+  order: number;
+}
+
 interface SendLetterRequest {
   recipientEmails: string[];
   recipientName: string;
@@ -19,6 +31,7 @@ interface SendLetterRequest {
   // Custom text mode (new)
   customText?: string;
   includesPayment?: boolean;
+  customHeaderLines?: CustomHeaderLine[];
   saveAsTemplate?: { name: string; description?: string; subject?: string; };
   // Common fields
   clientId?: string;
@@ -176,17 +189,87 @@ function parseTextToHTML(plainText: string): string {
 }
 
 /**
+ * Generate HTML for custom header lines
+ * Converts CustomHeaderLine[] to HTML to be inserted after company name in header table
+ */
+function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
+  if (!lines || lines.length === 0) {
+    return '';
+  }
+
+  // Sort by order
+  const sortedLines = [...lines].sort((a, b) => a.order - b.order);
+
+  const html = sortedLines.map(line => {
+    if (line.type === 'line') {
+      // Separator line - thin black line (1px solid) in table row
+      return `
+<tr>
+    <td style="padding: 0;">
+        <div style="border-top: 1px solid #000000; margin: 3px 0;"></div>
+    </td>
+</tr>`;
+    } else {
+      // Text line with formatting in table row
+      // Default to bold unless explicitly set to false
+      const isBold = line.formatting?.bold !== false;
+      const color = line.formatting?.color || 'black';
+      const isUnderline = line.formatting?.underline || false;
+
+      const colorMap: Record<string, string> = {
+        'red': '#FF0000',
+        'blue': '#395BF7',
+        'black': '#000000'
+      };
+
+      const styles: string[] = [
+        'font-family: "David Libre", "Heebo", "Assistant", sans-serif',
+        'font-size: 18px',
+        'text-align: right',
+        'direction: rtl',
+        'margin: 0',
+        'padding: 0',
+        `color: ${colorMap[color] || '#000000'}`
+      ];
+
+      // Bold by default
+      styles.push(isBold ? 'font-weight: 700' : 'font-weight: 400');
+
+      if (isUnderline) {
+        styles.push('text-decoration: underline');
+      }
+
+      return `
+<tr>
+    <td style="padding: 2px 0; text-align: right;">
+        <div style="${styles.join('; ')};">${line.content || ''}</div>
+    </td>
+</tr>`;
+    }
+  }).join('');
+
+  return html;
+}
+
+/**
  * Build custom letter HTML from parsed text
  */
 async function buildCustomLetterHtml(
   parsedBodyHtml: string,
   variables: Record<string, any>,
-  includesPayment: boolean
+  includesPayment: boolean,
+  customHeaderLines?: CustomHeaderLine[]
 ): Promise<string> {
   // Fetch components
-  const header = await fetchTemplate('components/header.html');
+  let header = await fetchTemplate('components/header.html');
   const footer = await fetchTemplate('components/footer.html');
   const paymentSection = includesPayment ? await fetchTemplate('components/payment-section.html') : '';
+
+  // Generate custom header lines HTML if provided
+  const customHeaderLinesHtml = customHeaderLines ? generateCustomHeaderLinesHtml(customHeaderLines) : '';
+
+  // Replace {{custom_header_lines}} placeholder in header
+  header = header.replace('{{custom_header_lines}}', customHeaderLinesHtml);
 
   // Build full HTML
   const fullHtml = `<!DOCTYPE html>
@@ -225,7 +308,7 @@ async function buildCustomLetterHtml(
  */
 async function buildLetterHtml(templateType: string, variables: Record<string, any>): Promise<string> {
   // Fetch components
-  const header = await fetchTemplate('components/header.html');
+  let header = await fetchTemplate('components/header.html');
   const footer = await fetchTemplate('components/footer.html');
   const paymentSection = await fetchTemplate('components/payment-section.html');
 
@@ -246,6 +329,10 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
 
   const bodyFile = bodyFileMap[templateType] || 'annual-fee.html';
   const body = await fetchTemplate(`bodies/${bodyFile}`);
+
+  // Replace {{custom_header_lines}} with empty string for fee calculation letters
+  // (custom_header_lines is only used in Universal Letter Builder)
+  header = header.replace('{{custom_header_lines}}', '');
 
   // Build full HTML
   const fullHtml = `<!DOCTYPE html>
@@ -422,6 +509,7 @@ serve(async (req) => {
       variables,
       customText,
       includesPayment,
+      customHeaderLines,
       saveAsTemplate,
       clientId,
       feeCalculationId
@@ -483,14 +571,17 @@ serve(async (req) => {
         year: nextYear,
         previous_year: currentYear,
         tax_year: nextYear,
-        ...(variables || {})  // User variables override defaults
+        ...(variables || {}),  // User variables override defaults
+        // Add fee_id and client_id for payment tracking links
+        fee_id: feeCalculationId || (variables && variables.fee_id),
+        client_id: clientId || (variables && variables.client_id)
       };
 
       // Replace variables in the parsed HTML
       const bodyWithVariables = replaceVariables(parsedBodyHtml, finalVariables);
 
       // Build full letter with header + body + optional payment + footer
-      letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false);
+      letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false, customHeaderLines);
 
       // Generate subject from variables or default
       subject = finalVariables.subject || `שכר טרחתנו לשנת המס ${finalVariables.year}`;
@@ -533,7 +624,14 @@ serve(async (req) => {
       console.log('   Mode: Template');
       console.log('   Template:', templateType);
 
-      letterHtml = await buildLetterHtml(templateType!, variables!);
+      // Add fee_id and client_id to variables for payment tracking links
+      const enrichedVariables = {
+        ...variables!,
+        fee_id: feeCalculationId || variables!.fee_id,
+        client_id: clientId || variables!.client_id
+      };
+
+      letterHtml = await buildLetterHtml(templateType!, enrichedVariables);
 
       // Generate subject - different for bookkeeping templates
       const year = variables!.year || new Date().getFullYear() + 1;
