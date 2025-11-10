@@ -577,7 +577,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         subjectLines,
         includesPayment,
         amount,
-        emailSubject: emailSubject || 'מכתב ממשרד רו״ח פרנקו',
+        emailSubject: emailSubject || 'מכתב',
         clientId: selectedClient?.id || null
       };
 

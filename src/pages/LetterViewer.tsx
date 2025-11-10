@@ -138,7 +138,7 @@ export default function LetterViewer() {
             <div className="flex items-center gap-2">
               <span className="text-2xl">📄</span>
               <div>
-                <h1 className="text-xl font-bold">מכתב ממשרד רו״ח פרנקו</h1>
+                <h1 className="text-xl font-bold">מכתב</h1>
                 {letter.subject && (
                   <p className="text-sm text-blue-100">{letter.subject}</p>
                 )}
@@ -159,9 +159,7 @@ export default function LetterViewer() {
 
         {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 border-t">
-          <p className="text-sm text-gray-500 text-center" dir="rtl">
-            מכתב זה נוצר באמצעות מערכת TicoVision של משרד רו״ח פרנקו
-          </p>
+          {/* Footer content removed - clean interface */}
         </div>
       </div>
     </div>
