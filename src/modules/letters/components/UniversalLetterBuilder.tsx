@@ -1030,28 +1030,43 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               placeholder="בחר לקוח או הקלד ידנית למטה..."
             />
 
+            {/* Alert when no client selected */}
+            {!selectedClient && (
+              <Alert className="bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-900 text-right">
+                  <strong>לא נבחר לקוח מהרשימה</strong> - אנא מלא את הפרטים הבאים ידנית
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="company_name" className="text-right block">
-                  הזן פרטי נמען {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
+                  הזן פרטי נמען
+                  {!selectedClient && <span className="text-red-500 mr-1">*</span>}
+                  {selectedClient && <span className="text-xs text-blue-600 mr-1">(נבחר אוטומטית)</span>}
                 </Label>
                 <Input
                   id="company_name"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="הזן שם נמען אחר אם לא נבחר לקוח"
+                  className={!selectedClient ? 'border-blue-400 border-2 bg-blue-50 focus:ring-blue-500' : ''}
                   dir="rtl"
                 />
               </div>
               <div>
                 <Label htmlFor="email_subject" className="text-right block">
-                  נושא המייל <span className="text-red-500">*</span>
+                  נושא המייל
+                  {!selectedClient && <span className="text-red-500 mr-1">*</span>}
                 </Label>
                 <Input
                   id="email_subject"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
                   placeholder="שכר טרחתנו לשנת המס 2026"
+                  className={!selectedClient ? 'border-blue-400 border-2 bg-blue-50 focus:ring-blue-500' : ''}
                   dir="rtl"
                   required
                 />
