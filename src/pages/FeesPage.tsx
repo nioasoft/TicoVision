@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { formatILS } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ import {
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
 import { ClientInfoCard } from '@/components/ClientInfoCard';
+import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewDialog';
 import { selectLetterTemplate, type LetterSelectionResult } from '@/modules/letters/utils/letter-selector';
 import type { LetterTemplateType } from '@/modules/letters/types/letter.types';
@@ -676,13 +678,6 @@ export function FeesPage() {
     setPreviousYearDataSaved(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('he-IL', {
-      style: 'currency',
-      currency: 'ILS',
-    }).format(amount);
-  };
-
   const selectedClient = clients.find(c => c.id === formData.client_id);
 
   if (loading) {
@@ -915,7 +910,7 @@ export function FeesPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="previous_after_discount">סכום אחרי הנחה לפני מע"מ (מחושב אוטומטית)</Label>
+                    <Label htmlFor="previous_after_discount">סכום אחרי הנחה (שנה קודמת) לפני מע"מ (מחושב אוטומטית)</Label>
                     <Input
                       id="previous_after_discount"
                       type="number"
@@ -924,14 +919,29 @@ export function FeesPage() {
                       className="font-semibold bg-blue-50 text-blue-900"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {formatCurrency(formData.previous_year_amount_after_discount)}
+                      {formatILS(formData.previous_year_amount_after_discount)}
                     </p>
                   </div>
 
-                  {/* Bookkeeping files upload removed - all file management done in File Manager (/files) */}
+                  {/* Bookkeeping Card Widget - Display files from 'bookkeeping_card' category */}
+                  {formData.client_id && (
+                    <div className="space-y-2 border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
+                      <Label className="text-sm font-medium text-blue-900">כרטיס הנהלת חשבונות</Label>
+                      <div className="border rounded-lg p-3 bg-white">
+                        <FileDisplayWidget
+                          clientId={formData.client_id}
+                          category="bookkeeping_card"
+                          variant="compact"
+                        />
+                      </div>
+                      <p className="text-xs text-blue-600">
+                        קבצים מתוך מנהל הקבצים בקטגוריה "כרטיס הנהח"ש"
+                      </p>
+                    </div>
+                  )}
 
                   <div>
-                    <Label htmlFor="previous_vat">סכום שנה קודמת כולל מע"מ (מחושב אוטומטית)</Label>
+                    <Label htmlFor="previous_vat">סכום שנה קודמת (אחרי הנחה) כולל מע"מ (מחושב אוטומטית)</Label>
                     <Input
                       id="previous_vat"
                       type="number"
@@ -1002,7 +1012,7 @@ export function FeesPage() {
                             נתוני שנת {formData.year - 1} נשמרו בהצלחה
                           </p>
                           <p className="text-sm text-green-700">
-                            סכום כולל מע"מ: {formatCurrency(formData.previous_year_amount_with_vat)}
+                            סכום כולל מע"מ: {formatILS(formData.previous_year_amount_with_vat)}
                           </p>
                         </div>
                       </div>
@@ -1217,11 +1227,11 @@ export function FeesPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <p className="text-sm text-gray-600">שנה קודמת (כולל מע"מ)</p>
-                        <p className="text-xl font-bold">{formatCurrency(formData.previous_year_amount_with_vat)}</p>
+                        <p className="text-xl font-bold">{formatILS(formData.previous_year_amount_with_vat)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">שנה נוכחית (כולל מע"מ)</p>
-                        <p className="text-xl font-bold text-primary">{formatCurrency(calculationResults.total_with_vat)}</p>
+                        <p className="text-xl font-bold text-primary">{formatILS(calculationResults.total_with_vat)}</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">שינוי</p>
@@ -1249,7 +1259,7 @@ export function FeesPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-500">סכום בסיס לפני הנחה ולפני מע״מ</p>
-                        <p className="text-lg font-semibold">{formatCurrency(formData.base_amount)}</p>
+                        <p className="text-lg font-semibold">{formatILS(formData.base_amount)}</p>
                       </div>
                       <DollarSign className="h-8 w-8 text-blue-500" />
                     </div>
@@ -1264,7 +1274,7 @@ export function FeesPage() {
                           התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}
                         </p>
                         <p className="text-lg font-semibold text-green-600">
-                          {formData.apply_inflation_index ? `+${formatCurrency(calculationResults.inflation_adjustment)}` : '₪0'}
+                          {formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment)}` : '₪0'}
                         </p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-green-500" />
@@ -1278,7 +1288,7 @@ export function FeesPage() {
                       <div>
                         <p className="text-sm text-gray-500">תוספת ריאלית</p>
                         <p className="text-lg font-semibold text-green-600">
-                          +{formatCurrency(calculationResults.real_adjustment)}
+                          +{formatILS(calculationResults.real_adjustment)}
                         </p>
                       </div>
                       <Plus className="h-8 w-8 text-green-500" />
@@ -1291,7 +1301,7 @@ export function FeesPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-500">מע"מ (18%)</p>
-                        <p className="text-lg font-semibold">{formatCurrency(calculationResults.vat_amount)}</p>
+                        <p className="text-lg font-semibold">{formatILS(calculationResults.vat_amount)}</p>
                       </div>
                       <FileText className="h-8 w-8 text-blue-500" />
                     </div>
@@ -1304,7 +1314,7 @@ export function FeesPage() {
                       <div>
                         <p className="text-sm text-gray-500">סך הכל כולל מע"מ</p>
                         <p className="text-2xl font-bold text-primary">
-                          {formatCurrency(calculationResults.total_with_vat)}
+                          {formatILS(calculationResults.total_with_vat)}
                         </p>
                       </div>
                       <Calculator className="h-8 w-8 text-primary" />
@@ -1318,29 +1328,29 @@ export function FeesPage() {
                 <div className="text-sm space-y-1">
                   <div className="flex justify-between">
                     <span>סכום בסיס לפני הנחה ולפני מע״מ:</span>
-                    <span>{formatCurrency(formData.base_amount)}</span>
+                    <span>{formatILS(formData.base_amount)}</span>
                   </div>
                   <div className="flex justify-between text-green-600">
                     <span>+ התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}:</span>
-                    <span>{formData.apply_inflation_index ? `+${formatCurrency(calculationResults.inflation_adjustment)}` : '₪0'}</span>
+                    <span>{formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment)}` : '₪0'}</span>
                   </div>
                   <div className="flex justify-between text-green-600">
                     <span>+ תוספת ריאלית:</span>
-                    <span>+{formatCurrency(calculationResults.real_adjustment)}</span>
+                    <span>+{formatILS(calculationResults.real_adjustment)}</span>
                   </div>
                   <hr className="my-2" />
                   <div className="flex justify-between font-semibold">
                     <span>סך הכל לפני מע"מ:</span>
-                    <span>{formatCurrency(calculationResults.final_amount)}</span>
+                    <span>{formatILS(calculationResults.final_amount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>+ מע"מ (18%):</span>
-                    <span>+{formatCurrency(calculationResults.vat_amount)}</span>
+                    <span>+{formatILS(calculationResults.vat_amount)}</span>
                   </div>
                   <hr className="my-2" />
                   <div className="flex justify-between font-bold text-lg">
                     <span>סך הכל כולל מע"מ:</span>
-                    <span>{formatCurrency(calculationResults.total_with_vat)}</span>
+                    <span>{formatILS(calculationResults.total_with_vat)}</span>
                   </div>
                 </div>
               </div>
@@ -1359,7 +1369,7 @@ export function FeesPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-500">סכום בסיס הנהלת חשבונות</p>
-                            <p className="text-lg font-semibold">{formatCurrency(formData.bookkeeping_base_amount)}</p>
+                            <p className="text-lg font-semibold">{formatILS(formData.bookkeeping_base_amount)}</p>
                           </div>
                           <DollarSign className="h-8 w-8 text-blue-500" />
                         </div>
@@ -1374,7 +1384,7 @@ export function FeesPage() {
                               התאמת מדד {formData.bookkeeping_apply_inflation_index ? `(${formData.bookkeeping_inflation_rate}%)` : '(לא מוחל)'}
                             </p>
                             <p className="text-lg font-semibold text-green-600">
-                              {formData.bookkeeping_apply_inflation_index ? `+${formatCurrency(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}
+                              {formData.bookkeeping_apply_inflation_index ? `+${formatILS(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}
                             </p>
                           </div>
                           <TrendingUp className="h-8 w-8 text-green-500" />
@@ -1388,7 +1398,7 @@ export function FeesPage() {
                           <div>
                             <p className="text-sm text-gray-500">תוספת ריאלית</p>
                             <p className="text-lg font-semibold text-green-600">
-                              +{formatCurrency(bookkeepingCalculationResults.real_adjustment)}
+                              +{formatILS(bookkeepingCalculationResults.real_adjustment)}
                             </p>
                           </div>
                           <Plus className="h-8 w-8 text-green-500" />
@@ -1401,7 +1411,7 @@ export function FeesPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-500">סך הכל לפני מע"מ</p>
-                            <p className="text-lg font-semibold">{formatCurrency(bookkeepingCalculationResults.final_amount)}</p>
+                            <p className="text-lg font-semibold">{formatILS(bookkeepingCalculationResults.final_amount)}</p>
                           </div>
                           <Calculator className="h-8 w-8 text-orange-500" />
                         </div>
@@ -1413,7 +1423,7 @@ export function FeesPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-500">מע"מ (18%)</p>
-                            <p className="text-lg font-semibold">{formatCurrency(bookkeepingCalculationResults.vat_amount)}</p>
+                            <p className="text-lg font-semibold">{formatILS(bookkeepingCalculationResults.vat_amount)}</p>
                           </div>
                           <FileText className="h-8 w-8 text-blue-500" />
                         </div>
@@ -1426,7 +1436,7 @@ export function FeesPage() {
                           <div>
                             <p className="text-sm text-gray-500">סך הכל כולל מע"מ</p>
                             <p className="text-2xl font-bold text-primary">
-                              {formatCurrency(bookkeepingCalculationResults.total_with_vat)}
+                              {formatILS(bookkeepingCalculationResults.total_with_vat)}
                             </p>
                           </div>
                           <Calculator className="h-8 w-8 text-primary" />
@@ -1440,29 +1450,29 @@ export function FeesPage() {
                     <div className="text-sm space-y-1">
                       <div className="flex justify-between">
                         <span>סכום בסיס:</span>
-                        <span>{formatCurrency(formData.bookkeeping_base_amount)}</span>
+                        <span>{formatILS(formData.bookkeeping_base_amount)}</span>
                       </div>
                       <div className="flex justify-between text-green-600">
                         <span>+ התאמת מדד {formData.bookkeeping_apply_inflation_index ? `(${formData.bookkeeping_inflation_rate}%)` : '(לא מוחל)'}:</span>
-                        <span>{formData.bookkeeping_apply_inflation_index ? `+${formatCurrency(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}</span>
+                        <span>{formData.bookkeeping_apply_inflation_index ? `+${formatILS(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}</span>
                       </div>
                       <div className="flex justify-between text-green-600">
                         <span>+ תוספת ריאלית:</span>
-                        <span>+{formatCurrency(bookkeepingCalculationResults.real_adjustment)}</span>
+                        <span>+{formatILS(bookkeepingCalculationResults.real_adjustment)}</span>
                       </div>
                       <hr className="my-2" />
                       <div className="flex justify-between font-semibold">
                         <span>סך הכל לפני מע"מ:</span>
-                        <span>{formatCurrency(bookkeepingCalculationResults.final_amount)}</span>
+                        <span>{formatILS(bookkeepingCalculationResults.final_amount)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>+ מע"מ (18%):</span>
-                        <span>+{formatCurrency(bookkeepingCalculationResults.vat_amount)}</span>
+                        <span>+{formatILS(bookkeepingCalculationResults.vat_amount)}</span>
                       </div>
                       <hr className="my-2" />
                       <div className="flex justify-between font-bold text-lg">
                         <span>סך הכל כולל מע"מ:</span>
-                        <span>{formatCurrency(bookkeepingCalculationResults.total_with_vat)}</span>
+                        <span>{formatILS(bookkeepingCalculationResults.total_with_vat)}</span>
                       </div>
                     </div>
                   </div>

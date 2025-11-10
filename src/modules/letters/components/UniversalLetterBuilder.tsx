@@ -13,9 +13,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X, Users, UserPlus } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -131,6 +132,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   // State - Manual email input
   const [manualEmailInput, setManualEmailInput] = useState('');
   const [showManualEmailInput, setShowManualEmailInput] = useState(false);
+
+  // State - Recipient Mode (client from list vs manual recipient)
+  const [recipientMode, setRecipientMode] = useState<'client' | 'manual'>('client');
+  const [showModeWarning, setShowModeWarning] = useState(false);
+  const [pendingMode, setPendingMode] = useState<'client' | 'manual' | null>(null);
+
+  // State - Manual recipient fields (for 'manual' mode)
+  const [manualCompanyName, setManualCompanyName] = useState('');
+  const [manualShowCommercialName, setManualShowCommercialName] = useState(false);
+  const [manualCommercialName, setManualCommercialName] = useState('');
+  const [manualCustomHeaderLines, setManualCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
 
   /**
    * Load saved templates on mount
@@ -665,6 +677,81 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
+   * Handle switching between client mode and manual mode
+   * Shows warning dialog if current mode has data
+   */
+  const handleModeSwitch = (newMode: 'client' | 'manual') => {
+    // If already in target mode, do nothing
+    if (recipientMode === newMode) return;
+
+    // Check if current mode has any data
+    const hasClientData =
+      selectedClient !== null ||
+      companyName.trim() !== '' ||
+      selectedRecipients.length > 0 ||
+      customHeaderLines.length > 0;
+
+    const hasManualData =
+      manualCompanyName.trim() !== '' ||
+      manualEmails.trim() !== '' ||
+      manualCustomHeaderLines.length > 0;
+
+    // Show warning if switching away from mode with data
+    const shouldWarn =
+      (recipientMode === 'client' && hasClientData && newMode === 'manual') ||
+      (recipientMode === 'manual' && hasManualData && newMode === 'client');
+
+    if (shouldWarn) {
+      setPendingMode(newMode);
+      setShowModeWarning(true);
+    } else {
+      // No data, switch directly
+      setRecipientMode(newMode);
+    }
+  };
+
+  /**
+   * Confirm mode switch and clear data from previous mode
+   */
+  const confirmModeSwitch = () => {
+    if (!pendingMode) return;
+
+    // Clear data from previous mode
+    if (recipientMode === 'client') {
+      // Clearing client mode data
+      setSelectedClient(null);
+      setCompanyName('');
+      setCommercialName('');
+      setShowCommercialName(false);
+      setCustomHeaderLines([]);
+      setSelectedRecipients([]);
+      setClientContacts([]);
+      setWhatsappPhone('');
+    } else {
+      // Clearing manual mode data
+      setManualCompanyName('');
+      setManualCommercialName('');
+      setManualShowCommercialName(false);
+      setManualCustomHeaderLines([]);
+      setManualEmails('');
+    }
+
+    // Switch to new mode
+    setRecipientMode(pendingMode);
+    setPendingMode(null);
+    setShowModeWarning(false);
+    toast.success('המצב שונה בהצלחה');
+  };
+
+  /**
+   * Cancel mode switch
+   */
+  const cancelModeSwitch = () => {
+    setPendingMode(null);
+    setShowModeWarning(false);
+  };
+
+  /**
    * Print/Save as PDF from preview dialog
    */
   const handlePrintPreview = () => {
@@ -1016,101 +1103,189 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Step 1: Client Selection and Variables */}
-          <div className="space-y-2">
+          {/* Step 1: Two-Column Layout - Client vs Manual */}
+          <div className="space-y-4">
             <Label className="text-right block text-base font-semibold">
-              1. בחר לקוח והזן פרטים
+              1. בחר לקוח מהרשימה או הזן נמען אחר
             </Label>
 
-            {/* Client Selection */}
-            <ClientSelector
-              value={selectedClient?.id || null}
-              onChange={handleClientChange}
-              label="בחר לקוח"
-              placeholder="בחר לקוח או הקלד ידנית למטה..."
-            />
+            {/* Two-Column Grid */}
+            <div className="grid grid-cols-2 gap-6">
 
-            {/* Alert when no client selected */}
-            {!selectedClient && (
-              <Alert className="bg-blue-50 border-blue-200">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-900 text-right">
-                  <strong>לא נבחר לקוח מהרשימה</strong> - אנא מלא את הפרטים הבאים ידנית
-                </AlertDescription>
-              </Alert>
-            )}
+              {/* RIGHT COLUMN: Client from List */}
+              <div
+                onClick={() => handleModeSwitch('client')}
+                className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                  recipientMode === 'client'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 bg-gray-100 opacity-60'
+                }`}
+              >
+                <h3 className="text-lg font-semibold mb-4 text-right flex items-center justify-end gap-2">
+                  <Users className="h-5 w-5" />
+                  לקוח מהרשימה
+                </h3>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="company_name" className="text-right block">
-                  הזן פרטי נמען
-                  {!selectedClient && <span className="text-red-500 mr-1">*</span>}
-                  {selectedClient && <span className="text-xs text-blue-600 mr-1">(נבחר אוטומטית)</span>}
-                </Label>
-                <Input
-                  id="company_name"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="הזן שם נמען אחר אם לא נבחר לקוח"
-                  className={!selectedClient ? 'border-blue-400 border-2 bg-blue-50 focus:ring-blue-500' : ''}
-                  dir="rtl"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email_subject" className="text-right block">
-                  נושא המייל
-                  {!selectedClient && <span className="text-red-500 mr-1">*</span>}
-                </Label>
-                <Input
-                  id="email_subject"
-                  value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  placeholder="שכר טרחתנו לשנת המס 2026"
-                  className={!selectedClient ? 'border-blue-400 border-2 bg-blue-50 focus:ring-blue-500' : ''}
-                  dir="rtl"
-                  required
-                />
-              </div>
-            </div>
+                <div className={recipientMode !== 'client' ? 'pointer-events-none' : ''}>
+                  {/* Client Selector */}
+                  <div className="space-y-4">
+                    <ClientSelector
+                      value={selectedClient?.id || null}
+                      onChange={handleClientChange}
+                      label="בחר לקוח"
+                      placeholder="חפש לפי שם או ח.פ..."
+                    />
 
-            {/* Commercial Name Section */}
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="show_commercial_name"
-                  checked={showCommercialName}
-                  onCheckedChange={(checked) => setShowCommercialName(checked as boolean)}
-                />
-                <Label htmlFor="show_commercial_name" className="text-right cursor-pointer">
-                  הוסף שם מסחרי
-                </Label>
-              </div>
+                    {/* Company Name */}
+                    <div>
+                      <Label htmlFor="company_name" className="text-right block">
+                        שם החברה {selectedClient && <span className="text-xs text-blue-600 mr-1">(נבחר אוטומטית)</span>}
+                      </Label>
+                      <Input
+                        id="company_name"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="שם החברה"
+                        dir="rtl"
+                        disabled={recipientMode !== 'client'}
+                      />
+                    </div>
 
-              {showCommercialName && (
-                <div>
-                  <Label htmlFor="commercial_name" className="text-right block">
-                    שם מסחרי {selectedClient?.commercial_name && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
-                  </Label>
-                  <Input
-                    id="commercial_name"
-                    value={commercialName}
-                    onChange={(e) => setCommercialName(e.target.value)}
-                    placeholder="הזן שם מסחרי (אופציונלי)"
-                    dir="rtl"
-                    className="text-right"
-                  />
-                  <p className="text-xs text-gray-500 mt-1 text-right">
-                    השם המסחרי יופיע כשורה נוספת מתחת לשם החברה
-                  </p>
+                    {/* Commercial Name */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="show_commercial_name"
+                          checked={showCommercialName}
+                          onCheckedChange={(checked) => setShowCommercialName(checked as boolean)}
+                          disabled={recipientMode !== 'client'}
+                        />
+                        <Label htmlFor="show_commercial_name" className="text-right cursor-pointer">
+                          הוסף שם מסחרי
+                        </Label>
+                      </div>
+
+                      {showCommercialName && (
+                        <div>
+                          <Input
+                            id="commercial_name"
+                            value={commercialName}
+                            onChange={(e) => setCommercialName(e.target.value)}
+                            placeholder="הזן שם מסחרי"
+                            dir="rtl"
+                            disabled={recipientMode !== 'client'}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* LEFT COLUMN: Manual Recipient */}
+              <div
+                onClick={() => handleModeSwitch('manual')}
+                className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                  recipientMode === 'manual'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-300 bg-gray-100 opacity-60'
+                }`}
+              >
+                <h3 className="text-lg font-semibold mb-4 text-right flex items-center justify-end gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  נמען אחר (כללי)
+                </h3>
+
+                <div className={recipientMode !== 'manual' ? 'pointer-events-none' : ''}>
+                  <div className="space-y-4">
+                    {/* Manual Company Name */}
+                    <div>
+                      <Label htmlFor="manual_company_name" className="text-right block">
+                        שם הנמען
+                      </Label>
+                      <Input
+                        id="manual_company_name"
+                        value={manualCompanyName}
+                        onChange={(e) => setManualCompanyName(e.target.value)}
+                        placeholder="הזן שם נמען"
+                        dir="rtl"
+                        disabled={recipientMode !== 'manual'}
+                      />
+                    </div>
+
+                    {/* Manual Commercial Name */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="manual_show_commercial_name"
+                          checked={manualShowCommercialName}
+                          onCheckedChange={(checked) => setManualShowCommercialName(checked as boolean)}
+                          disabled={recipientMode !== 'manual'}
+                        />
+                        <Label htmlFor="manual_show_commercial_name" className="text-right cursor-pointer">
+                          הוסף שם מסחרי
+                        </Label>
+                      </div>
+
+                      {manualShowCommercialName && (
+                        <div>
+                          <Input
+                            id="manual_commercial_name"
+                            value={manualCommercialName}
+                            onChange={(e) => setManualCommercialName(e.target.value)}
+                            placeholder="הזן שם מסחרי"
+                            dir="rtl"
+                            disabled={recipientMode !== 'manual'}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Manual Email Recipients */}
+                    <div className="space-y-2">
+                      <Label htmlFor="manual_emails" className="text-right block">
+                        כתובות מייל (הפרד בפסיקים)
+                      </Label>
+                      <Textarea
+                        id="manual_emails"
+                        value={manualEmails}
+                        onChange={(e) => setManualEmails(e.target.value)}
+                        placeholder="example1@email.com, example2@email.com"
+                        dir="ltr"
+                        rows={3}
+                        className="font-mono text-sm"
+                        disabled={recipientMode !== 'manual'}
+                      />
+                      <p className="text-xs text-gray-500 text-right">
+                        הזן מספר כתובות מייל מופרדות בפסיקים
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
-            {/* Custom Header Lines - Optional Section */}
+            {/* Email Subject - Shared by both modes */}
+            <div>
+              <Label htmlFor="email_subject" className="text-right block">
+                נושא המייל \ שם המכתב לתיוק <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="email_subject"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="שכר טרחתנו לשנת המס 2026"
+                dir="rtl"
+                required
+              />
+            </div>
+
+            {/* Custom Header Lines - Shared by both modes */}
             <div className="mt-4 p-4 border rounded-lg bg-gray-50">
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-right block font-semibold">
-                  שורות נוספות מתחת לשם הלקוח (אופציונלי)
+                  שורות נוספות מתחת לשם הנמען (אופציונלי)
                 </Label>
                 <div className="flex gap-2">
                   <Button
@@ -1136,7 +1311,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
               {customHeaderLines.length === 0 ? (
                 <p className="text-sm text-gray-500 text-right">
-                  לחץ על "הוסף שורת טקסט" או "הוסף קו מפריד" כדי להוסיף שורות מותאמות שיופיעו במכתב אחרי שם החברה
+                  לחץ על "הוסף שורת טקסט" או "הוסף קו מפריד" כדי להוסיף שורות מותאמות
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -1145,7 +1320,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       key={line.id}
                       className="flex items-center gap-2 p-3 bg-white border rounded"
                     >
-                      {/* Move Up/Down Buttons */}
                       <div className="flex flex-col gap-1">
                         <Button
                           type="button"
@@ -1153,7 +1327,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           size="sm"
                           onClick={() => handleMoveLineUp(line.id)}
                           disabled={index === 0}
-                          title="הזז למעלה"
                           className="h-6 w-6 p-0"
                         >
                           <ArrowUp className="h-3 w-3" />
@@ -1164,19 +1337,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           size="sm"
                           onClick={() => handleMoveLineDown(line.id)}
                           disabled={index === customHeaderLines.length - 1}
-                          title="הזז למטה"
                           className="h-6 w-6 p-0"
                         >
                           <ArrowDown className="h-3 w-3" />
                         </Button>
                       </div>
 
-                      {/* Line Content */}
                       <div className="flex-1">
                         {line.type === 'line' ? (
                           <div className="flex items-center gap-2 text-gray-600">
                             <Minus className="h-4 w-4" />
-                            <span className="text-sm">קו מפריד (שחור דק)</span>
+                            <span className="text-sm">קו מפריד</span>
                           </div>
                         ) : (
                           <div className="space-y-2">
@@ -1185,81 +1356,33 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               onChange={(e) => handleUpdateLineContent(line.id, e.target.value)}
                               placeholder="הזן טקסט..."
                               dir="rtl"
-                              className="text-right"
                             />
-
-                            {/* Formatting Options */}
                             <div className="flex gap-3 items-center">
                               <div className="flex items-center gap-2">
                                 <Checkbox
                                   id={`${line.id}-bold`}
                                   checked={line.formatting?.bold || false}
-                                  onCheckedChange={(checked) =>
-                                    handleUpdateLineFormatting(line.id, 'bold', !!checked)
-                                  }
+                                  onCheckedChange={(checked) => handleUpdateLineFormatting(line.id, 'bold', !!checked)}
                                 />
-                                <Label htmlFor={`${line.id}-bold`} className="text-sm cursor-pointer">
-                                  בולד
-                                </Label>
+                                <Label htmlFor={`${line.id}-bold`} className="text-sm">בולד</Label>
                               </div>
-
                               <div className="flex items-center gap-2">
                                 <Checkbox
                                   id={`${line.id}-underline`}
                                   checked={line.formatting?.underline || false}
-                                  onCheckedChange={(checked) =>
-                                    handleUpdateLineFormatting(line.id, 'underline', !!checked)
-                                  }
+                                  onCheckedChange={(checked) => handleUpdateLineFormatting(line.id, 'underline', !!checked)}
                                 />
-                                <Label htmlFor={`${line.id}-underline`} className="text-sm cursor-pointer">
-                                  קו תחתון
-                                </Label>
+                                <Label htmlFor={`${line.id}-underline`} className="text-sm">קו תחתון</Label>
                               </div>
-
-                              {/* Color Selection */}
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={line.formatting?.color === 'black' ? 'default' : 'outline'}
-                                  onClick={() => handleUpdateLineColor(line.id, 'black')}
-                                  className="h-7 px-2"
-                                >
-                                  שחור
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={line.formatting?.color === 'red' ? 'default' : 'outline'}
-                                  onClick={() => handleUpdateLineColor(line.id, 'red')}
-                                  className="h-7 px-2 text-red-600"
-                                >
-                                  אדום
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={line.formatting?.color === 'blue' ? 'default' : 'outline'}
-                                  onClick={() => handleUpdateLineColor(line.id, 'blue')}
-                                  className="h-7 px-2 text-blue-600"
-                                >
-                                  כחול
-                                </Button>
-                              </div>
+                              <Button type="button" size="sm" variant={line.formatting?.color === 'black' ? 'default' : 'outline'} onClick={() => handleUpdateLineColor(line.id, 'black')}>שחור</Button>
+                              <Button type="button" size="sm" variant={line.formatting?.color === 'red' ? 'default' : 'outline'} onClick={() => handleUpdateLineColor(line.id, 'red')} className="text-red-600">אדום</Button>
+                              <Button type="button" size="sm" variant={line.formatting?.color === 'blue' ? 'default' : 'outline'} onClick={() => handleUpdateLineColor(line.id, 'blue')} className="text-blue-600">כחול</Button>
                             </div>
                           </div>
                         )}
                       </div>
 
-                      {/* Delete Button */}
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteLine(line.id)}
-                        title="מחק שורה"
-                        className="h-8 w-8 p-0"
-                      >
+                      <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteLine(line.id)} className="h-8 w-8 p-0">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -1701,29 +1824,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               )}
             </Button>
 
-            {/* Recipients Section */}
-            <div className="space-y-4">
-              <Label className="text-right block font-semibold">בחר נמענים</Label>
+            {/* Recipients Section - Only for client mode */}
+            {recipientMode === 'client' && (
+              <div className="space-y-4">
+                <Label className="text-right block font-semibold">בחר נמענים מהלקוח</Label>
 
-              {!selectedClient ? (
-                <div className="space-y-2">
-                  <Label htmlFor="manual-emails" className="text-right block">
-                    כתובות מייל (הפרד בפסיקים)
-                  </Label>
-                  <Textarea
-                    id="manual-emails"
-                    value={manualEmails}
-                    onChange={(e) => setManualEmails(e.target.value)}
-                    placeholder="example1@email.com, example2@email.com"
-                    dir="ltr"
-                    rows={3}
-                    className="font-mono text-sm"
-                  />
-                  <p className="text-xs text-gray-500 text-right">
-                    ניתן להזין מספר כתובות מייל מופרדות בפסיקים, נקודה-פסיק או רווחים
-                  </p>
-                </div>
-              ) : isLoadingContacts ? (
+                {isLoadingContacts ? (
                 <div className="text-center py-8 text-gray-500">
                   <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                   טוען אנשי קשר...
@@ -1870,6 +1976,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 </>
               )}
             </div>
+            )}
 
             <Button
               onClick={handleSendEmail}
@@ -2020,6 +2127,25 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Mode Switch Warning Dialog */}
+      <AlertDialog open={showModeWarning} onOpenChange={setShowModeWarning}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">שימו לב: מעבר בין מצבים</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              מעבר מ{recipientMode === 'client' ? 'לקוח מהרשימה' : 'נמען אחר'} ל{pendingMode === 'client' ? 'לקוח מהרשימה' : 'נמען אחר'}
+              {' '}ינקה את כל הנתונים שמילאת במצב הנוכחי.
+              <br /><br />
+              <strong>האם ברצונך להמשיך?</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex gap-2">
+            <AlertDialogCancel onClick={cancelModeSwitch}>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmModeSwitch}>המשך ונקה נתונים</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
