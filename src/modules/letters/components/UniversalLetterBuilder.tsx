@@ -1033,13 +1033,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="company_name" className="text-right block">
-                  שם חברה {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
+                  הזן פרטי נמען {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
                 </Label>
                 <Input
                   id="company_name"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="מסעדת האחים"
+                  placeholder="הזן שם נמען אחר אם לא נבחר לקוח"
                   dir="rtl"
                 />
               </div>
