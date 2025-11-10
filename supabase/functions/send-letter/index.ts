@@ -380,6 +380,10 @@ async function sendEmail(
   subject: string,
   htmlContent: string
 ): Promise<void> {
+  if (!htmlContent || htmlContent.trim() === '') {
+    throw new Error('HTML content is empty. Cannot send email.');
+  }
+
   if (!SENDGRID_API_KEY) {
     throw new Error('SENDGRID_API_KEY not configured');
   }
@@ -593,17 +597,26 @@ serve(async (req) => {
         // Get tenant_id from JWT or client
         const authHeader = req.headers.get('Authorization');
         let tenantId = null;
+        let payload = null;
 
         if (authHeader) {
-          const token = authHeader.replace('Bearer ', '');
-          // Decode JWT to get tenant_id (simplified - in production use proper JWT library)
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          }).join(''));
-          const payload = JSON.parse(jsonPayload);
-          tenantId = payload.user_metadata?.tenant_id;
+          try {
+            const token = authHeader.replace('Bearer ', '');
+            // Decode JWT to get tenant_id (simplified - in production use proper JWT library)
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const base64Url = parts[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+              }).join(''));
+              payload = JSON.parse(jsonPayload);
+              tenantId = payload.user_metadata?.tenant_id;
+            }
+          } catch (jwtError) {
+            // JWT parsing failed - continue without tenant_id
+            console.warn('JWT parsing failed:', jwtError);
+          }
         }
 
         if (tenantId) {
@@ -649,57 +662,54 @@ serve(async (req) => {
     if (clientId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      if (isCustomMode) {
-        // For custom letters, we need a template_id
-        // First, get or create a "Custom Letter" template
-        const { data: customTemplate } = await supabase
-          .from('letter_templates')
-          .select('id')
-          .eq('name', 'Custom Letter')
-          .single();
+      // Get tenant_id from JWT or client context for RLS compliance
+      const authHeader = req.headers.get('Authorization');
+      let tenantId = null;
 
-        let templateId = customTemplate?.id;
-
-        if (!templateId) {
-          // Create the custom template entry
-          const { data: newTemplate } = await supabase
-            .from('letter_templates')
-            .insert({
-              name: 'Custom Letter',
-              description: 'User-generated custom letter',
-              body_template: ''
-            })
-            .select('id')
-            .single();
-
-          templateId = newTemplate?.id;
+      if (authHeader) {
+        try {
+          const token = authHeader.replace('Bearer ', '');
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const base64Url = parts[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            const payload = JSON.parse(jsonPayload);
+            tenantId = payload.user_metadata?.tenant_id;
+          }
+        } catch (jwtError) {
+          console.warn('JWT parsing failed for tenant extraction:', jwtError);
         }
+      }
 
-        await supabase.from('generated_letters').insert({
-          client_id: clientId,
-          template_id: templateId,
-          fee_calculation_id: feeCalculationId,
-          variables_used: variables || {},
-          generated_content_html: letterHtml,
-          recipient_emails: recipientEmails,
-          subject: subject,
-          template_type: 'custom',
-          sent_at: new Date().toISOString(),
-          status: 'sent'
-        });
-      } else {
-        // Template mode - existing logic
-        await supabase.from('generated_letters').insert({
-          client_id: clientId,
-          fee_calculation_id: feeCalculationId,
-          template_type: templateType,
-          subject: subject,
-          variables_used: variables,
-          generated_content_html: letterHtml,
-          recipient_emails: recipientEmails,
-          sent_at: new Date().toISOString(),
-          status: 'sent'
-        });
+      if (!tenantId) {
+        console.error('No tenant_id found - cannot insert letter record due to RLS policies');
+        throw new Error('Missing tenant context for letter logging');
+      }
+
+      // Save to generated_letters table
+      // Migration 096: template_id is now nullable
+      // Custom letters use template_id=null, template_type='custom'
+      // Template letters use template_id=null, template_type=<type>
+      const { error: insertError } = await supabase.from('generated_letters').insert({
+        tenant_id: tenantId,
+        client_id: clientId,
+        template_id: null,  // NULL for both custom and template mode letters
+        fee_calculation_id: feeCalculationId,
+        template_type: isCustomMode ? 'custom' : templateType,
+        subject: subject,
+        variables_used: variables || {},
+        generated_content_html: letterHtml,
+        recipient_emails: recipientEmails,
+        sent_at: new Date().toISOString(),
+        status: 'sent'
+      });
+
+      if (insertError) {
+        console.error('Database insert error:', insertError);
+        throw new Error(`Failed to log letter: ${insertError.message}`);
       }
     }
 
