@@ -5,10 +5,11 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import DOMPurify from 'https://esm.sh/isomorphic-dompurify@2.11.0';
 
 const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 
 interface CustomHeaderLine {
   id: string;
@@ -42,13 +43,33 @@ interface CorsHeaders {
   'Access-Control-Allow-Origin': string;
   'Access-Control-Allow-Headers': string;
   'Access-Control-Allow-Methods': string;
+  'Access-Control-Allow-Credentials': string;
 }
 
-const corsHeaders: CorsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-application-name',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://ticovision.vercel.app',
+  'http://localhost:5173',  // Vite dev server
+  'http://localhost:3000',  // Alternative dev port
+  Deno.env.get('APP_URL'),  // Custom deployment URL
+].filter(Boolean) as string[];
+
+/**
+ * Get CORS headers with validated origin
+ */
+function getCorsHeaders(origin: string | null): CorsHeaders {
+  // Check if origin is allowed
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-application-name',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 /**
  * Fetch HTML template from deployed app (Vercel)
@@ -64,13 +85,46 @@ async function fetchTemplate(path: string): Promise<string> {
 }
 
 /**
- * Replace variables in HTML
+ * Escape HTML entities to prevent XSS
+ */
+function escapeHtml(unsafe: string | number): string {
+  const str = String(unsafe);
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Sanitize HTML with whitelist for custom_header_lines
+ * Allows only: <b>, <strong>, <u>, <i>, <em>, <br>, <span> with limited styles
+ */
+function sanitizeCustomHeaderHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'strong', 'u', 'i', 'em', 'br', 'span'],
+    ALLOWED_ATTR: ['style'],
+    ALLOWED_STYLES: {
+      'span': {
+        'color': [/^#[0-9A-F]{6}$/i, /^#[0-9A-F]{3}$/i],  // hex colors only
+        'font-weight': [/^(bold|[1-9]00)$/],
+        'text-decoration': [/^underline$/]
+      }
+    }
+  });
+}
+
+/**
+ * Replace variables in HTML with HTML escaping to prevent XSS
  */
 function replaceVariables(html: string, variables: Record<string, any>): string {
   let result = html;
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-    result = result.replace(regex, String(value));
+    // Escape HTML for all variables except those that explicitly need HTML
+    // (custom_header_lines content is pre-sanitized in generateCustomHeaderLinesHtml)
+    result = result.replace(regex, escapeHtml(value));
   }
   return result;
 }
@@ -239,10 +293,13 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
         styles.push('text-decoration: underline');
       }
 
+      // Sanitize content with HTML whitelist (allows bold, underline, colors)
+      const sanitizedContent = sanitizeCustomHeaderHtml(line.content || '');
+
       return `
 <tr>
     <td style="padding: 2px 0; text-align: right;">
-        <div style="${styles.join('; ')};">${line.content || ''}</div>
+        <div style="${styles.join('; ')};">${sanitizedContent}</div>
     </td>
 </tr>`;
     }
@@ -494,6 +551,10 @@ async function sendEmail(
  * Main handler
  */
 serve(async (req) => {
+  // Get CORS headers based on request origin
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -587,45 +648,45 @@ serve(async (req) => {
       subject = finalVariables.subject || `שכר טרחתנו לשנת המס ${finalVariables.year}`;
 
       // Save as template if requested
-      if (saveAsTemplate && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-        // Get tenant_id from JWT or client
+      if (saveAsTemplate && SUPABASE_URL && SUPABASE_ANON_KEY) {
         const authHeader = req.headers.get('Authorization');
-        let tenantId = null;
-        let payload = null;
 
-        if (authHeader) {
-          try {
-            const token = authHeader.replace('Bearer ', '');
-            // Decode JWT to get tenant_id (simplified - in production use proper JWT library)
-            const parts = token.split('.');
-            if (parts.length === 3) {
-              const base64Url = parts[1];
-              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-              const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-              }).join(''));
-              payload = JSON.parse(jsonPayload);
-              tenantId = payload.user_metadata?.tenant_id;
-            }
-          } catch (jwtError) {
-            // JWT parsing failed - continue without tenant_id
-            console.warn('JWT parsing failed:', jwtError);
-          }
+        if (!authHeader) {
+          throw new Error('Missing authorization header');
         }
 
-        if (tenantId) {
-          await supabase.from('custom_letter_bodies').insert({
-            tenant_id: tenantId,
-            name: saveAsTemplate.name,
-            description: saveAsTemplate.description || null,
-            plain_text: customText,
-            parsed_html: parsedBodyHtml,
-            includes_payment: includesPayment || false,
-            subject: saveAsTemplate.subject || null,
-            created_by: payload?.sub || null
-          });
+        // Create Supabase client with user's JWT - this will verify the JWT signature
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: authHeader } }
+        });
+
+        // Verify JWT and get authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+          throw new Error('Unauthorized: Invalid or expired token');
+        }
+
+        const tenantId = user.user_metadata?.tenant_id;
+
+        if (!tenantId) {
+          throw new Error('Missing tenant_id in user metadata');
+        }
+
+        // RLS policies will automatically enforce tenant isolation
+        const { error: insertError } = await supabase.from('custom_letter_bodies').insert({
+          tenant_id: tenantId,
+          name: saveAsTemplate.name,
+          description: saveAsTemplate.description || null,
+          plain_text: customText,
+          parsed_html: parsedBodyHtml,
+          includes_payment: includesPayment || false,
+          subject: saveAsTemplate.subject || null,
+          created_by: user.id
+        });
+
+        if (insertError) {
+          throw new Error(`Failed to save template: ${insertError.message}`);
         }
       }
     } else {
@@ -655,34 +716,29 @@ serve(async (req) => {
     await sendEmail(recipientEmails, subject, letterHtml);
 
     // Log to database if client ID provided
-    if (clientId && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-      // Get tenant_id from JWT or client context for RLS compliance
+    if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY) {
       const authHeader = req.headers.get('Authorization');
-      let tenantId = null;
 
-      if (authHeader) {
-        try {
-          const token = authHeader.replace('Bearer ', '');
-          const parts = token.split('.');
-          if (parts.length === 3) {
-            const base64Url = parts[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            const payload = JSON.parse(jsonPayload);
-            tenantId = payload.user_metadata?.tenant_id;
-          }
-        } catch (jwtError) {
-          console.warn('JWT parsing failed for tenant extraction:', jwtError);
-        }
+      if (!authHeader) {
+        throw new Error('Missing authorization header for letter logging');
       }
 
+      // Create Supabase client with user's JWT - this will verify the JWT signature
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      // Verify JWT and get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error('Unauthorized: Invalid or expired token');
+      }
+
+      const tenantId = user.user_metadata?.tenant_id;
+
       if (!tenantId) {
-        console.error('No tenant_id found - cannot insert letter record due to RLS policies');
-        throw new Error('Missing tenant context for letter logging');
+        throw new Error('Missing tenant_id in user metadata');
       }
 
       // Save to generated_letters table

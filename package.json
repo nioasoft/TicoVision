@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "generate-types": "node scripts/generate-types.js",
     "typecheck": "tsc --noEmit",
-    "pre-commit": "npm run lint && npm run typecheck"
+    "pre-commit": "npm run lint && npm run typecheck",
+    "upload-assets-v2": "tsx scripts/upload-letter-assets-v2.ts",
+    "verify-v2": "tsx scripts/verify-v2-setup.ts",
+    "deploy-pdf-function": "npx supabase functions deploy generate-pdf"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -38,6 +41,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
+    "isomorphic-dompurify": "^2.31.0",
     "lucide-react": "^0.543.0",
     "next-themes": "^0.4.6",
     "react": "^19.1.1",

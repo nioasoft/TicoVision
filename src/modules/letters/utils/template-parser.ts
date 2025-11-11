@@ -5,17 +5,53 @@
 
 import type { LetterVariables } from '../types/letter.types';
 import { formatLetterDate } from './date-formatter';
+import DOMPurify from 'isomorphic-dompurify';
 
 export class TemplateParser {
   private static readonly VARIABLE_PATTERN = /\[([^\]]+)\]/g; // Matches [variable_name]
   private static readonly BRACKET_VARIABLE_PATTERN = /\{\{([^}]+)\}\}/g; // Matches {{variable_name}}
 
   /**
+   * Escape HTML entities to prevent XSS
+   * Use for all user-input variables except custom_header_lines
+   */
+  private static escapeHtml(unsafe: string | number): string {
+    const str = String(unsafe);
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  /**
+   * Sanitize HTML with whitelist for custom_header_lines
+   * Allows only: <b>, <strong>, <u>, <i>, <em>, <br>, <span> with style
+   */
+  private static sanitizeWithWhitelist(html: string): string {
+    // Configure DOMPurify with strict whitelist
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['b', 'strong', 'u', 'i', 'em', 'br', 'span'],
+      ALLOWED_ATTR: ['style'],
+      ALLOWED_STYLES: {
+        'span': {
+          'color': [/^#[0-9A-F]{6}$/i, /^#[0-9A-F]{3}$/i],  // hex colors only
+          'font-weight': [/^(bold|[1-9]00)$/],
+          'text-decoration': [/^underline$/]
+        }
+      }
+    });
+  }
+
+  /**
    * Replace variables in template content
+   * Uses HTML escaping for all variables to prevent XSS
    */
   static replaceVariables(
     template: string,
-    variables: Partial<LetterVariables>
+    variables: Partial<LetterVariables>,
+    allowHtmlInVariables: string[] = []  // Whitelist for variables that can contain HTML
   ): string {
     let result = template;
 
@@ -25,13 +61,29 @@ export class TemplateParser {
     // Replace [variable] pattern
     result = result.replace(this.VARIABLE_PATTERN, (match, variableName) => {
       const value = this.getVariableValue(variableName, variableMap, variables);
-      return value !== undefined ? String(value) : match;
+      if (value === undefined) return match;
+
+      // If this variable is whitelisted for HTML (e.g., custom_header_lines)
+      if (allowHtmlInVariables.includes(variableName)) {
+        return this.sanitizeWithWhitelist(String(value));
+      }
+
+      // Default: Escape HTML entities
+      return this.escapeHtml(value);
     });
 
     // Replace {{variable}} pattern
     result = result.replace(this.BRACKET_VARIABLE_PATTERN, (match, variableName) => {
       const value = this.getVariableValue(variableName, variableMap, variables);
-      return value !== undefined ? String(value) : match;
+      if (value === undefined) return match;
+
+      // If this variable is whitelisted for HTML
+      if (allowHtmlInVariables.includes(variableName)) {
+        return this.sanitizeWithWhitelist(String(value));
+      }
+
+      // Default: Escape HTML entities
+      return this.escapeHtml(value);
     });
 
     return result;
@@ -221,15 +273,15 @@ export class TemplateParser {
 
   /**
    * Sanitize HTML content while preserving structure
+   * Now uses DOMPurify for production-grade sanitization
    */
   static sanitizeHtml(html: string): string {
-    // This is a basic implementation
-    // In production, use a library like DOMPurify
-    return html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
-      .replace(/on\w+\s*=\s*"[^"]*"/gi, '')
-      .replace(/on\w+\s*=\s*'[^']*'/gi, '');
+    // Use DOMPurify with safe defaults
+    return DOMPurify.sanitize(html, {
+      // Remove all scripts, iframes, and event handlers by default
+      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'style'],
+      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
+    });
   }
 
   /**
