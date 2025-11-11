@@ -689,7 +689,7 @@ serve(async (req) => {
       // Migration 096: template_id is now nullable
       // Custom letters use template_id=null, template_type='custom'
       // Template letters use template_id=null, template_type=<type>
-      const { error: insertError } = await supabase.from('generated_letters').insert({
+      const { data: insertedLetter, error: insertError } = await supabase.from('generated_letters').insert({
         tenant_id: tenantId,
         client_id: clientId,
         template_id: null,  // NULL for both custom and template mode letters
@@ -701,21 +701,37 @@ serve(async (req) => {
         recipient_emails: recipientEmails,
         sent_at: new Date().toISOString(),
         status: 'sent'
-      });
+      }).select().single();
 
       if (insertError) {
         console.error('Database insert error:', insertError);
         throw new Error(`Failed to log letter: ${insertError.message}`);
       }
+
+      console.log('✅ Email sent successfully');
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Letter sent successfully',
+          recipients: recipientEmails,
+          letterId: insertedLetter?.id || null
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    console.log('✅ Email sent successfully');
+    console.log('✅ Email sent successfully (no client logging)');
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Letter sent successfully',
-        recipients: recipientEmails
+        recipients: recipientEmails,
+        letterId: null
       }),
       {
         status: 200,

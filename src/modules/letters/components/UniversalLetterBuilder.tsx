@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X, Users, UserPlus } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X, Users, UserPlus, FileDown } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -25,8 +25,10 @@ import { clientService } from '@/services';
 import type { Client } from '@/services/client.service';
 import { TenantContactService } from '@/services/tenant-contact.service';
 import type { AssignedContact } from '@/types/tenant-contact.types';
+import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 
 const templateService = new TemplateService();
+const pdfService = new PDFGenerationService();
 
 // Constant ID for auto-managed commercial name line
 const COMMERCIAL_NAME_LINE_ID = 'commercial-name-auto-line';
@@ -112,6 +114,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
+  const [lastSentLetterId, setLastSentLetterId] = useState<string | null>(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // State - Recipients
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
@@ -511,6 +515,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       if (error) throw error;
 
+      // Save letterId if returned
+      if (data?.letterId) {
+        setLastSentLetterId(data.letterId);
+      }
+
       toast.success(`מכתב נשלח בהצלחה ל-${recipientEmails.length} נמענים`);
 
       // Reload templates if saved
@@ -793,6 +802,35 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         document.body.removeChild(iframe);
       }, 100);
     };
+  };
+
+  /**
+   * Generate PDF using Browserless API
+   */
+  const handleGeneratePDF = async () => {
+    if (!lastSentLetterId) {
+      toast.error('לא נמצא מכתב לייצור PDF. נא לשלוח את המכתב תחילה.');
+      return;
+    }
+
+    try {
+      setGeneratingPdf(true);
+
+      const result = await pdfService.generatePDF(lastSentLetterId);
+
+      if (result.success && result.pdfUrl) {
+        toast.success('PDF נוצר בהצלחה');
+        // Open PDF in new tab
+        window.open(result.pdfUrl, '_blank');
+      } else {
+        throw new Error(result.error || 'שגיאה ביצירת PDF');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('שגיאה ביצירת PDF');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   /**
@@ -2109,8 +2147,23 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </Button>
             <Button variant="outline" onClick={handlePrintPreview}>
               <Printer className="h-4 w-4 ml-2" />
-              הדפסה/שמירה ל-PDF
+              הדפסה
             </Button>
+            {lastSentLetterId && (
+              <Button variant="outline" onClick={handleGeneratePDF} disabled={generatingPdf}>
+                {generatingPdf ? (
+                  <>
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    יוצר PDF...
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="h-4 w-4 ml-2" />
+                    צור PDF
+                  </>
+                )}
+              </Button>
+            )}
             <Button onClick={handleSendEmail} disabled={isSendingEmail}>
               {isSendingEmail ? (
                 <>
