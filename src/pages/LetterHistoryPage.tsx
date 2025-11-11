@@ -34,9 +34,11 @@ import type {
 import { LetterHistoryTable } from '@/modules/letters/components/LetterHistoryTable';
 import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog';
 import { ResendLetterDialog } from '@/modules/letters/components/ResendLetterDialog';
+import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 
 export function LetterHistoryPage() {
   const navigate = useNavigate();
+  const pdfService = new PDFGenerationService();
 
   // State
   const [activeTab, setActiveTab] = useState<'sent' | 'drafts'>('sent');
@@ -204,6 +206,28 @@ export function LetterHistoryPage() {
         activeTab: 'universal-builder'
       }
     });
+  };
+
+  /**
+   * Handle generate PDF
+   */
+  const handleGeneratePDF = async (letterId: string) => {
+    try {
+      toast.info('מייצר PDF...');
+
+      const result = await pdfService.generatePDF(letterId);
+
+      if (result.success && result.pdfUrl) {
+        toast.success('PDF נוצר בהצלחה');
+        // Open PDF in new tab
+        window.open(result.pdfUrl, '_blank');
+      } else {
+        throw new Error(result.error || 'שגיאה ביצירת PDF');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('שגיאה ביצירת PDF');
+    }
   };
 
   /**
@@ -383,6 +407,7 @@ export function LetterHistoryPage() {
                   onResendLetter={handleResendLetter}
                   onEditLetter={handleEditLetter}
                   onPrintLetter={handlePrintLetter}
+                  onGeneratePDF={handleGeneratePDF}
                   isDraftsMode={false}
                 />
               )}
@@ -400,6 +425,7 @@ export function LetterHistoryPage() {
                   onResendLetter={handleResendLetter}
                   onEditLetter={handleEditLetter}
                   onDeleteDraft={handleDeleteDraft}
+                  onGeneratePDF={handleGeneratePDF}
                   isDraftsMode={true}
                 />
               )}

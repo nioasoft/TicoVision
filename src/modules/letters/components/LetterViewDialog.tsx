@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Mail, Printer, Loader2, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 
 export interface LetterViewDialogProps {
   open: boolean;
@@ -47,6 +48,10 @@ export function LetterViewDialog({
   const [letter, setLetter] = useState<GeneratedLetter | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  const pdfService = new PDFGenerationService();
 
   /**
    * Load letter from database
@@ -72,6 +77,7 @@ export function LetterViewDialog({
       if (error) throw error;
 
       setLetter(data);
+      setPdfUrl(data.pdf_url || null);
     } catch (error) {
       console.error('Error loading letter:', error);
       toast.error('שגיאה בטעינת המכתב');
@@ -146,10 +152,31 @@ export function LetterViewDialog({
   };
 
   /**
-   * Download as PDF (opens print dialog with save as PDF option)
+   * Generate PDF using Browserless API
    */
-  const handleDownloadPdf = () => {
-    handlePrint(); // Same as print - user can choose "Save as PDF"
+  const handleDownloadPdf = async () => {
+    if (!letterId) return;
+
+    try {
+      setGeneratingPdf(true);
+
+      const result = await pdfService.generatePDF(letterId);
+
+      if (result.success && result.pdfUrl) {
+        setPdfUrl(result.pdfUrl);
+        toast.success('PDF נוצר בהצלחה');
+
+        // Open PDF in new tab
+        window.open(result.pdfUrl, '_blank');
+      } else {
+        throw new Error(result.error || 'שגיאה ביצירת PDF');
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('שגיאה ביצירת PDF');
+    } finally {
+      setGeneratingPdf(false);
+    }
   };
 
   if (!letter && !isLoading) {
@@ -223,10 +250,19 @@ export function LetterViewDialog({
           <Button
             variant="outline"
             onClick={handleDownloadPdf}
-            disabled={!letter}
+            disabled={!letter || generatingPdf}
           >
-            <Download className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-            שמור כ-PDF
+            {generatingPdf ? (
+              <>
+                <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                יוצר PDF...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                {pdfUrl ? 'הורד PDF' : 'צור PDF'}
+              </>
+            )}
           </Button>
 
           <Button

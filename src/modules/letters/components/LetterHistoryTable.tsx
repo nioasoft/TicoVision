@@ -24,6 +24,7 @@ import {
   Clock,
   Send,
   Edit,
+  FileDown,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ export interface LetterHistoryTableProps {
   onEditLetter?: (letterId: string) => void;
   onDeleteDraft?: (letterId: string) => void;
   onPrintLetter?: (letterId: string) => void;
+  onGeneratePDF?: (letterId: string) => void;
   isDraftsMode?: boolean;
 }
 
@@ -52,6 +54,7 @@ export function LetterHistoryTable({
   onEditLetter,
   onDeleteDraft,
   onPrintLetter,
+  onGeneratePDF,
   isDraftsMode = false,
 }: LetterHistoryTableProps) {
   /**
@@ -182,6 +185,13 @@ export function LetterHistoryTable({
                             <DropdownMenuItem onClick={() => onPrintLetter(letter.id)}>
                               <Printer className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
                               הדפסה
+                            </DropdownMenuItem>
+                          )}
+
+                          {onGeneratePDF && (
+                            <DropdownMenuItem onClick={() => onGeneratePDF(letter.id)}>
+                              <FileDown className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                              צור PDF
                             </DropdownMenuItem>
                           )}
                         </>
