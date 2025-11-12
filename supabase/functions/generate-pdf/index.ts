@@ -82,6 +82,15 @@ serve(async (req) => {
     }
 
     // 5. Wrap HTML in full document (for PDF generation)
+    // Extract header and footer for repeating on all pages
+    const headerMatch = html.match(/<!-- HEADER START -->([\s\S]*?)<!-- HEADER END -->/);
+    const footerMatch = html.match(/<!-- FOOTER START -->([\s\S]*?)<!-- FOOTER END -->/);
+    const bodyMatch = html.match(/<!-- BODY START -->([\s\S]*?)<!-- BODY END -->/);
+
+    const header = headerMatch ? headerMatch[1] : '';
+    const footer = footerMatch ? footerMatch[1] : '';
+    const bodyContent = bodyMatch ? bodyMatch[1] : html; // Fallback to full HTML if markers not found
+
     const fullHtml = `
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
@@ -98,20 +107,69 @@ serve(async (req) => {
             font-family: Arial, Helvetica, sans-serif;
             direction: rtl;
             background: white;
+            margin: 0;
+            padding: 0;
           }
           @page {
             size: A4;
-            margin: 20mm 15mm;
+            margin: 15mm;
           }
+
+          /* Fixed header on all pages */
+          .pdf-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            background: white;
+            z-index: 1000;
+          }
+
+          /* Fixed footer on all pages */
+          .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            background: white;
+            z-index: 1000;
+          }
+
+          /* Body content with margins to avoid overlap with fixed header/footer */
+          .pdf-body {
+            margin-top: 180px;  /* Space for header */
+            margin-bottom: 200px; /* Space for footer */
+            page-break-inside: auto;
+          }
+
+          /* Prevent page breaks inside important elements */
+          .pdf-body table,
+          .pdf-body tr,
+          .pdf-body p {
+            page-break-inside: avoid;
+          }
+
           @media print {
             body {
               margin: 0;
+            }
+            .pdf-header {
+              position: running(header);
+            }
+            .pdf-footer {
+              position: running(footer);
             }
           }
         </style>
       </head>
       <body>
-        ${html}
+        ${header ? `<div class="pdf-header">${header}</div>` : ''}
+        <div class="pdf-body">
+          ${bodyContent}
+        </div>
+        ${footer ? `<div class="pdf-footer">${footer}</div>` : ''}
       </body>
       </html>
     `;

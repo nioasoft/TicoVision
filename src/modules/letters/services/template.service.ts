@@ -528,11 +528,17 @@ export class TemplateService extends BaseService {
         <tr>
             <td align="center" style="padding: 40px 20px;">
                 <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
+                    <!-- HEADER START -->
                     ${headerWithCustomLines}
+                    <!-- HEADER END -->
+                    <!-- BODY START -->
                     ${subjectLinesHtml || ''}
                     ${body}
                     ${paymentSection}
+                    <!-- BODY END -->
+                    <!-- FOOTER START -->
                     ${footer}
+                    <!-- FOOTER END -->
                 </table>
             </td>
         </tr>
