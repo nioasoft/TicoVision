@@ -8,7 +8,7 @@
  * - Caches PDF URL for reuse
  *
  * Edge Function: 'generate-pdf'
- * Storage Bucket: 'letter-pdfs-v2'
+ * Storage Bucket: 'letter-pdfs' (created in migration 091)
  */
 
 import { supabase } from '@/lib/supabase';
@@ -28,7 +28,7 @@ interface PDFMetadata {
 
 export class PDFGenerationService {
   private readonly edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-pdf`;
-  private readonly bucket = 'letter-pdfs-v2';
+  private readonly bucket = 'letter-pdfs'; // Correct bucket (migration 091)
 
   /**
    * Generate PDF on-demand

@@ -16,7 +16,8 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
-  FolderOpen
+  FolderOpen,
+  Sparkles
 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ import { registrationService } from '@/services/registration.service';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
+import { VersionSwitcher } from '@/components/ui/VersionSwitcher';
 
 interface NavigationItem {
   name: string;
@@ -68,6 +70,15 @@ const navigation: NavigationItem[] = [
     submenu: [
       { name: 'כתיבת מכתבים', href: '/letter-templates' },
       { name: 'היסטוריית מכתבים', href: '/letter-history' },
+    ]
+  },
+  {
+    name: 'מכתבים V2',
+    icon: Sparkles,
+    allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[],
+    submenu: [
+      { name: 'בונה מכתבים חדש', href: '/letters-v2' },
+      { name: 'היסטוריית מכתבים V2', href: '/letters-v2/history' },
     ]
   },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
@@ -368,6 +379,9 @@ export function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Version Switcher - Fixed button */}
+      <VersionSwitcher />
     </div>
   );
 }

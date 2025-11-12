@@ -215,18 +215,16 @@ export function LetterHistoryPage() {
     try {
       toast.info('מייצר PDF...');
 
-      const result = await pdfService.generatePDF(letterId);
+      // generatePDF returns the PDF URL directly (not an object)
+      const pdfUrl = await pdfService.generatePDF(letterId);
 
-      if (result.success && result.pdfUrl) {
-        toast.success('PDF נוצר בהצלחה');
-        // Open PDF in new tab
-        window.open(result.pdfUrl, '_blank');
-      } else {
-        throw new Error(result.error || 'שגיאה ביצירת PDF');
-      }
+      toast.success('PDF נוצר בהצלחה');
+      // Open PDF in new tab
+      window.open(pdfUrl, '_blank');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('שגיאה ביצירת PDF');
+      // Show the actual error message
+      toast.error(error instanceof Error ? error.message : 'שגיאה ביצירת PDF');
     }
   };
 

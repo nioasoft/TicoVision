@@ -258,15 +258,20 @@
 ---
 
 ### 7. **generated_letters** ✅ שימוש מומלץ
-**תיאור**: מכתבים שנוצרו ונשלחו  
+**תיאור**: מכתבים שנוצרו ונשלחו
 **שימוש**: מעקב אחר מכתבים שנשלחו, נפתחו ונלחצו
+
+**שתי דרכים ליצירת מכתבים**:
+1. **Custom Mode**: מכתבים מותאמים אישית - משתמש ב-`template_id`
+2. **Template Mode**: מכתבים מוכנים (11 סוגים) - משתמש ב-`template_type`
 
 | שדה | סוג | תיאור |
 |-----|-----|-------|
 | id | UUID | מזהה ייחודי |
 | tenant_id | UUID | מזהה המשרד |
 | client_id | UUID | מזהה לקוח |
-| template_id | UUID | מזהה תבנית |
+| template_id | UUID NULL | מזהה תבנית מ-letter_templates (למכתבים custom בלבד). NULL עבור מכתבים מרכיבים |
+| template_type | TEXT | סוג תבנית (annual_fee, internal_audit, וכו'). משמש למכתבים מבוססי רכיבים |
 | fee_calculation_id | UUID | מזהה חישוב שכ"ט |
 | variables_used | JSONB | משתנים שהוחלפו |
 | generated_content_html | TEXT | תוכן סופי HTML |
@@ -278,6 +283,9 @@
 | clicked_at | TIMESTAMPTZ | מתי נלחץ |
 | created_at | TIMESTAMPTZ | תאריך יצירה |
 | created_by | UUID | מי יצר |
+
+**Constraints**:
+- `CHECK (template_id IS NOT NULL OR template_type IS NOT NULL)` - חייב להיות אחד מהשניים
 
 ---
 

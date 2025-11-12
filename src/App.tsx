@@ -33,6 +33,11 @@ const CollectionDashboard = lazy(() => import('@/modules/collections/pages/Colle
 const NotificationSettings = lazy(() => import('@/modules/collections/pages/NotificationSettings').then(m => ({ default: m.NotificationSettings })));
 const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage').then(m => ({ default: m.DisputesPage })));
 
+// Letters V2 - New System
+const LetterTemplatesPageV2 = lazy(() => import('@/modules/letters-v2/pages/LetterTemplatesPageV2'));
+const LetterHistoryPageV2 = lazy(() => import('@/modules/letters-v2/pages/LetterHistoryPageV2'));
+const LetterViewerV2 = lazy(() => import('@/modules/letters-v2/pages/LetterViewerV2'));
+
 // Loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -58,6 +63,12 @@ function App() {
                 <Route path="/letters/view/:id" element={
                   <ErrorBoundary>
                     <LetterViewer />
+                  </ErrorBoundary>
+                } />
+                {/* Letters V2 - Public Viewer (no auth) */}
+                <Route path="/letters-v2/view/:id" element={
+                  <ErrorBoundary>
+                    <LetterViewerV2 />
                   </ErrorBoundary>
                 } />
                 <Route path="/login" element={
@@ -166,6 +177,18 @@ function App() {
                       <Route path="/collections/disputes" element={
                         <ErrorBoundary>
                           <DisputesPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Letters V2 routes */}
+                      <Route path="/letters-v2" element={
+                        <ErrorBoundary>
+                          <LetterTemplatesPageV2 />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/letters-v2/history" element={
+                        <ErrorBoundary>
+                          <LetterHistoryPageV2 />
                         </ErrorBoundary>
                       } />
 
