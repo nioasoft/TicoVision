@@ -376,8 +376,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    * Preview letter
    */
   const handlePreview = async () => {
-    if (!letterContent.trim()) {
-      toast.error('נא להזין טקסט למכתב');
+    if (!letterContent || letterContent.trim() === '' || letterContent === '<p></p>' || letterContent === '<p><br></p>') {
+      toast.error('נא להזין תוכן למכתב');
       return;
     }
 
@@ -435,8 +435,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    * Send email via Edge Function
    */
   const handleSendEmail = async () => {
-    if (!letterContent.trim()) {
-      toast.error('נא להזין טקסט למכתב');
+    if (!letterContent || letterContent.trim() === '' || letterContent === '<p></p>' || letterContent === '<p><br></p>') {
+      toast.error('נא להזין תוכן למכתב');
       return;
     }
 
@@ -535,8 +535,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    */
   const handleSendWhatsApp = async () => {
     // 1. Validate inputs
-    if (!letterContent.trim()) {
-      toast.error('נא להזין טקסט למכתב');
+    if (!letterContent || letterContent.trim() === '' || letterContent === '<p></p>' || letterContent === '<p><br></p>') {
+      toast.error('נא להזין תוכן למכתב');
       return;
     }
 
@@ -943,7 +943,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       return;
     }
 
-    if (!letterContent.trim()) {
+    if (!letterContent || letterContent.trim() === '' || letterContent === '<p></p>' || letterContent === '<p><br></p>') {
       toast.error('נא להזין תוכן למכתב לפני שמירה כתבנית');
       return;
     }

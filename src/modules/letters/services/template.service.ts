@@ -755,9 +755,34 @@ export class TemplateService extends BaseService {
   /**
    * Parse plain text with Markdown syntax to HTML
    * Wrapper for text-to-html-parser utility
+   *
+   * @param text - The content to process
+   * @param isHtml - If true, assumes text is already HTML from Tiptap (bypasses parsing)
+   * @returns HTML string
    */
-  parseTextToHTML(plainText: string): string {
-    return parseMarkdownToHTML(plainText);
+  parseTextToHTML(text: string, isHtml: boolean = false): string {
+    let html: string;
+
+    // If already HTML from Tiptap, sanitize and normalize it
+    if (isHtml) {
+      html = text;
+
+      // Remove Tiptap editor-specific classes (prose, prose-sm, etc.)
+      html = html.replace(/class="[^"]*prose[^"]*"/g, '');
+      html = html.replace(/class="[^"]*max-w-none[^"]*"/g, '');
+      html = html.replace(/class=""/g, ''); // Remove empty class attributes
+
+      // Wrap in table row/cell with David Libre font (CRITICAL: Must be <tr><td> to fit in table structure)
+      html = `<tr><td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
+    } else {
+      // Otherwise parse Markdown to HTML (legacy support)
+      html = parseMarkdownToHTML(text);
+
+      // Also wrap Markdown output in table row/cell with David Libre font
+      html = `<tr><td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
+    }
+
+    return html;
   }
 
   /**
@@ -769,13 +794,15 @@ export class TemplateService extends BaseService {
     description?: string;
     plainText: string;
     includesPayment: boolean;
+    subject?: string; // Email subject line
+    isHtml?: boolean; // If true, plainText is already HTML from Tiptap
   }): Promise<ServiceResponse<{ id: string; name: string; parsed_html: string }>> {
     try {
       const tenantId = await this.getTenantId();
       const userId = (await supabase.auth.getUser()).data.user?.id;
 
-      // Parse plain text to HTML
-      const parsedHtml = this.parseTextToHTML(params.plainText);
+      // Parse plain text to HTML (or use as-is if already HTML)
+      const parsedHtml = this.parseTextToHTML(params.plainText, params.isHtml);
 
       // Save to database
       const { data, error } = await supabase
@@ -787,6 +814,7 @@ export class TemplateService extends BaseService {
           plain_text: params.plainText,
           parsed_html: parsedHtml,
           includes_payment: params.includesPayment,
+          subject: params.subject || null,
           created_by: userId
         })
         .select('id, name, parsed_html')
@@ -816,6 +844,7 @@ export class TemplateService extends BaseService {
     plain_text: string;
     parsed_html: string;
     includes_payment: boolean;
+    subject: string | null;
     created_at: string;
     updated_at: string;
   }>>> {
@@ -824,7 +853,7 @@ export class TemplateService extends BaseService {
 
       const { data, error } = await supabase
         .from('custom_letter_bodies')
-        .select('id, name, description, plain_text, parsed_html, includes_payment, created_at, updated_at')
+        .select('id, name, description, plain_text, parsed_html, includes_payment, subject, created_at, updated_at')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
 
@@ -846,13 +875,14 @@ export class TemplateService extends BaseService {
     plain_text: string;
     parsed_html: string;
     includes_payment: boolean;
+    subject: string | null;
   }>> {
     try {
       const tenantId = await this.getTenantId();
 
       const { data, error } = await supabase
         .from('custom_letter_bodies')
-        .select('id, name, description, plain_text, parsed_html, includes_payment')
+        .select('id, name, description, plain_text, parsed_html, includes_payment, subject')
         .eq('id', bodyId)
         .eq('tenant_id', tenantId)
         .single();
@@ -894,14 +924,17 @@ export class TemplateService extends BaseService {
    */
   async generateFromCustomText(params: {
     plainText: string;
-    clientId: string;
+    clientId: string | null;
     variables: Record<string, string | number>;
     includesPayment: boolean;
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
+    subject?: string; // Email subject / letter title
     saveAsTemplate?: {
       name: string;
       description?: string;
+      subject?: string;
     };
+    isHtml?: boolean; // If true, plainText is already HTML from Tiptap
   }): Promise<ServiceResponse<GeneratedLetter>> {
     try {
       const tenantId = await this.getTenantId();
@@ -910,8 +943,8 @@ export class TemplateService extends BaseService {
       const header = await this.loadTemplateFile('components/header.html');
       const footer = await this.loadTemplateFile('components/footer.html');
 
-      // 2. Parse custom text to HTML
-      const bodyHtml = this.parseTextToHTML(params.plainText);
+      // 2. Parse custom text to HTML (or use as-is if already HTML)
+      const bodyHtml = this.parseTextToHTML(params.plainText, params.isHtml);
 
       // 3. Load payment section if needed
       let paymentSection = '';
@@ -957,29 +990,58 @@ export class TemplateService extends BaseService {
           name: params.saveAsTemplate.name,
           description: params.saveAsTemplate.description,
           plainText: params.plainText,
-          includesPayment: params.includesPayment
+          includesPayment: params.includesPayment,
+          subject: params.saveAsTemplate.subject,
+          isHtml: params.isHtml
         });
       }
 
-      // 8. Save generated letter
+      // 8. Save generated letter (client_id is now optional for general letters)
+      const insertData = {
+        tenant_id: tenantId,
+        client_id: params.clientId || null, // Nullable for general/manual recipient letters
+        template_id: null, // No template_id for custom letters
+        template_type: 'custom_text', // Required when template_id is null (CHECK constraint)
+        fee_calculation_id: null,
+        subject: params.subject || 'מכתב חדש', // Email subject / letter title
+        status: 'draft', // Default status (CHECK: 'draft' | 'sent' | 'delivered' | 'opened')
+        rendering_engine: 'legacy', // CHECK constraint: 'legacy' | 'unified'
+        system_version: 'v1', // CHECK constraint: 'v1' | 'v2'
+        is_latest: true, // This is the latest version of this letter
+        version_number: 1, // First version
+        parent_letter_id: null, // No parent letter (not a new version)
+        variables_used: fullVariables,
+        generated_content_html: fullHtml,
+        generated_content_text: plainText,
+        payment_link: fullVariables.payment_link as string | undefined,
+        created_at: new Date().toISOString(),
+        created_by: (await supabase.auth.getUser()).data.user?.id
+      };
+
+      console.log('🔍 [DB Insert] Inserting to generated_letters:', {
+        tenant_id: insertData.tenant_id,
+        client_id: insertData.client_id,
+        template_type: insertData.template_type,
+        subject: insertData.subject,
+        status: insertData.status,
+        rendering_engine: insertData.rendering_engine,
+        system_version: insertData.system_version,
+        html_length: insertData.generated_content_html?.length,
+        text_length: insertData.generated_content_text?.length
+      });
+
       const { data: generatedLetter, error: saveError } = await supabase
         .from('generated_letters')
-        .insert({
-          tenant_id: tenantId,
-          client_id: params.clientId,
-          template_id: null, // No template_id for custom letters
-          fee_calculation_id: null,
-          variables_used: fullVariables,
-          generated_content_html: fullHtml,
-          generated_content_text: plainText,
-          payment_link: fullVariables.payment_link as string | undefined,
-          created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (saveError) throw saveError;
+      if (saveError) {
+        console.error('🔴 [DB Error] Failed to insert:', saveError);
+        throw saveError;
+      }
+
+      console.log('✅ [DB Insert] Success! Letter ID:', generatedLetter?.id);
 
       await this.logAction('generate_custom_letter', generatedLetter.id, {
         client_id: params.clientId,
@@ -1003,14 +1065,15 @@ export class TemplateService extends BaseService {
     includesPayment: boolean;
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
     subjectLines?: import('../types/letter.types').SubjectLine[];
+    isHtml?: boolean; // If true, plainText is already HTML from Tiptap
   }): Promise<ServiceResponse<{ html: string }>> {
     try {
       // 1. Load header and footer
       const header = await this.loadTemplateFile('components/header.html');
       const footer = await this.loadTemplateFile('components/footer.html');
 
-      // 2. Parse custom text to HTML
-      const bodyHtml = this.parseTextToHTML(params.plainText);
+      // 2. Parse custom text to HTML (or use as-is if already HTML)
+      const bodyHtml = this.parseTextToHTML(params.plainText, params.isHtml);
 
       // 3. Load payment section if needed
       let paymentSection = '';
