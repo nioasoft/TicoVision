@@ -138,9 +138,9 @@ serve(async (req) => {
             z-index: 1000;
           }
 
-          /* Force tagline spacing in fixed footer */
-          .pdf-footer tr:last-child td {
-            padding-top: 50px !important;
+          /* Add spacing between bottom border and tagline */
+          .pdf-footer tr:nth-last-child(2) td div {
+            margin-bottom: 50px !important;
           }
 
           /* Body content with margins to avoid overlap with fixed header/footer */
