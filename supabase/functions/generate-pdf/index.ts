@@ -1,16 +1,36 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
+  'https://ticovision.vercel.app',
+  'http://localhost:5173',  // Vite dev server (default)
+  'http://localhost:5174',  // Vite dev server (alternate port)
+  'http://localhost:3000',  // Alternative dev port
+  Deno.env.get('APP_URL'),  // Custom deployment URL
+].filter(Boolean) as string[];
+
+function getCorsHeaders(origin: string | null) {
+  // Check if origin is allowed
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+    ? origin
+    : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-application-name',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 interface GeneratePDFRequest {
   letterId: string;
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -77,16 +97,15 @@ serve(async (req) => {
           body {
             font-family: Arial, Helvetica, sans-serif;
             direction: rtl;
-            padding: 20mm;
             background: white;
           }
           @page {
             size: A4;
-            margin: 0;
+            margin: 20mm 15mm;
           }
           @media print {
             body {
-              padding: 20mm;
+              margin: 0;
             }
           }
         </style>
@@ -116,12 +135,6 @@ serve(async (req) => {
           options: {
             format: 'A4',
             printBackground: true,
-            margin: {
-              top: '20mm',
-              bottom: '20mm',
-              left: '15mm',
-              right: '15mm',
-            },
           },
         }),
       }
@@ -138,7 +151,7 @@ serve(async (req) => {
     // 7. Upload PDF to Supabase Storage
     const fileName = `${letterId}.pdf`;
     const { error: uploadError } = await supabase.storage
-      .from('letter-pdfs')
+      .from('letter-pdfs') // Correct bucket name (created in migration 091)
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
         upsert: true
@@ -150,7 +163,7 @@ serve(async (req) => {
 
     // 8. Get public URL
     const { data: urlData } = supabase.storage
-      .from('letter-pdfs')
+      .from('letter-pdfs') // Correct bucket name (created in migration 091)
       .getPublicUrl(fileName);
 
     const pdfUrl = urlData.publicUrl;

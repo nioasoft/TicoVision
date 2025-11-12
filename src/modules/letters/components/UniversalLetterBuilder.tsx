@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { TiptapEditor } from '@/components/editor/TiptapEditor';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -52,6 +53,7 @@ interface SavedTemplate {
   name: string;
   description: string | null;
   plain_text: string;
+  parsed_html: string;  // HTML content from Tiptap editor
   includes_payment: boolean;
   subject: string | null;
   created_at: string;
@@ -80,7 +82,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   // State - Text content
-  const [plainText, setPlainText] = useState('');
+  const [letterContent, setLetterContent] = useState(''); // Changed from plainText to letterContent (HTML from Tiptap)
   const [companyName, setCompanyName] = useState('');
   const [commercialName, setCommercialName] = useState('');
   const [showCommercialName, setShowCommercialName] = useState(false);
@@ -103,6 +105,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
 
   // State - Saved templates
   const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>([]);
@@ -298,7 +301,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const handleLoadTemplate = (templateId: string) => {
     const template = savedTemplates.find(t => t.id === templateId);
     if (template) {
-      setPlainText(template.plain_text);
+      setLetterContent(template.plain_text); // Load original HTML from Tiptap (not parsed_html with table wrapping)
       setIncludesPayment(template.includes_payment);
       setEmailSubject(template.subject || '');
       setSelectedTemplateId(templateId);
@@ -322,7 +325,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Clear selection if deleted template was selected
       if (selectedTemplateId === templateId) {
         setSelectedTemplateId('');
-        setPlainText('');
+        setLetterContent('');
       }
     } catch (error) {
       console.error('Error deleting template:', error);
@@ -373,7 +376,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    * Preview letter
    */
   const handlePreview = async () => {
-    if (!plainText.trim()) {
+    if (!letterContent.trim()) {
       toast.error('נא להזין טקסט למכתב');
       return;
     }
@@ -388,7 +391,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: companyName,
+        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
@@ -407,11 +410,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       }
 
       const { data, error } = await templateService.previewCustomLetter({
-        plainText,
+        plainText: letterContent, // Send HTML content
         variables,
         includesPayment,
         customHeaderLines, // Pass custom header lines to preview
-        subjectLines // Pass subject lines to preview
+        subjectLines, // Pass subject lines to preview
+        isHtml: true // Content is HTML from Tiptap
       });
 
       if (error) throw error;
@@ -431,43 +435,18 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    * Send email via Edge Function
    */
   const handleSendEmail = async () => {
-    if (!plainText.trim()) {
+    if (!letterContent.trim()) {
       toast.error('נא להזין טקסט למכתב');
       return;
     }
 
-    // Determine recipient emails - either from client contacts or manual input
-    let recipientEmails: string[] = [];
-
-    if (selectedClient) {
-      // Has client - use selected contacts
-      if (selectedRecipients.length === 0) {
-        toast.error('נא לבחור לפחות נמען אחד מרשימת אנשי הקשר');
-        return;
-      }
-      recipientEmails = selectedRecipients;
-    } else {
-      // No client - use manual emails
-      if (!manualEmails.trim()) {
-        toast.error('נא להזין לפחות כתובת מייל אחת');
-        return;
-      }
-
-      // Parse and validate manual emails
-      recipientEmails = parseManualEmails(manualEmails);
-
-      if (recipientEmails.length === 0) {
-        toast.error('נא להזין כתובת מייל תקינה');
-        return;
-      }
-
-      // Validate each email
-      const invalidEmails = recipientEmails.filter(email => !isValidEmail(email));
-      if (invalidEmails.length > 0) {
-        toast.error(`כתובות מייל לא תקינות: ${invalidEmails.join(', ')}`);
-        return;
-      }
+    // Determine recipient emails - selectedRecipients works for both client and manual modes
+    if (selectedRecipients.length === 0) {
+      toast.error('נא לבחור לפחות נמען אחד');
+      return;
     }
+
+    const recipientEmails = selectedRecipients;
 
     if (!emailSubject.trim()) {
       toast.error('נא להזין נושא למייל');
@@ -478,7 +457,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: companyName,
+        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
@@ -498,8 +477,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails, // Array of emails (from client or manual)
-          recipientName: companyName,
-          customText: plainText,
+          recipientName: recipientMode === 'manual' ? manualCompanyName : companyName,
+          customText: letterContent, // Send HTML content
           variables,
           includesPayment,
           customHeaderLines, // Pass custom header lines to Edge Function
@@ -509,6 +488,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             description: templateDescription,
             subject: emailSubject || undefined
           } : undefined,
+          isHtml: true, // Content is HTML from Tiptap
           clientId: selectedClient?.id || null
         }
       });
@@ -555,7 +535,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    */
   const handleSendWhatsApp = async () => {
     // 1. Validate inputs
-    if (!plainText.trim()) {
+    if (!letterContent.trim()) {
       toast.error('נא להזין טקסט למכתב');
       return;
     }
@@ -570,19 +550,27 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       return;
     }
 
-    if (!companyName.trim()) {
-      toast.error('נא להזין שם חברה');
+    // Check correct field based on recipient mode
+    const recipientName = recipientMode === 'manual' ? manualCompanyName : companyName;
+    if (!recipientName.trim()) {
+      toast.error('נא להזין שם נמען');
       return;
     }
 
     setIsSaving(true);
     try {
+      // Determine correct fields based on recipient mode
+      const recipientCommercialName = recipientMode === 'manual'
+        ? (manualShowCommercialName ? manualCommercialName : '')
+        : (showCommercialName ? commercialName : '');
+      const recipientCustomHeaderLines = recipientMode === 'manual' ? manualCustomHeaderLines : customHeaderLines;
+
       // 2. Build letter data
       const letterData = {
-        plainText,
-        companyName,
-        commercialName: showCommercialName ? commercialName : '',
-        customHeaderLines,
+        plainText: letterContent, // HTML content
+        companyName: recipientName,
+        commercialName: recipientCommercialName,
+        customHeaderLines: recipientCustomHeaderLines,
         subjectLines,
         includesPayment,
         amount,
@@ -592,9 +580,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: companyName,
+        company_name: recipientName,
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-        commercial_name: showCommercialName ? commercialName : ''
+        commercial_name: recipientCommercialName
       };
 
       // Add payment variables if needed
@@ -610,7 +598,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         variables,
         includesPayment: letterData.includesPayment,
         customHeaderLines: letterData.customHeaderLines,
-        saveAsTemplate: undefined
+        subject: emailSubject || 'מכתב חדש', // Pass email subject
+        saveAsTemplate: undefined,
+        isHtml: true // Content is HTML from Tiptap
       });
 
       if (result.error || !result.data) {
@@ -808,23 +798,69 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    * Generate PDF using Browserless API
    */
   const handleGeneratePDF = async () => {
-    if (!lastSentLetterId) {
-      toast.error('לא נמצא מכתב לייצור PDF. נא לשלוח את המכתב תחילה.');
+    // Validate content
+    if (!letterContent.trim()) {
+      toast.error('נא להזין טקסט למכתב');
+      return;
+    }
+
+    // Validate recipient info (either client OR manual company name)
+    if (recipientMode === 'manual' && !manualCompanyName.trim()) {
+      toast.error('נא להזין שם נמען');
+      return;
+    }
+    if (recipientMode === 'client' && !selectedClient?.id) {
+      toast.error('נא לבחור לקוח');
       return;
     }
 
     try {
       setGeneratingPdf(true);
 
-      const result = await pdfService.generatePDF(lastSentLetterId);
+      let letterId = lastSentLetterId;
 
-      if (result.success && result.pdfUrl) {
-        toast.success('PDF נוצר בהצלחה');
-        // Open PDF in new tab
-        window.open(result.pdfUrl, '_blank');
-      } else {
-        throw new Error(result.error || 'שגיאה ביצירת PDF');
+      // If letter not saved yet, save it first
+      if (!letterId) {
+        // Build variables
+        const variables: Record<string, string | number> = {
+          company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+          group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
+          commercial_name: showCommercialName ? commercialName : ''
+        };
+
+        // Add payment variables if needed
+        if (includesPayment) {
+          const discounts = calculateDiscounts(amount);
+          Object.assign(variables, discounts);
+        }
+
+        // Save letter to database (client_id is optional for general letters)
+        const result = await templateService.generateFromCustomText({
+          plainText: letterContent,
+          clientId: selectedClient?.id || null, // NULL for general/manual recipients
+          variables,
+          includesPayment,
+          customHeaderLines,
+          subject: emailSubject || 'מכתב חדש', // Pass email subject
+          saveAsTemplate: undefined,
+          isHtml: true
+        });
+
+        if (result.error || !result.data) {
+          toast.error('שגיאה בשמירת המכתב');
+          return;
+        }
+
+        letterId = result.data.id;
+        setLastSentLetterId(letterId); // Save for future use
       }
+
+      // Generate PDF
+      const pdfUrl = await pdfService.getOrGeneratePDF(letterId);
+
+      toast.success('PDF מוכן להורדה');
+      // Open PDF in new tab
+      window.open(pdfUrl, '_blank');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('שגיאה ביצירת PDF');
@@ -860,10 +896,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setEmailSubject(letter.subject || '');
       setCompanyName(letter.client?.company_name || '');
 
-      // TODO: Parse HTML back to plain text
-      // For now, use generated_content_text if available
-      if (letter.generated_content_text) {
-        setPlainText(letter.generated_content_text);
+      // Load content - prefer HTML if available
+      if (letter.generated_content_html) {
+        setLetterContent(letter.generated_content_html);
+      } else if (letter.generated_content_text) {
+        setLetterContent(letter.generated_content_text);
       } else {
         toast.warning('לא ניתן לטעון את התוכן המקורי של המכתב. ניתן להתחיל מחדש.');
       }
@@ -891,11 +928,55 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
-   * Load example text
+   * Handle save as template button click
    */
-  const handleLoadExample = () => {
-    setPlainText(EXAMPLE_TEXT);
-    toast.success('טקסט לדוגמה נטען');
+  const handleSaveTemplateClick = () => {
+    setShowSaveTemplateDialog(true);
+  };
+
+  /**
+   * Confirm save template - Save immediately to database
+   */
+  const handleConfirmSaveTemplate = async () => {
+    if (!templateName.trim()) {
+      toast.error('נא להזין שם לתבנית');
+      return;
+    }
+
+    if (!letterContent.trim()) {
+      toast.error('נא להזין תוכן למכתב לפני שמירה כתבנית');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Save template immediately to database
+      const { data, error } = await templateService.saveCustomBody({
+        name: templateName.trim(),
+        description: templateDescription.trim() || undefined,
+        plainText: letterContent,
+        includesPayment: false, // Universal letter doesn't include payment section
+        subject: emailSubject || undefined, // Save email subject with template
+        isHtml: true // Content is from Tiptap WYSIWYG editor
+      });
+
+      if (error) throw error;
+
+      // Success! Reload templates list and clear dialog
+      await loadSavedTemplates();
+      setShowSaveTemplateDialog(false);
+      setTemplateName('');
+      setTemplateDescription('');
+      setSaveAsTemplate(false); // Clear the flag since we saved immediately
+
+      toast.success(`התבנית "${data?.name}" נשמרה בהצלחה!`);
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast.error('שגיאה בשמירת התבנית');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   /**
@@ -1094,44 +1175,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         </Alert>
       )}
 
-      {/* Saved Templates Section */}
-      {savedTemplates.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-right">תבניות שמורות</CardTitle>
-            <CardDescription className="text-right">
-              טען תבנית קיימת או התחל מחדש
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Select value={selectedTemplateId} onValueChange={handleLoadTemplate}>
-                <SelectTrigger dir="rtl" className="flex-1">
-                  <SelectValue placeholder="בחר תבנית שמורה..." />
-                </SelectTrigger>
-                <SelectContent dir="rtl">
-                  {savedTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name} {template.includes_payment && '(עם תשלום)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTemplateId && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleDeleteTemplate(selectedTemplateId)}
-                  title="מחק תבנית"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Main Builder Card */}
       <Card>
         <CardHeader>
@@ -1141,10 +1184,69 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Step 1: Two-Column Layout - Client vs Manual */}
+          {/* Step 1: Email Subject + Template Selection - Two Columns */}
+          <div>
+            <Label className="text-right rtl:text-right block text-base font-semibold mb-4">
+              1. נושא המייל ובחירת תבנית
+            </Label>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* RIGHT COLUMN: Email Subject */}
+              <div>
+                <Label htmlFor="email_subject" className="text-right rtl:text-right block text-sm font-medium mb-2">
+                  נושא המייל <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email_subject"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  placeholder="שכר טרחתנו לשנת המס 2026"
+                  dir="rtl"
+                  required
+                />
+              </div>
+
+              {/* LEFT COLUMN: Template Selection */}
+              <div>
+                <Label className="text-right rtl:text-right block text-sm font-medium mb-2">
+                  בחר תבנית שמורה (אופציונלי)
+                </Label>
+                <div className="flex gap-2 rtl:flex-row-reverse">
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={handleLoadTemplate}
+                    disabled={savedTemplates.length === 0}
+                  >
+                    <SelectTrigger dir="rtl" className="flex-1">
+                      <SelectValue placeholder={savedTemplates.length > 0 ? "בחר תבנית..." : "אין תבניות שמורות"} />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl">
+                      {savedTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedTemplateId && (
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteTemplate(selectedTemplateId)}
+                      title="מחק תבנית"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2: Two-Column Layout - Client vs Manual */}
           <div className="space-y-4">
-            <Label className="text-right block text-base font-semibold">
-              1. בחר לקוח מהרשימה או הזן נמען אחר
+            <Label className="text-right rtl:text-right block text-base font-semibold">
+              2. בחר לקוח מהרשימה או הזן נמען אחר
             </Label>
 
             {/* Two-Column Grid */}
@@ -1159,7 +1261,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-lg font-semibold mb-4 text-right flex items-center justify-end gap-2">
+                <h3 className="text-lg font-semibold mb-4 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <Users className="h-5 w-5" />
                   לקוח מהרשימה
                 </h3>
@@ -1229,7 +1331,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-lg font-semibold mb-4 text-right flex items-center justify-end gap-2">
+                <h3 className="text-lg font-semibold mb-4 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <UserPlus className="h-5 w-5" />
                   נמען אחר (כללי)
                 </h3>
@@ -1251,52 +1353,89 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       />
                     </div>
 
-                    {/* Manual Commercial Name */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="manual_show_commercial_name"
-                          checked={manualShowCommercialName}
-                          onCheckedChange={(checked) => setManualShowCommercialName(checked as boolean)}
-                          disabled={recipientMode !== 'manual'}
-                        />
-                        <Label htmlFor="manual_show_commercial_name" className="text-right cursor-pointer">
-                          הוסף שם מסחרי
-                        </Label>
-                      </div>
+                    {/* Manual Email Recipients */}
+                    {/* Manual Email Addition - Same UX as client mode */}
+                    <div className="space-y-3">
+                      <Label className="text-right block">
+                        כתובות מייל
+                      </Label>
 
-                      {manualShowCommercialName && (
-                        <div>
+                      {/* Add Email Button */}
+                      {!showManualEmailInput ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowManualEmailInput(true)}
+                          className="w-full"
+                          disabled={recipientMode !== 'manual'}
+                        >
+                          <Plus className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                          הוסף מייל
+                        </Button>
+                      ) : (
+                        // Input for manual email
+                        <div className="flex gap-2">
                           <Input
-                            id="manual_commercial_name"
-                            value={manualCommercialName}
-                            onChange={(e) => setManualCommercialName(e.target.value)}
-                            placeholder="הזן שם מסחרי"
-                            dir="rtl"
-                            disabled={recipientMode !== 'manual'}
+                            type="email"
+                            value={manualEmailInput}
+                            onChange={(e) => setManualEmailInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddManualEmail();
+                              }
+                            }}
+                            placeholder="example@email.com"
+                            dir="ltr"
+                            className="flex-1 text-left"
                           />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleAddManualEmail}
+                          >
+                            הוסף
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setShowManualEmailInput(false);
+                              setManualEmailInput('');
+                            }}
+                          >
+                            ביטול
+                          </Button>
                         </div>
                       )}
-                    </div>
 
-                    {/* Manual Email Recipients */}
-                    <div className="space-y-2">
-                      <Label htmlFor="manual_emails" className="text-right block">
-                        כתובות מייל (הפרד בפסיקים)
-                      </Label>
-                      <Textarea
-                        id="manual_emails"
-                        value={manualEmails}
-                        onChange={(e) => setManualEmails(e.target.value)}
-                        placeholder="example1@email.com, example2@email.com"
-                        dir="ltr"
-                        rows={3}
-                        className="font-mono text-sm"
-                        disabled={recipientMode !== 'manual'}
-                      />
-                      <p className="text-xs text-gray-500 text-right">
-                        הזן מספר כתובות מייל מופרדות בפסיקים
-                      </p>
+                      {/* Display manually added emails */}
+                      {selectedRecipients.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <Label className="text-sm font-semibold text-blue-900 mb-2 block text-right">
+                            נמענים שנבחרו ({selectedRecipients.length}):
+                          </Label>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedRecipients.map((email) => (
+                              <div
+                                key={email}
+                                className="inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border text-sm"
+                              >
+                                <span className="text-gray-700">{email}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveRecipient(email)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1304,26 +1443,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
             </div>
 
-            {/* Email Subject - Shared by both modes */}
-            <div>
-              <Label htmlFor="email_subject" className="text-right block">
-                נושא המייל \ שם המכתב לתיוק <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="email_subject"
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
-                placeholder="שכר טרחתנו לשנת המס 2026"
-                dir="rtl"
-                required
-              />
-            </div>
-
-            {/* Custom Header Lines - Shared by both modes */}
+            {/* Custom Header Lines - Step 3 */}
             <div className="mt-4 p-4 border rounded-lg bg-gray-50">
               <div className="flex justify-between items-center mb-3">
-                <Label className="text-right block font-semibold">
-                  שורות נוספות מתחת לשם הנמען (אופציונלי)
+                <Label className="text-right rtl:text-right block text-base font-semibold">
+                  3. שורות נוספות מתחת לשם הנמען (אופציונלי)
                 </Label>
                 <div className="flex gap-2">
                   <Button
@@ -1332,7 +1456,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     size="sm"
                     onClick={handleAddTextLine}
                   >
-                    <Plus className="h-4 w-4 ml-1" />
+                    <Plus className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
                     הוסף שורת טקסט
                   </Button>
                   <Button
@@ -1429,11 +1553,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               )}
             </div>
 
-            {/* Subject Lines Section (הנדון) */}
+            {/* Subject Lines Section (הנדון) - Step 4 */}
             <div className="mt-4 p-4 border rounded-lg bg-blue-50">
               <div className="flex justify-between items-center mb-3">
-                <Label className="text-right block font-semibold">
-                  שורות הנדון (26px, כחול #395BF7)
+                <Label className="text-right rtl:text-right block text-base font-semibold">
+                  4. שורות הנדון (26px, כחול #395BF7)
                 </Label>
                 <Button
                   type="button"
@@ -1441,7 +1565,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   size="sm"
                   onClick={handleAddSubjectLine}
                 >
-                  <Plus className="h-4 w-4 ml-1" />
+                  <Plus className="h-4 w-4 rtl:ml-1 ltr:mr-1" />
                   הוסף שורת הנדון
                 </Button>
               </div>
@@ -1568,533 +1692,329 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
           </div>
 
-          {/* Step 2: Write Content */}
+          {/* Step 5: Letter Content with TiptapEditor */}
           <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label className="text-right block text-base font-semibold">
-                2. כתוב את תוכן המכתב
-              </Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLoadExample}
-              >
-                <FileText className="h-4 w-4 ml-2" />
-                טען דוגמה
-              </Button>
-            </div>
-
-            {/* Instructions Collapsible Panel */}
-            <Collapsible
-              open={isInstructionsOpen}
-              onOpenChange={setIsInstructionsOpen}
-              className="w-full"
-            >
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full mb-2"
-                  type="button"
-                >
-                  <HelpCircle className="h-4 w-4 ml-2" />
-                  📝 הוראות עיצוב והדרכה
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="bg-gray-50 border border-gray-300 rounded-lg p-4" dir="rtl">
-                  {/* Table 1: Text Formatting */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-bold mb-3 text-right">עיצוב טקסט</h3>
-                    <table className="w-full text-right border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-blue-100">
-                          <th className="border border-gray-300 p-2">תחביר</th>
-                          <th className="border border-gray-300 p-2">דוגמה</th>
-                          <th className="border border-gray-300 p-2">תוצאה</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">**טקסט**</td>
-                          <td className="border border-gray-300 p-2 font-mono">**חשוב**</td>
-                          <td className="border border-gray-300 p-2"><strong>חשוב</strong> (בולד)</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">##טקסט##</td>
-                          <td className="border border-gray-300 p-2 font-mono">##אדום##</td>
-                          <td className="border border-gray-300 p-2"><span style={{color: '#FF0000', fontWeight: 'bold'}}>אדום</span> (אדום בולד)</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">###טקסט###</td>
-                          <td className="border border-gray-300 p-2 font-mono">###כחול###</td>
-                          <td className="border border-gray-300 p-2"><span style={{color: '#395BF7', fontWeight: 'bold'}}>כחול</span> (כחול בולד)</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">__טקסט__</td>
-                          <td className="border border-gray-300 p-2 font-mono">__קו תחתון__</td>
-                          <td className="border border-gray-300 p-2"><span style={{textDecoration: 'underline'}}>קו תחתון</span></td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">===טקסט===</td>
-                          <td className="border border-gray-300 p-2 font-mono">===קו כפול===</td>
-                          <td className="border border-gray-300 p-2"><span style={{textDecoration: 'underline', textDecorationStyle: 'double'}}>קו כפול</span> (קו תחתון כפול)</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">~~טקסט~~</td>
-                          <td className="border border-gray-300 p-2 font-mono">~~מבוטל~~</td>
-                          <td className="border border-gray-300 p-2"><span style={{textDecoration: 'line-through'}}>מבוטל</span> (קו חוצה)</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Table 2: Combining Formats */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-bold mb-3 text-right">שילוב עיצובים</h3>
-                    <table className="w-full text-right border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-blue-100">
-                          <th className="border border-gray-300 p-2">תחביר</th>
-                          <th className="border border-gray-300 p-2">תוצאה</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">**__טקסט__**</td>
-                          <td className="border border-gray-300 p-2"><strong><span style={{textDecoration: 'underline'}}>בולד + קו תחתון</span></strong></td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">**===טקסט===**</td>
-                          <td className="border border-gray-300 p-2"><strong><span style={{textDecoration: 'underline', textDecorationStyle: 'double'}}>בולד + קו כפול</span></strong></td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">##__טקסט__##</td>
-                          <td className="border border-gray-300 p-2"><span style={{color: '#FF0000', fontWeight: 'bold', textDecoration: 'underline'}}>אדום בולד + קו תחתון</span></td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">###__טקסט__###</td>
-                          <td className="border border-gray-300 p-2"><span style={{color: '#395BF7', fontWeight: 'bold', textDecoration: 'underline'}}>כחול בולד + קו תחתון</span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Table 3: Letter Structure */}
-                  <div>
-                    <h3 className="text-lg font-bold mb-3 text-right">מבנה מכתב</h3>
-                    <table className="w-full text-right border-collapse border border-gray-300">
-                      <thead>
-                        <tr className="bg-blue-100">
-                          <th className="border border-gray-300 p-2">תחביר</th>
-                          <th className="border border-gray-300 p-2">תוצאה</th>
-                          <th className="border border-gray-300 p-2">הסבר</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">טקסט:</td>
-                          <td className="border border-gray-300 p-2"><strong>כותרת סעיף</strong></td>
-                          <td className="border border-gray-300 p-2">שורה שמסתיימת ב-: (20px, שחור, בולד)</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">* טקסט</td>
-                          <td className="border border-gray-300 p-2">• טקסט</td>
-                          <td className="border border-gray-300 p-2">bullet עם אייקון כחול</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">- טקסט</td>
-                          <td className="border border-gray-300 p-2">• טקסט</td>
-                          <td className="border border-gray-300 p-2">bullet עם אייקון כחול (זהה)</td>
-                        </tr>
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-2 font-mono">טקסט רגיל</td>
-                          <td className="border border-gray-300 p-2">פסקה</td>
-                          <td className="border border-gray-300 p-2">פסקה רגילה (16px)</td>
-                        </tr>
-                        <tr>
-                          <td className="border border-gray-300 p-2 font-mono">שורה ריקה</td>
-                          <td className="border border-gray-300 p-2">-</td>
-                          <td className="border border-gray-300 p-2">רווח בין פסקאות (20px)</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Practical Example */}
-                  <div className="mt-6 p-4 bg-white border border-gray-300 rounded">
-                    <h4 className="font-bold mb-2 text-right">דוגמה מעשית:</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-semibold mb-2 text-right">קלט:</p>
-                        <pre className="text-xs bg-gray-100 p-2 rounded font-mono whitespace-pre-wrap text-right">
-{`בפתח הדברים:
-* אנו **שמחים** __לעדכן__ אתכם
-* המחיר החדש: ##1,000 ש"ח##
-* תאריך: ###1.1.2026###`}
-                        </pre>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold mb-2 text-right">תוצאה:</p>
-                        <div className="text-sm bg-gray-100 p-2 rounded text-right">
-                          <p><strong>בפתח הדברים:</strong></p>
-                          <p>• אנו <strong>שמחים</strong> <span style={{textDecoration: 'underline'}}>לעדכן</span> אתכם</p>
-                          <p>• המחיר החדש: <span style={{color: '#FF0000', fontWeight: 'bold'}}>1,000 ש"ח</span></p>
-                          <p>• תאריך: <span style={{color: '#395BF7', fontWeight: 'bold'}}>1.1.2026</span></p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            <Textarea
-              value={plainText}
-              onChange={(e) => setPlainText(e.target.value)}
-              placeholder={EXAMPLE_TEXT}
-              className="min-h-[300px] font-mono text-sm"
-              dir="rtl"
+            <Label className="text-right rtl:text-right block text-base font-semibold">
+              5. כתוב את תוכן המכתב
+            </Label>
+            <TiptapEditor
+              value={letterContent}
+              onChange={setLetterContent}
+              placeholder="הקלד את תוכן המכתב..."
+              minHeight="400px"
             />
           </div>
 
-          {/* Step 3: Payment Section */}
+          {/* Step 6: Payment Section - DISABLED + Save Template Button */}
           <div className="space-y-4">
-            <Label className="text-right block text-base font-semibold">
-              3. הגדרות תשלום (אופציונלי)
-            </Label>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-right rtl:text-right block text-base font-semibold opacity-50">
+                6. הגדרות תשלום (בפיתוח)
+              </Label>
+
+              {/* Save Template Button - LEFT SIDE */}
+              <div className="ltr:ml-auto rtl:mr-auto">
+                <Button
+                  onClick={handleSaveTemplateClick}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                  שמור כתבנית
+                </Button>
+                {saveAsTemplate && (
+                  <p className="text-xs text-green-600 mt-1">✓ התבנית תישמר</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 opacity-50 pointer-events-none">
               <Checkbox
                 id="includes_payment"
-                checked={includesPayment}
-                onCheckedChange={(checked) => setIncludesPayment(checked as boolean)}
+                checked={false}
+                disabled
               />
-              <Label htmlFor="includes_payment" className="text-right cursor-pointer">
-                כלול סעיף תשלום (4 כפתורי תשלום עם הנחות)
+              <Label htmlFor="includes_payment" className="text-right rtl:text-right text-muted-foreground">
+                כלול סעיף תשלום (בפיתוח - בקרוב)
               </Label>
             </div>
-            {includesPayment && (
-              <div>
-                <Label htmlFor="amount" className="text-right block">
-                  סכום מקורי (₪)
-                </Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(Number(e.target.value))}
-                  placeholder="50000"
-                />
-                <p className="text-xs text-gray-500 text-right mt-1">
-                  הנחות: 9% העברה בנקאית, 8% תשלום יחיד, 4% תשלומים
-                </p>
-              </div>
-            )}
           </div>
 
-          {/* Step 4: Save as Template */}
+          {/* Steps 7-10: Combined into 4-Column Grid */}
           <div className="space-y-4">
-            <Label className="text-right block text-base font-semibold">
-              4. שמירה כתבנית (אופציונלי)
+            <Label className="text-right rtl:text-right block text-base font-semibold">
+              7. שמירה, תצוגה מקדימה, שליחה
             </Label>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="save_template"
-                checked={saveAsTemplate}
-                onCheckedChange={(checked) => setSaveAsTemplate(checked as boolean)}
-              />
-              <Label htmlFor="save_template" className="text-right cursor-pointer">
-                שמור כתבנית לשימוש חוזר
-              </Label>
-            </div>
-            {saveAsTemplate && (
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="template_name" className="text-right block">
-                    שם התבנית *
-                  </Label>
-                  <Input
-                    id="template_name"
-                    value={templateName}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    placeholder="מכתב עדכון שנתי"
-                    dir="rtl"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="template_description" className="text-right block">
-                    תיאור (אופציונלי)
-                  </Label>
-                  <Input
-                    id="template_description"
-                    value={templateDescription}
-                    onChange={(e) => setTemplateDescription(e.target.value)}
-                    placeholder="מכתב סטנדרטי לעדכון לקוחות"
-                    dir="rtl"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Step 5: Actions */}
-          <div className="space-y-4">
-            <Label className="text-right block text-base font-semibold">5. פעולות</Label>
+            {/* Overall border container */}
+            <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50/30">
+              <div className="grid grid-cols-4 gap-4">
+                {/* COLUMN 1 (RIGHT in RTL): Save as PDF */}
+                <div className="space-y-4 border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
+                <h3 className="text-lg font-semibold mb-4 rtl:text-right">שמור כ-PDF</h3>
 
-            {/* Preview Button */}
-            <Button
-              onClick={handlePreview}
-              disabled={isLoadingPreview || !plainText.trim()}
-              size="lg"
-              variant="outline"
-              className="w-full"
-            >
-              {isLoadingPreview ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  טוען...
-                </>
-              ) : (
-                <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  הצג תצוגה מקדימה
-                </>
-              )}
-            </Button>
+                <Button
+                  onClick={handleGeneratePDF}
+                  disabled={generatingPdf || !letterContent.trim()}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {generatingPdf ? (
+                    <>
+                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                      יוצר PDF...
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                      שמור PDF
+                    </>
+                  )}
+                </Button>
 
-            {/* Recipients Section - Only for client mode */}
-            {recipientMode === 'client' && (
-              <div className="space-y-4">
-                <Label className="text-right block font-semibold">בחר נמענים מהלקוח</Label>
-
-                {isLoadingContacts ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                  טוען אנשי קשר...
-                </div>
-              ) : clientContacts.length === 0 ? (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-right">
-                    לא נמצאו אנשי קשר עבור לקוח זה. נא להוסיף אנשי קשר בטופס הלקוח.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <div className="border rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
-                    <div className="grid grid-cols-4 gap-3">
-                      {clientContacts.map((contact) => {
-                        const isChecked = selectedRecipients.includes(contact.email!);
-
-                        return (
-                          <div
-                            key={contact.id}
-                            className="flex flex-col gap-2 p-2 bg-white hover:bg-gray-50 rounded border"
-                          >
-                            <div className="flex items-start gap-2">
-                              <Checkbox
-                                id={`universal-recipient-${contact.id}`}
-                                checked={isChecked}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedRecipients([...selectedRecipients, contact.email!]);
-                                  } else {
-                                    setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
-                                  }
-                                }}
-                                className="mt-0.5"
-                              />
-                              <Label
-                                htmlFor={`universal-recipient-${contact.id}`}
-                                className="flex-1 cursor-pointer text-right"
-                              >
-                                <div className="font-medium text-sm truncate">{contact.full_name}</div>
-                              </Label>
-                            </div>
-                            <div className="text-xs text-gray-600 dir-ltr text-right truncate">{contact.email}</div>
-                            <div className="text-xs text-gray-500 text-right">
-                              {getContactTypeLabel(contact.contact_type)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-gray-600 text-right">
-                    <strong>{selectedRecipients.length}</strong> נמענים נבחרו
-                  </p>
-
-                  {/* Manual Email Addition */}
-                  <div className="mt-4 space-y-3">
-                    {/* Add Email Button */}
-                    {!showManualEmailInput ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowManualEmailInput(true)}
-                        className="w-full"
-                      >
-                        <Plus className="h-4 w-4 ml-2" />
-                        הוסף מייל ידני
-                      </Button>
-                    ) : (
-                      // Input for manual email
-                      <div className="flex gap-2">
-                        <Input
-                          type="email"
-                          value={manualEmailInput}
-                          onChange={(e) => setManualEmailInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddManualEmail();
-                            }
-                          }}
-                          placeholder="example@email.com"
-                          dir="ltr"
-                          className="flex-1 text-left"
-                        />
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleAddManualEmail}
-                        >
-                          הוסף
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setShowManualEmailInput(false);
-                            setManualEmailInput('');
-                          }}
-                        >
-                          ביטול
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Display manually added emails */}
-                    {selectedRecipients.length > 0 && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <Label className="text-sm font-semibold text-blue-900 mb-2 block text-right">
-                          נמענים שנבחרו ({selectedRecipients.length}):
-                        </Label>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedRecipients.map((email) => {
-                            // Check if this email is from clientContacts
-                            const isFromContacts = clientContacts.some(c => c.email === email);
-
-                            return (
-                              <div
-                                key={email}
-                                className="inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border text-sm"
-                              >
-                                <span className="text-gray-700">{email}</span>
-                                {!isFromContacts && (
-                                  <span className="text-xs text-blue-600">(ידני)</span>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveRecipient(email)}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            )}
-
-            <Button
-              onClick={handleSendEmail}
-              disabled={isSendingEmail || !plainText.trim() || selectedRecipients.length === 0}
-              size="lg"
-              className="w-full"
-            >
-              {isSendingEmail ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  שולח...
-                </>
-              ) : (
-                <>
-                  <Mail className="h-4 w-4 mr-2" />
-                  {saveAsTemplate
-                    ? `שלח מכתב ושמור תבנית ל-${selectedRecipients.length} נמענים`
-                    : `שלח מכתב ל-${selectedRecipients.length} נמענים`}
-                </>
-              )}
-            </Button>
-
-            {/* WhatsApp Section */}
-            <div className="border-t pt-6 space-y-4">
-              <Label className="text-right block text-base font-semibold">שליחה בוואטסאפ 📱</Label>
-
-              <div>
-                <Label htmlFor="whatsapp_phone" className="text-right block">
-                  מספר טלפון {selectedClient?.contact_phone && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
-                </Label>
-                <Input
-                  id="whatsapp_phone"
-                  type="tel"
-                  value={whatsappPhone}
-                  onChange={(e) => setWhatsappPhone(e.target.value)}
-                  placeholder="050-1234567"
-                  dir="ltr"
-                  className="text-left font-mono"
-                />
-                <p className="text-xs text-gray-500 mt-1 text-right">
-                  פורמט: 050-XXXXXXX או 050XXXXXXXX
+                <p className="text-xs text-gray-600 text-right">
+                  המכתב יישמר אוטומטית לפני יצירת PDF
                 </p>
               </div>
 
-              <Button
-                onClick={handleSendWhatsApp}
-                disabled={isSaving || !whatsappPhone || !plainText.trim()}
-                size="lg"
-                variant="default"
-                className="w-full"
-              >
-                {isSaving ? (
+              {/* COLUMN 2: Preview */}
+              <div className="space-y-4 border-2 border-purple-200 rounded-lg p-3 bg-purple-50/30">
+                <h3 className="text-lg font-semibold mb-4 rtl:text-right">תצוגה מקדימה</h3>
+
+                <Button
+                  onClick={handlePreview}
+                  disabled={isLoadingPreview || !letterContent.trim()}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isLoadingPreview ? (
+                    <>
+                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                      טוען...
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                      הצג תצוגה
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* COLUMN 3: Email Recipients + Send Email */}
+              <div className="space-y-4 border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
+                <h3 className="text-lg font-semibold mb-4 rtl:text-right">נמעני מייל</h3>
+
+                {recipientMode === 'client' && selectedClient && (
                   <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    שומר מכתב...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="h-4 w-4 ml-2" />
-                    שלח בוואטסאפ
+                    {isLoadingContacts ? (
+                      <div className="text-center py-4 text-gray-500">
+                        <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                        <p className="text-xs">טוען אנשי קשר...</p>
+                      </div>
+                    ) : clientContacts.length === 0 ? (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-right text-xs">
+                          לא נמצאו אנשי קשר. הוסף בטופס הלקוח.
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <>
+                        <div className="border rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
+                          <div className="space-y-2">
+                            {clientContacts.map((contact) => {
+                              const isChecked = selectedRecipients.includes(contact.email!);
+                              return (
+                                <div
+                                  key={contact.id}
+                                  className="flex items-start gap-2 p-2 bg-white hover:bg-gray-50 rounded border"
+                                >
+                                  <Checkbox
+                                    id={`univ-rec-${contact.id}`}
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedRecipients([...selectedRecipients, contact.email!]);
+                                      } else {
+                                        setSelectedRecipients(selectedRecipients.filter(e => e !== contact.email));
+                                      }
+                                    }}
+                                    className="mt-0.5"
+                                  />
+                                  <Label
+                                    htmlFor={`univ-rec-${contact.id}`}
+                                    className="flex-1 cursor-pointer text-right"
+                                  >
+                                    <div className="font-medium text-xs truncate">{contact.full_name}</div>
+                                    <div className="text-xs text-gray-600 truncate">{contact.email}</div>
+                                  </Label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-gray-600 text-right">
+                          <strong>{selectedRecipients.length}</strong> נבחרו
+                        </p>
+                      </>
+                    )}
                   </>
                 )}
-              </Button>
+
+                {/* Manual Email Addition */}
+                <div className="space-y-2">
+                  {!showManualEmailInput ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowManualEmailInput(true)}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                      הוסף מייל
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        value={manualEmailInput}
+                        onChange={(e) => setManualEmailInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddManualEmail();
+                          }
+                        }}
+                        placeholder="email@example.com"
+                        dir="ltr"
+                        className="flex-1 text-left text-xs"
+                      />
+                      <Button type="button" size="sm" onClick={handleAddManualEmail}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowManualEmailInput(false);
+                          setManualEmailInput('');
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Display selected recipients */}
+                  {selectedRecipients.length > 0 && (
+                    <div className="border rounded-lg p-3 bg-gray-50">
+                      <div className="space-y-2">
+                        {selectedRecipients.map((email) => {
+                          const isFromContacts = clientContacts.some(c => c.email === email);
+                          const contact = clientContacts.find(c => c.email === email);
+                          return (
+                            <div
+                              key={email}
+                              className="flex items-center justify-between p-2 bg-white hover:bg-gray-50 rounded border"
+                            >
+                              <div className="flex-1 text-right">
+                                {contact ? (
+                                  <>
+                                    <div className="font-medium text-xs truncate">{contact.full_name}</div>
+                                    <div className="text-xs text-gray-600 truncate">{contact.email}</div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="text-xs text-gray-600 truncate">{email}</div>
+                                    <div className="text-xs text-blue-600">(נוסף ידנית)</div>
+                                  </>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRecipient(email)}
+                                className="text-red-500 hover:text-red-700 rtl:mr-2 ltr:ml-2"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Send Email Button */}
+                <Button
+                  onClick={handleSendEmail}
+                  disabled={isSendingEmail || !letterContent.trim() || selectedRecipients.length === 0}
+                  className="w-full"
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                      שולח...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                      שלח ({selectedRecipients.length})
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* COLUMN 4 (LEFT in RTL): WhatsApp */}
+              <div className="space-y-4 border-2 border-purple-200 rounded-lg p-3 bg-purple-50/30">
+                <h3 className="text-lg font-semibold mb-4 rtl:text-right">וואטסאפ</h3>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="whatsapp_phone" className="text-right rtl:text-right block text-xs mb-1">
+                      מספר טלפון
+                    </Label>
+                    <Input
+                      id="whatsapp_phone"
+                      type="tel"
+                      value={whatsappPhone}
+                      onChange={(e) => setWhatsappPhone(e.target.value)}
+                      placeholder="050-1234567"
+                      dir="ltr"
+                      className="text-left font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1 text-right rtl:text-right">
+                      050-XXXXXXX
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={handleSendWhatsApp}
+                    disabled={isSaving || !whatsappPhone || !letterContent.trim()}
+                    variant="default"
+                    className="w-full"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                        שומר...
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        שלח
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
             </div>
           </div>
-
-          {/* Info Box */}
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-right">
-              <strong>איך זה עובד?</strong>
-              <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                <li>כתוב טקסט פשוט עם סימוני Markdown (*, -, :)</li>
-                <li>המערכת ממירה אוטומטית לעיצוב מקצועי (פונטים, צבעים, רווחים)</li>
-                <li>תוכל לשמור כתבנית לשימוש חוזר</li>
-                <li>Header ו-Footer מתווספים אוטומטית</li>
-                <li>סעיף תשלום אופציונלי עם 4 כפתורים והנחות</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
 
           {/* Client Documents Section */}
           {selectedClient && (
@@ -2145,35 +2065,16 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
               סגור
             </Button>
-            <Button variant="outline" onClick={handlePrintPreview}>
-              <Printer className="h-4 w-4 ml-2" />
-              הדפסה
-            </Button>
-            {lastSentLetterId && (
-              <Button variant="outline" onClick={handleGeneratePDF} disabled={generatingPdf}>
-                {generatingPdf ? (
-                  <>
-                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    יוצר PDF...
-                  </>
-                ) : (
-                  <>
-                    <FileDown className="h-4 w-4 ml-2" />
-                    צור PDF
-                  </>
-                )}
-              </Button>
-            )}
-            <Button onClick={handleSendEmail} disabled={isSendingEmail}>
-              {isSendingEmail ? (
+            <Button variant="outline" onClick={handleGeneratePDF} disabled={generatingPdf}>
+              {generatingPdf ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  שולח...
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  יוצר PDF...
                 </>
               ) : (
                 <>
-                  <Mail className="h-4 w-4 mr-2" />
-                  שלח למייל
+                  <FileDown className="h-4 w-4 ml-2" />
+                  שמור PDF
                 </>
               )}
             </Button>
@@ -2185,8 +2086,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       <AlertDialog open={showModeWarning} onOpenChange={setShowModeWarning}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-right">שימו לב: מעבר בין מצבים</AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
+            <AlertDialogTitle className="text-right rtl:text-right">שימו לב: מעבר בין מצבים</AlertDialogTitle>
+            <AlertDialogDescription className="text-right rtl:text-right">
               מעבר מ{recipientMode === 'client' ? 'לקוח מהרשימה' : 'נמען אחר'} ל{pendingMode === 'client' ? 'לקוח מהרשימה' : 'נמען אחר'}
               {' '}ינקה את כל הנתונים שמילאת במצב הנוכחי.
               <br /><br />
@@ -2199,6 +2100,54 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Save Template Dialog */}
+      <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right rtl:text-right">שמור כתבנית</DialogTitle>
+            <DialogDescription className="text-right rtl:text-right">
+              הזן שם ותיאור לתבנית. התבנית תישמר עם שליחת המכתב.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="template_name" className="text-right rtl:text-right block">
+                שם התבנית <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="template_name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="מכתב עדכון שנתי"
+                dir="rtl"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="template_description" className="text-right rtl:text-right block">
+                תיאור (אופציונלי)
+              </Label>
+              <Input
+                id="template_description"
+                value={templateDescription}
+                onChange={(e) => setTemplateDescription(e.target.value)}
+                placeholder="מכתב סטנדרטי לעדכון לקוחות"
+                dir="rtl"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end rtl:flex-row-reverse mt-4">
+            <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>
+              ביטול
+            </Button>
+            <Button onClick={handleConfirmSaveTemplate}>
+              <Save className="h-4 w-4 ml-2" />
+              אישור
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
