@@ -598,6 +598,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         variables,
         includesPayment: letterData.includesPayment,
         customHeaderLines: letterData.customHeaderLines,
+        subjectLines: subjectLines, // ✅ Pass subject lines for "הנדון" section
         subject: emailSubject || 'מכתב חדש', // Pass email subject
         saveAsTemplate: undefined,
         isHtml: true // Content is HTML from Tiptap

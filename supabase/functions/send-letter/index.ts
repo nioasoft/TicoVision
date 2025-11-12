@@ -33,7 +33,9 @@ interface SendLetterRequest {
   customText?: string;
   includesPayment?: boolean;
   customHeaderLines?: CustomHeaderLine[];
+  subjectLines?: any[]; // Subject lines (הנדון)
   saveAsTemplate?: { name: string; description?: string; subject?: string; };
+  isHtml?: boolean; // If true, customText is already HTML from Tiptap
   // Common fields
   clientId?: string;
   feeCalculationId?: string;
@@ -49,7 +51,8 @@ interface CorsHeaders {
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
   'https://ticovision.vercel.app',
-  'http://localhost:5173',  // Vite dev server
+  'http://localhost:5173',  // Vite dev server (default)
+  'http://localhost:5174',  // Vite dev server (alternate port)
   'http://localhost:3000',  // Alternative dev port
   Deno.env.get('APP_URL'),  // Custom deployment URL
 ].filter(Boolean) as string[];
@@ -161,8 +164,17 @@ function closeBulletSection(): string {
 /**
  * Parse plain text to HTML (Markdown-like syntax)
  * Ported from text-to-html-parser.ts
+ *
+ * @param plainText - The content to process
+ * @param isHtml - If true, assumes text is already HTML from Tiptap (bypasses parsing)
  */
-function parseTextToHTML(plainText: string): string {
+function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
+  // If already HTML from Tiptap, return as-is
+  if (isHtml) {
+    return plainText;
+  }
+
+  // Otherwise parse Markdown to HTML (legacy support)
   const lines = plainText.split('\n');
   let html = '';
   let inBulletSection = false;
@@ -309,13 +321,44 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
 }
 
 /**
+ * Build subject lines HTML ("הנדון" section)
+ */
+function buildSubjectLinesHTML(subjectLines: any[]): string {
+  if (!subjectLines || subjectLines.length === 0) {
+    return '';
+  }
+
+  console.log('🔍 [Edge Function] Building subject lines HTML:', subjectLines);
+
+  const subjectLinesHtml = subjectLines.map((line, index) => {
+    // Build style string
+    let style = 'font-size: 19px; color: #395BF7; direction: rtl; text-align: right;';
+    style += line.formatting?.bold ? ' font-weight: 700;' : '';
+    style += line.formatting?.underline ? ' text-decoration: underline;' : '';
+
+    return `<tr>
+  <td style="padding: ${index === 0 ? '20px' : '4px'} 0 0 0;">
+    <p style="${style} margin: 0; padding: 0;">
+      ${line.content}
+    </p>
+  </td>
+</tr>`;
+  }).join('');
+
+  console.log('🔍 [Edge Function] Subject lines HTML generated:', subjectLinesHtml.length, 'chars');
+
+  return subjectLinesHtml;
+}
+
+/**
  * Build custom letter HTML from parsed text
  */
 async function buildCustomLetterHtml(
   parsedBodyHtml: string,
   variables: Record<string, any>,
   includesPayment: boolean,
-  customHeaderLines?: CustomHeaderLine[]
+  customHeaderLines?: CustomHeaderLine[],
+  subjectLinesHtml?: string
 ): Promise<string> {
   // Fetch components
   let header = await fetchTemplate('components/header.html');
@@ -343,6 +386,7 @@ async function buildCustomLetterHtml(
             <td align="center" style="padding: 40px 20px;">
                 <table width="800" cellpadding="0" cellspacing="0" border="0" style="max-width: 800px; width: 100%; background-color: #ffffff;">
                     ${header}
+                    ${subjectLinesHtml || ''}
                     <tr>
                         <td style="padding: 20px 0; text-align: right;">
                             ${parsedBodyHtml}
@@ -571,7 +615,9 @@ serve(async (req) => {
       customText,
       includesPayment,
       customHeaderLines,
+      subjectLines,
       saveAsTemplate,
+      isHtml,
       clientId,
       feeCalculationId
     } = requestData;
@@ -621,8 +667,8 @@ serve(async (req) => {
       console.log('   Mode: Custom text');
       console.log('   Includes payment:', includesPayment);
 
-      // Parse the custom text
-      parsedBodyHtml = parseTextToHTML(customText!);
+      // Parse the custom text (or use as-is if already HTML from Tiptap)
+      parsedBodyHtml = parseTextToHTML(customText!, isHtml);
 
       // Add auto-generated variables (like template mode does)
       const currentYear = new Date().getFullYear();
@@ -641,8 +687,12 @@ serve(async (req) => {
       // Replace variables in the parsed HTML
       const bodyWithVariables = replaceVariables(parsedBodyHtml, finalVariables);
 
+      // Generate subject lines HTML if provided
+      const subjectLinesHtml = subjectLines ? buildSubjectLinesHTML(subjectLines) : '';
+      console.log('🔍 [Edge Function] Subject lines HTML:', subjectLinesHtml ? 'generated' : 'empty');
+
       // Build full letter with header + body + optional payment + footer
-      letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false, customHeaderLines);
+      letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false, customHeaderLines, subjectLinesHtml);
 
       // Generate subject from variables or default
       subject = finalVariables.subject || `שכר טרחתנו לשנת המס ${finalVariables.year}`;

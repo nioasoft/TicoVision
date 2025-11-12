@@ -928,6 +928,7 @@ export class TemplateService extends BaseService {
     variables: Record<string, string | number>;
     includesPayment: boolean;
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
+    subjectLines?: import('../types/letter.types').SubjectLine[]; // Subject lines for "הנדון" section
     subject?: string; // Email subject / letter title
     saveAsTemplate?: {
       name: string;
@@ -963,7 +964,17 @@ export class TemplateService extends BaseService {
         console.log('🔍 [Service] אין שורות מותאמות');
       }
 
-      // 5. Add automatic variables
+      // 5. Generate subject lines HTML if provided
+      let subjectLinesHtml = '';
+      if (params.subjectLines && params.subjectLines.length > 0) {
+        console.log('🔍 [Service] מייצר שורות הנדון:', params.subjectLines);
+        subjectLinesHtml = this.buildSubjectLinesHTML(params.subjectLines);
+        console.log('🔍 [Service] HTML שורות הנדון נוצר:', subjectLinesHtml.length, 'תווים');
+      } else {
+        console.log('🔍 [Service] אין שורות הנדון');
+      }
+
+      // 6. Add automatic variables
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
 
@@ -977,8 +988,8 @@ export class TemplateService extends BaseService {
         fee_id: params.variables.fee_id // If provided in variables
       };
 
-      // 6. Build full HTML with custom header lines
-      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml);
+      // 6. Build full HTML with custom header lines and subject lines
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml, subjectLinesHtml);
 
       // 6. Replace variables in full HTML
       fullHtml = replaceVarsInText(fullHtml, fullVariables);
