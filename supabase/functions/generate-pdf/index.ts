@@ -97,6 +97,7 @@ serve(async (req) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
           * {
             margin: 0;
@@ -104,7 +105,7 @@ serve(async (req) => {
             box-sizing: border-box;
           }
           body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
             direction: rtl;
             background: white;
             margin: 0;
@@ -135,6 +136,11 @@ serve(async (req) => {
             width: 100%;
             background: white;
             z-index: 1000;
+          }
+
+          /* Force tagline spacing in fixed footer */
+          .pdf-footer tr:last-child td {
+            padding-top: 50px !important;
           }
 
           /* Body content with margins to avoid overlap with fixed header/footer */
