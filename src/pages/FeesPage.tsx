@@ -34,7 +34,9 @@ import {
   ArrowDown,
   Info,
   CheckCircle2,
-  Edit2
+  Edit2,
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
@@ -139,6 +141,8 @@ export function FeesPage() {
   const [autoSelectedLetters, setAutoSelectedLetters] = useState<LetterSelectionResult | null>(null);
   const [selectedPrimaryTemplate, setSelectedPrimaryTemplate] = useState<LetterTemplateType | null>(null);
   const [selectedSecondaryTemplate, setSelectedSecondaryTemplate] = useState<LetterTemplateType | null>(null);
+  const [isLoadingPrevious, setIsLoadingPrevious] = useState(false);
+  const [isSavingAndPreview, setIsSavingAndPreview] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -415,6 +419,96 @@ export function FeesPage() {
     }
   };
 
+  /**
+   * View previous calculation - skip to results tab with existing calculation
+   */
+  const viewPreviousCalculation = async () => {
+    if (!formData.client_id) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא לבחור לקוח תחילה',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsLoadingPrevious(true);
+
+    try {
+      // 1. Load latest calculation (draft or sent)
+      const response = await feeService.getLatestCalculationForYear(
+        formData.client_id,
+        formData.year
+      );
+
+      if (!response.data) {
+        toast({
+          title: 'לא נמצא חישוב',
+          description: 'לא נמצא חישוב קיים עבור הלקוח בשנה זו',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const calc = response.data;
+
+      // 2. Fill all form fields with existing calculation
+      setFormData({
+        ...formData,
+        base_amount: calc.base_amount || 0,
+        apply_inflation_index: calc.apply_inflation_index || false,
+        inflation_rate: calc.inflation_rate || 3,
+        real_adjustment: calc.real_adjustment || 0,
+        real_adjustment_reason: calc.real_adjustment_reason || '',
+        notes: calc.notes || '',
+        previous_year_amount: calc.previous_year_data?.amount || 0,
+        previous_year_discount: calc.previous_year_data?.discount || 0,
+      });
+
+      // 3. Calculate results
+      const results = feeService.calculateFeeAmounts({
+        base_amount: calc.base_amount || 0,
+        apply_inflation_index: calc.apply_inflation_index || false,
+        inflation_rate: calc.inflation_rate || 3,
+        real_adjustment: calc.real_adjustment || 0,
+        previous_year_amount_with_vat: calc.previous_year_data?.amount_with_vat || 0,
+      });
+      setCalculationResults(results);
+
+      // 4. If internal client, calculate bookkeeping too
+      if (selectedClientDetails?.client_type === 'internal' && calc.bookkeeping_calculation) {
+        const bookkeepingResults = feeService.calculateFeeAmounts({
+          base_amount: calc.bookkeeping_calculation.monthly_amount || 0,
+          apply_inflation_index: calc.bookkeeping_calculation.apply_inflation_index || false,
+          inflation_rate: calc.bookkeeping_calculation.inflation_rate || 3,
+          real_adjustment: calc.bookkeeping_calculation.real_adjustment || 0,
+          previous_year_amount_with_vat: 0,
+        });
+        setBookkeepingCalculationResults(bookkeepingResults);
+      }
+
+      // 5. Set current draft ID for editing
+      setCurrentDraftId(calc.id);
+
+      // 6. Jump to results tab
+      setActiveTab('results');
+
+      toast({
+        title: 'הצלחה!',
+        description: 'החישוב הקודם נטען בהצלחה',
+      });
+    } catch (error) {
+      console.error('Error loading previous calculation:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא הצלחנו לטעון את החישוב הקודם',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingPrevious(false);
+    }
+  };
+
   const calculateFeeAmounts = () => {
     const inflationRate = formData.apply_inflation_index ? (formData.inflation_rate || 3.0) : 0;
     const realAdjustment = formData.real_adjustment || 0;
@@ -576,6 +670,7 @@ export function FeesPage() {
       return;
     }
 
+    setIsSavingAndPreview(true);
     try {
       const createData: CreateFeeCalculationDto = {
         client_id: formData.client_id,
@@ -647,6 +742,8 @@ export function FeesPage() {
         description: 'אירעה שגיאה בשמירת החישוב',
         variant: 'destructive',
       });
+    } finally {
+      setIsSavingAndPreview(false);
     }
   };
 
@@ -877,53 +974,77 @@ export function FeesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="previous_amount">סכום בסיס שנה קודמת (לפני מע״מ ולפני הנחות)</Label>
-                    <Input
-                      id="previous_amount"
-                      type="number"
-                      value={formData.previous_year_amount || ''}
-                      onChange={(e) => setFormData({ ...formData, previous_year_amount: parseFloat(e.target.value) || 0 })}
-                      disabled={formData.isNewClient}
-                      className={formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}
-                    />
-                  </div>
+                  {/* Previous Year Data Container */}
+                  <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center gap-2 pb-3 border-b border-gray-300">
+                      <span className="text-lg">📊</span>
+                      <h3 className="text-lg font-semibold text-gray-800">נתוני שנה קודמת</h3>
+                    </div>
 
-                  <div>
-                    <Label htmlFor="previous_discount">הנחה שנה קודמת</Label>
-                    <div className="relative">
-                      <Input
-                        id="previous_discount"
-                        type="number"
-                        value={formData.previous_year_discount || ''}
-                        onChange={(e) => setFormData({ ...formData, previous_year_discount: parseFloat(e.target.value) || 0 })}
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        disabled={formData.isNewClient}
-                        className={`${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
-                        %
-                      </span>
+                    {/* 2x2 Grid for fields */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Row 1 Left: Base Amount */}
+                      <div>
+                        <Label htmlFor="previous_amount" className="text-sm">סכום בסיס</Label>
+                        <Input
+                          id="previous_amount"
+                          type="number"
+                          value={formData.previous_year_amount ?? ''}
+                          onChange={(e) => setFormData({ ...formData, previous_year_amount: parseFloat(e.target.value) || 0 })}
+                          disabled={formData.isNewClient}
+                          className={formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}
+                        />
+                      </div>
+
+                      {/* Row 1 Right: Discount */}
+                      <div>
+                        <Label htmlFor="previous_discount" className="text-sm">הנחה (%)</Label>
+                        <div className="relative">
+                          <Input
+                            id="previous_discount"
+                            type="number"
+                            value={formData.previous_year_discount ?? ''}
+                            onChange={(e) => setFormData({ ...formData, previous_year_discount: parseFloat(e.target.value) || 0 })}
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            disabled={formData.isNewClient}
+                            className={`${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
+                          />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
+                            %
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Row 2 Left: After Discount */}
+                      <div>
+                        <Label htmlFor="previous_after_discount" className="text-sm">אחרי הנחה (לפני מע"מ)</Label>
+                        <Input
+                          id="previous_after_discount"
+                          type="number"
+                          value={formData.previous_year_amount_after_discount ?? ''}
+                          disabled
+                          className="font-semibold bg-blue-50 text-blue-900"
+                        />
+                      </div>
+
+                      {/* Row 2 Right: With VAT */}
+                      <div>
+                        <Label htmlFor="previous_vat" className="text-sm">כולל מע"מ</Label>
+                        <Input
+                          id="previous_vat"
+                          type="number"
+                          value={formData.previous_year_amount_with_vat ?? ''}
+                          disabled
+                          className="font-semibold bg-green-50 text-green-900"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="previous_after_discount">סכום אחרי הנחה (שנה קודמת) לפני מע"מ (מחושב אוטומטית)</Label>
-                    <Input
-                      id="previous_after_discount"
-                      type="number"
-                      value={formData.previous_year_amount_after_discount || ''}
-                      disabled
-                      className="font-semibold bg-blue-50 text-blue-900"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatILS(formData.previous_year_amount_after_discount)}
-                    </p>
-                  </div>
-
-                  {/* Bookkeeping Card Widget - Display files from 'bookkeeping_card' category */}
+                  {/* Bookkeeping Card Widget - Outside the previous year container */}
                   {formData.client_id && (
                     <div className="space-y-2 border-2 border-blue-200 rounded-lg p-4 bg-blue-50">
                       <Label className="text-sm font-medium text-blue-900">כרטיס הנהלת חשבונות</Label>
@@ -939,21 +1060,10 @@ export function FeesPage() {
                       </p>
                     </div>
                   )}
-
-                  <div>
-                    <Label htmlFor="previous_vat">סכום שנה קודמת (אחרי הנחה) כולל מע"מ (מחושב אוטומטית)</Label>
-                    <Input
-                      id="previous_vat"
-                      type="number"
-                      value={formData.previous_year_amount_with_vat || ''}
-                      disabled
-                      className="font-semibold bg-gray-50"
-                    />
-                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-between">
+              <div className="flex justify-center gap-4 items-center">
                 <Button
                   onClick={() => {
                     if (previousYearDataSaved) {
@@ -984,6 +1094,28 @@ export function FeesPage() {
                     </>
                   )}
                 </Button>
+
+                {/* View Previous Calculation Button - only show if client selected and has calculation */}
+                {formData.client_id && currentDraftId && (
+                  <Button
+                    variant="default"
+                    onClick={viewPreviousCalculation}
+                    disabled={isLoadingPrevious}
+                  >
+                    {isLoadingPrevious ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        טוען חישוב...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 ml-2" />
+                        צפה בחישוב קודם
+                      </>
+                    )}
+                  </Button>
+                )}
+
                 <Button
                   onClick={() => setActiveTab('current')}
                   disabled={!previousYearDataSaved && !formData.isNewClient}
@@ -1578,9 +1710,18 @@ export function FeesPage() {
                     <FileText className="h-4 w-4 ml-2" />
                     שמור חישוב בלבד
                   </Button>
-                  <Button onClick={handleSaveCalculation}>
-                    <Calculator className="h-4 w-4 ml-2" />
-                    שמור וצפה במכתב
+                  <Button onClick={handleSaveCalculation} disabled={isSavingAndPreview}>
+                    {isSavingAndPreview ? (
+                      <>
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                        שומר ופותח מכתב...
+                      </>
+                    ) : (
+                      <>
+                        <Calculator className="h-4 w-4 ml-2" />
+                        שמור וצפה במכתב
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
