@@ -77,9 +77,16 @@ serve(async (req) => {
       'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
     };
 
+    // PDF footer image URL (for Puppeteer footer template)
+    const pdfFooterUrl = `${baseUrl}/storage/v1/object/public/${bucket}/pdf_footer.png`;
+
     for (const [cid, url] of Object.entries(cidToUrlMap)) {
       html = html.replace(new RegExp(cid, 'g'), url);
     }
+
+    // Remove footer from HTML body (will be rendered by Puppeteer footer template)
+    // This ensures footer appears on every page consistently
+    html = html.replace(/<!-- FOOTER START -->[\s\S]*?<!-- FOOTER END -->/g, '');
 
     // 5. Wrap HTML in full document (simple approach - same as preview!)
     const fullHtml = `
@@ -102,7 +109,7 @@ serve(async (req) => {
           }
           @page {
             size: A4;
-            margin: 20mm 15mm;
+            margin: 20mm 15mm 50mm 15mm; /* top, right, bottom, left - extra space for footer */
           }
         </style>
       </head>
@@ -131,6 +138,19 @@ serve(async (req) => {
           options: {
             format: 'A4',
             printBackground: true,
+            displayHeaderFooter: true,
+            headerTemplate: '<div></div>', // Empty header (keeping HTML header in body)
+            footerTemplate: `
+              <div style="width: 100%; margin: 0; padding: 0;">
+                <img src="${pdfFooterUrl}" style="width: 100%; display: block; margin: 0; padding: 0;" />
+              </div>
+            `,
+            margin: {
+              top: '20mm',
+              right: '15mm',
+              bottom: '50mm', // Space for footer image
+              left: '15mm'
+            }
           },
         }),
       }
