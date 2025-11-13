@@ -109,7 +109,7 @@ serve(async (req) => {
           }
           @page {
             size: A4;
-            margin: 20mm 15mm 50mm 15mm; /* top, right, bottom, left - extra space for footer */
+            margin: 10mm 10mm 40mm 10mm; /* top, right, bottom, left - optimized for A4 */
           }
         </style>
       </head>
@@ -141,15 +141,15 @@ serve(async (req) => {
             displayHeaderFooter: true,
             headerTemplate: '<div></div>', // Empty header (keeping HTML header in body)
             footerTemplate: `
-              <div style="width: 100%; margin: 0; padding: 0;">
-                <img src="${pdfFooterUrl}" style="width: 100%; display: block; margin: 0; padding: 0;" />
+              <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
+                <img src="${pdfFooterUrl}" style="width: 100%; display: block;" />
               </div>
             `,
             margin: {
-              top: '20mm',
-              right: '15mm',
-              bottom: '50mm', // Space for footer image
-              left: '15mm'
+              top: '10mm',    // Reduced from 20mm - raises header
+              right: '10mm',  // Reduced from 15mm - smaller side margins
+              bottom: '40mm', // Reduced from 50mm - adjusted for footer
+              left: '10mm'    // Reduced from 15mm - smaller side margins
             }
           },
         }),
