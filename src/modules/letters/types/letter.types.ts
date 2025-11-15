@@ -40,6 +40,9 @@ export interface LetterTemplate {
 }
 
 export interface LetterVariables {
+  // Letter Tracking
+  letter_id?: string; // Added for payment tracking - available after letter is saved
+
   // Client Information
   client_name: string;
   company_name: string;
@@ -47,7 +50,7 @@ export interface LetterVariables {
   tax_id: string;
   group_name?: string;
   contact_name?: string;
-  
+
   // Date and Time
   date: string; // Current date
   year: number; // Current year (e.g., 2025)

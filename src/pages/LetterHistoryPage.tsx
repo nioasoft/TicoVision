@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -52,6 +54,7 @@ export function LetterHistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [showOnlyFeeLetters, setShowOnlyFeeLetters] = useState(false); // NEW: Filter for fee letters
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,7 +80,7 @@ export function LetterHistoryPage() {
   useEffect(() => {
     loadData();
     loadStatistics();
-  }, [activeTab, searchQuery, templateFilter, dateFilter, currentPage]);
+  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, currentPage]);
 
   /**
    * Load letter data
@@ -90,6 +93,7 @@ export function LetterHistoryPage() {
         status: activeTab === 'sent' ? undefined : 'draft',
         searchQuery: searchQuery || undefined,
         templateType: templateFilter !== 'all' ? templateFilter : undefined,
+        feeLettersOnly: showOnlyFeeLetters || undefined, // NEW: Filter for fee letters
       };
 
       // Add date filters
@@ -372,6 +376,18 @@ export function LetterHistoryPage() {
                 <SelectItem value="month">חודש אחרון</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Fee Letters Filter Toggle */}
+            <div className="flex items-center gap-2 rtl:flex-row-reverse">
+              <Switch
+                id="fee-letters-filter"
+                checked={showOnlyFeeLetters}
+                onCheckedChange={setShowOnlyFeeLetters}
+              />
+              <Label htmlFor="fee-letters-filter" className="cursor-pointer rtl:text-right ltr:text-left">
+                הצג רק מכתבי שכר טרחה
+              </Label>
+            </div>
 
             {(searchQuery || templateFilter !== 'all' || dateFilter !== 'all') && (
               <Button variant="ghost" onClick={resetFilters}>

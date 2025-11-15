@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { Mail, Printer, Loader2, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
+import { imageServiceV2 } from '@/modules/letters-v2/services/image.service';
 
 export interface LetterViewDialogProps {
   open: boolean;
@@ -50,6 +51,7 @@ export function LetterViewDialog({
   const [isPrinting, setIsPrinting] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   const pdfService = new PDFGenerationService();
 
@@ -87,19 +89,17 @@ export function LetterViewDialog({
   };
 
   /**
-   * Convert CID images to web paths for browser display
+   * Convert CID images to Supabase Storage URLs for browser display
    */
   const convertHtmlForDisplay = (html: string): string => {
-    const baseUrl = import.meta.env.VITE_APP_URL || 'https://ticovision.vercel.app';
+    const imageMap = imageServiceV2.getAllPublicUrls();
+    let result = html;
 
-    return html
-      .replace(/cid:tico_logo_new/g, `${baseUrl}/brand/Tico_logo_png_new.png`)
-      .replace(/cid:tico_logo/g, `${baseUrl}/brand/tico_logo_240.png`)
-      .replace(/cid:franco_logo_new/g, `${baseUrl}/brand/Tico_franco_co.png`)
-      .replace(/cid:franco_logo/g, `${baseUrl}/brand/franco-logo-hires.png`)
-      .replace(/cid:tagline/g, `${baseUrl}/brand/tagline.png`)
-      .replace(/cid:bullet_star/g, `${baseUrl}/brand/bullet-star.png`)
-      .replace(/cid:bullet_star_blue/g, `${baseUrl}/brand/Bullet_star_blue.png`);
+    for (const [cid, url] of Object.entries(imageMap)) {
+      result = result.replace(new RegExp(cid, 'g'), url);
+    }
+
+    return result;
   };
 
   /**
@@ -160,17 +160,14 @@ export function LetterViewDialog({
     try {
       setGeneratingPdf(true);
 
-      const result = await pdfService.generatePDF(letterId);
+      // generatePDF returns a string (the PDF URL), not an object
+      const pdfUrl = await pdfService.generatePDF(letterId);
 
-      if (result.success && result.pdfUrl) {
-        setPdfUrl(result.pdfUrl);
-        toast.success('PDF נוצר בהצלחה');
+      setPdfUrl(pdfUrl);
+      toast.success('PDF נוצר בהצלחה');
 
-        // Open PDF in new tab
-        window.open(result.pdfUrl, '_blank');
-      } else {
-        throw new Error(result.error || 'שגיאה ביצירת PDF');
-      }
+      // Open PDF in new tab
+      window.open(pdfUrl, '_blank');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('שגיאה ביצירת PDF');
@@ -266,14 +263,33 @@ export function LetterViewDialog({
           </Button>
 
           <Button
-            onClick={() => {
-              onOpenChange(false);
-              onResend?.();
+            onClick={async () => {
+              setIsResending(true);
+              try {
+                // Trigger resend callback
+                onResend?.();
+
+                // Give user visual feedback before closing
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                onOpenChange(false);
+              } finally {
+                setIsResending(false);
+              }
             }}
-            disabled={!letter}
+            disabled={!letter || isResending}
           >
-            <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-            שלח מחדש
+            {isResending ? (
+              <>
+                <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                שולח...
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                שלח מחדש
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -246,7 +246,12 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
                   <FileText className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium rtl:text-right truncate">{file.file_name}</p>
+                    <button
+                      onClick={() => handleDownload(file)}
+                      className="font-medium rtl:text-right truncate hover:text-blue-600 hover:underline text-left w-full"
+                    >
+                      {file.file_name}
+                    </button>
 
                     {editingFileId === file.id ? (
                       <div className="mt-2 space-y-2">

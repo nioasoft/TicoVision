@@ -20,8 +20,11 @@ import { supabase, getCurrentTenantId } from '@/lib/supabase';
 import { selectLetterTemplate, type LetterSelectionResult } from '../utils/letter-selector';
 import { TenantContactService } from '@/services/tenant-contact.service';
 import type { AssignedContact } from '@/types/tenant-contact.types';
+import { FileUploadService } from '@/services/file-upload.service';
+import { imageServiceV2 } from '@/modules/letters-v2/services/image.service';
 
 const templateService = new TemplateService();
+const fileUploadService = new FileUploadService();
 
 // Helper function to get contact type label in Hebrew
 const getContactTypeLabel = (contactType: string): string => {
@@ -71,6 +74,11 @@ export function LetterPreviewDialog({
   const [primarySent, setPrimarySent] = useState(false);
   const [secondarySent, setSecondarySent] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+
+  // NEW: Letter saving state
+  const [savedLetterId, setSavedLetterId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isGeneratingPdfForFile, setIsGeneratingPdfForFile] = useState(false);
 
   // Recipient management per letter
   const [primaryEnabledEmails, setPrimaryEnabledEmails] = useState<Set<string>>(new Set());
@@ -229,19 +237,17 @@ export function LetterPreviewDialog({
   };
 
   /**
-   * Convert CID images to web paths for browser display and PDF
+   * Convert CID images to Supabase Storage URLs for browser display and PDF
    */
   const convertHtmlForDisplay = (html: string): string => {
-    const baseUrl = import.meta.env.VITE_APP_URL || 'https://ticovision.vercel.app';
+    const imageMap = imageServiceV2.getAllPublicUrls();
+    let result = html;
 
-    return html
-      .replace(/cid:tico_logo_new/g, `${baseUrl}/brand/Tico_logo_png_new.png`)
-      .replace(/cid:tico_logo/g, `${baseUrl}/brand/tico_logo_240.png`)
-      .replace(/cid:franco_logo_new/g, `${baseUrl}/brand/Tico_franco_co.png`)
-      .replace(/cid:franco_logo/g, `${baseUrl}/brand/franco-logo-hires.png`)
-      .replace(/cid:tagline/g, `${baseUrl}/brand/tagline.png`)
-      .replace(/cid:bullet_star/g, `${baseUrl}/brand/bullet-star.png`)
-      .replace(/cid:bullet_star_blue/g, `${baseUrl}/brand/Bullet_star_blue.png`);
+    for (const [cid, url] of Object.entries(imageMap)) {
+      result = result.replace(new RegExp(cid, 'g'), url);
+    }
+
+    return result;
   };
 
   /**
@@ -325,6 +331,104 @@ export function LetterPreviewDialog({
   };
 
   /**
+   * NEW: Save letter as draft to generated_letters
+   * Returns the saved letter_id for use in payment tracking
+   */
+  const saveLetterAsDraft = async (): Promise<string | null> => {
+    // If already saved, return existing ID
+    if (savedLetterId) {
+      console.log('✅ Letter already saved:', savedLetterId);
+      return savedLetterId;
+    }
+
+    if (!variables || !feeId || !clientId || !previewHtml || !letterSelection) {
+      console.warn('⚠️ Missing data for saving letter');
+      return null;
+    }
+
+    try {
+      setIsSaving(true);
+
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) {
+        toast.error('לא נמצא מזהה ארגון');
+        return null;
+      }
+
+      // Determine template type
+      const effectivePrimaryTemplate = manualPrimaryOverride || letterSelection.primaryTemplate;
+      const effectiveSecondaryTemplate = manualSecondaryOverride || letterSelection.secondaryTemplate;
+
+      const templateType: LetterTemplateType =
+        currentLetterStage === 'primary'
+          ? effectivePrimaryTemplate
+          : effectiveSecondaryTemplate!;
+
+      const finalRecipients = getFinalRecipients();
+
+      // Insert as draft
+      // IMPORTANT: Save HTML with CID references (not converted to URLs)
+      // This allows generate-pdf to properly convert CID → Supabase Storage URLs
+      const { data, error } = await supabase
+        .from('generated_letters')
+        .insert({
+          tenant_id: tenantId,
+          client_id: clientId,
+          fee_calculation_id: feeId,
+          template_id: null,
+          template_type: templateType,
+          subject: `מכתב שכר טרחה ${variables.tax_year}`,
+          variables_used: variables,
+          generated_content_html: previewHtml, // Save with CID (not converted)
+          payment_link: variables.payment_link_single,
+          recipient_emails: finalRecipients.length > 0 ? finalRecipients : null,
+          status: 'draft', // DRAFT status
+          rendering_engine: 'legacy',
+          system_version: 'v1',
+          is_latest: true,
+          version_number: 1,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving letter as draft:', error);
+        toast.error('שגיאה בשמירת המכתב');
+        return null;
+      }
+
+      setSavedLetterId(data.id);
+      console.log('✅ Letter saved as draft:', data.id);
+
+      // Update variables with letter_id for payment tracking
+      const updatedVariables = {
+        ...variables,
+        letter_id: data.id,
+      };
+      setVariables(updatedVariables);
+
+      // Regenerate preview with letter_id included
+      const { data: previewData, error: previewError } = await templateService.previewLetterFromFiles(
+        templateType,
+        updatedVariables
+      );
+
+      if (!previewError && previewData) {
+        setPreviewHtml(previewData.html);
+      }
+
+      return data.id;
+    } catch (error) {
+      console.error('Error in saveLetterAsDraft:', error);
+      toast.error('שגיאה בשמירת המכתב');
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
    * Print letter using browser's native print dialog
    * User can choose "Save as PDF" from the print dialog
    */
@@ -378,6 +482,68 @@ export function LetterPreviewDialog({
   };
 
   /**
+   * NEW: Save PDF to File Manager (client_attachments)
+   * Calls generate-pdf Edge Function and uploads to client files
+   */
+  const savePdfToFileManager = async (letterId: string): Promise<boolean> => {
+    if (!clientId || !variables) {
+      toast.error('חסרים נתונים לשמירת PDF');
+      return false;
+    }
+
+    try {
+      // 1. Call generate-pdf Edge Function (same function used by template-based letters)
+      // Universal Builder now uses the same PDF generation as templates
+      const { data, error: pdfError } = await supabase.functions.invoke<{
+        success: boolean;
+        pdfUrl: string;
+        letterId: string;
+      }>('generate-pdf', {
+        body: { letterId },
+      });
+
+      if (pdfError || !data?.success) {
+        console.error('PDF generation error:', pdfError);
+        throw new Error('שגיאה ביצירת PDF');
+      }
+
+      // 2. Download PDF from the public URL
+      const pdfResponse = await fetch(data.pdfUrl);
+      if (!pdfResponse.ok) {
+        throw new Error('Failed to download PDF');
+      }
+      const blob = await pdfResponse.blob();
+
+      const clientName = variables.company_name?.replace(/[^\u0590-\u05FF\w\s-]/g, '') || 'client';
+      const fileName = `מכתב_שכר_טרחה_${variables.tax_year}_${clientName}.pdf`;
+      const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+
+      // 3. Upload to File Manager
+      const description = `מכתב שכר טרחה ${variables.tax_year} - ${variables.letter_date}`;
+
+      const { error: uploadError } = await fileUploadService.uploadFileToCategory(
+        pdfFile,
+        clientId,
+        'quote_invoice',
+        description
+      );
+
+      if (uploadError) {
+        console.error('File upload error:', uploadError);
+        throw new Error('שגיאה בהעלאת PDF למנהל קבצים');
+      }
+
+      toast.success('PDF נשמר בהצלחה בתיקיית הלקוח');
+      return true;
+
+    } catch (error) {
+      console.error('Error in savePdfToFileManager:', error);
+      toast.error(error instanceof Error ? error.message : 'שגיאה בשמירת PDF');
+      return false;
+    }
+  };
+
+  /**
    * Send email via Supabase Edge Function
    */
   const handleSendEmail = async () => {
@@ -415,6 +581,7 @@ export function LetterPreviewDialog({
       console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) to ${finalRecipients.length} recipients...`);
 
       // Call Supabase Edge Function
+      // Pass letterId to prevent duplicate INSERT in Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails: finalRecipients,
@@ -423,6 +590,7 @@ export function LetterPreviewDialog({
           variables,
           clientId,
           feeCalculationId: feeId,
+          letterId: savedLetterId, // Pass existing letter ID to prevent duplicate
         },
       });
 
@@ -446,24 +614,67 @@ export function LetterPreviewDialog({
         }
       }
 
-      // Save to generated_letters
-      const { error: letterError } = await supabase
-        .from('generated_letters')
-        .insert({
-          tenant_id: tenantId,
-          client_id: clientId,
-          fee_calculation_id: feeId,
-          template_id: null, // File-based templates don't have DB template_id
-          template_type: templateType,
-          subject: `שלום רב ${variables.company_name} - הודעת חיוב ${templateType.includes('bookkeeping') ? 'הנהלת חשבונות ' : ''}לשנת המס ${variables.tax_year} כמדי שנה 😊`,
-          variables_used: variables,
-          generated_content_html: previewHtml,
-          payment_link: variables.payment_link_single,
-          recipient_emails: finalRecipients,
-          sent_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-          status: 'sent',
-        });
+      // Update or insert to generated_letters
+      let letterError = null;
+
+      if (savedLetterId) {
+        // UPDATE existing draft to 'sent'
+        const { error: updateError } = await supabase
+          .from('generated_letters')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            recipient_emails: finalRecipients,
+            // Update subject with final recipient count
+            subject: `שלום רב ${variables.company_name} - הודעת חיוב ${templateType.includes('bookkeeping') ? 'הנהלת חשבונות ' : ''}לשנת המס ${variables.tax_year} כמדי שנה 😊`,
+          })
+          .eq('id', savedLetterId);
+
+        letterError = updateError;
+
+        if (!updateError) {
+          console.log('✅ Updated existing letter to sent:', savedLetterId);
+
+          // Save PDF to file manager after successful email send
+          await savePdfToFileManager(savedLetterId);
+        }
+      } else {
+        // INSERT new letter (fallback if auto-save didn't work)
+        // IMPORTANT: Save HTML with CID references (not converted to URLs)
+        const { data, error: insertError } = await supabase
+          .from('generated_letters')
+          .insert({
+            tenant_id: tenantId,
+            client_id: clientId,
+            fee_calculation_id: feeId,
+            template_id: null,
+            template_type: templateType,
+            subject: `שלום רב ${variables.company_name} - הודעת חיוב ${templateType.includes('bookkeeping') ? 'הנהלת חשבונות ' : ''}לשנת המס ${variables.tax_year} כמדי שנה 😊`,
+            variables_used: variables,
+            generated_content_html: previewHtml, // Save with CID (not converted)
+            payment_link: variables.payment_link_single,
+            recipient_emails: finalRecipients,
+            sent_at: new Date().toISOString(),
+            created_by: (await supabase.auth.getUser()).data.user?.id,
+            status: 'sent',
+            rendering_engine: 'legacy',
+            system_version: 'v1',
+            is_latest: true,
+            version_number: 1,
+          })
+          .select()
+          .single();
+
+        letterError = insertError;
+
+        if (!insertError && data) {
+          console.log('✅ Inserted new letter:', data.id);
+          setSavedLetterId(data.id);
+
+          // Save PDF to file manager
+          await savePdfToFileManager(data.id);
+        }
+      }
 
       if (letterError) {
         console.error('Error saving generated letter:', letterError);
@@ -529,6 +740,16 @@ export function LetterPreviewDialog({
   useEffect(() => {
     setCurrentLetterStage(activeTab);
   }, [activeTab]);
+
+  /**
+   * NEW: Auto-save letter as draft when preview is ready
+   */
+  useEffect(() => {
+    if (previewHtml && !savedLetterId && !isLoadingPreview) {
+      console.log('🔄 Auto-saving letter as draft...');
+      saveLetterAsDraft();
+    }
+  }, [previewHtml, savedLetterId, isLoadingPreview]);
 
   // Helper to render letter content (preview + recipients + actions)
   const renderLetterContent = (stage: 'primary' | 'secondary', isSent: boolean) => (
@@ -657,7 +878,62 @@ export function LetterPreviewDialog({
       </div>
 
       {/* Actions for this letter */}
-      <div className="flex justify-end gap-2 rtl:flex-row-reverse">
+      <div className="flex justify-end gap-2 rtl:flex-row-reverse flex-wrap">
+        {/* NEW: Save as Draft button */}
+        <Button
+          variant="secondary"
+          onClick={saveLetterAsDraft}
+          disabled={isSaving || isLoadingPreview || !previewHtml || savedLetterId !== null}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              שומר...
+            </>
+          ) : savedLetterId ? (
+            <>
+              <CheckCircle2 className="h-4 w-4 ml-2 text-green-600" />
+              נשמר
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4 ml-2" />
+              שמור כטיוטה
+            </>
+          )}
+        </Button>
+
+        {/* NEW: Generate PDF and Save button */}
+        <Button
+          variant="outline"
+          onClick={async () => {
+            setIsGeneratingPdfForFile(true);
+            try {
+              // Save as draft first if not already saved
+              const letterId = savedLetterId || await saveLetterAsDraft();
+              if (letterId) {
+                await savePdfToFileManager(letterId);
+              }
+            } finally {
+              setIsGeneratingPdfForFile(false);
+            }
+          }}
+          disabled={isGeneratingPdfForFile || isSaving || isLoadingPreview || !previewHtml}
+        >
+          {isGeneratingPdfForFile ? (
+            <>
+              <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              מייצר PDF...
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4 ml-2" />
+              צור PDF ושמור בתיקייה
+            </>
+          )}
+        </Button>
+
+        {/* Existing: Print button */}
         <Button
           variant="outline"
           onClick={handlePrint}
@@ -671,10 +947,12 @@ export function LetterPreviewDialog({
           ) : (
             <>
               <Printer className="h-4 w-4 ml-2" />
-              הדפסה / שמור כ-PDF
+              הדפסה
             </>
           )}
         </Button>
+
+        {/* Existing: Send Email button */}
         <Button
           onClick={handleSendEmail}
           disabled={isSendingEmail || getFinalRecipients().length === 0 || isLoadingPreview || isSent}

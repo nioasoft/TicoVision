@@ -15,6 +15,7 @@ export interface LetterHistoryFilters {
   dateFrom?: string;
   dateTo?: string;
   searchQuery?: string;
+  feeLettersOnly?: boolean; // NEW: Filter to show only fee letters
 }
 
 export interface LetterHistoryItem extends GeneratedLetter {
@@ -79,6 +80,11 @@ class LetterHistoryService {
 
       if (filters.dateTo) {
         query = query.lte('created_at', filters.dateTo);
+      }
+
+      // NEW: Filter for fee letters only
+      if (filters.feeLettersOnly) {
+        query = query.not('fee_calculation_id', 'is', null);
       }
 
       if (filters.searchQuery) {

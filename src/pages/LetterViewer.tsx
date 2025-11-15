@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { imageServiceV2 } from '@/modules/letters-v2/services/image.service';
 
 // Print styles for clean printing
 const printStyles = `
@@ -115,18 +116,16 @@ export default function LetterViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Convert CID references to web URLs for proper image display
+  // Convert CID references to Supabase Storage URLs for proper image display
   const convertHtmlForDisplay = (html: string): string => {
-    const baseUrl = import.meta.env.VITE_APP_URL || 'https://ticovision.vercel.app';
+    const imageMap = imageServiceV2.getAllPublicUrls();
+    let result = html;
 
-    return html
-      .replace(/cid:tico_logo_new/g, `${baseUrl}/brand/Tico_logo_png_new.png`)
-      .replace(/cid:franco_logo_new/g, `${baseUrl}/brand/Tico_franco_co.png`)
-      .replace(/cid:tagline/g, `${baseUrl}/brand/tagline.png`)
-      .replace(/cid:bullet_star_blue/g, `${baseUrl}/brand/Bullet_star_blue.png`)
-      .replace(/cid:tico_logo/g, `${baseUrl}/brand/tico_logo_240.png`)
-      .replace(/cid:franco_logo/g, `${baseUrl}/brand/franco-logo-hires.png`)
-      .replace(/cid:bullet_star/g, `${baseUrl}/brand/bullet-star.png`);
+    for (const [cid, url] of Object.entries(imageMap)) {
+      result = result.replace(new RegExp(cid, 'g'), url);
+    }
+
+    return result;
   };
 
   useEffect(() => {
