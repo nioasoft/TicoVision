@@ -39,6 +39,7 @@ interface SendLetterRequest {
   // Common fields
   clientId?: string;
   feeCalculationId?: string;
+  letterId?: string; // Existing letter ID (prevents duplicate INSERT)
 }
 
 interface CorsHeaders {
@@ -619,7 +620,8 @@ serve(async (req) => {
       saveAsTemplate,
       isHtml,
       clientId,
-      feeCalculationId
+      feeCalculationId,
+      letterId // Existing letter ID (if provided, skip INSERT)
     } = requestData;
 
     // Validate - must have either templateType OR customText
@@ -791,27 +793,38 @@ serve(async (req) => {
         throw new Error('Missing tenant_id in user metadata');
       }
 
-      // Save to generated_letters table
-      // Migration 096: template_id is now nullable
-      // Custom letters use template_id=null, template_type='custom'
-      // Template letters use template_id=null, template_type=<type>
-      const { data: insertedLetter, error: insertError } = await supabase.from('generated_letters').insert({
-        tenant_id: tenantId,
-        client_id: clientId,
-        template_id: null,  // NULL for both custom and template mode letters
-        fee_calculation_id: feeCalculationId,
-        template_type: isCustomMode ? 'custom' : templateType,
-        subject: subject,
-        variables_used: variables || {},
-        generated_content_html: letterHtml,
-        recipient_emails: recipientEmails,
-        sent_at: new Date().toISOString(),
-        status: 'sent'
-      }).select().single();
+      // IMPORTANT: If letterId provided, letter already saved as draft
+      // LetterPreviewDialog saves draft → sends email → updates draft to 'sent'
+      // We only INSERT if no letterId (e.g., Universal Builder direct send)
+      let finalLetterId = letterId;
 
-      if (insertError) {
-        console.error('Database insert error:', insertError);
-        throw new Error(`Failed to log letter: ${insertError.message}`);
+      if (!letterId) {
+        // Save to generated_letters table
+        // Migration 096: template_id is now nullable
+        // Custom letters use template_id=null, template_type='custom'
+        // Template letters use template_id=null, template_type=<type>
+        const { data: insertedLetter, error: insertError } = await supabase.from('generated_letters').insert({
+          tenant_id: tenantId,
+          client_id: clientId,
+          template_id: null,  // NULL for both custom and template mode letters
+          fee_calculation_id: feeCalculationId,
+          template_type: isCustomMode ? 'custom' : templateType,
+          subject: subject,
+          variables_used: variables || {},
+          generated_content_html: letterHtml,
+          recipient_emails: recipientEmails,
+          sent_at: new Date().toISOString(),
+          status: 'sent'
+        }).select().single();
+
+        if (insertError) {
+          console.error('Database insert error:', insertError);
+          throw new Error(`Failed to log letter: ${insertError.message}`);
+        }
+
+        finalLetterId = insertedLetter?.id || null;
+      } else {
+        console.log('✅ Letter already saved as draft, skipping INSERT');
       }
 
       console.log('✅ Email sent successfully');
@@ -821,7 +834,7 @@ serve(async (req) => {
           success: true,
           message: 'Letter sent successfully',
           recipients: recipientEmails,
-          letterId: insertedLetter?.id || null
+          letterId: finalLetterId
         }),
         {
           status: 200,

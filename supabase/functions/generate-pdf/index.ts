@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { HEADER_PDF_BASE64 } from './header-image.ts';
+import { FOOTER_PDF_BASE64 } from './footer-image.ts';
+import { BULLET_BLUE_BASE64 } from './bullet-image.ts';
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -71,7 +74,7 @@ serve(async (req) => {
       'cid:tico_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_logo_png_new.png`,
       'cid:franco_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_franco_co.png`,
       'cid:tagline': `${baseUrl}/storage/v1/object/public/${bucket}/tagline.png`,
-      'cid:bullet_star_blue': `${baseUrl}/storage/v1/object/public/${bucket}/Bullet_star_blue.png`,
+      'cid:bullet_star_blue': BULLET_BLUE_BASE64, // Use base64 data URI instead of external URL
       'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
       'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
       'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
@@ -80,15 +83,28 @@ serve(async (req) => {
     // PDF footer image URL (for Puppeteer footer template)
     const pdfFooterUrl = `${baseUrl}/storage/v1/object/public/${bucket}/pdf_footer.png`;
 
+    // Remove STATIC header/footer from HTML for PDF (they'll be added via displayHeaderFooter)
+    // Keep DYNAMIC header (recipient + date) in body
+    // This prevents duplication - email/WhatsApp keep the full HTML header/footer
+
+    // Remove STATIC header (Logo + Black bar) using comment markers
+    // Same approach as generate-pdf-universal function
+    // Make regex more flexible to handle variations in comment formatting
+    console.log('🔍 [PDF] Before removal - Has HEADER STATIC START?', html.includes('HEADER STATIC START'));
+    console.log('🔍 [PDF] Before removal - Has HEADER STATIC END?', html.includes('HEADER STATIC END'));
+    html = html.replace(/<!--\s*HEADER\s+STATIC\s+START[^>]*-->([\s\S]*?)<!--\s*HEADER\s+STATIC\s+END[^>]*-->/gi, '');
+    console.log('🔍 [PDF] After removal - Has HEADER STATIC START?', html.includes('HEADER STATIC START'));
+    console.log('🔍 [PDF] If still there, regex did not match!');
+
+    // NOW replace CID references with URLs/base64
     for (const [cid, url] of Object.entries(cidToUrlMap)) {
       html = html.replace(new RegExp(cid, 'g'), url);
     }
 
-    // Remove footer from HTML body (will be rendered by Puppeteer footer template)
-    // This ensures footer appears on every page consistently
-    html = html.replace(/<!-- FOOTER START -->[\s\S]*?<!-- FOOTER END -->/g, '');
+    // Remove footer (entire footer section)
+    html = html.replace(/<!--\s*FOOTER START\s*-->[\s\S]*?<!--\s*FOOTER END\s*-->/g, '');
 
-    // 5. Wrap HTML in full document (simple approach - same as preview!)
+    // 5. Wrap HTML in full document with proper layout for header/footer
     const fullHtml = `
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
@@ -106,10 +122,18 @@ serve(async (req) => {
             font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
             direction: rtl;
             background: white;
+            padding: 0;
+            margin: 0;
           }
           @page {
             size: A4;
-            margin: 10mm 10mm 40mm 10mm; /* top, right, bottom, left - optimized for A4 */
+            /* Top: Header (34mm after scaling) + buffer (3mm) = 37mm */
+            margin-top: 37mm;
+            /* Bottom: Footer (63mm after scaling) + buffer (10mm) = 73mm */
+            margin-bottom: 73mm;
+            /* Side margins */
+            margin-left: 9mm;
+            margin-right: 9mm;
           }
         </style>
       </head>
@@ -139,17 +163,21 @@ serve(async (req) => {
             format: 'A4',
             printBackground: true,
             displayHeaderFooter: true,
-            headerTemplate: '<div></div>', // Empty header (keeping HTML header in body)
+            headerTemplate: `
+              <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
+                <img src="${HEADER_PDF_BASE64}" style="width: 100%; display: block;" />
+              </div>
+            `,
             footerTemplate: `
               <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
-                <img src="${pdfFooterUrl}" style="width: 100%; display: block;" />
+                <img src="${FOOTER_PDF_BASE64}" style="width: 100%; display: block;" />
               </div>
             `,
             margin: {
-              top: '10mm',    // Reduced from 20mm - raises header
-              right: '10mm',  // Reduced from 15mm - smaller side margins
-              bottom: '40mm', // Reduced from 50mm - adjusted for footer
-              left: '10mm'    // Reduced from 15mm - smaller side margins
+              top: '37mm',    // Synced with @page margin-top (34mm header + 3mm buffer)
+              right: '0mm',   // No side margins (handled in @page)
+              bottom: '63mm', // Footer PNG height after scaling to A4 width
+              left: '0mm'     // No side margins (handled in @page)
             }
           },
         }),
