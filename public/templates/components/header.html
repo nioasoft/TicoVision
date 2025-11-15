@@ -1,8 +1,10 @@
+<!-- HEADER START -->
 <!-- Letter Header Component -->
 <!-- Used by all 11 letter templates -->
 <!-- Variables: {{letter_date}}, {{company_name}}, {{group_name}} -->
 <!-- CID Images: cid:tico_logo_new -->
 
+<!-- HEADER STATIC START - Logo + Black line (removed in PDF, added via displayHeaderFooter) -->
 <!-- Row 1: Logo centered -->
 <tr>
     <td style="text-align: center; padding-bottom: 10px;">
@@ -24,7 +26,9 @@
         </table>
     </td>
 </tr>
+<!-- HEADER STATIC END -->
 
+<!-- HEADER DYNAMIC START - Recipient + Date (kept in PDF body) -->
 <!-- Row 3: Recipient (right) and Date (left) -->
 <tr>
     <td style="padding-bottom: 0px; padding-top: 0px;">
@@ -50,3 +54,5 @@
         </table>
     </td>
 </tr>
+<!-- HEADER DYNAMIC END -->
+<!-- HEADER END -->
