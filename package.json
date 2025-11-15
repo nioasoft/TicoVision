@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run sync-templates && vite",
     "build": "vite build && npm run copy-templates",
+    "sync-templates": "cp -r templates/* public/templates/",
     "copy-templates": "cp -r templates dist/",
     "lint": "eslint .",
     "preview": "vite preview",
