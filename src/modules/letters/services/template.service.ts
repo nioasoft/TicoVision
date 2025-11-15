@@ -5,8 +5,8 @@
 
 import { BaseService, type ServiceResponse } from '@/services/base.service';
 import { supabase } from '@/lib/supabase';
-import type { 
-  LetterTemplate, 
+import type {
+  LetterTemplate,
   LetterTemplateType,
   LetterVariables,
   GeneratedLetter,
@@ -745,8 +745,9 @@ export class TemplateService extends BaseService {
       // 6. Replace all variables
       fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
 
-      // 7. Convert CID images to web paths for browser preview
-      fullHtml = this.replaceCidWithWebPaths(fullHtml);
+      // 7. Keep CID references in HTML (for email + PDF generation)
+      // convertHtmlForDisplay will convert CID → Supabase URLs for browser display
+      // generate-pdf Edge Function will convert CID → Supabase URLs for PDF
 
       return { data: { html: fullHtml }, error: null };
     } catch (error) {
@@ -997,8 +998,16 @@ export class TemplateService extends BaseService {
       // 6. Build full HTML with custom header lines and subject lines
       let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml, subjectLinesHtml);
 
+      // DEBUG: Check if comment markers are present before variable replacement
+      console.log('🔍 [Before replaceVars] Has HEADER STATIC START?', fullHtml.includes('<!-- HEADER STATIC START -->'));
+      console.log('🔍 [Before replaceVars] Has HEADER STATIC END?', fullHtml.includes('<!-- HEADER STATIC END -->'));
+
       // 6. Replace variables in full HTML
       fullHtml = replaceVarsInText(fullHtml, fullVariables);
+
+      // DEBUG: Check if comment markers survived variable replacement
+      console.log('🔍 [After replaceVars] Has HEADER STATIC START?', fullHtml.includes('<!-- HEADER STATIC START -->'));
+      console.log('🔍 [After replaceVars] Has HEADER STATIC END?', fullHtml.includes('<!-- HEADER STATIC END -->'));
       const plainText = TemplateParser.htmlToText(fullHtml);
 
       // 7. Save as custom template if requested
@@ -1067,6 +1076,103 @@ export class TemplateService extends BaseService {
       });
 
       return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Update existing letter content
+   * Used when editing a letter and regenerating PDF
+   *
+   * CRITICAL: This updates generated_content_html with fresh content
+   * and clears pdf_url to force PDF regeneration
+   */
+  async updateLetterContent(params: {
+    letterId: string;
+    plainText: string;
+    subjectLines?: import('../types/letter.types').SubjectLine[];
+    customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
+    variables: Record<string, string | number>;
+    includesPayment: boolean;
+    isHtml?: boolean;
+  }): Promise<ServiceResponse<{ id: string; html: string }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Load header and footer components
+      const header = await this.loadTemplateFile('components/header.html');
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 2. Parse custom text to HTML (or use as-is if already HTML)
+      const bodyHtml = this.parseTextToHTML(params.plainText, params.isHtml);
+
+      // 3. Load payment section if needed
+      let paymentSection = '';
+      if (params.includesPayment) {
+        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+      }
+
+      // 4. Generate custom header lines HTML if provided
+      let customHeaderLinesHtml = '';
+      if (params.customHeaderLines && params.customHeaderLines.length > 0) {
+        customHeaderLinesHtml = this.generateCustomHeaderLinesHtml(params.customHeaderLines);
+      }
+
+      // 5. Generate subject lines HTML if provided
+      let subjectLinesHtml = '';
+      if (params.subjectLines && params.subjectLines.length > 0) {
+        subjectLinesHtml = this.buildSubjectLinesHTML(params.subjectLines);
+      }
+
+      // 6. Add automatic variables
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+
+      const fullVariables: Record<string, string | number> = {
+        ...params.variables,
+        letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
+        year: params.variables.year || nextYear,
+        tax_year: params.variables.tax_year || nextYear,
+        client_id: params.variables.client_id,
+        fee_id: params.variables.fee_id
+      };
+
+      // 7. Build full HTML with custom header lines and subject lines
+      let fullHtml = this.buildFullHTML(header, bodyHtml, paymentSection, footer, customHeaderLinesHtml, subjectLinesHtml);
+
+      // 8. Replace variables in full HTML
+      fullHtml = replaceVarsInText(fullHtml, fullVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 9. Update database - CRITICAL: Update HTML and clear PDF URL
+      const { data: updatedLetter, error: updateError } = await supabase
+        .from('generated_letters')
+        .update({
+          generated_content_html: fullHtml,
+          generated_content_text: plainText,
+          variables_used: fullVariables,
+          pdf_url: null // ✅ CRITICAL: Clear old PDF to force regeneration
+          // Note: updated_at column doesn't exist in generated_letters table
+        })
+        .eq('id', params.letterId)
+        .eq('tenant_id', tenantId)
+        .select('id')
+        .single();
+
+      if (updateError) throw updateError;
+
+      await this.logAction('update_letter_content', params.letterId, {
+        includes_payment: params.includesPayment
+      });
+
+      return {
+        data: {
+          id: updatedLetter.id,
+          html: fullHtml
+        },
+        error: null
+      };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
@@ -1174,26 +1280,25 @@ export class TemplateService extends BaseService {
 
       const styleStr = styles.length > 0 ? ` style="${styles.join('; ')};"` : '';
 
-      // שורה ראשונה: "הנדון: {טקסט}"
+      // שורה ראשונה: "הנדון: {טקסט}" (בלי בולט!)
       if (isFirstLine) {
-        return `      <div${styleStr}>הנדון: ${line.content || ''}</div>`;
+        return `הנדון: ${line.content || ''}`;
       }
 
-      // שורות נוספות: "הנדון: " invisible + טקסט
-      // זה גורם ליישור מושלם - הטקסט מתחיל בדיוק באותו מקום
-      return `      <div${styleStr}><span style="opacity: 0;">הנדון: </span>${line.content || ''}</div>`;
-    }).join('\n');
+      // שורות נוספות: <br/> + רווח invisible + טקסט (ליישור מושלם)
+      return `<br/><span style="opacity: 0;">הנדון: </span>${line.content || ''}`;
+    }).join(''); // NO NEWLINES - join with empty string for Puppeteer compatibility
 
     // Return complete subject lines section with borders
+    // מבנה זהה ל-annual-fee.html (שורות 8-15)
+    // CRITICAL: linesHtml must be on same line as <div> for Puppeteer PDF rendering
     return `<!-- Subject Lines (הנדון) -->
 <tr>
     <td style="padding-top: 20px;">
-        <!-- Top border -->
+        <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
-        <!-- Subject lines container -->
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; color: #395BF7; text-align: right; line-height: 1.2; padding-bottom: 20px; border-bottom: 1px solid #000000;">
-${linesHtml}
-        </div>
+        <!-- Subject line -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">${linesHtml}</div>
     </td>
 </tr>`;
   }

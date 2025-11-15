@@ -820,29 +820,29 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       let letterId = lastSentLetterId;
 
-      // If letter not saved yet, save it first
+      // Build variables (used for both new and existing letters)
+      const variables: Record<string, string | number> = {
+        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
+        commercial_name: showCommercialName ? commercialName : ''
+      };
+
+      // Add payment variables if needed
+      if (includesPayment) {
+        const discounts = calculateDiscounts(amount);
+        Object.assign(variables, discounts);
+      }
+
       if (!letterId) {
-        // Build variables
-        const variables: Record<string, string | number> = {
-          company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
-          group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-          commercial_name: showCommercialName ? commercialName : ''
-        };
-
-        // Add payment variables if needed
-        if (includesPayment) {
-          const discounts = calculateDiscounts(amount);
-          Object.assign(variables, discounts);
-        }
-
-        // Save letter to database (client_id is optional for general letters)
+        // ✅ NEW LETTER: Save letter to database
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
-          clientId: selectedClient?.id || null, // NULL for general/manual recipients
+          clientId: selectedClient?.id || null,
           variables,
           includesPayment,
           customHeaderLines,
-          subject: emailSubject || 'מכתב חדש', // Pass email subject
+          subjectLines, // ✅ CRITICAL: Pass subject lines for "הנדון" section
+          subject: emailSubject || 'מכתב חדש',
           saveAsTemplate: undefined,
           isHtml: true
         });
@@ -853,14 +853,36 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         }
 
         letterId = result.data.id;
-        setLastSentLetterId(letterId); // Save for future use
+        setLastSentLetterId(letterId);
+      } else {
+        // ✅ EXISTING LETTER: Update content with latest changes
+        console.log('🔄 Updating existing letter:', letterId);
+
+        const updateResult = await templateService.updateLetterContent({
+          letterId,
+          plainText: letterContent,
+          subjectLines, // ✅ CRITICAL: Pass updated subject lines
+          customHeaderLines,
+          variables,
+          includesPayment,
+          isHtml: true
+        });
+
+        if (updateResult.error) {
+          console.error('❌ Failed to update letter content:', updateResult.error);
+          toast.error('שגיאה בעדכון המכתב');
+          return;
+        }
+
+        console.log('✅ Letter content updated successfully');
       }
 
-      // Generate PDF
-      const pdfUrl = await pdfService.getOrGeneratePDF(letterId);
+      // ✅ CRITICAL: Always force PDF regeneration to reflect latest changes
+      // This is especially important for edited letters
+      console.log('🔄 Generating fresh PDF for letter:', letterId);
+      const pdfUrl = await pdfService.getOrGeneratePDF(letterId, true);
 
       toast.success('PDF מוכן להורדה');
-      // Open PDF in new tab
       window.open(pdfUrl, '_blank');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -2139,12 +2161,21 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
           </div>
           <div className="flex gap-2 justify-end rtl:flex-row-reverse mt-4">
-            <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>
+            <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)} disabled={isSaving}>
               ביטול
             </Button>
-            <Button onClick={handleConfirmSaveTemplate}>
-              <Save className="h-4 w-4 ml-2" />
-              אישור
+            <Button onClick={handleConfirmSaveTemplate} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  שומר...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 ml-2" />
+                  אישור
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>

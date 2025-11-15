@@ -1,4 +1,5 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { BULLET_BLUE_BASE64 } from '@/lib/letter-assets';
 
 export interface BlueBulletOptions {
   HTMLAttributes: Record<string, unknown>;
@@ -64,7 +65,7 @@ export const BlueBullet = Node.create<BlueBulletOptions>({
               [
                 'img',
                 {
-                  src: '/brand/Bullet_star_blue.png',
+                  src: BULLET_BLUE_BASE64,
                   alt: '•',
                   width: '11',
                   height: '11',
