@@ -1846,6 +1846,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       <>
                         <div className="border rounded-lg p-3 max-h-48 overflow-y-auto bg-gray-50">
                           <div className="space-y-2">
+                            {/* Client contacts with checkboxes */}
                             {clientContacts.map((contact) => {
                               const isChecked = selectedRecipients.includes(contact.email!);
                               return (
@@ -1875,6 +1876,29 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                 </div>
                               );
                             })}
+
+                            {/* Manually added emails with X button to remove */}
+                            {selectedRecipients
+                              .filter(email => !clientContacts.some(c => c.email === email))
+                              .map((email) => (
+                                <div
+                                  key={email}
+                                  className="flex items-center justify-between gap-2 p-2 bg-white hover:bg-gray-50 rounded border"
+                                >
+                                  <div className="flex-1 text-right">
+                                    <div className="text-xs text-gray-600 truncate">{email}</div>
+                                    <div className="text-xs text-blue-600">(נוסף ידנית)</div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedRecipients(selectedRecipients.filter(e => e !== email))}
+                                    className="text-red-500 hover:text-red-700 rtl:mr-2 ltr:ml-2"
+                                    title="הסר מייל"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
                           </div>
                         </div>
 
@@ -1929,45 +1953,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       >
                         <X className="h-3 w-3" />
                       </Button>
-                    </div>
-                  )}
-
-                  {/* Display selected recipients */}
-                  {selectedRecipients.length > 0 && (
-                    <div className="border rounded-lg p-3 bg-gray-50">
-                      <div className="space-y-2">
-                        {selectedRecipients.map((email) => {
-                          const isFromContacts = clientContacts.some(c => c.email === email);
-                          const contact = clientContacts.find(c => c.email === email);
-                          return (
-                            <div
-                              key={email}
-                              className="flex items-center justify-between p-2 bg-white hover:bg-gray-50 rounded border"
-                            >
-                              <div className="flex-1 text-right">
-                                {contact ? (
-                                  <>
-                                    <div className="font-medium text-xs truncate">{contact.full_name}</div>
-                                    <div className="text-xs text-gray-600 truncate">{contact.email}</div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <div className="text-xs text-gray-600 truncate">{email}</div>
-                                    <div className="text-xs text-blue-600">(נוסף ידנית)</div>
-                                  </>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveRecipient(email)}
-                                className="text-red-500 hover:text-red-700 rtl:mr-2 ltr:ml-2"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
                     </div>
                   )}
                 </div>
