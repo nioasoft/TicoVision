@@ -136,7 +136,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
   // State - WhatsApp
   const [whatsappPhone, setWhatsappPhone] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   // State - Manual email input
   const [manualEmailInput, setManualEmailInput] = useState('');
@@ -1000,8 +999,10 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       // Load client if exists
       if (letter.client_id) {
-        const client = await clientService.getClientById(letter.client_id);
-        setSelectedClient(client);
+        const { data: client } = await clientService.getById(letter.client_id);
+        if (client) {
+          setSelectedClient(client);
+        }
       }
 
       // Load recipients

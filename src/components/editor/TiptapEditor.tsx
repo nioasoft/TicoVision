@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
 import { BlueBullet } from './extensions/BlueBullet';
 import { BlueBulletButton } from './BlueBulletButton';
 
+// Import ProseMirror CSS for proper white-space handling
+import 'prosemirror-view/style/prosemirror.css';
+
 interface TiptapEditorProps {
   value: string;
   onChange: (html: string) => void;
