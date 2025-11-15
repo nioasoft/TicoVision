@@ -3,6 +3,17 @@
  * Based on the 11 templates from Shani & Tiko
  */
 
+/**
+ * Letter Status Type
+ * Represents the current state and delivery channel of a letter
+ */
+export type LetterStatus =
+  | 'draft'          // טיוטה - work in progress
+  | 'saved'          // נשמר ידנית - manually saved, not sent yet
+  | 'sent_email'     // נשלח במייל - sent via email
+  | 'sent_whatsapp'  // נשלח בוואטסאפ - sent via WhatsApp
+  | 'sent_print';    // הודפס - printed
+
 export type LetterTemplateType = 
   | 'external_index_only'        // A - חיצוניים - שינוי מדד
   | 'external_real_change'       // B - חיצוניים - שינוי ריאלי
@@ -145,8 +156,9 @@ export interface GeneratedLetter {
   generated_content_html: string;
   generated_content_text?: string;
   payment_link?: string;
+  status: LetterStatus; // Current status including delivery channel
   sent_at?: Date;
-  sent_via?: 'email' | 'print' | 'download';
+  sent_via?: 'email' | 'whatsapp' | 'print'; // DEPRECATED: Use status instead
   opened_at?: Date;
   clicked_at?: Date;
   created_at: Date;

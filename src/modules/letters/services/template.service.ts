@@ -943,6 +943,7 @@ export class TemplateService extends BaseService {
       subject?: string;
     };
     isHtml?: boolean; // If true, plainText is already HTML from Tiptap
+    saveWithStatus?: import('../types/letter.types').LetterStatus; // Save with specific status (draft/saved)
   }): Promise<ServiceResponse<GeneratedLetter>> {
     try {
       const tenantId = await this.getTenantId();
@@ -1030,7 +1031,7 @@ export class TemplateService extends BaseService {
         template_type: 'custom_text', // Required when template_id is null (CHECK constraint)
         fee_calculation_id: null,
         subject: params.subject || 'מכתב חדש', // Email subject / letter title
-        status: 'draft', // Default status (CHECK: 'draft' | 'sent' | 'delivered' | 'opened')
+        status: params.saveWithStatus || 'draft', // Use provided status or default to draft
         rendering_engine: 'legacy', // CHECK constraint: 'legacy' | 'unified'
         system_version: 'v1', // CHECK constraint: 'v1' | 'v2'
         is_latest: true, // This is the latest version of this letter

@@ -64,21 +64,50 @@ export function LetterHistoryTable({
     switch (status) {
       case 'draft':
         return (
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="secondary" className="gap-1 bg-gray-100 text-gray-800">
             <Clock className="h-3 w-3" />
             טיוטה
           </Badge>
         );
+      case 'saved':
+        return (
+          <Badge variant="default" className="gap-1 bg-green-100 text-green-800">
+            <CheckCircle2 className="h-3 w-3" />
+            שמור
+          </Badge>
+        );
+      case 'sent_email':
+        return (
+          <Badge variant="default" className="gap-1 bg-blue-100 text-blue-800">
+            <Mail className="h-3 w-3" />
+            נשלח במייל
+          </Badge>
+        );
+      case 'sent_whatsapp':
+        return (
+          <Badge variant="default" className="gap-1 bg-purple-100 text-purple-800">
+            <Send className="h-3 w-3" />
+            נשלח בוואטסאפ
+          </Badge>
+        );
+      case 'sent_print':
+        return (
+          <Badge variant="default" className="gap-1 bg-orange-100 text-orange-800">
+            <Printer className="h-3 w-3" />
+            הודפס
+          </Badge>
+        );
+      // Legacy statuses (for backward compatibility)
       case 'sent':
         return (
-          <Badge variant="default" className="gap-1 bg-blue-500">
+          <Badge variant="default" className="gap-1 bg-blue-100 text-blue-800">
             <Send className="h-3 w-3" />
             נשלח
           </Badge>
         );
       case 'opened':
         return (
-          <Badge variant="default" className="gap-1 bg-green-500">
+          <Badge variant="default" className="gap-1 bg-green-500 text-white">
             <CheckCircle2 className="h-3 w-3" />
             נפתח {openCount > 1 && `(${openCount})`}
           </Badge>

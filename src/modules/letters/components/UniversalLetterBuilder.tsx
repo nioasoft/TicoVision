@@ -118,6 +118,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
   const [lastSentLetterId, setLastSentLetterId] = useState<string | null>(null);
+  const [savedLetterId, setSavedLetterId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // State - Recipients
@@ -432,6 +434,59 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
+   * Save letter to history without sending
+   */
+  const handleSaveLetter = async () => {
+    if (!letterContent || letterContent.trim() === '' || letterContent === '<p></p>' || letterContent === '<p><br></p>') {
+      toast.error('נא להזין תוכן למכתב');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Build variables
+      const variables: Record<string, string | number> = {
+        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+        group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
+        commercial_name: showCommercialName ? commercialName : ''
+      };
+
+      // Add payment variables if needed
+      if (includesPayment) {
+        const discounts = calculateDiscounts(amount);
+        Object.assign(variables, discounts);
+      }
+
+      // Generate and save letter with status: 'saved'
+      const result = await templateService.generateFromCustomText({
+        plainText: letterContent,
+        clientId: selectedClient?.id || null,
+        variables,
+        includesPayment,
+        customHeaderLines,
+        subjectLines,
+        subject: emailSubject || 'מכתב חדש',
+        isHtml: true,
+        saveWithStatus: 'saved' // ⭐ Save as 'saved' not 'draft'
+      });
+
+      if (result.error || !result.data) {
+        toast.error('שגיאה בשמירת המכתב');
+        return;
+      }
+
+      setSavedLetterId(result.data.id);
+      toast.success('המכתב נשמר בהיסטוריית מכתבים');
+
+    } catch (error) {
+      console.error('Error saving letter:', error);
+      toast.error('שגיאה בשמירת המכתב');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
    * Send email via Edge Function
    */
   const handleSendEmail = async () => {
@@ -611,19 +666,34 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       const letterId = result.data.id;
 
-      // 4. Generate public link to view letter
+      // 4. Update letter status to 'sent_whatsapp'
+      const { error: updateError } = await supabase
+        .from('generated_letters')
+        .update({
+          status: 'sent_whatsapp',
+          sent_at: new Date().toISOString(),
+          sent_via: 'whatsapp'
+        })
+        .eq('id', letterId);
+
+      if (updateError) {
+        console.error('Error updating letter status:', updateError);
+        // Don't fail the whole operation, just log it
+      }
+
+      // 5. Generate public link to view letter
       const letterUrl = `${window.location.origin}/letters/view/${letterId}`;
 
-      // 5. Format phone for WhatsApp (972508620993)
+      // 6. Format phone for WhatsApp (972508620993)
       const cleanPhone = whatsappPhone.replace(/[\s\-\(\)]/g, '').replace(/^0/, '');
       const whatsappNumber = `972${cleanPhone}`;
 
-      // 6. Create WhatsApp message
+      // 7. Create WhatsApp message
       const message = encodeURIComponent(
         `שלום,\n\nשלחנו לך מכתב חשוב ממשרד רו"ח פרנקו.\n\nלצפייה במכתב: ${letterUrl}\n\nבברכה,\nצוות פרנקו`
       );
 
-      // 7. Open WhatsApp
+      // 8. Open WhatsApp
       const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
       window.open(whatsappUrl, '_blank');
 
@@ -1822,6 +1892,31 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     </>
                   )}
                 </Button>
+
+                <Button
+                  onClick={handleSaveLetter}
+                  disabled={isSaving || !letterContent.trim()}
+                  variant="default"
+                  className="w-full"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                      שומר...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                      שמור מכתב
+                    </>
+                  )}
+                </Button>
+
+                {savedLetterId && (
+                  <p className="text-xs text-green-600 text-center">
+                    ✓ המכתב נשמר בהיסטוריה
+                  </p>
+                )}
               </div>
 
               {/* COLUMN 3: Email Recipients + Send Email */}

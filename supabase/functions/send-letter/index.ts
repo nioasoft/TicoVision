@@ -814,7 +814,8 @@ serve(async (req) => {
           generated_content_html: letterHtml,
           recipient_emails: recipientEmails,
           sent_at: new Date().toISOString(),
-          status: 'sent'
+          status: 'sent_email', // ⭐ Changed from 'sent' to 'sent_email'
+          sent_via: 'email'
         }).select().single();
 
         if (insertError) {
@@ -824,7 +825,22 @@ serve(async (req) => {
 
         finalLetterId = insertedLetter?.id || null;
       } else {
-        console.log('✅ Letter already saved as draft, skipping INSERT');
+        // Letter already exists (saved as draft/saved), update status to sent_email
+        console.log('✅ Letter already saved, updating status to sent_email');
+        const { error: updateError } = await supabase
+          .from('generated_letters')
+          .update({
+            status: 'sent_email',
+            sent_at: new Date().toISOString(),
+            sent_via: 'email',
+            recipient_emails: recipientEmails
+          })
+          .eq('id', letterId);
+
+        if (updateError) {
+          console.error('Failed to update letter status:', updateError);
+          throw new Error(`Failed to update letter: ${updateError.message}`);
+        }
       }
 
       console.log('✅ Email sent successfully');
