@@ -641,6 +641,66 @@ kill -9 $(lsof -t -i:5173)    # Kill process on port 5173
 
 ## 📧 Letter System - CRITICAL ARCHITECTURE
 
+### 📁 Template Files Architecture (CRITICAL - Nov 14, 2025)
+
+**IMPORTANT**: Template files exist in **3 locations** - always edit the source!
+
+#### Directory Structure:
+```
+TicoVision/
+├── templates/              ← **SOURCE OF TRUTH** - ALWAYS EDIT HERE!
+│   ├── components/
+│   │   ├── header.html    ← Contains <!-- HEADER STATIC START/END --> markers
+│   │   ├── footer.html
+│   │   └── payment-section.html
+│   └── bodies/
+│       └── (11 body templates)
+│
+├── public/templates/       ← Copy for Vite dev server (localhost:5173)
+│   └── (Auto-synced from templates/)
+│
+└── dist/templates/         ← Production build output (Vercel)
+    └── (Auto-copied during build)
+```
+
+#### How It Works:
+1. **Development (localhost:5173)**:
+   - `fetch('/templates/header.html')` → Vite serves from `public/templates/`
+   - `npm run dev` **auto-syncs** `templates/` → `public/templates/` before starting server
+   - Critical for getting latest changes (e.g., PDF comment markers)
+
+2. **Production (Vercel)**:
+   - `npm run build` → `vite build && cp -r templates dist/`
+   - Copies `templates/` → `dist/templates/` automatically
+   - No manual sync needed
+
+3. **Why Three Locations?**
+   - `templates/` = **Source** - where you make all edits
+   - `public/templates/` = **Dev server** - Vite serves static files from `public/`
+   - `dist/templates/` = **Production** - created during build
+
+#### Critical Rules:
+1. **ALWAYS edit files in `templates/`** - NEVER edit `public/templates/` or `dist/templates/` directly
+2. **Auto-sync is enabled**: `npm run dev` syncs automatically before starting
+3. **Manual sync**: If needed, run `npm run sync-templates`
+4. **Production**: `npm run build` handles copying automatically
+
+#### npm Scripts:
+```bash
+npm run dev              # Auto-syncs templates/ → public/templates/, then starts Vite
+npm run sync-templates   # Manual sync: templates/ → public/templates/
+npm run build            # Builds + copies: templates/ → dist/templates/
+```
+
+#### Historical Issue (Fixed Nov 14, 2025):
+- **Problem**: `public/templates/` was out of sync (last updated Oct 20)
+- **Missing**: `<!-- HEADER STATIC START/END -->` markers in header.html
+- **Impact**: PDF generation showed duplicate headers in Universal Builder
+- **Root Cause**: Vite dev server serves from `public/`, but we were editing `templates/`
+- **Solution**: Added auto-sync to `npm run dev` script
+
+---
+
 ### ⚠️ IMPORTANT - Database Tables
 **USE ONLY:** `generated_letters` table (via `template.service.ts`)
 **DO NOT USE:** `letter_history` table (deprecated)
