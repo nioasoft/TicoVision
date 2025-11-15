@@ -21,7 +21,6 @@ import { selectLetterTemplate, type LetterSelectionResult } from '../utils/lette
 import { TenantContactService } from '@/services/tenant-contact.service';
 import type { AssignedContact } from '@/types/tenant-contact.types';
 import { FileUploadService } from '@/services/file-upload.service';
-import { imageServiceV2 } from '@/modules/letters-v2/services/image.service';
 
 const templateService = new TemplateService();
 const fileUploadService = new FileUploadService();
@@ -240,7 +239,17 @@ export function LetterPreviewDialog({
    * Convert CID images to Supabase Storage URLs for browser display and PDF
    */
   const convertHtmlForDisplay = (html: string): string => {
-    const imageMap = imageServiceV2.getAllPublicUrls();
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace('/rest/v1', '');
+    const bucket = 'letter-assets-v2';
+
+    const imageMap: Record<string, string> = {
+      'cid:tico_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_logo_png_new.png`,
+      'cid:franco_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_franco_co.png`,
+      'cid:tagline': `${baseUrl}/storage/v1/object/public/${bucket}/tagline.png`,
+      'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
+      'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
+    };
+
     let result = html;
 
     for (const [cid, url] of Object.entries(imageMap)) {

@@ -17,8 +17,6 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Mail, Printer, Loader2, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
-import { imageServiceV2 } from '@/modules/letters-v2/services/image.service';
 
 export interface LetterViewDialogProps {
   open: boolean;
@@ -52,8 +50,6 @@ export function LetterViewDialog({
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
-
-  const pdfService = new PDFGenerationService();
 
   /**
    * Load letter from database
@@ -92,7 +88,17 @@ export function LetterViewDialog({
    * Convert CID images to Supabase Storage URLs for browser display
    */
   const convertHtmlForDisplay = (html: string): string => {
-    const imageMap = imageServiceV2.getAllPublicUrls();
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace('/rest/v1', '');
+    const bucket = 'letter-assets-v2';
+
+    const imageMap: Record<string, string> = {
+      'cid:tico_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_logo_png_new.png`,
+      'cid:franco_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_franco_co.png`,
+      'cid:tagline': `${baseUrl}/storage/v1/object/public/${bucket}/tagline.png`,
+      'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
+      'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
+    };
+
     let result = html;
 
     for (const [cid, url] of Object.entries(imageMap)) {
@@ -160,14 +166,19 @@ export function LetterViewDialog({
     try {
       setGeneratingPdf(true);
 
-      // generatePDF returns a string (the PDF URL), not an object
-      const pdfUrl = await pdfService.generatePDF(letterId);
+      // Call generate-pdf Edge Function
+      const { data, error } = await supabase.functions.invoke('generate-pdf', {
+        body: { letterId },
+      });
 
-      setPdfUrl(pdfUrl);
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'PDF generation failed');
+
+      setPdfUrl(data.pdfUrl);
       toast.success('PDF נוצר בהצלחה');
 
       // Open PDF in new tab
-      window.open(pdfUrl, '_blank');
+      window.open(data.pdfUrl, '_blank');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('שגיאה ביצירת PDF');

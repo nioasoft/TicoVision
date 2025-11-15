@@ -11,7 +11,6 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
-import { imageServiceV2 } from '@/modules/letters-v2/services/image.service';
 
 // Print styles for clean printing
 const printStyles = `
@@ -118,7 +117,17 @@ export default function LetterViewer() {
 
   // Convert CID references to Supabase Storage URLs for proper image display
   const convertHtmlForDisplay = (html: string): string => {
-    const imageMap = imageServiceV2.getAllPublicUrls();
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace('/rest/v1', '');
+    const bucket = 'letter-assets-v2';
+
+    const imageMap: Record<string, string> = {
+      'cid:tico_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_logo_png_new.png`,
+      'cid:franco_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_franco_co.png`,
+      'cid:tagline': `${baseUrl}/storage/v1/object/public/${bucket}/tagline.png`,
+      'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
+      'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
+    };
+
     let result = html;
 
     for (const [cid, url] of Object.entries(imageMap)) {
