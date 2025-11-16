@@ -166,16 +166,67 @@ function closeBulletSection(): string {
  * Increase font sizes in HTML by 3px for better email readability
  * Processes inline styles in Tiptap-generated HTML
  *
+ * Step 1: Increase existing font-sizes
+ * Step 2: Add font-size to tags without one (p, h1, h2, span, div, td, li)
+ *
  * @param html - HTML content from Tiptap editor
  * @returns HTML with increased font sizes
  */
 function increaseFontSizesInHTML(html: string): string {
-  // Match font-size: XXpx in inline styles
-  return html.replace(/font-size:\s*(\d+)px/gi, (match, size) => {
+  // Step 1: Increase existing font-sizes by 3px
+  html = html.replace(/font-size:\s*(\d+)px/gi, (match, size) => {
     const currentSize = parseInt(size, 10);
     const newSize = currentSize + 3;
     return `font-size: ${newSize}px`;
   });
+
+  // Step 2: Add default font-sizes to tags without them
+  // This catches regular Tiptap HTML (p, h1, h2, etc.) that has no inline font-size
+  const tagsToProcess = [
+    { tag: 'p', size: 19 },      // Default 16px + 3px
+    { tag: 'h1', size: 35 },     // Default 32px + 3px
+    { tag: 'h2', size: 27 },     // Default 24px + 3px
+    { tag: 'h3', size: 22 },     // Default 19px + 3px
+    { tag: 'span', size: 19 },   // Default 16px + 3px
+    { tag: 'div', size: 19 },    // Default 16px + 3px
+    { tag: 'td', size: 19 },     // Default 16px + 3px (BlueBullet uses td)
+    { tag: 'li', size: 19 },     // Default 16px + 3px
+    { tag: 'strong', size: 19 }, // Default 16px + 3px
+    { tag: 'em', size: 19 }      // Default 16px + 3px
+  ];
+
+  for (const { tag, size } of tagsToProcess) {
+    // Match opening tags that don't already have font-size in their style
+    const regex = new RegExp(`<${tag}(?![^>]*font-size:)([^>]*)>`, 'gi');
+    html = html.replace(regex, (match, attrs) => {
+      // Check if there's already a style attribute
+      const styleMatch = attrs.match(/style="([^"]*)"/);
+      if (styleMatch) {
+        // Add font-size to existing style attribute
+        const existingStyle = styleMatch[1];
+        const newStyle = existingStyle + `; font-size: ${size}px`;
+        return match.replace(/style="[^"]*"/, `style="${newStyle}"`);
+      } else {
+        // Add new style attribute with font-size
+        return `<${tag}${attrs} style="font-size: ${size}px;">`;
+      }
+    });
+  }
+
+  return html;
+}
+
+/**
+ * Replace Base64 BlueBullet images with CID reference for email compatibility
+ * Gmail and Outlook block Base64 images, so we use CID attachments instead
+ *
+ * @param html - HTML content with Base64 bullet images
+ * @returns HTML with CID references (cid:bullet_star_blue)
+ */
+function replaceBlueBulletWithCID(html: string): string {
+  // Replace all Base64 PNG images (from BlueBullet extension) with CID reference
+  // The actual image is already attached to email as 'bullet_star_blue' (line 519, 591)
+  return html.replace(/src="data:image\/png;base64,[^"]+"/gi, 'src="cid:bullet_star_blue"');
 }
 
 /**
@@ -186,9 +237,11 @@ function increaseFontSizesInHTML(html: string): string {
  * @param isHtml - If true, assumes text is already HTML from Tiptap (bypasses parsing)
  */
 function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
-  // If already HTML from Tiptap, increase font sizes for better email readability
+  // If already HTML from Tiptap, process for email compatibility
   if (isHtml) {
-    return increaseFontSizesInHTML(plainText);
+    let html = increaseFontSizesInHTML(plainText);
+    html = replaceBlueBulletWithCID(html); // Replace Base64 images with CID
+    return html;
   }
 
   // Otherwise parse Markdown to HTML (legacy support)
