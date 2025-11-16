@@ -57,6 +57,10 @@ const FontSize = Extension.create({
       },
     };
   },
+
+  // CRITICAL: Priority ensures fontSize works with bold/italic marks
+  // Higher priority = applied later in mark stack = renders as outer wrapper
+  priority: 1000,
 });
 
 interface TiptapEditorProps {
@@ -89,8 +93,11 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         keepMarks: true, // Preserve formatting across line breaks
       },
       strike: false, // Disable strike (we don't use it, reduces extensions)
+      // CRITICAL: Disable built-in underline to prevent "Duplicate extension" warning
+      // We use a separate Underline extension below for better control
+      ...(StarterKit.options?.underline !== undefined && { underline: false }),
     }),
-    Underline, // StarterKit doesn't include Underline by default
+    Underline, // Separate Underline extension (not in StarterKit by default, but some versions include it)
     TextAlign.configure({
       types: ['paragraph'], // Only apply to paragraphs - headings conflict with Heading extension
       alignments: ['left', 'center', 'right'],

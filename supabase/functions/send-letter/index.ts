@@ -239,8 +239,13 @@ function replaceBlueBulletWithCID(html: string): string {
  */
 function replaceHrWithDiv(html: string): string {
   // Replace all <hr> and <hr/> tags with div border (same as templates)
-  // Matches: <hr>, <hr/>, <hr />, <hr class="...">, etc.
-  return html.replace(/<hr\s*\/?>/gi, '<div style="border-top: 1px solid #000000; margin: 20px 0;"></div>');
+  // Matches: <hr>, <hr/>, <hr />, <hr class="...">, <hr style="...">, etc.
+  // Regex explanation: /<hr(\s[^>]*)?\s*\/?>/gi
+  // - <hr = opening tag
+  // - (\s[^>]*)? = optional: space + any characters except > (attributes like class, style)
+  // - \s*\/? = optional: spaces + self-closing slash
+  // - > = closing bracket
+  return html.replace(/<hr(\s[^>]*)?\s*\/?>/gi, '<div style="border-top: 1px solid #000000; margin: 20px 0;"></div>');
 }
 
 /**
@@ -407,6 +412,8 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
 
 /**
  * Build subject lines HTML ("הנדון" section)
+ * CRITICAL: Must match template.service.ts buildSubjectLinesHTML() exactly!
+ * This creates the section with TOP and BOTTOM borders (black lines)
  */
 function buildSubjectLinesHTML(subjectLines: any[]): string {
   if (!subjectLines || subjectLines.length === 0) {
@@ -415,24 +422,50 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
 
   console.log('🔍 [Edge Function] Building subject lines HTML:', subjectLines);
 
-  const subjectLinesHtml = subjectLines.map((line, index) => {
-    // Build style string
-    let style = 'font-size: 22px; color: #395BF7; direction: rtl; text-align: right;';
-    style += line.formatting?.bold ? ' font-weight: 700;' : '';
-    style += line.formatting?.underline ? ' text-decoration: underline;' : '';
+  // Sort by order
+  const sortedLines = [...subjectLines].sort((a: any, b: any) => a.order - b.order);
 
-    return `<tr>
-  <td style="padding: ${index === 0 ? '20px' : '4px'} 0 0 0;">
-    <p style="${style} margin: 0; padding: 0;">
-      ${index === 0 ? 'הנדון: ' : ''}${line.content}
-    </p>
-  </td>
+  const linesHtml = sortedLines.map((line: any, index: number) => {
+    const isFirstLine = index === 0;
+
+    // Build inline styles for each line
+    const styles: string[] = [];
+
+    if (line.formatting?.bold) {
+      styles.push('font-weight: 700');
+    }
+
+    if (line.formatting?.underline) {
+      styles.push('text-decoration: underline');
+    }
+
+    const styleStr = styles.length > 0 ? ` style="${styles.join('; ')};"` : '';
+
+    // שורה ראשונה: "הנדון: {טקסט}" (בלי בולט!)
+    if (isFirstLine) {
+      return `הנדון: ${line.content || ''}`;
+    }
+
+    // שורות נוספות: <br/> + רווח invisible + טקסט (ליישור מושלם)
+    return `<br/><span style="opacity: 0;">הנדון: </span>${line.content || ''}`;
+  }).join(''); // NO NEWLINES - join with empty string for Puppeteer compatibility
+
+  // Return complete subject lines section with borders
+  // מבנה זהה ל-annual-fee.html (שורות 8-15)
+  // CRITICAL: linesHtml must be on same line as <div> for Puppeteer PDF rendering
+  const result = `<!-- Subject Lines (הנדון) -->
+<tr>
+    <td style="padding-top: 20px;">
+        <!-- Top border above subject -->
+        <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
+        <!-- Subject line -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">${linesHtml}</div>
+    </td>
 </tr>`;
-  }).join('');
 
-  console.log('🔍 [Edge Function] Subject lines HTML generated:', subjectLinesHtml.length, 'chars');
+  console.log('🔍 [Edge Function] Subject lines HTML generated:', result.length, 'chars');
 
-  return subjectLinesHtml;
+  return result;
 }
 
 /**
