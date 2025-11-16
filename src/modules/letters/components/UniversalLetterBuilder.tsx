@@ -993,8 +993,14 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       console.log('🔄 Generating fresh PDF for letter:', letterId);
       const pdfUrl = await pdfService.getOrGeneratePDF(letterId, true);
 
+      // ✅ CRITICAL: Add cache-busting timestamp to force browser to reload PDF
+      // Without this, browser shows cached version even after file deletion + regeneration
+      // Same URL = browser cache hit, different query param = cache miss
+      const urlWithTimestamp = `${pdfUrl}?t=${Date.now()}`;
+      console.log('📄 Opening PDF with cache-busting URL:', urlWithTimestamp);
+
       toast.success('PDF מוכן להורדה');
-      window.open(pdfUrl, '_blank');
+      window.open(urlWithTimestamp, '_blank');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('שגיאה ביצירת PDF');
