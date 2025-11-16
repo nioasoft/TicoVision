@@ -441,13 +441,17 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
 
     const styleStr = styles.length > 0 ? ` style="${styles.join('; ')};"` : '';
 
-    // שורה ראשונה: "הנדון: {טקסט}" (בלי בולט!)
+    // שורה ראשונה: "הנדון: {טקסט}" (עם styling אם יש!)
     if (isFirstLine) {
-      return `הנדון: ${line.content || ''}`;
+      return styleStr
+        ? `הנדון: <span${styleStr}>${line.content || ''}</span>`
+        : `הנדון: ${line.content || ''}`;
     }
 
-    // שורות נוספות: <br/> + רווח invisible + טקסט (ליישור מושלם)
-    return `<br/><span style="opacity: 0;">הנדון: </span>${line.content || ''}`;
+    // שורות נוספות: <br/> + רווח invisible + טקסט (עם styling אם יש!)
+    return styleStr
+      ? `<br/><span style="opacity: 0;">הנדון: </span><span${styleStr}>${line.content || ''}</span>`
+      : `<br/><span style="opacity: 0;">הנדון: </span>${line.content || ''}`;
   }).join(''); // NO NEWLINES - join with empty string for Puppeteer compatibility
 
   // Return complete subject lines section with borders
@@ -1011,11 +1015,17 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Error:', error);
+    // Enhanced error logging for debugging 500 errors
+    console.error('❌ ========== ERROR IN SEND-LETTER ==========');
+    console.error('❌ Error type:', error instanceof Error ? 'Error' : typeof error);
+    console.error('❌ Error message:', error instanceof Error ? error.message : String(error));
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('❌ Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.constructor.name : typeof error
       }),
       {
         status: 500,
