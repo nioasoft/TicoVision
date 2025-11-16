@@ -974,6 +974,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         console.log('✅ Letter content updated successfully');
       }
 
+      // ✅ CRITICAL: Delete old PDF to force browser cache invalidation
+      // This ensures the browser loads the new PDF instead of cached version
+      // Old PDF is deleted from Storage before generating new one
+      console.log('🗑️ Deleting old PDF from Storage...');
+      await pdfService.deletePDF(letterId);
+
       // ✅ CRITICAL: Always force PDF regeneration to reflect latest changes
       // This is especially important for edited letters
       console.log('🔄 Generating fresh PDF for letter:', letterId);
