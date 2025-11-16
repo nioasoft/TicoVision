@@ -163,6 +163,22 @@ function closeBulletSection(): string {
 }
 
 /**
+ * Increase font sizes in HTML by 3px for better email readability
+ * Processes inline styles in Tiptap-generated HTML
+ *
+ * @param html - HTML content from Tiptap editor
+ * @returns HTML with increased font sizes
+ */
+function increaseFontSizesInHTML(html: string): string {
+  // Match font-size: XXpx in inline styles
+  return html.replace(/font-size:\s*(\d+)px/gi, (match, size) => {
+    const currentSize = parseInt(size, 10);
+    const newSize = currentSize + 3;
+    return `font-size: ${newSize}px`;
+  });
+}
+
+/**
  * Parse plain text to HTML (Markdown-like syntax)
  * Ported from text-to-html-parser.ts
  *
@@ -170,9 +186,9 @@ function closeBulletSection(): string {
  * @param isHtml - If true, assumes text is already HTML from Tiptap (bypasses parsing)
  */
 function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
-  // If already HTML from Tiptap, return as-is
+  // If already HTML from Tiptap, increase font sizes for better email readability
   if (isHtml) {
-    return plainText;
+    return increaseFontSizesInHTML(plainText);
   }
 
   // Otherwise parse Markdown to HTML (legacy support)

@@ -9,7 +9,7 @@ import type { Database } from '@/types/supabase';
 type GeneratedLetter = Database['public']['Tables']['generated_letters']['Row'];
 
 export interface LetterHistoryFilters {
-  status?: 'draft' | 'sent' | 'delivered' | 'opened';
+  status?: 'draft' | 'saved' | 'sent_email' | 'sent_whatsapp' | 'sent_print' | string[] | string; // Updated: new status values + array support
   templateType?: string;
   clientId?: string;
   dateFrom?: string;
@@ -63,7 +63,12 @@ class LetterHistoryService {
 
       // Apply filters
       if (filters.status) {
-        query = query.eq('status', filters.status);
+        // Support both single status and array of statuses
+        if (Array.isArray(filters.status)) {
+          query = query.in('status', filters.status);
+        } else {
+          query = query.eq('status', filters.status);
+        }
       }
 
       if (filters.templateType) {
@@ -236,8 +241,8 @@ class LetterHistoryService {
         throw fetchError || new Error('Letter not found');
       }
 
-      if (letter.status !== 'draft') {
-        throw new Error('Cannot delete sent letters');
+      if (!['draft', 'saved'].includes(letter.status!)) {
+        throw new Error('Cannot delete sent letters - only drafts and saved letters can be deleted');
       }
 
       const { error } = await supabase
@@ -292,9 +297,9 @@ class LetterHistoryService {
 
       const stats = {
         total: data.length,
-        sent: data.filter(l => l.status === 'sent').length,
-        drafts: data.filter(l => l.status === 'draft').length,
-        opened: data.filter(l => l.status === 'opened').length,
+        sent: data.filter(l => ['sent_email', 'sent_whatsapp', 'sent_print'].includes(l.status!)).length, // Updated: all sent types
+        drafts: data.filter(l => ['draft', 'saved'].includes(l.status!)).length, // Updated: include saved
+        opened: 0, // Deprecated: no longer tracking opens as separate status
         error: null,
       };
 

@@ -98,7 +98,7 @@ export function LetterHistoryPage() {
     try {
       // Build filters
       const filters: LetterHistoryFilters = {
-        status: activeTab === 'sent' ? undefined : 'draft',
+        status: activeTab === 'sent' ? undefined : ['draft', 'saved'], // Updated: include both draft and saved
         searchQuery: searchQuery || undefined,
         templateType: templateFilter !== 'all' ? templateFilter : undefined,
         feeLettersOnly: showOnlyFeeLetters || undefined, // NEW: Filter for fee letters
@@ -118,9 +118,9 @@ export function LetterHistoryPage() {
         }
       }
 
-      // For sent tab, exclude drafts
+      // For sent tab, show only sent emails
       if (activeTab === 'sent') {
-        filters.status = 'sent';
+        filters.status = 'sent_email'; // Updated: use new status value
       }
 
       const { data, total, error } = await letterHistoryService.getAllLetters(
