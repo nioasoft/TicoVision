@@ -589,6 +589,13 @@ export function LetterPreviewDialog({
 
       console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) to ${finalRecipients.length} recipients...`);
 
+      // Get fresh session token for authorization
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('לא מחובר - אנא התחבר מחדש');
+      }
+
       // Call Supabase Edge Function
       // Pass letterId to prevent duplicate INSERT in Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
@@ -601,6 +608,9 @@ export function LetterPreviewDialog({
           feeCalculationId: feeId,
           letterId: savedLetterId, // Pass existing letter ID to prevent duplicate
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) {

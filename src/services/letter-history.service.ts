@@ -167,6 +167,13 @@ class LetterHistoryService {
         throw fetchError || new Error('Letter not found');
       }
 
+      // Get fresh session token for authorization
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('לא מחובר - אנא התחבר מחדש');
+      }
+
       // Call send-letter Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
@@ -177,6 +184,9 @@ class LetterHistoryService {
           clientId: letter.client_id,
           feeCalculationId: letter.fee_calculation_id,
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
@@ -205,6 +215,13 @@ class LetterHistoryService {
         throw fetchError || new Error('Letter not found');
       }
 
+      // Get fresh session token for authorization
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('לא מחובר - אנא התחבר מחדש');
+      }
+
       // Call send-letter Edge Function with new emails
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
@@ -215,6 +232,9 @@ class LetterHistoryService {
           clientId: letter.client_id,
           feeCalculationId: letter.fee_calculation_id,
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;

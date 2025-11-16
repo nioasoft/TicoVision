@@ -199,6 +199,13 @@ export function LetterBuilder() {
 
       console.log('📧 Sending letter via Edge Function...');
 
+      // Get fresh session token for authorization
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('לא מחובר - אנא התחבר מחדש');
+      }
+
       // Call Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
@@ -208,6 +215,9 @@ export function LetterBuilder() {
           variables: fullVariables,
           clientId: selectedClient?.id || null,
           feeCalculationId: null
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 

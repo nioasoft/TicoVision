@@ -552,6 +552,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         Object.assign(variables, discounts);
       }
 
+      // Get fresh session token for authorization
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !session) {
+        throw new Error('לא מחובר - אנא התחבר מחדש');
+      }
+
       // Send via Edge Function - it will parse, build, send, and save
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
@@ -569,6 +576,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           } : undefined,
           isHtml: true, // Content is HTML from Tiptap
           clientId: selectedClient?.id || null
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
         }
       });
 
