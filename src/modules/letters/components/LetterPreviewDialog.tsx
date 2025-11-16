@@ -876,9 +876,18 @@ export function LetterPreviewDialog({
               <CheckCircle2 className="h-5 w-5" />
               <span className="rtl:text-right">המכתב יישלח ל-{getFinalRecipients().length} נמענים</span>
             </div>
-            <div className="text-sm text-green-700 mt-1 rtl:text-right">
-              {Array.from(getCurrentEnabledEmails()).length} מאנשי קשר + {getCurrentManualEmails().length} מיילים נוספים
-              {sendToReviewers && ' + 2 (שני וסיגל לבדיקה)'}
+            <div className="text-sm text-green-700 mt-1 rtl:text-right" dir="rtl">
+              {(() => {
+                const contactCount = Array.from(getCurrentEnabledEmails()).length;
+                const manualCount = getCurrentManualEmails().length;
+                const parts: string[] = [];
+
+                if (contactCount > 0) parts.push(`${contactCount} מאנשי קשר`);
+                if (manualCount > 0) parts.push(`${manualCount} מיילים נוספים`);
+                if (sendToReviewers) parts.push('2 (שני וסיגל לבדיקה)');
+
+                return parts.join(' + ');
+              })()}
             </div>
           </div>
         )}
