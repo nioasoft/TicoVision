@@ -1040,6 +1040,7 @@ export class TemplateService extends BaseService {
         variables_used: fullVariables,
         generated_content_html: fullHtml,
         generated_content_text: plainText,
+        body_content_html: bodyHtml, // ✅ NEW: Save body separately for editing (without Header/Footer)
         payment_link: fullVariables.payment_link as string | undefined,
         created_at: new Date().toISOString(),
         created_by: (await supabase.auth.getUser()).data.user?.id
@@ -1152,9 +1153,9 @@ export class TemplateService extends BaseService {
         .update({
           generated_content_html: fullHtml,
           generated_content_text: plainText,
+          body_content_html: bodyHtml, // ✅ NEW: Update body separately for editing
           variables_used: fullVariables,
           pdf_url: null // ✅ CRITICAL: Clear old PDF to force regeneration
-          // Note: updated_at column doesn't exist in generated_letters table
         })
         .eq('id', params.letterId)
         .eq('tenant_id', tenantId)
@@ -1423,11 +1424,13 @@ export class TemplateService extends BaseService {
 
       // 4. Generate new letter HTML if content changed
       let generatedHtml = originalLetter.generated_content_html;
+      let newBodyHtml: string | undefined;
 
       if (params.updates.plainText) {
         const header = await this.loadTemplateFile('components/header.html');
         const footer = await this.loadTemplateFile('components/footer.html');
         const bodyHtml = this.parseTextToHTML(params.updates.plainText);
+        newBodyHtml = bodyHtml; // Save for body_content_html
 
         let paymentSection = '';
         if (params.updates.includesPayment !== undefined ? params.updates.includesPayment : originalLetter.variables_used?.includesPayment) {
@@ -1452,6 +1455,7 @@ export class TemplateService extends BaseService {
           variables_used: variables,
           generated_content_html: generatedHtml,
           generated_content_text: params.updates.plainText || originalLetter.generated_content_text,
+          body_content_html: newBodyHtml || originalLetter.body_content_html, // ✅ NEW: Save body separately
           subject: params.updates.emailSubject || originalLetter.subject,
           recipient_emails: originalLetter.recipient_emails,
           status: 'draft',

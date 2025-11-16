@@ -27,7 +27,11 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Trash2,
+  CheckSquare,
+  X,
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { letterHistoryService } from '@/services/letter-history.service';
 import type {
   LetterHistoryItem,
@@ -65,6 +69,10 @@ export function LetterHistoryPage() {
   const [resendDialogOpen, setResendDialogOpen] = useState(false);
   const [selectedLetterId, setSelectedLetterId] = useState<string | null>(null);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+
+  // Multi-select for bulk delete (drafts only)
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([]);
+  const [isSelectMode, setIsSelectMode] = useState(false);
 
   // Statistics
   const [stats, setStats] = useState({
@@ -149,6 +157,75 @@ export function LetterHistoryPage() {
       }
     } catch (error) {
       console.error('Error loading statistics:', error);
+    }
+  };
+
+  /**
+   * Toggle select mode (bulk delete)
+   */
+  const toggleSelectMode = () => {
+    setIsSelectMode(!isSelectMode);
+    setSelectedDraftIds([]); // Clear selections when toggling
+  };
+
+  /**
+   * Toggle single draft selection
+   */
+  const toggleDraftSelection = (draftId: string) => {
+    setSelectedDraftIds(prev =>
+      prev.includes(draftId)
+        ? prev.filter(id => id !== draftId)
+        : [...prev, draftId]
+    );
+  };
+
+  /**
+   * Select/deselect all drafts
+   */
+  const toggleSelectAll = () => {
+    if (selectedDraftIds.length === draftLetters.length) {
+      setSelectedDraftIds([]); // Deselect all
+    } else {
+      setSelectedDraftIds(draftLetters.map(d => d.id)); // Select all
+    }
+  };
+
+  /**
+   * Delete selected drafts
+   */
+  const handleBulkDelete = async () => {
+    if (selectedDraftIds.length === 0) {
+      toast.error('לא נבחרו טיוטות למחיקה');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `האם אתה בטוח שברצונך למחוק ${selectedDraftIds.length} טיוטות?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+
+      // Delete all selected drafts
+      const { error } = await supabase
+        .from('generated_letters')
+        .delete()
+        .in('id', selectedDraftIds);
+
+      if (error) throw error;
+
+      toast.success(`${selectedDraftIds.length} טיוטות נמחקו בהצלחה`);
+      setSelectedDraftIds([]);
+      setIsSelectMode(false);
+      loadData();
+      loadStatistics();
+    } catch (error) {
+      console.error('Error deleting drafts:', error);
+      toast.error('שגיאה במחיקת טיוטות');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -428,6 +505,54 @@ export function LetterHistoryPage() {
             </TabsContent>
 
             <TabsContent value="drafts" className="mt-6">
+              {/* Bulk actions for drafts */}
+              {draftLetters.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    variant={isSelectMode ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={toggleSelectMode}
+                  >
+                    {isSelectMode ? (
+                      <>
+                        <X className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        בטל בחירה
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        בחר טיוטות
+                      </>
+                    )}
+                  </Button>
+
+                  {isSelectMode && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={toggleSelectAll}
+                      >
+                        {selectedDraftIds.length === draftLetters.length
+                          ? 'בטל הכל'
+                          : 'בחר הכל'}
+                      </Button>
+
+                      {selectedDraftIds.length > 0 && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleBulkDelete}
+                        >
+                          <Trash2 className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                          מחק {selectedDraftIds.length} נבחרו
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               {loading ? (
                 <div className="flex justify-center py-12">
                   <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -441,6 +566,9 @@ export function LetterHistoryPage() {
                   onDeleteDraft={handleDeleteDraft}
                   onGeneratePDF={handleGeneratePDF}
                   isDraftsMode={true}
+                  isSelectMode={isSelectMode}
+                  selectedIds={selectedDraftIds}
+                  onToggleSelect={toggleDraftSelection}
                 />
               )}
             </TabsContent>

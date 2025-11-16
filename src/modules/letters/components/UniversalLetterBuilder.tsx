@@ -988,9 +988,14 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setEmailSubject(letter.subject || '');
       setCompanyName(letter.client?.company_name || '');
 
-      // Load content - prefer HTML if available
-      if (letter.generated_content_html) {
+      // Load content - prefer body_content_html for editing (without Header/Footer/Payment)
+      // This allows clean editing of only the body content in Tiptap editor
+      if (letter.body_content_html) {
+        setLetterContent(letter.body_content_html); // ✅ Body only - no Header/Footer!
+      } else if (letter.generated_content_html) {
+        // Fallback for old letters created before migration 101
         setLetterContent(letter.generated_content_html);
+        toast.warning('מכתב זה נוצר לפני עדכון המערכת. התוכן כולל Header ו-Footer.');
       } else if (letter.generated_content_text) {
         setLetterContent(letter.generated_content_text);
       } else {

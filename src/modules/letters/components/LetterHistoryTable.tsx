@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Eye,
   Mail,
@@ -45,6 +46,10 @@ export interface LetterHistoryTableProps {
   onPrintLetter?: (letterId: string) => void;
   onGeneratePDF?: (letterId: string) => void;
   isDraftsMode?: boolean;
+  // Multi-select support (for bulk delete in drafts mode)
+  isSelectMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
 }
 
 export function LetterHistoryTable({
@@ -56,6 +61,9 @@ export function LetterHistoryTable({
   onPrintLetter,
   onGeneratePDF,
   isDraftsMode = false,
+  isSelectMode = false,
+  selectedIds = [],
+  onToggleSelect,
 }: LetterHistoryTableProps) {
   /**
    * Get status badge
@@ -150,6 +158,12 @@ export function LetterHistoryTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {/* Checkbox column for multi-select (drafts only) */}
+            {isSelectMode && (
+              <TableHead className="w-12">
+                <span className="sr-only">בחירה</span>
+              </TableHead>
+            )}
             <TableHead className="rtl:text-right ltr:text-left w-[160px]">פעולות</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">סטטוס</TableHead>
             {!isDraftsMode && (
@@ -165,6 +179,16 @@ export function LetterHistoryTable({
         <TableBody>
           {letters.map((letter) => (
             <TableRow key={letter.id}>
+              {/* Checkbox for multi-select */}
+              {isSelectMode && (
+                <TableCell>
+                  <Checkbox
+                    checked={selectedIds.includes(letter.id)}
+                    onCheckedChange={() => onToggleSelect?.(letter.id)}
+                    aria-label={`בחר מכתב ${letter.subject || 'ללא נושא'}`}
+                  />
+                </TableCell>
+              )}
               {/* Actions */}
               <TableCell className="rtl:text-right ltr:text-left">
                 <div className="flex items-center gap-2">
@@ -187,7 +211,8 @@ export function LetterHistoryTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="rtl:text-right ltr:text-left">
-                      {onEditLetter && (
+                      {/* Edit button - only for universal builder letters (custom_text) */}
+                      {onEditLetter && letter.template_type === 'custom_text' && (
                         <DropdownMenuItem onClick={() => onEditLetter(letter.id)}>
                           <Edit className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
                           ערוך
