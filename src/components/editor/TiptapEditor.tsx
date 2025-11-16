@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline'; // Separate import needed (not in StarterKit)
@@ -30,36 +30,39 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   minHeight = '300px',
   className
 }) => {
+  // Memoize extensions to prevent duplicate extension warning in React Strict Mode
+  const extensions = useMemo(() => [
+    StarterKit.configure({
+      heading: {
+        levels: [1, 2, 3],
+      },
+      horizontalRule: true, // Enable horizontal rule
+      paragraph: {
+        HTMLAttributes: {
+          style: 'margin-bottom: 1em; min-height: 1em;', // Preserve spacing + min height for empty paragraphs
+        },
+      },
+      hardBreak: {
+        keepMarks: true, // Preserve formatting across line breaks
+      },
+      strike: false, // Disable strike (we don't use it, reduces extensions)
+    }),
+    Underline, // StarterKit doesn't include Underline by default
+    TextAlign.configure({
+      types: ['heading', 'paragraph'],
+      alignments: ['left', 'center', 'right'],
+      defaultAlignment: 'right', // RTL default
+    }),
+    Color,
+    TextStyle,
+    Highlight.configure({
+      multicolor: true, // Allow multiple highlight colors
+    }),
+    BlueBullet,
+  ], []); // Empty dependency array - extensions never change
+
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-        horizontalRule: true, // Enable horizontal rule
-        paragraph: {
-          HTMLAttributes: {
-            style: 'margin-bottom: 1em; min-height: 1em;', // Preserve spacing + min height for empty paragraphs
-          },
-        },
-        hardBreak: {
-          keepMarks: true, // Preserve formatting across line breaks
-        },
-        strike: false, // Disable strike (we don't use it, reduces extensions)
-      }),
-      Underline, // StarterKit doesn't include Underline by default
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-        alignments: ['left', 'center', 'right'],
-        defaultAlignment: 'right', // RTL default
-      }),
-      Color,
-      TextStyle,
-      Highlight.configure({
-        multicolor: true, // Allow multiple highlight colors
-      }),
-      BlueBullet,
-    ],
+    extensions,
     content: value,
     editorProps: {
       attributes: {

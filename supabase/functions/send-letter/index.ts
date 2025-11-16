@@ -812,6 +812,7 @@ serve(async (req) => {
           subject: subject,
           variables_used: variables || {},
           generated_content_html: letterHtml,
+          body_content_html: isCustomMode ? parsedBodyHtml : null, // ⭐ NEW: Save body separately for editing
           recipient_emails: recipientEmails,
           sent_at: new Date().toISOString(),
           status: 'sent_email', // ⭐ Changed from 'sent' to 'sent_email'
