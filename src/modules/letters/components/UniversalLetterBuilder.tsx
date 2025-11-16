@@ -456,26 +456,51 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         Object.assign(variables, discounts);
       }
 
-      // Generate and save letter with status: 'saved'
-      const result = await templateService.generateFromCustomText({
-        plainText: letterContent,
-        clientId: selectedClient?.id || null,
-        variables,
-        includesPayment,
-        customHeaderLines,
-        subjectLines,
-        subject: emailSubject || 'מכתב חדש',
-        isHtml: true,
-        saveWithStatus: 'saved' // ⭐ Save as 'saved' not 'draft'
-      });
+      // ✅ CRITICAL: Check if letter already exists (saved before)
+      if (savedLetterId) {
+        // UPDATE existing letter
+        console.log('🔄 Updating existing letter:', savedLetterId);
 
-      if (result.error || !result.data) {
-        toast.error('שגיאה בשמירת המכתב');
-        return;
+        const updateResult = await templateService.updateLetterContent({
+          letterId: savedLetterId,
+          plainText: letterContent,
+          subjectLines,
+          customHeaderLines,
+          variables,
+          includesPayment,
+          isHtml: true
+        });
+
+        if (updateResult.error) {
+          toast.error('שגיאה בעדכון המכתב');
+          return;
+        }
+
+        toast.success('המכתב עודכן בהצלחה');
+      } else {
+        // INSERT new letter (first save)
+        console.log('✅ Creating new letter (first save)');
+
+        const result = await templateService.generateFromCustomText({
+          plainText: letterContent,
+          clientId: selectedClient?.id || null,
+          variables,
+          includesPayment,
+          customHeaderLines,
+          subjectLines,
+          subject: emailSubject || 'מכתב חדש',
+          isHtml: true,
+          saveWithStatus: 'saved' // ⭐ Save as 'saved' not 'draft'
+        });
+
+        if (result.error || !result.data) {
+          toast.error('שגיאה בשמירת המכתב');
+          return;
+        }
+
+        setSavedLetterId(result.data.id);
+        toast.success('המכתב נשמר בהיסטוריית מכתבים');
       }
-
-      setSavedLetterId(result.data.id);
-      toast.success('המכתב נשמר בהיסטוריית מכתבים');
 
     } catch (error) {
       console.error('Error saving letter:', error);
@@ -887,7 +912,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     try {
       setGeneratingPdf(true);
 
-      let letterId = lastSentLetterId;
+      // ✅ CRITICAL: Use savedLetterId, editingLetterId, or lastSentLetterId (in priority order)
+      let letterId = savedLetterId || editingLetterId || lastSentLetterId;
 
       // Build variables (used for both new and existing letters)
       const variables: Record<string, string | number> = {
@@ -904,6 +930,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       if (!letterId) {
         // ✅ NEW LETTER: Save letter to database
+        console.log('✅ Creating new letter for PDF generation');
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || null,
@@ -923,6 +950,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
         letterId = result.data.id;
         setLastSentLetterId(letterId);
+        setSavedLetterId(letterId); // ✅ Also update savedLetterId for consistency
       } else {
         // ✅ EXISTING LETTER: Update content with latest changes
         console.log('🔄 Updating existing letter:', letterId);
