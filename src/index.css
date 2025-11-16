@@ -82,3 +82,38 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Tiptap Editor - Heading Styles */
+.ProseMirror h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  line-height: 1.2;
+  color: hsl(var(--color-foreground));
+}
+
+.ProseMirror h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  line-height: 1.2;
+  color: hsl(var(--color-foreground));
+}
+
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  line-height: 1.2;
+  color: hsl(var(--color-foreground));
+}
+
+/* Tiptap Editor - Horizontal Rule */
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid hsl(var(--color-border));
+  margin: 1.5rem 0;
+}

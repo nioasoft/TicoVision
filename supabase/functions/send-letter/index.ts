@@ -230,6 +230,20 @@ function replaceBlueBulletWithCID(html: string): string {
 }
 
 /**
+ * Replace <hr> tags with styled <div> borders for email compatibility
+ * Many email clients don't render <hr> tags well - they appear too light or invisible
+ * Using border-top on a div ensures consistent dark line across all email clients
+ *
+ * @param html - HTML content with <hr> tags from Tiptap editor
+ * @returns HTML with <div> styled borders (matches template style)
+ */
+function replaceHrWithDiv(html: string): string {
+  // Replace all <hr> and <hr/> tags with div border (same as templates)
+  // Matches: <hr>, <hr/>, <hr />, <hr class="...">, etc.
+  return html.replace(/<hr\s*\/?>/gi, '<div style="border-top: 1px solid #000000; margin: 20px 0;"></div>');
+}
+
+/**
  * Parse plain text to HTML (Markdown-like syntax)
  * Ported from text-to-html-parser.ts
  *
@@ -241,6 +255,7 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
   if (isHtml) {
     let html = increaseFontSizesInHTML(plainText);
     html = replaceBlueBulletWithCID(html); // Replace Base64 images with CID
+    html = replaceHrWithDiv(html); // Replace <hr> tags with styled divs
     return html;
   }
 
@@ -841,6 +856,7 @@ serve(async (req) => {
       const authHeader = req.headers.get('Authorization');
 
       if (!authHeader) {
+        console.error('❌ Missing authorization header for letter logging');
         throw new Error('Missing authorization header for letter logging');
       }
 
@@ -853,14 +869,19 @@ serve(async (req) => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !user) {
-        throw new Error('Unauthorized: Invalid or expired token');
+        console.error('❌ Auth error:', authError);
+        console.error('❌ User:', user);
+        throw new Error(`Unauthorized: Invalid or expired token - ${authError?.message || 'No user'}`);
       }
 
       const tenantId = user.user_metadata?.tenant_id;
 
       if (!tenantId) {
+        console.error('❌ Missing tenant_id in user metadata. User metadata:', user.user_metadata);
         throw new Error('Missing tenant_id in user metadata');
       }
+
+      console.log('✅ Auth successful. Tenant ID:', tenantId, 'User ID:', user.id);
 
       // IMPORTANT: If letterId provided, letter already saved as draft
       // LetterPreviewDialog saves draft → sends email → updates draft to 'sent'
@@ -872,6 +893,14 @@ serve(async (req) => {
         // Migration 096: template_id is now nullable
         // Custom letters use template_id=null, template_type='custom'
         // Template letters use template_id=null, template_type=<type>
+        console.log('📝 Inserting letter to database...', {
+          tenant_id: tenantId,
+          client_id: clientId,
+          template_type: isCustomMode ? 'custom' : templateType,
+          status: 'sent_email',
+          recipient_count: recipientEmails.length
+        });
+
         const { data: insertedLetter, error: insertError } = await supabase.from('generated_letters').insert({
           tenant_id: tenantId,
           client_id: clientId,
@@ -889,14 +918,16 @@ serve(async (req) => {
         }).select().single();
 
         if (insertError) {
-          console.error('Database insert error:', insertError);
+          console.error('❌ Database insert error:', insertError);
+          console.error('❌ Insert error details:', JSON.stringify(insertError, null, 2));
           throw new Error(`Failed to log letter: ${insertError.message}`);
         }
 
+        console.log('✅ Letter inserted successfully. ID:', insertedLetter?.id);
         finalLetterId = insertedLetter?.id || null;
       } else {
         // Letter already exists (saved as draft/saved), update status to sent_email
-        console.log('✅ Letter already saved, updating status to sent_email');
+        console.log('📝 Updating existing letter status to sent_email. Letter ID:', letterId);
         const { error: updateError } = await supabase
           .from('generated_letters')
           .update({
@@ -908,9 +939,11 @@ serve(async (req) => {
           .eq('id', letterId);
 
         if (updateError) {
-          console.error('Failed to update letter status:', updateError);
+          console.error('❌ Update error:', updateError);
+          console.error('❌ Update error details:', JSON.stringify(updateError, null, 2));
           throw new Error(`Failed to update letter: ${updateError.message}`);
         }
+        console.log('✅ Letter status updated successfully');
       }
 
       console.log('✅ Email sent successfully');

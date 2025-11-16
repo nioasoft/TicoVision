@@ -1,12 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline'; // Separate import needed (not in StarterKit)
 import TextAlign from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
+import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
-import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter } from 'lucide-react';
+import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet } from './extensions/BlueBullet';
@@ -14,6 +15,49 @@ import { BlueBulletButton } from './BlueBulletButton';
 
 // Import ProseMirror CSS for proper white-space handling
 import 'prosemirror-view/style/prosemirror.css';
+
+// Custom FontSize extension - simple inline style setter
+const FontSize = Extension.create({
+  name: 'fontSize',
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize || null,
+            renderHTML: attributes => {
+              if (!attributes.fontSize) {
+                return {};
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setFontSize: (fontSize: string) => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize })
+          .run();
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize: null })
+          .removeEmptyTextStyle()
+          .run();
+      },
+    };
+  },
+});
 
 interface TiptapEditorProps {
   value: string;
@@ -26,7 +70,6 @@ interface TiptapEditorProps {
 export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   value,
   onChange,
-  placeholder = 'הקלד את תוכן המכתב...',
   minHeight = '300px',
   className
 }) => {
@@ -49,12 +92,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     }),
     Underline, // StarterKit doesn't include Underline by default
     TextAlign.configure({
-      types: ['heading', 'paragraph'],
+      types: ['paragraph'], // Only apply to paragraphs - headings conflict with Heading extension
       alignments: ['left', 'center', 'right'],
       defaultAlignment: 'right', // RTL default
     }),
     Color,
     TextStyle,
+    FontSize, // Custom font size extension
     Highlight.configure({
       multicolor: true, // Allow multiple highlight colors
     }),
@@ -152,6 +196,33 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             title="כותרת 2"
           >
             <Heading2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="h-6 w-px bg-border mx-1" />
+
+        {/* Font Size */}
+        <div className="flex items-center gap-1 rtl:flex-row-reverse">
+          <Button
+            type="button"
+            variant={editor.getAttributes('textStyle').fontSize === '16px' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => editor.chain().focus().setFontSize('16px').run()}
+            title="גודל רגיל (16px)"
+          >
+            <Type className="h-4 w-4" />
+            <span className="text-xs mr-0.5">רגיל</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant={editor.getAttributes('textStyle').fontSize === '19px' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => editor.chain().focus().setFontSize('19px').run()}
+            title="גודל גדול (19px)"
+          >
+            <Type className="h-4 w-4" />
+            <span className="text-xs mr-0.5">גדול</span>
           </Button>
         </div>
 
