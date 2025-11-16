@@ -204,7 +204,7 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
       // קו מעל הנדון
       html += '<div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>';
       // הנדון עם קו מתחת
-      html += `<p style="margin: 0; padding: 20px 0; text-align: right; font-family: 'David Libre', serif; font-size: 26px; font-weight: 700; line-height: 1.2; color: #395BF7; direction: rtl; border-bottom: 1px solid #000000;">הנדון: ${styledSubject}</p>`;
+      html += `<p style="margin: 0; padding: 20px 0; text-align: right; font-family: 'David Libre', serif; font-size: 29px; font-weight: 700; line-height: 1.2; color: #395BF7; direction: rtl; border-bottom: 1px solid #000000;">הנדון: ${styledSubject}</p>`;
       continue;
     }
 
@@ -215,7 +215,7 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
         inBulletSection = false;
       }
       const styledLine = parseInlineStyles(line);
-      html += `<p style="margin: 20px 0 0 0; padding: 0; text-align: right; font-family: 'David Libre', serif; font-size: 20px; font-weight: 700; line-height: 1.2; color: #000000; direction: rtl;">${styledLine}</p>`;
+      html += `<p style="margin: 20px 0 0 0; padding: 0; text-align: right; font-family: 'David Libre', serif; font-size: 23px; font-weight: 700; line-height: 1.2; color: #000000; direction: rtl;">${styledLine}</p>`;
       continue;
     }
 
@@ -229,11 +229,11 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
       const styledBulletText = parseInlineStyles(bulletText);
       const bulletIcon = line.startsWith('* ')
         ? '<img src="cid:bullet_star_blue" alt="★" style="width: 19px; height: 18px; margin-left: 10px; margin-top: 3px; display: inline-block;">'
-        : '<span style="color: #395BF7; font-size: 20px; margin-left: 10px;">•</span>';
+        : '<span style="color: #395BF7; font-size: 23px; margin-left: 10px;">•</span>';
 
       html += `<div style="display: flex; align-items: start; margin: 10px 0; direction: rtl;">
         ${bulletIcon}
-        <span style="flex: 1; text-align: right; font-family: 'David Libre', serif; font-size: 16px; font-weight: 400; line-height: 1.4; color: #000000;">${styledBulletText}</span>
+        <span style="flex: 1; text-align: right; font-family: 'David Libre', serif; font-size: 19px; font-weight: 400; line-height: 1.4; color: #000000;">${styledBulletText}</span>
       </div>`;
       continue;
     }
@@ -244,7 +244,7 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
       inBulletSection = false;
     }
     const styledLine = parseInlineStyles(line);
-    html += `<p style="margin: 13px 0; padding: 0; text-align: right; font-family: 'David Libre', serif; font-size: 16px; font-weight: 400; line-height: 1.4; color: #000000; direction: rtl;">${styledLine}</p>`;
+    html += `<p style="margin: 13px 0; padding: 0; text-align: right; font-family: 'David Libre', serif; font-size: 19px; font-weight: 400; line-height: 1.4; color: #000000; direction: rtl;">${styledLine}</p>`;
   }
 
   // Close any open bullet section
@@ -291,7 +291,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
 
       const styles: string[] = [
         'font-family: "David Libre", "Heebo", "Assistant", sans-serif',
-        'font-size: 18px',
+        'font-size: 21px',
         'text-align: right',
         'direction: rtl',
         'margin: 0',
@@ -333,14 +333,14 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
 
   const subjectLinesHtml = subjectLines.map((line, index) => {
     // Build style string
-    let style = 'font-size: 19px; color: #395BF7; direction: rtl; text-align: right;';
+    let style = 'font-size: 22px; color: #395BF7; direction: rtl; text-align: right;';
     style += line.formatting?.bold ? ' font-weight: 700;' : '';
     style += line.formatting?.underline ? ' text-decoration: underline;' : '';
 
     return `<tr>
   <td style="padding: ${index === 0 ? '20px' : '4px'} 0 0 0;">
     <p style="${style} margin: 0; padding: 0;">
-      ${line.content}
+      ${index === 0 ? 'הנדון: ' : ''}${line.content}
     </p>
   </td>
 </tr>`;

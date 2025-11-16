@@ -986,14 +986,17 @@ export class TemplateService extends BaseService {
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
 
-      const fullVariables: Record<string, string | number> = {
+      const fullVariables: Record<string, string | number | unknown[]> = {
         ...params.variables,
         letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
         year: params.variables.year || nextYear,
         tax_year: params.variables.tax_year || nextYear,
         // Add client_id and fee_id for payment tracking links
         client_id: params.clientId || params.variables.client_id,
-        fee_id: params.variables.fee_id // If provided in variables
+        fee_id: params.variables.fee_id, // If provided in variables
+        // Save subjectLines and customHeaderLines for editing
+        subjectLines: params.subjectLines || [],
+        customHeaderLines: params.customHeaderLines || []
       };
 
       // 6. Build full HTML with custom header lines and subject lines

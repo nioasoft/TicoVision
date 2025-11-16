@@ -1002,6 +1002,16 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         toast.warning('לא ניתן לטעון את התוכן המקורי של המכתב. ניתן להתחיל מחדש.');
       }
 
+      // Load subject lines if saved (variables_used contains subjectLines array)
+      if (letter.variables_used?.subjectLines && Array.isArray(letter.variables_used.subjectLines)) {
+        setSubjectLines(letter.variables_used.subjectLines);
+      }
+
+      // Load custom header lines if saved (variables_used contains customHeaderLines array)
+      if (letter.variables_used?.customHeaderLines && Array.isArray(letter.variables_used.customHeaderLines)) {
+        setCustomHeaderLines(letter.variables_used.customHeaderLines);
+      }
+
       // Load client if exists
       if (letter.client_id) {
         const { data: client } = await clientService.getById(letter.client_id);
