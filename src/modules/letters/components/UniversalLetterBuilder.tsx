@@ -893,6 +893,14 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    * Generate PDF using Browserless API
    */
   const handleGeneratePDF = async () => {
+    // ✅ CRITICAL: Prevent duplicate calls - handleGeneratePDF was being called twice
+    // This caused: INSERT → PDF generation → UPDATE → PDF deletion → PDF regeneration
+    // Result: PDF always showed old content because UPDATE happened after first PDF
+    if (generatingPdf) {
+      console.log('⚠️ PDF generation already in progress, skipping duplicate call...');
+      return;
+    }
+
     // Validate content
     if (!letterContent.trim()) {
       toast.error('נא להזין טקסט למכתב');
