@@ -637,11 +637,11 @@ export function LetterPreviewDialog({
       let letterError = null;
 
       if (savedLetterId) {
-        // UPDATE existing draft to 'sent'
+        // UPDATE existing draft to 'sent_email'
         const { error: updateError } = await supabase
           .from('generated_letters')
           .update({
-            status: 'sent',
+            status: 'sent_email',
             sent_at: new Date().toISOString(),
             recipient_emails: finalRecipients,
             // Update subject with final recipient count
@@ -675,7 +675,7 @@ export function LetterPreviewDialog({
             recipient_emails: finalRecipients,
             sent_at: new Date().toISOString(),
             created_by: (await supabase.auth.getUser()).data.user?.id,
-            status: 'sent',
+            status: 'sent_email',
             rendering_engine: 'legacy',
             system_version: 'v1',
             is_latest: true,
