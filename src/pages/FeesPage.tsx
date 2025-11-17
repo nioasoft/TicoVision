@@ -1338,41 +1338,46 @@ export function FeesPage() {
 
                   {/* NEW FIELD: Manual Index Adjustment */}
                   <div>
-                    <Label htmlFor="index_manual_adjustment">התאמת מדד</Label>
-                    <input
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="index_manual_adjustment">התאמת מדד</Label>
+                      <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                        <Checkbox
+                          id="index_adjustment_negative"
+                          checked={formData.index_manual_adjustment < 0}
+                          onCheckedChange={(checked) => {
+                            const absValue = Math.abs(formData.index_manual_adjustment);
+                            setFormData({
+                              ...formData,
+                              index_manual_adjustment: checked ? -absValue : absValue
+                            });
+                          }}
+                          disabled={!formData.apply_inflation_index}
+                        />
+                        <Label htmlFor="index_adjustment_negative" className="text-sm font-normal cursor-pointer">
+                          ערך שלילי
+                        </Label>
+                      </div>
+                    </div>
+                    <Input
                       id="index_manual_adjustment"
-                      type="text"
-                      inputMode="decimal"
-                      value={formData.index_manual_adjustment === 0 ? '' : formData.index_manual_adjustment.toString()}
+                      type="number"
+                      value={Math.abs(formData.index_manual_adjustment) || 0}
                       onChange={(e) => {
-                        const inputValue = e.target.value;
-
-                        // Allow empty string or minus sign alone
-                        if (inputValue === '' || inputValue === '-') {
-                          setFormData({
-                            ...formData,
-                            index_manual_adjustment: 0
-                          });
-                          return;
-                        }
-
-                        // Parse and validate
-                        const numericValue = parseFloat(inputValue);
-                        if (!isNaN(numericValue)) {
-                          setFormData({
-                            ...formData,
-                            index_manual_adjustment: numericValue
-                          });
-                        }
+                        const value = parseFloat(e.target.value) || 0;
+                        const isNegative = formData.index_manual_adjustment < 0;
+                        setFormData({
+                          ...formData,
+                          index_manual_adjustment: isNegative ? -value : value
+                        });
                       }}
+                      step="100"
                       placeholder="0"
+                      min="0"
                       disabled={!formData.apply_inflation_index}
-                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        !formData.apply_inflation_index ? 'opacity-50' : ''
-                      }`}
+                      className={!formData.apply_inflation_index ? 'opacity-50' : ''}
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      סכום בשקלים להתאמה (יכול להיות שלילי)
+                      סכום בשקלים להתאמה
                     </p>
                   </div>
 
