@@ -179,9 +179,9 @@ export function generateUniqueFilename(originalName: string): string {
 
 export type FileCategory =
   | 'company_registry'          // רשם החברות
-  | 'financial_report'          // דוח כספי מבוקר אחרון
-  | 'bookkeeping_card'          // כרטיס הנהח"ש
-  | 'quote_invoice'             // הצעת מחיר / תעודת חיוב
+  | 'financial_report'          // דוחות כספיים
+  | 'bookkeeping_card'          // כרטיסי הנה"ח
+  | 'quote_invoice'             // הצעות מחיר / תעודות חיוב
   | 'payment_proof_2026'        // אסמכתאות תשלום 2026
   | 'holdings_presentation'     // מצגת החזקות
   | 'general';                  // כללי
@@ -201,17 +201,17 @@ export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
   },
   financial_report: {
     key: 'financial_report',
-    label: 'דוח כספי מבוקר אחרון',
+    label: 'דוחות כספיים',
     description: 'דוח ביקורת שנתי, דוחות כספיים מבוקרים',
   },
   bookkeeping_card: {
     key: 'bookkeeping_card',
-    label: 'כרטיס הנהח"ש',
-    description: 'כרטיס הנהלת חשבונות מפורט לפי שנת מס',
+    label: 'כרטיסי הנה"ח',
+    description: 'כרטיסי הנהלת חשבונות מפורטים לפי שנת מס',
   },
   quote_invoice: {
     key: 'quote_invoice',
-    label: 'הצעת מחיר / תעודת חיוב',
+    label: 'הצעות מחיר / תעודות חיוב',
     description: 'הצעות מחיר, תעודות חיוב, חשבוניות רלוונטיות',
   },
   payment_proof_2026: {
