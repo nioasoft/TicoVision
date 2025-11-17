@@ -382,7 +382,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
       return `
 <tr>
     <td style="padding: 2px 0; text-align: right;">
-        <div style="${styles.join('; ')};">${content}</div>
+        <div style="${styles.join('; ')}">${content}</div>
     </td>
 </tr>`;
     }

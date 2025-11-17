@@ -1368,7 +1368,7 @@ export class TemplateService extends BaseService {
       return `
 <tr>
     <td style="padding: 2px 0; text-align: right;">
-        <div style="${styles.join('; ')};">${line.content || ''}</div>
+        <div style="${styles.join('; ')}">${line.content || ''}</div>
     </td>
 </tr>`;
     }).join('');
