@@ -1339,7 +1339,7 @@ export class TemplateService extends BaseService {
 
       const styles: string[] = [
         'font-family: \'David Libre\', \'Heebo\', \'Assistant\', sans-serif',
-        'font-size: 18px',
+        'font-size: 24px',
         'text-align: right',
         'direction: rtl',
         'margin: 0',

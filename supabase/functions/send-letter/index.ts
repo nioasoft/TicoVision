@@ -363,7 +363,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
 
       const styles: string[] = [
         "font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif",
-        'font-size: 21px',
+        'font-size: 24px',
         'text-align: right',
         'direction: rtl',
         'margin: 0',
