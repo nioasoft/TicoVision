@@ -21,9 +21,14 @@
   --color-card-foreground: hsl(222.2 84% 4.9%);
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(222.2 84% 4.9%);
-  
+
+  /* Client Form Design Enhancements */
+  --color-input-bg: hsl(45 100% 96%);
+  --color-input-border: hsl(40 80% 85%);
+  --color-focus-ring: hsl(45 95% 50%);
+
   --radius: 0.5rem;
-  
+
   --font-sans: 'Assistant', system-ui, sans-serif;
   --font-hebrew: 'Heebo', 'Assistant', system-ui, sans-serif;
 }
@@ -83,7 +88,7 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Tiptap Editor - Heading Styles */
+/* Tiptap Editor - Heading Styles (in editor) */
 .ProseMirror h1 {
   font-size: 2em;
   font-weight: 700;
@@ -103,6 +108,35 @@ input[type="number"] {
 }
 
 .ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  line-height: 1.2;
+  color: hsl(var(--color-foreground));
+}
+
+/* Letter Preview & Email - Heading Styles (global h1/h2/h3) */
+/* These apply to dangerouslySetInnerHTML content in preview dialogs */
+.select-text h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  line-height: 1.2;
+  color: hsl(var(--color-foreground));
+}
+
+.select-text h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  margin-top: 0.5em;
+  line-height: 1.2;
+  color: hsl(var(--color-foreground));
+}
+
+.select-text h3 {
   font-size: 1.25em;
   font-weight: 600;
   margin-bottom: 0.5em;

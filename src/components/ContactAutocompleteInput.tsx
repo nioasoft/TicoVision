@@ -117,16 +117,18 @@ export function ContactAutocompleteInput({
   );
 
   return (
-    <div className="space-y-4 border-t pt-4">
-      <div className="flex items-center gap-2 rtl:justify-end">
-        <h3 className="text-sm font-semibold text-right">{label}</h3>
-        {selectedFromList && (
-          <span className="flex items-center gap-1 text-sm text-green-600 rtl:flex-row-reverse">
-            <Check className="h-4 w-4" />
-            <span>נבחר מהמאגר</span>
-          </span>
-        )}
-      </div>
+    <div className="space-y-4">
+      {label && (
+        <div className="flex items-center gap-2 rtl:justify-end">
+          <h3 className="text-sm font-semibold text-right">{label}</h3>
+          {selectedFromList && (
+            <span className="flex items-center gap-1 text-sm text-green-600 rtl:flex-row-reverse">
+              <Check className="h-4 w-4" />
+              <span>נבחר מהמאגר</span>
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         {/* Name field with autocomplete */}

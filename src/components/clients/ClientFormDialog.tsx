@@ -210,10 +210,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (!formData.address?.city?.trim()) errors.push('עיר');
       if (!formData.address?.postal_code?.trim()) errors.push('מיקוד');
 
-      // Accountant validation - required fields
-      if (!formData.accountant_name?.trim()) errors.push('שם מנהלת חשבונות');
-      if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
-      if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
+      // Accountant validation - required fields ONLY in add mode
+      // In edit mode, accountant contact already exists in the system
+      if (mode === 'add') {
+        if (!formData.accountant_name?.trim()) errors.push('שם מנהלת חשבונות');
+        if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
+        if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
+      }
 
       // Format validation - strip formatting before checking
       if (formData.tax_id) {
@@ -326,7 +329,14 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               </DialogDescription>
             </DialogHeader>
 
-            <div className="grid grid-cols-3 gap-4 py-4">
+            <div className="grid grid-cols-3 gap-3 py-4">
+              {/* Category Header: Company Details */}
+              <div className="col-span-3 mb-2">
+                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                  פרטי החברה
+                </h3>
+              </div>
+
               {/* Row 1: Tax ID, Company Name, Commercial Name (3 cols) */}
               <div>
                 <Label htmlFor="tax_id" className="text-right block mb-2">
@@ -375,10 +385,17 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
+              {/* Category Header: Primary Contact */}
+              <div className="col-span-3 mt-4 mb-2">
+                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                  איש קשר מהותי (בעל הבית)
+                </h3>
+              </div>
+
               {/* Row 2: Primary Contact (Owner) with Autocomplete (3 cols) */}
               <div className="col-span-3">
                 <ContactAutocompleteInput
-                  label="איש קשר מהותי (בעל הבית)"
+                  label=""
                   nameValue={formData.contact_name}
                   emailValue={formData.contact_email}
                   phoneValue={formData.contact_phone}
@@ -394,6 +411,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   emailPlaceholder="דוא״ל"
                   phonePlaceholder="050-1234567"
                 />
+              </div>
+
+              {/* Category Header: Address Details */}
+              <div className="col-span-3 mt-4 mb-2">
+                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                  פרטי כתובת
+                </h3>
               </div>
 
               {/* Row 3: Address, City, Postal Code (3 cols) */}
@@ -462,6 +486,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     מיקוד ישראלי חייב להכיל 7 ספרות בדיוק
                   </p>
                 )}
+              </div>
+
+              {/* Category Header: Additional Information */}
+              <div className="col-span-3 mt-4 mb-2">
+                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                  פרטים נוספים
+                </h3>
               </div>
 
               {/* Row 4: Group, Payment Role (if selected), Accounting Management (3 cols) */}
@@ -721,9 +752,17 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Row 8: Accountant Contact with Autocomplete (Add mode only) */}
               {mode === 'add' && (
-                <div className="col-span-3 border-t pt-4 mt-4">
-                  <ContactAutocompleteInput
-                    label="מנהלת חשבונות"
+                <>
+                  {/* Category Header: Accountant Manager */}
+                  <div className="col-span-3 mt-4 mb-2">
+                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                      מנהלת חשבונות
+                    </h3>
+                  </div>
+
+                  <div className="col-span-3">
+                    <ContactAutocompleteInput
+                      label=""
                     nameValue={formData.accountant_name}
                     emailValue={formData.accountant_email}
                     phoneValue={formData.accountant_phone}
@@ -739,7 +778,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     emailPlaceholder="דוא״ל"
                     phonePlaceholder="050-1234567"
                   />
-                </div>
+                  </div>
+                </>
               )}
 
               {/* Row 9: Notes (full width) */}
@@ -769,30 +809,44 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Contact Management (Edit Mode Only) */}
               {mode === 'edit' && client && onAddContact && onUpdateContact && onDeleteContact && onSetPrimaryContact && (
-                <div className="col-span-3 border-t pt-4 mt-4">
-                  <ContactsManager
+                <>
+                  <div className="col-span-3 mt-4 mb-2">
+                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                      אנשי קשר נוספים
+                    </h3>
+                  </div>
+                  <div className="col-span-3">
+                    <ContactsManager
                     contacts={contacts}
                     onAdd={(contactData) => onAddContact(client.id, contactData)}
                     onUpdate={onUpdateContact}
                     onDelete={onDeleteContact}
                     onSetPrimary={onSetPrimaryContact}
                   />
-                </div>
+                  </div>
+                </>
               )}
 
               {/* Phone Management */}
               {mode === 'edit' && client && onAddPhone && onUpdatePhone && onDeletePhone && onSetPrimaryPhone ? (
-                <div className="col-span-3 border-t pt-4 mt-4">
-                  <PhoneNumbersManager
+                <>
+                  <div className="col-span-3 mt-4 mb-2">
+                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                      מספרי טלפון
+                    </h3>
+                  </div>
+                  <div className="col-span-3">
+                    <PhoneNumbersManager
                     phones={phones}
                     onAdd={(phoneData) => onAddPhone(client.id, phoneData)}
                     onUpdate={onUpdatePhone}
                     onDelete={onDeletePhone}
                     onSetPrimary={onSetPrimaryPhone}
                   />
-                </div>
+                  </div>
+                </>
               ) : mode === 'add' ? (
-                <div className="col-span-3 border-t pt-4 mt-4">
+                <div className="col-span-3 mt-6">
                   <p className="text-sm text-gray-500 rtl:text-right">
                     הוספת מספרי טלפון תתאפשר לאחר יצירת הלקוח
                   </p>
@@ -801,14 +855,20 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Company Registry Files (Edit Mode Only) */}
               {mode === 'edit' && client && (
-                <div className="col-span-3 border-t pt-4 mt-4">
-                  <h3 className="text-lg font-semibold mb-3 rtl:text-right">מסמכי רשם החברות</h3>
-                  <FileDisplayWidget
+                <>
+                  <div className="col-span-3 mt-4 mb-2">
+                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                      מסמכי רשם החברות
+                    </h3>
+                  </div>
+                  <div className="col-span-3">
+                    <FileDisplayWidget
                     clientId={client.id}
                     category="company_registry"
                     variant="compact"
                   />
-                </div>
+                  </div>
+                </>
               )}
             </div>
 
