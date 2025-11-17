@@ -216,7 +216,7 @@ serve(async (req) => {
       .single();
 
     // Prepare display names for redirect pages
-    const displayName = clientData?.commercial_name || clientData?.company_name || 'לקוח';
+    const displayName = clientData?.company_name || clientData?.commercial_name || 'לקוח';
     const groupName = clientData?.client_groups?.group_name_hebrew || '';
 
     // Calculate discount
