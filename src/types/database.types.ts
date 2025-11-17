@@ -811,6 +811,7 @@ export type Database = {
           previous_year_amount_after_discount: number | null
           previous_year_amount_before_discount: number | null
           previous_year_amount_with_vat: number | null
+          previous_year_amount_with_vat_before_discount: number | null
           previous_year_base: number | null
           previous_year_data: Json | null
           previous_year_discount: number | null
@@ -870,6 +871,7 @@ export type Database = {
           previous_year_amount_after_discount?: number | null
           previous_year_amount_before_discount?: number | null
           previous_year_amount_with_vat?: number | null
+          previous_year_amount_with_vat_before_discount?: number | null
           previous_year_base?: number | null
           previous_year_data?: Json | null
           previous_year_discount?: number | null
@@ -929,6 +931,7 @@ export type Database = {
           previous_year_amount_after_discount?: number | null
           previous_year_amount_before_discount?: number | null
           previous_year_amount_with_vat?: number | null
+          previous_year_amount_with_vat_before_discount?: number | null
           previous_year_base?: number | null
           previous_year_data?: Json | null
           previous_year_discount?: number | null
@@ -1016,24 +1019,29 @@ export type Database = {
       }
       generated_letters: {
         Row: {
+          body_content_html: string | null
           clicked_at: string | null
-          client_id: string
+          client_id: string | null
           created_at: string | null
           created_by: string | null
           fee_calculation_id: string | null
           generated_content_html: string
           generated_content_text: string | null
           id: string
+          is_latest: boolean | null
           last_opened_at: string | null
           open_count: number | null
           opened_at: string | null
           parent_letter_id: string | null
           payment_link: string | null
+          pdf_url: string | null
           recipient_emails: Json | null
+          rendering_engine: string | null
           sent_at: string | null
           sent_via: string | null
           status: string | null
           subject: string | null
+          system_version: string | null
           template_id: string | null
           template_type: string | null
           tenant_id: string
@@ -1041,24 +1049,29 @@ export type Database = {
           version_number: number
         }
         Insert: {
+          body_content_html?: string | null
           clicked_at?: string | null
-          client_id: string
+          client_id?: string | null
           created_at?: string | null
           created_by?: string | null
           fee_calculation_id?: string | null
           generated_content_html: string
           generated_content_text?: string | null
           id?: string
+          is_latest?: boolean | null
           last_opened_at?: string | null
           open_count?: number | null
           opened_at?: string | null
           parent_letter_id?: string | null
           payment_link?: string | null
+          pdf_url?: string | null
           recipient_emails?: Json | null
+          rendering_engine?: string | null
           sent_at?: string | null
           sent_via?: string | null
           status?: string | null
           subject?: string | null
+          system_version?: string | null
           template_id?: string | null
           template_type?: string | null
           tenant_id: string
@@ -1066,24 +1079,29 @@ export type Database = {
           version_number?: number
         }
         Update: {
+          body_content_html?: string | null
           clicked_at?: string | null
-          client_id?: string
+          client_id?: string | null
           created_at?: string | null
           created_by?: string | null
           fee_calculation_id?: string | null
           generated_content_html?: string
           generated_content_text?: string | null
           id?: string
+          is_latest?: boolean | null
           last_opened_at?: string | null
           open_count?: number | null
           opened_at?: string | null
           parent_letter_id?: string | null
           payment_link?: string | null
+          pdf_url?: string | null
           recipient_emails?: Json | null
+          rendering_engine?: string | null
           sent_at?: string | null
           sent_via?: string | null
           status?: string | null
           subject?: string | null
+          system_version?: string | null
           template_id?: string | null
           template_type?: string | null
           tenant_id?: string
@@ -2968,6 +2986,10 @@ export type Database = {
         }[]
       }
       hash_password: { Args: { password: string }; Returns: string }
+      increment_letter_opens: {
+        Args: { letter_id: string }
+        Returns: undefined
+      }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { p_user_id: string }; Returns: boolean }
       list_users_with_auth: {

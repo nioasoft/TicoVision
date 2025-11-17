@@ -36,7 +36,8 @@ import {
   CheckCircle2,
   Edit2,
   Eye,
-  Loader2
+  Loader2,
+  Percent
 } from 'lucide-react';
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
@@ -69,6 +70,7 @@ interface FeeCalculatorForm {
   previous_year_discount: number;
   previous_year_amount_after_discount: number;
   previous_year_amount_with_vat: number;
+  previous_year_amount_with_vat_before_discount: number; // NEW: Base amount with VAT, before discount
   base_amount: number;
   inflation_rate: number;
   real_adjustment: number;
@@ -103,6 +105,7 @@ export function FeesPage() {
     previous_year_discount: 0,
     previous_year_amount_after_discount: 0,
     previous_year_amount_with_vat: 0,
+    previous_year_amount_with_vat_before_discount: 0,
     base_amount: 0,
     inflation_rate: 3.0,
     real_adjustment: 0,
@@ -145,6 +148,30 @@ export function FeesPage() {
   const [isSavingAndPreview, setIsSavingAndPreview] = useState(false);
   const { toast } = useToast();
 
+  /**
+   * Calculate previous year fields based on amount and discount
+   * Only call this when user manually inputs data, NOT when loading from database
+   */
+  const calculatePreviousYearFields = (amount: number, discount: number) => {
+    if (!amount || amount === 0) {
+      return {
+        previous_year_amount_with_vat_before_discount: 0,
+        previous_year_amount_after_discount: 0,
+        previous_year_amount_with_vat: 0
+      };
+    }
+
+    const baseWithVat = amount * 1.18; // Base + 18% VAT (before discount)
+    const afterDiscount = amount * (1 - discount / 100);
+    const withVat = afterDiscount * 1.18; // Final with VAT
+
+    return {
+      previous_year_amount_with_vat_before_discount: parseFloat(baseWithVat.toFixed(2)),
+      previous_year_amount_after_discount: parseFloat(afterDiscount.toFixed(2)),
+      previous_year_amount_with_vat: parseFloat(withVat.toFixed(2))
+    };
+  };
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -158,33 +185,25 @@ export function FeesPage() {
         await loadDraftCalculation(formData.client_id);
         await loadClientDetails(formData.client_id);
       } else {
+        // Clear all client-related data when no client selected
         setSelectedClientDetails(null);
         setRelatedCompanies([]);
         setCurrentDraftId(null);
+
+        // Reset previous year data
+        setFormData(prev => ({
+          ...prev,
+          previous_year_amount: 0,
+          previous_year_discount: 0,
+          previous_year_amount_after_discount: 0,
+          previous_year_amount_with_vat: 0,
+          previous_year_amount_with_vat_before_discount: 0
+        }));
       }
     };
 
     loadClientData();
   }, [formData.client_id, formData.year]); // Re-load when tax year changes
-
-  useEffect(() => {
-    // Auto-calculate previous year amounts after discount
-    if (formData.previous_year_amount && formData.previous_year_amount > 0) {
-      const afterDiscount = formData.previous_year_amount * (1 - (formData.previous_year_discount || 0) / 100);
-      const withVat = afterDiscount * 1.18; // 18% VAT
-      setFormData(prev => ({
-        ...prev,
-        previous_year_amount_after_discount: parseFloat(afterDiscount.toFixed(2)),
-        previous_year_amount_with_vat: parseFloat(withVat.toFixed(2))
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        previous_year_amount_after_discount: 0,
-        previous_year_amount_with_vat: 0
-      }));
-    }
-  }, [formData.previous_year_amount, formData.previous_year_discount]);
 
   useEffect(() => {
     // Auto-calculate when form data changes
@@ -261,14 +280,20 @@ export function FeesPage() {
         // Use final_amount (calculated result) if available, otherwise base_amount (manual entry)
         const baseAmount = response.data.final_amount || response.data.base_amount || 0;
         const discountPercent = response.data.previous_year_discount || 0;
-        const afterDiscount = baseAmount * (1 - discountPercent / 100);
+
+        // Calculate missing fields for backward compatibility with old data
+        // Old records (before migration) won't have these calculated fields
+        const calculatedFields = calculatePreviousYearFields(baseAmount, discountPercent);
 
         setFormData(prev => ({
           ...prev,
           previous_year_amount: baseAmount,
           previous_year_discount: discountPercent,
-          previous_year_amount_after_discount: parseFloat(afterDiscount.toFixed(2)),
-          previous_year_amount_with_vat: response.data.total_amount || 0,
+          // Use database values if they exist (not null/undefined), otherwise use calculated values
+          // Using ?? (nullish coalescing) instead of || to properly handle 0 values
+          previous_year_amount_after_discount: response.data.previous_year_amount_after_discount ?? calculatedFields.previous_year_amount_after_discount,
+          previous_year_amount_with_vat: response.data.previous_year_amount_with_vat ?? response.data.total_amount ?? calculatedFields.previous_year_amount_with_vat,
+          previous_year_amount_with_vat_before_discount: response.data.previous_year_amount_with_vat_before_discount ?? calculatedFields.previous_year_amount_with_vat_before_discount,
           // Auto-populate base amount for current year calculation
           // This provides a starting point - user can modify if needed
           // If a draft exists, loadDraftCalculation will override this value
@@ -284,9 +309,29 @@ export function FeesPage() {
       } else {
         // No previous data found - reset to empty
         setPreviousYearDataSaved(false);
+
+        // Clear previous year fields when no data exists
+        setFormData(prev => ({
+          ...prev,
+          previous_year_amount: 0,
+          previous_year_discount: 0,
+          previous_year_amount_after_discount: 0,
+          previous_year_amount_with_vat: 0,
+          previous_year_amount_with_vat_before_discount: 0
+        }));
       }
     } catch (error) {
       logger.error('Error loading previous year data:', error);
+
+      // Clear previous year fields on error to avoid showing stale data
+      setFormData(prev => ({
+        ...prev,
+        previous_year_amount: 0,
+        previous_year_discount: 0,
+        previous_year_amount_after_discount: 0,
+        previous_year_amount_with_vat: 0,
+        previous_year_amount_with_vat_before_discount: 0
+      }));
     }
   };
 
@@ -381,6 +426,7 @@ export function FeesPage() {
         base_amount: formData.previous_year_amount, // Use this amount as the base
         previous_year_discount: formData.previous_year_discount || 0,
         previous_year_amount_with_vat: formData.previous_year_amount_with_vat,
+        previous_year_amount_with_vat_before_discount: formData.previous_year_amount_with_vat_before_discount, // NEW FIELD!
         inflation_rate: 0, // No inflation for historical data
         real_adjustment: 0,
         apply_inflation_index: false, // Don't apply inflation to historical data
@@ -756,6 +802,7 @@ export function FeesPage() {
       previous_year_discount: 0,
       previous_year_amount_after_discount: 0,
       previous_year_amount_with_vat: 0,
+      previous_year_amount_with_vat_before_discount: 0,
       base_amount: 0,
       inflation_rate: 3.0,
       real_adjustment: 0,
@@ -974,7 +1021,7 @@ export function FeesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {/* Previous Year Data Container */}
+                  {/* Previous Year Data - Card-Based Layout */}
                   <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50 space-y-4">
                     {/* Header */}
                     <div className="flex items-center gap-2 pb-3 border-b border-gray-300">
@@ -982,65 +1029,136 @@ export function FeesPage() {
                       <h3 className="text-lg font-semibold text-gray-800">נתוני שנה קודמת</h3>
                     </div>
 
-                    {/* 2x2 Grid for fields */}
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Row 1 Left: Base Amount */}
-                      <div>
-                        <Label htmlFor="previous_amount" className="text-sm">סכום בסיס</Label>
-                        <Input
-                          id="previous_amount"
-                          type="number"
-                          value={formData.previous_year_amount ?? ''}
-                          onChange={(e) => setFormData({ ...formData, previous_year_amount: parseFloat(e.target.value) || 0 })}
-                          disabled={formData.isNewClient}
-                          className={formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}
-                        />
-                      </div>
-
-                      {/* Row 1 Right: Discount */}
-                      <div>
-                        <Label htmlFor="previous_discount" className="text-sm">הנחה (%)</Label>
-                        <div className="relative">
+                    {/* Row 1: Base amounts (before and after VAT) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Card 1: Base Amount BEFORE VAT (input) */}
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <Label htmlFor="previous_amount" className="text-sm font-medium rtl:text-right ltr:text-left">
+                              סכום בסיס (לפני הנחה, לפני מע"מ)
+                            </Label>
+                            <DollarSign className="h-6 w-6 text-blue-500" />
+                          </div>
                           <Input
-                            id="previous_discount"
+                            id="previous_amount"
                             type="number"
-                            value={formData.previous_year_discount ?? ''}
-                            onChange={(e) => setFormData({ ...formData, previous_year_discount: parseFloat(e.target.value) || 0 })}
-                            min="0"
-                            max="100"
-                            step="0.1"
+                            value={formData.previous_year_amount ?? ''}
+                            onChange={(e) => {
+                              const newAmount = parseFloat(e.target.value) || 0;
+                              const calculated = calculatePreviousYearFields(newAmount, formData.previous_year_discount);
+                              setFormData({
+                                ...formData,
+                                previous_year_amount: newAmount,
+                                ...calculated
+                              });
+                            }}
                             disabled={formData.isNewClient}
-                            className={`${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
+                            className={`text-lg ${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}`}
+                            placeholder="0"
                           />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
-                            %
-                          </span>
-                        </div>
-                      </div>
+                          <p className="text-xs text-gray-500 mt-2 rtl:text-right ltr:text-left">
+                            זרימה: לפני מע"מ
+                          </p>
+                        </CardContent>
+                      </Card>
 
-                      {/* Row 2 Left: After Discount */}
-                      <div>
-                        <Label htmlFor="previous_after_discount" className="text-sm">אחרי הנחה (לפני מע"מ)</Label>
-                        <Input
-                          id="previous_after_discount"
-                          type="number"
-                          value={formData.previous_year_amount_after_discount ?? ''}
-                          disabled
-                          className="font-semibold bg-blue-50 text-blue-900"
-                        />
-                      </div>
+                      {/* Card 2: Base Amount AFTER VAT (auto-calculated) - NEW! */}
+                      <Card className="bg-green-50 border-green-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="rtl:text-right ltr:text-left">
+                              <p className="text-sm font-medium text-gray-700">סכום בסיס (לפני הנחה, כולל מע"מ)</p>
+                            </div>
+                            <FileText className="h-6 w-6 text-green-500" />
+                          </div>
+                          <div className="text-2xl font-bold text-green-700">
+                            {formatILS(formData.previous_year_amount_with_vat_before_discount || 0)}
+                          </div>
+                          <p className="text-xs text-gray-600 mt-2 rtl:text-right ltr:text-left">
+                            חושב אוטומטית: +18% מע"מ
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
 
-                      {/* Row 2 Right: With VAT */}
-                      <div>
-                        <Label htmlFor="previous_vat" className="text-sm">כולל מע"מ</Label>
-                        <Input
-                          id="previous_vat"
-                          type="number"
-                          value={formData.previous_year_amount_with_vat ?? ''}
-                          disabled
-                          className="font-semibold bg-green-50 text-green-900"
-                        />
-                      </div>
+                    {/* Row 2: Discount */}
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* Card 3: Discount Percentage (input) */}
+                      <Card className="bg-purple-50 border-purple-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <Label htmlFor="previous_discount" className="text-sm font-medium rtl:text-right ltr:text-left">
+                              הנחה (%)
+                            </Label>
+                            <Percent className="h-6 w-6 text-purple-500" />
+                          </div>
+                          <div className="relative">
+                            <Input
+                              id="previous_discount"
+                              type="number"
+                              value={formData.previous_year_discount ?? ''}
+                              onChange={(e) => {
+                                const newDiscount = parseFloat(e.target.value) || 0;
+                                const calculated = calculatePreviousYearFields(formData.previous_year_amount, newDiscount);
+                                setFormData({
+                                  ...formData,
+                                  previous_year_discount: newDiscount,
+                                  ...calculated
+                                });
+                              }}
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              disabled={formData.isNewClient}
+                              className={`text-lg ${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
+                              placeholder="0"
+                            />
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
+                              %
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Row 3: Final amounts (after discount, with/without VAT) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Card 4: After Discount BEFORE VAT (auto-calculated) */}
+                      <Card className="bg-blue-50 border-blue-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="rtl:text-right ltr:text-left">
+                              <p className="text-sm text-gray-600 font-medium">אחרי הנחה (לפני מע"מ)</p>
+                              <p className="text-2xl font-bold text-blue-700 mt-1">
+                                {formatILS(formData.previous_year_amount_after_discount || 0)}
+                              </p>
+                            </div>
+                            <Calculator className="h-8 w-8 text-blue-500" />
+                          </div>
+                          <p className="text-xs text-gray-600 mt-2 rtl:text-right ltr:text-left">
+                            זרימה: לפני מע"מ
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 5: Total WITH VAT (auto-calculated - FINAL) */}
+                      <Card className="bg-primary/10 border-primary">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="rtl:text-right ltr:text-left">
+                              <p className="text-sm text-gray-600 font-medium">סך הכל כולל מע"מ</p>
+                              <p className="text-2xl font-bold text-primary mt-1">
+                                {formatILS(formData.previous_year_amount_with_vat || 0)}
+                              </p>
+                            </div>
+                            <CheckCircle2 className="h-8 w-8 text-primary" />
+                          </div>
+                          <p className="text-xs text-gray-600 mt-2 rtl:text-right ltr:text-left">
+                            סכום סופי - אחרי הנחה כולל מע"מ
+                          </p>
+                        </CardContent>
+                      </Card>
                     </div>
                   </div>
 

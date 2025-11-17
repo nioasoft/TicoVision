@@ -137,6 +137,7 @@ export interface CreateFeeCalculationDto {
   previous_year_amount_before_discount?: number;
   previous_year_amount_after_discount?: number;
   previous_year_amount_with_vat?: number;
+  previous_year_amount_with_vat_before_discount?: number; // NEW: Base with VAT before discount
   // Current year calculations
   base_amount: number;
   apply_inflation_index?: boolean; // Default true
