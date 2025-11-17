@@ -1,9 +1,9 @@
 /**
  * Supabase Edge Function: Cardcom Webhook
- * Receives payment completion notifications from Cardcom and updates database
+ * Receives payment completion notifications from Cardcom API v11 and updates database
  *
  * Endpoint: POST /cardcom-webhook
- * Request: Form data from Cardcom
+ * Request: JSON from Cardcom
  * Response: "-1" (required by Cardcom)
  */
 
@@ -14,71 +14,52 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const CARDCOM_TERMINAL = Deno.env.get('CARDCOM_TERMINAL') || '';
 
-interface CardcomWebhookData {
-  terminalnumber: string;
-  lowprofilecode: string;
-  operation: string;
-  dealnumber: string;
-  tokennumber?: string;
-  tokenexpdate?: string;
-  cardnumber: string;
-  cardexpdate: string;
-  approvalnum: string;
-  username: string;
-  sum: string;
-  currency: string;
-  responsecode: string;
-  responsemessage: string;
-  email?: string;
-  phone?: string;
-  customername?: string;
-  customerid?: string;
-  invoicenumber?: string;
-  invoicelink?: string;
-  dealid?: string;
-}
-
 /**
- * Parse form data from Cardcom webhook
+ * Cardcom Webhook JSON structure (API v11)
  */
-function parseWebhookData(formData: URLSearchParams): CardcomWebhookData {
-  return {
-    terminalnumber: formData.get('terminalnumber') || '',
-    lowprofilecode: formData.get('lowprofilecode') || '',
-    operation: formData.get('operation') || '',
-    dealnumber: formData.get('dealnumber') || '',
-    tokennumber: formData.get('tokennumber') || undefined,
-    tokenexpdate: formData.get('tokenexpdate') || undefined,
-    cardnumber: formData.get('cardnumber') || '',
-    cardexpdate: formData.get('cardexpdate') || '',
-    approvalnum: formData.get('approvalnum') || '',
-    username: formData.get('username') || '',
-    sum: formData.get('sum') || '',
-    currency: formData.get('currency') || '',
-    responsecode: formData.get('responsecode') || '',
-    responsemessage: formData.get('responsemessage') || '',
-    email: formData.get('email') || undefined,
-    phone: formData.get('phone') || undefined,
-    customername: formData.get('customername') || undefined,
-    customerid: formData.get('customerid') || undefined,
-    invoicenumber: formData.get('invoicenumber') || undefined,
-    invoicelink: formData.get('invoicelink') || undefined,
-    dealid: formData.get('dealid') || undefined,
+interface CardcomWebhookPayload {
+  ResponseCode: number;
+  Description: string;
+  TerminalNumber: number;
+  LowProfileId: string;
+  TranzactionId: number;
+  Operation: string;
+  TranzactionInfo?: {
+    ResponseCode: number;
+    Description: string;
+    TranzactionId: number;
+    Amount: number;
+    CoinId: number;
+    CouponNumber: string;
+    ApprovalNumber: string;
+    NumberOfPayments: number;
+    CardOwnerName: string;
+    CardOwnerEmail?: string;
+    CardOwnerPhone?: string;
+    CardOwnerIdentityNumber?: string;
+    Last4CardDigits?: number;
+    Last4CardDigitsString?: string;
   };
 }
 
 /**
- * Validate webhook is from Cardcom
+ * Validate webhook is from our Cardcom terminal
  */
-function validateWebhook(data: CardcomWebhookData): boolean {
-  return data.terminalnumber === CARDCOM_TERMINAL;
+function validateWebhook(data: CardcomWebhookPayload): boolean {
+  const terminalMatch = data.TerminalNumber.toString() === CARDCOM_TERMINAL;
+  console.log('Terminal validation:', {
+    received: data.TerminalNumber,
+    expected: CARDCOM_TERMINAL,
+    match: terminalMatch,
+  });
+  return terminalMatch;
 }
 
 /**
  * Check if payment was successful
  */
-function isSuccessfulPayment(data: CardcomWebhookData): boolean {
-  return data.responsecode === '0';
+function isSuccessfulPayment(data: CardcomWebhookPayload): boolean {
+  return data.ResponseCode === 0;
 }
 
 /**
@@ -87,21 +68,18 @@ function isSuccessfulPayment(data: CardcomWebhookData): boolean {
 serve(async (req) => {
   try {
     console.log('📨 Received Cardcom webhook');
+    console.log('Method:', req.method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
 
-    // Parse form data
-    const formData = await req.formData();
-    const urlParams = new URLSearchParams();
-    formData.forEach((value, key) => {
-      urlParams.append(key, value.toString());
-    });
-
-    const webhookData = parseWebhookData(urlParams);
+    // Parse JSON body
+    const webhookData: CardcomWebhookPayload = await req.json();
 
     console.log('Webhook data:', {
-      lowprofilecode: webhookData.lowprofilecode,
-      dealnumber: webhookData.dealnumber,
-      responsecode: webhookData.responsecode,
-      sum: webhookData.sum,
+      ResponseCode: webhookData.ResponseCode,
+      LowProfileId: webhookData.LowProfileId,
+      TranzactionId: webhookData.TranzactionId,
+      TerminalNumber: webhookData.TerminalNumber,
+      Amount: webhookData.TranzactionInfo?.Amount,
     });
 
     // Validate webhook source
@@ -117,17 +95,26 @@ serve(async (req) => {
       throw new Error('Supabase configuration missing');
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const paymentSuccessful = isSuccessfulPayment(webhookData);
-    const amount = parseFloat(webhookData.sum);
+    const amount = webhookData.TranzactionInfo?.Amount || 0;
+    const lowProfileId = webhookData.LowProfileId;
+    const transactionId = webhookData.TranzactionId.toString();
 
-    // Find transaction by lowprofilecode (LowProfileId from payment page creation)
+    console.log('Payment status:', {
+      successful: paymentSuccessful,
+      amount,
+      lowProfileId,
+      transactionId,
+    });
+
+    // Find transaction by LowProfileId (from payment link creation)
     const { data: existingTransaction, error: findError } = await supabase
       .from('payment_transactions')
       .select('id, fee_calculation_id, status')
-      .eq('cardcom_deal_id', webhookData.lowprofilecode)
+      .eq('cardcom_deal_id', lowProfileId)
       .single();
 
     if (findError && findError.code !== 'PGRST116') {
@@ -140,19 +127,22 @@ serve(async (req) => {
     }
 
     if (existingTransaction) {
+      console.log('Found existing transaction:', existingTransaction.id);
+
       // Update existing transaction
       const { error: updateError } = await supabase
         .from('payment_transactions')
         .update({
           status: paymentSuccessful ? 'completed' : 'failed',
-          cardcom_transaction_id: webhookData.dealnumber,
-          invoice_number: webhookData.invoicenumber || null,
+          cardcom_transaction_id: transactionId,
+          invoice_number: webhookData.TranzactionInfo?.CouponNumber || null,
           payment_date: paymentSuccessful ? new Date().toISOString() : null,
-          failure_reason: paymentSuccessful ? null : webhookData.responsemessage,
+          failure_reason: paymentSuccessful ? null : webhookData.Description,
           metadata: {
-            approval_number: webhookData.approvalnum,
-            card_last4: webhookData.cardnumber.slice(-4),
-            invoice_link: webhookData.invoicelink,
+            approval_number: webhookData.TranzactionInfo?.ApprovalNumber,
+            card_last4: webhookData.TranzactionInfo?.Last4CardDigitsString,
+            card_owner_name: webhookData.TranzactionInfo?.CardOwnerName,
+            number_of_payments: webhookData.TranzactionInfo?.NumberOfPayments,
           },
           updated_at: new Date().toISOString(),
         })
@@ -166,13 +156,15 @@ serve(async (req) => {
 
       // If payment successful, update fee_calculations and payment_method_selections
       if (paymentSuccessful && existingTransaction.fee_calculation_id) {
+        console.log('Updating fee_calculations to paid...');
+
         // Update fee_calculations
         const { error: feeUpdateError } = await supabase
           .from('fee_calculations')
           .update({
             status: 'paid',
             payment_date: new Date().toISOString(),
-            payment_reference: webhookData.invoicenumber || webhookData.dealnumber,
+            payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
           })
           .eq('id', existingTransaction.fee_calculation_id);
 
@@ -199,25 +191,26 @@ serve(async (req) => {
       }
     } else {
       // Create new transaction record (shouldn't normally happen, but handle gracefully)
-      console.warn('⚠️ Transaction not found, creating new record');
+      console.warn('⚠️ Transaction not found for LowProfileId:', lowProfileId);
+      console.warn('Creating new transaction record...');
 
       const { error: insertError } = await supabase
         .from('payment_transactions')
         .insert({
-          cardcom_deal_id: webhookData.lowprofilecode,
-          cardcom_transaction_id: webhookData.dealnumber,
+          cardcom_deal_id: lowProfileId,
+          cardcom_transaction_id: transactionId,
           amount: amount,
-          currency: webhookData.currency === 'ILS' ? 'ILS' : 'USD',
+          currency: 'ILS',
           status: paymentSuccessful ? 'completed' : 'failed',
           payment_method: 'credit_card',
-          invoice_number: webhookData.invoicenumber || null,
+          invoice_number: webhookData.TranzactionInfo?.CouponNumber || null,
           payment_date: paymentSuccessful ? new Date().toISOString() : null,
-          failure_reason: paymentSuccessful ? null : webhookData.responsemessage,
+          failure_reason: paymentSuccessful ? null : webhookData.Description,
           metadata: {
-            approval_number: webhookData.approvalnum,
-            card_last4: webhookData.cardnumber.slice(-4),
-            customer_name: webhookData.customername,
-            invoice_link: webhookData.invoicelink,
+            approval_number: webhookData.TranzactionInfo?.ApprovalNumber,
+            card_last4: webhookData.TranzactionInfo?.Last4CardDigitsString,
+            card_owner_name: webhookData.TranzactionInfo?.CardOwnerName,
+            number_of_payments: webhookData.TranzactionInfo?.NumberOfPayments,
           },
         });
 
@@ -236,6 +229,8 @@ serve(async (req) => {
       processed_at: new Date().toISOString(),
       response_sent: '-1',
     });
+
+    console.log('✅ Webhook processed successfully');
 
     // Cardcom requires "-1" response to acknowledge webhook
     return new Response('-1', {

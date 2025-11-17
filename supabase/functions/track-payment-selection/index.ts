@@ -46,8 +46,13 @@ async function createCardcomPaymentPage(
     console.log('💳 [Cardcom] Creating payment page:');
     console.log('  - Amount:', amount);
     console.log('  - Max payments:', maxPayments);
-    console.log('  - Terminal:', CARDCOM_TERMINAL ? 'SET' : 'MISSING');
-    console.log('  - Username:', CARDCOM_USERNAME ? 'SET' : 'MISSING');
+    console.log('  - Fee ID:', feeId);
+    console.log('  - Client Name:', clientName);
+    console.log('  - Client Email:', clientEmail || 'NO EMAIL');
+    console.log('  - Terminal:', CARDCOM_TERMINAL ? `SET (${CARDCOM_TERMINAL})` : 'MISSING');
+    console.log('  - Username:', CARDCOM_USERNAME ? `SET (${CARDCOM_USERNAME})` : 'MISSING');
+    console.log('  - APP_URL:', APP_URL);
+    console.log('  - SUPABASE_URL:', SUPABASE_URL);
 
     if (!CARDCOM_TERMINAL || !CARDCOM_USERNAME) {
       console.error('❌ [Cardcom] Missing required env variables!');
@@ -58,6 +63,11 @@ async function createCardcomPaymentPage(
 
     const baseUrl = 'https://secure.cardcom.solutions/api/v11';
 
+    const productName = `שכר טרחה רואה חשבון #${feeId.substring(0, 8)}`;
+
+    // Use custom design uploaded to Cardcom instead of UIDefinition
+    // Design file: CARDCOM-CUSTOM-DESIGN.html (uploaded to terminal 172012)
+    // Terminal settings control: installments (1-10), logo, colors
     const body = {
       TerminalNumber: CARDCOM_TERMINAL,
       ApiName: CARDCOM_USERNAME,
@@ -65,34 +75,11 @@ async function createCardcomPaymentPage(
       Operation: 'ChargeOnly',
       Language: 'he',
       ISOCoinId: 1, // ILS
-      ProductName: `תשלום שכר טרחה #${feeId.substring(0, 8)}`,
+      ProductName: productName,
       SuccessRedirectUrl: `${APP_URL}/payment/success?fee_id=${feeId}`,
       FailedRedirectUrl: `${APP_URL}/payment/error?fee_id=${feeId}`,
       WebHookUrl: `${SUPABASE_URL}/functions/v1/cardcom-webhook`,
-      UIDefinition: {
-        MinNumOfPayments: 1,
-        MaxNumOfPayments: maxPayments,
-        LogoUrl: `${APP_URL}/brand/tico_logo_240.png`,
-        TopColor: '#667eea',
-        BottomColor: '#764ba2',
-        ButtonColor: '#667eea',
-        ButtonHoverColor: '#5a67d8',
-        Language: 'he',
-        ShowCompanyNameOnPage: true,
-        CompanyName: 'TICO - מערכת CRM לרואי חשבון',
-        PageTitle: 'תשלום מאובטח',
-        IsShowCardOwnerID: true,
-        IsHideCardOwnerID: false,
-        CreditCardHolderIDtext: 'תעודת זהות',
-        SuccessMessage: 'התשלום בוצע בהצלחה! תודה רבה.',
-        FailedMessage: 'התשלום נכשל. אנא נסה שנית או צור קשר.',
-      },
-      Document: {
-        DocumentTypeToCreate: 'TaxInvoiceAndReceipt',
-        Name: clientName,
-        ...(clientEmail && { Email: clientEmail }),
-        IsSendByEmail: true,
-      },
+      // NO UIDefinition - uses custom design from Cardcom console
     };
 
     console.log('📤 [Cardcom] Sending request to:', `${baseUrl}/LowProfile/Create`);
@@ -113,7 +100,11 @@ async function createCardcomPaymentPage(
     if (jsonResponse.ResponseCode?.toString() === '0') {
       console.log('✅ [Cardcom] Payment page created successfully!');
       console.log('  - URL:', jsonResponse.Url);
-      return jsonResponse.Url || null;
+      console.log('  - LowProfileId:', jsonResponse.LowProfileId);
+      return {
+        url: jsonResponse.Url || null,
+        lowProfileId: jsonResponse.LowProfileId || null,
+      };
     }
 
     console.error('❌ [Cardcom] API returned error:');
@@ -267,25 +258,51 @@ serve(async (req) => {
         break;
 
       case 'cc_single':
-        const singlePaymentUrl = await createCardcomPaymentPage(
+        const singlePaymentResult = await createCardcomPaymentPage(
           amountAfterDiscount,
           1,
           feeId,
           displayName,
           clientData?.contact_email
         );
-        redirectUrl = singlePaymentUrl || `${APP_URL}/payment/error?fee_id=${feeId}`;
+        if (singlePaymentResult) {
+          // Save payment_transaction with LowProfileId
+          await supabase.from('payment_transactions').insert({
+            fee_calculation_id: feeId,
+            cardcom_deal_id: singlePaymentResult.lowProfileId,
+            amount: amountAfterDiscount,
+            currency: 'ILS',
+            status: 'pending',
+            payment_method: 'credit_card',
+          });
+          redirectUrl = singlePaymentResult.url || `${APP_URL}/payment/error?fee_id=${feeId}`;
+        } else {
+          redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId}`;
+        }
         break;
 
       case 'cc_installments':
-        const installmentsUrl = await createCardcomPaymentPage(
+        const installmentsResult = await createCardcomPaymentPage(
           amountAfterDiscount,
           10,
           feeId,
           displayName,
           clientData?.contact_email
         );
-        redirectUrl = installmentsUrl || `${APP_URL}/payment/error?fee_id=${feeId}`;
+        if (installmentsResult) {
+          // Save payment_transaction with LowProfileId
+          await supabase.from('payment_transactions').insert({
+            fee_calculation_id: feeId,
+            cardcom_deal_id: installmentsResult.lowProfileId,
+            amount: amountAfterDiscount,
+            currency: 'ILS',
+            status: 'pending',
+            payment_method: 'credit_card',
+          });
+          redirectUrl = installmentsResult.url || `${APP_URL}/payment/error?fee_id=${feeId}`;
+        } else {
+          redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId}`;
+        }
         break;
 
       case 'checks':
