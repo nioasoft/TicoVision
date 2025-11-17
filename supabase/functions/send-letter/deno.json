@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "dompurify": "https://esm.sh/dompurify@3.0.6?target=deno"
+  }
+}
