@@ -204,9 +204,20 @@ serve(async (req) => {
     // Get client details for Cardcom and redirect pages
     const { data: clientData } = await supabase
       .from('clients')
-      .select('company_name, group_name, contact_email')
+      .select(`
+        company_name,
+        commercial_name,
+        contact_email,
+        client_groups (
+          group_name_hebrew
+        )
+      `)
       .eq('id', clientId)
       .single();
+
+    // Prepare display names for redirect pages
+    const displayName = clientData?.commercial_name || clientData?.company_name || 'לקוח';
+    const groupName = clientData?.client_groups?.group_name_hebrew || '';
 
     // Calculate discount
     const discountPercent = DISCOUNT_RATES[method];
@@ -252,7 +263,7 @@ serve(async (req) => {
 
     switch (method) {
       case 'bank_transfer':
-        redirectUrl = `${APP_URL}/bank-transfer-details.html?fee_id=${feeId}&client_id=${clientId}&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(clientData?.company_name || '')}&group_name=${encodeURIComponent(clientData?.group_name || '')}`;
+        redirectUrl = `${APP_URL}/bank-transfer-details.html?fee_id=${feeId}&client_id=${clientId}&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(displayName)}&group_name=${encodeURIComponent(groupName)}`;
         break;
 
       case 'cc_single':
@@ -260,7 +271,7 @@ serve(async (req) => {
           amountAfterDiscount,
           1,
           feeId,
-          clientData?.company_name || 'לקוח',
+          displayName,
           clientData?.contact_email
         );
         redirectUrl = singlePaymentUrl || `${APP_URL}/payment/error?fee_id=${feeId}`;
@@ -271,14 +282,14 @@ serve(async (req) => {
           amountAfterDiscount,
           10,
           feeId,
-          clientData?.company_name || 'לקוח',
+          displayName,
           clientData?.contact_email
         );
         redirectUrl = installmentsUrl || `${APP_URL}/payment/error?fee_id=${feeId}`;
         break;
 
       case 'checks':
-        redirectUrl = `${APP_URL}/check-details.html?fee_id=${feeId}&client_id=${clientId}&num_checks=8&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(clientData?.company_name || '')}&group_name=${encodeURIComponent(clientData?.group_name || '')}`;
+        redirectUrl = `${APP_URL}/check-details.html?fee_id=${feeId}&client_id=${clientId}&num_checks=8&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(displayName)}&group_name=${encodeURIComponent(groupName)}`;
         break;
 
       default:

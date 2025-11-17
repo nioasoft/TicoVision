@@ -257,8 +257,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const clientId = urlParams.get('client_id');
         const totalAmount = urlParams.get('amount');
-        const companyName = urlParams.get('company_name') || 'מסעדת האחים';
-        const groupName = urlParams.get('group_name') || 'קבוצת מסעדות ישראליות';
+        const companyName = urlParams.get('company_name') || 'לקוח';
+        const groupName = urlParams.get('group_name') || '';
         const numChecks = parseInt(urlParams.get('num_checks')) || 8; // Dynamic: 8 or 12
 
         // Set current date in Israeli format (DD.MM.YYYY)
