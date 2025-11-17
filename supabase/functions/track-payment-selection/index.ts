@@ -201,10 +201,10 @@ serve(async (req) => {
       );
     }
 
-    // Get client details for Cardcom
+    // Get client details for Cardcom and redirect pages
     const { data: clientData } = await supabase
       .from('clients')
-      .select('company_name, contact_email')
+      .select('company_name, group_name, contact_email')
       .eq('id', clientId)
       .single();
 
@@ -252,7 +252,7 @@ serve(async (req) => {
 
     switch (method) {
       case 'bank_transfer':
-        redirectUrl = `${APP_URL}/bank-transfer-details.html?fee_id=${feeId}&amount=${amountAfterDiscount}`;
+        redirectUrl = `${APP_URL}/bank-transfer-details.html?fee_id=${feeId}&client_id=${clientId}&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(clientData?.company_name || '')}&group_name=${encodeURIComponent(clientData?.group_name || '')}`;
         break;
 
       case 'cc_single':
@@ -278,7 +278,7 @@ serve(async (req) => {
         break;
 
       case 'checks':
-        redirectUrl = `${APP_URL}/check-details.html?fee_id=${feeId}&num_checks=8&amount=${amountAfterDiscount}`;
+        redirectUrl = `${APP_URL}/check-details.html?fee_id=${feeId}&client_id=${clientId}&num_checks=8&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(clientData?.company_name || '')}&group_name=${encodeURIComponent(clientData?.group_name || '')}`;
         break;
 
       default:
