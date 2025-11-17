@@ -1342,25 +1342,31 @@ export function FeesPage() {
                     <Input
                       id="index_manual_adjustment"
                       type="text"
+                      inputMode="numeric"
+                      pattern="-?[0-9]*"
                       value={formData.index_manual_adjustment === 0 ? '' : formData.index_manual_adjustment.toString()}
+                      onKeyDown={(e) => {
+                        // Allow: backspace, delete, tab, escape, enter, minus, numbers, arrows
+                        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+                        const isNumber = /^[0-9]$/.test(e.key);
+                        const isMinus = e.key === '-';
+
+                        // Allow minus only at the beginning
+                        const isMinusAllowed = isMinus && (e.currentTarget.selectionStart === 0 || e.currentTarget.value === '');
+
+                        if (!allowedKeys.includes(e.key) && !isNumber && !isMinusAllowed) {
+                          e.preventDefault();
+                        }
+                      }}
                       onChange={(e) => {
                         const inputValue = e.target.value;
 
-                        // Allow empty, minus sign, or valid numbers
-                        if (inputValue === '' || inputValue === '-') {
+                        // Allow empty or valid negative/positive numbers
+                        if (inputValue === '' || inputValue === '-' || /^-?\d*$/.test(inputValue)) {
+                          const numericValue = parseFloat(inputValue);
                           setFormData({
                             ...formData,
-                            index_manual_adjustment: 0
-                          });
-                          return;
-                        }
-
-                        // Validate numeric input (positive or negative)
-                        const numericValue = parseFloat(inputValue);
-                        if (!isNaN(numericValue)) {
-                          setFormData({
-                            ...formData,
-                            index_manual_adjustment: numericValue
+                            index_manual_adjustment: isNaN(numericValue) ? 0 : numericValue
                           });
                         }
                       }}
