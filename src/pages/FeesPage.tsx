@@ -1339,40 +1339,37 @@ export function FeesPage() {
                   {/* NEW FIELD: Manual Index Adjustment */}
                   <div>
                     <Label htmlFor="index_manual_adjustment">התאמת מדד</Label>
-                    <Input
+                    <input
                       id="index_manual_adjustment"
                       type="text"
-                      inputMode="numeric"
-                      pattern="-?[0-9]*"
+                      inputMode="decimal"
                       value={formData.index_manual_adjustment === 0 ? '' : formData.index_manual_adjustment.toString()}
-                      onKeyDown={(e) => {
-                        // Allow: backspace, delete, tab, escape, enter, minus, numbers, arrows
-                        const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
-                        const isNumber = /^[0-9]$/.test(e.key);
-                        const isMinus = e.key === '-';
-
-                        // Allow minus only at the beginning
-                        const isMinusAllowed = isMinus && (e.currentTarget.selectionStart === 0 || e.currentTarget.value === '');
-
-                        if (!allowedKeys.includes(e.key) && !isNumber && !isMinusAllowed) {
-                          e.preventDefault();
-                        }
-                      }}
                       onChange={(e) => {
                         const inputValue = e.target.value;
 
-                        // Allow empty or valid negative/positive numbers
-                        if (inputValue === '' || inputValue === '-' || /^-?\d*$/.test(inputValue)) {
-                          const numericValue = parseFloat(inputValue);
+                        // Allow empty string or minus sign alone
+                        if (inputValue === '' || inputValue === '-') {
                           setFormData({
                             ...formData,
-                            index_manual_adjustment: isNaN(numericValue) ? 0 : numericValue
+                            index_manual_adjustment: 0
+                          });
+                          return;
+                        }
+
+                        // Parse and validate
+                        const numericValue = parseFloat(inputValue);
+                        if (!isNaN(numericValue)) {
+                          setFormData({
+                            ...formData,
+                            index_manual_adjustment: numericValue
                           });
                         }
                       }}
                       placeholder="0"
                       disabled={!formData.apply_inflation_index}
-                      className={!formData.apply_inflation_index ? 'opacity-50' : ''}
+                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        !formData.apply_inflation_index ? 'opacity-50' : ''
+                      }`}
                     />
                     <p className="text-sm text-gray-500 mt-1">
                       סכום בשקלים להתאמה (יכול להיות שלילי)
