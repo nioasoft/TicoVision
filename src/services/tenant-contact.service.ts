@@ -228,11 +228,37 @@ export class TenantContactService {
 
   /**
    * Assign contact to client (create assignment)
+   * Checks for existing assignment first to prevent 409 duplicates
    */
   static async assignToClient(
     assignmentData: AssignContactToClientDto
   ): Promise<ClientContactAssignment | null> {
     try {
+      // Check if this contact is already assigned to this client
+      const { data: existing, error: checkError } = await supabase
+        .from('client_contact_assignments')
+        .select('*')
+        .eq('client_id', assignmentData.client_id)
+        .eq('contact_id', assignmentData.contact_id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing assignment:', checkError);
+        throw checkError;
+      }
+
+      // If already assigned, return existing assignment (skip duplicate)
+      if (existing) {
+        console.warn('⚠️ Contact already assigned to this client. Skipping duplicate assignment.', {
+          client_id: assignmentData.client_id,
+          contact_id: assignmentData.contact_id,
+          existing_role: existing.role_at_client,
+          attempted_role: assignmentData.role_at_client,
+        });
+        return existing;
+      }
+
+      // Create new assignment
       const { data, error } = await supabase
         .from('client_contact_assignments')
         .insert([
