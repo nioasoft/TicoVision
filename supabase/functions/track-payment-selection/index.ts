@@ -208,7 +208,7 @@ serve(async (req) => {
         company_name,
         commercial_name,
         contact_email,
-        client_groups (
+        client_groups!left (
           group_name_hebrew
         )
       `)
