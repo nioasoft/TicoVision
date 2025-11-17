@@ -794,6 +794,7 @@ export type Database = {
           final_amount: number | null
           has_deviation: boolean | null
           id: string
+          index_manual_adjustment: number | null
           inflation_adjustment: number | null
           inflation_rate: number | null
           last_reminder_sent_at: string | null
@@ -854,6 +855,7 @@ export type Database = {
           final_amount?: number | null
           has_deviation?: boolean | null
           id?: string
+          index_manual_adjustment?: number | null
           inflation_adjustment?: number | null
           inflation_rate?: number | null
           last_reminder_sent_at?: string | null
@@ -914,6 +916,7 @@ export type Database = {
           final_amount?: number | null
           has_deviation?: boolean | null
           id?: string
+          index_manual_adjustment?: number | null
           inflation_adjustment?: number | null
           inflation_rate?: number | null
           last_reminder_sent_at?: string | null

@@ -73,6 +73,7 @@ interface FeeCalculatorForm {
   previous_year_amount_with_vat_before_discount: number; // NEW: Base amount with VAT, before discount
   base_amount: number;
   inflation_rate: number;
+  index_manual_adjustment: number; // NEW: Manual inflation adjustment in ILS (can be negative)
   real_adjustment: number;
   real_adjustment_reason: string;
   discount_percentage: number;
@@ -108,6 +109,7 @@ export function FeesPage() {
     previous_year_amount_with_vat_before_discount: 0,
     base_amount: 0,
     inflation_rate: 3.0,
+    index_manual_adjustment: 0,
     real_adjustment: 0,
     real_adjustment_reason: '',
     discount_percentage: 0,
@@ -123,6 +125,8 @@ export function FeesPage() {
   });
   const [calculationResults, setCalculationResults] = useState<{
     inflation_adjustment: number;
+    inflation_adjustment_auto: number;
+    index_manual_adjustment: number;
     real_adjustment: number;
     discount_amount: number;
     final_amount: number;
@@ -560,8 +564,14 @@ export function FeesPage() {
     const realAdjustment = formData.real_adjustment || 0;
     const discountPercentage = formData.discount_percentage || 0;
 
-    // Step 1: Apply inflation adjustment (only if checkbox is checked)
-    const inflationAdjustment = formData.base_amount * (inflationRate / 100);
+    // Step 1a: Apply automatic inflation adjustment (only if checkbox is checked)
+    const inflationAdjustmentAuto = formData.base_amount * (inflationRate / 100);
+
+    // Step 1b: Add manual index adjustment (only if inflation is enabled)
+    const indexManualAdjustment = formData.apply_inflation_index ? (formData.index_manual_adjustment || 0) : 0;
+
+    // Step 1c: Total inflation adjustment (auto + manual)
+    const inflationAdjustment = inflationAdjustmentAuto + indexManualAdjustment;
 
     // Step 2: Add real adjustment
     const adjustedAmount = formData.base_amount + inflationAdjustment + realAdjustment;
@@ -608,6 +618,8 @@ export function FeesPage() {
 
     return {
       inflation_adjustment: inflationAdjustment,
+      inflation_adjustment_auto: inflationAdjustmentAuto,
+      index_manual_adjustment: indexManualAdjustment,
       real_adjustment: realAdjustment,
       discount_amount: discountAmount,
       final_amount: finalAmount,
@@ -1324,6 +1336,43 @@ export function FeesPage() {
                     </p>
                   </div>
 
+                  {/* NEW FIELD: Manual Index Adjustment */}
+                  <div>
+                    <Label htmlFor="index_manual_adjustment">התאמת מדד</Label>
+                    <Input
+                      id="index_manual_adjustment"
+                      type="text"
+                      value={formData.index_manual_adjustment === 0 ? '' : formData.index_manual_adjustment.toString()}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+
+                        // Allow empty, minus sign, or valid numbers
+                        if (inputValue === '' || inputValue === '-') {
+                          setFormData({
+                            ...formData,
+                            index_manual_adjustment: 0
+                          });
+                          return;
+                        }
+
+                        // Validate numeric input (positive or negative)
+                        const numericValue = parseFloat(inputValue);
+                        if (!isNaN(numericValue)) {
+                          setFormData({
+                            ...formData,
+                            index_manual_adjustment: numericValue
+                          });
+                        }
+                      }}
+                      placeholder="0"
+                      disabled={!formData.apply_inflation_index}
+                      className={!formData.apply_inflation_index ? 'opacity-50' : ''}
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      סכום בשקלים להתאמה (יכול להיות שלילי)
+                    </p>
+                  </div>
+
                 </div>
 
                 <div className="space-y-4">
@@ -1532,6 +1581,28 @@ export function FeesPage() {
                   </CardContent>
                 </Card>
 
+                {/* NEW CARD: Manual Index Adjustment - only shown if value is not 0 */}
+                {formData.apply_inflation_index && formData.index_manual_adjustment !== 0 && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-500">התאמת מדד ידנית</p>
+                          <p className={`text-lg font-semibold ${
+                            formData.index_manual_adjustment >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {formData.index_manual_adjustment >= 0 ? '+' : ''}
+                            {formatILS(formData.index_manual_adjustment)}
+                          </p>
+                        </div>
+                        <TrendingUp className={`h-8 w-8 ${
+                          formData.index_manual_adjustment >= 0 ? 'text-green-500' : 'text-red-500'
+                        }`} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -1582,8 +1653,15 @@ export function FeesPage() {
                   </div>
                   <div className="flex justify-between text-green-600">
                     <span>+ התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}:</span>
-                    <span>{formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment)}` : '₪0'}</span>
+                    <span>{formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment_auto)}` : '₪0'}</span>
                   </div>
+                  {/* NEW LINE: Manual Index Adjustment - only if not zero */}
+                  {formData.apply_inflation_index && formData.index_manual_adjustment !== 0 && (
+                    <div className={`flex justify-between ${formData.index_manual_adjustment >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>+ התאמת מדד ידנית:</span>
+                      <span>{formData.index_manual_adjustment >= 0 ? '+' : ''}{formatILS(formData.index_manual_adjustment)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-green-600">
                     <span>+ תוספת ריאלית:</span>
                     <span>+{formatILS(calculationResults.real_adjustment)}</span>

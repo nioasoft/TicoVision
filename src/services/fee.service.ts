@@ -142,6 +142,7 @@ export interface CreateFeeCalculationDto {
   base_amount: number;
   apply_inflation_index?: boolean; // Default true
   inflation_rate?: number; // Default 3.0%
+  index_manual_adjustment?: number; // Default 0 - Manual inflation adjustment in ILS (can be negative)
   real_adjustment?: number; // Default 0
   real_adjustment_reason?: string;
   discount_percentage?: number; // Default 0 - DEPRECATED: Kept for backwards compatibility
@@ -207,13 +208,20 @@ class FeeService extends BaseService {
     const inflationRate = data.inflation_rate || 3.0; // Default 3%
     const applyInflation = data.apply_inflation_index !== false; // Default true
     const realAdjustment = data.real_adjustment || 0;
+    const indexManualAdjustment = data.index_manual_adjustment || 0;
     // Discounts are no longer applied - always 0
     const discountPercentage = 0;
 
-    // Step 1: Apply inflation adjustment (only if enabled) - ROUND UP
-    const inflationAdjustment = applyInflation
+    // Step 1a: Apply automatic inflation adjustment (only if enabled) - ROUND UP
+    const inflationAdjustmentAuto = applyInflation
       ? Math.ceil(data.base_amount * (inflationRate / 100))
       : 0;
+
+    // Step 1b: Add manual index adjustment (only if inflation is enabled)
+    const indexManualAdj = applyInflation ? indexManualAdjustment : 0;
+
+    // Step 1c: Total inflation adjustment (auto + manual)
+    const inflationAdjustment = inflationAdjustmentAuto + indexManualAdj;
 
     // Step 2: Add real adjustment - ROUND UP
     const adjustedAmount = Math.ceil(data.base_amount + inflationAdjustment + realAdjustment);
@@ -310,6 +318,7 @@ class FeeService extends BaseService {
         apply_inflation_index: data.apply_inflation_index !== false, // Default true
         inflation_adjustment: calculations.inflation_adjustment,
         inflation_rate: data.inflation_rate || 3.0,
+        index_manual_adjustment: data.index_manual_adjustment || 0,
         calculated_inflation_amount: calculations.inflation_adjustment,
         // Store real adjustments as JSONB
         real_adjustments: {
@@ -395,7 +404,8 @@ class FeeService extends BaseService {
       // Type: Partial includes all calculation fields that might be added during recalculation
       let updateData: Partial<FeeCalculation> = cleanData;
       if (data.base_amount !== undefined || data.inflation_rate !== undefined ||
-          data.real_adjustment !== undefined || data.apply_inflation_index !== undefined) {
+          data.index_manual_adjustment !== undefined || data.real_adjustment !== undefined ||
+          data.apply_inflation_index !== undefined) {
         const { data: existing } = await this.getById(id);
         if (existing) {
           // Recalculate all amounts
@@ -404,6 +414,7 @@ class FeeService extends BaseService {
             year: existing.year,
             base_amount: data.base_amount ?? existing.base_amount,
             inflation_rate: data.inflation_rate ?? existing.inflation_rate,
+            index_manual_adjustment: data.index_manual_adjustment ?? (existing as any).index_manual_adjustment ?? 0,
             real_adjustment: data.real_adjustment ?? existing.real_adjustment,
             apply_inflation_index: data.apply_inflation_index ?? existing.apply_inflation_index
           };
