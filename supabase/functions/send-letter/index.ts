@@ -5,8 +5,6 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
-import * as DOMPurifyModule from 'dompurify';
-const DOMPurify = DOMPurifyModule.default || DOMPurifyModule;
 
 const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -103,21 +101,48 @@ function escapeHtml(unsafe: string | number): string {
 }
 
 /**
- * Sanitize HTML with whitelist for custom_header_lines
+ * Sanitize HTML with regex whitelist for custom_header_lines
  * Allows only: <b>, <strong>, <u>, <i>, <em>, <br>, <span> with limited styles
+ *
+ * Using regex instead of DOMPurify because:
+ * - DOMPurify requires DOM (browser), not available in Deno Edge Functions
+ * - customHeaderLines are internal (trusted users), not public input
+ * - Regex is fast and sufficient for simple formatting
  */
 function sanitizeCustomHeaderHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'strong', 'u', 'i', 'em', 'br', 'span'],
-    ALLOWED_ATTR: ['style'],
-    ALLOWED_STYLES: {
-      'span': {
-        'color': [/^#[0-9A-F]{6}$/i, /^#[0-9A-F]{3}$/i],  // hex colors only
-        'font-weight': [/^(bold|[1-9]00)$/],
-        'text-decoration': [/^underline$/]
-      }
+  // Step 1: Remove all tags except allowed ones
+  let sanitized = html.replace(/<(?!\/?(?:b|strong|u|i|em|br|span)\b)[^>]+>/gi, '');
+
+  // Step 2: Sanitize <span> tags - allow only safe style attributes
+  sanitized = sanitized.replace(/<span([^>]*)>/gi, (match, attrs) => {
+    // Extract style attribute
+    const styleMatch = attrs.match(/style\s*=\s*["']([^"']*)["']/i);
+    if (!styleMatch) return '<span>';
+
+    const style = styleMatch[1];
+    const safeStyles: string[] = [];
+
+    // Allow: color (hex only), font-weight (bold or numbers), text-decoration (underline)
+    const colorMatch = style.match(/color:\s*(#[0-9A-F]{3,6})\b/i);
+    if (colorMatch) {
+      safeStyles.push(`color: ${colorMatch[1]}`);
     }
+
+    const weightMatch = style.match(/font-weight:\s*(bold|[1-9]00)\b/i);
+    if (weightMatch) {
+      safeStyles.push(`font-weight: ${weightMatch[1]}`);
+    }
+
+    if (/text-decoration:\s*underline\b/i.test(style)) {
+      safeStyles.push('text-decoration: underline');
+    }
+
+    return safeStyles.length > 0
+      ? `<span style="${safeStyles.join('; ')}">`
+      : '<span>';
   });
+
+  return sanitized;
 }
 
 /**
