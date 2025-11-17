@@ -38,6 +38,8 @@ import { useToast } from '@/hooks/use-toast';
 import { clientService, type ClientGroup, type Client } from '@/services';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AddClientsToGroupDialog } from '@/components/groups/AddClientsToGroupDialog';
+import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
+import { useClients } from '@/hooks/useClients';
 
 export default function ClientGroupsPage() {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
@@ -50,6 +52,8 @@ export default function ClientGroupsPage() {
   const [isAddClientsDialogOpen, setIsAddClientsDialogOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
   const [selectedGroupForAdding, setSelectedGroupForAdding] = useState<ClientGroup | null>(null);
+  const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
+  const [selectedClientForEdit, setSelectedClientForEdit] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
     group_name_hebrew: '',
     primary_owner: '',
@@ -61,6 +65,16 @@ export default function ClientGroupsPage() {
     notes: '',
   });
   const { toast } = useToast();
+
+  // Use clients hook for contact management in edit dialog
+  const {
+    clientContacts,
+    loadClientContacts,
+    addContact,
+    updateContact,
+    deleteContact,
+    setPrimaryContact,
+  } = useClients();
 
   useEffect(() => {
     loadGroups();
@@ -235,6 +249,11 @@ export default function ClientGroupsPage() {
       loadGroupClients(selectedGroupForAdding.id);
     }
     setSelectedGroupForAdding(null);
+  };
+
+  const handleEditClient = (client: Client) => {
+    setSelectedClientForEdit(client);
+    setIsEditClientDialogOpen(true);
   };
 
   return (
@@ -415,7 +434,11 @@ export default function ClientGroupsPage() {
                             </TableHeader>
                             <TableBody>
                               {clients.map((client) => (
-                                <TableRow key={client.id}>
+                                <TableRow
+                                  key={client.id}
+                                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                                  onClick={() => handleEditClient(client)}
+                                >
                                   <TableCell>
                                     <div className="flex items-center gap-2">
                                       <Building2 className="h-4 w-4" />
@@ -727,6 +750,49 @@ export default function ClientGroupsPage() {
             setSelectedGroupForAdding(null);
           }}
           onSuccess={handleAddClientsSuccess}
+        />
+      )}
+
+      {/* Edit Client Dialog */}
+      {selectedClientForEdit && (
+        <ClientFormDialog
+          open={isEditClientDialogOpen}
+          mode="edit"
+          client={selectedClientForEdit}
+          contacts={clientContacts}
+          phones={[]}
+          onClose={() => {
+            setIsEditClientDialogOpen(false);
+            setSelectedClientForEdit(null);
+          }}
+          onSubmit={async (data) => {
+            const response = await clientService.updateClient(
+              selectedClientForEdit.id,
+              data
+            );
+            if (response.error) {
+              toast({
+                title: 'שגיאה',
+                description: response.error.message,
+                variant: 'destructive',
+              });
+              return false;
+            }
+            toast({
+              title: 'לקוח עודכן בהצלחה',
+              description: `${data.company_name} עודכן`,
+            });
+            // Refresh all expanded groups to show updated data
+            expandedGroups.forEach((groupId) => {
+              loadGroupClients(groupId);
+            });
+            return true;
+          }}
+          onLoadContacts={loadClientContacts}
+          onAddContact={addContact}
+          onUpdateContact={updateContact}
+          onDeleteContact={deleteContact}
+          onSetPrimaryContact={setPrimaryContact}
         />
       )}
     </div>
