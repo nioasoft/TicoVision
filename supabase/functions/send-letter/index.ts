@@ -330,6 +330,8 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
  * Converts CustomHeaderLine[] to HTML to be inserted after company name in header table
  */
 function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
+  console.log('🔍 [Edge Function] Building custom header lines HTML:', lines);
+
   if (!lines || lines.length === 0) {
     return '';
   }
@@ -360,7 +362,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
       };
 
       const styles: string[] = [
-        'font-family: "David Libre", "Heebo", "Assistant", sans-serif',
+        "font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif",
         'font-size: 21px',
         'text-align: right',
         'direction: rtl',
@@ -388,6 +390,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
     }
   }).join('');
 
+  console.log('🔍 [Edge Function] Generated HTML content:', html);
   return html;
 }
 
@@ -470,6 +473,7 @@ async function buildCustomLetterHtml(
 
   // Generate custom header lines HTML if provided
   const customHeaderLinesHtml = customHeaderLines ? generateCustomHeaderLinesHtml(customHeaderLines) : '';
+  console.log('🔍 [Edge Function] Custom header lines HTML generated:', customHeaderLinesHtml ? `${customHeaderLinesHtml.length} chars` : 'empty');
 
   // Replace {{custom_header_lines}} placeholder in header
   header = header.replace('{{custom_header_lines}}', customHeaderLinesHtml);
@@ -725,6 +729,9 @@ serve(async (req) => {
       feeCalculationId,
       letterId // Existing letter ID (if provided, skip INSERT)
     } = requestData;
+
+    // Log custom header lines for debugging
+    console.log('🔍 [Edge Function] Received customHeaderLines:', customHeaderLines);
 
     // Validate - must have either templateType OR customText
     if (!recipientEmails || !Array.isArray(recipientEmails) || recipientEmails.length === 0) {
