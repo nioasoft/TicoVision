@@ -1941,9 +1941,9 @@ export function FeesPage() {
           setLetterPreviewOpen(open);
           if (!open) {
             // Dialog closed (with or without sending)
-            // Draft remains in DB, but clear form for clean state
+            // Keep client and calculation data, show results tab
             setCurrentDraftId(null);
-            resetForm();
+            setActiveTab('results');
             loadInitialData();
           }
         }}
