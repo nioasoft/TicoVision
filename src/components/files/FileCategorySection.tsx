@@ -74,12 +74,7 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
     const file = selectedFiles[0];
     if (!file) return;
 
-    // Validate description
-    if (!uploadDescription.trim()) {
-      toast.error('יש להזין תיאור לקובץ');
-      return;
-    }
-
+    // Validate description length (description is optional)
     if (uploadDescription.length > 50) {
       toast.error('התיאור חייב להיות עד 50 תווים');
       return;
@@ -200,7 +195,7 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
       <div className="space-y-3">
         <Label className="rtl:text-right block">העלאת קובץ חדש</Label>
         <Input
-          placeholder="תיאור הקובץ (עד 50 תווים)"
+          placeholder="תיאור הקובץ (אופציונלי, עד 50 תווים)"
           value={uploadDescription}
           onChange={(e) => setUploadDescription(e.target.value)}
           maxLength={50}
@@ -212,7 +207,7 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
         <FileUploadZone
           onFileSelect={handleFileSelect}
           progress={uploadProgress}
-          disabled={!uploadDescription.trim()}
+          disabled={false}
           multiple={false}
           compact
         />
