@@ -58,3 +58,36 @@ export const formatIsraeliPhone = (value: string): string => {
 
   return `${prefix}-${rest}`;
 };
+
+/**
+ * Formats Israeli Tax ID to XX-XXXXXX-X format
+ * @param taxId - Tax ID string (9 digits)
+ * @returns Formatted tax ID with dashes
+ * @example formatIsraeliTaxId("512345679") returns "51-2345678-9"
+ */
+export const formatIsraeliTaxId = (taxId: string): string => {
+  // Remove all non-digit characters
+  const numbers = taxId.replace(/\D/g, '');
+
+  // Don't format if too short
+  if (numbers.length <= 2) return numbers;
+
+  // Format based on length
+  if (numbers.length <= 8) {
+    // XX-XXXXXX format (partial)
+    return `${numbers.slice(0, 2)}-${numbers.slice(2, 8)}`;
+  }
+
+  // XX-XXXXXX-X format (complete)
+  return `${numbers.slice(0, 2)}-${numbers.slice(2, 8)}-${numbers.slice(8, 9)}`;
+};
+
+/**
+ * Strips formatting from Tax ID to get 9 digits only
+ * @param formattedTaxId - Tax ID with dashes (XX-XXXXXX-X)
+ * @returns Plain 9-digit string
+ * @example stripTaxIdFormatting("51-2345678-9") returns "512345679"
+ */
+export const stripTaxIdFormatting = (formattedTaxId: string): string => {
+  return formattedTaxId.replace(/\D/g, '');
+};

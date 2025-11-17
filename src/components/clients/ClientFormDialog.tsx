@@ -52,6 +52,8 @@ import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 import {
   validateIsraeliPostalCode,
   formatIsraeliPhone,
+  formatIsraeliTaxId,
+  stripTaxIdFormatting,
 } from '@/lib/validators';
 
 interface ClientFormDialogProps {
@@ -135,7 +137,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         setFormData({
           company_name: client.company_name,
           commercial_name: client.commercial_name || '', // NEW
-          tax_id: client.tax_id,
+          tax_id: formatIsraeliTaxId(client.tax_id), // Format for display
           contact_name: client.contact_name,
           contact_email: client.contact_email || '',
           contact_phone: client.contact_phone || '',
@@ -213,9 +215,12 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
       if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
 
-      // Format validation
-      if (formData.tax_id && !/^\d{9}$/.test(formData.tax_id)) {
-        errors.push('מספר מזהה חייב להכיל 9 ספרות בדיוק');
+      // Format validation - strip formatting before checking
+      if (formData.tax_id) {
+        const plainTaxId = stripTaxIdFormatting(formData.tax_id);
+        if (!/^\d{9}$/.test(plainTaxId)) {
+          errors.push('מספר מזהה חייב להכיל 9 ספרות בדיוק');
+        }
       }
 
       if (formData.address?.postal_code && !validateIsraeliPostalCode(formData.address.postal_code)) {
@@ -245,8 +250,14 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
       setIsSubmitting(true);
       try {
+        // Strip tax_id formatting before submitting
+        const submissionData = {
+          ...formData,
+          tax_id: stripTaxIdFormatting(formData.tax_id),
+        };
+
         // Submit the client data (contact fields will be auto-saved by client.service)
-        const success = await onSubmit(formData);
+        const success = await onSubmit(submissionData);
 
         if (success) {
           setFormData(INITIAL_FORM_DATA);
@@ -319,15 +330,18 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Row 1: Tax ID, Company Name, Commercial Name (3 cols) */}
               <div>
                 <Label htmlFor="tax_id" className="text-right block mb-2">
-                  מספר מזהה (9 ספרות) *
+                  מספר מזהה (XX-XXXXXX-X) *
                 </Label>
                 <Input
                   id="tax_id"
                   value={formData.tax_id}
-                  onChange={(e) => handleFormChange('tax_id', e.target.value)}
+                  onChange={(e) => {
+                    const formatted = formatIsraeliTaxId(e.target.value);
+                    handleFormChange('tax_id', formatted);
+                  }}
                   onKeyDown={handleKeyDown}
-                  maxLength={9}
-                  pattern="\d{9}"
+                  maxLength={11}
+                  placeholder="51-2345678-9"
                   required
                   dir="ltr"
                 />
