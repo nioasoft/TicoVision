@@ -101,51 +101,6 @@ function escapeHtml(unsafe: string | number): string {
 }
 
 /**
- * Sanitize HTML with regex whitelist for custom_header_lines
- * Allows only: <b>, <strong>, <u>, <i>, <em>, <br>, <span> with limited styles
- *
- * Using regex instead of DOMPurify because:
- * - DOMPurify requires DOM (browser), not available in Deno Edge Functions
- * - customHeaderLines are internal (trusted users), not public input
- * - Regex is fast and sufficient for simple formatting
- */
-function sanitizeCustomHeaderHtml(html: string): string {
-  // Step 1: Remove all tags except allowed ones
-  let sanitized = html.replace(/<(?!\/?(?:b|strong|u|i|em|br|span)\b)[^>]+>/gi, '');
-
-  // Step 2: Sanitize <span> tags - allow only safe style attributes
-  sanitized = sanitized.replace(/<span([^>]*)>/gi, (match, attrs) => {
-    // Extract style attribute
-    const styleMatch = attrs.match(/style\s*=\s*["']([^"']*)["']/i);
-    if (!styleMatch) return '<span>';
-
-    const style = styleMatch[1];
-    const safeStyles: string[] = [];
-
-    // Allow: color (hex only), font-weight (bold or numbers), text-decoration (underline)
-    const colorMatch = style.match(/color:\s*(#[0-9A-F]{3,6})\b/i);
-    if (colorMatch) {
-      safeStyles.push(`color: ${colorMatch[1]}`);
-    }
-
-    const weightMatch = style.match(/font-weight:\s*(bold|[1-9]00)\b/i);
-    if (weightMatch) {
-      safeStyles.push(`font-weight: ${weightMatch[1]}`);
-    }
-
-    if (/text-decoration:\s*underline\b/i.test(style)) {
-      safeStyles.push('text-decoration: underline');
-    }
-
-    return safeStyles.length > 0
-      ? `<span style="${safeStyles.join('; ')}">`
-      : '<span>';
-  });
-
-  return sanitized;
-}
-
-/**
  * Replace variables in HTML with HTML escaping to prevent XSS
  */
 function replaceVariables(html: string, variables: Record<string, any>): string {
@@ -421,13 +376,13 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
         styles.push('text-decoration: underline');
       }
 
-      // Sanitize content with HTML whitelist (allows bold, underline, colors)
-      const sanitizedContent = sanitizeCustomHeaderHtml(line.content || '');
+      // Use content as-is (plain text from user input)
+      const content = line.content || '';
 
       return `
 <tr>
     <td style="padding: 2px 0; text-align: right;">
-        <div style="${styles.join('; ')};">${sanitizedContent}</div>
+        <div style="${styles.join('; ')};">${content}</div>
     </td>
 </tr>`;
     }
