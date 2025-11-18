@@ -65,9 +65,9 @@ async function createCardcomPaymentPage(
 
     const productName = `שכר טרחה רואה חשבון #${feeId.substring(0, 8)}`;
 
-    // Use custom design uploaded to Cardcom instead of UIDefinition
-    // Design file: CARDCOM-CUSTOM-DESIGN.html (uploaded to terminal 172012)
-    // Terminal settings control: installments (1-10), logo, colors
+    // Always send UIDefinition to control payment installments
+    // - For single payment: MinNumOfPayments=1, MaxNumOfPayments=1
+    // - For installments: MinNumOfPayments=1, MaxNumOfPayments=10
     const body = {
       TerminalNumber: CARDCOM_TERMINAL,
       ApiName: CARDCOM_USERNAME,
@@ -79,7 +79,10 @@ async function createCardcomPaymentPage(
       SuccessRedirectUrl: `${APP_URL}/payment/success?fee_id=${feeId}`,
       FailedRedirectUrl: `${APP_URL}/payment/error?fee_id=${feeId}`,
       WebHookUrl: `${SUPABASE_URL}/functions/v1/cardcom-webhook`,
-      // NO UIDefinition - uses custom design from Cardcom console
+      UIDefinition: {
+        MinNumOfPayments: 1,           // Always allow minimum 1 payment
+        MaxNumOfPayments: maxPayments, // 1 for single, 10 for installments
+      },
     };
 
     console.log('📤 [Cardcom] Sending request to:', `${baseUrl}/LowProfile/Create`);
