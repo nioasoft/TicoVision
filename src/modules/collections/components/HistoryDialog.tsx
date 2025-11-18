@@ -18,7 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { CollectionRow } from '@/types/collection.types';
 import { formatIsraeliDate, formatILS } from '@/lib/formatters';
-import { DollarSign, Mail, MessageSquare, History, Loader2 } from 'lucide-react';
+import { Coins, Mail, MessageSquare, History, Loader2 } from 'lucide-react';
 
 interface HistoryDialogProps {
   open: boolean;
@@ -154,7 +154,7 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                 אינטראקציות ({interactionHistory.length})
               </TabsTrigger>
               <TabsTrigger value="payments" className="rtl:flex-row-reverse gap-2">
-                <DollarSign className="h-4 w-4" />
+                <Coins className="h-4 w-4" />
                 תשלומים ({paymentHistory.length})
               </TabsTrigger>
             </TabsList>
@@ -251,7 +251,7 @@ export const HistoryDialog: React.FC<HistoryDialogProps> = ({
                       <div key={payment.id} className="border rounded-lg p-4 rtl:text-right ltr:text-left">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <Coins className="h-4 w-4 text-green-600" />
                             <span className="font-medium text-lg">{formatILS(payment.amount)}</span>
                           </div>
                           <Badge variant={payment.is_partial ? 'secondary' : 'default'}>

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, DollarSign, Users, FileText, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Coins, Users, FileText, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import type { CollectionKPIs } from '@/types/collection.types';
 import { formatILSInteger, formatPercentage, formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -130,7 +130,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         title="סה״כ חיובים"
         value={formatILSInteger(kpis.total_expected)}
         subtitle="ששלחנו"
-        icon={DollarSign}
+        icon={Coins}
         iconColor="text-gray-600"
         borderColor="border-gray-200"
         valueColor="text-gray-900"
@@ -142,7 +142,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
         title="סה״כ הכנסות"
         value={formatILSInteger(kpis.total_received)}
         subtitle={formatPercentage(kpis.collection_rate) + ' מהצפוי'}
-        icon={DollarSign}
+        icon={Coins}
         iconColor="text-green-600"
         borderColor="border-green-200"
         valueColor="text-green-700"

@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   Calculator,
   TrendingUp,
-  DollarSign,
+  Coins,
   FileText,
   Calendar,
   Plus,
@@ -128,6 +128,7 @@ export function FeesPage() {
     inflation_adjustment_auto: number;
     index_manual_adjustment: number;
     real_adjustment: number;
+    adjusted_amount: number;
     discount_amount: number;
     final_amount: number;
     vat_amount: number;
@@ -1051,7 +1052,7 @@ export function FeesPage() {
                             <Label htmlFor="previous_amount" className="text-sm font-medium rtl:text-right ltr:text-left">
                               סכום בסיס (לפני הנחה, לפני מע"מ)
                             </Label>
-                            <DollarSign className="h-6 w-6 text-blue-500" />
+                            <Coins className="h-6 w-6 text-blue-500" />
                           </div>
                           <Input
                             id="previous_amount"
@@ -1522,7 +1523,7 @@ export function FeesPage() {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold mb-4">תוצאות החישוב</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -1530,7 +1531,7 @@ export function FeesPage() {
                         <p className="text-sm text-gray-500">סכום בסיס לפני הנחה ולפני מע״מ</p>
                         <p className="text-lg font-semibold">{formatILS(formData.base_amount)}</p>
                       </div>
-                      <DollarSign className="h-8 w-8 text-blue-500" />
+                      <Coins className="h-8 w-8 text-blue-500" />
                     </div>
                   </CardContent>
                 </Card>
@@ -1599,7 +1600,7 @@ export function FeesPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="md:col-span-2 lg:col-span-1">
+                <Card className="md:col-span-2 lg:col-span-2">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1614,7 +1615,7 @@ export function FeesPage() {
                 </Card>
 
                 {/* NEW CARD: Required Amount Before Discount and VAT */}
-                <Card className="md:col-span-4 bg-green-50 border-2 border-green-300">
+                <Card className="md:col-span-6 bg-green-50 border-2 border-green-300">
                   <CardContent className="p-6">
                     <div className="text-center">
                       <p className="text-lg font-semibold text-green-800 mb-2">
@@ -1683,7 +1684,7 @@ export function FeesPage() {
                             <p className="text-sm text-gray-500">סכום בסיס הנהלת חשבונות</p>
                             <p className="text-lg font-semibold">{formatILS(formData.bookkeeping_base_amount)}</p>
                           </div>
-                          <DollarSign className="h-8 w-8 text-blue-500" />
+                          <Coins className="h-8 w-8 text-blue-500" />
                         </div>
                       </CardContent>
                     </Card>

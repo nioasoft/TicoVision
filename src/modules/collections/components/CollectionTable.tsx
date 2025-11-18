@@ -27,7 +27,7 @@ import {
   ArrowUpDown,
   MoreHorizontal,
   CheckCircle,
-  DollarSign,
+  Coins,
   Mail,
   MessageSquare,
   History,
@@ -214,7 +214,7 @@ const CollectionTableRow: React.FC<{
               <span className="rtl:text-right ltr:text-left">סימון כשולם</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onMarkPartialPayment(row)} className="rtl:flex-row-reverse gap-2">
-              <DollarSign className="h-4 w-4" />
+              <Coins className="h-4 w-4" />
               <span className="rtl:text-right ltr:text-left">רישום תשלום חלקי</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onSendReminder(row)} className="rtl:flex-row-reverse gap-2">

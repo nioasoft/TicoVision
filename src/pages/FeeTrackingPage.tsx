@@ -41,7 +41,7 @@ import {
   XCircle,
   AlertTriangle,
   Clock,
-  DollarSign,
+  Coins,
   FileText,
   Users,
   TrendingUp,
