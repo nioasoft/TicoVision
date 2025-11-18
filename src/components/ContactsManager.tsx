@@ -155,6 +155,12 @@ export function ContactsManager({
   };
 
   const handleAdd = async () => {
+    // Validation: Both email and phone are required
+    if (!formData.email || !formData.phone) {
+      alert('חובה למלא גם אימייל וגם טלפון');
+      return;
+    }
+
     await onAdd(formData);
     setIsAddDialogOpen(false);
     resetForm();
@@ -162,6 +168,13 @@ export function ContactsManager({
 
   const handleEdit = async () => {
     if (!selectedContact) return;
+
+    // Validation: Both email and phone are required
+    if (!formData.email || !formData.phone) {
+      alert('חובה למלא גם אימייל וגם טלפון');
+      return;
+    }
+
     await onUpdate(selectedContact.id, formData);
     setIsEditDialogOpen(false);
     setSelectedContact(null);
@@ -400,7 +413,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="add_email" className="text-right block mb-2">
-                  אימייל
+                  אימייל *
                 </Label>
                 <Input
                   id="add_email"
@@ -409,12 +422,13 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  required
                   dir="ltr"
                 />
               </div>
               <div>
                 <Label htmlFor="add_phone" className="text-right block mb-2">
-                  טלפון
+                  טלפון *
                 </Label>
                 <Input
                   id="add_phone"
@@ -423,6 +437,7 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
+                  required
                   dir="ltr"
                 />
               </div>
@@ -555,7 +570,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="edit_email" className="text-right block mb-2">
-                  אימייל
+                  אימייל *
                 </Label>
                 <Input
                   id="edit_email"
@@ -564,12 +579,13 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  required
                   dir="ltr"
                 />
               </div>
               <div>
                 <Label htmlFor="edit_phone" className="text-right block mb-2">
-                  טלפון
+                  טלפון *
                 </Label>
                 <Input
                   id="edit_phone"
@@ -578,6 +594,7 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
+                  required
                   dir="ltr"
                 />
               </div>
