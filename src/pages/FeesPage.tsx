@@ -621,6 +621,7 @@ export function FeesPage() {
       inflation_adjustment_auto: inflationAdjustmentAuto,
       index_manual_adjustment: indexManualAdjustment,
       real_adjustment: realAdjustment,
+      adjusted_amount: adjustedAmount,
       discount_amount: discountAmount,
       final_amount: finalAmount,
       vat_amount: vatAmount,
@@ -1520,47 +1521,8 @@ export function FeesPage() {
           {activeTab === 'results' && calculationResults && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold mb-4">תוצאות החישוב</h3>
-              
-              {/* Previous Year Comparison */}
-              {formData.previous_year_amount_with_vat > 0 && (
-                <Card className="mb-6 bg-blue-50 border-blue-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Info className="h-5 w-5 text-blue-600" />
-                      השוואה לשנה קודמת
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-600">שנה קודמת (כולל מע"מ)</p>
-                        <p className="text-xl font-bold">{formatILS(formData.previous_year_amount_with_vat)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">שנה נוכחית (כולל מע"מ)</p>
-                        <p className="text-xl font-bold text-primary">{formatILS(calculationResults.total_with_vat)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">שינוי</p>
-                        <div className="flex items-center gap-2">
-                          {calculationResults.year_over_year_change >= 0 ? (
-                            <ArrowUp className="h-5 w-5 text-green-600" />
-                          ) : (
-                            <ArrowDown className="h-5 w-5 text-red-600" />
-                          )}
-                          <p className={`text-xl font-bold ${
-                            calculationResults.year_over_year_change >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {Math.abs(calculationResults.year_over_year_change).toFixed(1)}%
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -1589,8 +1551,8 @@ export function FeesPage() {
                   </CardContent>
                 </Card>
 
-                {/* NEW CARD: Manual Index Adjustment - only shown if value is not 0 */}
-                {formData.apply_inflation_index && formData.index_manual_adjustment !== 0 && (
+                {/* NEW CARD: Manual Index Adjustment - shown when inflation is applied */}
+                {formData.apply_inflation_index && (
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -1647,6 +1609,20 @@ export function FeesPage() {
                         </p>
                       </div>
                       <Calculator className="h-8 w-8 text-primary" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* NEW CARD: Required Amount Before Discount and VAT */}
+                <Card className="md:col-span-4 bg-green-50 border-2 border-green-300">
+                  <CardContent className="p-6">
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-green-800 mb-2">
+                        הסכום הנדרש לפני הנחה ולפני מע"מ לשנת המס {formData.year} הוא:
+                      </p>
+                      <p className="text-3xl font-bold text-green-700">
+                        {formatILS(calculationResults.adjusted_amount)}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
