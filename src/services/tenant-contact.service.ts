@@ -7,12 +7,16 @@ import { supabase, getCurrentTenantId } from '../lib/supabase';
 import type {
   TenantContact,
   ClientContactAssignment,
+  GroupContactAssignment,
   AssignedContact,
+  AssignedGroupContact,
   ContactSearchResult,
   CreateTenantContactDto,
   UpdateTenantContactDto,
   AssignContactToClientDto,
+  AssignContactToGroupDto,
   UpdateAssignmentDto,
+  UpdateGroupAssignmentDto,
   ContactSearchParams,
 } from '../types/tenant-contact.types';
 
@@ -429,6 +433,143 @@ export class TenantContactService {
       return true;
     } catch (error) {
       console.error('Error setting primary contact:', error);
+      return false;
+    }
+  }
+
+  // ============================================
+  // GROUP CONTACT MANAGEMENT
+  // ============================================
+
+  /**
+   * Get all contacts assigned to a group (with full details)
+   */
+  static async getGroupContacts(groupId: string): Promise<AssignedGroupContact[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_group_contacts_detailed', {
+        p_group_id: groupId,
+      });
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error getting group contacts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Assign contact to group (create assignment)
+   * Checks for existing assignment first to prevent duplicates
+   */
+  static async assignToGroup(
+    assignmentData: AssignContactToGroupDto
+  ): Promise<GroupContactAssignment | null> {
+    try {
+      // Check if this contact is already assigned to this group
+      const { data: existing, error: checkError } = await supabase
+        .from('group_contact_assignments')
+        .select('*')
+        .eq('group_id', assignmentData.group_id)
+        .eq('contact_id', assignmentData.contact_id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing assignment:', checkError);
+        throw checkError;
+      }
+
+      // If already assigned, return existing assignment (skip duplicate)
+      if (existing) {
+        console.warn('⚠️ Contact already assigned to this group. Skipping duplicate assignment.', {
+          group_id: assignmentData.group_id,
+          contact_id: assignmentData.contact_id,
+        });
+        return existing;
+      }
+
+      // Create new assignment
+      const { data, error } = await supabase
+        .from('group_contact_assignments')
+        .insert([
+          {
+            group_id: assignmentData.group_id,
+            contact_id: assignmentData.contact_id,
+            is_primary: assignmentData.is_primary ?? false,
+            notes: assignmentData.notes,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Error assigning contact to group:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update group assignment (e.g., set as primary, change notes)
+   */
+  static async updateGroupAssignment(
+    assignmentId: string,
+    updates: UpdateGroupAssignmentDto
+  ): Promise<GroupContactAssignment | null> {
+    try {
+      const { data, error } = await supabase
+        .from('group_contact_assignments')
+        .update(updates)
+        .eq('id', assignmentId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data;
+    } catch (error) {
+      console.error('Error updating group assignment:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Remove contact from group (delete assignment)
+   */
+  static async unassignFromGroup(assignmentId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('group_contact_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Error unassigning contact from group:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Set contact as primary owner for a group
+   */
+  static async setGroupPrimary(assignmentId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('group_contact_assignments')
+        .update({ is_primary: true })
+        .eq('id', assignmentId);
+
+      if (error) throw error;
+
+      return true;
+    } catch (error) {
+      console.error('Error setting primary group contact:', error);
       return false;
     }
   }

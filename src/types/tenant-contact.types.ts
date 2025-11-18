@@ -36,6 +36,17 @@ export interface ClientContactAssignment {
   created_by: string | null;
 }
 
+export interface GroupContactAssignment {
+  id: string;
+  group_id: string;
+  contact_id: string;
+  is_primary: boolean; // Primary controlling owner
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
 // ============================================
 // JOINED/ENRICHED TYPES
 // ============================================
@@ -47,6 +58,13 @@ export interface AssignedContact extends TenantContact {
   role_at_client: string | null;
   assignment_notes: string | null;
   other_clients_count: number; // How many OTHER clients share this contact
+}
+
+export interface AssignedGroupContact extends TenantContact {
+  assignment_id: string;
+  is_primary: boolean; // Primary controlling owner
+  assignment_notes: string | null;
+  other_groups_count: number; // How many OTHER groups share this contact
 }
 
 export interface ContactSearchResult extends TenantContact {
@@ -101,6 +119,18 @@ export interface UpdateAssignmentDto {
   is_primary?: boolean;
   email_preference?: EmailPreference;
   role_at_client?: string | null;
+  notes?: string | null;
+}
+
+export interface AssignContactToGroupDto {
+  group_id: string;
+  contact_id: string;
+  is_primary?: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateGroupAssignmentDto {
+  is_primary?: boolean;
   notes?: string | null;
 }
 

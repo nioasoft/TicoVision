@@ -31,6 +31,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { ClientContact, ContactType, EmailPreference, CreateClientContactDto } from '@/services/client.service';
 
 interface ContactsManagerProps {
+  resourceType?: 'client' | 'group'; // 'client' = default, 'group' = for groups
   contacts: ClientContact[];
   onAdd: (contact: CreateClientContactDto) => Promise<void>;
   onUpdate: (contactId: string, contact: Partial<CreateClientContactDto>) => Promise<void>;
@@ -55,12 +56,16 @@ const emailPreferenceLabels: Record<EmailPreference, { label: string; icon: type
 };
 
 export function ContactsManager({
+  resourceType = 'client', // Default to 'client' for backward compatibility
   contacts,
   onAdd,
   onUpdate,
   onDelete,
   onSetPrimary,
 }: ContactsManagerProps) {
+  // Dynamic labels based on resource type
+  const primaryContactLabel = resourceType === 'group' ? 'בעל שליטה ראשי' : 'איש קשר ראשי';
+  const setPrimaryLabel = resourceType === 'group' ? 'הגדר כבעל שליטה ראשי' : 'הגדר כאיש קשר ראשי';
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ClientContact | null>(null);
@@ -216,13 +221,13 @@ export function ContactsManager({
                       {contact.is_primary && (
                         <Badge variant="default" className="bg-yellow-500">
                           <Star className="h-3 w-3 ml-1" />
-                          ראשי
+                          {resourceType === 'group' ? 'ראשי' : 'ראשי'}
                         </Badge>
                       )}
                       <Badge variant="outline">
                         {contactTypeLabels[contact.contact_type]}
                       </Badge>
-                      {(() => {
+                      {resourceType === 'client' && (() => {
                         const EmailIcon = emailPreferenceLabels[contact.email_preference].icon;
                         return (
                           <Badge variant="secondary" className={emailPreferenceLabels[contact.email_preference].color}>
@@ -266,7 +271,7 @@ export function ContactsManager({
                         variant="ghost"
                         size="sm"
                         onClick={() => onSetPrimary(contact.id)}
-                        title="הגדר כאיש קשר ראשי"
+                        title={setPrimaryLabel}
                       >
                         <Star className="h-4 w-4" />
                       </Button>
@@ -425,30 +430,32 @@ export function ContactsManager({
 
             {/* Row 2: Email Preferences (span full width), Primary Contact Checkbox */}
             <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-3">
-                <Label className="text-right block mb-3">העדפות מייל</Label>
-                <RadioGroup
-                  value={formData.email_preference}
-                  onValueChange={(value: EmailPreference) =>
-                    setFormData({ ...formData, email_preference: value })
-                  }
-                  className="flex gap-6"
-                >
-                  {Object.entries(emailPreferenceLabels).map(([value, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <div key={value} className="flex items-center gap-2">
-                        <RadioGroupItem value={value} id={`add-email-${value}`} />
-                        <Label htmlFor={`add-email-${value}`} className="cursor-pointer flex items-center gap-2">
-                          <Icon className={`h-4 w-4 ${config.color}`} />
-                          {config.label}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </RadioGroup>
-              </div>
-              <div className="flex items-center gap-2">
+              {resourceType === 'client' && (
+                <div className="col-span-3">
+                  <Label className="text-right block mb-3">העדפות מייל</Label>
+                  <RadioGroup
+                    value={formData.email_preference}
+                    onValueChange={(value: EmailPreference) =>
+                      setFormData({ ...formData, email_preference: value })
+                    }
+                    className="flex gap-6"
+                  >
+                    {Object.entries(emailPreferenceLabels).map(([value, config]) => {
+                      const Icon = config.icon;
+                      return (
+                        <div key={value} className="flex items-center gap-2">
+                          <RadioGroupItem value={value} id={`add-email-${value}`} />
+                          <Label htmlFor={`add-email-${value}`} className="cursor-pointer flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${config.color}`} />
+                            {config.label}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              )}
+              <div className={cn("flex items-center gap-2", resourceType === 'group' && "col-span-4")}>
                 <Checkbox
                   id="add_is_primary"
                   checked={formData.is_primary}
@@ -457,7 +464,7 @@ export function ContactsManager({
                   }
                 />
                 <Label htmlFor="add_is_primary" className="cursor-pointer">
-                  איש קשר ראשי
+                  {primaryContactLabel}
                 </Label>
               </div>
             </div>
@@ -578,30 +585,32 @@ export function ContactsManager({
 
             {/* Row 2: Email Preferences (span full width), Primary Contact Checkbox */}
             <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-3">
-                <Label className="text-right block mb-3">העדפות מייל</Label>
-                <RadioGroup
-                  value={formData.email_preference}
-                  onValueChange={(value: EmailPreference) =>
-                    setFormData({ ...formData, email_preference: value })
-                  }
-                  className="flex gap-6"
-                >
-                  {Object.entries(emailPreferenceLabels).map(([value, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <div key={value} className="flex items-center gap-2">
-                        <RadioGroupItem value={value} id={`edit-email-${value}`} />
-                        <Label htmlFor={`edit-email-${value}`} className="cursor-pointer flex items-center gap-2">
-                          <Icon className={`h-4 w-4 ${config.color}`} />
-                          {config.label}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </RadioGroup>
-              </div>
-              <div className="flex items-center gap-2">
+              {resourceType === 'client' && (
+                <div className="col-span-3">
+                  <Label className="text-right block mb-3">העדפות מייל</Label>
+                  <RadioGroup
+                    value={formData.email_preference}
+                    onValueChange={(value: EmailPreference) =>
+                      setFormData({ ...formData, email_preference: value })
+                    }
+                    className="flex gap-6"
+                  >
+                    {Object.entries(emailPreferenceLabels).map(([value, config]) => {
+                      const Icon = config.icon;
+                      return (
+                        <div key={value} className="flex items-center gap-2">
+                          <RadioGroupItem value={value} id={`edit-email-${value}`} />
+                          <Label htmlFor={`edit-email-${value}`} className="cursor-pointer flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${config.color}`} />
+                            {config.label}
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              )}
+              <div className={cn("flex items-center gap-2", resourceType === 'group' && "col-span-4")}>
                 <Checkbox
                   id="edit_is_primary"
                   checked={formData.is_primary}
@@ -610,7 +619,7 @@ export function ContactsManager({
                   }
                 />
                 <Label htmlFor="edit_is_primary" className="cursor-pointer">
-                  איש קשר ראשי
+                  {primaryContactLabel}
                 </Label>
               </div>
             </div>
