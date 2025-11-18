@@ -40,6 +40,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { AddClientsToGroupDialog } from '@/components/groups/AddClientsToGroupDialog';
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 import { useClients } from '@/hooks/useClients';
+import { ContactsManager } from '@/components/ContactsManager';
+import TenantContactService from '@/services/tenant-contact.service';
+import type { AssignedGroupContact, CreateTenantContactDto } from '@/types/tenant-contact.types';
 
 export default function ClientGroupsPage() {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
@@ -54,10 +57,9 @@ export default function ClientGroupsPage() {
   const [selectedGroupForAdding, setSelectedGroupForAdding] = useState<ClientGroup | null>(null);
   const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
   const [selectedClientForEdit, setSelectedClientForEdit] = useState<Client | null>(null);
+  const [groupContacts, setGroupContacts] = useState<AssignedGroupContact[]>([]);
   const [formData, setFormData] = useState({
     group_name_hebrew: '',
-    primary_owner: '',
-    secondary_owners: [] as string[],
     combined_billing: true,
     combined_letters: true,
     company_structure_link: '',
@@ -202,39 +204,36 @@ export default function ClientGroupsPage() {
   const resetForm = () => {
     setFormData({
       group_name_hebrew: '',
-      primary_owner: '',
-      secondary_owners: [],
       combined_billing: true,
       combined_letters: true,
       company_structure_link: '',
       canva_link: '',
       notes: '',
     });
+    setGroupContacts([]);
   };
 
-  const openEditDialog = (group: ClientGroup) => {
+  const openEditDialog = async (group: ClientGroup) => {
     setSelectedGroup(group);
     setFormData({
       group_name_hebrew: group.group_name_hebrew,
-      primary_owner: group.primary_owner,
-      secondary_owners: group.secondary_owners || [],
       combined_billing: group.combined_billing,
       combined_letters: group.combined_letters,
       company_structure_link: group.company_structure_link || '',
       canva_link: group.canva_link || '',
       notes: group.notes || '',
     });
+
+    // Load group contacts
+    const contacts = await TenantContactService.getGroupContacts(group.id);
+    setGroupContacts(contacts);
+
     setIsEditDialogOpen(true);
   };
 
   const openDeleteDialog = (group: ClientGroup) => {
     setSelectedGroup(group);
     setIsDeleteDialogOpen(true);
-  };
-
-  const handleSecondaryOwnersChange = (value: string) => {
-    const owners = value.split(',').map(o => o.trim()).filter(o => o);
-    setFormData({ ...formData, secondary_owners: owners });
   };
 
   const openAddClientsDialog = (group: ClientGroup) => {
@@ -254,6 +253,123 @@ export default function ClientGroupsPage() {
   const handleEditClient = (client: Client) => {
     setSelectedClientForEdit(client);
     setIsEditClientDialogOpen(true);
+  };
+
+  // Group Contacts Handlers
+  const handleAddGroupContact = async (contactData: CreateTenantContactDto) => {
+    if (!selectedGroup) return;
+
+    try {
+      // Create or get contact
+      const contact = await TenantContactService.createOrGet(contactData);
+      if (!contact) {
+        toast({
+          title: 'שגיאה',
+          description: 'לא ניתן ליצור איש קשר',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Assign to group
+      await TenantContactService.assignToGroup({
+        group_id: selectedGroup.id,
+        contact_id: contact.id,
+        is_primary: contactData.is_primary ?? false,
+        notes: contactData.notes,
+      });
+
+      // Reload contacts
+      const updatedContacts = await TenantContactService.getGroupContacts(selectedGroup.id);
+      setGroupContacts(updatedContacts);
+
+      toast({
+        title: 'הצלחה',
+        description: 'איש קשר נוסף לקבוצה',
+      });
+    } catch (error) {
+      logger.error('Error adding group contact:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן להוסיף איש קשר',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateGroupContact = async (assignmentId: string, updates: Partial<CreateTenantContactDto>) => {
+    try {
+      await TenantContactService.updateGroupAssignment(assignmentId, {
+        is_primary: updates.is_primary,
+        notes: updates.notes,
+      });
+
+      // Reload contacts
+      if (selectedGroup) {
+        const updatedContacts = await TenantContactService.getGroupContacts(selectedGroup.id);
+        setGroupContacts(updatedContacts);
+      }
+
+      toast({
+        title: 'הצלחה',
+        description: 'פרטי איש הקשר עודכנו',
+      });
+    } catch (error) {
+      logger.error('Error updating group contact:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן לעדכן איש קשר',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteGroupContact = async (assignmentId: string) => {
+    try {
+      await TenantContactService.unassignFromGroup(assignmentId);
+
+      // Reload contacts
+      if (selectedGroup) {
+        const updatedContacts = await TenantContactService.getGroupContacts(selectedGroup.id);
+        setGroupContacts(updatedContacts);
+      }
+
+      toast({
+        title: 'הצלחה',
+        description: 'איש קשר הוסר מהקבוצה',
+      });
+    } catch (error) {
+      logger.error('Error deleting group contact:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן להסיר איש קשר',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSetPrimaryGroupContact = async (assignmentId: string) => {
+    try {
+      await TenantContactService.setGroupPrimary(assignmentId);
+
+      // Reload contacts
+      if (selectedGroup) {
+        const updatedContacts = await TenantContactService.getGroupContacts(selectedGroup.id);
+        setGroupContacts(updatedContacts);
+      }
+
+      toast({
+        title: 'הצלחה',
+        description: 'בעל שליטה ראשי עודכן',
+      });
+    } catch (error) {
+      logger.error('Error setting primary group contact:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'לא ניתן להגדיר כבעל שליטה ראשי',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -523,27 +639,7 @@ export default function ClientGroupsPage() {
                 />
               </div>
             </div>
-            
-            <div>
-              <Label htmlFor="primary_owner">בעל שליטה ראשי *</Label>
-              <Input
-                id="primary_owner"
-                value={formData.primary_owner}
-                onChange={(e) => setFormData({ ...formData, primary_owner: e.target.value })}
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="secondary_owners">בעלי מניות נוספים (מופרדים בפסיק)</Label>
-              <Input
-                id="secondary_owners"
-                value={formData.secondary_owners.join(', ')}
-                onChange={(e) => handleSecondaryOwnersChange(e.target.value)}
-                placeholder="יוסי כהן, רונית לוי, דוד ישראלי"
-              />
-            </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -641,27 +737,7 @@ export default function ClientGroupsPage() {
                 />
               </div>
             </div>
-            
-            <div>
-              <Label htmlFor="edit_primary_owner">בעל שליטה ראשי *</Label>
-              <Input
-                id="edit_primary_owner"
-                value={formData.primary_owner}
-                onChange={(e) => setFormData({ ...formData, primary_owner: e.target.value })}
-                required
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="edit_secondary_owners">בעלי מניות נוספים (מופרדים בפסיק)</Label>
-              <Input
-                id="edit_secondary_owners"
-                value={formData.secondary_owners.join(', ')}
-                onChange={(e) => handleSecondaryOwnersChange(e.target.value)}
-                placeholder="יוסי כהן, רונית לוי, דוד ישראלי"
-              />
-            </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -699,6 +775,23 @@ export default function ClientGroupsPage() {
                 rows={3}
               />
             </div>
+
+            {/* Group Contacts Manager */}
+            {selectedGroup && (
+              <div className="mt-6 pt-6 border-t-2">
+                <h3 className="text-lg font-semibold mb-4 rtl:text-right ltr:text-left">
+                  בעלי שליטה ובעלי מניות
+                </h3>
+                <ContactsManager
+                  resourceType="group"
+                  contacts={groupContacts}
+                  onAdd={handleAddGroupContact}
+                  onUpdate={handleUpdateGroupContact}
+                  onDelete={handleDeleteGroupContact}
+                  onSetPrimary={handleSetPrimaryGroupContact}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
