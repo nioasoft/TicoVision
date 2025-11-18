@@ -83,6 +83,7 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   contact_name: '',
   contact_email: '',
   contact_phone: '',
+  contact_phone_secondary: '',
   // Accountant fields (required)
   accountant_name: '',
   accountant_email: '',
@@ -141,6 +142,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           contact_name: client.contact_name,
           contact_email: client.contact_email || '',
           contact_phone: client.contact_phone || '',
+          contact_phone_secondary: client.contact_phone_secondary || '',
           // Accountant fields - will be populated from contacts if available
           accountant_name: '',
           accountant_email: '',
@@ -399,17 +401,23 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   nameValue={formData.contact_name}
                   emailValue={formData.contact_email}
                   phoneValue={formData.contact_phone}
+                  phoneSecondaryValue={formData.contact_phone_secondary}
                   onNameChange={(value) => handleFormChange('contact_name', value)}
                   onEmailChange={(value) => handleFormChange('contact_email', value)}
                   onPhoneChange={(value) => {
                     const formatted = formatIsraeliPhone(value);
                     handleFormChange('contact_phone', formatted);
                   }}
+                  onPhoneSecondaryChange={(value) => {
+                    const formatted = formatIsraeliPhone(value);
+                    handleFormChange('contact_phone_secondary', formatted);
+                  }}
                   contactType="owner"
                   required={true}
                   namePlaceholder="שם מלא"
                   emailPlaceholder="דוא״ל"
                   phonePlaceholder="050-1234567"
+                  phoneSecondaryPlaceholder="050-7654321"
                 />
               </div>
 

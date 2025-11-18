@@ -149,6 +149,7 @@ export interface CreateClientDto {
   contact_name: string;
   contact_email: string;
   contact_phone?: string;
+  contact_phone_secondary?: string;
   // Accountant fields (required from client creation)
   accountant_name: string;
   accountant_email: string;

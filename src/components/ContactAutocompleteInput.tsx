@@ -13,15 +13,18 @@ interface ContactAutocompleteInputProps {
   nameValue: string;
   emailValue: string;
   phoneValue: string;
+  phoneSecondaryValue?: string;
   onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
+  onPhoneSecondaryChange?: (value: string) => void;
   contactType: ContactType;
   required?: boolean;
   disabled?: boolean;
   namePlaceholder?: string;
   emailPlaceholder?: string;
   phonePlaceholder?: string;
+  phoneSecondaryPlaceholder?: string;
 }
 
 export function ContactAutocompleteInput({
@@ -29,15 +32,18 @@ export function ContactAutocompleteInput({
   nameValue,
   emailValue,
   phoneValue,
+  phoneSecondaryValue = '',
   onNameChange,
   onEmailChange,
   onPhoneChange,
+  onPhoneSecondaryChange,
   contactType,
   required = false,
   disabled = false,
   namePlaceholder = 'שם מלא',
   emailPlaceholder = 'דוא"ל',
   phonePlaceholder = '050-1234567',
+  phoneSecondaryPlaceholder = '050-7654321',
 }: ContactAutocompleteInputProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,6 +122,16 @@ export function ContactAutocompleteInput({
     [onPhoneChange]
   );
 
+  const handlePhoneSecondaryChange = useCallback(
+    (value: string) => {
+      if (onPhoneSecondaryChange) {
+        onPhoneSecondaryChange(value);
+        setSelectedFromList(false);
+      }
+    },
+    [onPhoneSecondaryChange]
+  );
+
   return (
     <div className="space-y-4">
       {label && (
@@ -130,7 +146,7 @@ export function ContactAutocompleteInput({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {/* Name field with autocomplete */}
         <div className="relative">
           <Label htmlFor={`${label}-name`} className="text-right block mb-2 rtl:text-right">
@@ -221,6 +237,23 @@ export function ContactAutocompleteInput({
             value={phoneValue}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder={phonePlaceholder}
+            disabled={disabled}
+            className="rtl:text-right"
+            dir="rtl"
+          />
+        </div>
+
+        {/* Phone Secondary field */}
+        <div>
+          <Label htmlFor={`${label}-phone-secondary`} className="text-right block mb-2 rtl:text-right">
+            טלפון נוסף
+          </Label>
+          <Input
+            id={`${label}-phone-secondary`}
+            type="tel"
+            value={phoneSecondaryValue}
+            onChange={(e) => handlePhoneSecondaryChange(e.target.value)}
+            placeholder={phoneSecondaryPlaceholder}
             disabled={disabled}
             className="rtl:text-right"
             dir="rtl"
