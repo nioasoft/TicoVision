@@ -870,11 +870,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     </h3>
                   </div>
                   <div className="col-span-3">
-                    <FileDisplayWidget
-                    clientId={client.id}
-                    category="company_registry"
-                    variant="compact"
-                  />
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <FileDisplayWidget
+                        clientId={client.id}
+                        category="company_registry"
+                        variant="compact"
+                      />
+                    </div>
                   </div>
                 </>
               )}
