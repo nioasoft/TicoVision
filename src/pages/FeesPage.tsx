@@ -222,6 +222,7 @@ export function FeesPage() {
     formData.real_adjustment,
     formData.discount_percentage,
     formData.apply_inflation_index,
+    formData.index_manual_adjustment,
     formData.previous_year_amount_with_vat,
     // Bookkeeping dependencies for internal clients
     formData.bookkeeping_base_amount,
