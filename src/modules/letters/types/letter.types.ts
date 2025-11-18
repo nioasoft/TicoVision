@@ -62,6 +62,9 @@ export interface LetterVariables {
   group_name?: string;
   contact_name?: string;
 
+  // Service Information
+  service_description?: string; // Description of services provided (e.g., "שירותי ראיית החשבון")
+
   // Date and Time
   date: string; // Current date
   year: number; // Current year (e.g., 2025)

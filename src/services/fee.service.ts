@@ -60,6 +60,21 @@ export interface BookkeepingCalculation {
   [key: string]: unknown;
 }
 
+export interface RetainerCalculation {
+  monthly_amount: number; // Monthly base amount (will be multiplied by 12 for annual)
+  apply_inflation_index: boolean;
+  inflation_rate: number;
+  inflation_adjustment: number;
+  real_adjustment: number;
+  real_adjustment_reason?: string;
+  discount_percentage: number; // Deprecated - always 0
+  discount_amount: number; // Deprecated - always 0
+  final_amount: number; // Annual total before VAT
+  vat_amount: number;
+  total_with_vat: number; // Annual total with VAT
+  [key: string]: unknown;
+}
+
 export interface FeeCalculation {
   id: string;
   tenant_id: string;
@@ -110,6 +125,7 @@ export interface FeeCalculation {
   notes?: string;
   calculation_metadata?: CalculationMetadata; // JSONB field with calculation context
   bookkeeping_calculation?: BookkeepingCalculation; // JSONB field: separate calculation for internal bookkeeping (letter F)
+  retainer_calculation?: RetainerCalculation; // JSONB field: dedicated calculation for retainer clients (letter E)
   created_by?: string;
   updated_by?: string;
   created_at: string;
@@ -155,6 +171,14 @@ export interface CreateFeeCalculationDto {
   bookkeeping_real_adjustment_reason?: string;
   bookkeeping_discount_percentage?: number; // DEPRECATED: Kept for backwards compatibility
   bookkeeping_apply_inflation_index?: boolean;
+  // Retainer calculation (for retainer clients - both internal and external)
+  retainer_monthly_amount?: number;
+  retainer_inflation_rate?: number;
+  retainer_index_manual_adjustment?: number;
+  retainer_index_manual_is_negative?: boolean;
+  retainer_real_adjustment?: number;
+  retainer_real_adjustment_reason?: string;
+  retainer_apply_inflation_index?: boolean;
 }
 
 export interface UpdateFeeCalculationDto extends Partial<CreateFeeCalculationDto> {
@@ -292,6 +316,40 @@ class FeeService extends BaseService {
         };
       }
 
+      // Calculate retainer amounts (for retainer clients - both internal and external)
+      let retainerCalc: RetainerCalculation | null = null;
+      if (data.retainer_monthly_amount && data.retainer_monthly_amount > 0) {
+        // Retainer is entered as MONTHLY amount, multiply by 12 for annual calculation
+        const annualRetainerAmount = data.retainer_monthly_amount * 12;
+
+        // Calculate manual index adjustment (with negative support)
+        const manualAdjustment = data.retainer_index_manual_is_negative
+          ? -(data.retainer_index_manual_adjustment || 0)
+          : (data.retainer_index_manual_adjustment || 0);
+
+        const retainerCalculations = this.calculateFeeAmounts({
+          base_amount: annualRetainerAmount,
+          inflation_rate: data.retainer_inflation_rate || 3.0,
+          index_manual_adjustment: manualAdjustment,
+          real_adjustment: data.retainer_real_adjustment || 0,
+          apply_inflation_index: data.retainer_apply_inflation_index ?? true,
+        });
+
+        retainerCalc = {
+          monthly_amount: data.retainer_monthly_amount, // Store MONTHLY amount (user input)
+          apply_inflation_index: data.retainer_apply_inflation_index ?? true,
+          inflation_rate: data.retainer_inflation_rate || 3.0,
+          inflation_adjustment: retainerCalculations.inflation_adjustment,
+          real_adjustment: data.retainer_real_adjustment || 0,
+          real_adjustment_reason: data.retainer_real_adjustment_reason,
+          discount_percentage: 0, // Discounts no longer applied
+          discount_amount: 0, // Discounts no longer applied
+          final_amount: retainerCalculations.final_amount, // Calculated from annual amount (monthly × 12)
+          vat_amount: retainerCalculations.vat_amount,
+          total_with_vat: retainerCalculations.total_with_vat,
+        };
+      }
+
       const feeData = {
         tenant_id: tenantId,
         client_id: data.client_id,
@@ -347,6 +405,7 @@ class FeeService extends BaseService {
           inflation_applied: data.apply_inflation_index !== false
         },
         bookkeeping_calculation: bookkeepingCalc,
+        retainer_calculation: retainerCalc,
         created_by: currentUserId
       };
 
@@ -389,7 +448,18 @@ class FeeService extends BaseService {
         bookkeeping_apply_inflation_index: data.bookkeeping_apply_inflation_index,
       };
 
-      // Remove bookkeeping_* fields - they don't exist as columns (only in JSONB)
+      // Save retainer fields BEFORE destructuring (we need them later for retainer_calculation)
+      const retainerFields = {
+        retainer_monthly_amount: data.retainer_monthly_amount,
+        retainer_inflation_rate: data.retainer_inflation_rate,
+        retainer_index_manual_adjustment: data.retainer_index_manual_adjustment,
+        retainer_index_manual_is_negative: data.retainer_index_manual_is_negative,
+        retainer_real_adjustment: data.retainer_real_adjustment,
+        retainer_real_adjustment_reason: data.retainer_real_adjustment_reason,
+        retainer_apply_inflation_index: data.retainer_apply_inflation_index,
+      };
+
+      // Remove bookkeeping_* and retainer_* fields - they don't exist as columns (only in JSONB)
       const {
         bookkeeping_base_amount,
         bookkeeping_inflation_rate,
@@ -397,6 +467,13 @@ class FeeService extends BaseService {
         bookkeeping_real_adjustment_reason,
         bookkeeping_discount_percentage,
         bookkeeping_apply_inflation_index,
+        retainer_monthly_amount,
+        retainer_inflation_rate,
+        retainer_index_manual_adjustment,
+        retainer_index_manual_is_negative,
+        retainer_real_adjustment,
+        retainer_real_adjustment_reason,
+        retainer_apply_inflation_index,
         ...cleanData
       } = data;
 
@@ -463,6 +540,49 @@ class FeeService extends BaseService {
             final_amount: bookkeepingCalc.final_amount, // Calculated from annual amount (monthly × 12)
             vat_amount: bookkeepingCalc.vat_amount,
             total_with_vat: bookkeepingCalc.total_with_vat,
+          };
+        }
+      }
+
+      // Calculate retainer if retainer fields changed (for retainer clients)
+      // Use retainerFields (saved before destructuring) instead of data
+      if (retainerFields.retainer_monthly_amount !== undefined ||
+          retainerFields.retainer_inflation_rate !== undefined ||
+          retainerFields.retainer_index_manual_adjustment !== undefined ||
+          retainerFields.retainer_index_manual_is_negative !== undefined ||
+          retainerFields.retainer_real_adjustment !== undefined ||
+          retainerFields.retainer_apply_inflation_index !== undefined) {
+
+        const { data: existing } = await this.getById(id);
+        if (existing && retainerFields.retainer_monthly_amount && retainerFields.retainer_monthly_amount > 0) {
+          // Retainer is entered as MONTHLY amount, multiply by 12 for annual calculation
+          const annualRetainerAmount = retainerFields.retainer_monthly_amount * 12;
+
+          // Calculate manual index adjustment (with negative support)
+          const manualAdjustment = (retainerFields.retainer_index_manual_is_negative ?? false)
+            ? -(retainerFields.retainer_index_manual_adjustment ?? 0)
+            : (retainerFields.retainer_index_manual_adjustment ?? 0);
+
+          const retainerCalc = this.calculateFeeAmounts({
+            base_amount: annualRetainerAmount,
+            inflation_rate: retainerFields.retainer_inflation_rate ?? existing.retainer_calculation?.inflation_rate ?? 3.0,
+            index_manual_adjustment: manualAdjustment,
+            real_adjustment: retainerFields.retainer_real_adjustment ?? existing.retainer_calculation?.real_adjustment ?? 0,
+            apply_inflation_index: retainerFields.retainer_apply_inflation_index ?? existing.retainer_calculation?.apply_inflation_index ?? true,
+          });
+
+          updateData.retainer_calculation = {
+            monthly_amount: retainerFields.retainer_monthly_amount, // Store MONTHLY amount (user input)
+            apply_inflation_index: retainerFields.retainer_apply_inflation_index ?? existing.retainer_calculation?.apply_inflation_index ?? true,
+            inflation_rate: retainerFields.retainer_inflation_rate ?? existing.retainer_calculation?.inflation_rate ?? 3.0,
+            inflation_adjustment: retainerCalc.inflation_adjustment,
+            real_adjustment: retainerFields.retainer_real_adjustment ?? existing.retainer_calculation?.real_adjustment ?? 0,
+            real_adjustment_reason: retainerFields.retainer_real_adjustment_reason ?? existing.retainer_calculation?.real_adjustment_reason,
+            discount_percentage: 0, // Discounts no longer applied
+            discount_amount: 0, // Discounts no longer applied
+            final_amount: retainerCalc.final_amount, // Calculated from annual amount (monthly × 12)
+            vat_amount: retainerCalc.vat_amount,
+            total_with_vat: retainerCalc.total_with_vat,
           };
         }
       }

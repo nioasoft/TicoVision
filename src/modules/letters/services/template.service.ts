@@ -568,16 +568,43 @@ export class TemplateService extends BaseService {
       const bodyFile = this.getBodyFileName(templateType);
       const body = await this.loadTemplateFile(`bodies/${bodyFile}`);
 
-      // 3. Load payment section if needed
+      // 3. Load payment section if needed (select correct version based on template type)
       const needsPayment = this.isPaymentLetter(templateType);
       let paymentSection = '';
       if (needsPayment) {
-        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+        let paymentSectionFile = 'components/payment-section.html'; // fallback
+        if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
+          paymentSectionFile = 'components/payment-section-audit.html';
+        } else if (templateType.includes('bookkeeping')) {
+          paymentSectionFile = 'components/payment-section-bookkeeping.html';
+        } else if (templateType.includes('retainer')) {
+          paymentSectionFile = 'components/payment-section-retainer.html';
+        }
+        paymentSection = await this.loadTemplateFile(paymentSectionFile);
       }
 
-      // 4. Add automatic variables
+      // 4. Detect service type automatically
+      let serviceDescription = '';
+      if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
+        serviceDescription = 'שירותי ראיית החשבון';
+      } else if (templateType.includes('bookkeeping')) {
+        serviceDescription = 'שירותי הנהלת החשבונות';
+      } else if (templateType.includes('retainer')) {
+        serviceDescription = 'שירותי ראיית החשבון, הנהלת החשבונות וחשבות השכר';
+      }
+
+      // 5. Calculate monthly amount (for bookkeeping & retainer only)
+      let monthlyAmount: number | undefined;
+      if (templateType.includes('bookkeeping') || templateType.includes('retainer')) {
+        monthlyAmount = variables.monthly_amount ||
+                        (variables.amount_original ? Math.round(variables.amount_original / 12) : undefined);
+      }
+
+      // 6. Add automatic variables
       const fullVariables: Partial<LetterVariables> = {
         ...variables,
+        service_description: variables.service_description || serviceDescription,
+        monthly_amount: monthlyAmount,
         letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
         year: variables.year || new Date().getFullYear(),
         tax_year: variables.tax_year || (new Date().getFullYear() + 1),
@@ -591,14 +618,14 @@ export class TemplateService extends BaseService {
         client_id: clientId || variables.client_id
       };
 
-      // 5. Build full HTML
+      // 7. Build full HTML
       let fullHtml = this.buildFullHTML(header, body, paymentSection, footer);
 
-      // 6. Replace all variables
+      // 8. Replace all variables
       fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
-      // 7. Save generated letter
+      // 8. Save generated letter
       const { data: generatedLetter, error: saveError } = await supabase
         .from('generated_letters')
         .insert({
@@ -711,20 +738,39 @@ export class TemplateService extends BaseService {
       const bodyFile = this.getBodyFileName(templateType);
       const body = await this.loadTemplateFile(`bodies/${bodyFile}`);
 
-      // 3. Load payment section if needed
+      // 3. Load payment section if needed (select correct version based on template type)
       const needsPayment = this.isPaymentLetter(templateType);
       let paymentSection = '';
       if (needsPayment) {
-        paymentSection = await this.loadTemplateFile('components/payment-section.html');
+        let paymentSectionFile = 'components/payment-section.html'; // fallback
+        if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
+          paymentSectionFile = 'components/payment-section-audit.html';
+        } else if (templateType.includes('bookkeeping')) {
+          paymentSectionFile = 'components/payment-section-bookkeeping.html';
+        } else if (templateType.includes('retainer')) {
+          paymentSectionFile = 'components/payment-section-retainer.html';
+        }
+        paymentSection = await this.loadTemplateFile(paymentSectionFile);
       }
 
-      // 4. Add automatic variables
+      // 4. Detect service type automatically
+      let serviceDescription = '';
+      if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
+        serviceDescription = 'שירותי ראיית החשבון';
+      } else if (templateType.includes('bookkeeping')) {
+        serviceDescription = 'שירותי הנהלת החשבונות';
+      } else if (templateType.includes('retainer')) {
+        serviceDescription = 'שירותי ראיית החשבון, הנהלת החשבונות וחשבות השכר';
+      }
+
+      // 5. Add automatic variables
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
       const previousYear = currentYear;
 
       const fullVariables: Partial<LetterVariables> = {
         ...variables,
+        service_description: variables.service_description || serviceDescription,
         letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
         year: variables.year || nextYear,
         previous_year: variables.previous_year || previousYear,
@@ -739,13 +785,13 @@ export class TemplateService extends BaseService {
         client_id: variables.client_id
       };
 
-      // 5. Build full HTML
+      // 7. Build full HTML
       let fullHtml = this.buildFullHTML(header, body, paymentSection, footer);
 
-      // 6. Replace all variables
+      // 8. Replace all variables
       fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
 
-      // 7. Keep CID references in HTML (for email + PDF generation)
+      // 8. Keep CID references in HTML (for email + PDF generation)
       // convertHtmlForDisplay will convert CID → Supabase URLs for browser display
       // generate-pdf Edge Function will convert CID → Supabase URLs for PDF
 

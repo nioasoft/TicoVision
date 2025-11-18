@@ -162,11 +162,15 @@ export function LetterPreviewDialog({
           ? selection.primaryNumChecks
           : selection.secondaryNumChecks!;
 
-      // Use primary or bookkeeping amounts based on stage
+      // Use primary, bookkeeping, or retainer amounts based on stage and client type
       const isBookkeeping = currentLetterStage === 'secondary';
-      const amountOriginal = isBookkeeping
-        ? (fee.bookkeeping_calculation?.total_with_vat || 0)
-        : (fee.total_amount || 0);
+      const isRetainer = client.is_retainer || false;
+
+      const amountOriginal = isRetainer && fee.retainer_calculation
+        ? fee.retainer_calculation.final_amount
+        : isBookkeeping
+        ? (fee.bookkeeping_calculation?.final_amount || 0)
+        : (fee.final_amount || 0);
 
       const formatNumber = (num: number): string => {
         return Math.round(num).toLocaleString('he-IL');
@@ -197,6 +201,13 @@ export function LetterPreviewDialog({
         amount_after_bank: formatNumber(amountAfterBank),
         amount_after_single: formatNumber(amountAfterSingle),
         amount_after_payments: formatNumber(amountAfterPayments),
+
+        // Monthly amount for bookkeeping/retainer letters (before VAT)
+        monthly_amount: isRetainer && fee.retainer_calculation
+          ? formatNumber(fee.retainer_calculation.final_amount / 12)
+          : isBookkeeping && fee.bookkeeping_calculation
+          ? formatNumber(fee.bookkeeping_calculation.final_amount / 12)
+          : undefined,
 
         // Payment links (TODO: Cardcom integration)
         payment_link_single: `http://localhost:5173/payment?fee_id=${feeId}&method=single`,

@@ -86,6 +86,14 @@ interface FeeCalculatorForm {
   bookkeeping_real_adjustment_reason: string;
   bookkeeping_discount_percentage: number;
   bookkeeping_apply_inflation_index: boolean;
+  // Retainer fields (for retainer clients - both internal and external)
+  retainer_monthly_amount: number;
+  retainer_inflation_rate: number;
+  retainer_index_manual_adjustment: number; // Manual inflation adjustment in ILS (positive number)
+  retainer_index_manual_is_negative: boolean; // Checkbox to mark as negative (reduce index)
+  retainer_real_adjustment: number;
+  retainer_real_adjustment_reason: string;
+  retainer_apply_inflation_index: boolean;
 }
 
 export function FeesPage() {
@@ -121,7 +129,15 @@ export function FeesPage() {
     bookkeeping_real_adjustment: 0,
     bookkeeping_real_adjustment_reason: '',
     bookkeeping_discount_percentage: 0,
-    bookkeeping_apply_inflation_index: true
+    bookkeeping_apply_inflation_index: true,
+    // Retainer fields (for retainer clients - both internal and external)
+    retainer_monthly_amount: 0,
+    retainer_inflation_rate: 3.0,
+    retainer_index_manual_adjustment: 0,
+    retainer_index_manual_is_negative: false,
+    retainer_real_adjustment: 0,
+    retainer_real_adjustment_reason: '',
+    retainer_apply_inflation_index: true
   });
   const [calculationResults, setCalculationResults] = useState<{
     inflation_adjustment: number;
@@ -137,6 +153,15 @@ export function FeesPage() {
   } | null>(null);
   const [bookkeepingCalculationResults, setBookkeepingCalculationResults] = useState<{
     inflation_adjustment: number;
+    real_adjustment: number;
+    discount_amount: number;
+    final_amount: number;
+    vat_amount: number;
+    total_with_vat: number;
+  } | null>(null);
+  const [retainerCalculationResults, setRetainerCalculationResults] = useState<{
+    inflation_adjustment: number;
+    index_manual_adjustment: number;
     real_adjustment: number;
     discount_amount: number;
     final_amount: number;
@@ -212,7 +237,7 @@ export function FeesPage() {
 
   useEffect(() => {
     // Auto-calculate when form data changes
-    if (formData.base_amount > 0) {
+    if (formData.base_amount > 0 || formData.retainer_monthly_amount > 0) {
       const results = calculateFeeAmounts();
       setCalculationResults(results);
     }
@@ -230,7 +255,13 @@ export function FeesPage() {
     formData.bookkeeping_real_adjustment,
     formData.bookkeeping_discount_percentage,
     formData.bookkeeping_apply_inflation_index,
-    selectedClientDetails?.internal_external
+    // Retainer dependencies
+    formData.retainer_monthly_amount,
+    formData.retainer_inflation_rate,
+    formData.retainer_real_adjustment,
+    formData.retainer_apply_inflation_index,
+    selectedClientDetails?.internal_external,
+    selectedClientDetails?.is_retainer
   ]);
 
   useEffect(() => {
@@ -361,6 +392,7 @@ export function FeesPage() {
           ...prev,
           base_amount: draft.base_amount || prev.base_amount,
           inflation_rate: draft.inflation_rate || prev.inflation_rate,
+          index_manual_adjustment: draft.index_manual_adjustment || 0,
           real_adjustment: draft.real_adjustment || 0,
           real_adjustment_reason: draft.real_adjustment_reason || '',
           discount_percentage: draft.discount_percentage || 0,
@@ -377,6 +409,14 @@ export function FeesPage() {
           bookkeeping_real_adjustment_reason: draft.bookkeeping_calculation?.real_adjustment_reason || '',
           bookkeeping_discount_percentage: draft.bookkeeping_calculation?.discount_percentage || 0,
           bookkeeping_apply_inflation_index: draft.bookkeeping_calculation?.apply_inflation_index ?? true,
+          // Load retainer data if exists (for retainer clients)
+          retainer_monthly_amount: draft.retainer_calculation?.monthly_amount || 0,
+          retainer_inflation_rate: draft.retainer_calculation?.inflation_rate || 3.0,
+          retainer_index_manual_adjustment: draft.retainer_calculation?.index_manual_adjustment || 0,
+          retainer_index_manual_is_negative: draft.retainer_calculation?.index_manual_is_negative ?? false,
+          retainer_real_adjustment: draft.retainer_calculation?.real_adjustment || 0,
+          retainer_real_adjustment_reason: draft.retainer_calculation?.real_adjustment_reason || '',
+          retainer_apply_inflation_index: draft.retainer_calculation?.apply_inflation_index ?? true,
         }));
 
         toast({
@@ -591,9 +631,9 @@ export function FeesPage() {
       ? ((totalWithVat - formData.previous_year_amount_with_vat) / formData.previous_year_amount_with_vat * 100)
       : 0;
 
-    // Calculate bookkeeping amounts (for internal clients)
+    // Calculate bookkeeping amounts (for internal clients - not retainer)
     let bookkeepingResults = null;
-    if (selectedClientDetails?.internal_external === 'internal' && formData.bookkeeping_base_amount > 0) {
+    if (selectedClientDetails?.internal_external === 'internal' && !selectedClientDetails?.is_retainer && formData.bookkeeping_base_amount > 0) {
       const bkInflationRate = formData.bookkeeping_apply_inflation_index ? (formData.bookkeeping_inflation_rate || 3.0) : 0;
       const bkRealAdjustment = formData.bookkeeping_real_adjustment || 0;
       const bkDiscountPercentage = formData.bookkeeping_discount_percentage || 0;
@@ -615,8 +655,43 @@ export function FeesPage() {
       };
     }
 
-    // Update bookkeeping state
+    // Calculate retainer amounts (for retainer clients - replaces both audit and bookkeeping)
+    let retainerResults = null;
+    if (selectedClientDetails?.is_retainer && formData.retainer_monthly_amount > 0) {
+      // Retainer: monthly amount × 12 = annual base
+      const annualRetainerBase = formData.retainer_monthly_amount * 12;
+      const rtInflationRate = formData.retainer_apply_inflation_index ? (formData.retainer_inflation_rate || 3.0) : 0;
+      const rtRealAdjustment = formData.retainer_real_adjustment || 0;
+
+      // Calculate automatic inflation adjustment
+      const rtInflationAdjustment = annualRetainerBase * (rtInflationRate / 100);
+
+      // Calculate manual index adjustment (with negative support via checkbox)
+      const rtManualAdjustment = formData.retainer_apply_inflation_index
+        ? (formData.retainer_index_manual_is_negative
+            ? -(formData.retainer_index_manual_adjustment || 0)
+            : (formData.retainer_index_manual_adjustment || 0))
+        : 0;
+
+      const rtAdjustedAmount = annualRetainerBase + rtInflationAdjustment + rtManualAdjustment + rtRealAdjustment;
+      const rtFinalAmount = rtAdjustedAmount; // No discount for retainer
+      const rtVatAmount = rtFinalAmount * 0.18;
+      const rtTotalWithVat = rtFinalAmount + rtVatAmount;
+
+      retainerResults = {
+        inflation_adjustment: rtInflationAdjustment,
+        index_manual_adjustment: rtManualAdjustment,
+        real_adjustment: rtRealAdjustment,
+        discount_amount: 0,
+        final_amount: rtFinalAmount,
+        vat_amount: rtVatAmount,
+        total_with_vat: rtTotalWithVat,
+      };
+    }
+
+    // Update bookkeeping and retainer states
     setBookkeepingCalculationResults(bookkeepingResults);
+    setRetainerCalculationResults(retainerResults);
 
     return {
       inflation_adjustment: inflationAdjustment,
@@ -633,13 +708,37 @@ export function FeesPage() {
   };
 
   const handleSaveCalculationOnly = async () => {
-    if (!formData.client_id || !formData.base_amount) {
+    // Check client type for different validation
+    const isRetainerClient = selectedClientDetails?.is_retainer;
+
+    if (!formData.client_id) {
       toast({
         title: 'שגיאה',
-        description: 'נא למלא את כל השדות החובה',
+        description: 'נא לבחור לקוח',
         variant: 'destructive',
       });
       return;
+    }
+
+    // Different required fields for retainer vs regular clients
+    if (isRetainerClient) {
+      if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
+        toast({
+          title: 'שגיאה',
+          description: 'נא למלא סכום רטיינר חודשי',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!formData.base_amount || formData.base_amount <= 0) {
+        toast({
+          title: 'שגיאה',
+          description: 'נא למלא סכום בסיס',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     try {
@@ -650,6 +749,7 @@ export function FeesPage() {
         previous_year_discount: formData.previous_year_discount,
         base_amount: formData.base_amount,
         inflation_rate: formData.inflation_rate,
+        index_manual_adjustment: formData.index_manual_adjustment,
         real_adjustment: formData.real_adjustment,
         real_adjustment_reason: formData.real_adjustment_reason,
         discount_percentage: formData.discount_percentage,
@@ -661,7 +761,15 @@ export function FeesPage() {
         bookkeeping_real_adjustment: formData.bookkeeping_real_adjustment,
         bookkeeping_real_adjustment_reason: formData.bookkeeping_real_adjustment_reason,
         bookkeeping_discount_percentage: formData.bookkeeping_discount_percentage,
-        bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index
+        bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index,
+        // Retainer fields (for retainer clients - both internal and external)
+        retainer_monthly_amount: formData.retainer_monthly_amount,
+        retainer_inflation_rate: formData.retainer_inflation_rate,
+        retainer_index_manual_adjustment: formData.retainer_index_manual_adjustment,
+        retainer_index_manual_is_negative: formData.retainer_index_manual_is_negative,
+        retainer_real_adjustment: formData.retainer_real_adjustment,
+        retainer_real_adjustment_reason: formData.retainer_real_adjustment_reason,
+        retainer_apply_inflation_index: formData.retainer_apply_inflation_index
       };
 
       // Check if updating existing draft or creating new
@@ -722,13 +830,37 @@ export function FeesPage() {
   };
 
   const handleSaveCalculation = async () => {
-    if (!formData.client_id || !formData.base_amount) {
+    // Check client type for different validation
+    const isRetainerClient = selectedClientDetails?.is_retainer;
+
+    if (!formData.client_id) {
       toast({
         title: 'שגיאה',
-        description: 'נא למלא את כל השדות החובה',
+        description: 'נא לבחור לקוח',
         variant: 'destructive',
       });
       return;
+    }
+
+    // Different required fields for retainer vs regular clients
+    if (isRetainerClient) {
+      if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
+        toast({
+          title: 'שגיאה',
+          description: 'נא למלא סכום רטיינר חודשי',
+          variant: 'destructive',
+        });
+        return;
+      }
+    } else {
+      if (!formData.base_amount || formData.base_amount <= 0) {
+        toast({
+          title: 'שגיאה',
+          description: 'נא למלא סכום בסיס',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsSavingAndPreview(true);
@@ -740,6 +872,7 @@ export function FeesPage() {
         previous_year_discount: formData.previous_year_discount,
         base_amount: formData.base_amount,
         inflation_rate: formData.inflation_rate,
+        index_manual_adjustment: formData.index_manual_adjustment,
         real_adjustment: formData.real_adjustment,
         real_adjustment_reason: formData.real_adjustment_reason,
         discount_percentage: formData.discount_percentage,
@@ -751,7 +884,15 @@ export function FeesPage() {
         bookkeeping_real_adjustment: formData.bookkeeping_real_adjustment,
         bookkeeping_real_adjustment_reason: formData.bookkeeping_real_adjustment_reason,
         bookkeeping_discount_percentage: formData.bookkeeping_discount_percentage,
-        bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index
+        bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index,
+        // Retainer fields (for retainer clients - both internal and external)
+        retainer_monthly_amount: formData.retainer_monthly_amount,
+        retainer_inflation_rate: formData.retainer_inflation_rate,
+        retainer_index_manual_adjustment: formData.retainer_index_manual_adjustment,
+        retainer_index_manual_is_negative: formData.retainer_index_manual_is_negative,
+        retainer_real_adjustment: formData.retainer_real_adjustment,
+        retainer_real_adjustment_reason: formData.retainer_real_adjustment_reason,
+        retainer_apply_inflation_index: formData.retainer_apply_inflation_index
       };
 
       // Check if updating existing draft or creating new
@@ -820,6 +961,7 @@ export function FeesPage() {
       previous_year_amount_with_vat_before_discount: 0,
       base_amount: 0,
       inflation_rate: 3.0,
+      index_manual_adjustment: 0,
       real_adjustment: 0,
       real_adjustment_reason: '',
       discount_percentage: 0,
@@ -830,9 +972,18 @@ export function FeesPage() {
       bookkeeping_real_adjustment: 0,
       bookkeeping_real_adjustment_reason: '',
       bookkeeping_discount_percentage: 0,
-      bookkeeping_apply_inflation_index: true
+      bookkeeping_apply_inflation_index: true,
+      retainer_monthly_amount: 0,
+      retainer_inflation_rate: 3.0,
+      retainer_index_manual_adjustment: 0,
+      retainer_index_manual_is_negative: false,
+      retainer_real_adjustment: 0,
+      retainer_real_adjustment_reason: '',
+      retainer_apply_inflation_index: true
     });
     setCalculationResults(null);
+    setBookkeepingCalculationResults(null);
+    setRetainerCalculationResults(null);
     setActiveTab('previous');
     setPreviousYearDataSaved(false);
   };
@@ -1047,7 +1198,7 @@ export function FeesPage() {
                     {/* Row 1: Base amounts (before and after VAT) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Card 1: Base Amount BEFORE VAT (input) */}
-                      <Card>
+                      <Card className="bg-green-50 border-green-200">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-3">
                             <Label htmlFor="previous_amount" className="text-sm font-medium rtl:text-right ltr:text-left">
@@ -1295,7 +1446,124 @@ export function FeesPage() {
                 </Card>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Retainer Section - Unified calculation for retainer clients */}
+              {selectedClientDetails?.is_retainer ? (
+                <div className="space-y-6">
+                  <div className="mb-4 rtl:text-right ltr:text-left">
+                    <h4 className="text-lg font-semibold text-purple-700 flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      חישוב ריטיינר - שכר טרחה משולב (מכתב E)
+                    </h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      חישוב משולב של ראיית חשבון, הנהלת חשבונות וחשבות שכר - סכום חודשי + התאמת מדד
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="retainer_monthly_amount">סכום חודשי ריטיינר (יוכפל ב-12) *</Label>
+                        <Input
+                          id="retainer_monthly_amount"
+                          type="number"
+                          value={formData.retainer_monthly_amount}
+                          onChange={(e) => setFormData({ ...formData, retainer_monthly_amount: parseFloat(e.target.value) || 0 })}
+                          placeholder="0"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          הזן סכום חודשי - המערכת תכפיל ב-12 לחישוב שנתי
+                        </p>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="retainer_inflation_rate">אחוז מדד</Label>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="retainer_apply_inflation"
+                              checked={formData.retainer_apply_inflation_index}
+                              onCheckedChange={(checked) =>
+                                setFormData({ ...formData, retainer_apply_inflation_index: checked as boolean })
+                              }
+                            />
+                            <Label htmlFor="retainer_apply_inflation" className="text-sm font-normal cursor-pointer">
+                              החל מדד
+                            </Label>
+                          </div>
+                        </div>
+                        <Input
+                          id="retainer_inflation_rate"
+                          type="number"
+                          value={formData.retainer_inflation_rate}
+                          onChange={(e) => setFormData({ ...formData, retainer_inflation_rate: parseFloat(e.target.value) || 3.0 })}
+                          step="0.1"
+                          placeholder="3.0"
+                          disabled={!formData.retainer_apply_inflation_index}
+                          className={!formData.retainer_apply_inflation_index ? 'opacity-50' : ''}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label htmlFor="retainer_index_manual_adjustment">תוספת מדד ידנית (₪)</Label>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="retainer_index_manual_is_negative"
+                              checked={formData.retainer_index_manual_is_negative}
+                              onCheckedChange={(checked) =>
+                                setFormData({ ...formData, retainer_index_manual_is_negative: checked as boolean })
+                              }
+                              disabled={!formData.retainer_apply_inflation_index}
+                            />
+                            <Label htmlFor="retainer_index_manual_is_negative" className="text-sm font-normal cursor-pointer">
+                              הפחת מדד
+                            </Label>
+                          </div>
+                        </div>
+                        <Input
+                          id="retainer_index_manual_adjustment"
+                          type="number"
+                          value={formData.retainer_index_manual_adjustment}
+                          onChange={(e) => setFormData({ ...formData, retainer_index_manual_adjustment: parseFloat(e.target.value) || 0 })}
+                          placeholder="0"
+                          disabled={!formData.retainer_apply_inflation_index}
+                          className={!formData.retainer_apply_inflation_index ? 'opacity-50' : ''}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formData.retainer_index_manual_is_negative ? 'סכום שיופחת מהמדד' : 'סכום שיתווסף למדד'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="retainer_real_adjustment">תוספת ריאלית</Label>
+                        <Input
+                          id="retainer_real_adjustment"
+                          type="number"
+                          value={formData.retainer_real_adjustment}
+                          onChange={(e) => setFormData({ ...formData, retainer_real_adjustment: parseFloat(e.target.value) || 0 })}
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="retainer_adjustment_reason">סיבת התוספת הריאלית</Label>
+                        <Textarea
+                          id="retainer_adjustment_reason"
+                          value={formData.retainer_real_adjustment_reason}
+                          onChange={(e) => setFormData({ ...formData, retainer_real_adjustment_reason: e.target.value })}
+                          placeholder="תיאור הסיבה לתוספת..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Regular Audit Section (Non-Retainer Clients) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="base_amount">סכום בסיס לפני הנחה ולפני מע״מ *</Label>
@@ -1422,8 +1690,8 @@ export function FeesPage() {
                 </div>
               </div>
 
-              {/* Bookkeeping Section (Internal Clients Only) */}
-              {selectedClientDetails?.internal_external === 'internal' && (
+              {/* Bookkeeping Section (Internal Clients Only - Not Retainer) */}
+              {selectedClientDetails?.internal_external === 'internal' && !selectedClientDetails?.is_retainer && (
                 <div className="mt-8 pt-8 border-t-2 border-gray-200">
                   <div className="mb-4 rtl:text-right ltr:text-left">
                     <h4 className="text-lg font-semibold text-primary flex items-center gap-2">
@@ -1503,6 +1771,8 @@ export function FeesPage() {
                   </div>
                 </div>
               )}
+                </>
+              )}
 
               <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setActiveTab('previous')}>
@@ -1520,8 +1790,10 @@ export function FeesPage() {
             </div>
           )}
 
-          {activeTab === 'results' && calculationResults && (
-            <div className="space-y-6">
+          {activeTab === 'results' && (
+            <>
+            {calculationResults && !selectedClientDetails?.is_retainer && (
+              <div className="space-y-6">
               <h3 className="text-lg font-semibold mb-4">תוצאות החישוב</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -1666,8 +1938,8 @@ export function FeesPage() {
                 </div>
               </div>
 
-              {/* Bookkeeping Results - Internal Clients Only */}
-              {selectedClientDetails?.internal_external === 'internal' && bookkeepingCalculationResults && (
+              {/* Bookkeeping Results - Internal Clients Only (Not Retainer) */}
+              {selectedClientDetails?.internal_external === 'internal' && !selectedClientDetails?.is_retainer && bookkeepingCalculationResults && (
                 <div className="mt-8 pt-8 border-t-2 border-gray-200">
                   <h4 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
                     <FileText className="h-5 w-5" />
@@ -1800,17 +2072,192 @@ export function FeesPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Letter Selection */}
-              {autoSelectedLetters && (
-                <div className="mb-6">
-                  {autoSelectedLetters.secondaryTemplate ? (
-                    // Internal client - 2 letters
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
-                        <Label className="text-base font-semibold mb-2 block text-right">
-                          מכתב ראשי - ראיית חשבון
-                        </Label>
+            {/* Retainer Results - Retainer Clients Only */}
+            {selectedClientDetails?.is_retainer && retainerCalculationResults && (
+              <div className="space-y-6">
+              <h4 className="text-lg font-semibold text-purple-700 mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                תוצאות חישוב ריטיינר (מכתב E)
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">סכום חודשי בסיס</p>
+                        <p className="text-lg font-semibold">{formatILS(formData.retainer_monthly_amount)}</p>
+                        <p className="text-xs text-gray-400 mt-1">שנתי: {formatILS(formData.retainer_monthly_amount * 12)}</p>
+                      </div>
+                      <Coins className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">
+                          התאמת מדד {formData.retainer_apply_inflation_index ? `(${formData.retainer_inflation_rate}%)` : '(לא מוחל)'}
+                        </p>
+                        <p className="text-lg font-semibold text-green-600">
+                          {formData.retainer_apply_inflation_index ? `+${formatILS(retainerCalculationResults.inflation_adjustment)}` : '₪0'}
+                        </p>
+                      </div>
+                      <TrendingUp className="h-8 w-8 text-green-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Manual Index Adjustment - Only show if not zero */}
+                {retainerCalculationResults.index_manual_adjustment !== 0 && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-500">תוספת מדד ידנית</p>
+                          <p className={`text-lg font-semibold ${retainerCalculationResults.index_manual_adjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {retainerCalculationResults.index_manual_adjustment > 0 ? '+' : ''}{formatILS(retainerCalculationResults.index_manual_adjustment)}
+                          </p>
+                        </div>
+                        {retainerCalculationResults.index_manual_adjustment > 0 ? (
+                          <ArrowUp className="h-8 w-8 text-green-500" />
+                        ) : (
+                          <ArrowDown className="h-8 w-8 text-red-500" />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">תוספת ריאלית</p>
+                        <p className="text-lg font-semibold text-green-600">
+                          +{formatILS(retainerCalculationResults.real_adjustment)}
+                        </p>
+                      </div>
+                      <Plus className="h-8 w-8 text-green-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">סך הכל לפני מע"מ</p>
+                        <p className="text-lg font-semibold">{formatILS(retainerCalculationResults.final_amount)}</p>
+                      </div>
+                      <Calculator className="h-8 w-8 text-orange-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">מע"מ (18%)</p>
+                        <p className="text-lg font-semibold">{formatILS(retainerCalculationResults.vat_amount)}</p>
+                      </div>
+                      <FileText className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">סך הכל כולל מע"מ</p>
+                        <p className="text-2xl font-bold text-purple-700">
+                          {formatILS(retainerCalculationResults.total_with_vat)}
+                        </p>
+                      </div>
+                      <Calculator className="h-8 w-8 text-purple-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="md:col-span-6 bg-purple-50 border-2 border-purple-300 mt-4">
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <p className="text-2xl font-semibold text-purple-800">
+                      הסכום הנדרש עבור שירותי ריטיינר לפני מע"מ לשנת המס {formData.year} הוא: {formatILS(retainerCalculationResults.final_amount)}
+                    </p>
+                    <p className="text-sm text-purple-600 mt-2">
+                      (סכום חודשי: {formatILS(retainerCalculationResults.final_amount / 12)})
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="bg-purple-50 p-4 rounded-lg mt-4">
+                <h5 className="font-semibold mb-2 text-purple-900">פירוט חישוב ריטיינר:</h5>
+                <div className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>סכום חודשי:</span>
+                    <span>{formatILS(formData.retainer_monthly_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>× 12 חודשים:</span>
+                    <span>{formatILS(formData.retainer_monthly_amount * 12)}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>+ התאמת מדד {formData.retainer_apply_inflation_index ? `(${formData.retainer_inflation_rate}%)` : '(לא מוחל)'}:</span>
+                    <span>{formData.retainer_apply_inflation_index ? `+${formatILS(retainerCalculationResults.inflation_adjustment)}` : '₪0'}</span>
+                  </div>
+                  {retainerCalculationResults.index_manual_adjustment !== 0 && (
+                    <div className={`flex justify-between ${retainerCalculationResults.index_manual_adjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{retainerCalculationResults.index_manual_adjustment > 0 ? '+' : '-'} תוספת מדד ידנית:</span>
+                      <span>{retainerCalculationResults.index_manual_adjustment > 0 ? '+' : ''}{formatILS(retainerCalculationResults.index_manual_adjustment)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-green-600">
+                    <span>+ תוספת ריאלית:</span>
+                    <span>+{formatILS(retainerCalculationResults.real_adjustment)}</span>
+                  </div>
+                  <hr className="my-2" />
+                  <div className="flex justify-between font-semibold">
+                    <span>סך הכל לפני מע"מ:</span>
+                    <span>{formatILS(retainerCalculationResults.final_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>+ מע"מ (18%):</span>
+                    <span>+{formatILS(retainerCalculationResults.vat_amount)}</span>
+                  </div>
+                  <hr className="my-2" />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>סך הכל כולל מע"מ:</span>
+                    <span>{formatILS(retainerCalculationResults.total_with_vat)}</span>
+                  </div>
+                  <div className="flex justify-between text-purple-600 font-semibold mt-2">
+                    <span>סכום חודשי כולל מע"מ:</span>
+                    <span>{formatILS(retainerCalculationResults.total_with_vat / 12)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            )}
+
+            {/* Letter Selection */}
+            {autoSelectedLetters && (
+              <div className="mb-6">
+              {autoSelectedLetters.secondaryTemplate ? (
+                // Internal client - 2 letters
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4">
+                    <Label className="text-base font-semibold mb-2 block text-right">
+                      מכתב ראשי - ראיית חשבון
+                    </Label>
                         <Select
                           value={selectedPrimaryTemplate || autoSelectedLetters.primaryTemplate}
                           onValueChange={(value) => setSelectedPrimaryTemplate(value as LetterTemplateType)}
@@ -1888,9 +2335,9 @@ export function FeesPage() {
                     </div>
                   )}
                 </div>
-              )}
+            )}
 
-              <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center">
                 <Button variant="outline" onClick={() => setActiveTab('current')}>
                   <ChevronRight className="h-4 w-4 ml-2" />
                   חזור לעריכה
@@ -1914,8 +2361,8 @@ export function FeesPage() {
                     )}
                   </Button>
                 </div>
-              </div>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
