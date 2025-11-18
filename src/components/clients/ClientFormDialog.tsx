@@ -333,7 +333,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Category Header: Company Details */}
               <div className="col-span-3 mb-2">
                 <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
-                  פרטי החברה
+                  פרטי הרשומה
                 </h3>
               </div>
 
@@ -359,7 +359,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               <div>
                 <Label htmlFor="company_name" className="text-right block mb-2">
-                  שם החברה פורמלי *
+                  שם פורמלי *
                 </Label>
                 <Input
                   id="company_name"
