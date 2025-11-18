@@ -1619,11 +1619,8 @@ export function FeesPage() {
                 <Card className="md:col-span-6 bg-green-50 border-2 border-green-300">
                   <CardContent className="p-6">
                     <div className="text-center">
-                      <p className="text-lg font-semibold text-green-800 mb-2">
-                        הסכום הנדרש לפני הנחה ולפני מע"מ לשנת המס {formData.year} הוא:
-                      </p>
-                      <p className="text-3xl font-bold text-green-700">
-                        {formatILS(calculationResults.adjusted_amount)}
+                      <p className="text-2xl font-semibold text-green-800">
+                        הסכום הנדרש עבור שירותי ראיית חשבון לפני הנחה ולפני מע"מ לשנת המס {formData.year} הוא: {formatILS(calculationResults.adjusted_amount)}
                       </p>
                     </div>
                   </CardContent>
@@ -1758,6 +1755,17 @@ export function FeesPage() {
                       </CardContent>
                     </Card>
                   </div>
+
+                  {/* NEW CARD: Required Amount for Bookkeeping Services */}
+                  <Card className="md:col-span-6 bg-green-50 border-2 border-green-300 mt-4">
+                    <CardContent className="p-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-semibold text-green-800">
+                          הסכום הנדרש עבור שירותי הנהלת חשבונות לפני הנחה ולפני מע"מ לשנת המס {formData.year} הוא: {formatILS(bookkeepingCalculationResults.final_amount)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   <div className="bg-blue-50 p-4 rounded-lg mt-4">
                     <h5 className="font-semibold mb-2 text-blue-900">פירוט חישוב הנהלת חשבונות:</h5>
