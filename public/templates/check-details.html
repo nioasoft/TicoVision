@@ -18,7 +18,7 @@
 </head>
 <body style="margin: 0; padding: 20px; font-family: 'Heebo', 'Assistant', Arial, sans-serif; background-color: hsl(210 40% 96.1%); direction: rtl;">
     <!-- Main container table (Card style) -->
-    <table width="700" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid hsl(214.3 31.8% 91.4%); box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); font-family: 'Heebo', 'Assistant', Arial, sans-serif;">
+    <table width="805" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto; background-color: #ffffff; border-radius: 8px; border: 1px solid hsl(214.3 31.8% 91.4%); box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); font-family: 'Heebo', 'Assistant', Arial, sans-serif;">
 
         <!-- Header: Logo centered on top -->
         <tr>
@@ -264,7 +264,7 @@
             // Remove commas and parse
             const cleanAmount = parseFloat(totalAmount.replace(/,/g, ''));
             if (!isNaN(cleanAmount)) {
-                checkAmount = Math.round(cleanAmount / 8);
+                checkAmount = Math.ceil(cleanAmount / 8);
                 formattedCheckAmount = checkAmount.toLocaleString('he-IL');
                 formattedTotalAmount = cleanAmount.toLocaleString('he-IL');
             }
