@@ -1601,7 +1601,7 @@ export function FeesPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="md:col-span-2 lg:col-span-2">
+                <Card className="md:col-span-2 lg:col-span-1">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
