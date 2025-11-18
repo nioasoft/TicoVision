@@ -1581,7 +1581,7 @@ export function FeesPage() {
                           התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}
                         </p>
                         <p className="text-lg font-semibold text-green-600">
-                          {formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment)}` : '₪0'}
+                          {formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment_auto)}` : '₪0'}
                         </p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-green-500" />
