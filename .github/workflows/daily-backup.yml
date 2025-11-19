@@ -1,0 +1,264 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    # Run every day at 23:00 UTC (02:00 Israel time)
+    - cron: '0 23 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verify environment
+        run: |
+          echo "🔍 Verifying backup environment..."
+          echo "Date: $(date -u +%Y-%m-%d\ %H:%M:%S) UTC"
+          echo "Supabase CLI version: $(supabase --version)"
+
+          # Check required secrets
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "❌ ERROR: SUPABASE_DB_URL secret not set"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.BACKUP_ENCRYPTION_KEY }}" ]; then
+            echo "❌ ERROR: BACKUP_ENCRYPTION_KEY secret not set"
+            exit 1
+          fi
+
+          echo "✅ All required secrets are set"
+
+      - name: Create backup directory
+        run: |
+          mkdir -p backups
+          echo "📁 Backup directory created"
+
+      - name: Backup database roles
+        run: |
+          echo "👥 Backing up database roles..."
+          supabase db dump \
+            --db-url "${{ secrets.SUPABASE_DB_URL }}" \
+            -f backups/roles.sql \
+            --role-only
+
+          echo "✅ Roles backup completed"
+          ls -lh backups/roles.sql
+
+      - name: Backup database schema
+        run: |
+          echo "🗂️  Backing up database schema..."
+          supabase db dump \
+            --db-url "${{ secrets.SUPABASE_DB_URL }}" \
+            -f backups/schema.sql
+
+          echo "✅ Schema backup completed"
+          ls -lh backups/schema.sql
+
+      - name: Backup database data
+        run: |
+          echo "📊 Backing up database data..."
+          supabase db dump \
+            --db-url "${{ secrets.SUPABASE_DB_URL }}" \
+            -f backups/data.sql \
+            --use-copy \
+            --data-only
+
+          echo "✅ Data backup completed"
+          ls -lh backups/data.sql
+
+      - name: Create backup metadata
+        run: |
+          echo "📝 Creating backup metadata..."
+
+          # Extract database stats
+          TABLES_COUNT=$(psql "${{ secrets.SUPABASE_DB_URL }}" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';")
+          TOTAL_ROWS=$(psql "${{ secrets.SUPABASE_DB_URL }}" -t -c "SELECT COALESCE(SUM(n_live_tup), 0) FROM pg_stat_user_tables;")
+          DB_SIZE=$(psql "${{ secrets.SUPABASE_DB_URL }}" -t -c "SELECT pg_size_pretty(pg_database_size(current_database()));")
+
+          cat > backups/metadata.json << EOF
+          {
+            "backup_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "backup_date_israel": "$(TZ=Asia/Jerusalem date +%Y-%m-%d\ %H:%M:%S)",
+            "database": "TicoVision Production",
+            "tables_count": $(echo $TABLES_COUNT | xargs),
+            "total_rows": $(echo $TOTAL_ROWS | xargs),
+            "database_size": "$(echo $DB_SIZE | xargs)",
+            "workflow_run": "${{ github.run_number }}",
+            "git_sha": "${{ github.sha }}"
+          }
+          EOF
+
+          echo "✅ Metadata created:"
+          cat backups/metadata.json | jq .
+
+      - name: Compress backup
+        run: |
+          echo "🗜️  Compressing backup files..."
+          BACKUP_FILE="ticovision-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+          tar -czf "$BACKUP_FILE" backups/
+
+          echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
+          echo "✅ Backup compressed: $BACKUP_FILE"
+          echo "📦 Size: $(du -h $BACKUP_FILE | cut -f1)"
+
+      - name: Encrypt backup
+        run: |
+          echo "🔐 Encrypting backup..."
+          gpg --symmetric \
+            --cipher-algo AES256 \
+            --passphrase "${{ secrets.BACKUP_ENCRYPTION_KEY }}" \
+            --batch --yes \
+            "$BACKUP_FILE"
+
+          echo "✅ Backup encrypted: $BACKUP_FILE.gpg"
+          echo "🔒 Size: $(du -h $BACKUP_FILE.gpg | cut -f1)"
+
+          # Remove unencrypted version for security
+          rm "$BACKUP_FILE"
+          echo "🗑️  Unencrypted backup removed"
+
+      - name: Upload backup to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: backup-${{ github.run_number }}
+          name: "Database Backup $(date +%Y-%m-%d)"
+          body: |
+            ## 🔒 Encrypted Database Backup
+
+            **Backup Details:**
+            - 📅 Date: $(date -u +%Y-%m-%d\ %H:%M:%S) UTC
+            - 🕐 Israel Time: $(TZ=Asia/Jerusalem date +%Y-%m-%d\ %H:%M:%S)
+            - 🏷️  Tag: backup-${{ github.run_number }}
+            - 📊 Metadata: See attached metadata.json
+
+            **Files Included:**
+            - `ticovision-backup-*.tar.gz.gpg` - Encrypted backup archive
+            - `metadata.json` - Backup statistics and information
+
+            ---
+
+            ### 🔓 To Restore This Backup:
+
+            ```bash
+            # 1. Download the encrypted backup
+            gh release download backup-${{ github.run_number }} --pattern "*.gpg"
+
+            # 2. Decrypt the backup
+            gpg -d ticovision-backup-*.tar.gz.gpg > backup.tar.gz
+
+            # 3. Extract the backup
+            tar -xzf backup.tar.gz
+
+            # 4. Restore to database (in order!)
+            psql -d "your-database-url" -f backups/roles.sql
+            psql -d "your-database-url" -f backups/schema.sql
+            psql -d "your-database-url" -f backups/data.sql
+            ```
+
+            **⚠️ Important:** You will need the `BACKUP_ENCRYPTION_KEY` to decrypt this backup.
+
+            ---
+
+            🤖 *Automated backup created by GitHub Actions*
+          files: |
+            ${{ env.BACKUP_FILE }}.gpg
+            backups/metadata.json
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup old backups
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('🧹 Cleaning up old backups...');
+
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const backupReleases = releases.data
+              .filter(r => r.tag_name.startsWith('backup-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            console.log(`📊 Total backup releases found: ${backupReleases.length}`);
+            console.log(`✅ Keeping latest 30 backups`);
+
+            let deletedCount = 0;
+
+            // Keep last 30 backups, delete older ones
+            for (let i = 30; i < backupReleases.length; i++) {
+              try {
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: backupReleases[i].id,
+                });
+                console.log(`🗑️  Deleted old backup: ${backupReleases[i].tag_name} (${backupReleases[i].created_at})`);
+                deletedCount++;
+              } catch (error) {
+                console.error(`❌ Failed to delete ${backupReleases[i].tag_name}:`, error.message);
+              }
+            }
+
+            console.log(`✅ Cleanup completed. Deleted ${deletedCount} old backups.`);
+
+      - name: Backup summary
+        if: success()
+        run: |
+          echo "✅ =========================================="
+          echo "✅ BACKUP COMPLETED SUCCESSFULLY"
+          echo "✅ =========================================="
+          echo ""
+          echo "📊 Backup Details:"
+          cat backups/metadata.json | jq .
+          echo ""
+          echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/backup-${{ github.run_number }}"
+          echo ""
+          echo "✅ Backup is encrypted and stored securely in GitHub Releases"
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '❌ Database Backup Failed - ' + new Date().toISOString().split('T')[0],
+              body: `## ❌ Database Backup Failure
+
+              **Workflow Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              **Failed at:** ${new Date().toISOString()}
+              **Triggered by:** ${context.eventName}
+
+              ### 🔍 Action Required
+
+              1. Check the workflow logs: [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              2. Verify the following secrets are set correctly:
+                 - \`SUPABASE_DB_URL\`
+                 - \`BACKUP_ENCRYPTION_KEY\`
+              3. Check Supabase database connectivity
+              4. Retry the backup manually if needed
+
+              ### 📋 Recent Backups
+
+              Check recent successful backups: [Releases](https://github.com/${{ github.repository }}/releases?q=backup-)
+
+              **⚠️ This is an automated alert. Please investigate and resolve the issue promptly.**
+              `,
+              labels: ['backup', 'urgent', 'automated']
+            });
