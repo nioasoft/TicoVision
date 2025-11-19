@@ -1,6 +1,6 @@
 # 📚 TicoVision AI - Database Reference Guide
-**תאריך עדכון אחרון**: אוקטובר 2025 (03/10/2025)
-**גרסת סכמה**: 3.2
+**תאריך עדכון אחרון**: נובמבר 2025 (19/11/2025)
+**גרסת סכמה**: 3.3
 
 ---
 
@@ -174,8 +174,9 @@
 
 ### 6. **letter_templates** ✅ שימוש מומלץ
 **תיאור**: 11 תבניות מכתבים משני ותיקו
-**שימוש**: תבניות מוכנות למכתבים עסקיים בעברית + קישור ל-Header/Footer נפרדים
+**שימוש**: תבניות מוכנות למכתבים עסקיים בעברית
 **⚠️ חשוב**: השתמשו רק ב-`generated_letters` (לא ב-`letter_history`)
+**📝 הערה**: Header/Footer נטענים מקבצים ב-`templates/components/` (לא מהדאטאבייס)
 
 | שדה | סוג | תיאור |
 |-----|-----|-------|
@@ -190,8 +191,6 @@
 | content_text | TEXT | תוכן טקסט |
 | variables_schema | JSONB | משתנים {{client_name}}, {{amount}}, {{letter_date}} |
 | selection_rules | JSONB | כללי בחירה אוטומטית |
-| header_template_id | UUID | קישור ל-header משותף (letter_components) |
-| footer_template_id | UUID | קישור ל-footer משותף (letter_components) |
 | is_active | BOOLEAN | האם פעיל |
 | is_editable | BOOLEAN | ניתן לעריכה |
 | version | INTEGER | גרסה |
@@ -214,41 +213,7 @@
 
 ---
 
-### 6.1. **letter_components** 🆕 Header & Footer משותפים
-**תיאור**: רכיבי Header ו-Footer משותפים לכל 11 המכתבים
-**שימוש**: מאפשר שינוי אחד ב-Header/Footer שישפיע על כל המכתבים
-**קבצי מקור**: `/templates/letter-header.html`, `/templates/letter-footer.html`
-
-| שדה | סוג | תיאור |
-|-----|-----|-------|
-| id | UUID | מזהה ייחודי |
-| tenant_id | UUID | מזהה המשרד |
-| type | TEXT | סוג (header/footer/both) |
-| name | TEXT | שם הרכיב |
-| content_html | TEXT | תוכן HTML |
-| is_default | BOOLEAN | ברירת מחדל |
-| created_at | TIMESTAMPTZ | תאריך יצירה |
-| updated_at | TIMESTAMPTZ | תאריך עדכון |
-
-**משתנים ב-Header**:
-- `{{letter_date}}` - תאריך המכתב (דינמי, פורמט: 4.10.2025)
-- `{{company_name}}` - שם החברה
-- `{{group_name}}` - שם הקבוצה (אופציונלי)
-
-**משתנים ב-Footer**:
-- `{{amount_single}}` - סכום תשלום אחד
-- `{{amount_4_payments}}` - סכום 4 תשלומים
-- `{{amount_bank}}` - סכום העברה בנקאית
-- `{{amount_checks}}` - סכום 8 המחקות
-- `{{discount_single}}` - חיסכון תשלום אחד
-- `{{discount_4_payments}}` - חיסכון 4 תשלומים
-- `{{payment_link_single}}` - קישור Cardcom תשלום אחד
-- `{{payment_link_4_payments}}` - קישור Cardcom 4 תשלומים
-- `{{client_id}}` - מזהה לקוח
-
----
-
-### 6.2. **letter_history** ⚠️ DEPRECATED
+### 6.1. **letter_history** ⚠️ DEPRECATED
 **תיאור**: ~~טבלה ישנה למעקב מכתבים~~
 **סטטוס**: ❌ **טבלה זו DEPRECATED - אל תשתמשו בה!**
 **שימוש**: השתמשו ב-`generated_letters` במקום
@@ -820,10 +785,13 @@ admins_delete_letters (DELETE) - רק admin
 ---
 
 ## 🔄 עדכון אחרון
-- **תאריך**: אוקטובר 2025 (03/10/2025)
-- **גרסה**: 3.2
+- **תאריך**: נובמבר 2025 (19/11/2025)
+- **גרסה**: 3.3
 - **מעדכן**: TicoVision AI Development Team
 - **שינויים עיקריים**:
+  - ✅ Migration 112: ניקוי טבלאות ריקות - מחיקת `letter_components` ו-`letter_component_combinations`
+  - ✅ Migration 112: הסרת FK constraints מ-`letter_templates` (header_template_id, footer_template_id)
+  - ✅ הוסבר שHeader/Footer נטענים מקבצים ב-`templates/components/` ולא מהדאטאבייס
   - ✅ Migration 026: תוקן באג קריטי ב-`users_read_clients_by_role` (fallback clause)
   - ✅ Migration 027: הוסרה מדיניות סותרת מ-`fee_calculations`
   - ✅ Migration 028: תוקנה מדיניות מסוכנת ב-`generated_letters`

@@ -195,7 +195,6 @@ src/
 │   ├── base.service.ts          # Base class for all services
 │   ├── client.service.ts        # Client management with Israeli tax ID validation
 │   ├── fee.service.ts           # Fee calculations and management
-│   ├── letter.service.ts        # Letter template generation
 │   ├── cardcom.service.ts       # Payment gateway integration
 │   ├── audit.service.ts         # Audit logging for all actions
 │   ├── collection.service.ts    # ✅ Collection tracking & dashboard (DEPLOYED)
