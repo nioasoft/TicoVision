@@ -151,6 +151,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [manualShowCommercialName, setManualShowCommercialName] = useState(false);
   const [manualCommercialName, setManualCommercialName] = useState('');
   const [manualCustomHeaderLines, setManualCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
+  const [taggedClientId, setTaggedClientId] = useState<string | null>(null); // ⭐ NEW: Client tagging for manual letters
 
   /**
    * Load saved templates on mount
@@ -483,7 +484,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
-          clientId: selectedClient?.id || null,
+          clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
           variables,
           includesPayment,
           customHeaderLines,
@@ -835,6 +836,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Clearing manual mode data
       setManualCompanyName('');
       setManualCommercialName('');
+      setTaggedClientId(null); // ⭐ Clear client tagging
       setManualShowCommercialName(false);
       setManualCustomHeaderLines([]);
       setManualEmails('');
@@ -951,7 +953,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         console.log('✅ Creating new letter for PDF generation');
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
-          clientId: selectedClient?.id || null,
+          clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
           variables,
           includesPayment,
           customHeaderLines,
@@ -1518,6 +1520,25 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         dir="rtl"
                         disabled={recipientMode !== 'manual'}
                       />
+                    </div>
+
+                    {/* ⭐ NEW: Client Tagging for Manual Letters */}
+                    <div className={recipientMode !== 'manual' ? 'opacity-50 pointer-events-none' : ''}>
+                      <Label className="text-right block mb-2">
+                        קשור ללקוח (אופציונלי)
+                        <span className="text-xs text-gray-500 mr-1">- לשיוך המכתב להיסטוריה של לקוח</span>
+                      </Label>
+                      <ClientSelector
+                        value={taggedClientId}
+                        onChange={(client) => setTaggedClientId(client?.id || null)}
+                        label=""
+                        placeholder="בחר לקוח לשיוך המכתב (אופציונלי)..."
+                      />
+                      {taggedClientId && (
+                        <p className="text-xs text-blue-600 mt-1 text-right">
+                          ✓ המכתב ישוייך ללקוח ויופיע בהיסטוריה שלו
+                        </p>
+                      )}
                     </div>
 
                     {/* Manual Email Recipients */}
