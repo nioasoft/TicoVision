@@ -45,8 +45,8 @@ import { ClientSelector } from '@/components/ClientSelector';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Filter } from 'lucide-react';
-import { format } from 'date-fns';
+import { CalendarIcon, Filter, List, Users, Calendar as CalendarListIcon, ArrowUpDown } from 'lucide-react';
+import { format, isToday, isYesterday, isThisWeek, isThisMonth, startOfDay } from 'date-fns';
 import { he } from 'date-fns/locale';
 
 export function LetterHistoryPage() {
@@ -73,6 +73,12 @@ export function LetterHistoryPage() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // ⭐ NEW: View mode and sorting
+  type ViewMode = 'flat' | 'by_client' | 'by_date';
+  const [viewMode, setViewMode] = useState<ViewMode>('flat');
+  const [sortField, setSortField] = useState<'created_at' | 'subject' | 'client_name'>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,7 +108,7 @@ export function LetterHistoryPage() {
   useEffect(() => {
     loadData();
     loadStatistics();
-  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, selectedClientId, selectedStatuses, dateFrom, dateTo, currentPage]);
+  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, selectedClientId, selectedStatuses, dateFrom, dateTo, currentPage, sortField, sortDirection]);
 
   /**
    * Load letter data
@@ -159,10 +165,11 @@ export function LetterHistoryPage() {
         filters.status = 'sent_email'; // Updated: use new status value
       }
 
+      // ⭐ Use selected sorting
       const { data, total, error } = await letterHistoryService.getAllLetters(
         filters,
         { page: currentPage, pageSize },
-        { field: 'created_at', direction: 'desc' }
+        { field: sortField, direction: sortDirection }
       );
 
       if (error) throw error;
@@ -373,6 +380,90 @@ export function LetterHistoryPage() {
   const currentLetters = activeTab === 'sent' ? sentLetters : draftLetters;
   const currentTotal = activeTab === 'sent' ? totalSent : totalDrafts;
   const totalPages = Math.ceil(currentTotal / pageSize);
+
+  /**
+   * ⭐ NEW: Group letters by client
+   */
+  const groupByClient = (letters: LetterHistoryItem[]) => {
+    const grouped = new Map<string, LetterHistoryItem[]>();
+
+    letters.forEach(letter => {
+      const clientKey = letter.client_id || 'no-client';
+      const clientName = letter.client_name || letter.client_company || 'ללא לקוח';
+
+      if (!grouped.has(clientKey)) {
+        grouped.set(clientKey, []);
+      }
+      grouped.get(clientKey)!.push(letter);
+    });
+
+    // Convert to array and sort by client name
+    return Array.from(grouped.entries())
+      .map(([key, letters]) => ({
+        key,
+        label: letters[0]?.client_name || letters[0]?.client_company || 'ללא לקוח',
+        letters,
+        count: letters.length
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'he'));
+  };
+
+  /**
+   * ⭐ NEW: Group letters by date
+   */
+  const groupByDate = (letters: LetterHistoryItem[]) => {
+    const grouped = new Map<string, LetterHistoryItem[]>();
+
+    letters.forEach(letter => {
+      const createdDate = new Date(letter.created_at);
+      let dateKey: string;
+      let dateLabel: string;
+
+      if (isToday(createdDate)) {
+        dateKey = 'today';
+        dateLabel = 'היום';
+      } else if (isYesterday(createdDate)) {
+        dateKey = 'yesterday';
+        dateLabel = 'אתמול';
+      } else if (isThisWeek(createdDate)) {
+        dateKey = 'this-week';
+        dateLabel = 'השבוע';
+      } else if (isThisMonth(createdDate)) {
+        dateKey = 'this-month';
+        dateLabel = 'החודש';
+      } else {
+        const monthKey = format(createdDate, 'yyyy-MM');
+        dateKey = monthKey;
+        dateLabel = format(createdDate, 'MMMM yyyy', { locale: he });
+      }
+
+      if (!grouped.has(dateKey)) {
+        grouped.set(dateKey, []);
+      }
+      grouped.get(dateKey)!.push(letter);
+    });
+
+    // Convert to array with proper ordering
+    const order = ['today', 'yesterday', 'this-week', 'this-month'];
+    return Array.from(grouped.entries())
+      .map(([key, letters]) => ({
+        key,
+        label: order.includes(key)
+          ? (key === 'today' ? 'היום' : key === 'yesterday' ? 'אתמול' : key === 'this-week' ? 'השבוע' : 'החודש')
+          : format(new Date(letters[0].created_at), 'MMMM yyyy', { locale: he }),
+        letters,
+        count: letters.length
+      }))
+      .sort((a, b) => {
+        const aIndex = order.indexOf(a.key);
+        const bIndex = order.indexOf(b.key);
+        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+        if (aIndex !== -1) return -1;
+        if (bIndex !== -1) return 1;
+        // Sort other months by key (yyyy-MM) descending
+        return b.key.localeCompare(a.key);
+      });
+  };
 
   return (
     <div className="space-y-6">
@@ -637,6 +728,67 @@ export function LetterHistoryPage() {
             )}
           </div>
 
+          {/* ⭐ NEW: View Mode & Sorting Controls */}
+          <div className="mb-4 flex items-center justify-between gap-4 border-t pt-4">
+            {/* View Mode Toggles */}
+            <div className="flex items-center gap-2">
+              <Label className="text-sm text-muted-foreground">תצוגה:</Label>
+              <div className="flex gap-1 rounded-lg border p-1">
+                <Button
+                  variant={viewMode === 'flat' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('flat')}
+                  className="gap-2"
+                >
+                  <List className="h-4 w-4" />
+                  רשימה
+                </Button>
+                <Button
+                  variant={viewMode === 'by_client' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('by_client')}
+                  className="gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  לפי לקוח
+                </Button>
+                <Button
+                  variant={viewMode === 'by_date' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('by_date')}
+                  className="gap-2"
+                >
+                  <CalendarListIcon className="h-4 w-4" />
+                  לפי תאריך
+                </Button>
+              </div>
+            </div>
+
+            {/* Sorting Controls */}
+            <div className="flex items-center gap-2">
+              <Label className="text-sm text-muted-foreground">מיון:</Label>
+              <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
+                <SelectTrigger className="w-[140px] rtl:text-right">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rtl:text-right">
+                  <SelectItem value="created_at">תאריך יצירה</SelectItem>
+                  <SelectItem value="subject">נושא</SelectItem>
+                  <SelectItem value="client_name">שם לקוח</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                className="gap-2"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                {sortDirection === 'asc' ? 'עולה' : 'יורד'}
+              </Button>
+            </div>
+          </div>
+
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'sent' | 'drafts')}>
             <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -655,7 +807,8 @@ export function LetterHistoryPage() {
                 <div className="flex justify-center py-12">
                   <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : (
+              ) : viewMode === 'flat' ? (
+                // ⭐ Flat view - regular table
                 <LetterHistoryTable
                   letters={currentLetters}
                   onViewLetter={handleViewLetter}
@@ -665,6 +818,50 @@ export function LetterHistoryPage() {
                   onGeneratePDF={handleGeneratePDF}
                   isDraftsMode={false}
                 />
+              ) : viewMode === 'by_client' ? (
+                // ⭐ Grouped by client
+                <div className="space-y-6">
+                  {groupByClient(currentLetters).map(group => (
+                    <div key={group.key} className="space-y-2">
+                      <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="font-semibold">{group.label}</h3>
+                        <span className="text-sm text-muted-foreground">({group.count} מכתבים)</span>
+                      </div>
+                      <LetterHistoryTable
+                        letters={group.letters}
+                        onViewLetter={handleViewLetter}
+                        onResendLetter={handleResendLetter}
+                        onEditLetter={handleEditLetter}
+                        onPrintLetter={handlePrintLetter}
+                        onGeneratePDF={handleGeneratePDF}
+                        isDraftsMode={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // ⭐ Grouped by date
+                <div className="space-y-6">
+                  {groupByDate(currentLetters).map(group => (
+                    <div key={group.key} className="space-y-2">
+                      <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
+                        <CalendarListIcon className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="font-semibold">{group.label}</h3>
+                        <span className="text-sm text-muted-foreground">({group.count} מכתבים)</span>
+                      </div>
+                      <LetterHistoryTable
+                        letters={group.letters}
+                        onViewLetter={handleViewLetter}
+                        onResendLetter={handleResendLetter}
+                        onEditLetter={handleEditLetter}
+                        onPrintLetter={handlePrintLetter}
+                        onGeneratePDF={handleGeneratePDF}
+                        isDraftsMode={false}
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
             </TabsContent>
 
@@ -721,7 +918,8 @@ export function LetterHistoryPage() {
                 <div className="flex justify-center py-12">
                   <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : (
+              ) : viewMode === 'flat' ? (
+                // ⭐ Flat view - regular table
                 <LetterHistoryTable
                   letters={currentLetters}
                   onViewLetter={handleViewLetter}
@@ -734,6 +932,56 @@ export function LetterHistoryPage() {
                   selectedIds={selectedDraftIds}
                   onToggleSelect={toggleDraftSelection}
                 />
+              ) : viewMode === 'by_client' ? (
+                // ⭐ Grouped by client
+                <div className="space-y-6">
+                  {groupByClient(currentLetters).map(group => (
+                    <div key={group.key} className="space-y-2">
+                      <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="font-semibold">{group.label}</h3>
+                        <span className="text-sm text-muted-foreground">({group.count} טיוטות)</span>
+                      </div>
+                      <LetterHistoryTable
+                        letters={group.letters}
+                        onViewLetter={handleViewLetter}
+                        onResendLetter={handleResendLetter}
+                        onEditLetter={handleEditLetter}
+                        onDeleteDraft={handleDeleteDraft}
+                        onGeneratePDF={handleGeneratePDF}
+                        isDraftsMode={true}
+                        isSelectMode={isSelectMode}
+                        selectedIds={selectedDraftIds}
+                        onToggleSelect={toggleDraftSelection}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // ⭐ Grouped by date
+                <div className="space-y-6">
+                  {groupByDate(currentLetters).map(group => (
+                    <div key={group.key} className="space-y-2">
+                      <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
+                        <CalendarListIcon className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="font-semibold">{group.label}</h3>
+                        <span className="text-sm text-muted-foreground">({group.count} טיוטות)</span>
+                      </div>
+                      <LetterHistoryTable
+                        letters={group.letters}
+                        onViewLetter={handleViewLetter}
+                        onResendLetter={handleResendLetter}
+                        onEditLetter={handleEditLetter}
+                        onDeleteDraft={handleDeleteDraft}
+                        onGeneratePDF={handleGeneratePDF}
+                        isDraftsMode={true}
+                        isSelectMode={isSelectMode}
+                        selectedIds={selectedDraftIds}
+                        onToggleSelect={toggleDraftSelection}
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
             </TabsContent>
           </Tabs>
