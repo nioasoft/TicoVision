@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Check, Smartphone, Phone } from 'lucide-react';
+import { Check, Smartphone, Phone, PhoneCall } from 'lucide-react';
 import TenantContactService from '@/services/tenant-contact.service';
 import type { ContactType } from '@/services/client.service';
 import type { TenantContact } from '@/types/tenant-contact.types';
@@ -247,7 +247,7 @@ export function ContactAutocompleteInput({
         {/* Phone Secondary field */}
         <div>
           <Label htmlFor={`${label}-phone-secondary`} className="text-right flex items-center justify-end gap-1 mb-2 rtl:text-right rtl:flex-row-reverse">
-            <Phone className="h-4 w-4" />
+            <PhoneCall className="h-4 w-4" />
           </Label>
           <Input
             id={`${label}-phone-secondary`}

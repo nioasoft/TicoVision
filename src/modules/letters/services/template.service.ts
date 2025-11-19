@@ -693,7 +693,7 @@ export class TemplateService extends BaseService {
    * Convert CID image references to web paths for browser preview
    * CID references work in emails but not in browsers
    */
-  private replaceCidWithWebPaths(html: string): string {
+  public replaceCidWithWebPaths(html: string): string {
     const cidMap: Record<string, string> = {
       'cid:tico_logo': '/brand/tico_logo_240.png',
       'cid:tico_logo_new': '/brand/Tico_logo_png_new.png',

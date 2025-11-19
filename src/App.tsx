@@ -19,6 +19,7 @@ const FeeTrackingPage = lazy(() => import('@/pages/FeeTrackingPage').then(m => (
 const LettersPage = lazy(() => import('@/pages/LettersPage').then(m => ({ default: m.LettersPage })));
 const LetterTemplatesPage = lazy(() => import('@/pages/LetterTemplatesPage').then(m => ({ default: m.LetterTemplatesPage })));
 const LetterHistoryPage = lazy(() => import('@/pages/LetterHistoryPage').then(m => ({ default: m.LetterHistoryPage })));
+const ComponentSimulatorPage = lazy(() => import('@/pages/ComponentSimulatorPage').then(m => ({ default: m.ComponentSimulatorPage })));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
@@ -151,6 +152,11 @@ function App() {
                       <Route path="/letter-history" element={
                         <ErrorBoundary>
                           <LetterHistoryPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/component-simulator" element={
+                        <ErrorBoundary>
+                          <ComponentSimulatorPage />
                         </ErrorBoundary>
                       } />
                       <Route path="/users" element={

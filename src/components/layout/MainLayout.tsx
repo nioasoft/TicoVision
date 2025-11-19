@@ -67,6 +67,7 @@ const navigation: NavigationItem[] = [
     allowedRoles: ['admin'] as UserRole[],
     submenu: [
       { name: 'כתיבת מכתבים', href: '/letter-templates' },
+      { name: 'סימולציית מכתבים', href: '/component-simulator' },
       { name: 'היסטוריית מכתבים', href: '/letter-history' },
     ]
   },
