@@ -92,11 +92,22 @@ class LetterHistoryService {
         query = query.not('fee_calculation_id', 'is', null);
       }
 
+      // Full-text search using search_vector (faster and supports Hebrew)
       if (filters.searchQuery) {
-        query = query.or(`
-          client.company_name.ilike.%${filters.searchQuery}%,
-          subject.ilike.%${filters.searchQuery}%
-        `);
+        // Convert search query to tsquery format (replace spaces with & for AND logic)
+        const searchTerms = filters.searchQuery
+          .trim()
+          .split(/\s+/)
+          .map(term => term.replace(/[^\w\u0590-\u05FF]/g, '')) // Keep only alphanumeric and Hebrew
+          .filter(term => term.length > 0)
+          .join(' & ');
+
+        if (searchTerms) {
+          query = query.textSearch('search_vector', searchTerms, {
+            type: 'websearch',
+            config: 'simple'
+          });
+        }
       }
 
       // Apply sorting

@@ -41,6 +41,13 @@ import { LetterHistoryTable } from '@/modules/letters/components/LetterHistoryTa
 import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog';
 import { ResendLetterDialog } from '@/modules/letters/components/ResendLetterDialog';
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
+import { ClientSelector } from '@/components/ClientSelector';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon, Filter } from 'lucide-react';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 
 export function LetterHistoryPage() {
   const navigate = useNavigate();
@@ -59,6 +66,13 @@ export function LetterHistoryPage() {
   const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
   const [showOnlyFeeLetters, setShowOnlyFeeLetters] = useState(false); // NEW: Filter for fee letters
+
+  // ⭐ NEW: Advanced filters
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,7 +102,7 @@ export function LetterHistoryPage() {
   useEffect(() => {
     loadData();
     loadStatistics();
-  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, currentPage]);
+  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, selectedClientId, selectedStatuses, dateFrom, dateTo, currentPage]);
 
   /**
    * Load letter data
@@ -104,8 +118,26 @@ export function LetterHistoryPage() {
         feeLettersOnly: showOnlyFeeLetters || undefined, // NEW: Filter for fee letters
       };
 
-      // Add date filters
-      if (dateFilter !== 'all') {
+      // ⭐ NEW: Advanced filters
+      if (selectedClientId) {
+        filters.clientId = selectedClientId;
+      }
+
+      // ⭐ NEW: Status multi-select (only if not controlled by activeTab)
+      if (selectedStatuses.length > 0 && activeTab === 'sent') {
+        // For sent tab, use selected statuses if any
+        filters.status = selectedStatuses;
+      } else if (selectedStatuses.length > 0 && activeTab === 'drafts') {
+        // For drafts tab, intersect with draft statuses
+        const draftStatuses = ['draft', 'saved'];
+        filters.status = selectedStatuses.filter(s => draftStatuses.includes(s));
+      }
+
+      // ⭐ NEW: Date range filter (overrides preset dateFilter if set)
+      if (dateFrom) {
+        filters.dateFrom = dateFrom.toISOString();
+      } else if (dateFilter !== 'all') {
+        // Fallback to preset date filter if custom range not set
         const now = new Date();
         if (dateFilter === 'today') {
           filters.dateFrom = new Date(now.setHours(0, 0, 0, 0)).toISOString();
@@ -118,8 +150,12 @@ export function LetterHistoryPage() {
         }
       }
 
-      // For sent tab, show only sent emails
-      if (activeTab === 'sent') {
+      if (dateTo) {
+        filters.dateTo = dateTo.toISOString();
+      }
+
+      // For sent tab, show only sent emails (unless status multi-select is active)
+      if (activeTab === 'sent' && selectedStatuses.length === 0) {
         filters.status = 'sent_email'; // Updated: use new status value
       }
 
@@ -325,6 +361,12 @@ export function LetterHistoryPage() {
     setSearchQuery('');
     setTemplateFilter('all');
     setDateFilter('all');
+    setShowOnlyFeeLetters(false);
+    // ⭐ NEW: Reset advanced filters
+    setSelectedClientId(null);
+    setSelectedStatuses([]);
+    setDateFrom(undefined);
+    setDateTo(undefined);
     setCurrentPage(1);
   };
 
@@ -466,9 +508,131 @@ export function LetterHistoryPage() {
               </Label>
             </div>
 
-            {(searchQuery || templateFilter !== 'all' || dateFilter !== 'all') && (
+            {/* ⭐ NEW: Advanced Filters Button */}
+            <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="h-4 w-4" />
+                  פילטרים מתקדמים
+                  {(selectedClientId || selectedStatuses.length > 0 || dateFrom || dateTo) && (
+                    <span className="flex h-2 w-2 rounded-full bg-blue-600" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-96 rtl:text-right ltr:text-left" align="end">
+                <div className="space-y-4">
+                  <h4 className="font-medium">פילטרים מתקדמים</h4>
+
+                  {/* Client Filter */}
+                  <div>
+                    <Label className="mb-2 block rtl:text-right ltr:text-left">סינון לפי לקוח</Label>
+                    <ClientSelector
+                      value={selectedClientId}
+                      onChange={(client) => setSelectedClientId(client?.id || null)}
+                      placeholder="בחר לקוח..."
+                    />
+                  </div>
+
+                  {/* Status Multi-Select (only for sent tab) */}
+                  {activeTab === 'sent' && (
+                    <div>
+                      <Label className="mb-2 block rtl:text-right ltr:text-left">סטטוס שליחה</Label>
+                      <div className="space-y-2">
+                        {[
+                          { value: 'sent_email', label: 'נשלח במייל' },
+                          { value: 'sent_whatsapp', label: 'נשלח בWhatsApp' },
+                          { value: 'sent_print', label: 'הודפס' },
+                        ].map(status => (
+                          <div key={status.value} className="flex items-center gap-2 rtl:flex-row-reverse">
+                            <Checkbox
+                              id={`status-${status.value}`}
+                              checked={selectedStatuses.includes(status.value)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedStatuses([...selectedStatuses, status.value]);
+                                } else {
+                                  setSelectedStatuses(selectedStatuses.filter(s => s !== status.value));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`status-${status.value}`} className="cursor-pointer rtl:text-right ltr:text-left">
+                              {status.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Date Range Picker */}
+                  <div className="space-y-2">
+                    <Label className="block rtl:text-right ltr:text-left">טווח תאריכים</Label>
+                    <div className="grid gap-2">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-right font-normal"
+                          >
+                            <CalendarIcon className="ml-2 h-4 w-4" />
+                            {dateFrom ? format(dateFrom, 'dd/MM/yyyy', { locale: he }) : 'תאריך התחלה'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dateFrom}
+                            onSelect={setDateFrom}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-right font-normal"
+                          >
+                            <CalendarIcon className="ml-2 h-4 w-4" />
+                            {dateTo ? format(dateTo, 'dd/MM/yyyy', { locale: he }) : 'תאריך סיום'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dateTo}
+                            onSelect={setDateTo}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* Clear Advanced Filters */}
+                  {(selectedClientId || selectedStatuses.length > 0 || dateFrom || dateTo) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedClientId(null);
+                        setSelectedStatuses([]);
+                        setDateFrom(undefined);
+                        setDateTo(undefined);
+                      }}
+                      className="w-full"
+                    >
+                      נקה פילטרים מתקדמים
+                    </Button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {(searchQuery || templateFilter !== 'all' || dateFilter !== 'all' || selectedClientId || selectedStatuses.length > 0 || dateFrom || dateTo || showOnlyFeeLetters) && (
               <Button variant="ghost" onClick={resetFilters}>
-                נקה פילטרים
+                נקה הכל
               </Button>
             )}
           </div>
