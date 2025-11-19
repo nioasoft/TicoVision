@@ -1,0 +1,138 @@
+<!-- Main Container -->
+<div class="mainDiv">
+    <div class="mainDivIn">
+
+        <!-- Header - Matching Letter Template -->
+        <div class="header">
+            <!-- Logo -->
+            <div class="header-logo">
+                <img alt="TICO" data-bind="attr: { src: images.logoURL }">
+            </div>
+
+            <!-- Black line with white text - EXACTLY like letters -->
+            <div class="header-line">
+                <span>Franco & Co. Certified Public Accountants (Isr.)</span>
+            </div>
+        </div>
+
+        <!-- Page Title -->
+        <div class="pageTitle">
+            <h1 data-bind="text: labels.PageTitle">תשלום מאובטח</h1>
+            <div class="amount-display" data-bind="visible: showAmount">
+                <span data-bind="text: formatAmount()"></span>
+            </div>
+        </div>
+
+        <!-- Payment Form -->
+        <div class="formDiv">
+
+            <!-- Card Number -->
+            <div class="formRow cardRow" data-bind="hide:cardNumber.hide, css:cardNumber.CssValid">
+                <label class="fieldName" data-bind="text:cardNumber.label" for="txtCardNumber">מספר כרטיס אשראי</label>
+                <span class="fieldInput">
+                    <input type="text" maxlength="20" data-bind="value:cardNumber.value" id="txtCardNumber" placeholder="0000 0000 0000 0000">
+                </span>
+            </div>
+
+            <!-- Expiry + CVV Grid -->
+            <div class="card-details-grid">
+                <!-- Expiry Date -->
+                <div class="formRow cardRow" data-bind="hide:cardExpiration.hide, css:cardExpiration.CssValid">
+                    <label class="fieldName" data-bind="text:cardExpiration.label" for="txtCardExpiration">תוקף</label>
+                    <span class="fieldInput">
+                        <input type="text" maxlength="5" data-bind="value:cardExpiration.value" id="txtCardExpiration" placeholder="MM/YY">
+                    </span>
+                </div>
+
+                <!-- CVV -->
+                <div class="formRow cardRow" data-bind="hide:cvv.hide, css:cvv.CssValid">
+                    <label class="fieldName" data-bind="text:cvv.label" for="txtCvv">CVV</label>
+                    <span class="fieldInput">
+                        <input maxlength="4" data-bind="value:cvv.value" id="txtCvv" placeholder="123">
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card Owner ID -->
+            <div class="formRow cardRow" data-bind="hide:cardOwnerID.hide, css:cardOwnerID.CssValid">
+                <label class="fieldName" data-bind="text:cardOwnerID.label" for="txtTZ">תעודת זהות</label>
+                <span class="fieldInput">
+                    <input type="text" maxlength="20" data-bind="value:cardOwnerID.value" id="txtTZ" placeholder="123456789">
+                </span>
+            </div>
+
+            <!-- Number of Payments -->
+            <div class="formRow cardRow" data-bind="hide:numberOfPayments.hide, css:numberOfPayments.CssValid">
+                <label class="fieldName" data-bind="text:numberOfPayments.label" for="numberOfPaymentsselect">מספר תשלומים</label>
+                <span class="fieldInput">
+                    <select class="tiny" data-bind="options: numberOfPayments.selectValues, value: numberOfPayments.value" id="numberOfPaymentsselect"></select>
+                </span>
+            </div>
+
+            <!-- Security Info -->
+            <div class="security-info">
+                <div>🔒 התשלום מאובטח בהצפנת SSL 256-bit</div>
+                <div>✓ תקן אבטחה PCI DSS Level 1</div>
+                <div>✓ נתוני הכרטיס מוצפנים ולא נשמרים</div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submitDiv">
+                <div class="buttonDiv">
+                    <input type="button" value="בצע תשלום מאובטח"
+                           data-bind="value: buttonText, click: sendData, hide: hideCreditCardInputs, enable: !loadMode()" />
+                </div>
+                <div data-bind="visible:showCancelURL" class="homeLink">
+                    <a href="#" data-bind="attr: { href : cancelURL }">
+                        <span data-bind="text: labels.LinkBackToSite">חזרה לאתר</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Error Messages -->
+            <div class="errorDiv" data-bind="visible: error.hasMessages()">
+                <div class="errorDivIn">
+                    <ul>
+                        <!-- ko template: { foreach: error.messages } -->
+                        <li><span data-bind="text: message"></span></li>
+                        <!-- /ko -->
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer - Matching Letter Template -->
+        <div class="footer">
+            <div class="footerIn">
+                <!-- Contact Details -->
+                <div class="footer-content">
+                    <div class="footer-contact">
+                        <div>פרנקו ושות' רואי חשבון</div>
+                        <div>שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב</div>
+                        <div>טלפון: 03-5666170</div>
+                        <div class="email">tico@franco.co.il</div>
+                    </div>
+                </div>
+
+                <!-- Cardcom Footer (Required) -->
+                <div class="footer-cardcom">
+                    <div class="footer-text">
+                        <span data-bind="html: labels.FooterTextTop">הסליקה מתבצעת דרך</span><br>
+                        <span data-bind="html: labels.FooterTextBottom"></span>
+                    </div>
+                    <div class="footer-logo">
+                        <img alt="Cardcom" data-bind="attr: { src: images.cardcomLogoEn }">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Loading State -->
+<div class="loadingDiv" data-bind="visible: loadMode()">
+    <div>מעבד תשלום...</div>
+    <div class="loading-sub">אנא המתן, אל תסגור את החלון</div>
+</div>

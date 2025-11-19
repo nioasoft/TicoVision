@@ -1,0 +1,244 @@
+<!-- Letter Payment Section Component - BOOKKEEPING VERSION -->
+<!-- For bookkeeping services - Monthly fee -->
+<!-- Variables: amounts, monthly_amount, num_checks, check_dates_description, client_id, company_name, group_name, tax_year, service_description -->
+
+<!--[if mso]>
+<style type="text/css">
+  a { color: #000000 !important; text-decoration: none !important; }
+  table td { padding: 20px !important; }
+</style>
+<![endif]-->
+
+<!-- BODY: Payment Section -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="border-top: 1px solid #000000;"></div>
+
+        <!-- Fee Summary Header - Bookkeeping (Monthly Fee) -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+            <tr>
+                <!-- Blue bullet -->
+                <td width="20" style="vertical-align: top; padding-top: 4px;">
+                    <img src="cid:bullet_star_blue" width="11" height="11" alt="•" style="display: block; border: 0;">
+                </td>
+                <!-- Text -->
+                <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 28px; line-height: 1.5; font-weight: 700; color: #395BF7; text-align: right;">
+                    אשר על כן, שכר הטרחה הנדרש לשנת המס {{tax_year}} בעבור מלוא {{service_description}} שימסרו לכם יסתכם לסך של:
+                </td>
+            </tr>
+            <tr>
+                <!-- Empty cell for bullet alignment -->
+                <td width="20"></td>
+                <!-- Centered Monthly Amount Box -->
+                <td style="padding-top: 10px; text-align: center;">
+                    <span style="background-color: #EEEDD8; padding: 8px 16px; border-radius: 4px; display: inline-block; font-weight: 700; color: #09090b; font-size: 26px;">₪{{monthly_amount}} לחודש לפני מע״מ</span>
+                </td>
+            </tr>
+        </table>
+
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 28px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin: 20px 0 20px 0;">
+            אופן התשלום:
+        </div>
+
+        <!-- Button 1: Bank Transfer (Most Recommended - 9% discount) -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 20px;">
+            <tr>
+                <td style="padding: 20px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 30px; font-weight: 400; margin-bottom: 8px; text-align: right; color: #000000;">
+                        תשלום מומלץ - בהעברה בנקאית
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; font-weight: 700; color: #BB0B0B; margin-bottom: 8px; text-align: right; text-decoration: underline;">
+                        בתמורה משרדנו יעניק לכם הנחה של 9%.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
+                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
+                        והסכום לאחר ההנחה הוא ₪{{amount_after_bank}} כולל מע"מ.
+                    </div>
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=bank_transfer&client_id={{client_id}}&amount={{amount_original}}&redirect_url=https://ticovision.vercel.app/bank-transfer-details.html" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
+                        <table width="70%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
+                            <tr>
+                                <td style="padding: 14px 16px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="vertical-align: middle; text-align: right;">
+                                                <span style="color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; font-weight: 400; line-height: 1.2;">לחץ לאישור וקבלת פרטי חשבון בנק להעברה</span>
+                                            </td>
+                                            <td style="vertical-align: middle;"></td>
+                                            <td width="60" style="vertical-align: middle; text-align: left;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="display: inline-block;">
+                                                    <tr>
+                                                        <td style="vertical-align: middle; padding: 0 2px 0 0; line-height: 0;">
+                                                            <div style="width: 48px; height: 1px; background-color: #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                        <td style="vertical-align: middle; padding: 0; line-height: 0;">
+                                                            <div style="width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Button 2: Credit Card Single Payment (8% discount) -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 20px;">
+            <tr>
+                <td style="padding: 20px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 30px; font-weight: 400; margin-bottom: 8px; text-align: right; color: #000000;">
+                        כרטיס אשראי בתשלום אחד
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; font-weight: 700; color: #BB0B0B; margin-bottom: 8px; text-align: right; text-decoration: underline;">
+                        בתמורה משרדנו יעניק לכם הנחה של 8%.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
+                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
+                        והסכום לאחר ההנחה הוא ₪{{amount_after_single}} כולל מע"מ.
+                    </div>
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=cc_single&client_id={{client_id}}&amount={{amount_original}}&redirect_url=https://ticovision.vercel.app/payment-credit-single.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
+                            <tr>
+                                <td style="padding: 14px 16px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="vertical-align: middle; text-align: right; white-space: nowrap;">
+                                                <span style="color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; font-weight: 400; line-height: 1;">לביצוע תשלום</span>
+                                            </td>
+                                            <td style="vertical-align: middle;"></td>
+                                            <td width="60" style="vertical-align: middle; text-align: left;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="display: inline-block;">
+                                                    <tr>
+                                                        <td style="vertical-align: middle; padding: 0 2px 0 0; line-height: 0;">
+                                                            <div style="width: 48px; height: 1px; background-color: #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                        <td style="vertical-align: middle; padding: 0; line-height: 0;">
+                                                            <div style="width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Button 3: Credit Card Installments (4% discount) -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 20px;">
+            <tr>
+                <td style="padding: 20px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 30px; font-weight: 400; margin-bottom: 8px; text-align: right; color: #000000;">
+                        כרטיס אשראי בתשלומים - ככל שתחפצו
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; font-weight: 700; color: #BB0B0B; margin-bottom: 8px; text-align: right; text-decoration: underline;">
+                        בתמורה משרדנו יעניק לכם הנחה של 4%.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
+                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
+                        והסכום לאחר ההנחה הוא ₪{{amount_after_payments}} כולל מע"מ.
+                    </div>
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=cc_installments&client_id={{client_id}}&amount={{amount_original}}&redirect_url=https://ticovision.vercel.app/payment-credit-installments.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
+                            <tr>
+                                <td style="padding: 14px 16px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="vertical-align: middle; text-align: right; white-space: nowrap;">
+                                                <span style="color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; font-weight: 400; line-height: 1;">לביצוע תשלום</span>
+                                            </td>
+                                            <td style="vertical-align: middle;"></td>
+                                            <td width="60" style="vertical-align: middle; text-align: left;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="display: inline-block;">
+                                                    <tr>
+                                                        <td style="vertical-align: middle; padding: 0 2px 0 0; line-height: 0;">
+                                                            <div style="width: 48px; height: 1px; background-color: #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                        <td style="vertical-align: middle; padding: 0; line-height: 0;">
+                                                            <div style="width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </a>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Button 4: Checks (8 or 12) - Dynamic -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-radius: 0px; background-color: #EEEDD8; margin-bottom: 20px;">
+            <tr>
+                <td style="padding: 20px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 30px; font-weight: 400; margin-bottom: 8px; text-align: right; color: #000000;">
+                        תשלום רגיל בהמחאות: כמדי שנה {{num_checks}} המחאות שוות
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
+                        בסכום של ₪{{amount_original}} כולל מע"מ.
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #71717a; text-align: right; font-weight: 400; margin-bottom: 16px;">
+                        תאריכי ההמחאות הינם לחמישי לכל חודש,
+                        <br>
+                        {{check_dates_description}}.
+                    </div>
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=checks&client_id={{client_id}}&amount={{amount_original}}&num_checks={{num_checks}}&redirect_url=https://ticovision.vercel.app/check-details.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
+                        <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
+                            <tr>
+                                <td style="padding: 14px 16px;">
+                                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="vertical-align: middle; text-align: right; white-space: nowrap;">
+                                                <span style="color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; font-weight: 400; line-height: 1;">לחץ לאישור</span>
+                                            </td>
+                                            <td style="vertical-align: middle;"></td>
+                                            <td width="60" style="vertical-align: middle; text-align: left;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="display: inline-block;">
+                                                    <tr>
+                                                        <td style="vertical-align: middle; padding: 0 2px 0 0; line-height: 0;">
+                                                            <div style="width: 48px; height: 1px; background-color: #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                        <td style="vertical-align: middle; padding: 0; line-height: 0;">
+                                                            <div style="width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ffffff; font-size: 0; line-height: 0;"></div>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+                    </a>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- FOOTER: Contact (Sigal) - MOVED HERE FROM FOOTER -->
+<tr>
+    <td style="padding-top: 15px; padding-bottom: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; padding-top: 0px; font-size: 19px; line-height: 1.2; font-weight: 600; color: #09090b; text-align: right;">
+            להסדרת התשלום יש לפנות לסמנכ"לית הכספים, סיגל נגר, בטלפון 050-8620993<br>
+            או במייל <span style="color: #395BF7;">sigal@franco.co.il</span>.
+        </div>
+    </td>
+</tr>

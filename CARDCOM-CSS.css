@@ -1,0 +1,404 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   TICO - Cardcom Payment Page CSS (Matching Letter Design)
+   Terminal: 172012
+   Version: 4.0 (Separate HTML/CSS)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ===== Colors - Matching Letter Templates ===== */
+:root {
+    --tico-blue: #395BF7;        /* Email links color */
+    --black: #000000;            /* Header/Footer lines */
+    --text-primary: #2d3748;     /* Main text */
+    --text-secondary: #71717a;   /* Footer text (gray) */
+    --border-color: #e2e8f0;     /* Light borders */
+    --bg-white: #ffffff;
+    --bg-light: #f7fafc;
+    --error-red: #ef4444;
+    --success-green: #10b981;
+}
+
+/* ===== Reset ===== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
+    background: linear-gradient(135deg, #f7fafc 0%, #e2e8f0 100%);
+    color: var(--text-primary);
+    direction: rtl;
+    text-align: right;
+    line-height: 1.6;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* ===== Main Container ===== */
+.mainDiv {
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--bg-white);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.mainDivIn {
+    padding: 0;
+}
+
+/* ===== Header - Matching Letter Template ===== */
+.header {
+    background: var(--bg-white);
+    padding: 30px 30px 0 30px;
+    text-align: center;
+}
+
+.header-logo {
+    margin-bottom: 20px;
+}
+
+.header-logo img {
+    max-width: 180px;
+    height: auto;
+    display: inline-block;
+}
+
+/* Black thick line with white text - EXACTLY like letters */
+.header-line {
+    background-color: var(--black);
+    height: 37px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px -30px 0 -30px; /* Extend to edges */
+}
+
+.header-line span {
+    font-family: 'Arial', 'Heebo', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #ffffff;
+    line-height: 37px;
+}
+
+/* ===== Page Title ===== */
+.pageTitle {
+    padding: 30px 30px 10px 30px;
+    text-align: center;
+}
+
+.pageTitle h1 {
+    font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--black);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.amount-display {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--tico-blue);
+    margin-top: 10px;
+    direction: ltr;
+    text-align: center;
+}
+
+/* ===== Form Container ===== */
+.formDiv {
+    padding: 20px 30px 30px 30px;
+}
+
+/* ===== Form Rows ===== */
+.formRow {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.formRow.cardRow {
+    /* Card-specific rows */
+}
+
+/* Labels */
+.fieldName {
+    font-family: 'Heebo', 'Assistant', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Input Fields */
+.fieldInput input,
+.fieldInput select {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: 'Heebo', 'Assistant', sans-serif;
+    font-size: 16px;
+    color: var(--text-primary);
+    background: var(--bg-white);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    direction: ltr;
+    text-align: left;
+}
+
+.fieldInput input:focus,
+.fieldInput select:focus {
+    outline: none;
+    border-color: var(--tico-blue);
+    box-shadow: 0 0 0 3px rgba(57, 91, 247, 0.1);
+}
+
+.fieldInput input::placeholder {
+    color: #9ca3af;
+}
+
+/* Expiry + CVV Grid */
+.card-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+/* Select Dropdown */
+select.tiny {
+    padding: 10px 14px;
+    font-size: 15px;
+}
+
+/* Valid/Invalid States */
+.validCss input,
+.validCss select {
+    border-color: var(--success-green);
+}
+
+.notvalidCss input,
+.notvalidCss select {
+    border-color: var(--error-red);
+}
+
+/* ===== Security Info ===== */
+.security-info {
+    background: #f0f9ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 20px 0;
+    text-align: center;
+    font-size: 13px;
+    color: #1e40af;
+    line-height: 1.8;
+}
+
+.security-info div {
+    margin: 4px 0;
+}
+
+/* ===== Submit Button - Blue like email links ===== */
+.submitDiv {
+    padding: 10px 0 0 0;
+}
+
+.buttonDiv {
+    text-align: center;
+}
+
+.buttonDiv input[type="button"] {
+    width: 100%;
+    padding: 16px 32px;
+    font-family: 'Heebo', 'Assistant', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    background: var(--tico-blue);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(57, 91, 247, 0.2);
+}
+
+.buttonDiv input[type="button"]:hover:not(:disabled) {
+    background: #2d4ad1;
+    box-shadow: 0 6px 12px rgba(57, 91, 247, 0.3);
+    transform: translateY(-1px);
+}
+
+.buttonDiv input[type="button"]:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Cancel Link */
+.homeLink {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.homeLink a {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.homeLink a:hover {
+    color: var(--tico-blue);
+}
+
+/* ===== Error Messages ===== */
+.errorDiv {
+    margin: 20px 0;
+    padding: 0;
+}
+
+.errorDivIn {
+    background: #fef2f2;
+    border: 2px solid var(--error-red);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.errorDivIn ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.errorDivIn li {
+    color: var(--error-red);
+    font-size: 14px;
+    font-weight: 600;
+    margin: 6px 0;
+    padding-right: 20px;
+    position: relative;
+}
+
+.errorDivIn li:before {
+    content: "⚠";
+    position: absolute;
+    right: 0;
+    font-size: 16px;
+}
+
+/* ===== Footer - Matching Letter Template ===== */
+.footer {
+    background: var(--bg-white);
+    padding: 0 30px 30px 30px;
+    margin-top: 20px;
+}
+
+.footerIn {
+    padding-top: 30px;
+    border-top: 13px solid var(--black); /* Thick black line like letters */
+}
+
+.footer-content {
+    padding-top: 20px;
+}
+
+.footer-contact {
+    text-align: right;
+}
+
+.footer-contact div {
+    font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.footer-contact .email {
+    color: var(--tico-blue);
+    font-weight: 600;
+}
+
+.footer-cardcom {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+    margin-top: 30px;
+}
+
+.footer-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.footer-logo img {
+    max-width: 120px;
+    height: auto;
+    opacity: 0.7;
+}
+
+/* ===== Loading State ===== */
+.loadingDiv {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.loading-sub {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+    body {
+        padding: 10px;
+    }
+
+    .mainDiv {
+        border-radius: 8px;
+    }
+
+    .header,
+    .pageTitle,
+    .formDiv,
+    .footer {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .header-line {
+        margin-left: -20px;
+        margin-right: -20px;
+    }
+
+    .header-line span {
+        font-size: 14px;
+    }
+
+    .pageTitle h1 {
+        font-size: 20px;
+    }
+
+    .amount-display {
+        font-size: 24px;
+    }
+
+    .card-details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== Hidden Elements ===== */
+[data-bind*="hide:true"],
+.hide {
+    display: none !important;
+}

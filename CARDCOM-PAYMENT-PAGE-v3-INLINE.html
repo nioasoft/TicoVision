@@ -1,0 +1,154 @@
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  TICO - Cardcom Payment Page v3 (INLINE STYLES ONLY)
+
+  Instructions:
+  1. Login to: https://secure.cardcom.solutions
+  2. Navigate to: הגדרות > סליקה בפרופיל נמוך > עיצוב מותאם אישית CSS ו HTML גרסה 5
+  3. Delete all existing code
+  4. Copy and paste THIS ENTIRE FILE
+  5. Click "שמור שינויים" (Save Changes)
+  6. Email Cardcom: dev@cardcom.solutions
+
+  Design: Matches letter templates (black lines, blue accents, clean)
+  Terminal: 172012
+  Version: 3.0 (Inline Styles Only - No <style> tag)
+═══════════════════════════════════════════════════════════════════════════════
+-->
+
+<div class="mainDiv" style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.07), 0 10px 20px rgba(0,0,0,0.1); overflow: hidden; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;">
+    <div class="mainDivIn">
+
+        <!-- Header - Matching Letter Template -->
+        <div class="header" style="background: #ffffff; padding: 30px 30px 0 30px; text-align: center;">
+            <!-- Logo -->
+            <div class="header-logo" style="margin-bottom: 20px;">
+                <img alt="TICO" data-bind="attr: { src: images.logoURL }" style="max-width: 180px; height: auto; display: inline-block;">
+            </div>
+
+            <!-- Black line with white text - EXACTLY like letters -->
+            <div class="header-line" style="background-color: #000000; height: 37px; display: flex; align-items: center; justify-content: center; margin: 20px -30px 0 -30px;">
+                <span style="font-family: 'Arial', 'Heebo', sans-serif; font-size: 18px; font-weight: 400; color: #ffffff; line-height: 37px;">Franco & Co. Certified Public Accountants (Isr.)</span>
+            </div>
+        </div>
+
+        <!-- Page Title -->
+        <div class="pageTitle" style="padding: 30px 30px 10px 30px; text-align: center;">
+            <h1 data-bind="text: labels.PageTitle" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 24px; font-weight: 700; color: #000000; margin: 0; line-height: 1.2;">תשלום מאובטח</h1>
+            <div class="amount-display" data-bind="visible: showAmount" style="font-size: 28px; font-weight: 700; color: #395BF7; margin-top: 10px; direction: ltr; text-align: center;">
+                <span data-bind="text: formatAmount()"></span>
+            </div>
+        </div>
+
+        <!-- Payment Form -->
+        <div class="formDiv" style="padding: 20px 30px 30px 30px;">
+
+            <!-- Card Number -->
+            <div class="formRow cardRow" data-bind="hide:cardNumber.hide, css:cardNumber.CssValid" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+                <label class="fieldName" data-bind="text:cardNumber.label" for="txtCardNumber" style="font-family: 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 600; color: #2d3748; display: block; margin-bottom: 4px;">מספר כרטיס אשראי</label>
+                <span class="fieldInput">
+                    <input type="text" maxlength="20" data-bind="value:cardNumber.value" id="txtCardNumber" placeholder="0000 0000 0000 0000" style="width: 100%; padding: 12px 16px; font-family: 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #2d3748; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; direction: ltr; text-align: left;">
+                </span>
+            </div>
+
+            <!-- Expiry Date -->
+            <div class="formRow cardRow" data-bind="hide:cardExpiration.hide, css:cardExpiration.CssValid" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px; width: 48%; display: inline-block; vertical-align: top; margin-left: 4%;">
+                <label class="fieldName" data-bind="text:cardExpiration.label" for="txtCardExpiration" style="font-family: 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 600; color: #2d3748; display: block; margin-bottom: 4px;">תוקף</label>
+                <span class="fieldInput">
+                    <input type="text" maxlength="5" data-bind="value:cardExpiration.value" id="txtCardExpiration" placeholder="MM/YY" style="width: 100%; padding: 12px 16px; font-family: 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #2d3748; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; direction: ltr; text-align: left;">
+                </span>
+            </div>
+
+            <!-- CVV -->
+            <div class="formRow cardRow" data-bind="hide:cvv.hide, css:cvv.CssValid" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px; width: 48%; display: inline-block; vertical-align: top;">
+                <label class="fieldName" data-bind="text:cvv.label" for="txtCvv" style="font-family: 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 600; color: #2d3748; display: block; margin-bottom: 4px;">CVV</label>
+                <span class="fieldInput">
+                    <input maxlength="4" data-bind="value:cvv.value" id="txtCvv" placeholder="123" style="width: 100%; padding: 12px 16px; font-family: 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #2d3748; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; direction: ltr; text-align: left;">
+                </span>
+            </div>
+
+            <!-- Card Owner ID -->
+            <div class="formRow cardRow" data-bind="hide:cardOwnerID.hide, css:cardOwnerID.CssValid" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+                <label class="fieldName" data-bind="text:cardOwnerID.label" for="txtTZ" style="font-family: 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 600; color: #2d3748; display: block; margin-bottom: 4px;">תעודת זהות</label>
+                <span class="fieldInput">
+                    <input type="text" maxlength="20" data-bind="value:cardOwnerID.value" id="txtTZ" placeholder="123456789" style="width: 100%; padding: 12px 16px; font-family: 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #2d3748; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; direction: ltr; text-align: left;">
+                </span>
+            </div>
+
+            <!-- Number of Payments -->
+            <div class="formRow cardRow" data-bind="hide:numberOfPayments.hide, css:numberOfPayments.CssValid" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+                <label class="fieldName" data-bind="text:numberOfPayments.label" for="numberOfPaymentsselect" style="font-family: 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 600; color: #2d3748; display: block; margin-bottom: 4px;">מספר תשלומים</label>
+                <span class="fieldInput">
+                    <select class="tiny" data-bind="options: numberOfPayments.selectValues, value: numberOfPayments.value" id="numberOfPaymentsselect" style="width: 100%; padding: 12px 16px; font-family: 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #2d3748; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; direction: ltr; text-align: left;"></select>
+                </span>
+            </div>
+
+            <!-- Security Info -->
+            <div class="security-info" style="background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin: 20px 0; text-align: center; font-size: 13px; color: #1e40af; line-height: 1.8;">
+                <div style="margin: 4px 0;">🔒 התשלום מאובטח בהצפנת SSL 256-bit</div>
+                <div style="margin: 4px 0;">✓ תקן אבטחה PCI DSS Level 1</div>
+                <div style="margin: 4px 0;">✓ נתוני הכרטיס מוצפנים ולא נשמרים</div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submitDiv" style="padding: 10px 0 0 0;">
+                <div class="buttonDiv" style="text-align: center;">
+                    <input type="button" value="בצע תשלום מאובטח" data-bind="value: buttonText, click: sendData, hide: hideCreditCardInputs, enable: !loadMode()" style="width: 100%; padding: 16px 32px; font-family: 'Heebo', 'Assistant', sans-serif; font-size: 18px; font-weight: 700; color: #ffffff; background: #395BF7; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(57, 91, 247, 0.2);" />
+                </div>
+                <div data-bind="visible:showCancelURL" class="homeLink" style="text-align: center; margin-top: 16px;">
+                    <a href="#" data-bind="attr: { href : cancelURL }" style="font-size: 14px; color: #71717a; text-decoration: underline;">
+                        <span data-bind="text: labels.LinkBackToSite">חזרה לאתר</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Error Messages -->
+            <div class="errorDiv" data-bind="visible: error.hasMessages()" style="margin: 20px 0; padding: 0;">
+                <div class="errorDivIn" style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 8px; padding: 16px;">
+                    <ul style="list-style: none; margin: 0; padding: 0;">
+                        <!-- ko template: { foreach: error.messages } -->
+                        <li style="color: #ef4444; font-size: 14px; font-weight: 600; margin: 6px 0; padding-right: 20px; position: relative;">
+                            <span data-bind="text: message"></span>
+                        </li>
+                        <!-- /ko -->
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer - Matching Letter Template -->
+        <div class="footer" style="background: #ffffff; padding: 0 30px 30px 30px; margin-top: 20px;">
+            <div class="footerIn" style="padding-top: 30px; border-top: 13px solid #000000;">
+
+                <!-- Contact Details -->
+                <div class="footer-content" style="padding-top: 20px; text-align: right;">
+                    <div class="footer-contact" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.8; color: #71717a;">
+                        <div style="margin-bottom: 4px;">פרנקו ושות' רואי חשבון</div>
+                        <div style="margin-bottom: 4px;">שד"ל 3, מגדל אלרוב קומה ראשונה, תל אביב</div>
+                        <div style="margin-bottom: 4px;">טלפון: 03-5666170</div>
+                        <div style="color: #395BF7; font-weight: 600;">tico@franco.co.il</div>
+                    </div>
+                </div>
+
+                <!-- Cardcom Footer (Required) -->
+                <div class="footer-cardcom" style="text-align: center; padding-top: 20px; border-top: 2px solid #e2e8f0; margin-top: 30px;">
+                    <div class="footer-text" style="font-size: 12px; color: #71717a; line-height: 1.6; margin-bottom: 12px;">
+                        <span data-bind="html: labels.FooterTextTop">הסליקה מתבצעת דרך</span><br>
+                        <span data-bind="html: labels.FooterTextBottom"></span>
+                    </div>
+                    <div class="footer-logo">
+                        <img alt="Cardcom" data-bind="attr: { src: images.cardcomLogoEn }" style="max-width: 120px; height: auto; opacity: 0.7;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Loading State -->
+<div class="loadingDiv" data-bind="visible: loadMode()" style="text-align: center; padding: 40px; font-size: 16px; color: #71717a;">
+    <div>מעבד תשלום...</div>
+    <div style="margin-top: 10px; font-size: 14px;">אנא המתן, אל תסגור את החלון</div>
+</div>
