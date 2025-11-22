@@ -181,6 +181,18 @@ export function LetterPreviewDialog({
       const amountAfterSingle = Math.round(amountOriginal * 0.92);   // 8% discount
       const amountAfterPayments = Math.round(amountOriginal * 0.96); // 4% discount
 
+      // Calculate service_description based on template type
+      const getServiceDescription = (type: string): string => {
+        if (type.includes('external_') || type.includes('internal_audit_')) {
+          return 'שירותי ראיית החשבון';
+        } else if (type.includes('bookkeeping')) {
+          return 'שירותי הנהלת החשבונות';
+        } else if (type.includes('retainer')) {
+          return 'שירותי ראיית החשבון, הנהלת החשבונות וחשבות השכר';
+        }
+        return 'שירותי ראיית החשבון';
+      };
+
       // Build variables
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
@@ -224,6 +236,18 @@ export function LetterPreviewDialog({
         inflation_rate: isBookkeeping
           ? (fee.bookkeeping_calculation?.inflation_rate || 0).toString()
           : (fee.inflation_rate || 0).toString(),
+
+        // Bank Transfer Only Option
+        ...(fee.bank_transfer_only && {
+          bank_transfer_only: true,
+          bank_discount: fee.bank_transfer_discount_percentage?.toString(),
+          amount_before_discount_no_vat: formatNumber(amountOriginal), // Original amount (no VAT)
+          amount_after_discount_no_vat: formatNumber(fee.bank_transfer_amount_before_vat || 0),
+          amount_after_discount_with_vat: formatNumber(fee.bank_transfer_amount_with_vat || 0),
+        }),
+
+        // Service description (for all letter types)
+        service_description: getServiceDescription(templateType),
       };
 
       setVariables(letterVariables);
