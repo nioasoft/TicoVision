@@ -81,39 +81,37 @@ export function BankTransferDiscountCalculator({
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-6 space-y-4">
             {/* בחירת אחוז הנחה */}
-            <div className="flex items-center gap-4 rtl:flex-row-reverse">
-              <Label htmlFor="bank-discount" className="min-w-[120px] rtl:text-right">
+            <div className="flex items-center gap-3" dir="rtl">
+              <Label htmlFor="bank-discount" className="text-right">
                 אחוז הנחה:
               </Label>
-              <div className="flex items-center gap-2 rtl:flex-row-reverse">
-                <Input
-                  id="bank-discount"
-                  type="number"
-                  min="0"
-                  max="15"
-                  step="0.5"
-                  value={discount}
-                  onChange={handleDiscountChange}
-                  className="w-24 text-center"
-                />
-                <span>%</span>
-                <span className="text-sm text-muted-foreground rtl:text-right">
-                  (0-15%)
-                </span>
-              </div>
+              <span>%</span>
+              <Input
+                id="bank-discount"
+                type="number"
+                min="0"
+                max="15"
+                step="0.5"
+                value={discount}
+                onChange={handleDiscountChange}
+                className="w-24 text-center"
+              />
+              <span className="text-sm text-muted-foreground text-right">
+                (0-15%)
+              </span>
             </div>
 
             {/* תצוגת סכומים מחושבים */}
             {amounts && (
               <div className="space-y-3 pt-4 border-t border-blue-300">
-                <h4 className="font-semibold text-blue-900 rtl:text-right">
+                <h4 className="font-semibold text-blue-900 text-right">
                   סכומים מחושבים:
                 </h4>
 
                 <div className="grid grid-cols-1 gap-3">
                   {/* לפני הנחה */}
-                  <div className="flex justify-between items-center bg-white p-3 rounded-md rtl:flex-row-reverse">
-                    <span className="text-sm rtl:text-right">
+                  <div className="flex justify-between items-center bg-white p-3 rounded-md" dir="rtl">
+                    <span className="text-sm text-right">
                       סכום לפני הנחה (לפני מע"מ):
                     </span>
                     <span className="font-semibold text-lg">
@@ -122,8 +120,8 @@ export function BankTransferDiscountCalculator({
                   </div>
 
                   {/* אחרי הנחה לפני מע"מ */}
-                  <div className="flex justify-between items-center bg-white p-3 rounded-md rtl:flex-row-reverse">
-                    <span className="text-sm rtl:text-right">
+                  <div className="flex justify-between items-center bg-white p-3 rounded-md" dir="rtl">
+                    <span className="text-sm text-right">
                       סכום אחרי {discount}% הנחה (לפני מע"מ):
                     </span>
                     <span className="font-semibold text-lg text-blue-600">
@@ -132,8 +130,8 @@ export function BankTransferDiscountCalculator({
                   </div>
 
                   {/* אחרי הנחה כולל מע"מ */}
-                  <div className="flex justify-between items-center bg-blue-100 p-3 rounded-md border-2 border-blue-400 rtl:flex-row-reverse">
-                    <span className="text-sm font-semibold rtl:text-right">
+                  <div className="flex justify-between items-center bg-blue-100 p-3 rounded-md border-2 border-blue-400" dir="rtl">
+                    <span className="text-sm font-semibold text-right">
                       סכום לתשלום (כולל מע"מ):
                     </span>
                     <span className="font-bold text-xl text-blue-700">
