@@ -112,6 +112,11 @@ export interface FeeCalculation {
   // Comparison fields
   year_over_year_change_percent?: number; // New: YoY change %
   year_over_year_change_amount?: number; // New: YoY change amount
+  // Bank Transfer Only Option
+  bank_transfer_only?: boolean;
+  bank_transfer_discount_percentage?: number;
+  bank_transfer_amount_before_vat?: number;
+  bank_transfer_amount_with_vat?: number;
   // Status tracking
   status: FeeStatus;
   due_date?: string;
@@ -179,6 +184,11 @@ export interface CreateFeeCalculationDto {
   retainer_real_adjustment?: number;
   retainer_real_adjustment_reason?: string;
   retainer_apply_inflation_index?: boolean;
+  // Bank Transfer Only Option
+  bank_transfer_only?: boolean;
+  bank_transfer_discount_percentage?: number;
+  bank_transfer_amount_before_vat?: number;
+  bank_transfer_amount_with_vat?: number;
 }
 
 export interface UpdateFeeCalculationDto extends Partial<CreateFeeCalculationDto> {
@@ -221,6 +231,8 @@ class FeeService extends BaseService {
    */
   calculateFeeAmounts(data: CreateFeeCalculationDto): {
     inflation_adjustment: number;
+    inflation_adjustment_auto: number;
+    index_manual_adjustment: number;
     real_adjustment: number;
     discount_amount: number;
     final_amount: number;
@@ -269,6 +281,8 @@ class FeeService extends BaseService {
 
     return {
       inflation_adjustment: inflationAdjustment,
+      inflation_adjustment_auto: inflationAdjustmentAuto,
+      index_manual_adjustment: indexManualAdj,
       real_adjustment: realAdjustment,
       discount_amount: discountAmount,
       final_amount: finalAmount,

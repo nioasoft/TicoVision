@@ -778,6 +778,10 @@ export type Database = {
           apply_inflation_index: boolean | null
           approved_at: string | null
           approved_by: string | null
+          bank_transfer_amount_before_vat: number | null
+          bank_transfer_amount_with_vat: number | null
+          bank_transfer_discount_percentage: number | null
+          bank_transfer_only: boolean | null
           base_amount: number | null
           bookkeeping_calculation: Json | null
           calculated_base_amount: number
@@ -823,6 +827,7 @@ export type Database = {
           real_adjustment_reason: string | null
           real_adjustments: Json | null
           reminder_count: number | null
+          retainer_calculation: Json | null
           status: string
           tenant_id: string
           total_amount: number | null
@@ -839,6 +844,10 @@ export type Database = {
           apply_inflation_index?: boolean | null
           approved_at?: string | null
           approved_by?: string | null
+          bank_transfer_amount_before_vat?: number | null
+          bank_transfer_amount_with_vat?: number | null
+          bank_transfer_discount_percentage?: number | null
+          bank_transfer_only?: boolean | null
           base_amount?: number | null
           bookkeeping_calculation?: Json | null
           calculated_base_amount: number
@@ -884,6 +893,7 @@ export type Database = {
           real_adjustment_reason?: string | null
           real_adjustments?: Json | null
           reminder_count?: number | null
+          retainer_calculation?: Json | null
           status?: string
           tenant_id: string
           total_amount?: number | null
@@ -900,6 +910,10 @@ export type Database = {
           apply_inflation_index?: boolean | null
           approved_at?: string | null
           approved_by?: string | null
+          bank_transfer_amount_before_vat?: number | null
+          bank_transfer_amount_with_vat?: number | null
+          bank_transfer_discount_percentage?: number | null
+          bank_transfer_only?: boolean | null
           base_amount?: number | null
           bookkeeping_calculation?: Json | null
           calculated_base_amount?: number
@@ -945,6 +959,7 @@ export type Database = {
           real_adjustment_reason?: string | null
           real_adjustments?: Json | null
           reminder_count?: number | null
+          retainer_calculation?: Json | null
           status?: string
           tenant_id?: string
           total_amount?: number | null
@@ -1043,6 +1058,7 @@ export type Database = {
           pdf_url: string | null
           recipient_emails: Json | null
           rendering_engine: string | null
+          search_vector: unknown
           sent_at: string | null
           sent_via: string | null
           status: string | null
@@ -1051,6 +1067,7 @@ export type Database = {
           template_id: string | null
           template_type: string | null
           tenant_id: string
+          uses_bank_transfer_only: boolean | null
           variables_used: Json
           version_number: number
         }
@@ -1073,6 +1090,7 @@ export type Database = {
           pdf_url?: string | null
           recipient_emails?: Json | null
           rendering_engine?: string | null
+          search_vector?: unknown
           sent_at?: string | null
           sent_via?: string | null
           status?: string | null
@@ -1081,6 +1099,7 @@ export type Database = {
           template_id?: string | null
           template_type?: string | null
           tenant_id: string
+          uses_bank_transfer_only?: boolean | null
           variables_used: Json
           version_number?: number
         }
@@ -1103,6 +1122,7 @@ export type Database = {
           pdf_url?: string | null
           recipient_emails?: Json | null
           rendering_engine?: string | null
+          search_vector?: unknown
           sent_at?: string | null
           sent_via?: string | null
           status?: string | null
@@ -1111,6 +1131,7 @@ export type Database = {
           template_id?: string | null
           template_type?: string | null
           tenant_id?: string
+          uses_bank_transfer_only?: boolean | null
           variables_used?: Json
           version_number?: number
         }
@@ -1134,6 +1155,54 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "letter_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_contact_assignments: {
+        Row: {
+          contact_id: string
+          created_at: string
+          created_by: string | null
+          group_id: string
+          id: string
+          is_primary: boolean
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          created_by?: string | null
+          group_id: string
+          id?: string
+          is_primary?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          created_by?: string | null
+          group_id?: string
+          id?: string
+          is_primary?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_contact_assignments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_contact_assignments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -1200,59 +1269,6 @@ export type Database = {
           },
         ]
       }
-      letter_components: {
-        Row: {
-          component_type: string | null
-          content_html: string
-          created_at: string | null
-          description: string | null
-          footer_html: string | null
-          header_html: string | null
-          id: string
-          is_active: boolean | null
-          is_default: boolean | null
-          name: string
-          tenant_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          component_type?: string | null
-          content_html: string
-          created_at?: string | null
-          description?: string | null
-          footer_html?: string | null
-          header_html?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_default?: boolean | null
-          name: string
-          tenant_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          component_type?: string | null
-          content_html?: string
-          created_at?: string | null
-          description?: string | null
-          footer_html?: string | null
-          header_html?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_default?: boolean | null
-          name?: string
-          tenant_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "letter_components_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       letter_templates: {
         Row: {
           category: string | null
@@ -1260,8 +1276,6 @@ export type Database = {
           content_text: string | null
           created_at: string | null
           description: string | null
-          footer_template_id: string | null
-          header_template_id: string | null
           id: string
           is_active: boolean | null
           is_editable: boolean | null
@@ -1284,8 +1298,6 @@ export type Database = {
           content_text?: string | null
           created_at?: string | null
           description?: string | null
-          footer_template_id?: string | null
-          header_template_id?: string | null
           id?: string
           is_active?: boolean | null
           is_editable?: boolean | null
@@ -1308,8 +1320,6 @@ export type Database = {
           content_text?: string | null
           created_at?: string | null
           description?: string | null
-          footer_template_id?: string | null
-          header_template_id?: string | null
           id?: string
           is_active?: boolean | null
           is_editable?: boolean | null
@@ -1326,22 +1336,7 @@ export type Database = {
           variables_schema?: Json
           version?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "letter_templates_footer_template_id_fkey"
-            columns: ["footer_template_id"]
-            isOneToOne: false
-            referencedRelation: "letter_components"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "letter_templates_header_template_id_fkey"
-            columns: ["header_template_id"]
-            isOneToOne: false
-            referencedRelation: "letter_components"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       notification_settings: {
         Row: {
@@ -2918,6 +2913,22 @@ export type Database = {
           payment_method_selected: string
         }[]
       }
+      get_group_contacts_detailed: {
+        Args: { p_group_id: string }
+        Returns: {
+          assignment_id: string
+          contact_id: string
+          contact_type: Database["public"]["Enums"]["contact_type"]
+          created_at: string
+          email: string
+          full_name: string
+          is_primary: boolean
+          job_title: string
+          notes: string
+          other_groups_count: number
+          phone: string
+        }[]
+      }
       get_payment_method_breakdown: {
         Args: { p_tax_year: number; p_tenant_id: string }
         Returns: {
@@ -3033,6 +3044,15 @@ export type Database = {
             }
             Returns: string
           }
+      migrate_existing_group_owners: {
+        Args: never
+        Returns: {
+          errors: string[]
+          group_id: string
+          primary_owner_created: boolean
+          secondary_owners_created: number
+        }[]
+      }
       migrate_to_shared_contacts: {
         Args: never
         Returns: {
