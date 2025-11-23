@@ -4,12 +4,20 @@
 
 -- Add client_requested_adjustment column (negative values only)
 ALTER TABLE fee_calculations
-ADD COLUMN IF NOT EXISTS client_requested_adjustment NUMERIC(10,2) DEFAULT 0
+ADD COLUMN IF NOT EXISTS client_requested_adjustment NUMERIC(10,2) DEFAULT 0;
+
+-- Add check constraint for negative values only
+ALTER TABLE fee_calculations
+ADD CONSTRAINT client_requested_adjustment_check
 CHECK (client_requested_adjustment <= 0);
 
 -- Add optional note for the adjustment (max 50 characters)
 ALTER TABLE fee_calculations
-ADD COLUMN IF NOT EXISTS client_requested_adjustment_note TEXT
+ADD COLUMN IF NOT EXISTS client_requested_adjustment_note TEXT;
+
+-- Add check constraint for max 50 characters
+ALTER TABLE fee_calculations
+ADD CONSTRAINT client_requested_adjustment_note_check
 CHECK (char_length(client_requested_adjustment_note) <= 50);
 
 -- Add comments for documentation

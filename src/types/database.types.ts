@@ -790,6 +790,8 @@ export type Database = {
           calculated_with_vat: number | null
           calculation_metadata: Json | null
           client_id: string
+          client_requested_adjustment: number | null
+          client_requested_adjustment_note: string | null
           created_at: string | null
           created_by: string | null
           current_year_data: Json | null
@@ -856,6 +858,8 @@ export type Database = {
           calculated_with_vat?: number | null
           calculation_metadata?: Json | null
           client_id: string
+          client_requested_adjustment?: number | null
+          client_requested_adjustment_note?: string | null
           created_at?: string | null
           created_by?: string | null
           current_year_data?: Json | null
@@ -922,6 +926,8 @@ export type Database = {
           calculated_with_vat?: number | null
           calculation_metadata?: Json | null
           client_id?: string
+          client_requested_adjustment?: number | null
+          client_requested_adjustment_note?: string | null
           created_at?: string | null
           created_by?: string | null
           current_year_data?: Json | null
@@ -1262,6 +1268,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_job_queue_tenant_id"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      letter_component_combinations: {
+        Row: {
+          body_template: string
+          created_at: string | null
+          default_amount: number | null
+          id: string
+          name: string
+          payment_template: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          body_template: string
+          created_at?: string | null
+          default_amount?: number | null
+          id?: string
+          name: string
+          payment_template: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          body_template?: string
+          created_at?: string | null
+          default_amount?: number | null
+          id?: string
+          name?: string
+          payment_template?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_component_combinations_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2749,11 +2796,11 @@ export type Database = {
         Returns: boolean
       }
       find_contact_by_email: {
-        Args: { contact_email: string }
+        Args: { p_email: string; p_tenant_id: string }
         Returns: string
       }
       find_contact_by_phone: {
-        Args: { contact_phone: string }
+        Args: { p_phone: string; p_tenant_id: string }
         Returns: string
       }
       format_ils: { Args: { amount: number }; Returns: string }
@@ -2808,17 +2855,15 @@ export type Database = {
       get_client_contacts_detailed: {
         Args: { p_client_id: string }
         Returns: {
-          assignment_id: string
-          assignment_notes: string
           contact_id: string
-          contact_notes: string
-          contact_type: string
+          contact_type: Database["public"]["Enums"]["contact_type"]
+          created_at: string
           email: string
           email_preference: string
           full_name: string
           is_primary: boolean
           job_title: string
-          other_clients_count: number
+          notes: string
           phone: string
           role_at_client: string
         }[]
@@ -2916,17 +2961,17 @@ export type Database = {
       get_group_contacts_detailed: {
         Args: { p_group_id: string }
         Returns: {
-          assignment_id: string
           contact_id: string
-          contact_type: Database["public"]["Enums"]["contact_type"]
+          contact_type: string
           created_at: string
           email: string
+          email_preference: string
           full_name: string
           is_primary: boolean
           job_title: string
           notes: string
-          other_groups_count: number
           phone: string
+          role_at_group: string
         }[]
       }
       get_payment_method_breakdown: {
@@ -3003,10 +3048,6 @@ export type Database = {
         }[]
       }
       hash_password: { Args: { password: string }; Returns: string }
-      increment_letter_opens: {
-        Args: { letter_id: string }
-        Returns: undefined
-      }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { p_user_id: string }; Returns: boolean }
       list_users_with_auth: {
@@ -3044,34 +3085,16 @@ export type Database = {
             }
             Returns: string
           }
-      migrate_existing_group_owners: {
-        Args: never
-        Returns: {
-          errors: string[]
-          group_id: string
-          primary_owner_created: boolean
-          secondary_owners_created: number
-        }[]
-      }
-      migrate_to_shared_contacts: {
-        Args: never
-        Returns: {
-          assignments_created: number
-          duplicates_merged: number
-          original_count: number
-          result_tenant_id: string
-          unique_contacts_created: number
-        }[]
-      }
+      migrate_existing_group_owners: { Args: never; Returns: undefined }
+      migrate_to_shared_contacts: { Args: never; Returns: undefined }
       reset_user_password: {
         Args: { p_new_password: string; p_user_id: string }
         Returns: boolean
       }
       search_tenant_contacts: {
-        Args: { max_results?: number; search_query: string }
+        Args: { p_search_term: string; p_tenant_id: string }
         Returns: {
-          client_count: number
-          contact_type: Database["public"]["Enums"]["contact_type"]
+          contact_type: string
           email: string
           full_name: string
           id: string
