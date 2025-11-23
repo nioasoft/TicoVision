@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { formatILS } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +28,7 @@ import {
   FileText,
   Calendar,
   Plus,
+  Minus,
   ChevronLeft,
   ChevronRight,
   ArrowUp,
@@ -46,6 +47,7 @@ import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewDialog';
 import { selectLetterTemplate, type LetterSelectionResult } from '@/modules/letters/utils/letter-selector';
 import type { LetterTemplateType } from '@/modules/letters/types/letter.types';
+import { BankTransferDiscountCalculator, type BankTransferAmounts } from '@/components/fees/BankTransferDiscountCalculator';
 
 // 11 Template options (for manual letter selection)
 const TEMPLATE_OPTIONS: { value: LetterTemplateType; label: string }[] = [
@@ -76,6 +78,8 @@ interface FeeCalculatorForm {
   index_manual_adjustment: number; // NEW: Manual inflation adjustment in ILS (can be negative)
   real_adjustment: number;
   real_adjustment_reason: string;
+  client_requested_adjustment: number; // NEW: Client requested adjustment (negative values only)
+  client_requested_adjustment_note: string; // NEW: Optional note (max 50 chars)
   discount_percentage: number;
   apply_inflation_index: boolean;
   notes: string;
@@ -120,6 +124,8 @@ export function FeesPage() {
     index_manual_adjustment: 0,
     real_adjustment: 0,
     real_adjustment_reason: '',
+    client_requested_adjustment: 0,
+    client_requested_adjustment_note: '',
     discount_percentage: 0,
     apply_inflation_index: true,
     notes: '',
@@ -176,6 +182,12 @@ export function FeesPage() {
   const [selectedSecondaryTemplate, setSelectedSecondaryTemplate] = useState<LetterTemplateType | null>(null);
   const [isLoadingPrevious, setIsLoadingPrevious] = useState(false);
   const [isSavingAndPreview, setIsSavingAndPreview] = useState(false);
+
+  // Bank Transfer Only Option
+  const [bankTransferOnly, setBankTransferOnly] = useState(false);
+  const [bankTransferDiscount, setBankTransferDiscount] = useState<number>(9);
+  const [bankTransferAmounts, setBankTransferAmounts] = useState<BankTransferAmounts | null>(null);
+
   const { toast } = useToast();
 
   /**
@@ -201,6 +213,16 @@ export function FeesPage() {
       previous_year_amount_with_vat: parseFloat(withVat.toFixed(2))
     };
   };
+
+  /**
+   * Handler for Bank Transfer Only option changes
+   * Wrapped in useCallback to prevent infinite re-renders in BankTransferDiscountCalculator
+   */
+  const handleBankTransferOnlyChange = useCallback((enabled: boolean, discount: number, amounts: BankTransferAmounts | null) => {
+    setBankTransferOnly(enabled);
+    setBankTransferDiscount(discount);
+    setBankTransferAmounts(amounts);
+  }, []); // Empty deps array - setState functions are always stable
 
   useEffect(() => {
     loadInitialData();
@@ -892,7 +914,12 @@ export function FeesPage() {
         retainer_index_manual_is_negative: formData.retainer_index_manual_is_negative,
         retainer_real_adjustment: formData.retainer_real_adjustment,
         retainer_real_adjustment_reason: formData.retainer_real_adjustment_reason,
-        retainer_apply_inflation_index: formData.retainer_apply_inflation_index
+        retainer_apply_inflation_index: formData.retainer_apply_inflation_index,
+        // Bank Transfer Only Option
+        bank_transfer_only: bankTransferOnly,
+        bank_transfer_discount_percentage: bankTransferOnly ? bankTransferDiscount : undefined,
+        bank_transfer_amount_before_vat: bankTransferAmounts?.afterDiscountNoVat,
+        bank_transfer_amount_with_vat: bankTransferAmounts?.afterDiscountWithVat
       };
 
       // Check if updating existing draft or creating new
@@ -1678,6 +1705,48 @@ export function FeesPage() {
                   </div>
 
                   <div>
+                    <Label htmlFor="client_requested_adjustment" className="text-right">
+                      תיקון שכר טרחה לבקשת הלקוח (ש"ח)
+                      <span className="text-xs text-gray-500 mr-2">רק ערכים שליליים</span>
+                    </Label>
+                    <Input
+                      id="client_requested_adjustment"
+                      type="number"
+                      step="0.01"
+                      max="0"
+                      value={formData.client_requested_adjustment || ''}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value) || 0;
+                        if (value <= 0) {
+                          setFormData({ ...formData, client_requested_adjustment: value });
+                        }
+                      }}
+                      className="text-right"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  {formData.client_requested_adjustment < 0 && (
+                    <div>
+                      <Label htmlFor="client_adjustment_note" className="text-right">
+                        הערה לתיקון (אופציונלי - עד 50 תווים)
+                      </Label>
+                      <Input
+                        id="client_adjustment_note"
+                        type="text"
+                        maxLength={50}
+                        value={formData.client_requested_adjustment_note || ''}
+                        onChange={(e) => setFormData({ ...formData, client_requested_adjustment_note: e.target.value })}
+                        className="text-right"
+                        placeholder="למשל: לפי הסכמה טלפונית"
+                      />
+                      <p className="text-xs text-gray-500 mt-1 text-right">
+                        {formData.client_requested_adjustment_note?.length || 0}/50 תווים
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
                     <Label htmlFor="notes">הערות</Label>
                     <Textarea
                       id="notes"
@@ -1860,6 +1929,28 @@ export function FeesPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Client Requested Adjustment - shown when negative */}
+                {formData.client_requested_adjustment < 0 && (
+                  <Card className="bg-red-50 border-red-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="w-full">
+                          <p className="text-sm text-red-600 font-semibold">תיקון לבקשת הלקוח</p>
+                          <p className="text-lg font-semibold text-red-600">
+                            {formatILS(formData.client_requested_adjustment)}
+                          </p>
+                          {formData.client_requested_adjustment_note && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {formData.client_requested_adjustment_note}
+                            </p>
+                          )}
+                        </div>
+                        <Minus className="h-8 w-8 text-red-500 flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card>
                   <CardContent className="p-4">
@@ -2335,6 +2426,16 @@ export function FeesPage() {
                     </div>
                   )}
                 </div>
+            )}
+
+            {/* Bank Transfer Only Option */}
+            {calculationResults && (
+              <div className="mt-6">
+                <BankTransferDiscountCalculator
+                  baseAmount={calculationResults.final_amount}
+                  onBankTransferOnlyChange={handleBankTransferOnlyChange}
+                />
+              </div>
             )}
 
             <div className="flex justify-between items-center">

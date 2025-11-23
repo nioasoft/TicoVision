@@ -13,6 +13,17 @@ import type {
   LetterComponent,
   LetterPreviewRequest
 } from '../types/letter.types';
+import type {
+  ForeignWorkerTemplateType,
+  ForeignWorkerVariables,
+  AccountantTurnoverVariables,
+  IsraeliWorkersVariables,
+  TurnoverApprovalVariables,
+  SalaryReportVariables,
+  MonthlyTurnover,
+  MonthlyWorkers,
+  WorkerData
+} from '@/types/foreign-workers.types';
 import { TemplateParser } from '../utils/template-parser';
 import { parseTextToHTML as parseMarkdownToHTML, replaceVariables as replaceVarsInText } from '../utils/text-to-html-parser';
 
@@ -572,18 +583,36 @@ export class TemplateService extends BaseService {
       const needsPayment = this.isPaymentLetter(templateType);
       let paymentSection = '';
       if (needsPayment) {
-        let paymentSectionFile = 'components/payment-section.html'; // fallback
-        if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
-          paymentSectionFile = 'components/payment-section-audit.html';
-        } else if (templateType.includes('bookkeeping')) {
-          paymentSectionFile = 'components/payment-section-bookkeeping.html';
-        } else if (templateType.includes('retainer')) {
-          paymentSectionFile = 'components/payment-section-retainer.html';
+        // Check if bank transfer only mode is enabled
+        if (variables.bank_transfer_only) {
+          paymentSection = await this.loadTemplateFile('components/payment-section-bank-only.html');
+        } else {
+          let paymentSectionFile = 'components/payment-section.html'; // fallback
+          if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
+            paymentSectionFile = 'components/payment-section-audit.html';
+          } else if (templateType.includes('bookkeeping')) {
+            paymentSectionFile = 'components/payment-section-bookkeeping.html';
+          } else if (templateType.includes('retainer')) {
+            paymentSectionFile = 'components/payment-section-retainer.html';
+          }
+          paymentSection = await this.loadTemplateFile(paymentSectionFile);
         }
-        paymentSection = await this.loadTemplateFile(paymentSectionFile);
       }
 
-      // 4. Detect service type automatically
+      // 4. Check if client requested adjustment exists (for red header)
+      let hasClientAdjustment = false;
+      if (feeCalculationId) {
+        const { data: feeCalculation } = await supabase
+          .from('fee_calculations')
+          .select('client_requested_adjustment')
+          .eq('id', feeCalculationId)
+          .eq('tenant_id', tenantId)
+          .single();
+
+        hasClientAdjustment = feeCalculation && (feeCalculation.client_requested_adjustment || 0) < 0;
+      }
+
+      // 5. Detect service type automatically
       let serviceDescription = '';
       if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
         serviceDescription = 'שירותי ראיית החשבון';
@@ -593,14 +622,14 @@ export class TemplateService extends BaseService {
         serviceDescription = 'שירותי ראיית החשבון, הנהלת החשבונות וחשבות השכר';
       }
 
-      // 5. Calculate monthly amount (for bookkeeping & retainer only)
+      // 6. Calculate monthly amount (for bookkeeping & retainer only)
       let monthlyAmount: number | undefined;
       if (templateType.includes('bookkeeping') || templateType.includes('retainer')) {
         monthlyAmount = variables.monthly_amount ||
                         (variables.amount_original ? Math.round(variables.amount_original / 12) : undefined);
       }
 
-      // 6. Add automatic variables
+      // 7. Add automatic variables
       const fullVariables: Partial<LetterVariables> = {
         ...variables,
         service_description: variables.service_description || serviceDescription,
@@ -615,7 +644,9 @@ export class TemplateService extends BaseService {
         ),
         // Add fee_id and client_id for payment tracking links
         fee_id: feeCalculationId || variables.fee_id,
-        client_id: clientId || variables.client_id
+        client_id: clientId || variables.client_id,
+        // Add red header if client requested adjustment exists
+        custom_header_lines: hasClientAdjustment ? this.buildCorrectionHeader() : (variables.custom_header_lines || '')
       };
 
       // 7. Build full HTML
@@ -701,7 +732,8 @@ export class TemplateService extends BaseService {
       'cid:bullet_star_blue': '/brand/Bullet_star_blue.png',
       'cid:franco_logo': '/brand/franco-logo-hires.png',
       'cid:franco_logo_new': '/brand/Tico_franco_co.png',
-      'cid:tagline': '/brand/tagline.png'
+      'cid:tagline': '/brand/tagline.png',
+      'cid:tico_signature': '/brand/tico_signature.png'
     };
 
     let result = html;
@@ -742,15 +774,20 @@ export class TemplateService extends BaseService {
       const needsPayment = this.isPaymentLetter(templateType);
       let paymentSection = '';
       if (needsPayment) {
-        let paymentSectionFile = 'components/payment-section.html'; // fallback
-        if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
-          paymentSectionFile = 'components/payment-section-audit.html';
-        } else if (templateType.includes('bookkeeping')) {
-          paymentSectionFile = 'components/payment-section-bookkeeping.html';
-        } else if (templateType.includes('retainer')) {
-          paymentSectionFile = 'components/payment-section-retainer.html';
+        // Check if bank transfer only mode is enabled
+        if (variables.bank_transfer_only) {
+          paymentSection = await this.loadTemplateFile('components/payment-section-bank-only.html');
+        } else {
+          let paymentSectionFile = 'components/payment-section.html'; // fallback
+          if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
+            paymentSectionFile = 'components/payment-section-audit.html';
+          } else if (templateType.includes('bookkeeping')) {
+            paymentSectionFile = 'components/payment-section-bookkeeping.html';
+          } else if (templateType.includes('retainer')) {
+            paymentSectionFile = 'components/payment-section-retainer.html';
+          }
+          paymentSection = await this.loadTemplateFile(paymentSectionFile);
         }
-        paymentSection = await this.loadTemplateFile(paymentSectionFile);
       }
 
       // 4. Detect service type automatically
@@ -1583,5 +1620,379 @@ export class TemplateService extends BaseService {
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
+  }
+
+  // ============================================================================
+  // FOREIGN WORKERS DOCUMENTS SECTION
+  // ============================================================================
+
+  /**
+   * Generate Foreign Worker Document
+   * Creates approval documents for foreign worker permits
+   * NO payment sections - these are informational documents
+   */
+  async generateForeignWorkerDocument(
+    templateType: ForeignWorkerTemplateType,
+    clientId: string,
+    variables: ForeignWorkerVariables
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Load header (foreign workers specific header)
+      const header = await this.loadTemplateFile('components/foreign-workers-header.html');
+
+      // 2. Load body based on template type
+      const bodyFile = this.getForeignWorkerBodyFileName(templateType);
+      const body = await this.loadTemplateFile(`bodies/foreign-workers/${bodyFile}`);
+
+      // 3. Load footer (same as regular letters - compact PDF footer)
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 4. Build dynamic content (tables, scenario content)
+      const processedVariables = await this.processForeignWorkerVariables(templateType, variables);
+
+      // 5. Build full HTML (no payment section for foreign worker documents)
+      let fullHtml = this.buildForeignWorkerHTML(header, body, footer);
+
+      // 6. Replace all variables - WHITELIST HTML VARIABLES
+      // Foreign worker documents contain HTML tables as variable values
+      // These must be whitelisted to prevent HTML escaping while still sanitizing with DOMPurify
+      const htmlVariables = [
+        'monthly_turnover_rows',      // Accountant turnover table
+        'israeli_workers_rows',        // Israeli workers table
+        'scenario_content',            // Turnover approval scenarios
+        'workers_data_rows',           // Salary report table
+        'recipient'                    // Recipient address (with <b>, <u> tags)
+      ];
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. Save generated letter
+      const { data: generatedLetter, error: saveError } = await supabase
+        .from('generated_letters')
+        .insert({
+          tenant_id: tenantId,
+          client_id: clientId,
+          template_id: null, // No template_id for file-based system
+          template_type: templateType, // Save the foreign worker template type
+          fee_calculation_id: null, // Foreign worker docs are not linked to fees
+          variables_used: processedVariables,
+          generated_content_html: fullHtml,
+          generated_content_text: plainText,
+          payment_link: null, // No payment links for informational documents
+          created_at: new Date().toISOString(),
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .select()
+        .single();
+
+      if (saveError) throw saveError;
+
+      await this.logAction('generate_foreign_worker_document', generatedLetter.id, {
+        template_type: templateType,
+        client_id: clientId
+      });
+
+      return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get body file name from foreign worker template type
+   */
+  private getForeignWorkerBodyFileName(templateType: ForeignWorkerTemplateType): string {
+    const bodyMap: Record<ForeignWorkerTemplateType, string> = {
+      'foreign_worker_accountant_turnover': 'accountant-turnover.html',
+      'foreign_worker_israeli_workers': 'israeli-workers.html',
+      'foreign_worker_living_business': 'living-business.html',
+      'foreign_worker_turnover_approval': 'turnover-approval.html',
+      'foreign_worker_salary_report': 'salary-report.html'
+    };
+
+    return bodyMap[templateType];
+  }
+
+  /**
+   * Build full HTML for foreign worker document
+   * Structure: Email wrapper + table container + header + body + footer
+   */
+  private buildForeignWorkerHTML(header: string, body: string, footer: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אישור עובדים זרים</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; direction: rtl;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="750" cellpadding="0" cellspacing="0" border="0" style="max-width: 750px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+  }
+
+  /**
+   * Process foreign worker variables - build dynamic content
+   */
+  private async processForeignWorkerVariables(
+    templateType: ForeignWorkerTemplateType,
+    variables: ForeignWorkerVariables
+  ): Promise<Record<string, unknown>> {
+    const processed: Record<string, unknown> = { ...variables };
+
+    // Add auto-generated date if not provided
+    if (!processed.document_date) {
+      processed.document_date = this.formatIsraeliDate(new Date());
+    }
+
+    // Build recipient based on template type
+    processed.recipient = this.getForeignWorkerRecipient(templateType);
+
+    // Build dynamic content based on template type
+    switch (templateType) {
+      case 'foreign_worker_accountant_turnover':
+        processed.monthly_turnover_rows = this.buildMonthlyTurnoverRows(
+          (variables as AccountantTurnoverVariables).monthly_turnover
+        );
+        break;
+
+      case 'foreign_worker_israeli_workers':
+        processed.israeli_workers_rows = this.buildIsraeliWorkersRows(
+          (variables as IsraeliWorkersVariables).israeli_workers
+        );
+        break;
+
+      case 'foreign_worker_turnover_approval':
+        processed.scenario_content = this.buildScenarioContent(
+          variables as TurnoverApprovalVariables
+        );
+        break;
+
+      case 'foreign_worker_salary_report':
+        processed.workers_data_rows = this.buildWorkersDataRows(
+          (variables as SalaryReportVariables).workers_data
+        );
+        break;
+
+      // living_business doesn't need dynamic content
+      case 'foreign_worker_living_business':
+      default:
+        break;
+    }
+
+    return processed;
+  }
+
+  /**
+   * Get recipient address for foreign worker document
+   */
+  private getForeignWorkerRecipient(templateType: ForeignWorkerTemplateType): string {
+    // Most documents go to Ministry of Interior
+    const ministryOfInterior = `
+      <b>לכבוד</b><br>
+      <b>משרד הפנים - רשות האוכלוסין ההגירה ומעברי גבול</b><br>
+      <b>יחידת ההיתרים</b><br>
+      רח' אגריפס 42<br>
+      <u>ירושלים</u>
+    `.trim();
+
+    // For now, all documents use the same recipient
+    // Can be customized per template type if needed
+    return ministryOfInterior;
+  }
+
+  /**
+   * Build monthly turnover table rows
+   */
+  private buildMonthlyTurnoverRows(turnoverData: MonthlyTurnover[]): string {
+    return turnoverData
+      .map(
+        (row) => `
+            <tr>
+                <td width="40%" style="border: 2px solid #000000; padding: 8px; background-color: #ffffff;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #09090b; text-align: right;">
+                        ${row.month}
+                    </div>
+                </td>
+                <td width="60%" style="border: 2px solid #000000; padding: 8px; background-color: #ffffff;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #09090b; text-align: center;">
+                        ${row.amount.toLocaleString('he-IL')}
+                    </div>
+                </td>
+            </tr>
+        `
+      )
+      .join('\n');
+  }
+
+  /**
+   * Build Israeli workers table rows
+   */
+  private buildIsraeliWorkersRows(workersData: MonthlyWorkers[]): string {
+    return workersData
+      .map(
+        (row) => `
+            <tr>
+                <td width="50%" style="border: 1px solid #000000; padding: 10px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${row.month}
+                    </div>
+                </td>
+                <td width="50%" style="border: 1px solid #000000; padding: 10px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${row.employee_count}
+                    </div>
+                </td>
+            </tr>
+        `
+      )
+      .join('\n');
+  }
+
+  /**
+   * Build workers salary data table rows
+   */
+  private buildWorkersDataRows(workersData: WorkerData[]): string {
+    return workersData
+      .map(
+        (row, index) => `
+            <tr>
+                <td width="5%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${index + 1}
+                    </div>
+                </td>
+                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: right;">
+                        ${row.full_name}
+                    </div>
+                </td>
+                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${row.passport_number}
+                    </div>
+                </td>
+                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${row.month}
+                    </div>
+                </td>
+                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${row.nationality}
+                    </div>
+                </td>
+                <td width="17%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ₪${row.salary.toLocaleString('he-IL')}
+                    </div>
+                </td>
+                <td width="18%" style="border: 1px solid #000000; padding: 8px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        -
+                    </div>
+                </td>
+            </tr>
+        `
+      )
+      .join('\n');
+  }
+
+  /**
+   * Build scenario content for turnover/costs approval
+   */
+  private buildScenarioContent(variables: TurnoverApprovalVariables): string {
+    const { scenario } = variables;
+
+    if (scenario === '12_plus' && variables.scenario_12_plus) {
+      const s = variables.scenario_12_plus;
+      return `
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
+          <div style="margin-bottom: 15px;">
+            <u><b>א. למסעדות בעלות פעילות כספית של 12 חודשים ומעלה:</b></u>
+          </div>
+          <div>
+            מחזור העסקאות מפעילות אסייתית ל-12 חודשי הפעילות האחרונים אשר קדמו ליום אישור זה,
+            המתחילים בחודש <u>${s.period_start}</u> ומסתיימים בחודש <u>${s.period_end}</u>,
+            הינו בסך של <u><b>${s.total_turnover.toLocaleString('he-IL')}</b></u> ש"ח.
+          </div>
+        </div>
+      `;
+    }
+
+    if (scenario === '4_to_11' && variables.scenario_4_to_11) {
+      const s = variables.scenario_4_to_11;
+      return `
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
+          <div style="margin-bottom: 15px;">
+            <u><b>ב. למסעדות בעלות פעילות כספית של 4 עד 11 חודשים (כולל):</b></u>
+          </div>
+          <div>
+            מחזור העסקאות החודשי הממוצע³ מפעילות אסייתית ל-<u>${s.months_count}</u> חודשי הפעילות האחרונים אשר
+            קדמו ליום אישור זה, המתחילים בחודש <u>${s.period_start}</u> ומסתיימים בחודש <u>${s.period_end}</u>,
+            הינו בסך של <u><b>${s.total_turnover.toLocaleString('he-IL')}</b></u> ש"ח.
+          </div>
+        </div>
+      `;
+    }
+
+    if (scenario === 'up_to_3' && variables.scenario_up_to_3) {
+      const s = variables.scenario_up_to_3;
+      return `
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
+          <div style="margin-bottom: 15px;">
+            <u><b>ג. למסעדות בעלות פעילות כספית של עד 3 חודשים (כולל):</b></u>
+          </div>
+          <div style="margin-bottom: 10px;">
+            עלות הקמת העסק בספרי החברה הינו <u><b>${s.estimated_annual_costs.toLocaleString('he-IL')}</b></u> ש"ח.
+          </div>
+          <div style="font-size: 14px; color: #666666;">
+            (בהתבסס על: ${s.estimate_basis})
+          </div>
+        </div>
+      `;
+    }
+
+    return '';
+  }
+
+  /**
+   * Build red correction header HTML for client requested adjustments
+   * Returns HTML string to be inserted before "הנדון:" in letter body
+   */
+  private buildCorrectionHeader(): string {
+    return `
+      <tr>
+        <td style="padding: 10px 0; text-align: right;">
+          <div style="
+            font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #FF0000;
+            text-align: right;
+            margin: 0;
+            padding: 10px 0;
+            border-bottom: 2px solid #FF0000;
+          ">
+            תיקון שכר טרחה לבקשתך
+          </div>
+        </td>
+      </tr>
+    `;
   }
 }

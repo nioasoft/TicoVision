@@ -102,6 +102,8 @@ export interface FeeCalculation {
   real_adjustment?: number;
   real_adjustments?: RealAdjustment[]; // JSONB field: array of adjustment records
   real_adjustment_reason?: string;
+  client_requested_adjustment?: number; // NEW: Client requested adjustment (negative values only)
+  client_requested_adjustment_note?: string; // NEW: Optional note for adjustment (max 50 chars)
   discount_percentage?: number;
   discount_amount?: number;
   final_amount?: number;
@@ -166,6 +168,8 @@ export interface CreateFeeCalculationDto {
   index_manual_adjustment?: number; // Default 0 - Manual inflation adjustment in ILS (can be negative)
   real_adjustment?: number; // Default 0
   real_adjustment_reason?: string;
+  client_requested_adjustment?: number; // NEW: Client requested adjustment (negative values only)
+  client_requested_adjustment_note?: string; // NEW: Optional note (max 50 chars)
   discount_percentage?: number; // Default 0 - DEPRECATED: Kept for backwards compatibility
   due_date?: string;
   notes?: string;
@@ -224,8 +228,9 @@ class FeeService extends BaseService {
    * Calculate fee with Israeli accounting standards:
    * 1. Apply inflation adjustment (default 3% if enabled)
    * 2. Apply real adjustments
-   * 3. Calculate VAT (18%)
-   * 4. Calculate year-over-year changes
+   * 3. Apply client requested adjustment (negative values only)
+   * 4. Calculate VAT (18%)
+   * 5. Calculate year-over-year changes
    *
    * Note: Discounts are no longer applied in fee calculations
    */
@@ -234,6 +239,7 @@ class FeeService extends BaseService {
     inflation_adjustment_auto: number;
     index_manual_adjustment: number;
     real_adjustment: number;
+    client_requested_adjustment: number;
     discount_amount: number;
     final_amount: number;
     vat_amount: number;
@@ -245,6 +251,13 @@ class FeeService extends BaseService {
     const applyInflation = data.apply_inflation_index !== false; // Default true
     const realAdjustment = data.real_adjustment || 0;
     const indexManualAdjustment = data.index_manual_adjustment || 0;
+    const clientAdjustment = data.client_requested_adjustment || 0;
+
+    // Validate client adjustment (must be negative or 0)
+    if (clientAdjustment > 0) {
+      throw new Error('תיקון לבקשת לקוח חייב להיות שלילי או 0');
+    }
+
     // Discounts are no longer applied - always 0
     const discountPercentage = 0;
 
@@ -259,8 +272,10 @@ class FeeService extends BaseService {
     // Step 1c: Total inflation adjustment (auto + manual)
     const inflationAdjustment = inflationAdjustmentAuto + indexManualAdj;
 
-    // Step 2: Add real adjustment - ROUND UP
-    const adjustedAmount = Math.ceil(data.base_amount + inflationAdjustment + realAdjustment);
+    // Step 2: Add real adjustment + client requested adjustment - ROUND UP
+    const adjustedAmount = Math.ceil(
+      data.base_amount + inflationAdjustment + realAdjustment + clientAdjustment
+    );
 
     // Step 3: No discount applied
     const discountAmount = 0;
@@ -284,6 +299,7 @@ class FeeService extends BaseService {
       inflation_adjustment_auto: inflationAdjustmentAuto,
       index_manual_adjustment: indexManualAdj,
       real_adjustment: realAdjustment,
+      client_requested_adjustment: clientAdjustment,
       discount_amount: discountAmount,
       final_amount: finalAmount,
       vat_amount: vatAmount,
@@ -398,6 +414,9 @@ class FeeService extends BaseService {
           reason: data.real_adjustment_reason
         },
         real_adjustment_reason: data.real_adjustment_reason,
+        // Client requested adjustment (negative values only)
+        client_requested_adjustment: data.client_requested_adjustment || 0,
+        client_requested_adjustment_note: data.client_requested_adjustment_note,
         discount_percentage: 0, // Discounts no longer applied
         discount_amount: 0, // Discounts no longer applied
         final_amount: calculations.final_amount,
@@ -496,7 +515,7 @@ class FeeService extends BaseService {
       let updateData: Partial<FeeCalculation> = cleanData;
       if (data.base_amount !== undefined || data.inflation_rate !== undefined ||
           data.index_manual_adjustment !== undefined || data.real_adjustment !== undefined ||
-          data.apply_inflation_index !== undefined) {
+          data.apply_inflation_index !== undefined || data.client_requested_adjustment !== undefined) {
         const { data: existing } = await this.getById(id);
         if (existing) {
           // Recalculate all amounts
@@ -507,6 +526,7 @@ class FeeService extends BaseService {
             inflation_rate: data.inflation_rate ?? existing.inflation_rate,
             index_manual_adjustment: data.index_manual_adjustment ?? (existing as any).index_manual_adjustment ?? 0,
             real_adjustment: data.real_adjustment ?? existing.real_adjustment,
+            client_requested_adjustment: data.client_requested_adjustment ?? existing.client_requested_adjustment,
             apply_inflation_index: data.apply_inflation_index ?? existing.apply_inflation_index
           };
           const calculations = this.calculateFeeAmounts(recalcData);
