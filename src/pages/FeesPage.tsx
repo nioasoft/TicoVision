@@ -779,6 +779,8 @@ export function FeesPage() {
         index_manual_adjustment: formData.index_manual_adjustment,
         real_adjustment: formData.real_adjustment,
         real_adjustment_reason: formData.real_adjustment_reason,
+        client_requested_adjustment: formData.client_requested_adjustment,
+        client_requested_adjustment_note: formData.client_requested_adjustment_note,
         discount_percentage: formData.discount_percentage,
         apply_inflation_index: formData.apply_inflation_index,
         notes: formData.notes,
@@ -902,6 +904,8 @@ export function FeesPage() {
         index_manual_adjustment: formData.index_manual_adjustment,
         real_adjustment: formData.real_adjustment,
         real_adjustment_reason: formData.real_adjustment_reason,
+        client_requested_adjustment: formData.client_requested_adjustment,
+        client_requested_adjustment_note: formData.client_requested_adjustment_note,
         discount_percentage: formData.discount_percentage,
         apply_inflation_index: formData.apply_inflation_index,
         notes: formData.notes,
@@ -944,10 +948,13 @@ export function FeesPage() {
           return;
         }
 
-        // Open letter preview dialog
+        // Open letter preview dialog - force reload by closing first
         if (response.data) {
-          setCurrentFeeId(response.data.id);
-          setLetterPreviewOpen(true);
+          setLetterPreviewOpen(false);
+          setTimeout(() => {
+            setCurrentFeeId(response.data.id);
+            setLetterPreviewOpen(true);
+          }, 100);
         }
       } else {
         // Create new calculation (no existing draft)
@@ -962,11 +969,14 @@ export function FeesPage() {
           return;
         }
 
-        // Open letter preview dialog and track the new draft
+        // Open letter preview dialog and track the new draft - force reload by closing first
         if (response.data) {
-          setCurrentFeeId(response.data.id);
-          setCurrentDraftId(response.data.id);
-          setLetterPreviewOpen(true);
+          setLetterPreviewOpen(false);
+          setTimeout(() => {
+            setCurrentFeeId(response.data.id);
+            setCurrentDraftId(response.data.id);
+            setLetterPreviewOpen(true);
+          }, 100);
         }
       }
     } catch (error) {
