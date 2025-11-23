@@ -2017,6 +2017,13 @@ export function FeesPage() {
                     <span>+ תוספת ריאלית:</span>
                     <span>+{formatILS(calculationResults.real_adjustment)}</span>
                   </div>
+                  {/* Client Requested Adjustment - only if negative */}
+                  {formData.client_requested_adjustment < 0 && (
+                    <div className="flex justify-between text-red-600 font-semibold">
+                      <span>- תיקון לבקשת הלקוח:</span>
+                      <span>{formatILS(formData.client_requested_adjustment)}</span>
+                    </div>
+                  )}
                   <hr className="my-2" />
                   <div className="flex justify-between font-semibold">
                     <span>סך הכל לפני מע"מ:</span>
