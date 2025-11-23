@@ -270,6 +270,8 @@ export function FeesPage() {
     formData.discount_percentage,
     formData.apply_inflation_index,
     formData.index_manual_adjustment,
+    formData.client_requested_adjustment,
+    formData.client_requested_adjustment_note,
     formData.previous_year_amount_with_vat,
     // Bookkeeping dependencies for internal clients
     formData.bookkeeping_base_amount,
@@ -585,6 +587,7 @@ export function FeesPage() {
         apply_inflation_index: calc.apply_inflation_index || false,
         inflation_rate: calc.inflation_rate || 3,
         real_adjustment: calc.real_adjustment || 0,
+        client_requested_adjustment: calc.client_requested_adjustment || 0,
         previous_year_amount_with_vat: calc.previous_year_data?.amount_with_vat || 0,
       });
       setCalculationResults(results);
@@ -626,6 +629,7 @@ export function FeesPage() {
   const calculateFeeAmounts = () => {
     const inflationRate = formData.apply_inflation_index ? (formData.inflation_rate || 3.0) : 0;
     const realAdjustment = formData.real_adjustment || 0;
+    const clientAdjustment = formData.client_requested_adjustment || 0;
     const discountPercentage = formData.discount_percentage || 0;
 
     // Step 1a: Apply automatic inflation adjustment (only if checkbox is checked)
@@ -637,8 +641,8 @@ export function FeesPage() {
     // Step 1c: Total inflation adjustment (auto + manual)
     const inflationAdjustment = inflationAdjustmentAuto + indexManualAdjustment;
 
-    // Step 2: Add real adjustment
-    const adjustedAmount = formData.base_amount + inflationAdjustment + realAdjustment;
+    // Step 2: Add real adjustment + client requested adjustment
+    const adjustedAmount = formData.base_amount + inflationAdjustment + realAdjustment + clientAdjustment;
 
     // Step 3: Apply discount
     const discountAmount = adjustedAmount * (discountPercentage / 100);
@@ -720,6 +724,7 @@ export function FeesPage() {
       inflation_adjustment_auto: inflationAdjustmentAuto,
       index_manual_adjustment: indexManualAdjustment,
       real_adjustment: realAdjustment,
+      client_requested_adjustment: clientAdjustment,
       adjusted_amount: adjustedAmount,
       discount_amount: discountAmount,
       final_amount: finalAmount,
