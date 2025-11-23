@@ -644,13 +644,12 @@ export class TemplateService extends BaseService {
         ),
         // Add fee_id and client_id for payment tracking links
         fee_id: feeCalculationId || variables.fee_id,
-        client_id: clientId || variables.client_id,
-        // Add red header if client requested adjustment exists
-        custom_header_lines: hasClientAdjustment ? this.buildCorrectionHeader() : (variables.custom_header_lines || '')
+        client_id: clientId || variables.client_id
       };
 
-      // 7. Build full HTML
-      let fullHtml = this.buildFullHTML(header, body, paymentSection, footer);
+      // 7. Build full HTML with custom header if client requested adjustment exists
+      const customHeaderHtml = hasClientAdjustment ? this.buildCorrectionHeader() : '';
+      let fullHtml = this.buildFullHTML(header, body, paymentSection, footer, customHeaderHtml);
 
       // 8. Replace all variables
       fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
