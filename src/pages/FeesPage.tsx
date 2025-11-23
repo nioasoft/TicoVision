@@ -576,6 +576,8 @@ export function FeesPage() {
         inflation_rate: calc.inflation_rate || 3,
         real_adjustment: calc.real_adjustment || 0,
         real_adjustment_reason: calc.real_adjustment_reason || '',
+        client_requested_adjustment: calc.client_requested_adjustment || 0,
+        client_requested_adjustment_note: calc.client_requested_adjustment_note || '',
         notes: calc.notes || '',
         previous_year_amount: calc.previous_year_data?.amount || 0,
         previous_year_discount: calc.previous_year_data?.discount || 0,

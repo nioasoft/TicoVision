@@ -601,15 +601,18 @@ export class TemplateService extends BaseService {
 
       // 4. Check if client requested adjustment exists (for red header)
       let hasClientAdjustment = false;
+      console.log('🔍 [Red Header] Checking for client adjustment...', { feeCalculationId });
       if (feeCalculationId) {
-        const { data: feeCalculation } = await supabase
+        const { data: feeCalculation, error } = await supabase
           .from('fee_calculations')
           .select('client_requested_adjustment')
           .eq('id', feeCalculationId)
           .eq('tenant_id', tenantId)
           .single();
 
+        console.log('🔍 [Red Header] Query result:', { feeCalculation, error });
         hasClientAdjustment = feeCalculation && (feeCalculation.client_requested_adjustment || 0) < 0;
+        console.log('🔍 [Red Header] hasClientAdjustment:', hasClientAdjustment);
       }
 
       // 5. Detect service type automatically
@@ -649,6 +652,8 @@ export class TemplateService extends BaseService {
 
       // 7. Build full HTML with custom header if client requested adjustment exists
       const customHeaderHtml = hasClientAdjustment ? this.buildCorrectionHeader() : '';
+      console.log('🔍 [Red Header] customHeaderHtml length:', customHeaderHtml.length);
+      console.log('🔍 [Red Header] customHeaderHtml preview:', customHeaderHtml.substring(0, 100));
       let fullHtml = this.buildFullHTML(header, body, paymentSection, footer, customHeaderHtml);
 
       // 8. Replace all variables

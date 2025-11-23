@@ -888,7 +888,7 @@ export function LetterPreviewDialog({
             <div className="space-y-1">
               <Label className="text-xs text-gray-600 rtl:text-right">מיילים נוספים:</Label>
               {getCurrentManualEmails().map((email, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 rounded rtl:flex-row-reverse">
+                <div key={email} className="flex items-center gap-2 p-2 bg-blue-50 rounded rtl:flex-row-reverse">
                   <Mail className="h-4 w-4 text-blue-600" />
                   <span className="text-sm flex-1 dir-ltr rtl:text-right">{email}</span>
                   <Button
