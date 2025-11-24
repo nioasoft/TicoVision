@@ -398,18 +398,20 @@ export function FeesPage() {
 
   const loadDraftCalculation = async (clientId: string) => {
     try {
-      // First try to find draft (unsent calculation)
-      let response = await feeService.getDraftCalculation(clientId, formData.year);
-
-      // If no draft found, try to find any calculation (including sent/calculated)
-      // This handles the case where user sent letters and then returns to the client
-      if (!response.data) {
-        response = await feeService.getLatestCalculationForYear(clientId, formData.year);
-      }
+      // ONLY load draft calculations - do NOT load sent/paid (prevents loading old data)
+      const response = await feeService.getDraftCalculation(clientId, formData.year);
 
       if (response.data) {
         const draft = response.data;
         setCurrentDraftId(draft.id);
+
+        // Debug logging to verify correct data
+        console.log('🔍 [LoadDraft] טעינת draft:', {
+          id: draft.id,
+          status: draft.status,
+          client_adjustment: draft.client_requested_adjustment,
+          client_adjustment_note: draft.client_requested_adjustment_note
+        });
 
         // Fill form with draft data (preserve previous_year_amount from loadPreviousYearData)
         setFormData(prev => ({
@@ -447,10 +449,19 @@ export function FeesPage() {
 
         toast({
           title: 'נטען חישוב קודם',
-          description: draft.status === 'draft' ? 'חישוב שטרם נשלח נטען מהמערכת' : 'חישוב קיים נטען מהמערכת',
+          description: 'חישוב שטרם נשלח נטען מהמערכת',
         });
       } else {
+        // No draft found - reset fields to prevent loading old data
         setCurrentDraftId(null);
+
+        console.log('🔍 [LoadDraft] אין draft - מנקה שדות');
+
+        setFormData(prev => ({
+          ...prev,
+          client_requested_adjustment: 0,
+          client_requested_adjustment_note: ''
+        }));
       }
     } catch (error) {
       logger.error('Error loading draft calculation:', error);

@@ -518,19 +518,25 @@ async function buildCustomLetterHtml(
 function buildCorrectionHeaderHtml(): string {
   return `
     <tr>
-      <td style="padding: 10px 0; text-align: center !important;">
-        <div style="
-          font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
-          font-size: 24px;
-          font-weight: 700;
-          color: #FF0000;
-          text-align: center !important;
-          margin: 0;
-          padding: 10px 0;
-          border-bottom: 2px solid #FF0000;
-        ">
-          ** תיקון שכר טרחה לבקשתך **
-        </div>
+      <td style="padding: 10px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td align="center" style="text-align: center;">
+              <div style="
+                font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
+                font-size: 24px;
+                font-weight: 700;
+                color: #FF0000;
+                margin: 0 auto;
+                padding: 10px 0;
+                border-bottom: 2px solid #FF0000;
+                display: inline-block;
+              ">
+                ** תיקון שכר טרחה לבקשתך **
+              </div>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   `;
