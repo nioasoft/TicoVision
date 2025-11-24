@@ -1993,7 +1993,7 @@ export class TemplateService extends BaseService {
             padding: 10px 0;
             border-bottom: 2px solid #FF0000;
           ">
-            תיקון שכר טרחה לבקשתך
+            ** תיקון שכר טרחה לבקשתך **
           </div>
         </td>
       </tr>
