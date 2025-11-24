@@ -1999,19 +1999,18 @@ export class TemplateService extends BaseService {
   private buildCorrectionHeader(): string {
     return `
       <tr>
-        <td style="padding: 10px 0;">
+        <td colspan="2" style="padding: 10px 0;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td align="center" style="text-align: center;">
+              <td style="text-align: center; padding: 10px 0;">
                 <div style="
                   font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
                   font-size: 24px;
                   font-weight: 700;
                   color: #FF0000;
-                  margin: 0 auto;
-                  padding: 10px 0;
+                  text-align: center;
                   border-bottom: 2px solid #FF0000;
-                  display: inline-block;
+                  padding: 10px 0;
                 ">
                   ** תיקון שכר טרחה לבקשתך **
                 </div>
