@@ -457,7 +457,8 @@ export function LetterPreviewDialog({
       // Regenerate preview with letter_id included
       const { data: previewData, error: previewError } = await templateService.previewLetterFromFiles(
         templateType,
-        updatedVariables
+        updatedVariables,
+        feeId
       );
 
       if (!previewError && previewData) {
