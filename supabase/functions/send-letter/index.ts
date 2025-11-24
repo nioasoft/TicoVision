@@ -583,7 +583,7 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
         .from('fee_calculations')
         .select('client_requested_adjustment')
         .eq('id', variables.fee_id)
-        .single();
+        .maybeSingle();
 
       console.log('🔍 [Edge] Fee calc result:', { feeCalc, error: error?.message });
 
