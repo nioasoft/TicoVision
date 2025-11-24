@@ -539,7 +539,7 @@ function buildCorrectionHeaderHtml(): string {
 /**
  * Build full letter HTML from components
  */
-async function buildLetterHtml(templateType: string, variables: Record<string, any>): Promise<string> {
+async function buildLetterHtml(templateType: string, variables: Record<string, any>, authHeader?: string | null): Promise<string> {
   // Fetch components
   let header = await fetchTemplate('components/header.html');
   const footer = await fetchTemplate('components/footer.html');
@@ -577,19 +577,26 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
     try {
       console.log('🔍 [Edge] Checking client adjustment for fee:', variables.fee_id);
 
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      if (!authHeader) {
+        console.warn('⚠️ [Edge] No auth header - skipping client adjustment check');
+      } else {
+        // Create Supabase client with Authorization header for RLS
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: authHeader } }
+        });
 
-      const { data: feeCalc, error } = await supabase
-        .from('fee_calculations')
-        .select('client_requested_adjustment')
-        .eq('id', variables.fee_id)
-        .maybeSingle();
+        const { data: feeCalc, error } = await supabase
+          .from('fee_calculations')
+          .select('client_requested_adjustment')
+          .eq('id', variables.fee_id)
+          .maybeSingle();
 
-      console.log('🔍 [Edge] Fee calc result:', { feeCalc, error: error?.message });
+        console.log('🔍 [Edge] Fee calc result:', { feeCalc, error: error?.message });
 
-      if (feeCalc && feeCalc.client_requested_adjustment < 0) {
-        console.log('🔍 [Edge] Client adjustment found:', feeCalc.client_requested_adjustment);
-        customHeaderHtml = buildCorrectionHeaderHtml();
+        if (feeCalc && feeCalc.client_requested_adjustment < 0) {
+          console.log('🔍 [Edge] Client adjustment found:', feeCalc.client_requested_adjustment);
+          customHeaderHtml = buildCorrectionHeaderHtml();
+        }
       }
     } catch (error) {
       console.error('❌ [Edge] Error checking client adjustment:', error);
@@ -927,7 +934,10 @@ serve(async (req) => {
         client_id: clientId || variables!.client_id
       };
 
-      letterHtml = await buildLetterHtml(templateType!, enrichedVariables);
+      // Get auth header for RLS authentication
+      const authHeader = req.headers.get('Authorization');
+
+      letterHtml = await buildLetterHtml(templateType!, enrichedVariables, authHeader);
 
       // Generate subject - different for bookkeeping templates
       const year = variables!.year || new Date().getFullYear() + 1;
