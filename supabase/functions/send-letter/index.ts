@@ -512,13 +512,45 @@ async function buildCustomLetterHtml(
 }
 
 /**
+ * Build red correction header for client requested adjustments
+ * Returns HTML table row to be inserted before subject line
+ */
+function buildCorrectionHeaderHtml(): string {
+  return `
+    <tr>
+      <td style="padding: 10px 0; text-align: right;">
+        <div style="
+          font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
+          font-size: 24px;
+          font-weight: 700;
+          color: #FF0000;
+          text-align: right;
+          margin: 0;
+          padding: 10px 0;
+          border-bottom: 2px solid #FF0000;
+        ">
+          ** תיקון שכר טרחה לבקשתך **
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+/**
  * Build full letter HTML from components
  */
 async function buildLetterHtml(templateType: string, variables: Record<string, any>): Promise<string> {
   // Fetch components
   let header = await fetchTemplate('components/header.html');
   const footer = await fetchTemplate('components/footer.html');
-  const paymentSection = await fetchTemplate('components/payment-section.html');
+
+  // Load payment section based on bank_transfer_only flag
+  let paymentSection: string;
+  if (variables.bank_transfer_only) {
+    paymentSection = await fetchTemplate('components/payment-section-bank-only.html');
+  } else {
+    paymentSection = await fetchTemplate('components/payment-section.html');
+  }
 
   // Get body based on template type
   const bodyFileMap: Record<string, string> = {
@@ -538,9 +570,34 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
   const bodyFile = bodyFileMap[templateType] || 'annual-fee.html';
   const body = await fetchTemplate(`bodies/${bodyFile}`);
 
-  // Replace {{custom_header_lines}} with empty string for fee calculation letters
-  // (custom_header_lines is only used in Universal Letter Builder)
-  header = header.replace('{{custom_header_lines}}', '');
+  // Check if fee_id exists and query for client_requested_adjustment
+  let customHeaderHtml = '';
+
+  if (variables.fee_id && SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      console.log('🔍 [Edge] Checking client adjustment for fee:', variables.fee_id);
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      const { data: feeCalc, error } = await supabase
+        .from('fee_calculations')
+        .select('client_requested_adjustment')
+        .eq('id', variables.fee_id)
+        .single();
+
+      console.log('🔍 [Edge] Fee calc result:', { feeCalc, error: error?.message });
+
+      if (feeCalc && feeCalc.client_requested_adjustment < 0) {
+        console.log('🔍 [Edge] Client adjustment found:', feeCalc.client_requested_adjustment);
+        customHeaderHtml = buildCorrectionHeaderHtml();
+      }
+    } catch (error) {
+      console.error('❌ [Edge] Error checking client adjustment:', error);
+    }
+  }
+
+  // Replace {{custom_header_lines}} with red header or empty string
+  header = header.replace('{{custom_header_lines}}', customHeaderHtml);
 
   // Build full HTML
   const fullHtml = `<!DOCTYPE html>
@@ -599,14 +656,15 @@ async function sendEmail(
   // Fetch images as base64 from deployed app
   // These images are served from the Vercel deployment's public folder
   const baseUrl = Deno.env.get('APP_URL') || 'https://ticovision.vercel.app';
-  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue] = await Promise.all([
+  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue, ticoSignature] = await Promise.all([
     fetchImageBase64(`${baseUrl}/brand/tico_logo_240.png`),
     fetchImageBase64(`${baseUrl}/brand/Tico_logo_png_new.png`),
     fetchImageBase64(`${baseUrl}/brand/franco-logo-hires.png`),
     fetchImageBase64(`${baseUrl}/brand/Tico_franco_co.png`),
     fetchImageBase64(`${baseUrl}/brand/tagline.png`),
     fetchImageBase64(`${baseUrl}/brand/bullet-star.png`),
-    fetchImageBase64(`${baseUrl}/brand/Bullet_star_blue.png`)
+    fetchImageBase64(`${baseUrl}/brand/Bullet_star_blue.png`),
+    fetchImageBase64(`${baseUrl}/brand/tico_signature.png`)
   ]);
 
   const emailData = {
@@ -679,6 +737,13 @@ async function sendEmail(
         type: 'image/png',
         disposition: 'inline',
         content_id: 'bullet_star_blue'
+      },
+      {
+        content: ticoSignature,
+        filename: 'tico_signature.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'tico_signature'
       }
     ]
   };
