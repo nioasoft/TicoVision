@@ -763,7 +763,8 @@ export class TemplateService extends BaseService {
    */
   async previewLetterFromFiles(
     templateType: LetterTemplateType,
-    variables: Partial<LetterVariables>
+    variables: Partial<LetterVariables>,
+    feeCalculationId?: string
   ): Promise<ServiceResponse<{ html: string }>> {
     try {
       // 1. Load the 4 components
@@ -826,8 +827,24 @@ export class TemplateService extends BaseService {
         client_id: variables.client_id
       };
 
-      // 7. Build full HTML
-      let fullHtml = this.buildFullHTML(header, body, paymentSection, footer);
+      // 6.5. Check if client requested adjustment exists (for red header)
+      let hasClientAdjustment = false;
+      if (feeCalculationId) {
+        const tenantId = await this.getTenantId();
+        const { data: feeCalculation, error } = await supabase
+          .from('fee_calculations')
+          .select('client_requested_adjustment')
+          .eq('id', feeCalculationId)
+          .eq('tenant_id', tenantId)
+          .single();
+
+        hasClientAdjustment = feeCalculation && (feeCalculation.client_requested_adjustment || 0) < 0;
+        console.log('🔍 [Preview] Fee ID:', feeCalculationId, 'Has adjustment:', hasClientAdjustment);
+      }
+
+      // 7. Build full HTML with custom header if client requested adjustment exists
+      const customHeaderHtml = hasClientAdjustment ? this.buildCorrectionHeader() : '';
+      let fullHtml = this.buildFullHTML(header, body, paymentSection, footer, customHeaderHtml);
 
       // 8. Replace all variables
       fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
@@ -1982,13 +1999,13 @@ export class TemplateService extends BaseService {
   private buildCorrectionHeader(): string {
     return `
       <tr>
-        <td style="padding: 10px 0; text-align: right;">
+        <td style="padding: 10px 0; text-align: center;">
           <div style="
             font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
             font-size: 24px;
             font-weight: 700;
             color: #FF0000;
-            text-align: right;
+            text-align: center;
             margin: 0;
             padding: 10px 0;
             border-bottom: 2px solid #FF0000;

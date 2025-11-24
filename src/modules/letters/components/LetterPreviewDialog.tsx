@@ -255,7 +255,8 @@ export function LetterPreviewDialog({
       // Generate preview
       const { data, error } = await templateService.previewLetterFromFiles(
         templateType,
-        letterVariables
+        letterVariables,
+        feeId // Pass feeId for client_requested_adjustment check
       );
 
       if (error) throw error;
