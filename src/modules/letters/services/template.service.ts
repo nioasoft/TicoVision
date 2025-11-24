@@ -1999,13 +1999,13 @@ export class TemplateService extends BaseService {
   private buildCorrectionHeader(): string {
     return `
       <tr>
-        <td style="padding: 10px 0; text-align: center;">
+        <td style="padding: 10px 0; text-align: center !important;">
           <div style="
             font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
             font-size: 24px;
             font-weight: 700;
             color: #FF0000;
-            text-align: center;
+            text-align: center !important;
             margin: 0;
             padding: 10px 0;
             border-bottom: 2px solid #FF0000;
