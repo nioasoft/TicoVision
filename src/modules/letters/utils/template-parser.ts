@@ -30,15 +30,52 @@ export class TemplateParser {
    * Allows only: <b>, <strong>, <u>, <i>, <em>, <br>, <span> with style
    */
   private static sanitizeWithWhitelist(html: string): string {
-    // Configure DOMPurify with strict whitelist
+    // Configure DOMPurify with whitelist that allows table elements and common formatting
     return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: ['b', 'strong', 'u', 'i', 'em', 'br', 'span'],
-      ALLOWED_ATTR: ['style'],
+      ALLOWED_TAGS: [
+        // Text formatting
+        'b', 'strong', 'u', 'i', 'em', 'br', 'span', 'p', 'div',
+        // Table elements (for foreign worker documents)
+        'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th',
+        // Lists
+        'ul', 'ol', 'li'
+      ],
+      ALLOWED_ATTR: ['style', 'width', 'cellpadding', 'cellspacing', 'border', 'colspan', 'rowspan'],
       ALLOWED_STYLES: {
         'span': {
-          'color': [/^#[0-9A-F]{6}$/i, /^#[0-9A-F]{3}$/i],  // hex colors only
-          'font-weight': [/^(bold|[1-9]00)$/],
+          'color': [/^#[0-9A-Fa-f]{6}$/i, /^#[0-9A-Fa-f]{3}$/i],
+          'font-weight': [/^(bold|normal|[1-9]00)$/],
           'text-decoration': [/^underline$/]
+        },
+        'div': {
+          'font-family': [/.*/],  // Allows any font (including with spaces and commas)
+          'font-size': [/^\d+px$/],
+          'color': [/^#[0-9A-Fa-f]{6}$/i, /^#[0-9A-Fa-f]{3}$/i],
+          'text-align': [/^(left|right|center|justify)$/],
+          'font-weight': [/^(bold|normal|[1-9]00)$/],
+          'line-height': [/^\d+(\.\d+)?$/]
+        },
+        'td': {
+          'border': [/.*/],  // Allows complex border like "1px solid #000000"
+          'padding': [/.*px$/],  // More permissive - any number + px
+          'background-color': [/^#[0-9A-Fa-f]{6}$/i, /^#[0-9A-Fa-f]{3}$/i],
+          'width': [/^\d+%$/, /^\d+px$/],  // Allows percentages and pixels
+          'text-align': [/^(left|right|center|justify)$/],
+          'vertical-align': [/^(top|middle|bottom)$/]
+        },
+        'th': {
+          'border': [/.*/],
+          'padding': [/.*px$/],
+          'background-color': [/^#[0-9A-Fa-f]{6}$/i, /^#[0-9A-Fa-f]{3}$/i],
+          'width': [/^\d+%$/, /^\d+px$/],
+          'text-align': [/^(left|right|center|justify)$/],
+          'font-weight': [/^(bold|normal|[1-9]00)$/]
+        },
+        'table': {
+          'border-collapse': [/^collapse$/],
+          'margin': [/.*/],
+          'max-width': [/^\d+px$/],
+          'width': [/^\d+%$/, /^\d+px$/]  // Allows percentages and pixels
         }
       }
     });
@@ -79,7 +116,7 @@ export class TemplateParser {
 
       // If this variable is whitelisted for HTML
       if (allowHtmlInVariables.includes(variableName)) {
-        return this.sanitizeWithWhitelist(String(value));
+        return String(value); // Trusted HTML from backend functions - no sanitization needed
       }
 
       // Default: Escape HTML entities

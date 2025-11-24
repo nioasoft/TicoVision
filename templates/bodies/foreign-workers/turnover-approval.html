@@ -1,0 +1,59 @@
+<!-- Letter Body: Turnover/Costs Approval (אישור מחזור/עלויות) -->
+<!-- Template Type: foreign_worker_turnover_approval -->
+<!-- Variables: {{company_name}}, {{tax_id}}, {{scenario_content}} -->
+<!-- Note: scenario_content will be generated dynamically based on selected scenario (12_plus, 4_to_11, or up_to_3) -->
+
+<!-- BODY: Title -->
+<tr>
+    <td style="padding-top: 20px;">
+        <!-- Top border above title -->
+        <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.3; font-weight: 700; color: #000000; text-align: center; padding-bottom: 10px;">
+            אגף היתרים – תחום המומחים
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.3; font-weight: 700; color: #000000; text-align: center; padding-bottom: 20px;">
+            <u><b>נספח א'</b></u>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Subject -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.3; font-weight: 700; color: #000000; text-align: center; padding-bottom: 20px;">
+            <u><b>הנדון: אישור על מחזור כספי מפעילות אסייתית</b></u>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Opening Paragraph -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify;">
+            לבקשתכם וכרואי החשבון של חברתכם הרינו לאשר כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Scenario Content (dynamically generated based on selected scenario) -->
+<tr>
+    <td style="padding-top: 30px;">
+        {{scenario_content}}
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 60px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

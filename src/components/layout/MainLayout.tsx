@@ -69,6 +69,7 @@ const navigation: NavigationItem[] = [
       { name: 'כתיבת מכתבים', href: '/letter-templates' },
       { name: 'סימולציית מכתבים', href: '/component-simulator' },
       { name: 'היסטוריית מכתבים', href: '/letter-history' },
+      { name: 'אישורי עובדים זרים', href: '/foreign-workers' },
     ]
   },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },

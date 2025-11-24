@@ -714,14 +714,13 @@ export class TemplateService extends BaseService {
   }
 
   /**
-   * Format date in Israeli format (DD/MM/YYYY)
+   * Format date in Israeli format (DD.MM.YYYY)
    */
   private formatIsraeliDate(date: Date): string {
-    return new Intl.DateTimeFormat('he-IL', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).format(date);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
   }
 
   /**
@@ -1778,7 +1777,11 @@ export class TemplateService extends BaseService {
 
     // Add auto-generated date if not provided
     if (!processed.document_date) {
+      // Auto-generate today's date if not provided
       processed.document_date = this.formatIsraeliDate(new Date());
+    } else if (typeof processed.document_date === 'string') {
+      // Format user-provided date (from HTML date input: YYYY-MM-DD)
+      processed.document_date = this.formatIsraeliDate(new Date(processed.document_date));
     }
 
     // Build recipient based on template type
@@ -1845,14 +1848,14 @@ export class TemplateService extends BaseService {
       .map(
         (row) => `
             <tr>
-                <td width="40%" style="border: 2px solid #000000; padding: 8px; background-color: #ffffff;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #09090b; text-align: right;">
-                        ${row.month}
+                <td width="40%" style="border: 2px solid #000000; border-top: 2px solid #000000; border-bottom: 2px solid #000000; border-left: 2px solid #000000; border-right: 2px solid #000000; padding: 5px; background-color: #ffffff;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; font-weight: 600; color: #000000; text-align: center;">
+                        ${row.amount.toLocaleString('he-IL')}
                     </div>
                 </td>
-                <td width="60%" style="border: 2px solid #000000; padding: 8px; background-color: #ffffff;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #09090b; text-align: center;">
-                        ${row.amount.toLocaleString('he-IL')}
+                <td width="60%" style="border: 2px solid #000000; border-top: 2px solid #000000; border-bottom: 2px solid #000000; border-left: 2px solid #000000; border-right: 2px solid #000000; padding: 5px; background-color: #ffffff;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; color: #000000; text-align: right;">
+                        ${row.month}
                     </div>
                 </td>
             </tr>
@@ -1869,14 +1872,14 @@ export class TemplateService extends BaseService {
       .map(
         (row) => `
             <tr>
-                <td width="50%" style="border: 1px solid #000000; padding: 10px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
-                        ${row.month}
-                    </div>
-                </td>
-                <td width="50%" style="border: 1px solid #000000; padding: 10px;">
+                <td width="50%" style="border: 1px solid #000000; padding: 6px;">
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
                         ${row.employee_count}
+                    </div>
+                </td>
+                <td width="50%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                        ${row.month}
                     </div>
                 </td>
             </tr>
@@ -1944,14 +1947,9 @@ export class TemplateService extends BaseService {
       const s = variables.scenario_12_plus;
       return `
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
-          <div style="margin-bottom: 15px;">
-            <u><b>א. למסעדות בעלות פעילות כספית של 12 חודשים ומעלה:</b></u>
-          </div>
-          <div>
-            מחזור העסקאות מפעילות אסייתית ל-12 חודשי הפעילות האחרונים אשר קדמו ליום אישור זה,
-            המתחילים בחודש <u>${s.period_start}</u> ומסתיימים בחודש <u>${s.period_end}</u>,
-            הינו בסך של <u><b>${s.total_turnover.toLocaleString('he-IL')}</b></u> ש"ח.
-          </div>
+          מחזור העסקאות מפעילות אסייתית ל-12 חודשי הפעילות האחרונים אשר קדמו ליום אישור זה,
+          המתחילים בחודש <u>${s.period_start}</u> ומסתיימים בחודש <u>${s.period_end}</u>,
+          הינו בסך של <u><b>${s.total_turnover.toLocaleString('he-IL')}</b></u> ש"ח.
         </div>
       `;
     }
@@ -1960,14 +1958,9 @@ export class TemplateService extends BaseService {
       const s = variables.scenario_4_to_11;
       return `
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
-          <div style="margin-bottom: 15px;">
-            <u><b>ב. למסעדות בעלות פעילות כספית של 4 עד 11 חודשים (כולל):</b></u>
-          </div>
-          <div>
-            מחזור העסקאות החודשי הממוצע³ מפעילות אסייתית ל-<u>${s.months_count}</u> חודשי הפעילות האחרונים אשר
-            קדמו ליום אישור זה, המתחילים בחודש <u>${s.period_start}</u> ומסתיימים בחודש <u>${s.period_end}</u>,
-            הינו בסך של <u><b>${s.total_turnover.toLocaleString('he-IL')}</b></u> ש"ח.
-          </div>
+          מחזור העסקאות החודשי הממוצע מפעילות אסייתית ל-<u>${s.months_count}</u> חודשי הפעילות האחרונים אשר
+          קדמו ליום אישור זה, המתחילים בחודש <u>${s.period_start}</u> ומסתיימים בחודש <u>${s.period_end}</u>,
+          הינו בסך של <u><b>${s.total_turnover.toLocaleString('he-IL')}</b></u> ש"ח.
         </div>
       `;
     }
@@ -1976,14 +1969,14 @@ export class TemplateService extends BaseService {
       const s = variables.scenario_up_to_3;
       return `
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
-          <div style="margin-bottom: 15px;">
-            <u><b>ג. למסעדות בעלות פעילות כספית של עד 3 חודשים (כולל):</b></u>
-          </div>
           <div style="margin-bottom: 10px;">
             עלות הקמת העסק בספרי החברה הינו <u><b>${s.estimated_annual_costs.toLocaleString('he-IL')}</b></u> ש"ח.
           </div>
-          <div style="font-size: 14px; color: #666666;">
+          <div style="font-size: 14px; color: #666666; margin-bottom: 30px;">
             (בהתבסס על: ${s.estimate_basis})
+          </div>
+          <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify;">
+            <b>לאישור זה מצורפים, בחתימה לשם זיהוי, פירוט המחזור הכספי מפעילות אסייתית כמופיע בספרי החברה לחודשים הרלוונטיים / טופס פחת מפורט, ליום הוצאת האישור, הכולל את פירוט עלויות הקמת העסק.</b>
           </div>
         </div>
       `;

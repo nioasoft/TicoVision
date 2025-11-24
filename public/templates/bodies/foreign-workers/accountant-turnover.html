@@ -1,0 +1,64 @@
+<!-- Letter Body: Accountant Turnover Report (דוח מחזורים רו"ח) -->
+<!-- Template Type: foreign_worker_accountant_turnover -->
+<!-- Variables: {{company_name}}, {{company_type}}, {{tax_id}}, {{monthly_turnover_rows}} -->
+<!-- Note: monthly_turnover_rows will be generated dynamically from the MonthlyTurnover[] array -->
+
+<!-- BODY: Title + Opening Paragraph (merged for space efficiency) -->
+<tr>
+    <td style="padding-top: 6px;">
+        <!-- Top border above title -->
+        <div style="border-top: 1px solid #000000; margin-bottom: 6px;"></div>
+
+        <!-- Title -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.15; font-weight: 700; color: #000000; text-align: center; padding-bottom: 6px;">
+            אישור רו"ח המסכם את הדיווחים למע"מ ב-12 החודשים שקדמו להגשת <u>הבקשה בגין סכומי העסקאות של המבקשת</u>
+        </div>
+
+        <!-- Opening Paragraph -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.25; color: #09090b; text-align: justify; padding-top: 4px;">
+            כרואי החשבון של המבקשת <b>{{company_name}}</b> מספר מזהה <b>{{tax_id}}</b> הרינו לדווח לכם את סכומי העסקאות <b>(לא כולל מע"מ)</b> של המבקשת <b>בלבד</b> בכל אחד מהחודשים המפורטים להלן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Monthly Turnover Table -->
+<tr>
+    <td style="padding-top: 10px;">
+        <table width="100%" cellpadding="0" cellspacing="0" dir="ltr" style="border-collapse: collapse; table-layout: fixed; border: 2px solid #000000;">
+            <thead>
+                <tr>
+                    <td width="40%" style="border: 2px solid #000000; border-top: 2px solid #000000; border-bottom: 2px solid #000000; border-left: 2px solid #000000; border-right: 2px solid #000000; padding: 6px; background-color: #d9d9d9;">
+                        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; font-weight: 700; color: #000000; text-align: center;">
+                            סה"כ עסקאות <u>ללא</u> מע"מ
+                        </div>
+                    </td>
+                    <td width="60%" style="border: 2px solid #000000; border-top: 2px solid #000000; border-bottom: 2px solid #000000; border-left: 2px solid #000000; border-right: 2px solid #000000; padding: 6px; background-color: #d9d9d9;">
+                        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; font-weight: 700; color: #000000; text-align: center;">
+                            חודש דיווח
+                        </div>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table Data Rows (dynamically generated) -->
+                {{monthly_turnover_rows}}
+            </tbody>
+        </table>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 18px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 18px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>
