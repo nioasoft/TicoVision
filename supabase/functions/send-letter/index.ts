@@ -518,13 +518,13 @@ async function buildCustomLetterHtml(
 function buildCorrectionHeaderHtml(): string {
   return `
     <tr>
-      <td style="padding: 10px 0; text-align: right;">
+      <td style="padding: 10px 0; text-align: center;">
         <div style="
           font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;
           font-size: 24px;
           font-weight: 700;
           color: #FF0000;
-          text-align: right;
+          text-align: center;
           margin: 0;
           padding: 10px 0;
           border-bottom: 2px solid #FF0000;

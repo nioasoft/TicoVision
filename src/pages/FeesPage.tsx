@@ -419,6 +419,8 @@ export function FeesPage() {
           index_manual_adjustment: draft.index_manual_adjustment || 0,
           real_adjustment: draft.real_adjustment || 0,
           real_adjustment_reason: draft.real_adjustment_reason || '',
+          client_requested_adjustment: draft.client_requested_adjustment || 0,
+          client_requested_adjustment_note: draft.client_requested_adjustment_note || '',
           discount_percentage: draft.discount_percentage || 0,
           apply_inflation_index: draft.apply_inflation_index ?? prev.apply_inflation_index,
           notes: draft.notes || '',
