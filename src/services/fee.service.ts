@@ -1022,6 +1022,95 @@ class FeeService extends BaseService {
       return { data: 0, error: this.handleError(error as Error) };
     }
   }
+
+  /**
+   * Check if a client is part of a group calculation for a given year
+   * Used to determine if individual fee calculation should be blocked
+   *
+   * @param clientId - Client ID to check
+   * @param year - Tax year
+   * @returns Object with isGroupMember flag and optional groupName
+   */
+  async isClientInGroupCalculation(
+    clientId: string,
+    year: number
+  ): Promise<ServiceResponse<{ isGroupMember: boolean; groupName?: string; groupCalculationId?: string }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // First check if client has a fee_calculation linked to a group
+      const { data: feeCalc, error: calcError } = await supabase
+        .from('fee_calculations')
+        .select('group_calculation_id')
+        .eq('tenant_id', tenantId)
+        .eq('client_id', clientId)
+        .eq('year', year)
+        .eq('is_group_member', true)
+        .maybeSingle();
+
+      if (calcError) throw calcError;
+
+      if (feeCalc?.group_calculation_id) {
+        // Get group name
+        const { data: groupCalc, error: groupError } = await supabase
+          .from('group_fee_calculations')
+          .select('id, client_group:client_groups(group_name_hebrew)')
+          .eq('id', feeCalc.group_calculation_id)
+          .single();
+
+        if (groupError) throw groupError;
+
+        const groupInfo = groupCalc?.client_group as { group_name_hebrew: string } | null;
+
+        return {
+          data: {
+            isGroupMember: true,
+            groupName: groupInfo?.group_name_hebrew,
+            groupCalculationId: feeCalc.group_calculation_id
+          },
+          error: null
+        };
+      }
+
+      // Also check if client's group has a calculation (even if not yet linked)
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('group_id')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError) throw clientError;
+
+      if (client?.group_id) {
+        const { data: groupCalc, error: groupError } = await supabase
+          .from('group_fee_calculations')
+          .select('id, client_group:client_groups(group_name_hebrew)')
+          .eq('tenant_id', tenantId)
+          .eq('group_id', client.group_id)
+          .eq('year', year)
+          .maybeSingle();
+
+        if (groupError) throw groupError;
+
+        if (groupCalc) {
+          const groupInfo = groupCalc?.client_group as { group_name_hebrew: string } | null;
+
+          return {
+            data: {
+              isGroupMember: true,
+              groupName: groupInfo?.group_name_hebrew,
+              groupCalculationId: groupCalc.id
+            },
+            error: null
+          };
+        }
+      }
+
+      return { data: { isGroupMember: false }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
 }
 
 export const feeService = new FeeService();

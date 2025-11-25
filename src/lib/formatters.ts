@@ -11,6 +11,11 @@ import type { PaymentMethod, PaymentStatus } from '@/types/collection.types';
  * @returns Formatted string like "₪1,234" (no decimals, always rounded up)
  */
 export function formatILS(amount: number): string {
+  // Guard against NaN, null, undefined
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    return '₪0';
+  }
+
   return new Intl.NumberFormat('he-IL', {
     style: 'currency',
     currency: 'ILS',
@@ -25,6 +30,11 @@ export function formatILS(amount: number): string {
  * @returns Formatted string like "₪1,234"
  */
 export function formatILSInteger(amount: number): string {
+  // Guard against NaN, null, undefined
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    return '₪0';
+  }
+
   return new Intl.NumberFormat('he-IL', {
     style: 'currency',
     currency: 'ILS',
@@ -156,5 +166,10 @@ export function formatPercentage(value: number, decimals: number = 1): string {
  * @returns Formatted number like "1,234,567"
  */
 export function formatNumber(value: number): string {
+  // Guard against NaN, null, undefined
+  if (typeof value !== 'number' || isNaN(value)) {
+    return '0';
+  }
+
   return new Intl.NumberFormat('he-IL').format(value);
 }

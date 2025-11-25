@@ -33,9 +33,16 @@ export class TenantContactService {
     console.log('🔍 searchContacts called:', { query, contact_type, limit });
 
     try {
+      // Get tenant_id for the new function signature (Migration 116)
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) {
+        console.warn('⚠️ No tenant_id available for contact search');
+        return [];
+      }
+
       const { data, error } = await supabase.rpc('search_tenant_contacts', {
-        search_query: query,
-        max_results: limit,
+        p_tenant_id: tenantId,
+        p_search_term: query,
       });
 
       console.log('📡 RPC response:', { data, error });
@@ -45,15 +52,18 @@ export class TenantContactService {
         throw error;
       }
 
+      let results = data || [];
+
       // Filter by contact_type if provided
-      if (contact_type && data) {
-        const filtered = data.filter((c: ContactSearchResult) => c.contact_type === contact_type);
-        console.log('✅ Filtered results:', filtered.length, 'contacts');
-        return filtered;
+      if (contact_type) {
+        results = results.filter((c: ContactSearchResult) => c.contact_type === contact_type);
       }
 
-      console.log('✅ Unfiltered results:', data?.length || 0, 'contacts');
-      return data || [];
+      // Apply limit (since DB function no longer has max_results param)
+      results = results.slice(0, limit);
+
+      console.log('✅ Results:', results.length, 'contacts');
+      return results;
     } catch (error) {
       console.error('💥 Error searching contacts:', error);
       return [];

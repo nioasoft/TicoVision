@@ -132,7 +132,7 @@ export function BankTransferDiscountCalculator({
                   {/* אחרי הנחה כולל מע"מ */}
                   <div className="flex justify-between items-center bg-blue-100 p-3 rounded-md border-2 border-blue-400" dir="rtl">
                     <span className="text-sm font-semibold text-right">
-                      סכום לתשלום (כולל מע"מ):
+                      סכום לתשלום כולל מע"מ כולל הנחה
                     </span>
                     <span className="font-bold text-xl text-blue-700">
                       {formatILS(amounts.afterDiscountWithVat)}

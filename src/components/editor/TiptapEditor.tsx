@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline'; // Separate import needed (not in StarterKit)
 import TextAlign from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
@@ -93,11 +92,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         keepMarks: true, // Preserve formatting across line breaks
       },
       strike: false, // Disable strike (we don't use it, reduces extensions)
-      // CRITICAL: Disable built-in underline to prevent "Duplicate extension" warning
-      // We use a separate Underline extension below for better control
-      ...(StarterKit.options?.underline !== undefined && { underline: false }),
     }),
-    Underline, // Separate Underline extension (not in StarterKit by default, but some versions include it)
     TextAlign.configure({
       types: ['paragraph'], // Only apply to paragraphs - headings conflict with Heading extension
       alignments: ['left', 'center', 'right'],

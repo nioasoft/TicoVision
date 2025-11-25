@@ -44,6 +44,9 @@ export interface LetterPreviewDialogProps {
   onOpenChange: (open: boolean) => void;
   feeId: string | null;
   clientId: string | null;
+  // Group mode props (optional - when provided, uses group data instead of client)
+  groupId?: string | null;
+  groupFeeCalculationId?: string | null;
   onEmailSent?: () => void;
   manualPrimaryOverride?: LetterTemplateType | null;
   manualSecondaryOverride?: LetterTemplateType | null;
@@ -54,10 +57,14 @@ export function LetterPreviewDialog({
   onOpenChange,
   feeId,
   clientId,
+  groupId,
+  groupFeeCalculationId,
   onEmailSent,
   manualPrimaryOverride,
   manualSecondaryOverride,
 }: LetterPreviewDialogProps) {
+  // Determine if we're in group mode
+  const isGroupMode = !!groupId && !!groupFeeCalculationId;
   // Existing state
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -266,6 +273,162 @@ export function LetterPreviewDialog({
     } catch (error) {
       console.error('Error loading fee and generating variables:', error);
       toast.error('שגיאה בטעינת תצוגה מקדימה');
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  /**
+   * Load GROUP fee calculation and generate variables
+   * Used when groupId and groupFeeCalculationId are provided
+   */
+  const loadGroupFeeAndGenerateVariables = async () => {
+    if (!groupId || !groupFeeCalculationId) return null;
+
+    try {
+      setIsLoadingPreview(true);
+
+      // Fetch group data
+      const { data: group, error: groupError } = await supabase
+        .from('client_groups')
+        .select(`
+          *,
+          clients:clients(id, company_name, company_name_hebrew, tax_id, internal_external, status)
+        `)
+        .eq('id', groupId)
+        .single();
+
+      if (groupError) throw groupError;
+
+      // Fetch group fee calculation
+      const { data: groupCalc, error: calcError } = await supabase
+        .from('group_fee_calculations')
+        .select('*')
+        .eq('id', groupFeeCalculationId)
+        .single();
+
+      if (calcError) throw calcError;
+
+      // Collect emails from all group member clients
+      const allEmails: string[] = [];
+      const allContacts: AssignedContact[] = [];
+
+      for (const client of (group.clients || [])) {
+        const emails = await TenantContactService.getClientEmails(client.id, 'important');
+        allEmails.push(...emails);
+
+        const contacts = await TenantContactService.getClientContacts(client.id);
+        const eligibleContacts = contacts.filter(c => emails.includes(c.email!));
+        allContacts.push(...eligibleContacts);
+      }
+
+      // Remove duplicates
+      const uniqueEmails = [...new Set(allEmails)];
+      setRecipientEmails(uniqueEmails);
+      setPrimaryEnabledEmails(new Set(uniqueEmails));
+      setSecondaryEnabledEmails(new Set(uniqueEmails));
+
+      // Remove duplicate contacts
+      const uniqueContacts = allContacts.filter((contact, index, self) =>
+        index === self.findIndex(c => c.email === contact.email)
+      );
+      setContactsDetails(uniqueContacts);
+
+      // Determine template type based on calculation settings
+      const hasRealAdjustment = (groupCalc.audit_real_adjustment || 0) > 0;
+      const applyInflation = groupCalc.audit_apply_inflation_index !== false;
+
+      // For groups, we use external templates (group = external client pattern)
+      const selection = selectLetterTemplate({
+        clientType: 'external',
+        isRetainer: false,
+        applyInflation: applyInflation,
+        hasRealAdjustment: hasRealAdjustment,
+        bookkeepingApplyInflation: false,
+        bookkeepingHasRealAdjustment: false,
+      });
+
+      setLetterSelection(selection);
+
+      const effectivePrimaryTemplate = manualPrimaryOverride || selection.primaryTemplate;
+      const templateType = effectivePrimaryTemplate;
+      const numChecks = selection.primaryNumChecks;
+
+      // Calculate total amount (audit + bookkeeping)
+      const auditFinalAmount = groupCalc.audit_final_amount || 0;
+      const bookkeepingFinalAmount = groupCalc.bookkeeping_final_amount || 0;
+      const totalAmount = auditFinalAmount + bookkeepingFinalAmount;
+
+      const formatNumber = (num: number): string => {
+        return Math.round(num).toLocaleString('he-IL');
+      };
+
+      // Calculate discounts
+      const amountAfterBank = Math.round(totalAmount * 0.91);
+      const amountAfterSingle = Math.round(totalAmount * 0.92);
+      const amountAfterPayments = Math.round(totalAmount * 0.96);
+
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+
+      // Build variables - use GROUP NAME as company_name
+      const letterVariables: Partial<LetterVariables> = {
+        letter_date: new Intl.DateTimeFormat('he-IL').format(new Date()),
+        year: nextYear.toString(),
+        previous_year: currentYear.toString(),
+        tax_year: nextYear.toString(),
+
+        // GROUP NAME instead of client name!
+        company_name: group.group_name_hebrew,
+        group_name: group.group_name_hebrew,
+
+        // Amounts
+        amount_original: formatNumber(totalAmount),
+        amount_after_bank: formatNumber(amountAfterBank),
+        amount_after_single: formatNumber(amountAfterSingle),
+        amount_after_payments: formatNumber(amountAfterPayments),
+
+        // Payment links
+        payment_link_single: `http://localhost:5173/payment?group_fee_id=${groupFeeCalculationId}&method=single`,
+        payment_link_4_payments: `http://localhost:5173/payment?group_fee_id=${groupFeeCalculationId}&method=installments`,
+
+        // Checks
+        num_checks: numChecks.toString(),
+        check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.${numChecks}.${nextYear}`,
+
+        // Group ID for tracking
+        client_id: groupId,
+
+        inflation_rate: (groupCalc.audit_inflation_rate || 0).toString(),
+
+        // Bank Transfer Only Option
+        ...(groupCalc.bank_transfer_only && {
+          bank_transfer_only: true,
+          bank_discount: groupCalc.bank_transfer_discount_percentage?.toString(),
+          amount_before_discount_no_vat: formatNumber(totalAmount),
+          amount_after_discount_no_vat: formatNumber(groupCalc.bank_transfer_amount_before_vat || 0),
+          amount_after_discount_with_vat: formatNumber(groupCalc.bank_transfer_amount_with_vat || 0),
+        }),
+
+        service_description: 'שירותי ראיית החשבון',
+      };
+
+      setVariables(letterVariables);
+
+      // Generate preview using the same template system
+      const { data, error } = await templateService.previewLetterFromFiles(
+        templateType,
+        letterVariables,
+        groupFeeCalculationId
+      );
+
+      if (error) throw error;
+      if (data) {
+        setPreviewHtml(data.html);
+      }
+    } catch (error) {
+      console.error('Error loading group fee and generating variables:', error);
+      toast.error('שגיאה בטעינת תצוגה מקדימה לקבוצה');
     } finally {
       setIsLoadingPreview(false);
     }
@@ -767,10 +930,16 @@ export function LetterPreviewDialog({
    * Load preview when dialog opens or stage changes
    */
   useEffect(() => {
-    if (open && feeId && clientId) {
-      loadFeeAndGenerateVariables();
+    if (open) {
+      if (isGroupMode) {
+        // Group mode - load group fee calculation data
+        loadGroupFeeAndGenerateVariables();
+      } else if (feeId && clientId) {
+        // Client mode - load individual fee calculation
+        loadFeeAndGenerateVariables();
+      }
     }
-  }, [open, feeId, clientId, currentLetterStage]);
+  }, [open, feeId, clientId, groupId, groupFeeCalculationId, currentLetterStage, isGroupMode]);
 
   /**
    * Reset state when dialog opens

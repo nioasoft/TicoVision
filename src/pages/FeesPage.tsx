@@ -48,6 +48,9 @@ import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewD
 import { selectLetterTemplate, type LetterSelectionResult } from '@/modules/letters/utils/letter-selector';
 import type { LetterTemplateType } from '@/modules/letters/types/letter.types';
 import { BankTransferDiscountCalculator, type BankTransferAmounts } from '@/components/fees/BankTransferDiscountCalculator';
+import { GroupClientSelector, type SelectionMode } from '@/components/fees/GroupClientSelector';
+import { GroupMembersList } from '@/components/fees/GroupMembersList';
+import { groupFeeService, type ClientGroup, type GroupFeeCalculation } from '@/services/group-fee.service';
 
 // 11 Template options (for manual letter selection)
 const TEMPLATE_OPTIONS: { value: LetterTemplateType; label: string }[] = [
@@ -107,6 +110,12 @@ export function FeesPage() {
   const [relatedCompanies, setRelatedCompanies] = useState<Client[]>([]);
   const [feeCalculations, setFeeCalculations] = useState<FeeCalculation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Group mode state
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('client');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
+  const [groupCalculation, setGroupCalculation] = useState<GroupFeeCalculation | null>(null);
   const [previousYearDataSaved, setPreviousYearDataSaved] = useState(false);
   const [savingPreviousData, setSavingPreviousData] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
@@ -177,6 +186,8 @@ export function FeesPage() {
   const [letterPreviewOpen, setLetterPreviewOpen] = useState(false);
   const [currentFeeId, setCurrentFeeId] = useState<string | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  // Group letter preview state
+  const [currentGroupFeeCalculationId, setCurrentGroupFeeCalculationId] = useState<string | null>(null);
   const [autoSelectedLetters, setAutoSelectedLetters] = useState<LetterSelectionResult | null>(null);
   const [selectedPrimaryTemplate, setSelectedPrimaryTemplate] = useState<LetterTemplateType | null>(null);
   const [selectedSecondaryTemplate, setSelectedSecondaryTemplate] = useState<LetterTemplateType | null>(null);
@@ -452,16 +463,70 @@ export function FeesPage() {
           description: 'חישוב שטרם נשלח נטען מהמערכת',
         });
       } else {
-        // No draft found - reset fields to prevent loading old data
+        // No draft found - try to load latest sent/calculated for reference
         setCurrentDraftId(null);
 
-        console.log('🔍 [LoadDraft] אין draft - מנקה שדות');
+        console.log('🔍 [LoadDraft] אין draft - מנסה לטעון חישוב שנשלח');
 
-        setFormData(prev => ({
-          ...prev,
-          client_requested_adjustment: 0,
-          client_requested_adjustment_note: ''
-        }));
+        // NEW: Try to load sent/calculated calculation to populate form
+        const latestResponse = await feeService.getLatestCalculationForYear(clientId, formData.year);
+
+        if (latestResponse.data) {
+          const latest = latestResponse.data;
+          console.log('📋 [LoadLatest] נטען חישוב שנשלח:', {
+            id: latest.id,
+            status: latest.status,
+            inflation_rate: latest.inflation_rate
+          });
+
+          // Fill form with sent data (same logic as draft, just from 'latest')
+          // Don't set currentDraftId - user will create a new draft if they save
+          setFormData(prev => ({
+            ...prev,
+            base_amount: latest.base_amount || prev.base_amount,
+            inflation_rate: latest.inflation_rate || prev.inflation_rate,
+            index_manual_adjustment: latest.index_manual_adjustment || 0,
+            real_adjustment: latest.real_adjustment || 0,
+            real_adjustment_reason: latest.real_adjustment_reason || '',
+            client_requested_adjustment: latest.client_requested_adjustment || 0,
+            client_requested_adjustment_note: latest.client_requested_adjustment_note || '',
+            discount_percentage: latest.discount_percentage || 0,
+            apply_inflation_index: latest.apply_inflation_index ?? prev.apply_inflation_index,
+            notes: latest.notes || '',
+            // Keep previous year data from loadPreviousYearData
+            previous_year_amount: prev.previous_year_amount,
+            previous_year_discount: prev.previous_year_discount,
+            previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
+            // Load bookkeeping data if exists (for internal clients)
+            bookkeeping_base_amount: latest.bookkeeping_calculation?.base_amount || 0,
+            bookkeeping_inflation_rate: latest.bookkeeping_calculation?.inflation_rate || 3.0,
+            bookkeeping_real_adjustment: latest.bookkeeping_calculation?.real_adjustment || 0,
+            bookkeeping_real_adjustment_reason: latest.bookkeeping_calculation?.real_adjustment_reason || '',
+            bookkeeping_discount_percentage: latest.bookkeeping_calculation?.discount_percentage || 0,
+            bookkeeping_apply_inflation_index: latest.bookkeeping_calculation?.apply_inflation_index ?? true,
+            // Load retainer data if exists (for retainer clients)
+            retainer_monthly_amount: latest.retainer_calculation?.monthly_amount || 0,
+            retainer_inflation_rate: latest.retainer_calculation?.inflation_rate || 3.0,
+            retainer_index_manual_adjustment: latest.retainer_calculation?.index_manual_adjustment || 0,
+            retainer_index_manual_is_negative: latest.retainer_calculation?.index_manual_is_negative ?? false,
+            retainer_real_adjustment: latest.retainer_calculation?.real_adjustment || 0,
+            retainer_real_adjustment_reason: latest.retainer_calculation?.real_adjustment_reason || '',
+            retainer_apply_inflation_index: latest.retainer_calculation?.apply_inflation_index ?? true,
+          }));
+
+          toast({
+            title: 'נטען חישוב קודם',
+            description: 'חישוב שנשלח ללקוח נטען לעיון. שמירה תיצור חישוב חדש.',
+          });
+        } else {
+          // No calculation found at all - reset client adjustment fields
+          console.log('🔍 [LoadDraft] אין חישוב כלל - מנקה שדות');
+          setFormData(prev => ({
+            ...prev,
+            client_requested_adjustment: 0,
+            client_requested_adjustment_note: ''
+          }));
+        }
       }
     } catch (error) {
       logger.error('Error loading draft calculation:', error);
@@ -487,6 +552,51 @@ export function FeesPage() {
       }
     } catch (error) {
       logger.error('Error loading client details:', error);
+    }
+  };
+
+  /**
+   * Load group calculation for the selected group and year
+   */
+  const loadGroupCalculation = async (groupId: string) => {
+    try {
+      const response = await groupFeeService.getGroupCalculation(groupId, formData.year);
+      if (response.data) {
+        setGroupCalculation(response.data);
+        // Pre-fill form with existing calculation data
+        setFormData(prev => ({
+          ...prev,
+          base_amount: response.data.audit_base_amount || 0,
+          inflation_rate: response.data.audit_inflation_rate || 3.0,
+          apply_inflation_index: response.data.audit_apply_inflation_index ?? true,
+          index_manual_adjustment: response.data.audit_index_manual_adjustment || 0,
+          real_adjustment: response.data.audit_real_adjustment || 0,
+          real_adjustment_reason: response.data.audit_real_adjustment_reason || '',
+          discount_percentage: response.data.audit_discount_percentage || 0,
+          client_requested_adjustment: response.data.client_requested_adjustment || 0,
+          client_requested_adjustment_note: response.data.client_requested_adjustment_note || '',
+          // Bookkeeping fields
+          bookkeeping_base_amount: response.data.bookkeeping_base_amount || 0,
+          bookkeeping_inflation_rate: response.data.bookkeeping_inflation_rate || 3.0,
+          bookkeeping_apply_inflation_index: response.data.bookkeeping_apply_inflation_index ?? true,
+          bookkeeping_real_adjustment: response.data.bookkeeping_real_adjustment || 0,
+          bookkeeping_real_adjustment_reason: response.data.bookkeeping_real_adjustment_reason || '',
+          bookkeeping_discount_percentage: response.data.bookkeeping_discount_percentage || 0,
+          notes: response.data.notes || ''
+        }));
+        setPreviousYearDataSaved(true); // Allow progression for group
+        toast({
+          title: 'נטען חישוב קבוצתי',
+          description: 'נתוני חישוב קיימים נטענו בהצלחה',
+        });
+      } else {
+        setGroupCalculation(null);
+        // For groups, we don't require previous year data - just allow calculation
+        setPreviousYearDataSaved(true);
+      }
+    } catch (error) {
+      logger.error('Error loading group calculation:', error);
+      setGroupCalculation(null);
     }
   };
 
@@ -753,7 +863,8 @@ export function FeesPage() {
     // Check client type for different validation
     const isRetainerClient = selectedClientDetails?.is_retainer;
 
-    if (!formData.client_id) {
+    // Validate selection based on mode (client or group)
+    if (selectionMode === 'client' && !formData.client_id) {
       toast({
         title: 'שגיאה',
         description: 'נא לבחור לקוח',
@@ -762,21 +873,43 @@ export function FeesPage() {
       return;
     }
 
-    // Different required fields for retainer vs regular clients
-    if (isRetainerClient) {
-      if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
-        toast({
-          title: 'שגיאה',
-          description: 'נא למלא סכום רטיינר חודשי',
-          variant: 'destructive',
-        });
-        return;
+    if (selectionMode === 'group' && !selectedGroupId) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא לבחור קבוצה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Different required fields based on mode
+    if (selectionMode === 'client') {
+      // Client mode validation
+      if (isRetainerClient) {
+        if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
+          toast({
+            title: 'שגיאה',
+            description: 'נא למלא סכום רטיינר חודשי',
+            variant: 'destructive',
+          });
+          return;
+        }
+      } else {
+        if (!formData.base_amount || formData.base_amount <= 0) {
+          toast({
+            title: 'שגיאה',
+            description: 'נא למלא סכום בסיס',
+            variant: 'destructive',
+          });
+          return;
+        }
       }
     } else {
+      // Group mode validation - require base amount
       if (!formData.base_amount || formData.base_amount <= 0) {
         toast({
           title: 'שגיאה',
-          description: 'נא למלא סכום בסיס',
+          description: 'נא למלא סכום בסיס לקבוצה',
           variant: 'destructive',
         });
         return;
@@ -784,6 +917,54 @@ export function FeesPage() {
     }
 
     try {
+      // GROUP MODE: Save to group_fee_calculations
+      if (selectionMode === 'group' && selectedGroupId) {
+        const groupInput = {
+          group_id: selectedGroupId,
+          year: formData.year,
+          audit_base_amount: formData.base_amount,
+          audit_inflation_rate: formData.inflation_rate,
+          audit_apply_inflation_index: formData.apply_inflation_index,
+          audit_index_manual_adjustment: formData.index_manual_adjustment,
+          audit_real_adjustment: formData.real_adjustment,
+          audit_real_adjustment_reason: formData.real_adjustment_reason,
+          audit_discount_percentage: formData.discount_percentage,
+          bookkeeping_base_amount: formData.bookkeeping_base_amount,
+          bookkeeping_inflation_rate: formData.bookkeeping_inflation_rate,
+          bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index,
+          bookkeeping_real_adjustment: formData.bookkeeping_real_adjustment,
+          bookkeeping_real_adjustment_reason: formData.bookkeeping_real_adjustment_reason,
+          bookkeeping_discount_percentage: formData.bookkeeping_discount_percentage,
+          client_requested_adjustment: formData.client_requested_adjustment,
+          client_requested_adjustment_note: formData.client_requested_adjustment_note,
+          notes: formData.notes
+        };
+
+        const response = await groupFeeService.saveGroupCalculation(groupInput);
+
+        if (response.error) {
+          toast({
+            title: 'שגיאה',
+            description: response.error.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        if (response.data) {
+          setGroupCalculation(response.data);
+          toast({
+            title: 'הצלחה',
+            description: 'חישוב קבוצתי נשמר בהצלחה',
+          });
+        }
+
+        resetForm();
+        loadInitialData();
+        return;
+      }
+
+      // CLIENT MODE: Save to fee_calculations (existing logic)
       const createData: CreateFeeCalculationDto = {
         client_id: formData.client_id,
         year: formData.year,
@@ -877,7 +1058,8 @@ export function FeesPage() {
     // Check client type for different validation
     const isRetainerClient = selectedClientDetails?.is_retainer;
 
-    if (!formData.client_id) {
+    // Validate selection based on mode (client or group)
+    if (selectionMode === 'client' && !formData.client_id) {
       toast({
         title: 'שגיאה',
         description: 'נא לבחור לקוח',
@@ -886,21 +1068,43 @@ export function FeesPage() {
       return;
     }
 
-    // Different required fields for retainer vs regular clients
-    if (isRetainerClient) {
-      if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
-        toast({
-          title: 'שגיאה',
-          description: 'נא למלא סכום רטיינר חודשי',
-          variant: 'destructive',
-        });
-        return;
+    if (selectionMode === 'group' && !selectedGroupId) {
+      toast({
+        title: 'שגיאה',
+        description: 'נא לבחור קבוצה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Different required fields based on mode
+    if (selectionMode === 'client') {
+      // Client mode validation
+      if (isRetainerClient) {
+        if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
+          toast({
+            title: 'שגיאה',
+            description: 'נא למלא סכום רטיינר חודשי',
+            variant: 'destructive',
+          });
+          return;
+        }
+      } else {
+        if (!formData.base_amount || formData.base_amount <= 0) {
+          toast({
+            title: 'שגיאה',
+            description: 'נא למלא סכום בסיס',
+            variant: 'destructive',
+          });
+          return;
+        }
       }
     } else {
+      // Group mode validation - require base amount
       if (!formData.base_amount || formData.base_amount <= 0) {
         toast({
           title: 'שגיאה',
-          description: 'נא למלא סכום בסיס',
+          description: 'נא למלא סכום בסיס לקבוצה',
           variant: 'destructive',
         });
         return;
@@ -909,6 +1113,56 @@ export function FeesPage() {
 
     setIsSavingAndPreview(true);
     try {
+      // GROUP MODE: Save to group_fee_calculations
+      if (selectionMode === 'group' && selectedGroupId) {
+        const groupInput = {
+          group_id: selectedGroupId,
+          year: formData.year,
+          audit_base_amount: formData.base_amount,
+          audit_inflation_rate: formData.inflation_rate,
+          audit_apply_inflation_index: formData.apply_inflation_index,
+          audit_index_manual_adjustment: formData.index_manual_adjustment,
+          audit_real_adjustment: formData.real_adjustment,
+          audit_real_adjustment_reason: formData.real_adjustment_reason,
+          audit_discount_percentage: formData.discount_percentage,
+          bookkeeping_base_amount: formData.bookkeeping_base_amount,
+          bookkeeping_inflation_rate: formData.bookkeeping_inflation_rate,
+          bookkeeping_apply_inflation_index: formData.bookkeeping_apply_inflation_index,
+          bookkeeping_real_adjustment: formData.bookkeeping_real_adjustment,
+          bookkeeping_real_adjustment_reason: formData.bookkeeping_real_adjustment_reason,
+          bookkeeping_discount_percentage: formData.bookkeeping_discount_percentage,
+          client_requested_adjustment: formData.client_requested_adjustment,
+          client_requested_adjustment_note: formData.client_requested_adjustment_note,
+          bank_transfer_only: bankTransferOnly,
+          bank_transfer_discount_percentage: bankTransferOnly ? bankTransferDiscount : undefined,
+          notes: formData.notes
+        };
+
+        const response = await groupFeeService.saveGroupCalculation(groupInput);
+
+        if (response.error) {
+          toast({
+            title: 'שגיאה',
+            description: response.error.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        if (response.data) {
+          setGroupCalculation(response.data);
+          // Open group letter preview dialog
+          setLetterPreviewOpen(false);
+          setTimeout(() => {
+            setCurrentGroupFeeCalculationId(response.data.id);
+            setCurrentFeeId(null); // Clear client fee ID
+            setLetterPreviewOpen(true);
+          }, 100);
+        }
+        return;
+      }
+
+      // CLIENT MODE: Save to fee_calculations (existing logic)
       const createData: CreateFeeCalculationDto = {
         client_id: formData.client_id,
         year: formData.year,
@@ -1181,34 +1435,66 @@ export function FeesPage() {
 
                   {/* File uploads removed - all file management done in File Manager (/files) */}
 
-                  <div>
-                    <Label htmlFor="client">בחירת לקוח *</Label>
-                    <Combobox
-                      options={clients.map((client) => ({
-                        value: client.id,
-                        label: `${client.company_name} - ${client.tax_id}`,
-                      }))}
-                      value={formData.client_id}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, client_id: value });
-                        setPreviousYearDataSaved(false); // Reset saved state when changing client
-                      }}
-                      placeholder="בחר לקוח"
-                      searchPlaceholder="חיפוש לפי שם או ח.פ..."
-                      emptyText="לא נמצא לקוח"
-                    />
-                  </div>
+                  {/* Group/Client Selector - Toggle between individual and group mode */}
+                  <GroupClientSelector
+                    year={formData.year}
+                    mode={selectionMode}
+                    onModeChange={(mode) => {
+                      setSelectionMode(mode);
+                      // Clear selections when switching modes
+                      if (mode === 'client') {
+                        setSelectedGroupId(null);
+                        setSelectedGroup(null);
+                        setGroupCalculation(null);
+                      } else {
+                        setFormData(prev => ({ ...prev, client_id: '' }));
+                        setSelectedClientDetails(null);
+                        setRelatedCompanies([]);
+                      }
+                      setPreviousYearDataSaved(false);
+                    }}
+                    selectedClientId={formData.client_id || null}
+                    selectedGroupId={selectedGroupId}
+                    onClientSelect={(client) => {
+                      if (client) {
+                        setFormData({ ...formData, client_id: client.id });
+                      } else {
+                        setFormData({ ...formData, client_id: '' });
+                      }
+                      setPreviousYearDataSaved(false);
+                    }}
+                    onGroupSelect={(group) => {
+                      setSelectedGroupId(group?.id || null);
+                      setSelectedGroup(group);
+                      if (group) {
+                        // Load group calculation if exists
+                        loadGroupCalculation(group.id);
+                      } else {
+                        setGroupCalculation(null);
+                      }
+                      setPreviousYearDataSaved(false);
+                    }}
+                  />
 
-                  {/* Client Info Card */}
-                  {selectedClientDetails && (
+                  {/* Group Members List - Show when group is selected */}
+                  {selectionMode === 'group' && selectedGroupId && (
+                    <GroupMembersList
+                      groupId={selectedGroupId}
+                      compact={false}
+                      showHeader={true}
+                    />
+                  )}
+
+                  {/* Client Info Card - Show only in client mode */}
+                  {selectionMode === 'client' && selectedClientDetails && (
                     <ClientInfoCard
                       client={selectedClientDetails}
                       relatedCompanies={relatedCompanies}
                     />
                   )}
 
-                  {/* New Client Checkbox */}
-                  {formData.client_id && (
+                  {/* New Client Checkbox - Only show in client mode */}
+                  {selectionMode === 'client' && formData.client_id && (
                     <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <Checkbox
@@ -1436,8 +1722,8 @@ export function FeesPage() {
                   )}
                 </Button>
 
-                {/* View Previous Calculation Button - only show if client selected and has calculation */}
-                {formData.client_id && currentDraftId && (
+                {/* View Previous Calculation Button - show if client selected (works with draft OR sent calculations) */}
+                {formData.client_id && (
                   <Button
                     variant="default"
                     onClick={viewPreviousCalculation}
@@ -2520,14 +2806,17 @@ export function FeesPage() {
         }}
         feeId={currentFeeId}
         clientId={formData.client_id || null}
+        groupId={selectedGroupId}
+        groupFeeCalculationId={currentGroupFeeCalculationId}
         manualPrimaryOverride={selectedPrimaryTemplate}
         manualSecondaryOverride={selectedSecondaryTemplate}
         onEmailSent={() => {
           toast({
             title: 'הצלחה',
-            description: 'המכתב נשלח בהצלחה ללקוח',
+            description: selectionMode === 'group' ? 'המכתב הקבוצתי נשלח בהצלחה' : 'המכתב נשלח בהצלחה ללקוח',
           });
           setCurrentDraftId(null);
+          setCurrentGroupFeeCalculationId(null);
           resetForm();
           loadInitialData();
           setLetterPreviewOpen(false);

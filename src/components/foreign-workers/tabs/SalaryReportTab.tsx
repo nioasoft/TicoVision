@@ -49,10 +49,10 @@ export function SalaryReportTab({ value, onChange, disabled }: SalaryReportTabPr
     setWorkersData(updated);
   };
 
-  const handlePeriodChange = (field: 'period_start' | 'period_end', value: string) => {
+  const handlePeriodChange = (field: 'period_start' | 'period_end', dateValue: string) => {
     onChange({
       ...value,
-      [field]: value
+      [field]: dateValue
     });
   };
 

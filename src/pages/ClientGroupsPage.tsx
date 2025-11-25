@@ -41,6 +41,7 @@ import { AddClientsToGroupDialog } from '@/components/groups/AddClientsToGroupDi
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 import { useClients } from '@/hooks/useClients';
 import { ContactsManager } from '@/components/ContactsManager';
+import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import TenantContactService from '@/services/tenant-contact.service';
 import type { AssignedGroupContact, CreateTenantContactDto } from '@/types/tenant-contact.types';
 
@@ -60,6 +61,9 @@ export default function ClientGroupsPage() {
   const [groupContacts, setGroupContacts] = useState<AssignedGroupContact[]>([]);
   const [formData, setFormData] = useState({
     group_name_hebrew: '',
+    primary_owner: '',
+    primary_owner_email: '',
+    primary_owner_phone: '',
     combined_billing: true,
     combined_letters: true,
     company_structure_link: '',
@@ -132,14 +136,53 @@ export default function ClientGroupsPage() {
   };
 
   const handleAddGroup = async () => {
-    const response = await clientService.createGroup(formData);
-    if (response.error) {
+    // 1. Extract only database-compatible fields (exclude email/phone which are for contact creation)
+    const { primary_owner_email, primary_owner_phone, ...groupData } = formData;
+
+    // 2. Create the group first
+    const response = await clientService.createGroup(groupData);
+    if (response.error || !response.data) {
       toast({
         title: 'שגיאה',
-        description: response.error.message,
+        description: response.error?.message || 'לא ניתן ליצור קבוצה',
         variant: 'destructive',
       });
       return;
+    }
+
+    // 2. Auto-create contact and assignment for primary_owner
+    if (formData.primary_owner) {
+      try {
+        // Create or find the contact in tenant_contacts
+        const contact = await TenantContactService.createOrGet({
+          full_name: formData.primary_owner,
+          email: formData.primary_owner_email || null,
+          phone: formData.primary_owner_phone || null,
+          contact_type: 'owner',
+        });
+
+        if (contact) {
+          // Assign to group as primary owner
+          await TenantContactService.assignToGroup({
+            group_id: response.data.id,
+            contact_id: contact.id,
+            is_primary: true,
+          });
+          logger.info('Primary owner assigned to group:', {
+            group_id: response.data.id,
+            contact_id: contact.id,
+            contact_name: contact.full_name,
+          });
+        }
+      } catch (error) {
+        logger.error('Error assigning primary owner to group:', error);
+        // Don't fail the whole operation - group is created
+        toast({
+          title: 'אזהרה',
+          description: 'הקבוצה נוצרה אך הקישור לבעל השליטה נכשל',
+          variant: 'default',
+        });
+      }
     }
 
     toast({
@@ -155,7 +198,10 @@ export default function ClientGroupsPage() {
   const handleUpdateGroup = async () => {
     if (!selectedGroup) return;
 
-    const response = await clientService.updateGroup(selectedGroup.id, formData);
+    // Extract only database-compatible fields
+    const { primary_owner_email, primary_owner_phone, ...groupData } = formData;
+
+    const response = await clientService.updateGroup(selectedGroup.id, groupData);
     
     if (response.error) {
       toast({
@@ -204,6 +250,9 @@ export default function ClientGroupsPage() {
   const resetForm = () => {
     setFormData({
       group_name_hebrew: '',
+      primary_owner: '',
+      primary_owner_email: '',
+      primary_owner_phone: '',
       combined_billing: true,
       combined_letters: true,
       company_structure_link: '',
@@ -217,6 +266,9 @@ export default function ClientGroupsPage() {
     setSelectedGroup(group);
     setFormData({
       group_name_hebrew: group.group_name_hebrew,
+      primary_owner: group.primary_owner || '',
+      primary_owner_email: '',
+      primary_owner_phone: '',
       combined_billing: group.combined_billing,
       combined_letters: group.combined_letters,
       company_structure_link: group.company_structure_link || '',
@@ -615,6 +667,18 @@ export default function ClientGroupsPage() {
               />
             </div>
 
+            <ContactAutocompleteInput
+              label="בעלים ראשי"
+              nameValue={formData.primary_owner}
+              emailValue={formData.primary_owner_email}
+              phoneValue={formData.primary_owner_phone}
+              onNameChange={(value) => setFormData(prev => ({ ...prev, primary_owner: value }))}
+              onEmailChange={(value) => setFormData(prev => ({ ...prev, primary_owner_email: value }))}
+              onPhoneChange={(value) => setFormData(prev => ({ ...prev, primary_owner_phone: value }))}
+              contactType="owner"
+              required
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="company_structure_link">לינק למבנה החברה (אופציונלי)</Label>
@@ -712,6 +776,18 @@ export default function ClientGroupsPage() {
                 required
               />
             </div>
+
+            <ContactAutocompleteInput
+              label="בעלים ראשי"
+              nameValue={formData.primary_owner}
+              emailValue={formData.primary_owner_email}
+              phoneValue={formData.primary_owner_phone}
+              onNameChange={(value) => setFormData(prev => ({ ...prev, primary_owner: value }))}
+              onEmailChange={(value) => setFormData(prev => ({ ...prev, primary_owner_email: value }))}
+              onPhoneChange={(value) => setFormData(prev => ({ ...prev, primary_owner_phone: value }))}
+              contactType="owner"
+              required
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>

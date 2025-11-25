@@ -1889,45 +1889,45 @@ export class TemplateService extends BaseService {
   }
 
   /**
-   * Build workers salary data table rows
+   * Build workers salary data table rows (LTR order)
    */
   private buildWorkersDataRows(workersData: WorkerData[]): string {
     return workersData
       .map(
         (row, index) => `
             <tr>
-                <td width="5%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                <td width="5%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: center;">
                         ${index + 1}
                     </div>
                 </td>
-                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: right;">
+                <td width="15%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: right;">
                         ${row.full_name}
                     </div>
                 </td>
-                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                <td width="15%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: center;">
                         ${row.passport_number}
                     </div>
                 </td>
-                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                <td width="15%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: center;">
                         ${row.month}
                     </div>
                 </td>
-                <td width="15%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                <td width="15%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: center;">
                         ${row.nationality}
                     </div>
                 </td>
-                <td width="17%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                <td width="17%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: center;">
                         ₪${row.salary.toLocaleString('he-IL')}
                     </div>
                 </td>
-                <td width="18%" style="border: 1px solid #000000; padding: 8px;">
-                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #09090b; text-align: center;">
+                <td width="18%" style="border: 1px solid #000000; padding: 6px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; color: #09090b; text-align: center;">
                         -
                     </div>
                 </td>

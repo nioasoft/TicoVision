@@ -25,6 +25,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           fee_calculation_id: string
+          group_calculation_id: string | null
           id: string
           notes: string | null
           num_installments: number | null
@@ -45,6 +46,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           fee_calculation_id: string
+          group_calculation_id?: string | null
           id?: string
           notes?: string | null
           num_installments?: number | null
@@ -65,6 +67,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           fee_calculation_id?: string
+          group_calculation_id?: string | null
           id?: string
           notes?: string | null
           num_installments?: number | null
@@ -103,6 +106,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "fee_tracking_enhanced_view"
             referencedColumns: ["fee_calculation_id"]
+          },
+          {
+            foreignKeyName: "actual_payments_group_calculation_id_fkey"
+            columns: ["group_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "group_fee_calculations"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "actual_payments_tenant_id_fkey"
@@ -801,11 +811,13 @@ export type Database = {
           due_date: string | null
           fee_type_id: string | null
           final_amount: number | null
+          group_calculation_id: string | null
           has_deviation: boolean | null
           id: string
           index_manual_adjustment: number | null
           inflation_adjustment: number | null
           inflation_rate: number | null
+          is_group_member: boolean | null
           last_reminder_sent_at: string | null
           month: number | null
           notes: string | null
@@ -869,11 +881,13 @@ export type Database = {
           due_date?: string | null
           fee_type_id?: string | null
           final_amount?: number | null
+          group_calculation_id?: string | null
           has_deviation?: boolean | null
           id?: string
           index_manual_adjustment?: number | null
           inflation_adjustment?: number | null
           inflation_rate?: number | null
+          is_group_member?: boolean | null
           last_reminder_sent_at?: string | null
           month?: number | null
           notes?: string | null
@@ -937,11 +951,13 @@ export type Database = {
           due_date?: string | null
           fee_type_id?: string | null
           final_amount?: number | null
+          group_calculation_id?: string | null
           has_deviation?: boolean | null
           id?: string
           index_manual_adjustment?: number | null
           inflation_adjustment?: number | null
           inflation_rate?: number | null
+          is_group_member?: boolean | null
           last_reminder_sent_at?: string | null
           month?: number | null
           notes?: string | null
@@ -1006,6 +1022,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fee_calculations_group_calculation_id_fkey"
+            columns: ["group_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "group_fee_calculations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_fee_calculations_tenant_id"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1054,6 +1077,7 @@ export type Database = {
           fee_calculation_id: string | null
           generated_content_html: string
           generated_content_text: string | null
+          group_calculation_id: string | null
           id: string
           is_latest: boolean | null
           last_opened_at: string | null
@@ -1086,6 +1110,7 @@ export type Database = {
           fee_calculation_id?: string | null
           generated_content_html: string
           generated_content_text?: string | null
+          group_calculation_id?: string | null
           id?: string
           is_latest?: boolean | null
           last_opened_at?: string | null
@@ -1118,6 +1143,7 @@ export type Database = {
           fee_calculation_id?: string | null
           generated_content_html?: string
           generated_content_text?: string | null
+          group_calculation_id?: string | null
           id?: string
           is_latest?: boolean | null
           last_opened_at?: string | null
@@ -1147,6 +1173,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_letters_group_calculation_id_fkey"
+            columns: ["group_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "group_fee_calculations"
             referencedColumns: ["id"]
           },
           {
@@ -1209,6 +1242,147 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_fee_calculations: {
+        Row: {
+          amount_paid: number | null
+          audit_apply_inflation_index: boolean | null
+          audit_base_amount: number
+          audit_discount_percentage: number | null
+          audit_final_amount: number | null
+          audit_final_amount_with_vat: number | null
+          audit_index_manual_adjustment: number | null
+          audit_inflation_rate: number | null
+          audit_real_adjustment: number | null
+          audit_real_adjustment_reason: string | null
+          bank_transfer_amount_before_vat: number | null
+          bank_transfer_amount_with_vat: number | null
+          bank_transfer_discount_percentage: number | null
+          bank_transfer_only: boolean | null
+          bookkeeping_apply_inflation_index: boolean | null
+          bookkeeping_base_amount: number | null
+          bookkeeping_discount_percentage: number | null
+          bookkeeping_final_amount: number | null
+          bookkeeping_final_amount_with_vat: number | null
+          bookkeeping_index_manual_adjustment: number | null
+          bookkeeping_inflation_rate: number | null
+          bookkeeping_real_adjustment: number | null
+          bookkeeping_real_adjustment_reason: string | null
+          client_requested_adjustment: number | null
+          client_requested_adjustment_note: string | null
+          created_at: string | null
+          created_by: string | null
+          group_id: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          status: Database["public"]["Enums"]["group_fee_status"]
+          tenant_id: string
+          total_final_amount: number | null
+          total_final_amount_with_vat: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          amount_paid?: number | null
+          audit_apply_inflation_index?: boolean | null
+          audit_base_amount?: number
+          audit_discount_percentage?: number | null
+          audit_final_amount?: number | null
+          audit_final_amount_with_vat?: number | null
+          audit_index_manual_adjustment?: number | null
+          audit_inflation_rate?: number | null
+          audit_real_adjustment?: number | null
+          audit_real_adjustment_reason?: string | null
+          bank_transfer_amount_before_vat?: number | null
+          bank_transfer_amount_with_vat?: number | null
+          bank_transfer_discount_percentage?: number | null
+          bank_transfer_only?: boolean | null
+          bookkeeping_apply_inflation_index?: boolean | null
+          bookkeeping_base_amount?: number | null
+          bookkeeping_discount_percentage?: number | null
+          bookkeeping_final_amount?: number | null
+          bookkeeping_final_amount_with_vat?: number | null
+          bookkeeping_index_manual_adjustment?: number | null
+          bookkeeping_inflation_rate?: number | null
+          bookkeeping_real_adjustment?: number | null
+          bookkeeping_real_adjustment_reason?: string | null
+          client_requested_adjustment?: number | null
+          client_requested_adjustment_note?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          group_id: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: Database["public"]["Enums"]["group_fee_status"]
+          tenant_id: string
+          total_final_amount?: number | null
+          total_final_amount_with_vat?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          amount_paid?: number | null
+          audit_apply_inflation_index?: boolean | null
+          audit_base_amount?: number
+          audit_discount_percentage?: number | null
+          audit_final_amount?: number | null
+          audit_final_amount_with_vat?: number | null
+          audit_index_manual_adjustment?: number | null
+          audit_inflation_rate?: number | null
+          audit_real_adjustment?: number | null
+          audit_real_adjustment_reason?: string | null
+          bank_transfer_amount_before_vat?: number | null
+          bank_transfer_amount_with_vat?: number | null
+          bank_transfer_discount_percentage?: number | null
+          bank_transfer_only?: boolean | null
+          bookkeeping_apply_inflation_index?: boolean | null
+          bookkeeping_base_amount?: number | null
+          bookkeeping_discount_percentage?: number | null
+          bookkeeping_final_amount?: number | null
+          bookkeeping_final_amount_with_vat?: number | null
+          bookkeeping_index_manual_adjustment?: number | null
+          bookkeeping_inflation_rate?: number | null
+          bookkeeping_real_adjustment?: number | null
+          bookkeeping_real_adjustment_reason?: string | null
+          client_requested_adjustment?: number | null
+          client_requested_adjustment_note?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          group_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          status?: Database["public"]["Enums"]["group_fee_status"]
+          tenant_id?: string
+          total_final_amount?: number | null
+          total_final_amount_with_vat?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_fee_calculations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_fee_calculations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -2735,6 +2909,17 @@ export type Database = {
           },
         ]
       }
+      unused_indexes_analysis: {
+        Row: {
+          index_size: string | null
+          indexname: unknown
+          schemaname: unknown
+          tablename: unknown
+          times_used: number | null
+          usage_status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_payment_deviation: {
@@ -3143,6 +3328,13 @@ export type Database = {
         | "payment_proof_2026"
         | "holdings_presentation"
         | "general"
+      group_fee_status:
+        | "draft"
+        | "calculated"
+        | "sent"
+        | "partially_paid"
+        | "paid"
+        | "disputed"
       letter_template_type:
         | "external_index_only"
         | "external_real_change"
@@ -3311,6 +3503,14 @@ export const Constants = {
         "payment_proof_2026",
         "holdings_presentation",
         "general",
+      ],
+      group_fee_status: [
+        "draft",
+        "calculated",
+        "sent",
+        "partially_paid",
+        "paid",
+        "disputed",
       ],
       letter_template_type: [
         "external_index_only",

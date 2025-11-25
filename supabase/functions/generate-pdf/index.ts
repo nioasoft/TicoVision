@@ -78,6 +78,7 @@ serve(async (req) => {
       'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
       'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
       'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
+      'cid:tico_signature': `${baseUrl}/storage/v1/object/public/${bucket}/tico_signature.png`,
     };
 
     // PDF footer image URL (for Puppeteer footer template)
@@ -92,7 +93,7 @@ serve(async (req) => {
     // Make regex more flexible to handle variations in comment formatting
     console.log('🔍 [PDF] Before removal - Has HEADER STATIC START?', html.includes('HEADER STATIC START'));
     console.log('🔍 [PDF] Before removal - Has HEADER STATIC END?', html.includes('HEADER STATIC END'));
-    html = html.replace(/<!--\s*HEADER\s+STATIC\s+START[^>]*-->([\s\S]*?)<!--\s*HEADER\s+STATIC\s+END[^>]*-->/gi, '');
+    html = html.replace(/<!--\s*HEADER\s+STATIC\s+START[\s\S]*?-->([\s\S]*?)<!--\s*HEADER\s+STATIC\s+END[\s\S]*?-->/gi, '');
     console.log('🔍 [PDF] After removal - Has HEADER STATIC START?', html.includes('HEADER STATIC START'));
     console.log('🔍 [PDF] If still there, regex did not match!');
 

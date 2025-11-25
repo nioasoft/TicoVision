@@ -169,7 +169,7 @@ export function ContactAutocompleteInput({
             />
             {/* Autocomplete dropdown */}
             {open && contacts.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 rounded-md border bg-popover text-popover-foreground shadow-md">
+              <div className="absolute z-[9999] w-full mt-1 rounded-md border bg-popover text-popover-foreground shadow-md">
                 <Command shouldFilter={false}>
                   <CommandEmpty className="py-6 text-center text-sm rtl:text-right">
                     {loading ? 'טוען...' : 'לא נמצאו אנשי קשר'}

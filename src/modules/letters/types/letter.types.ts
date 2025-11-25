@@ -99,6 +99,13 @@ export interface LetterVariables {
   bank_branch?: string;
   bank_account?: string;
   bank_account_name?: string;
+
+  // Bank Transfer Only Option (Custom Discount)
+  bank_transfer_only?: boolean; // Whether to use bank transfer only payment section
+  bank_discount?: number; // Custom bank transfer discount percentage (0-15%)
+  amount_before_discount_no_vat?: string; // Amount before discount (no VAT) - formatted
+  amount_after_discount_no_vat?: string; // Amount after discount (no VAT) - formatted
+  amount_after_discount_with_vat?: string; // Amount after discount (with VAT) - formatted
   
   // Contact Information
   contact_email?: string;
