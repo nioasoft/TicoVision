@@ -184,9 +184,9 @@ export function SalaryReportTab({ value, onChange, disabled }: SalaryReportTabPr
                           <Input
                             type="number"
                             min="0"
-                            value={worker.salary}
+                            value={worker.salary || ''}
                             onChange={(e) => updateWorker(index, 'salary', e.target.value)}
-                            placeholder="0"
+                            placeholder="הזן סכום"
                             disabled={disabled}
                             className="text-right rtl:text-right text-sm h-8"
                             dir="rtl"

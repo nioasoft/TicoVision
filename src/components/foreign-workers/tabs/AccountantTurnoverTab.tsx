@@ -140,9 +140,9 @@ export function AccountantTurnoverTab({ value, onChange, disabled }: AccountantT
                         <td className="px-4 py-2">
                           <Input
                             type="number"
-                            value={row.amount}
+                            value={row.amount || ''}
                             onChange={(e) => updateMonth(index, 'amount', e.target.value)}
-                            placeholder="0"
+                            placeholder="הזן סכום"
                             disabled={disabled}
                             className="text-right rtl:text-right"
                             dir="rtl"

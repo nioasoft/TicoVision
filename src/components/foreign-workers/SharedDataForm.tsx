@@ -20,6 +20,19 @@ export function SharedDataForm({
   onClientSelect
 }: SharedDataFormProps) {
   /**
+   * Set today's date as default on mount
+   */
+  useEffect(() => {
+    if (!value.document_date) {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      onChange({
+        ...value,
+        document_date: today
+      });
+    }
+  }, []);
+
+  /**
    * Handle client selection from ClientSelector
    */
   const handleClientChange = (client: Client | null) => {
@@ -61,7 +74,7 @@ export function SharedDataForm({
       <CardContent className="space-y-6">
         {/* Grid 2 columns: Client + Date */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Client Selector */}
+          {/* Client Selector - filters by assignment for bookkeepers */}
           <div className="space-y-2">
             <Label htmlFor="client-select" className="text-right block">
               בחר לקוח <span className="text-red-500">*</span>
@@ -71,6 +84,7 @@ export function SharedDataForm({
               onChange={handleClientChange}
               label=""
               placeholder="בחר לקוח מהרשימה..."
+              filterByAssignment={true}
             />
           </div>
 

@@ -148,9 +148,9 @@ export function IsraeliWorkersTab({ value, onChange, disabled }: IsraeliWorkersT
                           <Input
                             type="number"
                             min="0"
-                            value={row.employee_count}
+                            value={row.employee_count || ''}
                             onChange={(e) => updateMonth(index, 'employee_count', e.target.value)}
-                            placeholder="0"
+                            placeholder="הזן מספר"
                             disabled={disabled}
                             className="text-right rtl:text-right"
                             dir="rtl"

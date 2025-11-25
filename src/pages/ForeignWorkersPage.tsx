@@ -9,6 +9,7 @@ import { AccountantTurnoverTab } from '@/components/foreign-workers/tabs/Account
 import { IsraeliWorkersTab } from '@/components/foreign-workers/tabs/IsraeliWorkersTab';
 import { TurnoverApprovalTab } from '@/components/foreign-workers/tabs/TurnoverApprovalTab';
 import { SalaryReportTab } from '@/components/foreign-workers/tabs/SalaryReportTab';
+import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
 import { FOREIGN_WORKER_TABS, type ForeignWorkerFormState } from '@/types/foreign-workers.types';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { toast } from 'sonner';
@@ -22,6 +23,10 @@ export function ForeignWorkersPage() {
   const [generating, setGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
+  // PDF sharing state
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
+  const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
   const [formState, setFormState] = useState<ForeignWorkerFormState>({
     selectedClientId: null,
     activeTab: 0,
@@ -140,28 +145,11 @@ export function ForeignWorkersPage() {
         return;
       }
 
-      // Auto-download the generated PDF
-      try {
-        const pdfResponse = await fetch(pdfData.pdfUrl);
-        if (!pdfResponse.ok) {
-          throw new Error('Failed to fetch PDF');
-        }
-
-        const blob = await pdfResponse.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${tab.label}_${formState.sharedData.company_name}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
-        toast.success('קובץ PDF הורד בהצלחה!');
-      } catch (downloadError) {
-        console.error('PDF download error:', downloadError);
-        toast.error('הPDF נוצר אבל הייתה שגיאה בהורדה. נסה שוב.');
-      }
+      // Open share dialog instead of auto-download
+      const pdfFileName = `${tab.label}_${formState.sharedData.company_name}.pdf`;
+      setGeneratedPdfUrl(pdfData.pdfUrl);
+      setGeneratedPdfName(pdfFileName);
+      setShowShareDialog(true);
     } catch (error) {
       console.error('Error generating document:', error);
       toast.error('שגיאה ביצירת המסמך');
@@ -417,6 +405,15 @@ export function ForeignWorkersPage() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Share PDF Dialog */}
+      <SharePdfDialog
+        open={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        pdfUrl={generatedPdfUrl || ''}
+        pdfName={generatedPdfName}
+        clientName={formState.sharedData.company_name || ''}
+      />
     </div>
   );
 }
