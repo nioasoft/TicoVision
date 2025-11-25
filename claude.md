@@ -2,490 +2,144 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-# TicoVision AI - Core Rules for Claude Code
-
 ## Project Context
-Multi-tenant CRM for Israeli accounting firms. Starting with 10 users, 700 clients.
-Future: Scale to 10,000 clients with white-label support from Day 1.
-**Full details: See `/docs/ARCHITECTURE.md` and `/docs/PRD.md`**
-**Payment Integration: See `/docs/CARDCOM.md`**
+Multi-tenant CRM for Israeli accounting firms. 10 users, 700 clients → scaling to 10,000.
+**Phase 1**: Fee Management System (Target: December 2025)
 
-## Tech Stack (LOCKED - DO NOT CHANGE)
-```yaml
-Frontend:
-  - React 19 + Vite + TypeScript (strict mode)
-  - UI: shadcn/ui + Tailwind CSS ONLY
-  - State: Zustand (no Redux)
-  - Router: React Router v6
+## Tech Stack (LOCKED)
+- **Frontend**: React 19 + Vite + TypeScript (strict) + shadcn/ui + Tailwind + Zustand
+- **Backend**: Supabase (PostgreSQL + RLS + Auth + Edge Functions)
+- **Payments**: Cardcom (Israeli gateway)
+- **Email**: SendGrid
 
-Backend:
-  - Supabase (Database + Auth + Realtime + Storage) - ALREADY SETUP
-  - PostgreSQL with Row Level Security (RLS)
-  - Edge Functions for business logic
+## Quick Commands
+```bash
+# Development
+npm run dev                    # Start dev (port 5173, fallback 5174)
+npm run build                  # Production build
+npm run lint                   # ESLint check
+npm run typecheck              # TypeScript check (no emit)
+npm run pre-commit             # lint + typecheck
 
-Infrastructure:
-  - CDN: Cloudflare (protection + performance)
-  - Monitoring: Sentry + DataDog
-  - Email: SendGrid (transactional emails)
+# Database
+npm run generate-types         # Update TS types from Supabase schema
 
-Performance:
-  - Caching: Redis/Upstash
-  - Queue: BullMQ for background jobs
-  - Search: Typesense (Hebrew native support)
+# Templates & Assets
+npm run sync-templates         # Sync templates/ → public/templates/
+npm run upload-assets-v2       # Upload letter assets to storage
+npm run verify-v2              # Verify V2 setup
 
-Testing:
-  - Vitest for unit tests
-  - Playwright for E2E testing
-  - Coverage target: 80%+ for services
+# Edge Functions
+npm run deploy-pdf-function    # Deploy PDF generator
+SUPABASE_ACCESS_TOKEN="..." npx supabase functions deploy <name>
 
-Payment:
-  - Cardcom (Israeli payment gateway) - DECIDED
-  - Full integration guide: /docs/CARDCOM.md
-
-Israeli Market:
-  - Language: Hebrew primary, English secondary
-  - External APIs: חשבשבת integration (Phase 2)
+# Troubleshooting
+lsof -i :5173                  # Check port usage
+kill -9 $(lsof -t -i:5173)     # Kill process on port
 ```
 
-## 🔴 NEVER Rules (Critical Violations)
-1. **NEVER** use Material-UI, Ant Design, Mantine, or any UI library except shadcn/ui
-2. **NEVER** access data without tenant_id filter
-3. **NEVER** commit API keys - use .env.local
+## 🔴 NEVER Rules
+1. **NEVER** use UI libraries except shadcn/ui (no MUI, Ant, Mantine)
+2. **NEVER** access data without `tenant_id` filter
+3. **NEVER** commit API keys - use `.env.local`
 4. **NEVER** bypass Supabase RLS policies
 5. **NEVER** mix business logic in components (use services)
 6. **NEVER** use `any` type in TypeScript
-7. **NEVER** skip error boundaries in React components
-8. **NEVER** hardcode values that could be global (colors, fonts, sizes, business rules)
+7. **NEVER** hardcode values that could be global
 
 ## ✅ ALWAYS Rules
+1. **ALWAYS** extend `BaseService` for new services
+2. **ALWAYS** use `getTenantId()` for tenant isolation
+3. **ALWAYS** run `npm run generate-types` after schema changes
+4. **ALWAYS** use plural snake_case for tables: `clients` not `client`
+5. **ALWAYS** paginate lists (default: 20 items)
+6. **ALWAYS** use optimistic updates for UX
 
-### 🔴 RTL Alignment Rule (CRITICAL - BASE LAW)
-**ALL UI COMPONENTS MUST BE RIGHT-ALIGNED FOR HEBREW INTERFACE**
-- **זה חוק בסיס**: Every single text element, dialog, modal, popup, dropdown, and form MUST be right-aligned
-- **Use RTL classes on ALL components**: `rtl:text-right` and `ltr:text-left` classes on all text elements
-- **Headers, descriptions, labels, buttons** - EVERYTHING must be right-aligned in RTL mode
-- **This includes ALL shadcn/ui components**: Dialog, AlertDialog, Popover, DropdownMenu, Sheet, Tooltip, Card, etc.
-- **Button groups**: Use `rtl:space-x-reverse` for proper spacing
-- **Default alignment**: Should ALWAYS be right for Hebrew interface
-- **NO EXCEPTIONS**: If you see ANY text aligned to the left in the Hebrew interface, it's a BUG that must be fixed immediately
+## 🔴 RTL Alignment (BASE LAW - חוק בסיס)
+**ALL UI MUST BE RIGHT-ALIGNED FOR HEBREW**
+- Every text element, dialog, modal, form MUST be right-aligned
+- Use `rtl:text-right` and `ltr:text-left` on ALL text elements
+- Button groups: Use `rtl:space-x-reverse`
+- If ANY text is left-aligned in Hebrew UI → it's a BUG
 
-1. **ALWAYS** use MCP commands first for database operations:
-   ```bash
-   # List tables
-   /supabase list-tables
-   
-   # Describe table structure
-   /supabase describe-table <table_name>
-   
-   # Get full schema overview
-   /supabase get-schema
-   
-   # List all database functions
-   /supabase list-functions
-   ```
+## 🌐 Israeli Market Requirements
+| Requirement | Format | Example |
+|-------------|--------|---------|
+| Language | Hebrew primary, RTL | `dir="rtl"` |
+| Currency | ILS (₪) | `₪1,234.56` |
+| Date | DD/MM/YYYY | `25/11/2025` |
+| Tax ID | 9-digit + Luhn | `validateTaxId()` in `client.service.ts` |
 
-2. **ALWAYS** use available Sub-Agents for specialized tasks:
-   ```bash
-   # For security reviews and RLS policy validation
-   @security-auditor
-   
-   # For database design and schema optimization
-   @database-admin
-   
-   # For API design and backend architecture
-   @backend-architect
-   
-   # For code quality and best practices
-   @code-reviewer
-   
-   # For automation workflows and business logic
-   @automation-engineer
-   
-   # For frontend components and UX
-   @frontend-developer
-   ```
-
-3. **ALWAYS** use plural snake_case for tables: `clients` not `client`
-4. **ALWAYS** add comments to tables and functions in SQL
-5. **ALWAYS** generate types after schema changes: `npm run generate-types`
-6. **ALWAYS** test RLS policies before implementing features
-7. **ALWAYS** use optimistic updates for better UX
-8. **ALWAYS** paginate lists (default: 20 items)
-
-## 🌐 Israeli Market Requirements (MANDATORY)
-1. **Language**: Hebrew UI with RTL support (dir="rtl" in HTML)
-2. **Currency**: ILS (₪) formatting - ₪1,234.56
-3. **Date Format**: DD/MM/YYYY (Israeli standard)
-4. **Tax ID**: 9-digit Israeli tax ID validation with Luhn check digit
-5. **Payment Gateway**: Cardcom (Israeli credit card processing) - See `/docs/CARDCOM.md`
-6. **Business Letters**: Hebrew correspondence, formal tone - **Templates from Shani & Tiko**
-7. **Typography**: Hebrew fonts (Assistant/Heebo) with RTL layout
-
-### Implemented Israeli Tax ID Validation:
+## Service Architecture (MANDATORY)
 ```typescript
-// In client.service.ts - ALREADY IMPLEMENTED
-private validateTaxId(taxId: string): boolean {
-  if (!/^\d{9}$/.test(taxId)) return false;
-  const digits = taxId.split('').map(Number);
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    let num = digits[i] * ((i % 2) + 1);
-    sum += num > 9 ? num - 9 : num;
-  }
-  return sum % 10 === 0; // Luhn algorithm check
-}
-```
-
-### Currency Formatting:
-```typescript
-// Format as Israeli Shekel
-const formatILS = (amount: number): string => {
-  return new Intl.NumberFormat('he-IL', {
-    style: 'currency',
-    currency: 'ILS'
-  }).format(amount); // Returns: ₪1,234.56
-}
-```
-
-### Date Formatting:
-```typescript
-// Israeli date format DD/MM/YYYY
-const formatIsraeliDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('he-IL').format(date);
-}
-```
-
-## 🌍 Global Configuration Rules
-1. **MANDATORY GLOBALS**: Colors, fonts, sizes, spacing - MUST be defined globally
-2. **BUSINESS RULES**: Fee rates, payment terms, deadline intervals - MUST be global constants
-3. **SYSTEM SETTINGS**: Pagination, timeouts, file limits - MUST be centralized
-4. **ASK FIRST**: Before creating any global configuration file or constant, ask Asaf for approval
-5. **SINGLE SOURCE**: Each value should have exactly one source of truth
-6. **EASY OVERRIDE**: Global values should be easily changeable for white-label customization
-
-### Global Structure Pattern:
-```typescript
-// ✅ Correct approach - ask Asaf first, then implement:
-// lib/design-tokens.ts - for UI values
-// lib/business-rules.ts - for business logic values  
-// lib/system-config.ts - for system settings
-
-// ❌ Wrong approach:
-const primaryColor = "#3b82f6" // Hardcoded in component
-const maxClients = 700 // Hardcoded business rule
-```
-
-## File Structure
-```
-src/
-├── components/        # UI components (shadcn/ui based)
-├── modules/           # Feature modules
-│   ├── collections/       # ✅ Collection Management System (DEPLOYED)
-│   │   ├── pages/            # 3 pages: Dashboard, Settings, Disputes
-│   │   ├── components/       # 6 components: KPICards, Filters, Table, Dialogs
-│   │   ├── store/            # Zustand store for collection state
-│   │   └── routes.tsx        # Route configuration
-│   ├── fee-management/    # Phase 1: Automated fee collection
-│   ├── letter-templates/  # 11 letter templates from Shani & Tiko
-│   ├── payment-system/    # Cardcom integration (see /docs/CARDCOM.md)
-│   ├── clients/          # Client management (CRM base)
-│   ├── user-management/  # User roles & permissions system
-│   └── dashboard/        # Real-time revenue tracking
-├── services/         # Business logic & API calls (EXTENDS BaseService)
-│   ├── base.service.ts          # Base class for all services
-│   ├── client.service.ts        # Client management with Israeli tax ID validation
-│   ├── fee.service.ts           # Fee calculations and management
-│   ├── cardcom.service.ts       # Payment gateway integration
-│   ├── audit.service.ts         # Audit logging for all actions
-│   ├── collection.service.ts    # ✅ Collection tracking & dashboard (DEPLOYED)
-│   ├── reminder.service.ts      # ✅ Reminder rules & history (DEPLOYED)
-│   ├── notification.service.ts  # ✅ Alert settings management (DEPLOYED)
-│   └── email-template.service.ts # ✅ Email template generation (DEPLOYED)
-├── hooks/           # Custom React hooks
-├── lib/            # Utilities & configurations (GLOBAL VALUES HERE)
-│   ├── supabase.ts # Supabase client + helper functions
-│   └── formatters.ts # ✅ ILS currency, Israeli dates, Hebrew labels (DEPLOYED)
-└── types/          # TypeScript definitions
-    └── collection.types.ts # ✅ Collection system types (DEPLOYED)
-```
-
-## 🏗️ Service Architecture Pattern (MANDATORY)
-
-### All services MUST extend BaseService:
-```typescript
-// Every service follows this pattern:
+// All services MUST extend BaseService
 export class YourService extends BaseService {
   constructor() {
-    super('table_name'); // Pass the table name
+    super('table_name');
   }
-  
-  // All methods MUST use tenant isolation:
+
   async getAll() {
     const tenantId = await this.getTenantId(); // REQUIRED
     // Query with tenant_id filter
   }
 }
-```
 
-### Service Response Pattern:
-```typescript
+// Response pattern
 interface ServiceResponse<T> {
   data: T | null;
   error: Error | null;
 }
-
-// ALWAYS return this structure from service methods
 ```
 
-### Available Helper Functions:
-```typescript
-// In lib/supabase.ts - USE THESE:
-getCurrentTenantId(): Promise<string | null>  // Get current tenant
-getCurrentUserRole(): Promise<string | null>  // Get user role
-
-// In BaseService - INHERITED BY ALL:
-getTenantId(): Promise<string>               // Throws if no tenant
-handleError(error): Error                    // Standardize errors  
-logAction(action, resourceId?, details?)     // Audit logging
-buildPaginationQuery(query, params)          // Pagination helper
-buildFilterQuery(query, filters)             // Filter helper
-```
-
-## 🚨 CRITICAL DATABASE ARCHITECTURE NOTES (DO NOT IGNORE)
-
-### Table Architecture - THERE IS NO `users` TABLE!
-The system uses **`user_tenant_access`** for user-tenant relationships:
-- **auth.users** - Supabase authentication (DO NOT QUERY DIRECTLY)
-- **user_tenant_access** - Links users to tenants with roles
-- **super_admins** - Super admin access control
-- **NO `public.users` TABLE EXISTS** - Any reference to it will fail
-
-### Common Errors and Solutions:
-1. **"column reference is ambiguous"** - Always qualify columns with table alias (e.g., `uta.user_id` not just `user_id`)
-2. **"relation users does not exist"** - You're referencing non-existent `public.users` table, use `user_tenant_access` instead
-3. **RLS infinite recursion** - Use SECURITY DEFINER functions to bypass RLS where needed
-4. **400 Bad Request on RPC calls** - Check function parameter names and column qualifications
-
-### Correct User Query Pattern:
+## 🚨 Database Architecture - CRITICAL
+### NO `public.users` TABLE!
 ```sql
--- CORRECT: Get users for a tenant
-SELECT 
-  uta.user_id,
-  uta.role,
-  au.email
+-- CORRECT: Get users for tenant
+SELECT uta.user_id, uta.role, au.email
 FROM user_tenant_access uta
 JOIN auth.users au ON uta.user_id = au.id
-WHERE uta.tenant_id = 'tenant-id'
-AND uta.is_active = true;
+WHERE uta.tenant_id = 'tenant-id' AND uta.is_active = true;
 
--- WRONG: This will fail
-SELECT * FROM users; -- NO SUCH TABLE!
+-- WRONG: This will FAIL
+SELECT * FROM users; -- TABLE DOES NOT EXIST!
 ```
 
-### Database Function Best Practices:
-1. **Always qualify columns** in PL/pgSQL functions to avoid ambiguity
-2. **Use table aliases** consistently (uta for user_tenant_access, au for auth.users)
-3. **Declare variables** with different names than column names
-4. **Test functions** directly in SQL before using in application
+### Migration Requirements
+```sql
+-- Use gen_random_uuid() NOT uuid_generate_v4()
+id UUID PRIMARY KEY DEFAULT gen_random_uuid()
 
-## 📞 Shared Contacts System Architecture (Migration 083)
+-- Auth functions MUST be in public schema
+CREATE OR REPLACE FUNCTION public.get_current_tenant_id()
+RETURNS UUID AS $$
+  SELECT (auth.jwt() -> 'user_metadata' ->> 'tenant_id')::UUID;
+$$ LANGUAGE SQL STABLE;
+```
 
-### Overview - Unified Contact Management
-**המערכת מנהלת מאגר משותף של אנשי קשר עבור כל הדיירים:**
-- **tenant_contacts** - מאגר משותף לכל אנשי הקשר (owner, accountant_manager, secretary, etc.)
-- **client_contact_assignments** - קישור many-to-many בין לקוחות לאנשי קשר
-- **איש קשר אחד יכול להיות משוייך למספר לקוחות** (חיסכון בכפילויות)
+## 📧 Letter System - 4-Part Architecture
+**Template = Header + Body (1 of 11) + Payment Section + Footer**
 
-### Contact Architecture:
+### Directory Structure
+```
+templates/              ← SOURCE OF TRUTH - ALWAYS EDIT HERE!
+├── components/
+│   ├── header.html
+│   ├── footer.html
+│   └── payment-section.html
+└── bodies/             ← 11 letter types
+    ├── annual-fee.html
+    ├── annual-fee-as-agreed.html
+    └── ... (9 more)
+```
+
+### Rules
+- **Edit ONLY** `templates/` - auto-syncs to `public/templates/` on `npm run dev`
+- **Use** `template.service.ts` → saves to `generated_letters` table
+- **DO NOT USE** `letter.service.ts` (deprecated) or `letter_history` table
+- **Variables**: Use `{{variable_name}}` format
+
+### Payment Discounts (BUSINESS RULES)
 ```typescript
-// אנשי קשר במאגר המשותף
-interface TenantContact {
-  id: string;
-  tenant_id: string;
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  contact_type: ContactType; // 'owner' | 'accountant_manager' | 'secretary' | ...
-  job_title: string | null;
-  notes: string | null;
-}
-
-// קישור לקוח-איש קשר
-interface ClientContactAssignment {
-  id: string;
-  client_id: string;
-  contact_id: string;
-  is_primary: boolean; // רק איש קשר אחד ראשי לכל לקוח
-  email_preference: 'all' | 'important_only' | 'none';
-  role_at_client: string | null; // תפקיד ספציפי אצל הלקוח
-  notes: string | null;
-}
-```
-
-### How Email Distribution Works:
-```typescript
-// כשיוצר מכתב שכר טרחה, המערכת:
-// 1. טוענת את כל אנשי הקשר של הלקוח
-const contacts = await clientService.getClientContacts(clientId);
-
-// 2. מסננת לפי העדפות מייל (fee letters = "important")
-const eligible = contacts.filter(c =>
-  c.email &&
-  (c.email_preference === 'all' || c.email_preference === 'important_only')
-);
-
-// 3. שולחת לכל המיילים שנבחרו
-const recipientEmails = eligible.map(c => c.email!);
-await sendEmail(recipientEmails, subject, htmlContent);
-```
-
-### Contact Creation Flow:
-```typescript
-// בעת יצירת לקוח חדש:
-// 1. בעלים (owner) ומנהלת חשבונות (accountant_manager) נשמרים ב-tenant_contacts
-const owner = await TenantContactService.createOrGet({
-  full_name: data.contact_name,
-  email: data.contact_email,
-  phone: data.contact_phone,
-  contact_type: 'owner',
-  job_title: 'איש קשר מהותי'
-});
-
-// 2. נוצר קישור ב-client_contact_assignments
-await TenantContactService.assignToClient({
-  client_id: client.id,
-  contact_id: owner.id,
-  is_primary: true, // הבעלים הוא איש הקשר הראשי
-  email_preference: 'all'
-});
-
-// 3. אנשי קשר נוספים מתווספים דרך ContactsManager
-// כל אנשי הקשר נשמרים באותו אופן במאגר המשותף
-```
-
-### Key Points:
-- **אין** שדה `group_id` או `contact_group_id` ב-`tenant_contacts` - זה רק עבור `clients`
-- **בעלים ומנהלת חשבונות** מופיעים בטופס היצירה של לקוח רק ל-UX - אחר כך מנוהלים כמו שאר אנשי הקשר
-- **שליחת מיילים** תמיד מסננת לפי `email_preference` - מכתבי שכר טרחה נשלחים ל-'all' ו-'important_only'
-- **חיפוש אנשי קשר** משתמש ב-full-text search עם תמיכה בעברית (search_vector)
-
-## 💥 User Management & Authentication System
-
-### User Roles & Hierarchy:
-```typescript
-type UserRole = 'admin' | 'accountant' | 'bookkeeper' | 'client';
-
-interface UserPermissions {
-  modules: {
-    [moduleName: string]: {
-      read: boolean;
-      write: boolean;
-      view: boolean;
-      delete?: boolean;
-    };
-  };
-  systemActions: {
-    manageUsers: boolean;
-    viewLogs: boolean;
-    systemConfig: boolean;
-  };
-}
-```
-
-### Authentication Flow:
-1. **Supabase Auth**: Email/password + social login - ALREADY CONFIGURED
-2. **Initial Setup**: First user becomes admin automatically
-3. **User Registration**: New users need admin approval
-4. **Role Assignment**: Admins set roles and permissions
-5. **Module Access**: Sidebar shows only allowed modules
-
-### Audit Logging Requirements:
-```typescript
-interface AuditLog {
-  id: string;
-  user_id: string;
-  user_email: string;
-  action: string;           // "login", "create_client", "send_letter"
-  module: string;           // "fee-management", "user-management"
-  resource_id?: string;     // ID of affected resource
-  details: Record<string, unknown>; // Action-specific data (NO ANY TYPE!)
-  ip_address: string;
-  user_agent: string;
-  timestamp: Date;
-  tenant_id: string;       // For multi-tenancy
-}
-```
-
-### Required Pages:
-- `/login` - Supabase Auth login
-- `/dashboard` - Main dashboard with module sidebar
-- `/admin/users` - User management (admin only)
-- `/admin/permissions` - Permission templates
-- `/admin/audit-logs` - System activity logs
-
-## 📋 Task Management System
-
-### Task Tracking Rules:
-1. **ALWAYS** create tasks in `/docs/TASKS.md` before starting work
-2. **ALWAYS** check off completed tasks with ✅
-3. **ALWAYS** add new tasks during development
-4. **ALWAYS** update progress weekly
-
-### Task Format:
-```markdown
-## Current Sprint Tasks
-
-### Phase 1: Fee Management System
-- [ ] Setup user authentication with Supabase
-- [ ] Create user roles and permissions system
-- [ ] Build admin user management interface
-- [ ] Implement audit logging for all actions
-- [x] Setup project structure and dependencies ✅
-```
-
-## Current Development Phase
-**Phase 1: Fee Management System** (Active - Target: December 2025)
-- ✅ Focus: Automated fee collection + 11 letter templates from Shani & Tiko
-- ✅ Payment integration: Cardcom credit card links in letters (see /docs/CARDCOM.md)
-- ✅ Real-time dashboard: Budget vs. actual collections
-- ✅ Letter template system: Simple variable replacement (NO AI GENERATION)
-- ✅ Multi-tenant with RLS from Day 1 for white-label support
-- ⏸️ Skip: Advanced AI, Tax authority APIs (Phase 2-3)
-
-## 💰 Collection Management System (DEPLOYED - Oct 28, 2025)
-
-**Complete system for tracking fee payments and automated client reminders.**
-
-### Quick Reference Documentation
-- **Deployment Summary**: `/DEPLOYMENT_COMPLETE.md` - Full deployment details
-- **Technical Spec**: `/docs/COLLECTION_IMPLEMENTATION_COMPLETE.md` - Complete implementation
-- **System Design**: `/docs/COLLECTION_SYSTEM.md` - Architecture and features
-- **API Reference**: `/docs/COLLECTION_API.md` - Endpoint documentation
-- **Memory Bank**: `/memory-bank/collection-system-summary.md` - Quick reference
-
-### Database (Migrations 032-041)
-**10 migrations deployed to production:**
-- 6 new tables: `payment_method_selections`, `payment_disputes`, `payment_reminders`, `client_interactions`, `notification_settings`, `reminder_rules`
-- Extended `fee_calculations` with 6 payment tracking columns
-- Extended `generated_letters` with 4 email tracking columns
-- 2 helper functions: `get_collection_statistics()`, `get_fees_needing_reminders()`
-- 1 view: `collection_dashboard_view`
-- 2 cron jobs: daily reminders (7AM UTC), hourly alerts
-
-### Edge Functions (7 deployed)
-All deployed to: `https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/`
-
-1. `track-email-open` - Tracking pixel for email opens
-2. `track-payment-selection` - Record payment method choice
-3. `payment-dispute` - Handle "שילמתי" disputes
-4. `cardcom-webhook` - Payment status sync (updated)
-5. `collection-reminder-engine` - Automated daily reminders
-6. `alert-monitor` - Hourly alert checking
-7. `send-letter` - Letter sending (existing)
-
-### Payment Method Discounts (BUSINESS RULES)
-```typescript
-// Defined in collection.types.ts
 const PAYMENT_DISCOUNTS = {
   bank_transfer: 9,      // 9% discount
   cc_single: 8,          // 8% discount
@@ -494,743 +148,84 @@ const PAYMENT_DISCOUNTS = {
 } as const;
 ```
 
-### Frontend Routes
-- `/collections` - Main dashboard (8 KPIs, filters, data table)
-- `/collections/settings` - Alert thresholds and reminder configuration
-- `/collections/disputes` - Payment dispute management
+**Full details**: `/memory-bank/letter-system-structure.md`
 
-### Key Services
+## 📞 Contacts System
+- **tenant_contacts** - Shared contact pool (owner, accountant_manager, etc.)
+- **client_contact_assignments** - Many-to-many link between clients and contacts
+- One contact can be assigned to multiple clients
+
+**Full details**: See Migration 083 docs
+
+## 📁 File Manager (7 Categories)
+| Category | Hebrew |
+|----------|--------|
+| company_registry | רשם החברות |
+| financial_report | דוח כספי מבוקר |
+| bookkeeping_card | כרטיס הנהח"ש |
+| quote_invoice | הצעת מחיר / חיוב |
+| payment_proof_2026 | אסמכתאות תשלום |
+| holdings_presentation | מצגת החזקות |
+| general | כללי |
+
+**Route**: `/files` | **Service**: `file-upload.service.ts`
+
+## 💰 Collection System (DEPLOYED)
+- **Tables**: `payment_method_selections`, `payment_disputes`, `payment_reminders`, `client_interactions`, `notification_settings`, `reminder_rules`
+- **Edge Functions**: `track-email-open`, `track-payment-selection`, `payment-dispute`, `cardcom-webhook`, `collection-reminder-engine`, `alert-monitor`, `send-letter`
+- **Routes**: `/collections`, `/collections/settings`, `/collections/disputes`
+
+**Full details**: `/memory-bank/collection-system-summary.md`
+
+## User Roles
 ```typescript
-// Collection tracking and dashboard
-collectionService.getDashboardData(filters, sort, pagination)
-collectionService.getKPIs(dateRange)
-collectionService.markAsPaid(feeId, paymentDetails)
-collectionService.markPartialPayment(feeId, amount, notes)
+type UserRole = 'admin' | 'accountant' | 'bookkeeper' | 'client';
+```
+- `user_tenant_access` - Links users to tenants with roles
+- `super_admins` - Super admin access control
 
-// Reminder management
-reminderService.getReminderRules(tenantId)
-reminderService.getReminderHistory(feeId)
-reminderService.sendManualReminder(reminderData)
-
-// Alert settings
-notificationService.getSettings(tenantId)
-notificationService.updateSettings(tenantId, settings)
-notificationService.checkAlertsNeeded()
+## File Structure
+```
+src/
+├── components/        # UI (shadcn/ui based)
+├── modules/           # Feature modules (collections, letters, etc.)
+├── services/          # Business logic (EXTENDS BaseService)
+├── hooks/             # Custom React hooks
+├── lib/               # Utilities (supabase.ts, formatters.ts)
+└── types/             # TypeScript definitions
 ```
 
-### Verification Queries
-```sql
--- Check collection tables exist
-SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'public'
-AND table_name IN ('payment_method_selections', 'payment_disputes',
-                   'payment_reminders', 'client_interactions',
-                   'notification_settings', 'reminder_rules');
-
--- Check cron jobs running
-SELECT * FROM cron.job WHERE active = true;
-
--- Get collection statistics
-SELECT * FROM get_collection_statistics('your-tenant-id');
-
--- View dashboard data
-SELECT * FROM collection_dashboard_view LIMIT 10;
-```
-
-## 🗄️ Database Migration Guidelines
-
-### CRITICAL: Migration Requirements
-```sql
--- ALWAYS use gen_random_uuid() NOT uuid_generate_v4()
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-id UUID PRIMARY KEY DEFAULT gen_random_uuid()
-
--- Auth functions MUST be in public schema (permission issues)
-CREATE OR REPLACE FUNCTION public.get_current_tenant_id() 
-RETURNS UUID AS $$
-  SELECT (auth.jwt() -> 'user_metadata' ->> 'tenant_id')::UUID;
-$$ LANGUAGE SQL STABLE;
-
--- NOT in auth schema - will fail with permission denied
-```
-
-### Table Naming Conventions:
-- **ALWAYS** plural snake_case: `clients`, `fee_calculations`, `letter_templates`
-- **ALWAYS** include `tenant_id UUID NOT NULL` for multi-tenancy
-- **ALWAYS** add RLS policies for tenant isolation
-- **ALWAYS** add table comments for documentation
-
-## Environment Setup
-```bash
-# Development setup needed:
-cp .env.example .env.local
-npm install
-npx supabase start
-npm run dev
-
-# Required environment variables (ALREADY CONFIGURED):
+## Environment Variables
+```env
+# Required in .env.local
 VITE_SUPABASE_URL=https://zbqfeebrhberddvfkuhe.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-key
 SENDGRID_API_KEY=your-sendgrid-key
-REDIS_URL=your-redis-url
-CARDCOM_TERMINAL_NUMBER=see-cardcom-docs
-CARDCOM_API_USERNAME=see-cardcom-docs
 ```
 
-## Quick Commands
-```bash
-# Development
-npm run dev                    # Start dev server (port 5173)
-npm run build                  # Build for production
-npm run preview                # Preview production build
-npm run lint                   # Check code quality with ESLint
-npm run typecheck              # TypeScript type checking (no emit)
-npm run pre-commit             # Run lint + typecheck before commit
-
-# Database (Supabase already setup)
-npx supabase db reset          # Reset local DB
-npm run generate-types         # Update TypeScript types from database
-
-# MCP Database Operations (USE THESE FIRST)
-/supabase list-tables          # View all tables
-/supabase describe-table <name> # Table structure
-/supabase get-schema           # Full schema overview
-/supabase list-functions       # Database functions
-
-# Troubleshooting
-lsof -i :5173                  # Check if port is in use
-kill -9 $(lsof -t -i:5173)    # Kill process on port 5173
+## Development URLs
+```
+http://localhost:5173/setup   # Initial setup (create admin)
+http://localhost:5173/login   # Login
+http://localhost:5173/        # Dashboard (after auth)
 ```
 
-## MCP & Sub-Agents Usage
-
-### When to Use Sub-Agents:
-```bash
-# Security and compliance
-@security-auditor "Review RLS policies for fee_calculations table"
-@security-auditor "Audit authentication flow for multi-tenant access"
-
-# Database operations
-@database-admin "Design schema for Hebrew letter templates"
-@database-admin "Optimize queries for 10,000+ clients"
-@database-admin "Setup table partitioning for multi-tenancy"
-
-# Backend architecture
-@backend-architect "Design fee calculation service architecture"
-@backend-architect "Plan API structure for Cardcom payment integration"
-
-# Automation workflows
-@automation-engineer "Design automated fee collection workflow"
-@automation-engineer "Create letter sending automation rules"
-
-# Code quality
-@code-reviewer "Review fee calculation logic for business rules"
-@code-reviewer "Check TypeScript types for audit logging"
-
-# Frontend development
-@frontend-developer "Build Hebrew RTL dashboard with shadcn/ui"
-@frontend-developer "Create responsive payment status components"
-```
-
-### MCP Database Commands Priority:
-1. **FIRST**: Use MCP commands for database exploration
-2. **SECOND**: Use npx supabase commands for schema changes
-3. **THIRD**: Manual SQL only when needed
-
-## 📧 Letter System - CRITICAL ARCHITECTURE
-
-### 📁 Template Files Architecture (CRITICAL - Nov 14, 2025)
-
-**IMPORTANT**: Template files exist in **3 locations** - always edit the source!
-
-#### Directory Structure:
-```
-TicoVision/
-├── templates/              ← **SOURCE OF TRUTH** - ALWAYS EDIT HERE!
-│   ├── components/
-│   │   ├── header.html    ← Contains <!-- HEADER STATIC START/END --> markers
-│   │   ├── footer.html
-│   │   └── payment-section.html
-│   └── bodies/
-│       └── (11 body templates)
-│
-├── public/templates/       ← Copy for Vite dev server (localhost:5173)
-│   └── (Auto-synced from templates/)
-│
-└── dist/templates/         ← Production build output (Vercel)
-    └── (Auto-copied during build)
-```
-
-#### How It Works:
-1. **Development (localhost:5173)**:
-   - `fetch('/templates/header.html')` → Vite serves from `public/templates/`
-   - `npm run dev` **auto-syncs** `templates/` → `public/templates/` before starting server
-   - Critical for getting latest changes (e.g., PDF comment markers)
-
-2. **Production (Vercel)**:
-   - `npm run build` → `vite build && cp -r templates dist/`
-   - Copies `templates/` → `dist/templates/` automatically
-   - No manual sync needed
-
-3. **Why Three Locations?**
-   - `templates/` = **Source** - where you make all edits
-   - `public/templates/` = **Dev server** - Vite serves static files from `public/`
-   - `dist/templates/` = **Production** - created during build
-
-#### Critical Rules:
-1. **ALWAYS edit files in `templates/`** - NEVER edit `public/templates/` or `dist/templates/` directly
-2. **Auto-sync is enabled**: `npm run dev` syncs automatically before starting
-3. **Manual sync**: If needed, run `npm run sync-templates`
-4. **Production**: `npm run build` handles copying automatically
-
-#### npm Scripts:
-```bash
-npm run dev              # Auto-syncs templates/ → public/templates/, then starts Vite
-npm run sync-templates   # Manual sync: templates/ → public/templates/
-npm run build            # Builds + copies: templates/ → dist/templates/
-```
-
-#### Historical Issue (Fixed Nov 14, 2025):
-- **Problem**: `public/templates/` was out of sync (last updated Oct 20)
-- **Missing**: `<!-- HEADER STATIC START/END -->` markers in header.html
-- **Impact**: PDF generation showed duplicate headers in Universal Builder
-- **Root Cause**: Vite dev server serves from `public/`, but we were editing `templates/`
-- **Solution**: Added auto-sync to `npm run dev` script
-
----
-
-### ⚠️ IMPORTANT - Database Tables
-**USE ONLY:** `generated_letters` table (via `template.service.ts`)
-**DO NOT USE:** `letter_history` table (deprecated)
-
-### Template Structure (4-Part System)
-**מכתב = Header (קבוע) + Body (1 מ-11) + Payment Section (קבוע) + Footer (קבוע)**
-
-All 11 letters are assembled from 4 components. Only the Body changes between letter types:
-
-#### 1. **Header** (`templates/components/header.html`) - Shared by ALL
-   - Logo TICO centered (180×80px) - `cid:tico_logo_new`
-   - Thick black line (13px)
-   - Recipient: "לכבוד:" + company name (right) and date (left)
-   - **Variables:** `{{letter_date}}`, `{{company_name}}`, `{{group_name}}`
-
-#### 2. **Body** (`templates/bodies/[file].html`) - 11 Different Types
-   **All 11 Bodies:**
-
-   | # | File | Letter Type | Code |
-   |---|------|-------------|------|
-   | 1 | `annual-fee.html` | חיצוניים - מדד בלבד | A |
-   | 2 | `annual-fee-as-agreed.html` | חיצוניים - כפי שסוכם | B |
-   | 3 | `annual-fee-real-change.html` | חיצוניים - ריאלי | C |
-   | 4 | `internal-audit-index.html` | ביקורת פנימית - מדד | D1 |
-   | 5 | `internal-audit-real-change.html` | ביקורת פנימית - ריאלי | D2 |
-   | 6 | `internal-audit-as-agreed.html` | ביקורת פנימית - כפי שסוכם | D3 |
-   | 7 | `bookkeeping-index.html` | הנהלת חשבונות - מדד | F1 |
-   | 8 | `bookkeeping-real-change.html` | הנהלת חשבונות - ריאלי | F2 |
-   | 9 | `bookkeeping-as-agreed.html` | הנהלת חשבונות - כפי שסוכם | F3 |
-   | 10 | `retainer-index.html` | רטיינר - מדד | E1 |
-   | 11 | `retainer-real-change.html` | רטיינר - ריאלי | E2 |
-
-   **Common body structure:**
-   - Subject line: "הנדון:" (blue #395BF7, 26px)
-   - "בפתח הדברים, ברצוננו:" section with blue bullets
-   - "ולגופו של עניין:" section
-   - **Variables:** `{{company_name}}`, `{{year}}`, `{{inflation_rate}}`, `{{tax_year}}`, etc.
-
-#### 3. **Payment Section** (`templates/components/payment-section.html`) - Shared by ALL
-   Title: "אופן התשלום:"
-
-   **4 Payment Buttons (in this order):**
-   1. **העברה בנקאית** - 9% discount - "לחץ לאישור" (recommended)
-   2. **כרטיס אשראי תשלום אחד** - 8% discount - "לביצוע תשלום"
-   3. **כרטיס אשראי בתשלומים** - 4% discount - "לביצוע תשלום"
-   4. **המחאות (8 או 12)** - 0% discount - "לחץ לאישור"
-
-   **Contact info:** Sigal Nagar (050-8620993, sigal@franco.co.il)
-
-   **Variables:**
-   - `{{amount_original}}` - Original amount before discount
-   - `{{amount_after_bank}}` - After 9% discount
-   - `{{amount_after_single}}` - After 8% discount
-   - `{{amount_after_payments}}` - After 4% discount
-   - `{{client_id}}`, `{{num_checks}}`, `{{check_dates_description}}`
-
-#### 4. **Footer** (`templates/components/footer.html`) - Shared by ALL
-   - Thick black line (13px)
-   - Franco logo (`cid:franco_logo_new`, 135×95px) + contact details
-   - Address: שד"ל 3, מגדל אלרוב, תל אביב
-   - Phone: 03-5666170 | Email: tico@franco.co.il
-   - Thick black line (13px)
-   - Tagline image: "DARE TO THINK · COMMIT TO DELIVER" (`cid:tagline`)
-   - **Variables:** None (static content)
-
-### How System Merges Components
-```typescript
-// In template.service.ts → generateLetterFromComponents()
-// System automatically combines 4 parts:
-final_letter = header + body + payment_section + footer
-
-// Example flow:
-const variables = {
-  letter_date: '4.10.2025',        // Auto-generated if not provided
-  company_name: 'מסעדת האחים',
-  year: 2026,
-  tax_year: 2026,
-  amount_original: 50000,
-  amount_after_bank: 45500,        // 9% discount
-  amount_after_single: 46000,      // 8% discount
-  amount_after_payments: 48000,    // 4% discount
-  num_checks: 8,
-  check_dates_description: 'החל מיום 5.1.2026 ועד ליום 5.8.2026'
-};
-
-await templateService.generateLetterFromComponents(
-  'external_index_only',  // Maps to annual-fee.html
-  clientId,
-  variables
-);
-// → Loads 4 files, merges them, replaces variables
-// → Saves to generated_letters with full HTML
-```
-
-### Template Variables - COMPLETE LIST
-
-**Auto-Generated (you don't need to provide):**
-- `{{letter_date}}` - Current date in Israeli format (4.10.2025)
-- `{{year}}` - Current/next year (2026)
-- `{{tax_year}}` - Tax year (usually next year)
-- `{{num_checks}}` - Default: 8
-- `{{check_dates_description}}` - Calculated from num_checks + tax_year
-
-**Required in Header:**
-- `{{company_name}}` - Client company name
-- `{{group_name}}` - Company group name (optional)
-
-**Required in Payment Section:**
-- `{{amount_original}}` - Original amount before any discount
-- `{{amount_after_bank}}` - After 9% discount (bank transfer)
-- `{{amount_after_single}}` - After 8% discount (CC single payment)
-- `{{amount_after_payments}}` - After 4% discount (CC installments)
-- `{{client_id}}` - Client ID for tracking
-
-**Body Variables (vary by template type):**
-- `{{inflation_rate}}` - "4%" (for index-based letters)
-- `{{real_adjustment_reason}}` - Reason for real change (for real_change letters)
-- `{{previous_year}}` - Previous year (for bookkeeping letters)
-- etc. (see `letter.types.ts` for full schema)
-
-### Services Architecture
-
-**USE THIS:** `src/modules/letters/services/template.service.ts`
-- Modern 4-component system (Header + Body + Payment + Footer)
-- Function: `generateLetterFromComponents(templateType, clientId, variables)`
-- Loads from `templates/components/` and `templates/bodies/`
-- Auto-generates `letter_date`, `year`, `tax_year`, `check_dates_description`
-- Saves to `generated_letters` table
-- Tracks opens, clicks, payments
-
-**DO NOT USE:** `services/letter.service.ts`
-- Old/deprecated implementation
-- Saves to `letter_history` (deprecated table)
-- No component-based system
-
-### Payment Discount Rules (BUSINESS RULES)
-```typescript
-const PAYMENT_DISCOUNTS = {
-  bank_transfer: 9,      // 9% discount - most recommended
-  cc_single: 8,          // 8% discount
-  cc_installments: 4,    // 4% discount
-  checks: 0              // 0% discount (no discount)
-} as const;
-```
-
-### Variable Format
-Always use double curly braces: `{{variable_name}}`
-
-**Examples:**
-- ✅ `{{letter_date}}` - Correct
-- ✅ `{{company_name}}` - Correct
-- ❌ `[letter_date]` - Wrong (old format)
-- ❌ `{letter_date}` - Wrong (single braces)
-
-### Key Files Reference
-```
-templates/
-├── components/
-│   ├── header.html           (Header - shared)
-│   ├── payment-section.html  (Payment - shared)
-│   └── footer.html           (Footer - shared)
-└── bodies/
-    ├── annual-fee.html                    (#1)
-    ├── annual-fee-as-agreed.html          (#2)
-    ├── annual-fee-real-change.html        (#3)
-    ├── internal-audit-index.html          (#4)
-    ├── internal-audit-real-change.html    (#5)
-    ├── internal-audit-as-agreed.html      (#6)
-    ├── bookkeeping-index.html             (#7)
-    ├── bookkeeping-real-change.html       (#8)
-    ├── bookkeeping-as-agreed.html         (#9)
-    ├── retainer-index.html                (#10)
-    └── retainer-real-change.html          (#11)
-
-Service: src/modules/letters/services/template.service.ts
-Database: generated_letters (NOT letter_history!)
-
-For complete details: /memory-bank/letter-system-structure.md
-```
-
-## API Key Security - Development Phase
-```env
-# .env.local (for development only)
-VITE_SUPABASE_URL=your-dev-supabase-url
-VITE_SUPABASE_ANON_KEY=your-dev-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-dev-service-key
-
-# Email Service
-SENDGRID_API_KEY=your-sendgrid-key
-
-# Caching
-REDIS_URL=your-redis-url
-
-# Cardcom Payment Gateway (see /docs/CARDCOM.md)
-CARDCOM_TERMINAL_NUMBER=cardcom-terminal
-CARDCOM_API_USERNAME=cardcom-username
-CARDCOM_API_KEY=cardcom-key-here
-
-# חשבשבת Integration (Phase 2)
-HASHAVSHEVET_API_KEY=hashavshevet-key-here
-
-# Monitoring
-SENTRY_DSN=your-sentry-dsn
-DATADOG_API_KEY=your-datadog-key
-
-# NEVER commit these files:
-.env
-.env.local
-.env.production
-```
-
-## Monitoring & Error Handling
-```yaml
-Error Tracking: Sentry (production)
-Performance: DataDog + Vercel Analytics
-Logging: Structured logs with Supabase
-Alerts: Critical errors via email/Slack
-```
-
-## Testing Strategy
-```yaml
-Unit Tests: Vitest (80%+ coverage for services)
-E2E Tests: Playwright (critical user flows)
-RTL Testing: Hebrew UI specific test cases
-Security Testing: RLS policies validation
-Performance Testing: 10,000+ clients simulation
-```
-
-## CI/CD Pipeline
-```yaml
-Platform: GitHub Actions + Vercel
-Stages:
-  - Lint & Type Check
-  - Unit Tests (Vitest)
-  - E2E Tests (Playwright)
-  - Security Audit
-  - Deploy to Preview
-  - Deploy to Production (manual approval)
-```
-
-## Development Workflow with Global Values
-1. **Before coding**: Identify any values that might be reused or changed
-2. **Ask Asaf**: "Should [X value] be global? Where should it go?"
-3. **Get approval**: Wait for confirmation before creating global constants
-4. **Implement**: Create the global configuration as agreed
-5. **Use everywhere**: Import and use the global value consistently
-
-## 📁 File Manager System (Migration 087 - Deployed)
-
-### Architecture Overview
-**Centralized file management for client documents with 7 fixed categories**
-
-#### System Purpose:
-- **Replaces**: Scattered file uploads across client forms
-- **Provides**: Single source of truth for client documents
-- **Separates**: Client-level documents from transaction-specific attachments
-
-### 7 Fixed Categories (קטגוריות קבועות)
-
-```typescript
-export type FileCategory =
-  | 'company_registry'          // רשם החברות
-  | 'financial_report'          // דוח כספי מבוקר אחרון
-  | 'bookkeeping_card'          // כרטיס הנהח"ש
-  | 'quote_invoice'             // הצעת מחיר / תעודת חיוב
-  | 'payment_proof_2026'        // אסמכתאות תשלום 2026
-  | 'holdings_presentation'     // מצגת החזקות
-  | 'general';                  // כללי
-```
-
-### Database Schema (Migration 087)
-
-**Table**: `client_attachments` (extended with new columns)
-```sql
--- New columns added:
-file_category file_category NOT NULL DEFAULT 'general'  -- ENUM type
-description TEXT CHECK (char_length(description) <= 50)  -- Optional, max 50 chars
-```
-
-**Indexes** (optimized for category queries):
-```sql
-idx_client_attachments_category_latest (client_id, file_category, tenant_id) WHERE is_latest = true
-idx_tenant_attachments_category_date (tenant_id, file_category, created_at DESC) WHERE is_latest = true
-```
-
-### TypeScript Types (`src/types/file-attachment.types.ts`)
-
-```typescript
-// Category configuration with Hebrew labels
-export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
-  company_registry: {
-    key: 'company_registry',
-    label: 'רשם החברות',
-    description: 'תעודת רישום חברה, תקנון, פרוטוקולים מאסיפות',
-  },
-  // ... 6 more categories
-};
-
-// Helper functions
-getCategoryLabel(category: FileCategory): string
-getCategoryDescription(category: FileCategory): string
-getAllCategories(): CategoryConfig[]
-```
-
-### Service Methods (`src/services/file-upload.service.ts`)
-
-**New methods added to FileUploadService:**
-
-```typescript
-// Get files by category
-getFilesByCategory(clientId: string, category: FileCategory): Promise<ServiceResponse<FileAttachment[]>>
-
-// Upload with category and description
-uploadFileToCategory(
-  file: File,
-  clientId: string,
-  category: FileCategory,
-  description: string  // Max 100 chars
-): Promise<ServiceResponse<FileAttachment>>
-
-// Update file description
-updateFileDescription(fileId: string, description: string): Promise<ServiceResponse<FileAttachment>>
-
-// Get statistics per category
-getCategoryStats(clientId: string): Promise<ServiceResponse<CategoryStats[]>>
-```
-
-### UI Components
-
-#### 1. **FilesManagerPage** (`src/pages/FilesManagerPage.tsx`)
-- **Route**: `/files`
-- **Access**: admin, accountant, bookkeeper
-- **Features**:
-  - ClientSelector at top
-  - 7 tabs (one per category)
-  - Each tab shows FileCategorySection
-  - RTL layout
-
-#### 2. **FileCategorySection** (`src/components/files/FileCategorySection.tsx`)
-- **Props**: clientId, category
-- **Features**:
-  - Category title + description
-  - Upload zone with description input (max 100 chars)
-  - File list with:
-    - File name, description (editable), size, date
-    - Download and delete actions
-  - Empty/loading states
-
-#### 3. **FileDisplayWidget** (`src/components/files/FileDisplayWidget.tsx`)
-- **Props**: clientId, category, variant ('buttons' | 'cards' | 'compact')
-- **Purpose**: Reusable widget for displaying files in other pages
-- **Usage Example**:
-```tsx
-// In client details page - show company registry files
-<FileDisplayWidget
-  clientId={client.id}
-  category="company_registry"
-  variant="compact"
-/>
-```
-
-### Navigation
-**Menu item added BEFORE "משתמשים":**
-```typescript
-{
-  name: 'מנהל הקבצים',
-  href: '/files',
-  icon: FolderOpen,
-  allowedRoles: ['admin', 'accountant', 'bookkeeper']
-}
-```
-
-### Important Distinctions
-
-#### ✅ **USE File Manager FOR**:
-- Client-level documents (company registry, financial reports, etc.)
-- Documents that belong to the client, not to specific transactions
-- Files that should be organized by category
-
-#### ❌ **DO NOT USE File Manager FOR**:
-- **Payment attachments** (receipts, bank confirmations) → Stay in ActualPaymentEntryDialog
-- **Fee calculation attachments** (year-specific docs) → Stay in FeesPage
-- **Transaction-specific files** → Keep where they belong to the transaction
-
-**Why?** Payment/calculation attachments are tied to specific actions, not to the client in general.
-
-### Adding New Categories (Future)
-
-To add a new category:
-```sql
--- 1. Add to ENUM (migration)
-ALTER TYPE file_category ADD VALUE 'new_category';
-```
-
-```typescript
-// 2. Update FILE_CATEGORIES constant
-export const FILE_CATEGORIES = {
-  // ... existing
-  new_category: {
-    key: 'new_category',
-    label: 'קטגוריה חדשה',
-    description: 'תיאור הקטגוריה',
-  },
-};
-```
-
-**Note**: New categories appear in File Manager automatically. To integrate in other pages, manually add FileDisplayWidget.
-
-### Integration Examples
-
-```tsx
-// Client details page - show company registry
-<FileDisplayWidget clientId={client.id} category="company_registry" />
-
-// Fee tracking - show quotes
-<FileDisplayWidget clientId={row.client_id} category="quote_invoice" variant="buttons" />
-
-// Letter builder - show financial reports
-<FileDisplayWidget clientId={selectedClient.id} category="financial_report" />
-```
-
-### Files Modified/Created
-
-**Created**:
-- `supabase/migrations/087_file_manager_categories.sql`
-- `src/pages/FilesManagerPage.tsx`
-- `src/components/files/FileCategorySection.tsx`
-- `src/components/files/FileDisplayWidget.tsx`
-
-**Modified**:
-- `src/types/file-attachment.types.ts` - Added FileCategory + FILE_CATEGORIES
-- `src/services/file-upload.service.ts` - Added 4 new methods
-- `src/components/layout/MainLayout.tsx` - Added navigation item
-- `src/App.tsx` - Added /files route
-- `src/components/clients/ClientFormDialog.tsx` - Removed FileUploadSection
-
-**Kept (with explanatory comments)**:
-- `src/modules/collections/components/ActualPaymentEntryDialog.tsx` - Payment attachments
-- `src/components/fee-tracking/FeeTrackingExpandedRow.tsx` - Payment display
-- `src/pages/FeesPage.tsx` - Calculation-specific files
-
-### Key Principles
-
-1. **7 Fixed Categories**: Defined in code, can be extended but requires migration
-2. **Description Limit**: 100 characters maximum per file
-3. **Tenant Isolation**: All methods use `getTenantId()` for security
-4. **Category Organization**: Each file must have a category
-5. **Reusable Widget**: Use FileDisplayWidget for integrating in other pages
-6. **Hebrew Interface**: All labels and descriptions in Hebrew, RTL layout
-
-## 🚀 Development Server & Troubleshooting
-
-### Starting Development:
-```bash
-# Default port: http://localhost:5173
-npm run dev
-
-# Access points:
-http://localhost:5173/setup   # Initial setup page (create admin)
-http://localhost:5173/login   # Login page
-http://localhost:5173/        # Main dashboard (after auth)
-```
-
-### Common Issues & Solutions:
-
-#### Multiple Dev Servers Running:
-```bash
-# Check running processes
-ps aux | grep vite
-lsof -i :5173
-
-# Kill old processes
-kill -9 $(lsof -t -i:5173)
-
-# Or kill all node processes (careful!)
-killall node
-```
-
-#### Import Errors:
-```typescript
-// ❌ Wrong - may cause "does not provide export" error
-import { Session } from '@supabase/supabase-js';
-
-// ✅ Correct - use type imports
-import type { Session } from '@supabase/supabase-js';
-```
-
-#### Component Import Issues:
-```bash
-# shadcn/ui components may install in wrong location
-# If @/components/ui doesn't work, check:
-ls src/components/ui/
-ls "@/components/ui/"  # Wrong location
-
-# Fix by moving:
-mv "@/components/ui/"* src/components/ui/
-```
-
-#### Missing Dependencies:
-```bash
-# Common missing packages after shadcn/ui install:
-npm install class-variance-authority
-npm install @tailwindcss/postcss
-```
-
-## Where to Find More
-- **Architecture Details**: `/docs/ARCHITECTURE.md`
-- **Product Requirements**: `/docs/PRD.md`
-- **API Documentation**: `/docs/API.md`
-- **Cardcom Integration**: `/docs/CARDCOM.md`
-- **Database Reference**: `/docs/DATABASE_REFERENCE.md` ⭐ **ALWAYS USE THIS FIRST!**
-- **Database Schema**: Auto-generated via MCP tools
-- **Task Management**: `/docs/TASKS.md`
-- **Naming Conventions**: `/docs/DATABASE-SCHEMA.md`
-
-## 🗄️ Database Reference - MANDATORY USE
-**CRITICAL**: Always consult `/docs/DATABASE_REFERENCE.md` BEFORE:
-- Creating any migration
-- Writing any SQL query
-- Using any table or function
-- Adding new database objects
-
-**UPDATE REQUIREMENT**: Any database changes MUST be reflected in DATABASE_REFERENCE.md immediately
-
----
-**Remember**: 
-- Phase 1 = Fee Management System by December 2025. Keep it simple, focused, and automated.
-- Letter templates come from Shani & Tico - NO AI generation needed.
-- Global values = Ask Asaf first, implement second.
-- Multi-tenant & white-label ready from Day 1.
-- Hebrew + RTL support is mandatory from day one.
-- Use MCP commands and Sub-Agents - they're already installed and ready to use.
-- Cardcom integration is critical - see `/docs/CARDCOM.md` for full details.
-- Service architecture pattern is MANDATORY - all services must extend BaseService.
+## Detailed Documentation
+| Topic | Location |
+|-------|----------|
+| Letter System | `/memory-bank/letter-system-structure.md` |
+| Collection System | `/memory-bank/collection-system-summary.md` |
+| Project Brief | `/memory-bank/projectbrief.md` |
+| Tech Context | `/memory-bank/techContext.md` |
+| System Patterns | `/memory-bank/systemPatterns.md` |
+| Active Context | `/memory-bank/activeContext.md` |
+| Progress | `/memory-bank/progress.md` |
+
+## Key Reminders
+- Phase 1 = Fee Management by December 2025
+- Letter templates from Shani & Tiko - NO AI generation
+- Global values = Ask Asaf first
+- Multi-tenant + white-label ready from Day 1
+- Hebrew + RTL mandatory
+- Services MUST extend BaseService

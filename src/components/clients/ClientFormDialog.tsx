@@ -52,6 +52,7 @@ import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 import {
   validateIsraeliPostalCode,
   formatIsraeliPhone,
+  formatIsraeliLandline,
   formatIsraeliTaxId,
   stripTaxIdFormatting,
 } from '@/lib/validators';
@@ -409,7 +410,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     handleFormChange('contact_phone', formatted);
                   }}
                   onPhoneSecondaryChange={(value) => {
-                    const formatted = formatIsraeliPhone(value);
+                    const formatted = formatIsraeliLandline(value);
                     handleFormChange('contact_phone_secondary', formatted);
                   }}
                   contactType="owner"
@@ -417,7 +418,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   namePlaceholder="שם מלא"
                   emailPlaceholder="דוא״ל"
                   phonePlaceholder="050-1234567"
-                  phoneSecondaryPlaceholder="050-7654321"
+                  phoneSecondaryPlaceholder="03-6543210"
                 />
               </div>
 

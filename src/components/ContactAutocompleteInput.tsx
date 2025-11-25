@@ -43,7 +43,7 @@ export function ContactAutocompleteInput({
   namePlaceholder = 'שם מלא',
   emailPlaceholder = 'דוא"ל',
   phonePlaceholder = '050-1234567',
-  phoneSecondaryPlaceholder = '050-7654321',
+  phoneSecondaryPlaceholder = '03-6543210',
 }: ContactAutocompleteInputProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

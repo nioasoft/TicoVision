@@ -52,9 +52,29 @@ export const formatIsraeliPhone = (value: string): string => {
   // Don't format if too short
   if (numbers.length <= 3) return numbers;
 
-  // Format: 0XX-XXXXXXX or 05X-XXXXXXX
+  // Format: 0XX-XXXXXXX or 05X-XXXXXXX (mobile)
   const prefix = numbers.slice(0, 3);
   const rest = numbers.slice(3, 10); // Max 10 digits total
+
+  return `${prefix}-${rest}`;
+};
+
+/**
+ * Formats Israeli landline phone number: 0X-XXXXXXX
+ * Landline format: 2-digit prefix (02-09) + 7-digit number
+ * @param value - Phone number string to format
+ * @returns Formatted phone number
+ */
+export const formatIsraeliLandline = (value: string): string => {
+  // Remove all non-digit characters
+  const numbers = value.replace(/\D/g, '');
+
+  // Don't format if too short
+  if (numbers.length <= 2) return numbers;
+
+  // Format: 0X-XXXXXXX (landline)
+  const prefix = numbers.slice(0, 2);
+  const rest = numbers.slice(2, 9); // Max 9 digits total
 
   return `${prefix}-${rest}`;
 };
