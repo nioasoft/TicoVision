@@ -1,184 +1,286 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Plus, Loader2, Save, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import type { AccountantTurnoverVariables, MonthlyTurnover } from '@/types/foreign-workers.types';
+import { useMonthRange } from '@/contexts/MonthRangeContext';
+import { monthlyDataService, MonthlyDataService } from '@/services/monthly-data.service';
+import { MonthRangeInitializer } from '@/components/foreign-workers/shared';
 
 interface AccountantTurnoverTabProps {
   value: Partial<AccountantTurnoverVariables>;
   onChange: (data: Partial<AccountantTurnoverVariables>) => void;
   disabled?: boolean;
+  clientId?: string | null;
 }
 
-const HEBREW_MONTHS = [
-  'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-  'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
-];
+export function AccountantTurnoverTab({ value, onChange, disabled, clientId }: AccountantTurnoverTabProps) {
+  const { range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
 
-export function AccountantTurnoverTab({ value, onChange, disabled }: AccountantTurnoverTabProps) {
-  const [monthlyTurnover, setMonthlyTurnover] = useState<MonthlyTurnover[]>(
-    value.monthly_turnover || []
-  );
+  // Local state for month data keyed by month ISO string
+  const [monthData, setMonthData] = useState<Map<string, number>>(new Map());
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+  // Load data from database when range changes
   useEffect(() => {
-    if (monthlyTurnover.length > 0) {
-      onChange({
-        ...value,
-        monthly_turnover: monthlyTurnover
-      });
+    if (!clientId || !range) {
+      setMonthData(new Map());
+      return;
     }
-  }, [monthlyTurnover]);
 
-  const addMonth = () => {
-    const newMonth: MonthlyTurnover = {
-      month: '',
-      amount: 0
+    loadData();
+  }, [clientId, range]);
+
+  // Sync with parent component when monthData changes
+  useEffect(() => {
+    if (!range) return;
+
+    // Get LAST 12 months only (even if displaying 14)
+    // This ensures the letter uses only the 12-month period
+    const last12Months = range.months.slice(-12);
+
+    const monthlyTurnover: MonthlyTurnover[] = last12Months.map(date => ({
+      month: MonthlyDataService.dateToHebrew(date),
+      amount: monthData.get(MonthlyDataService.dateToMonthKey(date)) || 0
+    }));
+
+    // Calculate total turnover for last 12 months only
+    const totalTurnoverValue = monthlyTurnover.reduce((sum, m) => sum + m.amount, 0);
+
+    // Format period dates as MM/YYYY for TurnoverApprovalTab
+    const formatPeriod = (date: Date) => {
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${month}/${year}`;
     };
-    setMonthlyTurnover([...monthlyTurnover, newMonth]);
-  };
 
-  const removeMonth = (index: number) => {
-    setMonthlyTurnover(monthlyTurnover.filter((_, i) => i !== index));
-  };
+    onChange({
+      ...value,
+      monthly_turnover: monthlyTurnover,
+      total_turnover: totalTurnoverValue,
+      period_start: formatPeriod(last12Months[0]),
+      period_end: formatPeriod(last12Months[last12Months.length - 1])
+    });
+  }, [monthData, range]);
 
-  const updateMonth = (index: number, field: keyof MonthlyTurnover, value: string | number) => {
-    const updated = [...monthlyTurnover];
-    if (field === 'month') {
-      updated[index].month = value as string;
-    } else if (field === 'amount') {
-      updated[index].amount = typeof value === 'number' ? value : parseFloat(value as string) || 0;
-    }
-    setMonthlyTurnover(updated);
-  };
+  const loadData = useCallback(async () => {
+    if (!clientId) return;
 
-  const generateDefaultMonths = () => {
-    const currentYear = new Date().getFullYear();
-    const lastYear = currentYear - 1;
+    setIsLoading(true);
+    try {
+      const { data, error } = await monthlyDataService.getClientMonthlyReports(
+        clientId,
+        'accountant_turnover'
+      );
 
-    const months: MonthlyTurnover[] = [];
+      if (error) {
+        toast.error('שגיאה בטעינת נתונים');
+        console.error('Error loading turnover data:', error);
+        return;
+      }
 
-    // Last 12 months (Nov last year to Oct current year)
-    for (let i = 10; i < 12; i++) {
-      months.push({
-        month: `${HEBREW_MONTHS[i]} ${lastYear}`,
-        amount: 0
+      const newMap = new Map<string, number>();
+      data?.forEach(report => {
+        if (report.turnover_amount !== null && report.turnover_amount !== undefined) {
+          newMap.set(report.month_date, Number(report.turnover_amount));
+        }
       });
+      setMonthData(newMap);
+      setHasUnsavedChanges(false);
+    } catch (error) {
+      console.error('Error loading turnover data:', error);
+      toast.error('שגיאה בטעינת נתונים');
+    } finally {
+      setIsLoading(false);
     }
-    for (let i = 0; i < 10; i++) {
-      months.push({
-        month: `${HEBREW_MONTHS[i]} ${currentYear}`,
-        amount: 0
-      });
+  }, [clientId]);
+
+  const handleAmountChange = (monthKey: string, amount: number) => {
+    const newMap = new Map(monthData);
+    newMap.set(monthKey, amount);
+    setMonthData(newMap);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSave = async () => {
+    if (!clientId || !range) {
+      toast.error('לא נבחר לקוח');
+      return;
     }
 
-    setMonthlyTurnover(months);
+    setIsSaving(true);
+    try {
+      // Build records to upsert
+      const records = range.months.map(date => ({
+        month_date: MonthlyDataService.dateToMonthKey(date),
+        turnover_amount: monthData.get(MonthlyDataService.dateToMonthKey(date)) || 0
+      }));
+
+      const { error } = await monthlyDataService.bulkUpsertClientMonthlyReports(
+        clientId,
+        'accountant_turnover',
+        records
+      );
+
+      if (error) {
+        toast.error('שגיאה בשמירת נתונים');
+        console.error('Error saving turnover data:', error);
+        return;
+      }
+
+      setHasUnsavedChanges(false);
+      toast.success('הנתונים נשמרו בהצלחה');
+    } catch (error) {
+      console.error('Error saving turnover data:', error);
+      toast.error('שגיאה בשמירת נתונים');
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Calculate total
+  const totalTurnover = Array.from(monthData.values()).reduce((sum, val) => sum + val, 0);
+
+  // If no range exists, show initializer
+  if (!isLoadingRange && !range && clientId) {
+    return (
+      <div className="space-y-6" dir="rtl">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-right">דוח מחזורים רו"ח</CardTitle>
+            <CardDescription className="text-right">
+              אישור המסכם את הדיווחים למע"מ ב-12 החודשים
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MonthRangeInitializer
+              onInitialize={initializeRange}
+              isLoading={isLoadingRange}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">דוח מחזורים רו"ח</CardTitle>
-          <CardDescription className="text-right">
-            אישור המסכם את הדיווחים למע"מ ב-12 החודשים
-          </CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-right">דוח מחזורים רו"ח</CardTitle>
+              <CardDescription className="text-right">
+                אישור המסכם את הדיווחים למע"מ ב-12 החודשים
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadData}
+                disabled={isLoading || !clientId}
+              >
+                <RefreshCw className={`h-4 w-4 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
+                רענן
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={isSaving || !hasUnsavedChanges || !clientId}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 ml-1" />
+                )}
+                שמור
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Generate Button */}
-          {monthlyTurnover.length === 0 && (
-            <Button
-              onClick={generateDefaultMonths}
-              disabled={disabled}
-              variant="outline"
-              className="w-full"
-            >
-              <Plus className="ml-2 h-4 w-4" />
-              צור 12 חודשים אוטומטית
-            </Button>
-          )}
+          {/* Loading State */}
+          {isLoading || isLoadingRange ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : !range ? (
+            <div className="p-4 text-center text-muted-foreground">
+              יש לבחור לקוח לצפייה בנתונים
+            </div>
+          ) : (
+            <>
+              {/* Monthly Turnover Table */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-right">מחזורים חודשיים ({range.monthCount} חודשים)</h4>
+                  {hasUnsavedChanges && (
+                    <span className="text-sm text-amber-600">* יש שינויים שלא נשמרו</span>
+                  )}
+                </div>
 
-          {/* Monthly Turnover Table */}
-          {monthlyTurnover.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-medium text-right">מחזורים חודשיים ({monthlyTurnover.length}/12)</h4>
-                <Button
-                  onClick={addMonth}
-                  disabled={disabled || monthlyTurnover.length >= 12}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Plus className="ml-1 h-3 w-3" />
-                  הוסף חודש
-                </Button>
-              </div>
+                <div className="border rounded-md overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-right font-medium">חודש דיווח</th>
+                        <th className="px-4 py-2 text-right font-medium">סכום (ללא מע"מ)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {range.months.map((date) => {
+                        const monthKey = MonthlyDataService.dateToMonthKey(date);
+                        const amount = monthData.get(monthKey) || 0;
 
-              <div className="border rounded-md overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-right font-medium">חודש דיווח</th>
-                      <th className="px-4 py-2 text-right font-medium">סכום (ללא מע"מ)</th>
-                      <th className="px-4 py-2 w-16"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyTurnover.map((row, index) => (
-                      <tr key={index} className="border-t">
-                        <td className="px-4 py-2">
-                          <Input
-                            value={row.month}
-                            onChange={(e) => updateMonth(index, 'month', e.target.value)}
-                            placeholder="לדוגמה: ינואר 2025"
-                            disabled={disabled}
-                            className="text-right rtl:text-right"
-                            dir="rtl"
-                          />
+                        return (
+                          <tr key={monthKey} className="border-t hover:bg-gray-50">
+                            <td className="px-4 py-2">
+                              <span className="text-gray-700 font-medium">
+                                {MonthlyDataService.dateToHebrew(date)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                value={amount || ''}
+                                onChange={(e) => handleAmountChange(monthKey, parseFloat(e.target.value) || 0)}
+                                placeholder="הזן סכום"
+                                disabled={disabled}
+                                className="text-right rtl:text-right w-32"
+                                dir="rtl"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-blue-50 border-t-2">
+                      <tr>
+                        <td className="px-4 py-3 text-right font-bold">
+                          סה"כ
                         </td>
-                        <td className="px-4 py-2">
-                          <Input
-                            type="number"
-                            value={row.amount || ''}
-                            onChange={(e) => updateMonth(index, 'amount', e.target.value)}
-                            placeholder="הזן סכום"
-                            disabled={disabled}
-                            className="text-right rtl:text-right"
-                            dir="rtl"
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <Button
-                            onClick={() => removeMonth(index)}
-                            disabled={disabled}
-                            variant="ghost"
-                            size="sm"
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                        <td className="px-4 py-3 text-right font-bold text-blue-700">
+                          ₪{totalTurnover.toLocaleString('he-IL')}
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
 
-              {monthlyTurnover.length !== 12 && (
-                <p className="text-sm text-yellow-600 text-right">
-                  מומלץ למלא בדיוק 12 חודשים
+              {/* Info Box */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800 text-right">
+                  <strong>הערה:</strong> הנתונים נשמרים בבסיס הנתונים. לחץ "שמור" לשמירת שינויים.
+                  ניתן לנהל את טווח החודשים באמצעות כפתור הטווח למעלה.
                 </p>
-              )}
-            </div>
-          )}
-
-          {/* Validation */}
-          {monthlyTurnover.length === 0 && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p className="text-sm text-yellow-800 text-right">
-                יש למלא לפחות חודש אחד
-              </p>
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -8,9 +8,13 @@ interface TurnoverApprovalTabProps {
   value: Partial<TurnoverApprovalVariables>;
   onChange: (data: Partial<TurnoverApprovalVariables>) => void;
   disabled?: boolean;
+  /** Total turnover from AccountantTurnoverTab (Tab 0) - auto-fills scenarios A & B */
+  accountantTotalTurnover?: number;
+  /** Period dates from AccountantTurnoverTab (Tab 0) - auto-fills period_start & period_end */
+  accountantPeriod?: { start?: string; end?: string };
 }
 
-export function TurnoverApprovalTab({ value, onChange, disabled }: TurnoverApprovalTabProps) {
+export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotalTurnover, accountantPeriod }: TurnoverApprovalTabProps) {
   // Calculate end period based on start period + months count
   // Format: MM/YYYY (Israeli standard)
   const calculateEndPeriod = (startPeriod: string, monthsCount: number): string => {
@@ -29,14 +33,36 @@ export function TurnoverApprovalTab({ value, onChange, disabled }: TurnoverAppro
   };
 
   const handleScenarioChange = (scenario: TurnoverApprovalScenario) => {
-    onChange({
+    const baseUpdate: Partial<TurnoverApprovalVariables> = {
       ...value,
       scenario,
       // Clear other scenarios when switching
       scenario_12_plus: scenario === '12_plus' ? value.scenario_12_plus : undefined,
       scenario_4_to_11: scenario === '4_to_11' ? value.scenario_4_to_11 : undefined,
       scenario_up_to_3: scenario === 'up_to_3' ? value.scenario_up_to_3 : undefined
-    });
+    };
+
+    // Auto-fill from accountant data when selecting scenarios A or B
+    if (scenario === '12_plus') {
+      baseUpdate.scenario_12_plus = {
+        period_start: accountantPeriod?.start || '',
+        period_end: accountantPeriod?.end || '',
+        total_turnover: accountantTotalTurnover || 0,
+        total_costs: baseUpdate.scenario_12_plus?.total_costs || 0
+      };
+    } else if (scenario === '4_to_11') {
+      baseUpdate.scenario_4_to_11 = {
+        period_start: accountantPeriod?.start || '',
+        period_end: accountantPeriod?.end || '',
+        months_count: 12, // Default to 12, user can adjust for 4-11 scenarios
+        total_turnover: accountantTotalTurnover || 0,
+        total_costs: baseUpdate.scenario_4_to_11?.total_costs || 0,
+        projected_annual_turnover: baseUpdate.scenario_4_to_11?.projected_annual_turnover || 0,
+        projected_annual_costs: baseUpdate.scenario_4_to_11?.projected_annual_costs || 0
+      };
+    }
+
+    onChange(baseUpdate);
   };
 
   return (

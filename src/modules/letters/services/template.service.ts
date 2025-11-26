@@ -1841,10 +1841,14 @@ export class TemplateService extends BaseService {
   }
 
   /**
-   * Build monthly turnover table rows
+   * Build monthly turnover table rows with total footer
    */
   private buildMonthlyTurnoverRows(turnoverData: MonthlyTurnover[]): string {
-    return turnoverData
+    // Calculate total
+    const total = turnoverData.reduce((sum, row) => sum + row.amount, 0);
+
+    // Build data rows
+    const dataRows = turnoverData
       .map(
         (row) => `
             <tr>
@@ -1862,6 +1866,24 @@ export class TemplateService extends BaseService {
         `
       )
       .join('\n');
+
+    // Add total row with highlighted background
+    const totalRow = `
+            <tr>
+                <td width="40%" style="border: 2px solid #000000; border-top: 2px solid #000000; border-bottom: 2px solid #000000; border-left: 2px solid #000000; border-right: 2px solid #000000; padding: 5px; background-color: #d9d9d9;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; font-weight: 700; color: #000000; text-align: center;">
+                        ${total.toLocaleString('he-IL')}
+                    </div>
+                </td>
+                <td width="60%" style="border: 2px solid #000000; border-top: 2px solid #000000; border-bottom: 2px solid #000000; border-left: 2px solid #000000; border-right: 2px solid #000000; padding: 5px; background-color: #d9d9d9;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; font-weight: 700; color: #000000; text-align: right;">
+                        סה"כ
+                    </div>
+                </td>
+            </tr>
+        `;
+
+    return dataRows + totalRow;
   }
 
   /**

@@ -39,6 +39,15 @@ export interface MonthlyTurnover {
 export interface AccountantTurnoverVariables extends ForeignWorkerSharedData {
   /** Array of 12 monthly turnover entries (one per month) */
   monthly_turnover: MonthlyTurnover[];
+
+  /** Calculated total turnover across all months (סה"כ מחזור) */
+  total_turnover?: number;
+
+  /** Period start date in MM/YYYY format (for sharing with TurnoverApprovalTab) */
+  period_start?: string;
+
+  /** Period end date in MM/YYYY format (for sharing with TurnoverApprovalTab) */
+  period_end?: string;
 }
 
 // ============================================================================
@@ -146,11 +155,14 @@ export interface TurnoverApprovalVariables extends ForeignWorkerSharedData {
 // ============================================================================
 
 export interface WorkerData {
+  /** Worker database ID (if saved to pool) */
+  id?: string;
+
+  /** Passport number - PRIMARY identifier (unique per tenant) */
+  passport_number: string;
+
   /** Worker's full name */
   full_name: string;
-
-  /** Passport number */
-  passport_number: string;
 
   /** Month of employment (e.g., "01/2024") */
   month: string;
@@ -158,8 +170,14 @@ export interface WorkerData {
   /** Worker's nationality */
   nationality: string;
 
-  /** Monthly salary in ILS */
+  /** Monthly base salary in ILS */
   salary: number;
+
+  /** Supplement/bonus in ILS ("תוספת") */
+  supplement: number;
+
+  /** UI state: true if worker was loaded from pool */
+  _isFromPool?: boolean;
 }
 
 export interface SalaryReportVariables extends ForeignWorkerSharedData {

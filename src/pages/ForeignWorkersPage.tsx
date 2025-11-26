@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -10,16 +10,44 @@ import { IsraeliWorkersTab } from '@/components/foreign-workers/tabs/IsraeliWork
 import { TurnoverApprovalTab } from '@/components/foreign-workers/tabs/TurnoverApprovalTab';
 import { SalaryReportTab } from '@/components/foreign-workers/tabs/SalaryReportTab';
 import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
+import { MonthDeletionDialog, MonthLimitBadge, MonthRangeInitializer } from '@/components/foreign-workers/shared';
+import { MonthRangeProvider, useMonthRange } from '@/contexts/MonthRangeContext';
 import { FOREIGN_WORKER_TABS, type ForeignWorkerFormState } from '@/types/foreign-workers.types';
 import { TemplateService } from '@/modules/letters/services/template.service';
+import { fileUploadService } from '@/services/file-upload.service';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
 const templateService = new TemplateService();
 
+// Wrapper component that provides MonthRangeContext
 export function ForeignWorkersPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+
+  return (
+    <MonthRangeProvider initialClientId={selectedClientId || undefined}>
+      <ForeignWorkersPageContent
+        selectedClientId={selectedClientId}
+        setSelectedClientId={setSelectedClientId}
+      />
+    </MonthRangeProvider>
+  );
+}
+
+// Inner component that uses the MonthRangeContext
+interface ForeignWorkersPageContentProps {
+  selectedClientId: string | null;
+  setSelectedClientId: (id: string | null) => void;
+}
+
+function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: ForeignWorkersPageContentProps) {
+  const { setClientId, range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
   const [activeTab, setActiveTab] = useState(0);
+
+  // Sync client ID with MonthRangeContext
+  useEffect(() => {
+    setClientId(selectedClientId);
+  }, [selectedClientId, setClientId]);
   const [generating, setGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
@@ -145,8 +173,25 @@ export function ForeignWorkersPage() {
         return;
       }
 
-      // Open share dialog instead of auto-download
+      // Save PDF reference to File Manager under "אישורי עובדים זרים" category
       const pdfFileName = `${tab.label}_${formState.sharedData.company_name}.pdf`;
+      const storagePath = `letter-pdfs/${result.data.id}.pdf`;
+      const description = `${tab.label} - ${formState.sharedData.document_date}`;
+
+      const saveResult = await fileUploadService.savePdfReference(
+        selectedClientId,
+        storagePath,
+        pdfFileName,
+        'foreign_worker_docs',
+        description
+      );
+
+      if (saveResult.error) {
+        console.warn('Failed to save PDF reference to File Manager:', saveResult.error);
+        // Don't block the flow - PDF was generated successfully
+      }
+
+      // Open share dialog instead of auto-download
       setGeneratedPdfUrl(pdfData.pdfUrl);
       setGeneratedPdfName(pdfFileName);
       setShowShareDialog(true);
@@ -262,6 +307,21 @@ export function ForeignWorkersPage() {
           ))}
         </TabsList>
 
+        {/* Month Range Badge - shown for monthly data tabs (0, 1, 4) */}
+        {isSharedDataComplete && selectedClientId && [0, 1, 4].includes(activeTab) && (
+          <div className="flex justify-end mt-4">
+            {range ? (
+              <MonthLimitBadge />
+            ) : (
+              !isLoadingRange && (
+                <div className="text-sm text-muted-foreground">
+                  יש לאתחל טווח חודשים לצפייה ועריכת נתונים חודשיים
+                </div>
+              )
+            )}
+          </div>
+        )}
+
         {/* Tab Content */}
         <TabsContent value="0" className="mt-6">
           <AccountantTurnoverTab
@@ -276,6 +336,7 @@ export function ForeignWorkersPage() {
               })
             }
             disabled={!isSharedDataComplete}
+            clientId={selectedClientId}
           />
         </TabsContent>
 
@@ -292,6 +353,7 @@ export function ForeignWorkersPage() {
               })
             }
             disabled={!isSharedDataComplete}
+            clientId={selectedClientId}
           />
         </TabsContent>
 
@@ -324,6 +386,11 @@ export function ForeignWorkersPage() {
               })
             }
             disabled={!isSharedDataComplete}
+            accountantTotalTurnover={formState.documentData.accountantTurnover.total_turnover}
+            accountantPeriod={{
+              start: formState.documentData.accountantTurnover.period_start,
+              end: formState.documentData.accountantTurnover.period_end
+            }}
           />
         </TabsContent>
 
@@ -340,6 +407,7 @@ export function ForeignWorkersPage() {
               })
             }
             disabled={!isSharedDataComplete}
+            clientId={selectedClientId}
           />
         </TabsContent>
       </Tabs>
@@ -414,6 +482,9 @@ export function ForeignWorkersPage() {
         pdfName={generatedPdfName}
         clientName={formState.sharedData.company_name || ''}
       />
+
+      {/* Month Range Deletion Confirmation Dialog */}
+      <MonthDeletionDialog />
     </div>
   );
 }
