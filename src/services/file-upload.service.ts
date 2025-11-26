@@ -528,6 +528,68 @@ export class FileUploadService extends BaseService {
   }
 
   /**
+   * Save PDF reference to client_attachments
+   * Used for foreign worker documents that are already stored in letter-pdfs bucket
+   */
+  async savePdfReference(
+    clientId: string,
+    storagePath: string,
+    fileName: string,
+    category: FileCategory,
+    description?: string
+  ): Promise<ServiceResponse<ClientAttachment>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+
+      if (!userId) {
+        throw new Error('משתמש לא מחובר');
+      }
+
+      // Create database record pointing to the PDF in letter-pdfs bucket
+      const attachmentData = {
+        tenant_id: tenantId,
+        client_id: clientId,
+        file_name: fileName,
+        file_type: 'application/pdf' as FileType,
+        file_size: 1, // Minimal size - actual size unknown from Edge Function
+        storage_path: storagePath,
+        file_category: category,
+        description: description || null,
+        upload_context: 'client_form' as UploadContext,
+        version: 1,
+        is_latest: true,
+        uploaded_by: userId
+      };
+
+      const { data, error: dbError } = await supabase
+        .from(this.tableName)
+        .insert(attachmentData)
+        .select()
+        .single();
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Log action
+      await this.logAction(
+        'save_pdf_reference',
+        data.id,
+        {
+          file_name: fileName,
+          category: category,
+          storage_path: storagePath
+        }
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
    * Get statistics of files per category for a client
    */
   async getCategoryStats(clientId: string): Promise<ServiceResponse<Record<FileCategory, number>>> {
@@ -554,7 +616,8 @@ export class FileUploadService extends BaseService {
         quote_invoice: 0,
         payment_proof_2026: 0,
         holdings_presentation: 0,
-        general: 0
+        general: 0,
+        foreign_worker_docs: 0
       };
 
       // Count files per category
