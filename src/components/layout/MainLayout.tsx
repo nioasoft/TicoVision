@@ -69,9 +69,9 @@ const navigation: NavigationItem[] = [
       { name: 'כתיבת מכתבים', href: '/letter-templates' },
       { name: 'סימולציית מכתבים', href: '/component-simulator' },
       { name: 'היסטוריית מכתבים', href: '/letter-history' },
-      { name: 'אישורי עובדים זרים', href: '/foreign-workers' },
     ]
   },
+  { name: 'אישורי עובדים זרים', href: '/foreign-workers', icon: FileText, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
