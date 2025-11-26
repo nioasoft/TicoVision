@@ -239,13 +239,11 @@ export function useUsers(): UseUsersReturn {
 
   // Save client assignments
   const saveClientAssignments = useCallback(async (userId: string): Promise<boolean> => {
-    const assignments = selectedClients.map((clientId) => ({
-      user_id: userId,
-      client_id: clientId,
-      is_primary: clientId === primaryClientId,
-    }));
-
-    const response = await registrationService.assignClientsToUser(userId, assignments);
+    const response = await registrationService.assignClientsToUser(
+      userId,
+      selectedClients,
+      primaryClientId
+    );
     if (response.error) {
       toast.error('שגיאה בשמירת שיוך לקוחות');
       return false;
