@@ -45,7 +45,7 @@ const navigation: NavigationItem[] = [
   {
     name: 'לקוחות',
     icon: Users,
-    allowedRoles: ['admin', 'accountant', 'bookkeeper', 'client'] as UserRole[],
+    allowedRoles: ['admin', 'bookkeeper', 'client'] as UserRole[],
     submenu: [
       { name: 'רשימת לקוחות', href: '/clients' },
       { name: 'ניהול קבוצות', href: '/client-groups' },
@@ -72,7 +72,7 @@ const navigation: NavigationItem[] = [
     ]
   },
   { name: 'אישורי עובדים זרים', href: '/foreign-workers', icon: FileText, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
-  { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
+  { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
 ];

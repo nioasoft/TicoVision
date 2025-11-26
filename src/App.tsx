@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleBasedRoute } from '@/components/auth/RoleBasedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -31,6 +31,7 @@ const PaymentErrorPage = lazy(() => import('@/pages/PaymentErrorPage'));
 const ClientGroupsPage = lazy(() => import('@/pages/ClientGroupsPage'));
 const FilesManagerPage = lazy(() => import('@/pages/FilesManagerPage'));
 const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
+const WelcomePage = lazy(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
 
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
@@ -43,6 +44,16 @@ const PageLoader = () => (
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
 );
+
+// Default redirect based on user role
+function DefaultRedirect() {
+  const { role } = useAuth();
+
+  if (role === 'accountant') {
+    return <Navigate to="/welcome" replace />;
+  }
+  return <Navigate to="/clients" replace />;
+}
 
 function App() {
   return (
@@ -93,25 +104,36 @@ function App() {
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
                   <Route element={<MainLayout />}>
-                    {/* Default redirect to clients for all users */}
-                    <Route path="/" element={<Navigate to="/clients" replace />} />
+                    {/* Default redirect based on role */}
+                    <Route path="/" element={<DefaultRedirect />} />
 
-                    {/* Clients page - accessible to all roles */}
-                    <Route path="/clients" element={
+                    {/* Welcome page - for accountant role */}
+                    <Route path="/welcome" element={
                       <ErrorBoundary>
-                        <ClientsPage />
+                        <WelcomePage />
                       </ErrorBoundary>
                     } />
 
-                    {/* Client Groups page - accessible to all roles */}
-                    <Route path="/client-groups" element={
-                      <ErrorBoundary>
-                        <ClientGroupsPage />
-                      </ErrorBoundary>
-                    } />
+                    {/* Clients page - NOT accessible to accountant */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'bookkeeper', 'client']} />}>
+                      <Route path="/clients" element={
+                        <ErrorBoundary>
+                          <ClientsPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
 
-                    {/* Files Manager - accessible to admin, accountant, bookkeeper */}
-                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
+                    {/* Client Groups page - NOT accessible to accountant */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'bookkeeper', 'client']} />}>
+                      <Route path="/client-groups" element={
+                        <ErrorBoundary>
+                          <ClientGroupsPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+
+                    {/* Files Manager - accessible to admin, bookkeeper only */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'bookkeeper']} />}>
                       <Route path="/files" element={
                         <ErrorBoundary>
                           <FilesManagerPage />
