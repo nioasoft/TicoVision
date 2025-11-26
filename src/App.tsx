@@ -119,6 +119,15 @@ function App() {
                       } />
                     </Route>
 
+                    {/* Foreign Workers - accessible to admin, accountant and bookkeeper */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
+                      <Route path="/foreign-workers" element={
+                        <ErrorBoundary>
+                          <ForeignWorkersPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+
                     {/* Admin-only routes */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
                       <Route path="/dashboard" element={
@@ -158,11 +167,6 @@ function App() {
                       <Route path="/component-simulator" element={
                         <ErrorBoundary>
                           <ComponentSimulatorPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/foreign-workers" element={
-                        <ErrorBoundary>
-                          <ForeignWorkersPage />
                         </ErrorBoundary>
                       } />
                       <Route path="/users" element={
