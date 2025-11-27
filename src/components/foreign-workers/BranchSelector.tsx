@@ -109,7 +109,7 @@ export function BranchSelector({
           onValueChange={handleSelect}
           disabled={disabled || isLoading}
         >
-          <SelectTrigger className="w-[200px] text-right">
+          <SelectTrigger className="w-[280px] text-right">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
               <SelectValue placeholder={placeholder} />

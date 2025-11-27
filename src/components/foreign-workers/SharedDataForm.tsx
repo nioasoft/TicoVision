@@ -69,15 +69,15 @@ export function SharedDataForm({
    * Handle branch selection from BranchSelector
    */
   const handleBranchChange = (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean) => {
-    // Update the company name to include branch name (only for non-default branches)
-    if (baseCompanyName && branchName && !isDefault) {
+    // Update the company name to include branch name (for ALL branches, including default)
+    if (baseCompanyName && branchName) {
       // Format: "Company Name - Branch Name"
       onChange({
         ...value,
         company_name: `${baseCompanyName} - ${branchName}`
       });
     } else if (baseCompanyName) {
-      // Reset to base company name for default branch
+      // Reset to base company name only if no branch name
       onChange({
         ...value,
         company_name: baseCompanyName
