@@ -19,7 +19,8 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  Shield
 } from 'lucide-react';
 import { SuperAdminService, type TenantWithDetails, type GlobalStats } from '@/services/super-admin.service';
 import type { Database } from '@/types/supabase';
@@ -334,6 +335,14 @@ export default function SuperAdminDashboard() {
               <CardDescription>ניהול הרשאות ותצורת מערכת</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => navigate('/super-admin/permissions')}
+              >
+                <Shield className="ml-2 h-4 w-4" />
+                ניהול הרשאות תפקידים
+              </Button>
               <Button variant="outline" className="w-full justify-start">
                 <Settings className="ml-2 h-4 w-4" />
                 ניהול משתמשי Super Admin

@@ -25,6 +25,7 @@ const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
 const TenantManagementPage = lazy(() => import('@/pages/TenantManagementPage'));
+const PermissionsPage = lazy(() => import('@/pages/PermissionsPage'));
 const PaymentPage = lazy(() => import('@/pages/payment-page'));
 const PaymentSuccessPage = lazy(() => import('@/pages/PaymentSuccessPage'));
 const PaymentErrorPage = lazy(() => import('@/pages/PaymentErrorPage'));
@@ -228,6 +229,11 @@ function App() {
                       <Route path="/super-admin/tenants/:id" element={
                         <ErrorBoundary>
                           <TenantManagementPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/super-admin/permissions" element={
+                        <ErrorBoundary>
+                          <PermissionsPage />
                         </ErrorBoundary>
                       } />
                     </Route>
