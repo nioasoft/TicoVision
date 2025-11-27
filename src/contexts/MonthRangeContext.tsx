@@ -53,6 +53,10 @@ interface MonthRangeContextActions {
   initializeRange: (startDate: Date) => Promise<void>;
   /** Extend range by adding months (handles 14-month limit) */
   extendRange: (direction: 'past' | 'future', monthCount: number) => Promise<void>;
+  /** Delete months from the start of the range (oldest months) */
+  deleteMonthsFromStart: (count: number) => Promise<void>;
+  /** Delete months from the end of the range (newest months) */
+  deleteMonthsFromEnd: (count: number) => Promise<void>;
   /** Confirm pending deletion */
   confirmDeletion: () => Promise<void>;
   /** Cancel pending deletion */
@@ -298,6 +302,114 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     }
   }, [branchId, clientId, range, toast]);
 
+  // Delete months from the start of the range (oldest months)
+  const deleteMonthsFromStart = useCallback(async (count: number) => {
+    if (!branchId || !clientId || !range) {
+      setError('לא נבחר סניף או לא קיים טווח חודשים');
+      return;
+    }
+
+    if (count <= 0 || count >= range.monthCount) {
+      setError('מספר חודשים לא תקין');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Calculate new start month (move forward by 'count' months)
+      const newStartMonth = new Date(range.startMonth);
+      newStartMonth.setMonth(newStartMonth.getMonth() + count);
+
+      // End month stays the same
+      const newEndMonth = new Date(range.endMonth);
+
+      // Update the range
+      const { data, error: saveError } = await monthlyDataService.setBranchMonthRange(
+        branchId,
+        clientId,
+        newStartMonth,
+        newEndMonth
+      );
+
+      if (saveError) {
+        setError(saveError.message);
+        toast({
+          variant: 'destructive',
+          title: 'שגיאה במחיקת חודשים',
+          description: saveError.message,
+        });
+        return;
+      }
+
+      setRange(data);
+      toast({
+        title: 'חודשים נמחקו',
+        description: `נמחקו ${count} חודשים מההתחלה`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [branchId, clientId, range, toast]);
+
+  // Delete months from the end of the range (newest months)
+  const deleteMonthsFromEnd = useCallback(async (count: number) => {
+    if (!branchId || !clientId || !range) {
+      setError('לא נבחר סניף או לא קיים טווח חודשים');
+      return;
+    }
+
+    if (count <= 0 || count >= range.monthCount) {
+      setError('מספר חודשים לא תקין');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Start month stays the same
+      const newStartMonth = new Date(range.startMonth);
+
+      // Calculate new end month (move backward by 'count' months)
+      const newEndMonth = new Date(range.endMonth);
+      newEndMonth.setMonth(newEndMonth.getMonth() - count);
+
+      // Update the range
+      const { data, error: saveError } = await monthlyDataService.setBranchMonthRange(
+        branchId,
+        clientId,
+        newStartMonth,
+        newEndMonth
+      );
+
+      if (saveError) {
+        setError(saveError.message);
+        toast({
+          variant: 'destructive',
+          title: 'שגיאה במחיקת חודשים',
+          description: saveError.message,
+        });
+        return;
+      }
+
+      setRange(data);
+      toast({
+        title: 'חודשים נמחקו',
+        description: `נמחקו ${count} חודשים מהסוף`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'שגיאה לא ידועה';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [branchId, clientId, range, toast]);
+
   // Confirm pending deletion
   const confirmDeletion = useCallback(async () => {
     if (!branchId || !clientId || !pendingDeletion) {
@@ -402,6 +514,8 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     loadMonthRange,
     initializeRange,
     extendRange,
+    deleteMonthsFromStart,
+    deleteMonthsFromEnd,
     confirmDeletion,
     cancelDeletion,
     reset,

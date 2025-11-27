@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { FileText, Eye, Download, Loader2 } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, Eye, Download, Loader2, AlertTriangle } from 'lucide-react';
 import { SharedDataForm } from '@/components/foreign-workers/SharedDataForm';
 import { LivingBusinessTab } from '@/components/foreign-workers/tabs/LivingBusinessTab';
 import { AccountantTurnoverTab, type AccountantTurnoverTabRef } from '@/components/foreign-workers/tabs/AccountantTurnoverTab';
@@ -12,6 +14,7 @@ import { SalaryReportTab, type SalaryReportTabRef } from '@/components/foreign-w
 import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
 import { MonthDeletionDialog, MonthLimitBadge, MonthRangeInitializer } from '@/components/foreign-workers/shared';
 import { MonthRangeProvider, useMonthRange } from '@/contexts/MonthRangeContext';
+import { MonthlyDataService } from '@/services/monthly-data.service';
 import { FOREIGN_WORKER_TABS, type ForeignWorkerFormState } from '@/types/foreign-workers.types';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
@@ -56,6 +59,19 @@ function ForeignWorkersPageContent({
 }: ForeignWorkersPageContentProps) {
   const { setBranchId, range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
   const [activeTab, setActiveTab] = useState(0);
+
+  // Print range selection - when there are more than 12 months
+  const [printStartIndex, setPrintStartIndex] = useState<number>(0);
+
+  // Calculate the print range (12 months starting from printStartIndex)
+  const printRange = range && range.monthCount > 12
+    ? {
+        startMonth: range.months[printStartIndex],
+        endMonth: range.months[printStartIndex + 11],
+        months: range.months.slice(printStartIndex, printStartIndex + 12),
+        monthCount: 12
+      }
+    : range;
 
   // Refs for tab components to enable auto-save
   const accountantTurnoverRef = useRef<AccountantTurnoverTabRef>(null);
@@ -137,7 +153,11 @@ function ForeignWorkersPageContent({
     }
   };
 
-  const canGenerateDocument = isSharedDataComplete && isCurrentTabComplete();
+  // For monthly data tabs (0, 1, 4), need valid print range (12 months)
+  const requiresMonthlyData = [0, 1, 4].includes(activeTab);
+  const hasPrintRange = !requiresMonthlyData || (printRange && printRange.monthCount === 12);
+
+  const canGenerateDocument = isSharedDataComplete && isCurrentTabComplete() && hasPrintRange;
 
   // Helper function to save current tab data before preview/generate
   const saveCurrentTabData = async (): Promise<boolean> => {
@@ -343,6 +363,35 @@ function ForeignWorkersPageContent({
           onBranchChange={handleBranchChange}
         />
       </div>
+
+      {/* Print Range Selector - shows when more than 12 months */}
+      {range && range.monthCount > 12 && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>יש {range.monthCount} חודשים בטווח</AlertTitle>
+          <AlertDescription>
+            להנפקת הדוח נדרשים 12 חודשים. בחר את טווח ההדפסה:
+          </AlertDescription>
+          <div className="flex gap-3 mt-3 items-center">
+            <span className="text-sm font-medium">מחודש:</span>
+            <Select value={String(printStartIndex)} onValueChange={(v) => setPrintStartIndex(Number(v))}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {range.months.slice(0, range.monthCount - 11).map((month, index) => (
+                  <SelectItem key={index} value={String(index)}>
+                    {MonthlyDataService.dateToHebrew(month)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">
+              עד: <strong>{MonthlyDataService.dateToHebrew(range.months[printStartIndex + 11])}</strong>
+            </span>
+          </div>
+        </Alert>
+      )}
 
       {/* Document Tabs */}
       <Tabs
