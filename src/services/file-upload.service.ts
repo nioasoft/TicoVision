@@ -263,13 +263,41 @@ export class FileUploadService extends BaseService {
   }
 
   /**
-   * Get signed URL for file viewing
+   * Get URL for file viewing
+   * Automatically detects the correct bucket from the storage path
+   * Uses public URL for public buckets, signed URL for private buckets
    */
   async getFileUrl(storagePath: string): Promise<ServiceResponse<string>> {
     try {
+      // Detect bucket from path prefix
+      let bucket = this.STORAGE_BUCKET; // default: 'client-attachments'
+      let filePath = storagePath;
+      let isPublicBucket = false;
+
+      // If path starts with 'letter-pdfs/', use that bucket (public)
+      if (storagePath.startsWith('letter-pdfs/')) {
+        bucket = 'letter-pdfs';
+        filePath = storagePath.replace('letter-pdfs/', '');
+        isPublicBucket = true;
+      }
+
+      // For public buckets, use getPublicUrl (createSignedUrl doesn't work on public buckets)
+      if (isPublicBucket) {
+        const { data } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(filePath);
+
+        if (!data?.publicUrl) {
+          throw new Error('Failed to generate public URL');
+        }
+
+        return { data: data.publicUrl, error: null };
+      }
+
+      // For private buckets, use createSignedUrl
       const { data, error } = await supabase.storage
-        .from(this.STORAGE_BUCKET)
-        .createSignedUrl(storagePath, 3600); // Valid for 1 hour
+        .from(bucket)
+        .createSignedUrl(filePath, 3600); // Valid for 1 hour
 
       if (error || !data) {
         throw error || new Error('Failed to generate signed URL');
