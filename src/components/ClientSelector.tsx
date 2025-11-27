@@ -2,6 +2,8 @@
  * Client Selector Component
  * Reusable component for selecting a client from the database
  * Used in both LetterBuilder and UniversalLetterBuilder
+ *
+ * filterByAssignment: When true, bookkeepers see only their assigned clients
  */
 
 import { useState, useEffect } from 'react';
@@ -9,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { Loader2 } from 'lucide-react';
 import { ClientService, type Client } from '@/services/client.service';
+import { userClientAssignmentService } from '@/services/user-client-assignment.service';
+import { useAuth } from '@/contexts/AuthContext';
 
 const clientService = new ClientService();
 
@@ -18,6 +22,8 @@ interface ClientSelectorProps {
   label?: string;
   placeholder?: string;
   className?: string;
+  /** When true, non-admin users see only their assigned clients */
+  filterByAssignment?: boolean;
 }
 
 export function ClientSelector({
@@ -25,42 +31,75 @@ export function ClientSelector({
   onChange,
   label = 'בחר לקוח',
   placeholder = 'בחר לקוח מהרשימה...',
-  className = ''
+  className = '',
+  filterByAssignment = false
 }: ClientSelectorProps) {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { role } = useAuth();
 
   /**
    * Load clients on mount
    */
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [filterByAssignment, role]);
 
   /**
-   * Load all active clients
+   * Load clients - all for admin, assigned only for bookkeeper when filterByAssignment is true
    */
   const loadClients = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data, error: fetchError } = await clientService.getClients();
+      // If filterByAssignment is enabled and user is not admin, get only accessible clients
+      if (filterByAssignment && role !== 'admin') {
+        const { data: accessibleClients, error: accessError } =
+          await userClientAssignmentService.getAccessibleClients();
 
-      if (fetchError) throw fetchError;
+        if (accessError) throw accessError;
 
-      if (data && data.clients) {
-        // Filter only active clients and sort by Hebrew name or English name
-        const activeClients = data.clients.filter(c => c.status === 'active');
+        if (accessibleClients) {
+          // Need to fetch full client data for each accessible client
+          const { data: allClientsData, error: fetchError } = await clientService.getClients();
+          if (fetchError) throw fetchError;
 
-        const sorted = activeClients.sort((a, b) => {
-          const nameA = a.company_name_hebrew || a.company_name || '';
-          const nameB = b.company_name_hebrew || b.company_name || '';
-          return nameA.localeCompare(nameB, 'he');
-        });
+          if (allClientsData && allClientsData.clients) {
+            // Filter only accessible clients that are active
+            const accessibleIds = new Set(accessibleClients.map(c => c.id));
+            const filteredClients = allClientsData.clients.filter(
+              c => accessibleIds.has(c.id) && c.status === 'active'
+            );
 
-        setClients(sorted);
+            const sorted = filteredClients.sort((a, b) => {
+              const nameA = a.company_name_hebrew || a.company_name || '';
+              const nameB = b.company_name_hebrew || b.company_name || '';
+              return nameA.localeCompare(nameB, 'he');
+            });
+
+            setClients(sorted);
+          }
+        }
+      } else {
+        // Admin or filterByAssignment is false - get all clients
+        const { data, error: fetchError } = await clientService.getClients();
+
+        if (fetchError) throw fetchError;
+
+        if (data && data.clients) {
+          // Filter only active clients and sort by Hebrew name or English name
+          const activeClients = data.clients.filter(c => c.status === 'active');
+
+          const sorted = activeClients.sort((a, b) => {
+            const nameA = a.company_name_hebrew || a.company_name || '';
+            const nameB = b.company_name_hebrew || b.company_name || '';
+            return nameA.localeCompare(nameB, 'he');
+          });
+
+          setClients(sorted);
+        }
       }
     } catch (err) {
       console.error('Error loading clients:', err);

@@ -174,7 +174,7 @@ export function generateUniqueFilename(originalName: string): string {
 }
 
 // ===================================
-// File Categories (7 Fixed Categories)
+// File Categories (8 Fixed Categories)
 // ===================================
 
 export type FileCategory =
@@ -184,7 +184,8 @@ export type FileCategory =
   | 'quote_invoice'             // הצעות מחיר / תעודות חיוב
   | 'payment_proof_2026'        // אסמכתאות תשלום 2026
   | 'holdings_presentation'     // מצגת החזקות
-  | 'general';                  // כללי
+  | 'general'                   // כללי
+  | 'foreign_worker_docs';      // אישורי עובדים זרים
 
 export interface CategoryConfig {
   key: FileCategory;
@@ -228,6 +229,11 @@ export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
     key: 'general',
     label: 'כללי',
     description: 'מסמכים נוספים שאינם משויכים לקטגוריה ספציפית',
+  },
+  foreign_worker_docs: {
+    key: 'foreign_worker_docs',
+    label: 'אישורי עובדים זרים',
+    description: 'אישורי מחזור, עובדים ישראלים, דו"ח שכר ומסמכים נוספים לרשות האוכלוסין',
   },
 };
 

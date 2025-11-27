@@ -2,20 +2,23 @@
  * FilesManagerPage
  * Main page for managing client files organized by categories
  * Access: admin, accountant, bookkeeper
+ *
+ * Layout: Sidebar (categories on right) + Content (files on left)
  */
 
 import { useState } from 'react';
 import { ClientSelector } from '@/components/ClientSelector';
 import { FileCategorySection } from '@/components/files/FileCategorySection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, FileText } from 'lucide-react';
 import { getAllCategories } from '@/types/file-attachment.types';
+import { cn } from '@/lib/utils';
 import type { Client } from '@/services/client.service';
 import type { FileCategory } from '@/types/file-attachment.types';
 
 export default function FilesManagerPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<FileCategory>('company_registry');
   const categories = getAllCategories();
 
   return (
@@ -49,7 +52,7 @@ export default function FilesManagerPage() {
         </CardContent>
       </Card>
 
-      {/* Files by Category */}
+      {/* Files by Category - Sidebar Layout */}
       {selectedClient ? (
         <Card>
           <CardHeader className="rtl:text-right">
@@ -57,32 +60,40 @@ export default function FilesManagerPage() {
               מסמכים - {selectedClient.company_name_hebrew || selectedClient.company_name}
             </CardTitle>
             <CardDescription className="rtl:text-right">
-              קבצים מאורגנים לפי 7 קטגוריות
+              קבצים מאורגנים לפי {categories.length} קטגוריות
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={categories[0].key} className="w-full" dir="rtl">
-              <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 w-full rtl:space-x-reverse">
-                {categories.map((category) => (
-                  <TabsTrigger
-                    key={category.key}
-                    value={category.key}
-                    className="rtl:text-right text-xs md:text-sm"
-                  >
-                    {category.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <div className="flex gap-6" dir="rtl">
+              {/* Sidebar - קטגוריות מימין */}
+              <div className="w-64 flex-shrink-0">
+                <nav className="space-y-1 sticky top-4">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.key}
+                      onClick={() => setSelectedCategory(cat.key as FileCategory)}
+                      className={cn(
+                        "w-full text-right px-4 py-3 rounded-lg transition-colors flex items-center gap-2",
+                        selectedCategory === cat.key
+                          ? "bg-primary text-white font-medium"
+                          : "hover:bg-gray-100 text-gray-700"
+                      )}
+                    >
+                      <FileText className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{cat.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
 
-              {categories.map((category) => (
-                <TabsContent key={category.key} value={category.key} className="mt-6">
-                  <FileCategorySection
-                    clientId={selectedClient.id}
-                    category={category.key as FileCategory}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
+              {/* Content - קבצים משמאל */}
+              <div className="flex-1 min-w-0">
+                <FileCategorySection
+                  clientId={selectedClient.id}
+                  category={selectedCategory}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -90,10 +101,10 @@ export default function FilesManagerPage() {
           <CardContent className="py-16">
             <div className="text-center">
               <FolderOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 rtl:text-right mb-2">
+              <h3 className="text-lg font-medium text-gray-700 mb-2">
                 בחר לקוח להתחלה
               </h3>
-              <p className="text-gray-500 rtl:text-right">
+              <p className="text-gray-500">
                 בחר לקוח מהרשימה למעלה כדי לצפות ולנהל את המסמכים שלו
               </p>
             </div>
