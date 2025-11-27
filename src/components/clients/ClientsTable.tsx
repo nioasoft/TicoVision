@@ -27,6 +27,7 @@ interface ClientsTableProps {
   clients: Client[];
   selectedClients: string[];
   loading: boolean;
+  isAdmin?: boolean;
   onSelectAll: () => void;
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
@@ -37,6 +38,7 @@ interface ClientsTableProps {
 interface ClientRowProps {
   client: Client;
   isSelected: boolean;
+  isAdmin?: boolean;
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
@@ -45,7 +47,7 @@ interface ClientRowProps {
 
 // Memoized row component to prevent unnecessary re-renders
 const ClientRow = React.memo<ClientRowProps>(
-  ({ client, isSelected, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
+  ({ client, isSelected, isAdmin, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
     const getStatusBadge = (status: string) => {
       const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
         active: 'default',
@@ -155,15 +157,17 @@ const ClientRow = React.memo<ClientRowProps>(
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onEdit(client)}>
                 <Edit className="ml-2 h-4 w-4" />
-                ערוך
+                {isAdmin ? 'ערוך' : 'צפה'}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-red-600"
-                onClick={() => onDelete(client)}
-              >
-                <Trash2 className="ml-2 h-4 w-4" />
-                מחק
-              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => onDelete(client)}
+                >
+                  <Trash2 className="ml-2 h-4 w-4" />
+                  מחק
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </TableCell>
@@ -178,6 +182,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   clients,
   selectedClients,
   loading,
+  isAdmin,
   onSelectAll,
   onToggleSelect,
   onEdit,
@@ -224,6 +229,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
                 key={client.id}
                 client={client}
                 isSelected={selectedClients.includes(client.id)}
+                isAdmin={isAdmin}
                 onToggleSelect={onToggleSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}

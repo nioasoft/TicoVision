@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useClients } from '@/hooks/useClients';
+import { useAuth } from '@/contexts/AuthContext';
 import { ClientFilters } from '@/components/clients/ClientFilters';
 import { BulkActionsBar } from '@/components/clients/BulkActionsBar';
 import { ClientsTable } from '@/components/clients/ClientsTable';
@@ -19,6 +20,9 @@ import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 import type { Client } from '@/services';
 
 export default function ClientsPage() {
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
+
   const {
     // State
     clients,
@@ -131,10 +135,12 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">ניהול לקוחות</h1>
-        <Button onClick={handleOpenAddDialog}>
-          <Plus className="ml-2 h-4 w-4" />
-          הוסף לקוח חדש
-        </Button>
+        {isAdmin && (
+          <Button onClick={handleOpenAddDialog}>
+            <Plus className="ml-2 h-4 w-4" />
+            הוסף לקוח חדש
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -146,19 +152,22 @@ export default function ClientsPage() {
         onReset={resetFilters}
       />
 
-      {/* Bulk Actions */}
-      <BulkActionsBar
-        selectedCount={selectedClients.length}
-        onActivate={handleBulkActivate}
-        onDeactivate={handleBulkDeactivate}
-        onClearSelection={clearSelection}
-      />
+      {/* Bulk Actions - Admin only */}
+      {isAdmin && (
+        <BulkActionsBar
+          selectedCount={selectedClients.length}
+          onActivate={handleBulkActivate}
+          onDeactivate={handleBulkDeactivate}
+          onClearSelection={clearSelection}
+        />
+      )}
 
       {/* Clients Table */}
       <ClientsTable
         clients={clients}
         selectedClients={selectedClients}
         loading={loading}
+        isAdmin={isAdmin}
         onSelectAll={toggleSelectAll}
         onToggleSelect={toggleClientSelection}
         onEdit={handleOpenEditDialog}

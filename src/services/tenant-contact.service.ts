@@ -383,7 +383,7 @@ export class TenantContactService {
     try {
       const contacts = await this.getClientContacts(clientId);
 
-      return contacts
+      const emails = contacts
         .filter(contact => {
           // Must have email
           if (!contact.email) return false;
@@ -400,6 +400,22 @@ export class TenantContactService {
           return contact.email_preference === 'all';
         })
         .map(contact => contact.email!);
+
+      // FALLBACK: If no contacts found in the new system, get email from client directly
+      if (emails.length === 0) {
+        const { data: client, error } = await supabase
+          .from('clients')
+          .select('contact_email')
+          .eq('id', clientId)
+          .single();
+
+        if (!error && client?.contact_email) {
+          console.log('📧 Using fallback email from client.contact_email:', client.contact_email);
+          return [client.contact_email];
+        }
+      }
+
+      return emails;
     } catch (error) {
       console.error('Error getting client emails:', error);
       return [];
