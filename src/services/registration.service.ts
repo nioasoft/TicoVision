@@ -10,7 +10,7 @@ export interface RegistrationData {
   requested_role: UserRole;
   tax_id?: string;
   message?: string;
-  // NOTE: No password field - users set password via email link after approval
+  password: string; // User's password - hashed server-side during registration
 }
 
 export interface PendingRegistration extends RegistrationData {
@@ -41,27 +41,25 @@ export interface UserClientAssignment {
 class RegistrationService {
   /**
    * Submit a new registration request
+   * Password is hashed server-side via RPC for security
    */
   async submitRegistration(data: RegistrationData) {
     try {
-      // No password hashing - users will set password via email link after approval
-      const { data: registration, error } = await supabase
-        .from('pending_registrations')
-        .insert({
-          email: data.email,
-          full_name: data.full_name,
-          phone: data.phone,
-          company_name: data.company_name,
-          requested_role: data.requested_role,
-          tax_id: data.tax_id,
-          message: data.message
-          // password_hash removed for security - see migration 031
-        })
-        .select()
-        .single();
+      // Use RPC function to hash password server-side
+      const { data: registrationId, error } = await supabase
+        .rpc('submit_registration', {
+          p_email: data.email,
+          p_password: data.password,
+          p_full_name: data.full_name,
+          p_phone: data.phone || null,
+          p_company_name: data.company_name || null,
+          p_requested_role: data.requested_role,
+          p_tax_id: data.tax_id || null,
+          p_message: data.message || null
+        });
 
       if (error) throw error;
-      return { data: registration, error: null };
+      return { data: { id: registrationId }, error: null };
     } catch (error) {
       logger.error('Error submitting registration:', error);
       return { data: null, error };
@@ -174,45 +172,67 @@ class RegistrationService {
 
       if (!tenantUser) throw new Error('Tenant not found');
 
-      // Generate a secure random temporary password (will be reset immediately via email)
-      const tempPassword = crypto.randomUUID() + Math.random().toString(36);
-
-      // Create auth user with temporary password
-      // Using v2 function to bypass PostgREST cache issue
-      // Use provided role OR fall back to requested_role from registration
       const roleToAssign = role || registration.requested_role;
+      let authData;
 
-      const { data: authData, error: authError } = await supabase
-        .rpc('create_user_with_role_v2', {
-          p_email: registration.email,
-          p_password: tempPassword, // Temporary password - user will reset via email
-          p_full_name: registration.full_name,
-          p_phone: registration.phone || null,
-          p_role: roleToAssign,
-          p_permissions: {}
-        })
-        .single();
+      // Check if user provided password during registration
+      if (registration.password_hash) {
+        // NEW FLOW: Use stored password hash - user can log in immediately
+        const { data, error: authError } = await supabase
+          .rpc('create_user_with_role_v3', {
+            p_email: registration.email,
+            p_password_hash: registration.password_hash,
+            p_full_name: registration.full_name,
+            p_phone: registration.phone || null,
+            p_role: roleToAssign,
+            p_permissions: {}
+          })
+          .single();
 
-      if (authError) throw authError;
-      if (!authData) throw new Error('Failed to create user');
+        if (authError) throw authError;
+        if (!data) throw new Error('Failed to create user');
+        authData = data;
 
-      // CRITICAL: Immediately send password reset email (secure invitation flow)
-      // This ensures user sets their own password via secure token
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        registration.email,
-        {
-          redirectTo: `${window.location.origin}/set-password`
+        // Send simple confirmation email (no password reset needed)
+        await this.sendApprovalConfirmationEmail(registration.email, registration.full_name);
+
+        // Clear password hash after user creation for security
+        await supabase
+          .from('pending_registrations')
+          .update({ password_hash: null })
+          .eq('id', registrationId);
+
+      } else {
+        // LEGACY FLOW: No password stored - use temp password + reset email
+        const tempPassword = crypto.randomUUID() + Math.random().toString(36);
+
+        const { data, error: authError } = await supabase
+          .rpc('create_user_with_role_v2', {
+            p_email: registration.email,
+            p_password: tempPassword,
+            p_full_name: registration.full_name,
+            p_phone: registration.phone || null,
+            p_role: roleToAssign,
+            p_permissions: {}
+          })
+          .single();
+
+        if (authError) throw authError;
+        if (!data) throw new Error('Failed to create user');
+        authData = data;
+
+        // Send password reset email
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          registration.email,
+          { redirectTo: `${window.location.origin}/set-password` }
+        );
+
+        if (resetError) {
+          logger.error('Failed to send password reset email:', resetError);
         }
-      );
-
-      if (resetError) {
-        logger.error('Failed to send password reset email:', resetError);
-        // Don't fail the approval - user was created successfully
-        // Admin can manually resend password reset if needed
       }
 
       // If client role and tax_id provided, find and assign client
-      // Use roleToAssign (not requested_role) in case admin changed the role
       if (roleToAssign === 'client' && registration.tax_id) {
         const { data: client } = await supabase
           .from('clients')
@@ -233,7 +253,7 @@ class RegistrationService {
           client_id: clientId,
           tenant_id: tenantUser.tenant_id,
           assigned_by: currentUser.id,
-          is_primary: index === 0 // First client is primary
+          is_primary: index === 0
         }));
 
         const { error: assignmentError } = await supabase
@@ -259,6 +279,55 @@ class RegistrationService {
     } catch (error) {
       logger.error('Error approving registration:', error);
       return { data: null, error };
+    }
+  }
+
+  /**
+   * Send approval confirmation email (no password reset link)
+   * Called when user already set their password during registration
+   */
+  private async sendApprovalConfirmationEmail(email: string, fullName: string): Promise<void> {
+    try {
+      const loginUrl = `${window.location.origin}/login`;
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-letter`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session?.access_token}`
+          },
+          body: JSON.stringify({
+            recipientEmails: [email],
+            recipientName: fullName,
+            subject: 'ההרשמה שלך אושרה - TicoVision',
+            customText: `שלום ${fullName},
+
+בקשת ההרשמה שלך אושרה בהצלחה!
+
+כעת ניתן להתחבר למערכת עם הסיסמה שבחרת בעת ההרשמה.
+
+לחץ כאן לכניסה: ${loginUrl}
+
+בברכה,
+צוות TicoVision`,
+            isHtml: false,
+            includesPayment: false
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('Failed to send approval email:', errorData);
+      } else {
+        logger.info('Approval confirmation email sent to:', email);
+      }
+    } catch (error) {
+      // Don't throw - email failure shouldn't block approval
+      logger.error('Failed to send approval confirmation email:', error);
     }
   }
 
@@ -383,38 +452,23 @@ class RegistrationService {
 
   /**
    * Check if email is already registered or pending
+   * Uses secure RPC function that doesn't expose table data
    */
   async checkEmailAvailability(email: string) {
     try {
-      // Check in pending registrations (all statuses due to unique constraint)
-      // Note: Cannot check auth.users directly from client-side
-      // Auth check will happen server-side during approval
-      const { data: existing, error } = await supabase
-        .from('pending_registrations')
-        .select('id, status')
-        .eq('email', email)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid errors
+      // Use RPC function for secure email check (doesn't expose password_hash)
+      const { data, error } = await supabase
+        .rpc('check_email_availability', { p_email: email });
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 = no rows returned (which is OK)
+      if (error) {
         logger.error('Error checking email:', error);
-        return { available: true }; // Allow registration on error
+        return { available: true }; // Allow registration on error, server will validate
       }
 
-      if (existing) {
-        if (existing.status === 'pending') {
-          return { available: false, reason: 'pending_registration' };
-        } else if (existing.status === 'approved') {
-          return { available: false, reason: 'already_registered' };
-        } else {
-          // status === 'rejected' - allow re-registration
-          return { available: true };
-        }
-      }
-
-      // If no existing registration found, allow it
-      // Duplicate email check will happen during approval
-      return { available: true };
+      return {
+        available: data?.available ?? true,
+        reason: data?.reason || undefined
+      };
     } catch (error) {
       // On any error, allow registration (server will validate)
       logger.error('Error in checkEmailAvailability:', error);
