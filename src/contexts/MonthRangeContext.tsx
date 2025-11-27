@@ -6,6 +6,9 @@
  * - Tab 5: Salary Report
  *
  * All tabs share the same month range (14-month rolling window)
+ *
+ * NOTE: This context now works with branches instead of clients.
+ * Each branch has its own month range and data.
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
@@ -31,16 +34,20 @@ interface MonthRangeContextState {
   isLoading: boolean;
   /** Error message */
   error: string | null;
-  /** Currently selected client ID */
+  /** Currently selected branch ID */
+  branchId: string | null;
+  /** Currently selected client ID (for reference) */
   clientId: string | null;
   /** Pending deletion (waiting for confirmation) */
   pendingDeletion: PendingDeletion | null;
 }
 
 interface MonthRangeContextActions {
-  /** Set the active client ID */
+  /** Set the active branch and client IDs */
+  setBranchId: (branchId: string | null, clientId: string | null) => void;
+  /** @deprecated Use setBranchId instead */
   setClientId: (clientId: string | null) => void;
-  /** Load or refresh month range for current client */
+  /** Load or refresh month range for current branch */
   loadMonthRange: () => Promise<void>;
   /** Initialize range with default 12 months from a start date */
   initializeRange: (startDate: Date) => Promise<void>;
@@ -68,21 +75,34 @@ const MonthRangeContext = createContext<MonthRangeContextValue | undefined>(unde
 
 interface MonthRangeProviderProps {
   children: React.ReactNode;
+  initialBranchId?: string;
   initialClientId?: string;
 }
 
-export function MonthRangeProvider({ children, initialClientId }: MonthRangeProviderProps) {
+export function MonthRangeProvider({ children, initialBranchId, initialClientId }: MonthRangeProviderProps) {
   const { toast } = useToast();
 
   // State
+  const [branchId, setBranchIdState] = useState<string | null>(initialBranchId || null);
   const [clientId, setClientIdState] = useState<string | null>(initialClientId || null);
   const [range, setRange] = useState<MonthRange | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
 
-  // Set client ID
+  // Set branch ID (and client ID)
+  const setBranchId = useCallback((newBranchId: string | null, newClientId: string | null) => {
+    setBranchIdState(newBranchId);
+    setClientIdState(newClientId);
+    // Reset state when branch changes
+    setRange(null);
+    setError(null);
+    setPendingDeletion(null);
+  }, []);
+
+  // Deprecated: Set client ID only (backward compatibility)
   const setClientId = useCallback((id: string | null) => {
+    console.warn('setClientId is deprecated, use setBranchId instead');
     setClientIdState(id);
     // Reset state when client changes
     setRange(null);
@@ -90,9 +110,9 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     setPendingDeletion(null);
   }, []);
 
-  // Load month range for current client
+  // Load month range for current branch
   const loadMonthRange = useCallback(async () => {
-    if (!clientId) {
+    if (!branchId) {
       setRange(null);
       return;
     }
@@ -101,7 +121,7 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     setError(null);
 
     try {
-      const { data, error: loadError } = await monthlyDataService.getClientMonthRange(clientId);
+      const { data, error: loadError } = await monthlyDataService.getBranchMonthRange(branchId);
 
       if (loadError) {
         setError(loadError.message);
@@ -120,12 +140,12 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     } finally {
       setIsLoading(false);
     }
-  }, [clientId, toast]);
+  }, [branchId, toast]);
 
   // Initialize range with default months
   const initializeRange = useCallback(async (startDate: Date) => {
-    if (!clientId) {
-      setError('לא נבחר לקוח');
+    if (!branchId || !clientId) {
+      setError('לא נבחר סניף');
       return;
     }
 
@@ -137,7 +157,8 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + DEFAULT_INITIAL_MONTHS - 1);
 
-      const { data, error: saveError } = await monthlyDataService.setClientMonthRange(
+      const { data, error: saveError } = await monthlyDataService.setBranchMonthRange(
+        branchId,
         clientId,
         startDate,
         endDate
@@ -164,12 +185,12 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     } finally {
       setIsLoading(false);
     }
-  }, [clientId, toast]);
+  }, [branchId, clientId, toast]);
 
   // Extend range by adding months
   const extendRange = useCallback(async (direction: 'past' | 'future', monthCount: number) => {
-    if (!clientId || !range) {
-      setError('לא נבחר לקוח או לא קיים טווח חודשים');
+    if (!branchId || !clientId || !range) {
+      setError('לא נבחר סניף או לא קיים טווח חודשים');
       return;
     }
 
@@ -220,12 +241,8 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
         }
 
         // Get deletion preview
-        const beforeDate = direction === 'future'
-          ? newStartMonth  // Delete everything before new start
-          : new Date(monthsToDelete[0].getTime() + 1); // Delete everything in the delete list
-
-        const { data: preview, error: previewError } = await monthlyDataService.getDeletionPreview(
-          clientId,
+        const { data: preview, error: previewError } = await monthlyDataService.getBranchDeletionPreview(
+          branchId,
           direction === 'future' ? newStartMonth : new Date(range.endMonth.getFullYear(), range.endMonth.getMonth() - monthsToTrim + 2, 1)
         );
 
@@ -249,7 +266,8 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
       }
 
       // No data to delete or within limits - save directly
-      const { data, error: saveError } = await monthlyDataService.setClientMonthRange(
+      const { data, error: saveError } = await monthlyDataService.setBranchMonthRange(
+        branchId,
         clientId,
         newStartMonth,
         newEndMonth
@@ -278,11 +296,11 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     } finally {
       setIsLoading(false);
     }
-  }, [clientId, range, toast]);
+  }, [branchId, clientId, range, toast]);
 
   // Confirm pending deletion
   const confirmDeletion = useCallback(async () => {
-    if (!clientId || !pendingDeletion) {
+    if (!branchId || !clientId || !pendingDeletion) {
       return;
     }
 
@@ -291,8 +309,8 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
 
     try {
       // Delete old data
-      const { error: deleteError } = await monthlyDataService.cleanupClientData(
-        clientId,
+      const { error: deleteError } = await monthlyDataService.cleanupBranchData(
+        branchId,
         pendingDeletion.newStartMonth
       );
 
@@ -307,7 +325,8 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
       }
 
       // Update month range
-      const { data, error: saveError } = await monthlyDataService.setClientMonthRange(
+      const { data, error: saveError } = await monthlyDataService.setBranchMonthRange(
+        branchId,
         clientId,
         pendingDeletion.newStartMonth,
         pendingDeletion.newEndMonth
@@ -336,7 +355,7 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     } finally {
       setIsLoading(false);
     }
-  }, [clientId, pendingDeletion, toast]);
+  }, [branchId, clientId, pendingDeletion, toast]);
 
   // Cancel pending deletion
   const cancelDeletion = useCallback(() => {
@@ -345,6 +364,7 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
 
   // Reset context
   const reset = useCallback(() => {
+    setBranchIdState(null);
     setClientIdState(null);
     setRange(null);
     setError(null);
@@ -358,14 +378,14 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     loadMonthRangeRef.current = loadMonthRange;
   }, [loadMonthRange]);
 
-  // Auto-load when client changes
-  // NOTE: We only depend on clientId, not loadMonthRange
+  // Auto-load when branch changes
+  // NOTE: We only depend on branchId, not loadMonthRange
   // The ref ensures we always call the latest version of loadMonthRange
   useEffect(() => {
-    if (clientId) {
+    if (branchId) {
       loadMonthRangeRef.current();
     }
-  }, [clientId]);
+  }, [branchId]);
 
   // Context value
   const value: MonthRangeContextValue = {
@@ -373,9 +393,11 @@ export function MonthRangeProvider({ children, initialClientId }: MonthRangeProv
     range,
     isLoading,
     error,
+    branchId,
     clientId,
     pendingDeletion,
     // Actions
+    setBranchId,
     setClientId,
     loadMonthRange,
     initializeRange,

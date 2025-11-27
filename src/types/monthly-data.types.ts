@@ -18,6 +18,7 @@ export interface ClientMonthRange {
   id: string;
   tenant_id: string;
   client_id: string;
+  branch_id: string;
   start_month: string; // ISO date string (YYYY-MM-DD)
   end_month: string;   // ISO date string (YYYY-MM-DD)
   created_at: string;
@@ -30,6 +31,7 @@ export interface ClientMonthlyReport {
   id: string;
   tenant_id: string;
   client_id: string;
+  branch_id: string;
   report_type: ClientReportType;
   month_date: string;           // ISO date string (YYYY-MM-DD, first day of month)
   turnover_amount?: number;     // For accountant_turnover type (ILS)
@@ -45,6 +47,7 @@ export interface ForeignWorkerMonthlyData {
   id: string;
   tenant_id: string;
   client_id: string;
+  branch_id: string;
   worker_id: string;
   month_date: string;           // ISO date string (YYYY-MM-DD, first day of month)
   salary: number;               // Base salary in ILS
@@ -148,7 +151,10 @@ export interface MonthRangeContextState {
   /** Error message */
   error: string | null;
 
-  /** Currently selected client ID */
+  /** Currently selected branch ID */
+  branchId: string | null;
+
+  /** Currently selected client ID (for reference) */
   clientId: string | null;
 
   /** Pending deletion (waiting for confirmation) */
@@ -160,11 +166,11 @@ export interface MonthRangeContextState {
 
 /** Actions for MonthRangeContext */
 export interface MonthRangeContextActions {
-  /** Load or refresh month range for a client */
-  loadMonthRange: (clientId: string) => Promise<void>;
+  /** Load or refresh month range for a branch */
+  loadMonthRange: (branchId: string, clientId: string) => Promise<void>;
 
   /** Initialize range with default 12 months from a start date */
-  initializeRange: (clientId: string, startDate: Date) => Promise<void>;
+  initializeRange: (branchId: string, clientId: string, startDate: Date) => Promise<void>;
 
   /** Extend range by adding months (handles 14-month limit) */
   extendRange: (direction: 'past' | 'future', monthCount: number) => Promise<void>;

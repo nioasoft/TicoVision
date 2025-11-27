@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Combobox } from '@/components/ui/combobox';
 import { RotateCcw, Loader2, CheckCircle2, UserPlus, Save, RefreshCw } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 import type { SalaryReportVariables, WorkerData } from '@/types/foreign-workers.types';
 import { ForeignWorkerService } from '@/services/foreign-worker.service';
@@ -19,6 +19,11 @@ interface SalaryReportTabProps {
   onChange: (data: Partial<SalaryReportVariables>) => void;
   disabled?: boolean;
   clientId: string | null;
+  branchId: string | null;
+}
+
+export interface SalaryReportTabRef {
+  save: () => Promise<boolean>;
 }
 
 // Special value for "new worker" option
@@ -27,11 +32,12 @@ const NEW_WORKER_VALUE = '__NEW_WORKER__';
 // Type for salary data keyed by workerId -> monthKey
 type SalaryDataMap = Map<string, Map<string, { salary: number; supplement: number }>>;
 
-export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryReportTabProps) {
+export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabProps>(
+  function SalaryReportTab({ value, onChange, disabled, clientId, branchId }, ref) {
   const { range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
 
-  // Workers list for combobox
-  const [clientWorkers, setClientWorkers] = useState<ForeignWorker[]>([]);
+  // Workers list for combobox (branch-specific)
+  const [branchWorkers, setBranchWorkers] = useState<ForeignWorker[]>([]);
   const [isLoadingWorkers, setIsLoadingWorkers] = useState(false);
 
   // Salary data keyed by workerId -> monthKey -> {salary, supplement}
@@ -49,25 +55,25 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  // Load workers when client changes
+  // Load workers when branch changes
   useEffect(() => {
-    if (clientId) {
-      loadClientWorkers();
+    if (branchId) {
+      loadBranchWorkers();
     } else {
-      setClientWorkers([]);
+      setBranchWorkers([]);
       resetWorkerFields();
     }
-  }, [clientId]);
+  }, [branchId]);
 
   // Load salary data when range changes
   useEffect(() => {
-    if (!clientId || !range) {
+    if (!branchId || !range) {
       setSalaryData(new Map());
       return;
     }
 
     loadSalaryData();
-  }, [clientId, range]);
+  }, [branchId, range]);
 
   // Sync with parent component when salaryData changes
   useEffect(() => {
@@ -77,7 +83,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
     const workersData: WorkerData[] = [];
 
     salaryData.forEach((monthMap, workerId) => {
-      const worker = clientWorkers.find(w => w.id === workerId);
+      const worker = branchWorkers.find(w => w.id === workerId);
       if (!worker) return;
 
       range.months.forEach(date => {
@@ -108,28 +114,28 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
       period_end: periodEnd,
       workers_data: workersData
     });
-  }, [salaryData, range, clientWorkers]);
+  }, [salaryData, range, branchWorkers]);
 
-  const loadClientWorkers = async () => {
-    if (!clientId) return;
+  const loadBranchWorkers = async () => {
+    if (!branchId) return;
 
     setIsLoadingWorkers(true);
     try {
-      const workers = await ForeignWorkerService.getClientWorkers(clientId);
-      setClientWorkers(workers);
+      const workers = await ForeignWorkerService.getBranchWorkers(branchId);
+      setBranchWorkers(workers);
     } catch (error) {
-      console.error('Error loading client workers:', error);
+      console.error('Error loading branch workers:', error);
     } finally {
       setIsLoadingWorkers(false);
     }
   };
 
   const loadSalaryData = useCallback(async () => {
-    if (!clientId) return;
+    if (!branchId) return;
 
     setIsLoading(true);
     try {
-      const { data, error } = await monthlyDataService.getWorkerMonthlyData(clientId);
+      const { data, error } = await monthlyDataService.getBranchWorkerMonthlyData(branchId);
 
       if (error) {
         toast.error('שגיאה בטעינת נתונים');
@@ -159,7 +165,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
     } finally {
       setIsLoading(false);
     }
-  }, [clientId]);
+  }, [branchId]);
 
   const resetWorkerFields = () => {
     setSelectedWorkerId(null);
@@ -180,7 +186,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
       return;
     }
 
-    const worker = clientWorkers.find(w => w.id === workerId);
+    const worker = branchWorkers.find(w => w.id === workerId);
     if (worker) {
       setSelectedWorkerId(worker.id);
       setPassportInput(worker.passport_number);
@@ -192,8 +198,8 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
 
   // Add worker to the salary data
   const handleAddWorker = async () => {
-    if (!clientId || !range) {
-      toast.error('יש לבחור לקוח ולאתחל טווח חודשים');
+    if (!branchId || !clientId || !range) {
+      toast.error('יש לבחור סניף ולאתחל טווח חודשים');
       return;
     }
 
@@ -214,6 +220,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
     // If new worker, save to database first
     if (isNewWorker || !workerId) {
       const result = await ForeignWorkerService.upsertWorker({
+        branch_id: branchId,
         client_id: clientId,
         passport_number: passportInput.trim(),
         full_name: nameInput.trim(),
@@ -229,7 +236,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
         workerId = result.data.id;
         workerName = result.data.full_name;
         workerNationality = result.data.nationality || '';
-        loadClientWorkers(); // Refresh the workers list
+        loadBranchWorkers(); // Refresh the workers list
         toast.success('עובד חדש נשמר בהצלחה');
       }
     }
@@ -275,10 +282,10 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
     handleSalaryChange(workerId, monthKey, 'supplement', 0);
   };
 
-  const handleSave = async () => {
-    if (!clientId || !range) {
-      toast.error('לא נבחר לקוח');
-      return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!branchId || !clientId || !range) {
+      toast.error('לא נבחר סניף');
+      return false;
     }
 
     setIsSaving(true);
@@ -291,7 +298,8 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
           supplement: data.supplement
         }));
 
-        const { error } = await monthlyDataService.bulkUpsertWorkerMonthlyData(
+        const { error } = await monthlyDataService.bulkUpsertBranchWorkerMonthlyData(
+          branchId,
           clientId,
           workerId,
           records
@@ -300,22 +308,32 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
         if (error) {
           toast.error('שגיאה בשמירת נתונים');
           console.error('Error saving salary data:', error);
-          return;
+          return false;
         }
       }
 
       setHasUnsavedChanges(false);
       toast.success('הנתונים נשמרו בהצלחה');
+      return true;
     } catch (error) {
       console.error('Error saving salary data:', error);
       toast.error('שגיאה בשמירת נתונים');
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
+  // Expose save function to parent via ref
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      if (!hasUnsavedChanges) return true; // Nothing to save
+      return await handleSave();
+    }
+  }), [hasUnsavedChanges, branchId, clientId, range, salaryData]);
+
   // If no range exists, show initializer
-  if (!isLoadingRange && !range && clientId) {
+  if (!isLoadingRange && !range && branchId) {
     return (
       <div className="space-y-6" dir="rtl">
         <Card>
@@ -352,7 +370,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                 variant="outline"
                 size="sm"
                 onClick={loadSalaryData}
-                disabled={isLoading || !clientId}
+                disabled={isLoading || !branchId}
               >
                 <RefreshCw className={`h-4 w-4 ml-1 ${isLoading ? 'animate-spin' : ''}`} />
                 רענן
@@ -360,7 +378,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
               <Button
                 size="sm"
                 onClick={handleSave}
-                disabled={isSaving || !hasUnsavedChanges || !clientId}
+                disabled={isSaving || !hasUnsavedChanges || !branchId}
               >
                 {isSaving ? (
                   <Loader2 className="h-4 w-4 ml-1 animate-spin" />
@@ -416,17 +434,17 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                       <Combobox
                         options={[
                           { value: NEW_WORKER_VALUE, label: '➕ הוסף עובד חדש' },
-                          ...clientWorkers.map((worker) => ({
+                          ...branchWorkers.map((worker) => ({
                             value: worker.id,
                             label: `${worker.full_name} - ${worker.passport_number}`,
                           }))
                         ]}
                         value={isNewWorker ? NEW_WORKER_VALUE : selectedWorkerId || undefined}
                         onValueChange={handleWorkerSelect}
-                        placeholder={clientWorkers.length > 0 ? 'בחר עובד מהרשימה...' : 'אין עובדים - הוסף חדש'}
+                        placeholder={branchWorkers.length > 0 ? 'בחר עובד מהרשימה...' : 'אין עובדים - הוסף חדש'}
                         searchPlaceholder="חפש לפי שם או דרכון..."
                         emptyText="לא נמצא עובד"
-                        disabled={disabled || !clientId}
+                        disabled={disabled || !branchId}
                       />
                     )}
                   </div>
@@ -440,7 +458,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                           value={passportInput}
                           onChange={(e) => setPassportInput(e.target.value)}
                           placeholder="הזן מספר דרכון"
-                          disabled={disabled || !clientId}
+                          disabled={disabled || !branchId}
                           className="text-right rtl:text-right"
                           dir="rtl"
                         />
@@ -451,7 +469,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                           value={nameInput}
                           onChange={(e) => setNameInput(e.target.value)}
                           placeholder="שם העובד"
-                          disabled={disabled || !clientId}
+                          disabled={disabled || !branchId}
                           className="text-right rtl:text-right"
                           dir="rtl"
                         />
@@ -462,7 +480,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                           value={nationalityInput}
                           onChange={(e) => setNationalityInput(e.target.value)}
                           placeholder="מדינה"
-                          disabled={disabled || !clientId}
+                          disabled={disabled || !branchId}
                           className="text-right rtl:text-right"
                           dir="rtl"
                         />
@@ -474,7 +492,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                   <div>
                     <Button
                       onClick={handleAddWorker}
-                      disabled={disabled || !clientId || (isNewWorker ? (!passportInput || !nameInput) : !selectedWorkerId)}
+                      disabled={disabled || !branchId || (isNewWorker ? (!passportInput || !nameInput) : !selectedWorkerId)}
                       className="w-full"
                     >
                       הוסף לדוח
@@ -515,7 +533,7 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
                       </thead>
                       <tbody>
                         {Array.from(salaryData.entries()).map(([workerId, monthMap]) => {
-                          const worker = clientWorkers.find(w => w.id === workerId);
+                          const worker = branchWorkers.find(w => w.id === workerId);
                           if (!worker) return null;
 
                           return range.months.map((date, monthIdx) => {
@@ -605,4 +623,4 @@ export function SalaryReportTab({ value, onChange, disabled, clientId }: SalaryR
       </Card>
     </div>
   );
-}
+});

@@ -132,13 +132,13 @@ export class MonthlyDataService extends BaseService {
   }
 
   // ==============================================
-  // MONTH RANGE METHODS
+  // MONTH RANGE METHODS (Branch-based)
   // ==============================================
 
   /**
-   * Get month range for a client
+   * Get month range for a branch
    */
-  async getClientMonthRange(clientId: string): Promise<ServiceResponse<MonthRange | null>> {
+  async getBranchMonthRange(branchId: string): Promise<ServiceResponse<MonthRange | null>> {
     try {
       const tenantId = await this.getTenantId();
 
@@ -146,7 +146,7 @@ export class MonthlyDataService extends BaseService {
         .from('client_month_range')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('client_id', clientId)
+        .eq('branch_id', branchId)
         .maybeSingle();
 
       if (error) {
@@ -175,9 +175,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Set or update month range for a client
+   * Set or update month range for a branch
    */
-  async setClientMonthRange(
+  async setBranchMonthRange(
+    branchId: string,
     clientId: string,
     startMonth: Date,
     endMonth: Date
@@ -191,19 +192,20 @@ export class MonthlyDataService extends BaseService {
         .upsert({
           tenant_id: tenantId,
           client_id: clientId,
+          branch_id: branchId,
           start_month: MonthlyDataService.dateToMonthKey(startMonth),
           end_month: MonthlyDataService.dateToMonthKey(endMonth),
           created_by: user?.id,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'tenant_id,client_id',
+          onConflict: 'tenant_id,branch_id',
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      await this.logAction('set_month_range', clientId, {
+      await this.logAction('set_month_range', branchId, {
         start_month: MonthlyDataService.dateToMonthKey(startMonth),
         end_month: MonthlyDataService.dateToMonthKey(endMonth),
       });
@@ -222,15 +224,57 @@ export class MonthlyDataService extends BaseService {
     }
   }
 
+  /**
+   * @deprecated Use getBranchMonthRange instead
+   */
+  async getClientMonthRange(clientId: string): Promise<ServiceResponse<MonthRange | null>> {
+    // Get default branch and use it
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: null, error: null };
+    }
+
+    return this.getBranchMonthRange(branches[0].id);
+  }
+
+  /**
+   * @deprecated Use setBranchMonthRange instead
+   */
+  async setClientMonthRange(
+    clientId: string,
+    startMonth: Date,
+    endMonth: Date
+  ): Promise<ServiceResponse<MonthRange>> {
+    // Get default branch and use it
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: null, error: new Error('No default branch found for client') };
+    }
+
+    return this.setBranchMonthRange(branches[0].id, clientId, startMonth, endMonth);
+  }
+
   // ==============================================
-  // CLIENT MONTHLY REPORTS (Tab 1 & Tab 2)
+  // BRANCH MONTHLY REPORTS (Tab 1 & Tab 2)
   // ==============================================
 
   /**
-   * Get client monthly reports by type
+   * Get branch monthly reports by type
    */
-  async getClientMonthlyReports(
-    clientId: string,
+  async getBranchMonthlyReports(
+    branchId: string,
     reportType: ClientReportType,
     limit: number = 14
   ): Promise<ServiceResponse<ClientMonthlyReport[]>> {
@@ -241,7 +285,7 @@ export class MonthlyDataService extends BaseService {
         .from('client_monthly_reports')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('client_id', clientId)
+        .eq('branch_id', branchId)
         .eq('report_type', reportType)
         .order('month_date', { ascending: false })
         .limit(limit);
@@ -255,9 +299,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Upsert a single client monthly report
+   * Upsert a single branch monthly report
    */
-  async upsertClientMonthlyReport(
+  async upsertBranchMonthlyReport(
+    branchId: string,
     clientId: string,
     reportType: ClientReportType,
     monthDate: Date,
@@ -272,6 +317,7 @@ export class MonthlyDataService extends BaseService {
         .upsert({
           tenant_id: tenantId,
           client_id: clientId,
+          branch_id: branchId,
           report_type: reportType,
           month_date: MonthlyDataService.dateToMonthKey(monthDate),
           turnover_amount: data.turnoverAmount,
@@ -280,7 +326,7 @@ export class MonthlyDataService extends BaseService {
           created_by: user?.id,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'tenant_id,client_id,report_type,month_date',
+          onConflict: 'tenant_id,branch_id,report_type,month_date',
         })
         .select()
         .single();
@@ -294,9 +340,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Bulk upsert client monthly reports
+   * Bulk upsert branch monthly reports
    */
-  async bulkUpsertClientMonthlyReports(
+  async bulkUpsertBranchMonthlyReports(
+    branchId: string,
     clientId: string,
     reportType: ClientReportType,
     records: BulkClientReportRecord[]
@@ -308,6 +355,7 @@ export class MonthlyDataService extends BaseService {
       const upsertData = records.map(r => ({
         tenant_id: tenantId,
         client_id: clientId,
+        branch_id: branchId,
         report_type: reportType,
         month_date: r.month_date,
         turnover_amount: r.turnover_amount,
@@ -319,13 +367,13 @@ export class MonthlyDataService extends BaseService {
       const { data, error } = await supabase
         .from('client_monthly_reports')
         .upsert(upsertData, {
-          onConflict: 'tenant_id,client_id,report_type,month_date',
+          onConflict: 'tenant_id,branch_id,report_type,month_date',
         })
         .select();
 
       if (error) throw error;
 
-      await this.logAction('bulk_upsert_reports', clientId, {
+      await this.logAction('bulk_upsert_reports', branchId, {
         report_type: reportType,
         count: records.length,
       });
@@ -337,10 +385,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Delete client monthly reports before a date
+   * Delete branch monthly reports before a date
    */
-  async deleteOldClientReports(
-    clientId: string,
+  async deleteOldBranchReports(
+    branchId: string,
     reportType: ClientReportType,
     beforeDate: Date
   ): Promise<ServiceResponse<{ deleted: number }>> {
@@ -351,7 +399,7 @@ export class MonthlyDataService extends BaseService {
         .from('client_monthly_reports')
         .delete()
         .eq('tenant_id', tenantId)
-        .eq('client_id', clientId)
+        .eq('branch_id', branchId)
         .eq('report_type', reportType)
         .lt('month_date', MonthlyDataService.dateToMonthKey(beforeDate))
         .select();
@@ -364,15 +412,97 @@ export class MonthlyDataService extends BaseService {
     }
   }
 
+  // Deprecated client-based methods for backward compatibility
+  /** @deprecated Use getBranchMonthlyReports instead */
+  async getClientMonthlyReports(
+    clientId: string,
+    reportType: ClientReportType,
+    limit: number = 14
+  ): Promise<ServiceResponse<ClientMonthlyReport[]>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: [], error: null };
+    }
+
+    return this.getBranchMonthlyReports(branches[0].id, reportType, limit);
+  }
+
+  /** @deprecated Use upsertBranchMonthlyReport instead */
+  async upsertClientMonthlyReport(
+    clientId: string,
+    reportType: ClientReportType,
+    monthDate: Date,
+    data: { turnoverAmount?: number; employeeCount?: number; notes?: string }
+  ): Promise<ServiceResponse<ClientMonthlyReport>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: null, error: new Error('No default branch found') };
+    }
+
+    return this.upsertBranchMonthlyReport(branches[0].id, clientId, reportType, monthDate, data);
+  }
+
+  /** @deprecated Use bulkUpsertBranchMonthlyReports instead */
+  async bulkUpsertClientMonthlyReports(
+    clientId: string,
+    reportType: ClientReportType,
+    records: BulkClientReportRecord[]
+  ): Promise<ServiceResponse<{ saved: number }>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: null, error: new Error('No default branch found') };
+    }
+
+    return this.bulkUpsertBranchMonthlyReports(branches[0].id, clientId, reportType, records);
+  }
+
+  /** @deprecated Use deleteOldBranchReports instead */
+  async deleteOldClientReports(
+    clientId: string,
+    reportType: ClientReportType,
+    beforeDate: Date
+  ): Promise<ServiceResponse<{ deleted: number }>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: { deleted: 0 }, error: null };
+    }
+
+    return this.deleteOldBranchReports(branches[0].id, reportType, beforeDate);
+  }
+
   // ==============================================
-  // WORKER MONTHLY DATA (Tab 5)
+  // WORKER MONTHLY DATA (Tab 5) - Branch-based
   // ==============================================
 
   /**
-   * Get worker monthly data for a client
+   * Get worker monthly data for a branch
    */
-  async getWorkerMonthlyData(
-    clientId: string,
+  async getBranchWorkerMonthlyData(
+    branchId: string,
     workerId?: string,
     limit: number = 14
   ): Promise<ServiceResponse<WorkerMonthlyDataWithDetails[]>> {
@@ -390,7 +520,7 @@ export class MonthlyDataService extends BaseService {
           )
         `)
         .eq('tenant_id', tenantId)
-        .eq('client_id', clientId)
+        .eq('branch_id', branchId)
         .order('month_date', { ascending: false })
         .limit(limit);
 
@@ -417,9 +547,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Upsert worker monthly data
+   * Upsert worker monthly data for a branch
    */
-  async upsertWorkerMonthlyData(
+  async upsertBranchWorkerMonthlyData(
+    branchId: string,
     clientId: string,
     workerId: string,
     monthDate: Date,
@@ -435,6 +566,7 @@ export class MonthlyDataService extends BaseService {
         .upsert({
           tenant_id: tenantId,
           client_id: clientId,
+          branch_id: branchId,
           worker_id: workerId,
           month_date: MonthlyDataService.dateToMonthKey(monthDate),
           salary,
@@ -442,7 +574,7 @@ export class MonthlyDataService extends BaseService {
           created_by: user?.id,
           updated_at: new Date().toISOString(),
         }, {
-          onConflict: 'tenant_id,client_id,worker_id,month_date',
+          onConflict: 'tenant_id,branch_id,worker_id,month_date',
         })
         .select()
         .single();
@@ -456,9 +588,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Bulk upsert worker monthly data
+   * Bulk upsert worker monthly data for a branch
    */
-  async bulkUpsertWorkerMonthlyData(
+  async bulkUpsertBranchWorkerMonthlyData(
+    branchId: string,
     clientId: string,
     workerId: string,
     records: BulkWorkerDataRecord[]
@@ -470,6 +603,7 @@ export class MonthlyDataService extends BaseService {
       const upsertData = records.map(r => ({
         tenant_id: tenantId,
         client_id: clientId,
+        branch_id: branchId,
         worker_id: workerId,
         month_date: r.month_date,
         salary: r.salary,
@@ -481,13 +615,13 @@ export class MonthlyDataService extends BaseService {
       const { data, error } = await supabase
         .from('foreign_worker_monthly_data')
         .upsert(upsertData, {
-          onConflict: 'tenant_id,client_id,worker_id,month_date',
+          onConflict: 'tenant_id,branch_id,worker_id,month_date',
         })
         .select();
 
       if (error) throw error;
 
-      await this.logAction('bulk_upsert_worker_data', clientId, {
+      await this.logAction('bulk_upsert_worker_data', branchId, {
         worker_id: workerId,
         count: records.length,
       });
@@ -499,10 +633,10 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Delete old worker monthly data
+   * Delete old worker monthly data for a branch
    */
-  async deleteOldWorkerData(
-    clientId: string,
+  async deleteOldBranchWorkerData(
+    branchId: string,
     beforeDate: Date
   ): Promise<ServiceResponse<{ deleted: number }>> {
     try {
@@ -512,7 +646,7 @@ export class MonthlyDataService extends BaseService {
         .from('foreign_worker_monthly_data')
         .delete()
         .eq('tenant_id', tenantId)
-        .eq('client_id', clientId)
+        .eq('branch_id', branchId)
         .lt('month_date', MonthlyDataService.dateToMonthKey(beforeDate))
         .select();
 
@@ -525,20 +659,20 @@ export class MonthlyDataService extends BaseService {
   }
 
   // ==============================================
-  // DELETION PREVIEW & CLEANUP
+  // DELETION PREVIEW & CLEANUP (Branch-based)
   // ==============================================
 
   /**
-   * Get comprehensive deletion preview
+   * Get comprehensive deletion preview for a branch
    */
-  async getDeletionPreview(
-    clientId: string,
+  async getBranchDeletionPreview(
+    branchId: string,
     beforeDate: Date
   ): Promise<ServiceResponse<DeletionPreview>> {
     try {
       const { data, error } = await supabase
-        .rpc('get_comprehensive_deletion_preview', {
-          p_client_id: clientId,
+        .rpc('get_branch_deletion_preview', {
+          p_branch_id: branchId,
           p_before_date: MonthlyDataService.dateToMonthKey(beforeDate),
         });
 
@@ -574,22 +708,22 @@ export class MonthlyDataService extends BaseService {
   }
 
   /**
-   * Delete all old data for a client (both reports and worker data)
+   * Delete all old data for a branch (both reports and worker data)
    */
-  async cleanupClientData(
-    clientId: string,
+  async cleanupBranchData(
+    branchId: string,
     beforeDate: Date
   ): Promise<ServiceResponse<{ deletedReports: number; deletedWorkerData: number }>> {
     try {
       const { data, error } = await supabase
-        .rpc('cleanup_client_monthly_data', {
-          p_client_id: clientId,
+        .rpc('cleanup_branch_monthly_data', {
+          p_branch_id: branchId,
           p_before_date: MonthlyDataService.dateToMonthKey(beforeDate),
         });
 
       if (error) throw error;
 
-      await this.logAction('cleanup_monthly_data', clientId, {
+      await this.logAction('cleanup_monthly_data', branchId, {
         before_date: MonthlyDataService.dateToMonthKey(beforeDate),
         deleted_reports: data?.[0]?.deleted_client_reports || 0,
         deleted_worker_data: data?.[0]?.deleted_worker_data || 0,
@@ -605,6 +739,137 @@ export class MonthlyDataService extends BaseService {
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
+  }
+
+  // ==============================================
+  // DEPRECATED CLIENT-BASED METHODS (Tab 5)
+  // ==============================================
+
+  /** @deprecated Use getBranchWorkerMonthlyData instead */
+  async getWorkerMonthlyData(
+    clientId: string,
+    workerId?: string,
+    limit: number = 14
+  ): Promise<ServiceResponse<WorkerMonthlyDataWithDetails[]>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: [], error: null };
+    }
+
+    return this.getBranchWorkerMonthlyData(branches[0].id, workerId, limit);
+  }
+
+  /** @deprecated Use upsertBranchWorkerMonthlyData instead */
+  async upsertWorkerMonthlyData(
+    clientId: string,
+    workerId: string,
+    monthDate: Date,
+    salary: number,
+    supplement: number
+  ): Promise<ServiceResponse<ForeignWorkerMonthlyData>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: null, error: new Error('No default branch found') };
+    }
+
+    return this.upsertBranchWorkerMonthlyData(branches[0].id, clientId, workerId, monthDate, salary, supplement);
+  }
+
+  /** @deprecated Use bulkUpsertBranchWorkerMonthlyData instead */
+  async bulkUpsertWorkerMonthlyData(
+    clientId: string,
+    workerId: string,
+    records: BulkWorkerDataRecord[]
+  ): Promise<ServiceResponse<{ saved: number }>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: null, error: new Error('No default branch found') };
+    }
+
+    return this.bulkUpsertBranchWorkerMonthlyData(branches[0].id, clientId, workerId, records);
+  }
+
+  /** @deprecated Use deleteOldBranchWorkerData instead */
+  async deleteOldWorkerData(
+    clientId: string,
+    beforeDate: Date
+  ): Promise<ServiceResponse<{ deleted: number }>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: { deleted: 0 }, error: null };
+    }
+
+    return this.deleteOldBranchWorkerData(branches[0].id, beforeDate);
+  }
+
+  /** @deprecated Use getBranchDeletionPreview instead */
+  async getDeletionPreview(
+    clientId: string,
+    beforeDate: Date
+  ): Promise<ServiceResponse<DeletionPreview>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return {
+        data: {
+          beforeDate,
+          clientReports: [],
+          workerData: [],
+          summary: { totalClientReports: 0, totalWorkerRecords: 0 },
+        },
+        error: null,
+      };
+    }
+
+    return this.getBranchDeletionPreview(branches[0].id, beforeDate);
+  }
+
+  /** @deprecated Use cleanupBranchData instead */
+  async cleanupClientData(
+    clientId: string,
+    beforeDate: Date
+  ): Promise<ServiceResponse<{ deletedReports: number; deletedWorkerData: number }>> {
+    const { data: branches } = await supabase
+      .from('client_branches')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('is_default', true)
+      .limit(1);
+
+    if (!branches || branches.length === 0) {
+      return { data: { deletedReports: 0, deletedWorkerData: 0 }, error: null };
+    }
+
+    return this.cleanupBranchData(branches[0].id, beforeDate);
   }
 }
 

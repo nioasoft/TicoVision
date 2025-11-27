@@ -11,6 +11,7 @@ export interface ForeignWorker {
   id: string;
   tenant_id: string;
   client_id: string;
+  branch_id: string;
   passport_number: string;
   full_name: string;
   nationality: string | null;
@@ -27,6 +28,7 @@ export interface ForeignWorker {
 
 export interface CreateForeignWorkerDto {
   client_id: string;
+  branch_id: string;
   passport_number: string;
   full_name: string;
   nationality?: string | null;
@@ -48,6 +50,7 @@ export interface UpdateForeignWorkerDto {
 export interface ForeignWorkerSearchResult {
   id: string;
   client_id: string;
+  branch_id: string;
   passport_number: string;
   full_name: string;
   nationality: string | null;

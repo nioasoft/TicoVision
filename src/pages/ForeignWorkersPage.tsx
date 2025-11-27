@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { FileText, Eye, Download, Loader2 } from 'lucide-react';
 import { SharedDataForm } from '@/components/foreign-workers/SharedDataForm';
 import { LivingBusinessTab } from '@/components/foreign-workers/tabs/LivingBusinessTab';
-import { AccountantTurnoverTab } from '@/components/foreign-workers/tabs/AccountantTurnoverTab';
-import { IsraeliWorkersTab } from '@/components/foreign-workers/tabs/IsraeliWorkersTab';
+import { AccountantTurnoverTab, type AccountantTurnoverTabRef } from '@/components/foreign-workers/tabs/AccountantTurnoverTab';
+import { IsraeliWorkersTab, type IsraeliWorkersTabRef } from '@/components/foreign-workers/tabs/IsraeliWorkersTab';
 import { TurnoverApprovalTab } from '@/components/foreign-workers/tabs/TurnoverApprovalTab';
-import { SalaryReportTab } from '@/components/foreign-workers/tabs/SalaryReportTab';
+import { SalaryReportTab, type SalaryReportTabRef } from '@/components/foreign-workers/tabs/SalaryReportTab';
 import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
 import { MonthDeletionDialog, MonthLimitBadge, MonthRangeInitializer } from '@/components/foreign-workers/shared';
 import { MonthRangeProvider, useMonthRange } from '@/contexts/MonthRangeContext';
@@ -23,12 +23,18 @@ const templateService = new TemplateService();
 // Wrapper component that provides MonthRangeContext
 export function ForeignWorkersPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
   return (
-    <MonthRangeProvider initialClientId={selectedClientId || undefined}>
+    <MonthRangeProvider
+      initialBranchId={selectedBranchId || undefined}
+      initialClientId={selectedClientId || undefined}
+    >
       <ForeignWorkersPageContent
         selectedClientId={selectedClientId}
         setSelectedClientId={setSelectedClientId}
+        selectedBranchId={selectedBranchId}
+        setSelectedBranchId={setSelectedBranchId}
       />
     </MonthRangeProvider>
   );
@@ -38,16 +44,36 @@ export function ForeignWorkersPage() {
 interface ForeignWorkersPageContentProps {
   selectedClientId: string | null;
   setSelectedClientId: (id: string | null) => void;
+  selectedBranchId: string | null;
+  setSelectedBranchId: (id: string | null) => void;
 }
 
-function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: ForeignWorkersPageContentProps) {
-  const { setClientId, range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
+function ForeignWorkersPageContent({
+  selectedClientId,
+  setSelectedClientId,
+  selectedBranchId,
+  setSelectedBranchId,
+}: ForeignWorkersPageContentProps) {
+  const { setBranchId, range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
   const [activeTab, setActiveTab] = useState(0);
 
-  // Sync client ID with MonthRangeContext
+  // Refs for tab components to enable auto-save
+  const accountantTurnoverRef = useRef<AccountantTurnoverTabRef>(null);
+  const israeliWorkersRef = useRef<IsraeliWorkersTabRef>(null);
+  const salaryReportRef = useRef<SalaryReportTabRef>(null);
+
+  // Sync branch ID with MonthRangeContext
   useEffect(() => {
-    setClientId(selectedClientId);
-  }, [selectedClientId, setClientId]);
+    setBranchId(selectedBranchId, selectedClientId);
+  }, [selectedBranchId, selectedClientId, setBranchId]);
+
+  // Handler for combined client and branch selection
+  const handleBranchChange = (branchId: string | null, clientId: string | null, _branchName: string | null, _isDefault: boolean) => {
+    setSelectedBranchId(branchId);
+    if (clientId !== selectedClientId) {
+      setSelectedClientId(clientId);
+    }
+  };
   const [generating, setGenerating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
@@ -113,9 +139,31 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
 
   const canGenerateDocument = isSharedDataComplete && isCurrentTabComplete();
 
+  // Helper function to save current tab data before preview/generate
+  const saveCurrentTabData = async (): Promise<boolean> => {
+    switch (activeTab) {
+      case 0:
+        return (await accountantTurnoverRef.current?.save()) ?? true;
+      case 1:
+        return (await israeliWorkersRef.current?.save()) ?? true;
+      case 4:
+        return (await salaryReportRef.current?.save()) ?? true;
+      default:
+        // Tabs 2, 3 don't have DB data to save
+        return true;
+    }
+  };
+
   const handleGenerateDocument = async () => {
     if (!canGenerateDocument || !selectedClientId) {
       toast.error('נא למלא את כל השדות הנדרשים');
+      return;
+    }
+
+    // Auto-save current tab data before generating
+    const saved = await saveCurrentTabData();
+    if (!saved) {
+      // Error toast already shown by the save function
       return;
     }
 
@@ -209,6 +257,13 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
       return;
     }
 
+    // Auto-save current tab data before preview
+    const saved = await saveCurrentTabData();
+    if (!saved) {
+      // Error toast already shown by the save function
+      return;
+    }
+
     setGenerating(true);
 
     try {
@@ -284,6 +339,8 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
           }
           selectedClientId={selectedClientId}
           onClientSelect={setSelectedClientId}
+          selectedBranchId={selectedBranchId}
+          onBranchChange={handleBranchChange}
         />
       </div>
 
@@ -308,7 +365,7 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
         </TabsList>
 
         {/* Month Range Badge - shown for monthly data tabs (0, 1, 4) */}
-        {isSharedDataComplete && selectedClientId && [0, 1, 4].includes(activeTab) && (
+        {isSharedDataComplete && selectedBranchId && [0, 1, 4].includes(activeTab) && (
           <div className="flex justify-end mt-4">
             {range ? (
               <MonthLimitBadge />
@@ -325,6 +382,7 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
         {/* Tab Content */}
         <TabsContent value="0" className="mt-6">
           <AccountantTurnoverTab
+            ref={accountantTurnoverRef}
             value={formState.documentData.accountantTurnover}
             onChange={(data) =>
               setFormState({
@@ -337,11 +395,13 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
             }
             disabled={!isSharedDataComplete}
             clientId={selectedClientId}
+            branchId={selectedBranchId}
           />
         </TabsContent>
 
         <TabsContent value="1" className="mt-6">
           <IsraeliWorkersTab
+            ref={israeliWorkersRef}
             value={formState.documentData.israeliWorkers}
             onChange={(data) =>
               setFormState({
@@ -354,6 +414,7 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
             }
             disabled={!isSharedDataComplete}
             clientId={selectedClientId}
+            branchId={selectedBranchId}
           />
         </TabsContent>
 
@@ -396,6 +457,7 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
 
         <TabsContent value="4" className="mt-6">
           <SalaryReportTab
+            ref={salaryReportRef}
             value={formState.documentData.salaryReport}
             onChange={(data) =>
               setFormState({
@@ -408,6 +470,7 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
             }
             disabled={!isSharedDataComplete}
             clientId={selectedClientId}
+            branchId={selectedBranchId}
           />
         </TabsContent>
       </Tabs>
@@ -481,6 +544,7 @@ function ForeignWorkersPageContent({ selectedClientId, setSelectedClientId }: Fo
         pdfUrl={generatedPdfUrl || ''}
         pdfName={generatedPdfName}
         clientName={formState.sharedData.company_name || ''}
+        clientId={selectedClientId || undefined}
       />
 
       {/* Month Range Deletion Confirmation Dialog */}

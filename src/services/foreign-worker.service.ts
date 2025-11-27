@@ -2,7 +2,7 @@
  * Foreign Worker Service
  * Manages foreign workers pool with passport-based search
  *
- * Workers belong to ONE client only (not shared like contacts)
+ * Workers belong to ONE branch (and thus client) only
  * Passport number is unique per tenant (cannot exist at different clients)
  */
 
@@ -77,10 +77,11 @@ export class ForeignWorkerService {
           };
         }
 
-        // Same client - update existing record
+        // Same client - update existing record (may be different branch, that's OK)
         const { data, error } = await supabase
           .from('foreign_workers')
           .update({
+            branch_id: dto.branch_id, // Update branch if needed
             full_name: dto.full_name,
             nationality: dto.nationality,
             salary: dto.salary ?? existing.salary,
@@ -111,6 +112,7 @@ export class ForeignWorkerService {
         .insert({
           tenant_id: tenantId,
           client_id: dto.client_id,
+          branch_id: dto.branch_id,
           passport_number: dto.passport_number,
           full_name: dto.full_name,
           nationality: dto.nationality,
@@ -144,7 +146,31 @@ export class ForeignWorkerService {
   }
 
   /**
-   * Get all workers for a specific client
+   * Get all workers for a specific branch
+   */
+  static async getBranchWorkers(branchId: string): Promise<ForeignWorker[]> {
+    try {
+      const { data, error } = await supabase
+        .from('foreign_workers')
+        .select('*')
+        .eq('branch_id', branchId)
+        .order('full_name');
+
+      if (error) {
+        console.error('Error getting branch workers:', error);
+        return [];
+      }
+
+      return data as ForeignWorker[];
+    } catch (error) {
+      console.error('Error in getBranchWorkers:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all workers for a specific client (all branches)
+   * @deprecated Use getBranchWorkers instead
    */
   static async getClientWorkers(clientId: string): Promise<ForeignWorker[]> {
     try {

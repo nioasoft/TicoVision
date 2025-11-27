@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calculator, Loader2, Save, RefreshCw } from 'lucide-react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 import type { IsraeliWorkersVariables, MonthlyWorkers } from '@/types/foreign-workers.types';
 import { useMonthRange } from '@/contexts/MonthRangeContext';
@@ -14,9 +14,15 @@ interface IsraeliWorkersTabProps {
   onChange: (data: Partial<IsraeliWorkersVariables>) => void;
   disabled?: boolean;
   clientId?: string | null;
+  branchId?: string | null;
 }
 
-export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: IsraeliWorkersTabProps) {
+export interface IsraeliWorkersTabRef {
+  save: () => Promise<boolean>;
+}
+
+export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkersTabProps>(
+  function IsraeliWorkersTab({ value, onChange, disabled, clientId, branchId }, ref) {
   const { range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
 
   // Local state for month data keyed by month ISO string
@@ -27,13 +33,13 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
 
   // Load data from database when range changes
   useEffect(() => {
-    if (!clientId || !range) {
+    if (!branchId || !range) {
       setMonthData(new Map());
       return;
     }
 
     loadData();
-  }, [clientId, range]);
+  }, [branchId, range]);
 
   // Calculate average
   const averageWorkers = useMemo(() => {
@@ -60,12 +66,12 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
   }, [monthData, range, averageWorkers]);
 
   const loadData = useCallback(async () => {
-    if (!clientId) return;
+    if (!branchId) return;
 
     setIsLoading(true);
     try {
-      const { data, error } = await monthlyDataService.getClientMonthlyReports(
-        clientId,
+      const { data, error } = await monthlyDataService.getBranchMonthlyReports(
+        branchId,
         'israeli_workers'
       );
 
@@ -89,7 +95,7 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
     } finally {
       setIsLoading(false);
     }
-  }, [clientId]);
+  }, [branchId]);
 
   const handleCountChange = (monthKey: string, count: number) => {
     const newMap = new Map(monthData);
@@ -98,10 +104,10 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
     setHasUnsavedChanges(true);
   };
 
-  const handleSave = async () => {
-    if (!clientId || !range) {
-      toast.error('לא נבחר לקוח');
-      return;
+  const handleSave = async (): Promise<boolean> => {
+    if (!branchId || !clientId || !range) {
+      toast.error('לא נבחר סניף');
+      return false;
     }
 
     setIsSaving(true);
@@ -112,7 +118,8 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
         employee_count: monthData.get(MonthlyDataService.dateToMonthKey(date)) || 0
       }));
 
-      const { error } = await monthlyDataService.bulkUpsertClientMonthlyReports(
+      const { error } = await monthlyDataService.bulkUpsertBranchMonthlyReports(
+        branchId,
         clientId,
         'israeli_workers',
         records
@@ -121,21 +128,31 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
       if (error) {
         toast.error('שגיאה בשמירת נתונים');
         console.error('Error saving workers data:', error);
-        return;
+        return false;
       }
 
       setHasUnsavedChanges(false);
       toast.success('הנתונים נשמרו בהצלחה');
+      return true;
     } catch (error) {
       console.error('Error saving workers data:', error);
       toast.error('שגיאה בשמירת נתונים');
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
+  // Expose save function to parent via ref
+  useImperativeHandle(ref, () => ({
+    save: async () => {
+      if (!hasUnsavedChanges) return true; // Nothing to save
+      return await handleSave();
+    }
+  }), [hasUnsavedChanges, branchId, clientId, range, monthData]);
+
   // If no range exists, show initializer
-  if (!isLoadingRange && !range && clientId) {
+  if (!isLoadingRange && !range && branchId) {
     return (
       <div className="space-y-6" dir="rtl">
         <Card>
@@ -277,4 +294,4 @@ export function IsraeliWorkersTab({ value, onChange, disabled, clientId }: Israe
       </Card>
     </div>
   );
-}
+});

@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { ClientSelector } from '@/components/ClientSelector';
+import { BranchSelector } from './BranchSelector';
 import type { Client } from '@/services/client.service';
 import type { ForeignWorkerSharedData } from '@/types/foreign-workers.types';
 
@@ -11,14 +12,21 @@ interface SharedDataFormProps {
   onChange: (data: Partial<ForeignWorkerSharedData>) => void;
   selectedClientId: string | null;
   onClientSelect: (clientId: string | null) => void;
+  selectedBranchId: string | null;
+  onBranchChange: (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean) => void;
 }
 
 export function SharedDataForm({
   value,
   onChange,
   selectedClientId,
-  onClientSelect
+  onClientSelect,
+  selectedBranchId,
+  onBranchChange,
 }: SharedDataFormProps) {
+  // Store the base company name (without branch) to append branch when needed
+  const [baseCompanyName, setBaseCompanyName] = useState<string | undefined>(value.company_name);
+
   /**
    * Set today's date as default on mount
    */
@@ -38,6 +46,7 @@ export function SharedDataForm({
   const handleClientChange = (client: Client | null) => {
     if (client) {
       onClientSelect(client.id);
+      setBaseCompanyName(client.company_name);
       onChange({
         ...value,
         company_name: client.company_name,
@@ -45,12 +54,38 @@ export function SharedDataForm({
       });
     } else {
       onClientSelect(null);
+      setBaseCompanyName(undefined);
+      // Reset branch when client changes
+      onBranchChange(null, null, null, true);
       onChange({
         ...value,
         company_name: undefined,
         tax_id: undefined
       });
     }
+  };
+
+  /**
+   * Handle branch selection from BranchSelector
+   */
+  const handleBranchChange = (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean) => {
+    // Update the company name to include branch name (only for non-default branches)
+    if (baseCompanyName && branchName && !isDefault) {
+      // Format: "Company Name - Branch Name"
+      onChange({
+        ...value,
+        company_name: `${baseCompanyName} - ${branchName}`
+      });
+    } else if (baseCompanyName) {
+      // Reset to base company name for default branch
+      onChange({
+        ...value,
+        company_name: baseCompanyName
+      });
+    }
+
+    // Call the parent handler
+    onBranchChange(branchId, clientId, branchName, isDefault);
   };
 
   /**
@@ -72,8 +107,8 @@ export function SharedDataForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Grid 2 columns: Client + Date */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Grid 3 columns: Client + Branch + Date */}
+        <div className="grid grid-cols-3 gap-4">
           {/* Client Selector - filters by assignment for bookkeepers */}
           <div className="space-y-2">
             <Label htmlFor="client-select" className="text-right block">
@@ -85,6 +120,20 @@ export function SharedDataForm({
               label=""
               placeholder="בחר לקוח מהרשימה..."
               filterByAssignment={true}
+            />
+          </div>
+
+          {/* Branch Selector - shown only when client is selected */}
+          <div className="space-y-2">
+            <Label htmlFor="branch-select" className="text-right block">
+              סניף
+            </Label>
+            <BranchSelector
+              clientId={selectedClientId}
+              value={selectedBranchId}
+              onChange={handleBranchChange}
+              placeholder="בחר סניף..."
+              disabled={!selectedClientId}
             />
           </div>
 
