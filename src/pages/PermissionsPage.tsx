@@ -37,12 +37,12 @@ import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 import { cn } from '@/lib/utils';
 
-// Role display configuration
-const ROLES: { key: UserRole; label: string; description: string; color: string }[] = [
-  { key: 'admin', label: 'מנהל', description: 'גישה מלאה למערכת', color: 'bg-red-100 text-red-800' },
-  { key: 'accountant', label: 'רואה חשבון', description: 'עובדים זרים בלבד', color: 'bg-blue-100 text-blue-800' },
-  { key: 'bookkeeper', label: 'מנהלת חשבונות', description: 'לקוחות וקבצים', color: 'bg-green-100 text-green-800' },
-  { key: 'client', label: 'לקוח', description: 'צפייה בלבד', color: 'bg-gray-100 text-gray-800' },
+// Role display configuration with stronger colors
+const ROLES: { key: UserRole; label: string; description: string; color: string; cardBorder: string }[] = [
+  { key: 'admin', label: 'מנהל', description: 'גישה מלאה למערכת', color: 'bg-red-500 text-white', cardBorder: 'border-red-400' },
+  { key: 'accountant', label: 'רואה חשבון', description: 'עובדים זרים בלבד', color: 'bg-blue-500 text-white', cardBorder: 'border-blue-400' },
+  { key: 'bookkeeper', label: 'מנהלת חשבונות', description: 'לקוחות וקבצים', color: 'bg-green-500 text-white', cardBorder: 'border-green-400' },
+  { key: 'client', label: 'לקוח', description: 'צפייה בלבד', color: 'bg-gray-500 text-white', cardBorder: 'border-gray-400' },
 ];
 
 // Group permissions by category for display
@@ -153,11 +153,11 @@ export default function PermissionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold flex items-center gap-2 text-gray-900">
+            <Shield className="h-8 w-8 text-blue-600" />
             ניהול הרשאות תפקידים
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-gray-600 mt-1">
             הגדר גישה לתפריטים ודפים לפי תפקיד המשתמש
           </p>
         </div>
@@ -197,22 +197,22 @@ export default function PermissionsPage() {
           const enabledCount = Object.values(matrix[role.key] || {}).filter(Boolean).length;
           const totalCount = ALL_PERMISSIONS.length;
           return (
-            <Card key={role.key}>
+            <Card key={role.key} className={cn('border-2', role.cardBorder)}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center justify-between">
                   {role.label}
                   <Badge className={role.color}>{role.key}</Badge>
                 </CardTitle>
-                <CardDescription>{role.description}</CardDescription>
+                <CardDescription className="text-gray-600">{role.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold text-gray-900">
                   {enabledCount} / {totalCount}
                 </div>
-                <div className="text-sm text-gray-500">הרשאות פעילות</div>
+                <div className="text-sm text-gray-600">הרשאות פעילות</div>
                 {role.key !== 'admin' && (
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     className="mt-2 text-xs"
                     onClick={() => setShowResetDialog(role.key)}
@@ -228,16 +228,16 @@ export default function PermissionsPage() {
       </div>
 
       {/* Permissions Matrix */}
-      <Card>
+      <Card className="border-2 border-gray-200">
         <CardHeader>
-          <CardTitle>מטריצת הרשאות</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl text-gray-900">מטריצת הרשאות</CardTitle>
+          <CardDescription className="text-gray-600">
             סמן או בטל סימון כדי לשנות הרשאות. הרשאות מנהל (admin) אינן ניתנות לשינוי.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 bg-gray-100 p-1">
               <TabsTrigger value="all">הכל</TabsTrigger>
               {PERMISSION_GROUPS.map(group => (
                 <TabsTrigger key={group.key} value={group.key}>
@@ -278,27 +278,27 @@ export default function PermissionsPage() {
       </Card>
 
       {/* Legend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">מקרא</CardTitle>
+      <Card className="border-2 border-gray-200">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base text-gray-700">מקרא</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <Checkbox checked disabled className="data-[state=checked]:bg-primary" />
-              <span>הרשאה פעילה</span>
+              <Checkbox checked disabled className="h-5 w-5 border-2 border-green-500 data-[state=checked]:bg-green-500" />
+              <span className="text-gray-700 font-medium">הרשאה פעילה (ניתן לשינוי)</span>
             </div>
             <div className="flex items-center gap-2">
-              <Checkbox disabled className="opacity-50" />
-              <span>הרשאה לא פעילה</span>
+              <Checkbox disabled className="h-5 w-5 border-2 border-gray-400" />
+              <span className="text-gray-700 font-medium">הרשאה לא פעילה</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded border-2 border-yellow-400 bg-yellow-50" />
-              <span>שינוי ממתין לשמירה</span>
+              <div className="w-5 h-5 rounded border-2 border-yellow-500 bg-yellow-100 ring-2 ring-yellow-400 ring-offset-1" />
+              <span className="text-gray-700 font-medium">שינוי ממתין לשמירה</span>
             </div>
             <div className="flex items-center gap-2">
-              <Checkbox disabled checked className="opacity-30" />
-              <span>לא ניתן לשינוי (admin)</span>
+              <Checkbox disabled checked className="h-5 w-5 border-2 border-gray-400 data-[state=checked]:bg-gray-400" />
+              <span className="text-gray-700 font-medium">נעול (admin / לא בברירת מחדל)</span>
             </div>
           </div>
         </CardContent>
@@ -363,25 +363,25 @@ function PermissionsTable({
   isInDefault,
 }: PermissionsTableProps) {
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border-2 border-gray-300">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="text-right w-[200px]">הרשאה</TableHead>
+          <TableRow className="bg-gray-100">
+            <TableHead className="text-right w-[200px] font-bold text-gray-900 border-b-2 border-gray-300">הרשאה</TableHead>
             {roles.map(role => (
-              <TableHead key={role.key} className="text-center w-[120px]">
-                <Badge className={cn('font-normal', role.color)}>{role.label}</Badge>
+              <TableHead key={role.key} className="text-center w-[130px] border-b-2 border-gray-300">
+                <Badge className={cn('font-medium px-3 py-1', role.color)}>{role.label}</Badge>
               </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {permissions.map(menuKey => {
+          {permissions.map((menuKey, idx) => {
             const perm = ALL_PERMISSIONS.find(p => p.menu === menuKey);
             const isSubmenu = perm?.parent;
             return (
-              <TableRow key={menuKey}>
-                <TableCell className={cn('text-right', isSubmenu && 'pr-8')}>
+              <TableRow key={menuKey} className={cn(idx % 2 === 0 ? 'bg-white' : 'bg-gray-50', 'hover:bg-blue-50')}>
+                <TableCell className={cn('text-right font-medium text-gray-800 border-l border-gray-200', isSubmenu && 'pr-8 text-gray-600')}>
                   {getPermissionLabel(menuKey)}
                 </TableCell>
                 {roles.map(role => {
@@ -391,7 +391,7 @@ function PermissionsTable({
                     isEnabled !== (matrix[role.key]?.[menuKey] ?? false) && role.key !== 'admin';
 
                   return (
-                    <TableCell key={role.key} className="text-center">
+                    <TableCell key={role.key} className="text-center border-l border-gray-200">
                       <div className="flex justify-center">
                         <Checkbox
                           checked={isEnabled}
@@ -402,8 +402,13 @@ function PermissionsTable({
                             }
                           }}
                           className={cn(
+                            'h-5 w-5 border-2',
+                            isEnabled && canEdit && 'border-green-500 data-[state=checked]:bg-green-500',
+                            isEnabled && role.key === 'admin' && 'border-gray-400 data-[state=checked]:bg-gray-400',
+                            !isEnabled && canEdit && 'border-gray-400',
+                            !isEnabled && !canEdit && 'border-gray-300 opacity-40',
                             hasChange && 'ring-2 ring-yellow-400 ring-offset-2',
-                            !canEdit && role.key !== 'admin' && 'opacity-30'
+                            canEdit && 'cursor-pointer hover:border-green-600'
                           )}
                         />
                       </div>
