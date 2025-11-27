@@ -31,13 +31,19 @@ import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 
+interface SubmenuItem {
+  name: string;
+  href: string;
+  allowedRoles?: UserRole[]; // If not specified, inherits from parent
+}
+
 interface NavigationItem {
   name: string;
   href?: string;
   icon: any;
   allowedRoles: UserRole[];
   showBadge?: boolean;
-  submenu?: { name: string; href: string }[];
+  submenu?: SubmenuItem[];
 }
 
 const navigation: NavigationItem[] = [
@@ -48,7 +54,7 @@ const navigation: NavigationItem[] = [
     allowedRoles: ['admin', 'bookkeeper', 'client'] as UserRole[],
     submenu: [
       { name: 'רשימת לקוחות', href: '/clients' },
-      { name: 'ניהול קבוצות', href: '/client-groups' },
+      { name: 'ניהול קבוצות', href: '/client-groups', allowedRoles: ['admin'] as UserRole[] },
     ]
   },
   {
@@ -277,7 +283,9 @@ export function MainLayout() {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="pt-1">
                         <ul className="space-y-1 pr-6">
-                          {item.submenu.map((subItem) => (
+                          {item.submenu
+                            .filter(subItem => !subItem.allowedRoles || (role && subItem.allowedRoles.includes(role)))
+                            .map((subItem) => (
                             <li key={subItem.href}>
                               <NavLink
                                 to={subItem.href}

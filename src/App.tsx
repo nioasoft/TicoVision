@@ -123,8 +123,8 @@ function App() {
                       } />
                     </Route>
 
-                    {/* Client Groups page - NOT accessible to accountant */}
-                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'bookkeeper', 'client']} />}>
+                    {/* Client Groups page - admin only */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
                       <Route path="/client-groups" element={
                         <ErrorBoundary>
                           <ClientGroupsPage />
