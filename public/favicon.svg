@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background: Rounded Square in Professional Blue -->
+  <rect x="5" y="5" width="90" height="90" rx="24" fill="#2563EB" />
+  
+  <!-- Content: Increasing Bar Chart (Growth/Accounting) -->
+  <!-- Bar 1 -->
+  <rect x="25" y="55" width="12" height="20" fill="white" rx="2" />
+  <!-- Bar 2 -->
+  <rect x="44" y="40" width="12" height="35" fill="white" rx="2" />
+  <!-- Bar 3 -->
+  <rect x="63" y="25" width="12" height="50" fill="white" rx="2" />
+  
+  <!-- Optional: Small decorative line/axis at bottom -->
+  <rect x="20" y="80" width="60" height="4" fill="white" rx="2" opacity="0.5" />
+</svg>
