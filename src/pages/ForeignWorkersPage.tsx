@@ -57,21 +57,18 @@ function ForeignWorkersPageContent({
   selectedBranchId,
   setSelectedBranchId,
 }: ForeignWorkersPageContentProps) {
-  const { setBranchId, range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
+  const { setBranchId, range, displayMonths, displayStartIndex, setDisplayStartIndex, isLoading: isLoadingRange, initializeRange, extendRange } = useMonthRange();
   const [activeTab, setActiveTab] = useState(0);
 
-  // Print range selection - when there are more than 12 months
-  const [printStartIndex, setPrintStartIndex] = useState<number>(0);
-
-  // Calculate the print range (12 months starting from printStartIndex)
-  const printRange = range && range.monthCount > 12
+  // For monthly data tabs, use displayMonths directly (always 12 months or less)
+  const printRange = displayMonths
     ? {
-        startMonth: range.months[printStartIndex],
-        endMonth: range.months[printStartIndex + 11],
-        months: range.months.slice(printStartIndex, printStartIndex + 12),
-        monthCount: 12
+        startMonth: displayMonths[0],
+        endMonth: displayMonths[displayMonths.length - 1],
+        months: displayMonths,
+        monthCount: displayMonths.length
       }
-    : range;
+    : null;
 
   // Refs for tab components to enable auto-save
   const accountantTurnoverRef = useRef<AccountantTurnoverTabRef>(null);
@@ -364,33 +361,52 @@ function ForeignWorkersPageContent({
         />
       </div>
 
-      {/* Print Range Selector - shows when more than 12 months */}
-      {range && range.monthCount > 12 && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>יש {range.monthCount} חודשים בטווח</AlertTitle>
-          <AlertDescription>
-            להנפקת הדוח נדרשים 12 חודשים. בחר את טווח ההדפסה:
-          </AlertDescription>
-          <div className="flex gap-3 mt-3 items-center">
-            <span className="text-sm font-medium">מחודש:</span>
-            <Select value={String(printStartIndex)} onValueChange={(v) => setPrintStartIndex(Number(v))}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {range.months.slice(0, range.monthCount - 11).map((month, index) => (
-                  <SelectItem key={index} value={String(index)}>
-                    {MonthlyDataService.dateToHebrew(month)}
+      {/* Display range selector - always show for selecting which 12 months to view */}
+      {range && range.monthCount > 0 && (
+        <div className="flex gap-3 mb-6 items-center justify-end">
+          <span className="text-sm font-medium">תצוגת חודשים החל מ:</span>
+          <Select 
+            value={String(displayStartIndex)} 
+            onValueChange={async (v) => {
+              const val = Number(v);
+              if (val < 0) {
+                // Extend range to the past and set start index to 0 (to view the new months)
+                const monthsToAdd = Math.abs(val);
+                await extendRange('past', monthsToAdd, 0);
+              } else {
+                setDisplayStartIndex(val);
+              }
+            }}
+          >
+            <SelectTrigger className="w-[220px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {/* Previous 3 months options */}
+              {Array.from({ length: 3 }).map((_, i) => {
+                const monthsBack = 3 - i; // 3, 2, 1
+                const date = new Date(range.startMonth);
+                date.setMonth(date.getMonth() - monthsBack);
+                return (
+                  <SelectItem key={`prev-${monthsBack}`} value={String(-monthsBack)} className="text-muted-foreground italic">
+                    Load {MonthlyDataService.dateToHebrew(date)} (+{monthsBack})
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground">
-              עד: <strong>{MonthlyDataService.dateToHebrew(range.months[printStartIndex + 11])}</strong>
-            </span>
-          </div>
-        </Alert>
+                );
+              })}
+              
+              {/* Existing months options */}
+              {range.months.map((month, index) => (
+                <SelectItem key={index} value={String(index)}>
+                  {MonthlyDataService.dateToHebrew(month)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">
+            עד: <strong>{displayMonths ? MonthlyDataService.dateToHebrew(displayMonths[displayMonths.length - 1]) : '-'}</strong>
+            ({displayMonths ? displayMonths.length : 0} חודשים)
+          </span>
+        </div>
       )}
 
       {/* Document Tabs */}
@@ -431,6 +447,7 @@ function ForeignWorkersPageContent({
         {/* Tab Content */}
         <TabsContent value="0" className="mt-6">
           <AccountantTurnoverTab
+            key={`${selectedClientId}-${selectedBranchId}` || 'no-client-branch'}
             ref={accountantTurnoverRef}
             value={formState.documentData.accountantTurnover}
             onChange={(data) =>
@@ -450,6 +467,7 @@ function ForeignWorkersPageContent({
 
         <TabsContent value="1" className="mt-6">
           <IsraeliWorkersTab
+            key={`${selectedClientId}-${selectedBranchId}` || 'no-client-branch'}
             ref={israeliWorkersRef}
             value={formState.documentData.israeliWorkers}
             onChange={(data) =>
@@ -506,6 +524,7 @@ function ForeignWorkersPageContent({
 
         <TabsContent value="4" className="mt-6">
           <SalaryReportTab
+            key={`${selectedClientId}-${selectedBranchId}` || 'no-client-branch'}
             ref={salaryReportRef}
             value={formState.documentData.salaryReport}
             onChange={(data) =>

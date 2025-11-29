@@ -30,6 +30,10 @@ interface PendingDeletion {
 interface MonthRangeContextState {
   /** Current month range (null if no data exists) */
   range: MonthRange | null;
+  /** Currently displayed months (12 months or less) */
+  displayMonths: Date[] | null;
+  /** Starting index for display months within the full range */
+  displayStartIndex: number;
   /** Loading state */
   isLoading: boolean;
   /** Error message */
@@ -51,12 +55,14 @@ interface MonthRangeContextActions {
   loadMonthRange: () => Promise<void>;
   /** Initialize range with default 12 months from a start date */
   initializeRange: (startDate: Date) => Promise<void>;
-  /** Extend range by adding months (handles 14-month limit) */
-  extendRange: (direction: 'past' | 'future', monthCount: number) => Promise<void>;
+  /** Extend range by adding months (no limit) */
+  extendRange: (direction: 'past' | 'future', monthCount: number, targetStartIndex?: number) => Promise<void>;
   /** Delete months from the start of the range (oldest months) */
   deleteMonthsFromStart: (count: number) => Promise<void>;
   /** Delete months from the end of the range (newest months) */
   deleteMonthsFromEnd: (count: number) => Promise<void>;
+  /** Set the display start index (for selecting which 12 months to show) */
+  setDisplayStartIndex: (index: number) => void;
   /** Confirm pending deletion */
   confirmDeletion: () => Promise<void>;
   /** Cancel pending deletion */
@@ -90,9 +96,21 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
   const [branchId, setBranchIdState] = useState<string | null>(initialBranchId || null);
   const [clientId, setClientIdState] = useState<string | null>(initialClientId || null);
   const [range, setRange] = useState<MonthRange | null>(null);
+  const [displayMonths, setDisplayMonths] = useState<Date[] | null>(null);
+  const [displayStartIndex, setDisplayStartIndexState] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingDeletion, setPendingDeletion] = useState<PendingDeletion | null>(null);
+
+  // Helper: Calculate display months based on range and start index
+  const calculateDisplayMonths = useCallback((currentRange: MonthRange | null, startIndex: number) => {
+    if (!currentRange || currentRange.monthCount === 0) {
+      return null;
+    }
+
+    const monthsToShow = Math.min(12, currentRange.monthCount - startIndex);
+    return currentRange.months.slice(startIndex, startIndex + monthsToShow);
+  }, []);
 
   // Set branch ID (and client ID)
   const setBranchId = useCallback((newBranchId: string | null, newClientId: string | null) => {
@@ -100,6 +118,8 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     setClientIdState(newClientId);
     // Reset state when branch changes
     setRange(null);
+    setDisplayMonths(null); // Clear displayed months immediately
+    setDisplayStartIndexState(0); // Reset start index
     setError(null);
     setPendingDeletion(null);
   }, []);
@@ -137,7 +157,16 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
         return;
       }
 
+      // Set the full range
       setRange(data);
+
+      // Calculate display months (last 12 months by default)
+      if (data) {
+        const totalMonths = data.monthCount;
+        const startIndex = Math.max(0, totalMonths - 12);
+        setDisplayStartIndexState(startIndex);
+        setDisplayMonths(calculateDisplayMonths(data, startIndex));
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'שגיאה לא ידועה';
       setError(message);
@@ -192,7 +221,7 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
   }, [branchId, clientId, toast]);
 
   // Extend range by adding months
-  const extendRange = useCallback(async (direction: 'past' | 'future', monthCount: number) => {
+  const extendRange = useCallback(async (direction: 'past' | 'future', monthCount: number, targetStartIndex?: number) => {
     if (!branchId || !clientId || !range) {
       setError('לא נבחר סניף או לא קיים טווח חודשים');
       return;
@@ -217,59 +246,7 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
         newEndMonth = new Date(range.endMonth);
       }
 
-      // Check if we exceed max months
-      const totalMonths = MonthlyDataService.getMonthCount(newStartMonth, newEndMonth);
-
-      if (totalMonths > MAX_MONTHS) {
-        // Need to delete old data
-        const monthsToTrim = totalMonths - MAX_MONTHS;
-        let trimDate: Date;
-        const monthsToDelete: Date[] = [];
-
-        if (direction === 'future') {
-          // Trim from the start (oldest months)
-          trimDate = new Date(newStartMonth);
-          for (let i = 0; i < monthsToTrim; i++) {
-            monthsToDelete.push(new Date(trimDate));
-            trimDate.setMonth(trimDate.getMonth() + 1);
-          }
-          newStartMonth = trimDate;
-        } else {
-          // Trim from the end (newest months) - this is unusual but handle it
-          trimDate = new Date(newEndMonth);
-          for (let i = 0; i < monthsToTrim; i++) {
-            monthsToDelete.unshift(new Date(trimDate));
-            trimDate.setMonth(trimDate.getMonth() - 1);
-          }
-          newEndMonth = trimDate;
-        }
-
-        // Get deletion preview
-        const { data: preview, error: previewError } = await monthlyDataService.getBranchDeletionPreview(
-          branchId,
-          direction === 'future' ? newStartMonth : new Date(range.endMonth.getFullYear(), range.endMonth.getMonth() - monthsToTrim + 2, 1)
-        );
-
-        if (previewError) {
-          setError(previewError.message);
-          setIsLoading(false);
-          return;
-        }
-
-        // If there's data to delete, show confirmation
-        if (preview && (preview.summary.totalClientReports > 0 || preview.summary.totalWorkerRecords > 0)) {
-          setPendingDeletion({
-            monthsToDelete,
-            preview,
-            newStartMonth,
-            newEndMonth,
-          });
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // No data to delete or within limits - save directly
+      // Save directly (no limit check - unlimited months allowed in DB)
       const { data, error: saveError } = await monthlyDataService.setBranchMonthRange(
         branchId,
         clientId,
@@ -288,6 +265,19 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
       }
 
       setRange(data);
+
+      // Update display months too
+      if (data) {
+        const totalMonths = data.monthCount;
+        // Use targetStartIndex if provided, otherwise default to showing the last 12 months
+        const startIndex = targetStartIndex !== undefined 
+          ? Math.max(0, Math.min(targetStartIndex, totalMonths - 1))
+          : Math.max(0, totalMonths - 12);
+          
+        setDisplayStartIndexState(startIndex);
+        setDisplayMonths(calculateDisplayMonths(data, startIndex));
+      }
+
       toast({
         title: 'טווח חודשים עודכן',
         description: direction === 'future'
@@ -300,7 +290,7 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     } finally {
       setIsLoading(false);
     }
-  }, [branchId, clientId, range, toast]);
+  }, [branchId, clientId, range, toast, calculateDisplayMonths]);
 
   // Delete months from the start of the range (oldest months)
   const deleteMonthsFromStart = useCallback(async (count: number) => {
@@ -499,10 +489,20 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     }
   }, [branchId]);
 
+  // Helper to set display start index
+  const setDisplayStartIndex = useCallback((index: number) => {
+    setDisplayStartIndexState(index);
+    if (range) {
+      setDisplayMonths(calculateDisplayMonths(range, index));
+    }
+  }, [range, calculateDisplayMonths]);
+
   // Context value
   const value: MonthRangeContextValue = {
     // State
     range,
+    displayMonths,
+    displayStartIndex,
     isLoading,
     error,
     branchId,
@@ -516,6 +516,7 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     extendRange,
     deleteMonthsFromStart,
     deleteMonthsFromEnd,
+    setDisplayStartIndex,
     confirmDeletion,
     cancelDeletion,
     reset,
@@ -545,16 +546,16 @@ export function useMonthRange() {
 // ==============================================
 
 /**
- * Get Hebrew month headers for display
+ * Get Hebrew month headers for display (returns only displayed months, not all months in range)
  */
 export function useMonthHeaders() {
-  const { range } = useMonthRange();
+  const { displayMonths } = useMonthRange();
 
-  if (!range) {
+  if (!displayMonths) {
     return [];
   }
 
-  return range.months.map(date => ({
+  return displayMonths.map(date => ({
     date,
     key: MonthlyDataService.dateToMonthKey(date),
     hebrew: MonthlyDataService.dateToHebrew(date),

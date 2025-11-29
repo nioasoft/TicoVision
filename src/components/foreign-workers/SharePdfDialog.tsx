@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import TenantContactService from '@/services/tenant-contact.service';
 
 interface SharePdfDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface SharePdfDialogProps {
   pdfUrl: string;
   pdfName: string;
   clientName: string;
+  clientId?: string;
 }
 
 export function SharePdfDialog({
@@ -27,14 +30,53 @@ export function SharePdfDialog({
   pdfUrl,
   pdfName,
   clientName,
+  clientId,
 }: SharePdfDialogProps) {
   const [showEmailInput, setShowEmailInput] = useState(false);
-  const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Client emails from contact system
+  const [clientEmails, setClientEmails] = useState<string[]>([]);
+  const [loadingEmails, setLoadingEmails] = useState(false);
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
+
+  // Additional email inputs
+  const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
+  const [showAddEmail, setShowAddEmail] = useState(false);
+
   // Check if Web Share API is available
   const canShare = typeof navigator !== 'undefined' && !!navigator.share;
+
+  // Load client emails when dialog opens
+  useEffect(() => {
+    if (open && clientId) {
+      loadClientEmails();
+    }
+    // Reset state when dialog closes
+    if (!open) {
+      setShowEmailInput(false);
+      setSelectedEmails(new Set());
+      setAdditionalEmails([]);
+      setShowAddEmail(false);
+    }
+  }, [open, clientId]);
+
+  const loadClientEmails = async () => {
+    if (!clientId) return;
+    setLoadingEmails(true);
+    try {
+      const emails = await TenantContactService.getClientEmails(clientId, 'all');
+      setClientEmails(emails);
+      // Pre-select all emails by default
+      setSelectedEmails(new Set(emails));
+    } catch (error) {
+      console.error('Error loading client emails:', error);
+      setClientEmails([]);
+    } finally {
+      setLoadingEmails(false);
+    }
+  };
 
   const handleDownload = async () => {
     try {
@@ -88,8 +130,101 @@ export function SharePdfDialog({
     }
   };
 
+  const toggleEmailSelection = (email: string) => {
+    setSelectedEmails(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(email)) {
+        newSet.delete(email);
+      } else {
+        newSet.add(email);
+      }
+      return newSet;
+    });
+  };
+
+  const addAdditionalEmail = () => {
+    setAdditionalEmails(prev => [...prev, '']);
+    setShowAddEmail(true);
+  };
+
+  const updateAdditionalEmail = (index: number, value: string) => {
+    setAdditionalEmails(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const removeAdditionalEmail = (index: number) => {
+    setAdditionalEmails(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const isValidEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const handleSendEmail = async () => {
-    if (!email || !email.includes('@')) {
+    // Collect all selected and valid additional emails
+    const allEmails = [
+      ...Array.from(selectedEmails),
+      ...additionalEmails.filter(e => e.trim() && isValidEmail(e.trim())),
+    ];
+
+    if (allEmails.length === 0) {
+      toast.error('נא לבחור לפחות כתובת מייל אחת');
+      return;
+    }
+
+    setSending(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      // Send to each email
+      for (const email of allEmails) {
+        try {
+          const { data, error } = await supabase.functions.invoke('send-pdf-email', {
+            body: {
+              to: email,
+              subject: `מסמך עובדים זרים - ${clientName}`,
+              pdfUrl,
+              pdfName,
+            },
+          });
+
+          if (error) throw error;
+          if (!data?.success) throw new Error(data?.error || 'Failed to send email');
+          successCount++;
+        } catch (err) {
+          console.error(`Error sending to ${email}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0 && errorCount === 0) {
+        toast.success(`המייל נשלח בהצלחה ל-${successCount} נמענים!`);
+        setShowEmailInput(false);
+        setSelectedEmails(new Set());
+        setAdditionalEmails([]);
+        setShowAddEmail(false);
+      } else if (successCount > 0 && errorCount > 0) {
+        toast.warning(`נשלח ל-${successCount} נמענים, נכשל עבור ${errorCount}`);
+      } else {
+        toast.error('שגיאה בשליחת המייל');
+      }
+    } catch (error) {
+      console.error('Send email error:', error);
+      toast.error('שגיאה בשליחת המייל');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Legacy single email send (fallback when no clientId)
+  const [legacyEmail, setLegacyEmail] = useState('');
+
+  const handleLegacySendEmail = async () => {
+    if (!legacyEmail || !legacyEmail.includes('@')) {
       toast.error('נא להזין כתובת מייל תקינה');
       return;
     }
@@ -98,7 +233,7 @@ export function SharePdfDialog({
     try {
       const { data, error } = await supabase.functions.invoke('send-pdf-email', {
         body: {
-          to: email,
+          to: legacyEmail,
           subject: `מסמך עובדים זרים - ${clientName}`,
           pdfUrl,
           pdfName,
@@ -110,7 +245,7 @@ export function SharePdfDialog({
 
       toast.success('המייל נשלח בהצלחה!');
       setShowEmailInput(false);
-      setEmail('');
+      setLegacyEmail('');
     } catch (error) {
       console.error('Send email error:', error);
       toast.error('שגיאה בשליחת המייל');
@@ -121,9 +256,14 @@ export function SharePdfDialog({
 
   const handleClose = () => {
     setShowEmailInput(false);
-    setEmail('');
+    setLegacyEmail('');
+    setSelectedEmails(new Set());
+    setAdditionalEmails([]);
+    setShowAddEmail(false);
     onClose();
   };
+
+  const totalSelectedCount = selectedEmails.size + additionalEmails.filter(e => e.trim() && isValidEmail(e.trim())).length;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -186,7 +326,108 @@ export function SharePdfDialog({
               </Button>
             )}
           </div>
+        ) : clientId && clientEmails.length > 0 ? (
+          // New UI with email selection from client contacts
+          <div className="space-y-4 mt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowEmailInput(false)}
+              className="mb-2"
+            >
+              <ArrowRight className="ml-1 h-4 w-4" />
+              חזור
+            </Button>
+
+            {loadingEmails ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="mr-2">טוען כתובות מייל...</span>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-right block font-medium">בחר נמענים:</Label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                    {clientEmails.map((email) => (
+                      <div key={email} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`email-${email}`}
+                          checked={selectedEmails.has(email)}
+                          onCheckedChange={() => toggleEmailSelection(email)}
+                        />
+                        <label
+                          htmlFor={`email-${email}`}
+                          className="text-sm cursor-pointer flex-1 text-left"
+                          dir="ltr"
+                        >
+                          {email}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Additional emails section */}
+                <div className="space-y-2 border-t pt-3">
+                  {additionalEmails.map((email, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="example@email.com"
+                        value={email}
+                        onChange={(e) => updateAdditionalEmail(index, e.target.value)}
+                        dir="ltr"
+                        className="text-left flex-1"
+                        disabled={sending}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeAdditionalEmail(index)}
+                        disabled={sending}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addAdditionalEmail}
+                    className="w-full"
+                    disabled={sending}
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    הוסף כתובת נוספת
+                  </Button>
+                </div>
+
+                <Button
+                  onClick={handleSendEmail}
+                  disabled={sending || totalSelectedCount === 0}
+                  className="w-full"
+                >
+                  {sending ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      שולח...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="ml-2 h-4 w-4" />
+                      שלח מייל ({totalSelectedCount} נמענים)
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
         ) : (
+          // Legacy UI - single email input (when no clientId or no emails found)
           <div className="space-y-4 mt-4">
             <Button
               variant="ghost"
@@ -205,8 +446,8 @@ export function SharePdfDialog({
               <Input
                 id="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={legacyEmail}
+                onChange={(e) => setLegacyEmail(e.target.value)}
                 placeholder="example@email.com"
                 dir="ltr"
                 className="text-left"
@@ -215,8 +456,8 @@ export function SharePdfDialog({
             </div>
 
             <Button
-              onClick={handleSendEmail}
-              disabled={sending || !email}
+              onClick={handleLegacySendEmail}
+              disabled={sending || !legacyEmail}
               className="w-full"
             >
               {sending ? (

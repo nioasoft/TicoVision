@@ -23,7 +23,7 @@ export interface IsraeliWorkersTabRef {
 
 export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkersTabProps>(
   function IsraeliWorkersTab({ value, onChange, disabled, clientId, branchId }, ref) {
-  const { range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
+  const { range, displayMonths, isLoading: isLoadingRange, initializeRange } = useMonthRange();
 
   // Local state for month data keyed by month ISO string
   const [monthData, setMonthData] = useState<Map<string, number>>(new Map());
@@ -51,9 +51,11 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
 
   // Sync with parent component when monthData changes
   useEffect(() => {
-    if (!range) return;
+    if (!range || !displayMonths) return;
 
-    const israeliWorkers: MonthlyWorkers[] = range.months.map(date => ({
+    const monthsToReport = displayMonths;
+
+    const israeliWorkers: MonthlyWorkers[] = monthsToReport.map(date => ({
       month: MonthlyDataService.dateToHebrew(date),
       employee_count: monthData.get(MonthlyDataService.dateToMonthKey(date)) || 0
     }));
@@ -63,7 +65,7 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
       israeli_workers: israeliWorkers,
       average_workers: averageWorkers
     });
-  }, [monthData, range, averageWorkers]);
+  }, [monthData, range, displayMonths, averageWorkers]);
 
   const loadData = useCallback(async () => {
     if (!branchId) return;
@@ -72,7 +74,8 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
     try {
       const { data, error } = await monthlyDataService.getBranchMonthlyReports(
         branchId,
-        'israeli_workers'
+        'israeli_workers',
+        50 // Load more months to support extended history
       );
 
       if (error) {
@@ -96,6 +99,11 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
       setIsLoading(false);
     }
   }, [branchId]);
+
+  // Load data when component mounts (after key change causes remount)
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const handleCountChange = (monthKey: string, count: number) => {
     const newMap = new Map(monthData);
@@ -224,7 +232,7 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
               {/* Monthly Workers Table */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-right">עובדים לפי חודש ({range.monthCount} חודשים)</h4>
+                  <h4 className="font-medium text-right">עובדים לפי חודש ({displayMonths?.length || 0} חודשים)</h4>
                   {hasUnsavedChanges && (
                     <span className="text-sm text-amber-600">* יש שינויים שלא נשמרו</span>
                   )}
@@ -239,7 +247,7 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
                       </tr>
                     </thead>
                     <tbody>
-                      {range.months.map((date) => {
+                      {displayMonths?.map((date) => {
                         const monthKey = MonthlyDataService.dateToMonthKey(date);
                         const count = monthData.get(monthKey) || 0;
 

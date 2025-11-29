@@ -44,6 +44,9 @@ export function SharedDataForm({
    * Handle client selection from ClientSelector
    */
   const handleClientChange = (client: Client | null) => {
+    // Always reset branch when client changes (whether to a new client or null)
+    onBranchChange(null, null, null, true);
+    
     if (client) {
       onClientSelect(client.id);
       setBaseCompanyName(client.company_name);
@@ -55,8 +58,6 @@ export function SharedDataForm({
     } else {
       onClientSelect(null);
       setBaseCompanyName(undefined);
-      // Reset branch when client changes
-      onBranchChange(null, null, null, true);
       onChange({
         ...value,
         company_name: undefined,

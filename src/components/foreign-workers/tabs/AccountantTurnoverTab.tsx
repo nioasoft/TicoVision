@@ -23,7 +23,7 @@ export interface AccountantTurnoverTabRef {
 
 export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, AccountantTurnoverTabProps>(
   function AccountantTurnoverTab({ value, onChange, disabled, clientId, branchId }, ref) {
-  const { range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
+  const { range, displayMonths, isLoading: isLoadingRange, initializeRange } = useMonthRange();
 
   // Local state for month data keyed by month ISO string
   const [monthData, setMonthData] = useState<Map<string, number>>(new Map());
@@ -43,18 +43,17 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
 
   // Sync with parent component when monthData changes
   useEffect(() => {
-    if (!range) return;
+    if (!range || !displayMonths) return;
 
-    // Get LAST 12 months only (even if displaying 14)
-    // This ensures the letter uses only the 12-month period
-    const last12Months = range.months.slice(-12);
+    // Use the displayed months (user selected)
+    const monthsToReport = displayMonths;
 
-    const monthlyTurnover: MonthlyTurnover[] = last12Months.map(date => ({
+    const monthlyTurnover: MonthlyTurnover[] = monthsToReport.map(date => ({
       month: MonthlyDataService.dateToHebrew(date),
       amount: monthData.get(MonthlyDataService.dateToMonthKey(date)) || 0
     }));
 
-    // Calculate total turnover for last 12 months only
+    // Calculate total turnover for displayed months only
     const totalTurnoverValue = monthlyTurnover.reduce((sum, m) => sum + m.amount, 0);
 
     // Format period dates as MM/YYYY for TurnoverApprovalTab
@@ -68,10 +67,10 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
       ...value,
       monthly_turnover: monthlyTurnover,
       total_turnover: totalTurnoverValue,
-      period_start: formatPeriod(last12Months[0]),
-      period_end: formatPeriod(last12Months[last12Months.length - 1])
+      period_start: formatPeriod(monthsToReport[0]),
+      period_end: formatPeriod(monthsToReport[monthsToReport.length - 1])
     });
-  }, [monthData, range]);
+  }, [monthData, range, displayMonths]);
 
   const loadData = useCallback(async () => {
     if (!branchId) return;
@@ -80,7 +79,8 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
     try {
       const { data, error } = await monthlyDataService.getBranchMonthlyReports(
         branchId,
-        'accountant_turnover'
+        'accountant_turnover',
+        50 // Load more months to support extended history
       );
 
       if (error) {
@@ -235,7 +235,7 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
               {/* Monthly Turnover Table */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-right">מחזורים חודשיים ({range.monthCount} חודשים)</h4>
+                  <h4 className="font-medium text-right">מחזורים חודשיים ({displayMonths?.length || 0} חודשים)</h4>
                   {hasUnsavedChanges && (
                     <span className="text-sm text-amber-600">* יש שינויים שלא נשמרו</span>
                   )}
@@ -250,7 +250,7 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
                       </tr>
                     </thead>
                     <tbody>
-                      {range.months.map((date) => {
+                      {displayMonths?.map((date) => {
                         const monthKey = MonthlyDataService.dateToMonthKey(date);
                         const amount = monthData.get(monthKey) || 0;
 

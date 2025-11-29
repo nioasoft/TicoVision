@@ -34,7 +34,7 @@ type SalaryDataMap = Map<string, Map<string, { salary: number; supplement: numbe
 
 export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabProps>(
   function SalaryReportTab({ value, onChange, disabled, clientId, branchId }, ref) {
-  const { range, isLoading: isLoadingRange, initializeRange } = useMonthRange();
+  const { range, displayMonths, isLoading: isLoadingRange, initializeRange } = useMonthRange();
 
   // Workers list for combobox (branch-specific)
   const [branchWorkers, setBranchWorkers] = useState<ForeignWorker[]>([]);
@@ -77,16 +77,17 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
 
   // Sync with parent component when salaryData changes
   useEffect(() => {
-    if (!range) return;
+    if (!range || !displayMonths) return;
 
     // Transform salaryData to WorkerData[] for parent
     const workersData: WorkerData[] = [];
+    const monthsToReport = displayMonths;
 
     salaryData.forEach((monthMap, workerId) => {
       const worker = branchWorkers.find(w => w.id === workerId);
       if (!worker) return;
 
-      range.months.forEach(date => {
+      monthsToReport.forEach(date => {
         const monthKey = MonthlyDataService.dateToMonthKey(date);
         const data = monthMap.get(monthKey) || { salary: 0, supplement: 0 };
 
@@ -102,9 +103,9 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
       });
     });
 
-    // Set period dates based on range
-    const periodStart = range.startMonth.toISOString().split('T')[0];
-    const lastMonth = range.endMonth;
+    // Set period dates based on displayed range
+    const periodStart = monthsToReport[0].toISOString().split('T')[0];
+    const lastMonth = monthsToReport[monthsToReport.length - 1];
     const lastDay = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0).getDate();
     const periodEnd = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
@@ -114,7 +115,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
       period_end: periodEnd,
       workers_data: workersData
     });
-  }, [salaryData, range, branchWorkers]);
+  }, [salaryData, range, displayMonths, branchWorkers]);
 
   const loadBranchWorkers = async () => {
     if (!branchId) return;
@@ -135,7 +136,11 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
 
     setIsLoading(true);
     try {
-      const { data, error } = await monthlyDataService.getBranchWorkerMonthlyData(branchId);
+      const { data, error } = await monthlyDataService.getBranchWorkerMonthlyData(
+        branchId,
+        undefined,
+        50 // Load more months to support extended history
+      );
 
       if (error) {
         toast.error('שגיאה בטעינת נתונים');
@@ -505,7 +510,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h4 className="font-medium text-right">
-                    נתוני שכר ({salaryData.size} עובדים, {range.monthCount} חודשים)
+                    נתוני שכר ({salaryData.size} עובדים, {displayMonths?.length || 0} חודשים)
                   </h4>
                   {hasUnsavedChanges && (
                     <span className="text-sm text-amber-600">* יש שינויים שלא נשמרו</span>
@@ -536,7 +541,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                           const worker = branchWorkers.find(w => w.id === workerId);
                           if (!worker) return null;
 
-                          return range.months.map((date, monthIdx) => {
+                          return displayMonths?.map((date, monthIdx) => {
                             const monthKey = MonthlyDataService.dateToMonthKey(date);
                             const data = monthMap.get(monthKey) || { salary: 0, supplement: 0 };
 
@@ -548,7 +553,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                                 {monthIdx === 0 && (
                                   <td
                                     className="px-2 py-2 sticky right-0 bg-white font-medium"
-                                    rowSpan={range.monthCount}
+                                    rowSpan={displayMonths.length}
                                   >
                                     <div className="flex flex-col">
                                       <span>{worker.full_name}</span>
