@@ -588,12 +588,19 @@ export function FeesPage() {
    */
   const loadGroupCalculation = async (groupId: string) => {
     try {
+      console.log('🔄 [FeesPage] loadGroupCalculation called', { groupId, year: formData.year });
       const response = await groupFeeService.getGroupCalculation(groupId, formData.year);
+      console.log('📦 [FeesPage] loadGroupCalculation response:', response);
+
       if (response.data) {
+        console.log('✅ [FeesPage] Found group calculation data:', response.data);
         setGroupCalculation(response.data);
+        
         // Pre-fill form with existing calculation data
-        setFormData(prev => ({
-          ...prev,
+        // Explicitly logging the mapping to debug 0 values
+        const newFormData = {
+          ...formData, // Keep other fields like client_id (which should be empty in group mode)
+          // Ensure we map audit_base_amount correctly to base_amount
           base_amount: response.data.audit_base_amount ?? 0,
           inflation_rate: response.data.audit_inflation_rate || 3.0,
           apply_inflation_index: response.data.audit_apply_inflation_index ?? true,
@@ -611,13 +618,18 @@ export function FeesPage() {
           bookkeeping_real_adjustment_reason: response.data.bookkeeping_real_adjustment_reason || '',
           bookkeeping_discount_percentage: response.data.bookkeeping_discount_percentage || 0,
           notes: response.data.notes || ''
-        }));
+        };
+        
+        console.log('📝 [FeesPage] Setting form data from group calculation:', newFormData);
+        setFormData(prev => ({ ...prev, ...newFormData }));
+        
         setPreviousYearDataSaved(true); // Allow progression for group
         toast({
           title: 'נטען חישוב קבוצתי',
           description: 'נתוני חישוב קיימים נטענו בהצלחה',
         });
       } else {
+        console.log('⚠️ [FeesPage] No group calculation found, resetting form.');
         setGroupCalculation(null);
         // For groups, we don't require previous year data - just allow calculation
         setPreviousYearDataSaved(true);
@@ -645,6 +657,7 @@ export function FeesPage() {
       }
     } catch (error) {
       logger.error('Error loading group calculation:', error);
+      console.error('❌ [FeesPage] Error loading group calculation:', error);
       setGroupCalculation(null);
     }
   };
