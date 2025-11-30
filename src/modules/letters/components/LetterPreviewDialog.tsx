@@ -707,7 +707,11 @@ export function LetterPreviewDialog({
    * Calls generate-pdf Edge Function and uploads to client files
    */
   const savePdfToFileManager = async (letterId: string): Promise<boolean> => {
-    if (!clientId || !variables) {
+    // Check for necessary data (supports both client and group mode)
+    const hasClientData = !!clientId;
+    const hasGroupData = !!groupId;
+
+    if ((!hasClientData && !hasGroupData) || !variables) {
       toast.error('חסרים נתונים לשמירת PDF');
       return false;
     }
@@ -739,22 +743,43 @@ export function LetterPreviewDialog({
       const fileName = `מכתב_שכר_טרחה_${variables.tax_year}_${clientName}.pdf`;
       const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
 
-      // 3. Upload to File Manager
+      // 3. Upload to File Manager (Group vs Client)
       const description = `מכתב שכר טרחה ${variables.tax_year} - ${variables.letter_date}`;
 
-      const { error: uploadError } = await fileUploadService.uploadFileToCategory(
-        pdfFile,
-        clientId,
-        'quote_invoice',
-        description
-      );
+      if (isGroupMode && groupId) {
+        // Group Mode: Upload to all clients in the group
+        const { data: result, error: uploadError } = await fileUploadService.uploadFileToGroupCategory(
+          pdfFile,
+          groupId,
+          'quote_invoice',
+          description
+        );
 
-      if (uploadError) {
-        console.error('File upload error:', uploadError);
-        throw new Error('שגיאה בהעלאת PDF למנהל קבצים');
+        if (uploadError) {
+          console.error('Group file upload error:', uploadError);
+          throw new Error('שגיאה בהעלאת PDF לקבוצה');
+        }
+
+        if (result) {
+          toast.success(`PDF נשמר בהצלחה ל-${result.successful} לקוחות (${result.failed} נכשלו)`);
+        }
+      } else if (clientId) {
+        // Client Mode: Upload to single client
+        const { error: uploadError } = await fileUploadService.uploadFileToCategory(
+          pdfFile,
+          clientId,
+          'quote_invoice',
+          description
+        );
+
+        if (uploadError) {
+          console.error('File upload error:', uploadError);
+          throw new Error('שגיאה בהעלאת PDF למנהל קבצים');
+        }
+        
+        toast.success('PDF נשמר בהצלחה בתיקיית הלקוח');
       }
 
-      toast.success('PDF נשמר בהצלחה בתיקיית הלקוח');
       return true;
 
     } catch (error) {
