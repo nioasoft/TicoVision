@@ -323,8 +323,7 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
                                             <th className="px-4 py-2 text-right font-medium">מספר עובדים</th>
                                             <th className="px-4 py-2 text-right font-medium">לא פעיל / טרם נפתח</th>
                                           </tr>
-                                        </thead>
-                                        <tbody>
+                                        </thead><tbody>
                                           {displayMonths?.map((date) => {
                                             const monthKey = MonthlyDataService.dateToMonthKey(date);
                                             const count = monthData.get(monthKey);
@@ -370,8 +369,7 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
                                               </tr>
                                             );
                                           })}
-                                        </tbody>
-                                        <tfoot className="bg-blue-50 border-t-2">
+                                        </tbody><tfoot className="bg-blue-50 border-t-2">
                                           <tr>
                                             <td className="px-4 py-3 text-right font-bold" colSpan={3}>
                                               <Calculator className="inline ml-2 h-4 w-4" />
