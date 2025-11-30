@@ -130,8 +130,8 @@ serve(async (req) => {
             size: A4;
             /* Top: Header (34mm after scaling) + buffer (3mm) = 37mm */
             margin-top: 37mm;
-            /* Bottom: Footer (63mm after scaling) + buffer (10mm) = 73mm */
-            margin-bottom: 73mm;
+            /* Bottom: Footer (51mm after scaling) + buffer (10mm) = 61mm */
+            margin-bottom: 61mm;
             /* Side margins */
             margin-left: 9mm;
             margin-right: 9mm;
@@ -177,7 +177,7 @@ serve(async (req) => {
             margin: {
               top: '37mm',    // Synced with @page margin-top (34mm header + 3mm buffer)
               right: '0mm',   // No side margins (handled in @page)
-              bottom: '63mm', // Footer PNG height after scaling to A4 width
+              bottom: '51mm', // Footer PNG height after scaling (231px → 51mm)
               left: '0mm'     // No side margins (handled in @page)
             }
           },

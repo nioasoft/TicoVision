@@ -6,13 +6,14 @@
  * filterByAssignment: When true, bookkeepers see only their assigned clients
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { Loader2 } from 'lucide-react';
 import { ClientService, type Client } from '@/services/client.service';
 import { userClientAssignmentService } from '@/services/user-client-assignment.service';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLastClient } from '@/hooks/useLastClient';
 
 const clientService = new ClientService();
 
@@ -38,6 +39,7 @@ export function ClientSelector({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { role } = useAuth();
+  const { getLastClientId, setLastClientId } = useLastClient();
 
   /**
    * Load clients on mount
@@ -114,8 +116,29 @@ export function ClientSelector({
    */
   const handleValueChange = (clientId: string) => {
     const selectedClient = clients.find(c => c.id === clientId);
+    if (selectedClient) {
+      setLastClientId(clientId); // Save as last used client
+    }
     onChange(selectedClient || null);
   };
+
+  /**
+   * Sort clients - last selected client first, then alphabetically
+   */
+  const sortedClients = useMemo(() => {
+    const lastId = getLastClientId();
+    if (!lastId || clients.length === 0) return clients;
+
+    return [...clients].sort((a, b) => {
+      // Last client always first
+      if (a.id === lastId) return -1;
+      if (b.id === lastId) return 1;
+      // Alphabetical for the rest
+      const nameA = a.company_name_hebrew || a.company_name || '';
+      const nameB = b.company_name_hebrew || b.company_name || '';
+      return nameA.localeCompare(nameB, 'he');
+    });
+  }, [clients, getLastClientId]);
 
   /**
    * Get display name for a client (used in Combobox options)
@@ -145,7 +168,7 @@ export function ClientSelector({
         </div>
       ) : (
         <Combobox
-          options={clients.map((client) => ({
+          options={sortedClients.map((client) => ({
             value: client.id,
             label: getClientDisplayName(client),
           }))}

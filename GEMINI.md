@@ -14,10 +14,10 @@ The application serves multiple user roles including Admins, Accountants, Bookke
     3.  Living Business 2025 (עסק חי 2025)
     4.  Turnover/Costs Approval (אישור מחזור/עלויות)
     5.  Salary Report (דוח שכר)
-*   **Document Generation:** Automated PDF generation using HTML templates and Supabase Edge Functions.
+*   **Document Generation:** Automated PDF generation using HTML templates and Supabase Edge Functions (Browserless).
 *   **Client & Branch Management:** Hierarchical management of companies (clients) and their specific branches.
 *   **Fee Tracking & Collections:** Systems for calculating fees, tracking payments, and managing debt collections.
-*   **File Manager:** centralized system for managing uploaded documents and generated reports.
+*   **File Manager:** Centralized system for managing uploaded documents and generated reports.
 *   **Letter Builder:** A rich-text editor (Tiptap) for creating and managing letter templates.
 
 ## Tech Stack
@@ -37,16 +37,36 @@ The application serves multiple user roles including Admins, Accountants, Bookke
 *   `src/pages`: Top-level route components (e.g., `ForeignWorkersPage`, `ClientsPage`).
 *   `src/services`: API service layers for interacting with Supabase (e.g., `monthly-data.service.ts`).
 *   `src/contexts`: Global state providers (`AuthContext`, `MonthRangeContext`).
-*   `src/types`: TypeScript definitions and interfaces.
+*   `src/types`: TypeScript definitions and interfaces (Database & App types).
 *   `src/modules`: Encapsulated feature modules (e.g., `collections`).
 *   `templates`: HTML templates used for generating PDF documents.
-*   `supabase`: Supabase configuration and edge functions.
+*   `supabase`: Supabase configuration, migrations, and edge functions.
+
+## Database & Performance
+
+### Core Schema Highlights
+*   **Multi-tenancy:** All major tables include `tenant_id` for strict data isolation via RLS policies.
+*   **Vertical Partitioning:** Monthly data (reports, salaries) is stored as individual rows per month/branch, enabling efficient range queries and aggregations.
+*   **JSONB Usage:** Flexible data storage for letter variables (`generated_letters.variables_used`) and client metadata.
+
+### Performance Indexes
+To ensure scalability, the following composite indexes are implemented:
+1.  **Monthly Reports:** `(tenant_id, branch_id, report_type, month_date DESC)` - Critical for dashboard loading.
+2.  **Worker Data:** `(tenant_id, branch_id, worker_id, month_date DESC)` - Optimizes salary report generation.
+3.  **Generated Letters:** `(tenant_id, client_id, created_at DESC)` - Speeds up file manager and history views.
+4.  **Audit Logs:** `(tenant_id, created_at DESC)` - Essential for log viewing and security audits.
+5.  **Fee Calculations:** `(tenant_id, client_id, year DESC)` - Optimizes fee tracking dashboards.
+
+### Migration Management
+*   **Syncing:** Always pull remote changes before pushing: `npx supabase db pull`.
+*   **Conflicts:** If `db push` fails due to history mismatch, verify schema state and consider manual execution of specific migration files via the Supabase Dashboard SQL Editor to avoid data loss.
 
 ## Building and Running
 
 ### Prerequisites
 *   Node.js (latest LTS recommended)
 *   NPM
+*   Supabase CLI (optional but recommended for backend tasks)
 
 ### Development
 Start the development server with hot reload:

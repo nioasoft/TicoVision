@@ -198,8 +198,11 @@ export const HEBREW_MONTHS = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ] as const;
 
-/** Maximum months allowed in rolling window */
+/** Maximum months allowed in rolling window (deprecated - DB no longer enforces limit) */
 export const MAX_MONTHS = 14;
 
 /** Default initial months when creating new range */
 export const DEFAULT_INITIAL_MONTHS = 12;
+
+/** Number of months to display in UI */
+export const DISPLAY_MONTHS = 12;

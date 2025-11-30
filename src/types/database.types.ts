@@ -261,6 +261,57 @@ export type Database = {
           },
         ]
       }
+      client_branches: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_branches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_branches_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_contact_assignments: {
         Row: {
           client_id: string
@@ -514,6 +565,131 @@ export type Database = {
           },
           {
             foreignKeyName: "client_interactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_month_range: {
+        Row: {
+          branch_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          end_month: string
+          id: string
+          start_month: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          end_month: string
+          id?: string
+          start_month: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          end_month?: string
+          id?: string
+          start_month?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_month_range_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "client_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_month_range_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_month_range_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_monthly_reports: {
+        Row: {
+          branch_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          employee_count: number | null
+          id: string
+          month_date: string
+          notes: string | null
+          report_type: Database["public"]["Enums"]["client_report_type"]
+          tenant_id: string
+          turnover_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          employee_count?: number | null
+          id?: string
+          month_date: string
+          notes?: string | null
+          report_type: Database["public"]["Enums"]["client_report_type"]
+          tenant_id: string
+          turnover_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          employee_count?: number | null
+          id?: string
+          month_date?: string
+          notes?: string | null
+          report_type?: Database["public"]["Enums"]["client_report_type"]
+          tenant_id?: string
+          turnover_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_monthly_reports_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "client_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_monthly_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_monthly_reports_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1066,6 +1242,144 @@ export type Database = {
           tenant_id?: string
         }
         Relationships: []
+      }
+      foreign_worker_monthly_data: {
+        Row: {
+          branch_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          month_date: string
+          salary: number
+          supplement: number
+          tenant_id: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          branch_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month_date: string
+          salary?: number
+          supplement?: number
+          tenant_id: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          branch_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month_date?: string
+          salary?: number
+          supplement?: number
+          tenant_id?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foreign_worker_monthly_data_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "client_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foreign_worker_monthly_data_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foreign_worker_monthly_data_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foreign_worker_monthly_data_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "foreign_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      foreign_workers: {
+        Row: {
+          branch_id: string
+          client_id: string
+          created_at: string
+          created_by: string | null
+          full_name: string
+          id: string
+          nationality: string | null
+          passport_number: string
+          salary: number | null
+          supplement: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          full_name: string
+          id?: string
+          nationality?: string | null
+          passport_number: string
+          salary?: number | null
+          supplement?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          full_name?: string
+          id?: string
+          nationality?: string | null
+          passport_number?: string
+          salary?: number | null
+          supplement?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foreign_workers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "client_branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foreign_workers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foreign_workers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       generated_letters: {
         Row: {
@@ -2926,6 +3240,13 @@ export type Database = {
         Args: { p_actual_amount: number; p_fee_calculation_id: string }
         Returns: Json
       }
+      check_email_availability: {
+        Args: { p_email: string }
+        Returns: {
+          available: boolean
+          reason: string
+        }[]
+      }
       check_primary_payer_exists: {
         Args: { p_client_id?: string; p_group_id: string; p_tenant_id: string }
         Returns: boolean
@@ -2941,6 +3262,21 @@ export type Database = {
       check_tenant_admin_access: {
         Args: { p_tenant_id: string; p_user_id: string }
         Returns: boolean
+      }
+      cleanup_client_monthly_data: {
+        Args: { p_before_date: string; p_client_id: string }
+        Returns: {
+          deleted_client_reports: number
+          deleted_worker_data: number
+        }[]
+      }
+      cleanup_old_monthly_data: {
+        Args: never
+        Returns: {
+          cutoff_date: string
+          deleted_client_reports: number
+          deleted_worker_data: number
+        }[]
       }
       create_user_with_role: {
         Args: {
@@ -2976,9 +3312,38 @@ export type Database = {
           user_id: string
         }[]
       }
+      create_user_with_role_v3: {
+        Args: {
+          p_email: string
+          p_full_name?: string
+          p_password_hash: string
+          p_permissions?: Json
+          p_phone?: string
+          p_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: {
+          email: string
+          full_name: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }[]
+      }
       deactivate_user_account: {
         Args: { p_reason?: string; p_user_id: string }
         Returns: boolean
+      }
+      delete_old_client_monthly_reports: {
+        Args: {
+          p_before_date: string
+          p_client_id: string
+          p_report_type: Database["public"]["Enums"]["client_report_type"]
+        }
+        Returns: number
+      }
+      delete_old_worker_monthly_data: {
+        Args: { p_before_date: string; p_client_id: string }
+        Returns: number
       }
       find_contact_by_email: {
         Args: { p_email: string; p_tenant_id: string }
@@ -2987,6 +3352,18 @@ export type Database = {
       find_contact_by_phone: {
         Args: { p_phone: string; p_tenant_id: string }
         Returns: string
+      }
+      find_worker_by_passport: {
+        Args: { p_passport_number: string; p_tenant_id: string }
+        Returns: {
+          client_id: string
+          full_name: string
+          id: string
+          nationality: string
+          passport_number: string
+          salary: number
+          supplement: number
+        }[]
       }
       format_ils: { Args: { amount: number }; Returns: string }
       format_israeli_date:
@@ -3002,6 +3379,34 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.format_israeli_date(date_input => text), public.format_israeli_date(date_input => date). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      generate_months_array: {
+        Args: { p_end_month: string; p_start_month: string }
+        Returns: string[]
+      }
+      get_branch_display_name: {
+        Args: { p_branch_id: string }
+        Returns: string
+      }
+      get_branch_month_range: {
+        Args: { p_branch_id: string }
+        Returns: {
+          end_month: string
+          month_count: number
+          start_month: string
+        }[]
+      }
+      get_branch_workers: {
+        Args: { p_branch_id: string }
+        Returns: {
+          created_at: string
+          full_name: string
+          id: string
+          nationality: string
+          passport_number: string
+          salary: number
+          supplement: number
+        }[]
+      }
       get_budget_by_category: {
         Args: { p_tax_year: number; p_tenant_id: string }
         Returns: {
@@ -3037,6 +3442,16 @@ export type Database = {
           freelancers_with_vat: number
         }[]
       }
+      get_client_branches: {
+        Args: { p_client_id: string }
+        Returns: {
+          display_name: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+        }[]
+      }
       get_client_contacts_detailed: {
         Args: { p_client_id: string }
         Returns: {
@@ -3051,6 +3466,30 @@ export type Database = {
           notes: string
           phone: string
           role_at_client: string
+        }[]
+      }
+      get_client_month_range: {
+        Args: { p_client_id: string }
+        Returns: {
+          end_month: string
+          month_count: number
+          start_month: string
+        }[]
+      }
+      get_client_monthly_reports: {
+        Args: {
+          p_client_id: string
+          p_limit?: number
+          p_report_type: Database["public"]["Enums"]["client_report_type"]
+        }
+        Returns: {
+          created_at: string
+          employee_count: number
+          id: string
+          month_date: string
+          notes: string
+          turnover_amount: number
+          updated_at: string
         }[]
       }
       get_client_statistics: {
@@ -3077,6 +3516,10 @@ export type Database = {
           total_pending: number
           total_received: number
         }[]
+      }
+      get_comprehensive_deletion_preview: {
+        Args: { p_before_date: string; p_client_id: string }
+        Returns: Json
       }
       get_current_tenant_id: { Args: never; Returns: string }
       get_current_user_role: { Args: never; Returns: string }
@@ -3159,6 +3602,10 @@ export type Database = {
           role_at_group: string
         }[]
       }
+      get_or_create_default_branch: {
+        Args: { p_client_id: string }
+        Returns: string
+      }
       get_payment_method_breakdown: {
         Args: { p_tax_year: number; p_tenant_id: string }
         Returns: {
@@ -3232,6 +3679,21 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_worker_monthly_data: {
+        Args: { p_client_id: string; p_limit?: number; p_worker_id?: string }
+        Returns: {
+          created_at: string
+          id: string
+          month_date: string
+          nationality: string
+          passport_number: string
+          salary: number
+          supplement: number
+          updated_at: string
+          worker_id: string
+          worker_name: string
+        }[]
+      }
       hash_password: { Args: { password: string }; Returns: string }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { p_user_id: string }; Returns: boolean }
@@ -3287,6 +3749,19 @@ export type Database = {
           phone: string
         }[]
       }
+      submit_registration: {
+        Args: {
+          p_company_name?: string
+          p_email: string
+          p_full_name: string
+          p_message?: string
+          p_password: string
+          p_phone?: string
+          p_requested_role?: Database["public"]["Enums"]["user_role"]
+          p_tax_id?: string
+        }
+        Returns: string
+      }
       update_user_role_and_metadata: {
         Args: {
           p_full_name?: string
@@ -3298,6 +3773,35 @@ export type Database = {
         }
         Returns: boolean
       }
+      upsert_client_month_range: {
+        Args: {
+          p_client_id: string
+          p_end_month: string
+          p_start_month: string
+        }
+        Returns: string
+      }
+      upsert_client_monthly_report: {
+        Args: {
+          p_client_id: string
+          p_employee_count?: number
+          p_month_date: string
+          p_notes?: string
+          p_report_type: Database["public"]["Enums"]["client_report_type"]
+          p_turnover_amount?: number
+        }
+        Returns: string
+      }
+      upsert_worker_monthly_data: {
+        Args: {
+          p_client_id: string
+          p_month_date: string
+          p_salary?: number
+          p_supplement?: number
+          p_worker_id: string
+        }
+        Returns: string
+      }
       user_has_client_access: {
         Args: { p_client_id: string; p_user_id?: string }
         Returns: boolean
@@ -3305,6 +3809,7 @@ export type Database = {
       validate_israeli_tax_id: { Args: { tax_id: string }; Returns: boolean }
     }
     Enums: {
+      client_report_type: "accountant_turnover" | "israeli_workers"
       client_type:
         | "company"
         | "freelancer"
@@ -3328,6 +3833,7 @@ export type Database = {
         | "payment_proof_2026"
         | "holdings_presentation"
         | "general"
+        | "foreign_worker_docs"
       group_fee_status:
         | "draft"
         | "calculated"
@@ -3478,6 +3984,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      client_report_type: ["accountant_turnover", "israeli_workers"],
       client_type: [
         "company",
         "freelancer",
@@ -3503,6 +4010,7 @@ export const Constants = {
         "payment_proof_2026",
         "holdings_presentation",
         "general",
+        "foreign_worker_docs",
       ],
       group_fee_status: [
         "draft",

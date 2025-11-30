@@ -5,7 +5,7 @@
  * When group is selected, all member companies will be included in a combined fee letter.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,7 @@ import { Loader2, Users, Building2, AlertCircle } from 'lucide-react';
 import { ClientService, type Client } from '@/services/client.service';
 import { groupFeeService, type ClientGroup } from '@/services/group-fee.service';
 import { cn } from '@/lib/utils';
+import { useLastClient } from '@/hooks/useLastClient';
 
 const clientService = new ClientService();
 
@@ -47,6 +48,7 @@ export function GroupClientSelector({
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { getLastClientId, setLastClientId } = useLastClient();
 
   // Load clients when component mounts
   useEffect(() => {
@@ -140,8 +142,29 @@ export function GroupClientSelector({
    */
   const handleClientSelect = (clientId: string) => {
     const selectedClient = clients.find(c => c.id === clientId);
+    if (selectedClient) {
+      setLastClientId(clientId); // Save as last used client
+    }
     onClientSelect(selectedClient || null);
   };
+
+  /**
+   * Sort clients - last selected client first, then alphabetically
+   */
+  const sortedClients = useMemo(() => {
+    const lastId = getLastClientId();
+    if (!lastId || clients.length === 0) return clients;
+
+    return [...clients].sort((a, b) => {
+      // Last client always first
+      if (a.id === lastId) return -1;
+      if (b.id === lastId) return 1;
+      // Alphabetical for the rest
+      const nameA = a.company_name_hebrew || a.company_name || '';
+      const nameB = b.company_name_hebrew || b.company_name || '';
+      return nameA.localeCompare(nameB, 'he');
+    });
+  }, [clients, getLastClientId]);
 
   /**
    * Handle group selection
@@ -221,7 +244,7 @@ export function GroupClientSelector({
         ) : mode === 'client' ? (
           /* Client Selector */
           <Combobox
-            options={clients.map((client) => ({
+            options={sortedClients.map((client) => ({
               value: client.id,
               label: getClientDisplayName(client),
             }))}

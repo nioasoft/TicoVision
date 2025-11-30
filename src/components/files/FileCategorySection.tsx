@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Download, Trash2, Edit2, Save, X, FileText } from 'lucide-react';
+import { Loader2, Download, Trash2, Edit2, Save, X, FileText, Info } from 'lucide-react';
 import { fileUploadService } from '@/services/file-upload.service';
 import type { ClientAttachment, FileCategory } from '@/types/file-attachment.types';
 import { getCategoryLabel, getCategoryDescription } from '@/types/file-attachment.types';
@@ -27,7 +27,8 @@ import { formatFileSize } from '@/types/file-attachment.types';
 import { toast } from 'sonner';
 
 interface FileCategorySectionProps {
-  clientId: string;
+  clientId?: string;
+  groupId?: string;
   category: FileCategory;
 }
 
@@ -38,7 +39,7 @@ interface FileUploadProgress {
   error?: string;
 }
 
-export function FileCategorySection({ clientId, category }: FileCategorySectionProps) {
+export function FileCategorySection({ clientId, groupId, category }: FileCategorySectionProps) {
   const [files, setFiles] = useState<ClientAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,14 +48,28 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingDescription, setEditingDescription] = useState('');
 
+  const isGroupMode = !!groupId;
+
   useEffect(() => {
     loadFiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId, category]);
+  }, [clientId, groupId, category]);
 
   const loadFiles = async () => {
     setIsLoading(true);
     setError(null);
+    setFiles([]);
+
+    if (isGroupMode) {
+      // In group mode, we don't display a file list currently
+      setIsLoading(false);
+      return;
+    }
+
+    if (!clientId) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error: fetchError } = await fileUploadService.getFilesByCategory(clientId, category);
@@ -88,25 +103,53 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
     }]);
 
     try {
-      const { error: uploadError } = await fileUploadService.uploadFileToCategory(
-        file,
-        clientId,
-        category,
-        uploadDescription.trim()
-      );
+      if (isGroupMode && groupId) {
+        // Group Upload
+        const { data, error: uploadError } = await fileUploadService.uploadFileToGroupCategory(
+          file,
+          groupId,
+          category,
+          uploadDescription.trim()
+        );
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      // Success
-      setUploadProgress([{
-        fileName: file.name,
-        progress: 100,
-        status: 'success'
-      }]);
+        // Success
+        setUploadProgress([{
+          fileName: file.name,
+          progress: 100,
+          status: 'success'
+        }]);
 
-      toast.success('הקובץ הועלה בהצלחה');
+        if (data) {
+          toast.success(`הקובץ הועלה בהצלחה ל-${data.successful} לקוחות (${data.failed} נכשלו)`);
+        } else {
+          toast.success('הקובץ הועלה בהצלחה ללקוחות הקבוצה');
+        }
+
+      } else if (clientId) {
+        // Single Client Upload
+        const { error: uploadError } = await fileUploadService.uploadFileToCategory(
+          file,
+          clientId,
+          category,
+          uploadDescription.trim()
+        );
+
+        if (uploadError) throw uploadError;
+
+        // Success
+        setUploadProgress([{
+          fileName: file.name,
+          progress: 100,
+          status: 'success'
+        }]);
+
+        toast.success('הקובץ הועלה בהצלחה');
+        loadFiles(); // Reload files
+      }
+
       setUploadDescription(''); // Reset description
-      loadFiles(); // Reload files
 
       // Clear progress after 2 seconds
       setTimeout(() => {
@@ -193,7 +236,19 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
 
       {/* Upload Section */}
       <div className="space-y-3">
-        <Label className="rtl:text-right block">העלאת קובץ חדש</Label>
+        <Label className="rtl:text-right block">
+          {isGroupMode ? 'העלאת קובץ לכל לקוחות הקבוצה' : 'העלאת קובץ חדש'}
+        </Label>
+        
+        {isGroupMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2 flex items-start gap-2 rtl:flex-row-reverse text-blue-800">
+            <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <p className="text-sm rtl:text-right">
+              שים לב: העלאת קובץ במצב קבוצה תוסיף את הקובץ לכל הלקוחות הפעילים בקבוצה זו. פעולה זו עשויה לקחת זמן כתלות במספר הלקוחות.
+            </p>
+          </div>
+        )}
+
         <Input
           placeholder="תיאור הקובץ (אופציונלי, עד 50 תווים)"
           value={uploadDescription}
@@ -213,140 +268,142 @@ export function FileCategorySection({ clientId, category }: FileCategorySectionP
         />
       </div>
 
-      {/* Files List */}
-      <div className="space-y-4">
-        <h4 className="font-medium rtl:text-right">קבצים ({files.length})</h4>
+      {/* Files List - Only show in Client Mode */}
+      {!isGroupMode && (
+        <div className="space-y-4">
+          <h4 className="font-medium rtl:text-right">קבצים ({files.length})</h4>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-          </div>
-        ) : error ? (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg rtl:text-right text-red-600">
-            {error}
-          </div>
-        ) : files.length === 0 ? (
-          <div className="p-8 bg-gray-50 border border-gray-200 rounded-lg text-center">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500 rtl:text-right">אין קבצים בקטגוריה זו</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {files.map((file) => (
-              <div
-                key={file.id}
-                className="p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-              >
-                <div className="flex items-start gap-3">
-                  <FileText className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : error ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg rtl:text-right text-red-600">
+              {error}
+            </div>
+          ) : files.length === 0 ? (
+            <div className="p-8 bg-gray-50 border border-gray-200 rounded-lg text-center">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-500 rtl:text-right">אין קבצים בקטגוריה זו</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {files.map((file) => (
+                <div
+                  key={file.id}
+                  className="p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <FileText className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
 
-                  <div className="flex-1 min-w-0">
-                    <button
-                      onClick={() => handleDownload(file)}
-                      className="font-medium rtl:text-right truncate hover:text-blue-600 hover:underline text-left w-full"
-                    >
-                      {file.file_name}
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <button
+                        onClick={() => handleDownload(file)}
+                        className="font-medium rtl:text-right truncate hover:text-blue-600 hover:underline text-left w-full"
+                      >
+                        {file.file_name}
+                      </button>
 
-                    {editingFileId === file.id ? (
-                      <div className="mt-2 space-y-2">
-                        <Input
-                          value={editingDescription}
-                          onChange={(e) => setEditingDescription(e.target.value)}
-                          maxLength={50}
-                          placeholder="תיאור הקובץ"
-                          className="rtl:text-right"
-                        />
-                        <p className="text-xs text-gray-500 rtl:text-right">
-                          {editingDescription.length}/50 תווים
-                        </p>
-                        <div className="flex gap-2 rtl:space-x-reverse">
-                          <Button
-                            size="sm"
-                            onClick={() => saveEditDescription(file.id)}
-                            className="rtl:flex-row-reverse"
-                          >
-                            <Save className="h-4 w-4 ml-1" />
-                            שמור
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={cancelEditDescription}
-                            className="rtl:flex-row-reverse"
-                          >
-                            <X className="h-4 w-4 ml-1" />
-                            ביטול
-                          </Button>
+                      {editingFileId === file.id ? (
+                        <div className="mt-2 space-y-2">
+                          <Input
+                            value={editingDescription}
+                            onChange={(e) => setEditingDescription(e.target.value)}
+                            maxLength={50}
+                            placeholder="תיאור הקובץ"
+                            className="rtl:text-right"
+                          />
+                          <p className="text-xs text-gray-500 rtl:text-right">
+                            {editingDescription.length}/50 תווים
+                          </p>
+                          <div className="flex gap-2 rtl:space-x-reverse">
+                            <Button
+                              size="sm"
+                              onClick={() => saveEditDescription(file.id)}
+                              className="rtl:flex-row-reverse"
+                            >
+                              <Save className="h-4 w-4 ml-1" />
+                              שמור
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditDescription}
+                              className="rtl:flex-row-reverse"
+                            >
+                              <X className="h-4 w-4 ml-1" />
+                              ביטול
+                            </Button>
+                          </div>
                         </div>
+                      ) : (
+                        <>
+                          <p className="text-sm text-gray-600 rtl:text-right mt-1">
+                            {file.description || 'אין תיאור'}
+                          </p>
+                          <p className="text-xs text-gray-400 rtl:text-right mt-1">
+                            {formatFileSize(file.file_size)} • {new Date(file.created_at).toLocaleDateString('he-IL')}
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {editingFileId !== file.id && (
+                      <div className="flex gap-2 rtl:space-x-reverse flex-shrink-0">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => handleDownload(file)}
+                          title="הורדה"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => startEditDescription(file)}
+                          title="עריכת תיאור"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              title="מחיקה"
+                              className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rtl:text-right">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="rtl:text-right">מחיקת קובץ</AlertDialogTitle>
+                              <AlertDialogDescription className="rtl:text-right">
+                                האם אתה בטוח שברצונך למחוק את הקובץ "{file.file_name}"? פעולה זו לא ניתנת לביטול.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="rtl:space-x-reverse">
+                              <AlertDialogCancel className="rtl:ml-2">ביטול</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(file.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                מחק
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
-                    ) : (
-                      <>
-                        <p className="text-sm text-gray-600 rtl:text-right mt-1">
-                          {file.description || 'אין תיאור'}
-                        </p>
-                        <p className="text-xs text-gray-400 rtl:text-right mt-1">
-                          {formatFileSize(file.file_size)} • {new Date(file.created_at).toLocaleDateString('he-IL')}
-                        </p>
-                      </>
                     )}
                   </div>
-
-                  {editingFileId !== file.id && (
-                    <div className="flex gap-2 rtl:space-x-reverse flex-shrink-0">
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => handleDownload(file)}
-                        title="הורדה"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => startEditDescription(file)}
-                        title="עריכת תיאור"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            title="מחיקה"
-                            className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rtl:text-right">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="rtl:text-right">מחיקת קובץ</AlertDialogTitle>
-                            <AlertDialogDescription className="rtl:text-right">
-                              האם אתה בטוח שברצונך למחוק את הקובץ "{file.file_name}"? פעולה זו לא ניתנת לביטול.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="rtl:space-x-reverse">
-                            <AlertDialogCancel className="rtl:ml-2">ביטול</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(file.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              מחק
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

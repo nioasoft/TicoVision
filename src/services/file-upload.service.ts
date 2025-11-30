@@ -5,6 +5,7 @@
 
 import { BaseService } from './base.service';
 import { supabase } from '@/lib/supabase';
+import { clientService } from './client.service';
 import type {
   ClientAttachment,
   FileUploadOptions,
@@ -24,6 +25,64 @@ export class FileUploadService extends BaseService {
 
   constructor() {
     super('client_attachments');
+  }
+
+  /**
+   * Upload file to all clients in a group
+   */
+  async uploadFileToGroupCategory(
+    file: File,
+    groupId: string,
+    category: FileCategory,
+    description: string
+  ): Promise<ServiceResponse<{ successful: number; failed: number }>> {
+    try {
+      // Get all clients in the group
+      const { data: clients, error: groupError } = await clientService.getClientsByGroup(groupId);
+
+      if (groupError) throw groupError;
+      if (!clients || clients.length === 0) {
+        throw new Error('לא נמצאו לקוחות בקבוצה זו');
+      }
+
+      let successful = 0;
+      let failed = 0;
+
+      // Upload for each client
+      // We process sequentially to avoid overwhelming the server/browser
+      for (const client of clients) {
+        try {
+          // Clone the file because upload consumes it? No, File object is reusable.
+          // But duplicate upload calls might be an issue?
+          // Actually, uploadFileToCategory does: upload to storage, then insert DB record.
+          // The storage path includes client_id, so it's a unique path per client.
+          // So we are uploading the same file content multiple times to different paths.
+          // This is correct for isolation, though inefficient for storage.
+          // Given the requirements, this is the safest way.
+
+          const { error } = await this.uploadFileToCategory(
+            file,
+            client.id,
+            category,
+            description
+          );
+
+          if (error) {
+            console.error(`Failed to upload for client ${client.company_name}:`, error);
+            failed++;
+          } else {
+            successful++;
+          }
+        } catch (err) {
+          console.error(`Failed to upload for client ${client.company_name}:`, err);
+          failed++;
+        }
+      }
+
+      return { data: { successful, failed }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
   }
 
   /**
