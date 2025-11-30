@@ -316,67 +316,65 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
                 </div>
 
                 <div className="border rounded-md overflow-hidden">
-                  <table className="w-full">
-                                        <thead className="bg-gray-50">
-                                          <tr>
-                                            <th className="px-4 py-2 text-right font-medium">חודש</th>
-                                            <th className="px-4 py-2 text-right font-medium">מספר עובדים</th>
-                                            <th className="px-4 py-2 text-right font-medium">לא פעיל / טרם נפתח</th>
-                                          </tr>
-                                        </thead><tbody>
-                                          {displayMonths?.map((date) => {
-                                            const monthKey = MonthlyDataService.dateToMonthKey(date);
-                                            const count = monthData.get(monthKey);
-                                            const isInactive = inactiveMonths.has(monthKey);
-                                            // Display value: empty string if inactive, otherwise count (including 0)
-                                            const displayValue = isInactive ? '' : (count !== undefined ? count : 0);
-                    
-                                            return (
-                                              <tr key={monthKey} className={`border-t hover:bg-gray-50 ${isInactive ? 'bg-gray-50' : ''}`}>
-                                                <td className="px-4 py-2">
-                                                  <span className={`font-medium ${isInactive ? 'text-gray-400' : 'text-gray-700'}`}>
-                                                    {MonthlyDataService.dateToHebrew(date)}
-                                                  </span>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                  <Input
-                                                    type="number"
-                                                    min="0"
-                                                    value={displayValue}
-                                                    onChange={(e) => handleCountChange(monthKey, parseInt(e.target.value, 10) || 0)}
-                                                    placeholder={isInactive ? '-' : '0'}
-                                                    disabled={disabled || isInactive}
-                                                    className={`text-right rtl:text-right w-24 ${isInactive ? 'bg-gray-100 text-gray-400' : ''}`}
-                                                    dir="rtl"
-                                                  />
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <Checkbox
-                                                      id={`inactive-${monthKey}`}
-                                                      checked={isInactive}
-                                                      onCheckedChange={(checked) => handleInactiveChange(monthKey, checked === true)}
-                                                      disabled={disabled}
-                                                    />
-                                                    <Label
-                                                      htmlFor={`inactive-${monthKey}`}
-                                                      className={`text-sm cursor-pointer ${isInactive ? 'text-gray-600' : 'text-gray-400'}`}
-                                                    >
-                                                      לא פעיל
-                                                    </Label>
-                                                  </div>
-                                                </td>
-                                              </tr>
-                                            );
-                                          })}
-                                        </tbody><tfoot className="bg-blue-50 border-t-2">
-                                          <tr>
-                                            <td className="px-4 py-3 text-right font-bold" colSpan={3}>
-                                              <Calculator className="inline ml-2 h-4 w-4" />
-                                              ממוצע (לחודשים פעילים בלבד)
-                                            </td>
-                                          </tr>
-                                        </tfoot>                  </table>
+                  <table className="w-full"><thead>
+                      <tr>
+                        <th className="px-4 py-2 text-right font-medium">חודש</th>
+                        <th className="px-4 py-2 text-right font-medium">מספר עובדים</th>
+                        <th className="px-4 py-2 text-right font-medium">לא פעיל / טרם נפתח</th>
+                      </tr>
+                    </thead><tbody>
+                      {displayMonths?.map((date) => {
+                        const monthKey = MonthlyDataService.dateToMonthKey(date);
+                        const count = monthData.get(monthKey);
+                        const isInactive = inactiveMonths.has(monthKey);
+                        const displayValue = isInactive ? '' : (count !== undefined ? count : 0);
+
+                        return (
+                          <tr key={monthKey} className={`border-t hover:bg-gray-50 ${isInactive ? 'bg-gray-50' : ''}`}>
+                            <td className="px-4 py-2">
+                              <span className={`font-medium ${isInactive ? 'text-gray-400' : 'text-gray-700'}`}>
+                                {MonthlyDataService.dateToHebrew(date)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={displayValue}
+                                onChange={(e) => handleCountChange(monthKey, parseInt(e.target.value, 10) || 0)}
+                                placeholder={isInactive ? '-' : '0'}
+                                disabled={disabled || isInactive}
+                                className={`text-right rtl:text-right w-24 ${isInactive ? 'bg-gray-100 text-gray-400' : ''}`}
+                                dir="rtl"
+                              />
+                            </td>
+                            <td className="px-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`inactive-${monthKey}`}
+                                  checked={isInactive}
+                                  onCheckedChange={(checked) => handleInactiveChange(monthKey, checked === true)}
+                                  disabled={disabled}
+                                />
+                                <Label
+                                  htmlFor={`inactive-${monthKey}`}
+                                  className={`text-sm cursor-pointer ${isInactive ? 'text-gray-600' : 'text-gray-400'}`}
+                                >
+                                  לא פעיל
+                                </Label>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody><tfoot>
+                      <tr>
+                        <td className="px-4 py-3 text-right font-bold" colSpan={3}>
+                          <Calculator className="inline ml-2 h-4 w-4" />
+                          ממוצע (לחודשים פעילים בלבד)
+                        </td>
+                      </tr>
+                    </tfoot></table>
                 </div>
               </div>
 
