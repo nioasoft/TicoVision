@@ -262,9 +262,9 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
                               <Input
                                 type="number"
                                 min="0"
-                                value={count || ''}
+                                value={count}
                                 onChange={(e) => handleCountChange(monthKey, parseInt(e.target.value, 10) || 0)}
-                                placeholder="הזן מספר"
+                                placeholder="0"
                                 disabled={disabled}
                                 className="text-right rtl:text-right w-24"
                                 dir="rtl"

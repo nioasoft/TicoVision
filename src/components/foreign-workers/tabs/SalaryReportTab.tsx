@@ -570,7 +570,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                                   <Input
                                     type="number"
                                     min="0"
-                                    value={data.salary || ''}
+                                    value={data.salary}
                                     onChange={(e) => handleSalaryChange(workerId, monthKey, 'salary', parseInt(e.target.value, 10) || 0)}
                                     placeholder="0"
                                     disabled={disabled}
@@ -582,7 +582,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                                   <Input
                                     type="number"
                                     min="0"
-                                    value={data.supplement || ''}
+                                    value={data.supplement}
                                     onChange={(e) => handleSalaryChange(workerId, monthKey, 'supplement', parseInt(e.target.value, 10) || 0)}
                                     placeholder="0"
                                     disabled={disabled}

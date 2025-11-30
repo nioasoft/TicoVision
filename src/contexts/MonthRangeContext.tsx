@@ -145,7 +145,7 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
     setError(null);
 
     try {
-      const { data, error: loadError } = await monthlyDataService.getBranchMonthRange(branchId);
+      let { data, error: loadError } = await monthlyDataService.getBranchMonthRange(branchId);
 
       if (loadError) {
         setError(loadError.message);
@@ -155,6 +155,38 @@ export function MonthRangeProvider({ children, initialBranchId, initialClientId 
           description: loadError.message,
         });
         return;
+      }
+
+      // If no range exists, initialize with default 12 months ending in current month
+      if (!data) {
+        if (!clientId) {
+          // Should not happen as branchId implies clientId usually, but safe guard
+          setRange(null);
+          return;
+        }
+
+        const today = new Date();
+        const endMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startMonth = new Date(endMonth);
+        startMonth.setMonth(startMonth.getMonth() - (DEFAULT_INITIAL_MONTHS - 1));
+
+        console.log('No range found, auto-initializing:', { startMonth, endMonth });
+
+        const { data: newData, error: initError } = await monthlyDataService.setBranchMonthRange(
+          branchId,
+          clientId,
+          startMonth,
+          endMonth
+        );
+
+        if (initError) {
+          console.error('Error auto-initializing range:', initError);
+          // Fallback to empty state but don't show error to user to avoid confusion
+          setRange(null);
+          return;
+        }
+
+        data = newData;
       }
 
       // Set the full range

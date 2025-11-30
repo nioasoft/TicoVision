@@ -264,9 +264,9 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
                             <td className="px-4 py-2">
                               <Input
                                 type="number"
-                                value={amount || ''}
+                                value={amount}
                                 onChange={(e) => handleAmountChange(monthKey, parseFloat(e.target.value) || 0)}
-                                placeholder="הזן סכום"
+                                placeholder="0"
                                 disabled={disabled}
                                 className="text-right rtl:text-right w-32"
                                 dir="rtl"
