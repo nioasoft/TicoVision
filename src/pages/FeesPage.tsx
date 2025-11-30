@@ -240,33 +240,61 @@ export function FeesPage() {
   }, []);
 
   useEffect(() => {
-    // Load previous year data and client details when client or tax year changes
-    const loadClientData = async () => {
-      if (formData.client_id) {
+    // Load data when selection or tax year changes
+    const loadData = async () => {
+      if (selectionMode === 'client' && formData.client_id) {
         // Run sequentially to avoid race conditions
         await loadPreviousYearData(formData.client_id);
         await loadDraftCalculation(formData.client_id);
         await loadClientDetails(formData.client_id);
+      } else if (selectionMode === 'group' && selectedGroupId) {
+        await loadGroupCalculation(selectedGroupId);
       } else {
-        // Clear all client-related data when no client selected
+        // Clear all client/group-related data when no selection
         setSelectedClientDetails(null);
         setRelatedCompanies([]);
         setCurrentDraftId(null);
+        setGroupCalculation(null);
 
-        // Reset previous year data
+        // Reset form data to defaults (except year)
         setFormData(prev => ({
           ...prev,
+          client_id: '',
+          isNewClient: false,
           previous_year_amount: 0,
           previous_year_discount: 0,
           previous_year_amount_after_discount: 0,
           previous_year_amount_with_vat: 0,
-          previous_year_amount_with_vat_before_discount: 0
+          previous_year_amount_with_vat_before_discount: 0,
+          base_amount: 0,
+          inflation_rate: 3.0,
+          index_manual_adjustment: 0,
+          real_adjustment: 0,
+          real_adjustment_reason: '',
+          client_requested_adjustment: 0,
+          client_requested_adjustment_note: '',
+          discount_percentage: 0,
+          apply_inflation_index: true,
+          notes: '',
+          bookkeeping_base_amount: 0,
+          bookkeeping_inflation_rate: 3.0,
+          bookkeeping_real_adjustment: 0,
+          bookkeeping_real_adjustment_reason: '',
+          bookkeeping_discount_percentage: 0,
+          bookkeeping_apply_inflation_index: true,
+          retainer_monthly_amount: 0,
+          retainer_inflation_rate: 3.0,
+          retainer_index_manual_adjustment: 0,
+          retainer_index_manual_is_negative: false,
+          retainer_real_adjustment: 0,
+          retainer_real_adjustment_reason: '',
+          retainer_apply_inflation_index: true
         }));
       }
     };
 
-    loadClientData();
-  }, [formData.client_id, formData.year]); // Re-load when tax year changes
+    loadData();
+  }, [formData.client_id, formData.year, selectionMode, selectedGroupId]);
 
   useEffect(() => {
     // Auto-calculate when form data changes
@@ -593,6 +621,27 @@ export function FeesPage() {
         setGroupCalculation(null);
         // For groups, we don't require previous year data - just allow calculation
         setPreviousYearDataSaved(true);
+        
+        // Reset form data to avoid showing stale data from previous group/client
+        setFormData(prev => ({
+          ...prev,
+          base_amount: 0,
+          inflation_rate: 3.0,
+          index_manual_adjustment: 0,
+          real_adjustment: 0,
+          real_adjustment_reason: '',
+          client_requested_adjustment: 0,
+          client_requested_adjustment_note: '',
+          discount_percentage: 0,
+          apply_inflation_index: true,
+          notes: '',
+          bookkeeping_base_amount: 0,
+          bookkeeping_inflation_rate: 3.0,
+          bookkeeping_real_adjustment: 0,
+          bookkeeping_real_adjustment_reason: '',
+          bookkeeping_discount_percentage: 0,
+          bookkeeping_apply_inflation_index: true
+        }));
       }
     } catch (error) {
       logger.error('Error loading group calculation:', error);
@@ -1466,10 +1515,7 @@ export function FeesPage() {
                     onGroupSelect={(group) => {
                       setSelectedGroupId(group?.id || null);
                       setSelectedGroup(group);
-                      if (group) {
-                        // Load group calculation if exists
-                        loadGroupCalculation(group.id);
-                      } else {
+                      if (!group) {
                         setGroupCalculation(null);
                       }
                       setPreviousYearDataSaved(false);
