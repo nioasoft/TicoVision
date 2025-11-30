@@ -793,7 +793,11 @@ export function LetterPreviewDialog({
    * Send email via Supabase Edge Function
    */
   const handleSendEmail = async () => {
-    if (!variables || !feeId || !clientId || !letterSelection) {
+    // Check for necessary data (supports both client and group mode)
+    const hasClientData = !!feeId && !!clientId;
+    const hasGroupData = !!groupId && !!groupFeeCalculationId;
+
+    if (!variables || (!hasClientData && !hasGroupData) || !letterSelection) {
       toast.error('חסרים נתונים לשליחת המכתב');
       return;
     }
@@ -841,8 +845,9 @@ export function LetterPreviewDialog({
           recipientName: variables.company_name || 'לקוח יקר',
           templateType,
           variables,
-          clientId,
-          feeCalculationId: feeId,
+          clientId: clientId || null, // Can be null for group letters
+          feeCalculationId: feeId || null, // Can be null for group letters
+          groupCalculationId: groupFeeCalculationId || null, // Add group fee ID
           letterId: savedLetterId, // Pass existing letter ID to prevent duplicate
         },
         headers: {
@@ -857,7 +862,8 @@ export function LetterPreviewDialog({
       console.log('✅ Email sent successfully:', data);
 
       // Update fee_calculations status to 'sent' (only after all letters sent)
-      if (currentLetterStage === 'secondary' || !effectiveSecondaryTemplate) {
+      // Only for individual clients
+      if (feeId && (currentLetterStage === 'secondary' || !effectiveSecondaryTemplate)) {
         const { error: statusError } = await supabase
           .from('fee_calculations')
           .update({ status: 'sent' })
@@ -868,6 +874,18 @@ export function LetterPreviewDialog({
           toast.error('המייל נשלח אך הסטטוס לא עודכן');
           return;
         }
+      }
+      
+      // Update group fee calculation status if applicable
+      if (groupFeeCalculationId) {
+        const { error: statusError } = await supabase
+          .from('group_fee_calculations')
+          .update({ status: 'sent' })
+          .eq('id', groupFeeCalculationId);
+
+          if (statusError) {
+            console.error('Error updating group fee status:', statusError);
+          }
       }
 
       // Update or insert to generated_letters
@@ -901,8 +919,9 @@ export function LetterPreviewDialog({
           .from('generated_letters')
           .insert({
             tenant_id: tenantId,
-            client_id: clientId,
-            fee_calculation_id: feeId,
+            client_id: clientId || null,
+            fee_calculation_id: feeId || null,
+            group_calculation_id: groupFeeCalculationId || null,
             template_id: null,
             template_type: templateType,
             subject: `שלום רב ${variables.company_name} - הודעת חיוב ${templateType.includes('bookkeeping') ? 'הנהלת חשבונות ' : ''}לשנת המס ${variables.tax_year} כמדי שנה 😊`,
