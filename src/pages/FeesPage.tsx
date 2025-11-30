@@ -607,7 +607,7 @@ export function FeesPage() {
           index_manual_adjustment: response.data.audit_index_manual_adjustment || 0,
           real_adjustment: response.data.audit_real_adjustment || 0,
           real_adjustment_reason: response.data.audit_real_adjustment_reason || '',
-          discount_percentage: response.data.audit_discount_percentage || 0,
+          discount_percentage: response.data.audit_discount_percentage ?? 0, // Use nullish coalescing
           client_requested_adjustment: response.data.client_requested_adjustment || 0,
           client_requested_adjustment_note: response.data.client_requested_adjustment_note || '',
           // Bookkeeping fields
@@ -624,6 +624,7 @@ export function FeesPage() {
         setFormData(prev => ({ ...prev, ...newFormData }));
         
         setPreviousYearDataSaved(true); // Allow progression for group
+        // Removed auto-navigation to 'current' tab per user request
         toast({
           title: 'נטען חישוב קבוצתי',
           description: 'נתוני חישוב קיימים נטענו בהצלחה',
@@ -654,6 +655,7 @@ export function FeesPage() {
           bookkeeping_discount_percentage: 0,
           bookkeeping_apply_inflation_index: true
         }));
+        // Removed auto-navigation to 'current' tab per user request
       }
     } catch (error) {
       logger.error('Error loading group calculation:', error);
