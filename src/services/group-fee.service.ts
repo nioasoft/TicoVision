@@ -417,6 +417,71 @@ class GroupFeeService extends BaseService {
   }
 
   /**
+   * Get aggregated data for a group from individual client calculations (fallback for previous year)
+   */
+  async getAggregatedGroupData(groupId: string, year: number): Promise<ServiceResponse<{
+    base_amount: number;
+    total_with_vat: number;
+    discount_amount: number;
+  } | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Get all clients in the group
+      const { data: clients, error: clientsError } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('group_id', groupId);
+
+      if (clientsError) throw clientsError;
+      if (!clients || clients.length === 0) return { data: null, error: null };
+
+      const clientIds = clients.map(c => c.id);
+
+      // 2. Get all fee calculations for these clients for the year
+      const { data: fees, error: feesError } = await supabase
+        .from('fee_calculations')
+        .select('base_amount, total_amount, discount_amount, final_amount, vat_amount, discount_percentage, previous_year_discount')
+        .eq('tenant_id', tenantId)
+        .eq('year', year)
+        .in('client_id', clientIds);
+
+      if (feesError) throw feesError;
+
+      if (!fees || fees.length === 0) return { data: null, error: null };
+
+      // 3. Aggregate totals
+      const totals = fees.reduce((acc, fee) => {
+        // Use either total_amount or calculate from final + vat
+        const totalWithVat = fee.total_amount || ((fee.final_amount || 0) + (fee.vat_amount || 0));
+        
+        let feeDiscountAmount = fee.discount_amount || 0;
+        
+        // If discount_amount is 0 but percentage exists, calculate it
+        if (feeDiscountAmount === 0 && fee.discount_percentage && fee.discount_percentage > 0 && fee.base_amount) {
+             feeDiscountAmount = fee.base_amount * (fee.discount_percentage / 100);
+        }
+
+        // If still 0, try to calculate from previous_year_discount (which is itself a percentage from year-2)
+        if (feeDiscountAmount === 0 && fee.previous_year_discount && fee.previous_year_discount > 0 && fee.base_amount) {
+            feeDiscountAmount = fee.base_amount * (fee.previous_year_discount / 100);
+        }
+
+        return {
+          base_amount: acc.base_amount + (fee.base_amount || 0),
+          total_with_vat: acc.total_with_vat + totalWithVat,
+          discount_amount: acc.discount_amount + feeDiscountAmount
+        };
+      }, { base_amount: 0, total_with_vat: 0, discount_amount: 0 });
+
+      return { data: totals, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
    * Save (create or update) group calculation
    */
   async saveGroupCalculation(input: GroupFeeCalculationInput): Promise<ServiceResponse<GroupFeeCalculation>> {

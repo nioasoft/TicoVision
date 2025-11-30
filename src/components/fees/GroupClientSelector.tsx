@@ -15,6 +15,7 @@ import { ClientService, type Client } from '@/services/client.service';
 import { groupFeeService, type ClientGroup } from '@/services/group-fee.service';
 import { cn } from '@/lib/utils';
 import { useLastClient } from '@/hooks/useLastClient';
+import { useLastGroup } from '@/hooks/useLastGroup';
 
 const clientService = new ClientService();
 
@@ -49,6 +50,7 @@ export function GroupClientSelector({
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { getLastClientId, setLastClientId } = useLastClient();
+  const { getLastGroupId, setLastGroupId } = useLastGroup();
 
   // Load clients when component mounts
   useEffect(() => {
@@ -167,10 +169,29 @@ export function GroupClientSelector({
   }, [clients, getLastClientId]);
 
   /**
+   * Sort groups - last selected group first, then alphabetically
+   */
+  const sortedGroups = useMemo(() => {
+    const lastId = getLastGroupId();
+    if (!lastId || groups.length === 0) return groups;
+
+    return [...groups].sort((a, b) => {
+      // Last group always first
+      if (a.id === lastId) return -1;
+      if (b.id === lastId) return 1;
+      // Alphabetical for the rest
+      return (a.group_name_hebrew || '').localeCompare(b.group_name_hebrew || '', 'he');
+    });
+  }, [groups, getLastGroupId]);
+
+  /**
    * Handle group selection
    */
   const handleGroupSelect = (groupId: string) => {
     const selectedGroup = groups.find(g => g.id === groupId);
+    if (selectedGroup) {
+      setLastGroupId(groupId); // Save as last used group
+    }
     onGroupSelect(selectedGroup || null);
   };
 
@@ -259,7 +280,7 @@ export function GroupClientSelector({
           /* Group Selector */
           <div className="space-y-2">
             <Combobox
-              options={groups.map((group) => ({
+              options={sortedGroups.map((group) => ({
                 value: group.id,
                 label: getGroupDisplayName(group),
               }))}

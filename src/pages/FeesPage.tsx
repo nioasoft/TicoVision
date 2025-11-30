@@ -589,6 +589,73 @@ export function FeesPage() {
   const loadGroupCalculation = async (groupId: string) => {
     try {
       console.log('🔄 [FeesPage] loadGroupCalculation called', { groupId, year: formData.year });
+      
+      let updates: Partial<FeeCalculatorForm> = {};
+
+      // 1. Fetch Previous Year Data (year - 1)
+      try {
+        const prevResponse = await groupFeeService.getGroupCalculation(groupId, formData.year - 1);
+        if (prevResponse.data) {
+          const base = prevResponse.data.audit_base_amount || 0;
+          const discount = prevResponse.data.audit_discount_percentage || 0;
+          const calculated = calculatePreviousYearFields(base, discount);
+          
+          updates = {
+            ...updates,
+            previous_year_amount: base,
+            previous_year_discount: discount,
+            previous_year_amount_after_discount: calculated.previous_year_amount_after_discount,
+            previous_year_amount_with_vat: calculated.previous_year_amount_with_vat,
+            previous_year_amount_with_vat_before_discount: calculated.previous_year_amount_with_vat_before_discount,
+          };
+        } else {
+             // FALLBACK: Try aggregated data from individual clients
+             console.log('⚠️ [FeesPage] No group calculation found for previous year, trying aggregation.');
+             const aggResponse = await groupFeeService.getAggregatedGroupData(groupId, formData.year - 1);
+             
+             if (aggResponse.data) {
+                 const base = aggResponse.data.base_amount || 0;
+                 const totalWithVat = aggResponse.data.total_with_vat;
+                 const discountAmount = aggResponse.data.discount_amount;
+                 
+                 // Calculate blended discount percentage
+                 let discountPercent = 0;
+                 if (base > 0 && discountAmount > 0) {
+                     discountPercent = (discountAmount / base) * 100;
+                 }
+                 
+                 // Back-calculate "amount_after_discount" from totalWithVat
+                 const totalBeforeVat = totalWithVat / 1.18;
+                 
+                 updates = {
+                    ...updates,
+                    previous_year_amount: base,
+                    previous_year_discount: parseFloat(discountPercent.toFixed(2)),
+                    previous_year_amount_after_discount: parseFloat(totalBeforeVat.toFixed(2)),
+                    previous_year_amount_with_vat: totalWithVat,
+                    previous_year_amount_with_vat_before_discount: parseFloat((base * 1.18).toFixed(2))
+                 };
+                 
+                 toast({
+                    title: 'נטענו נתוני שנה קודמת (אגרגציה)',
+                    description: 'סוכמו נתוני החיובים הנפרדים של חברי הקבוצה משנה קודמת',
+                 });
+             } else {
+                 updates = {
+                    ...updates,
+                    previous_year_amount: 0,
+                    previous_year_discount: 0,
+                    previous_year_amount_after_discount: 0,
+                    previous_year_amount_with_vat: 0,
+                    previous_year_amount_with_vat_before_discount: 0,
+                 };
+             }
+        }
+      } catch (error) {
+        console.error('Error loading previous group calculation:', error);
+      }
+
+      // 2. Fetch Current Year Data
       const response = await groupFeeService.getGroupCalculation(groupId, formData.year);
       console.log('📦 [FeesPage] loadGroupCalculation response:', response);
 
@@ -596,18 +663,14 @@ export function FeesPage() {
         console.log('✅ [FeesPage] Found group calculation data:', response.data);
         setGroupCalculation(response.data);
         
-        // Pre-fill form with existing calculation data
-        // Explicitly logging the mapping to debug 0 values
-        const newFormData = {
-          ...formData, // Keep other fields like client_id (which should be empty in group mode)
-          // Ensure we map audit_base_amount correctly to base_amount
+        const currentYearFields = {
           base_amount: response.data.audit_base_amount ?? 0,
           inflation_rate: response.data.audit_inflation_rate || 3.0,
           apply_inflation_index: response.data.audit_apply_inflation_index ?? true,
           index_manual_adjustment: response.data.audit_index_manual_adjustment || 0,
           real_adjustment: response.data.audit_real_adjustment || 0,
           real_adjustment_reason: response.data.audit_real_adjustment_reason || '',
-          discount_percentage: response.data.audit_discount_percentage ?? 0, // Use nullish coalescing
+          discount_percentage: response.data.audit_discount_percentage ?? 0,
           client_requested_adjustment: response.data.client_requested_adjustment || 0,
           client_requested_adjustment_note: response.data.client_requested_adjustment_note || '',
           // Bookkeeping fields
@@ -620,11 +683,10 @@ export function FeesPage() {
           notes: response.data.notes || ''
         };
         
-        console.log('📝 [FeesPage] Setting form data from group calculation:', newFormData);
-        setFormData(prev => ({ ...prev, ...newFormData }));
+        updates = { ...updates, ...currentYearFields };
         
-        setPreviousYearDataSaved(true); // Allow progression for group
-        // Removed auto-navigation to 'current' tab per user request
+        setPreviousYearDataSaved(true); 
+        
         toast({
           title: 'נטען חישוב קבוצתי',
           description: 'נתוני חישוב קיימים נטענו בהצלחה',
@@ -632,12 +694,9 @@ export function FeesPage() {
       } else {
         console.log('⚠️ [FeesPage] No group calculation found, resetting form.');
         setGroupCalculation(null);
-        // For groups, we don't require previous year data - just allow calculation
         setPreviousYearDataSaved(true);
         
-        // Reset form data to avoid showing stale data from previous group/client
-        setFormData(prev => ({
-          ...prev,
+        const resetFields = {
           base_amount: 0,
           inflation_rate: 3.0,
           index_manual_adjustment: 0,
@@ -653,10 +712,22 @@ export function FeesPage() {
           bookkeeping_real_adjustment: 0,
           bookkeeping_real_adjustment_reason: '',
           bookkeeping_discount_percentage: 0,
-          bookkeeping_apply_inflation_index: true
-        }));
-        // Removed auto-navigation to 'current' tab per user request
+          bookkeeping_apply_inflation_index: true,
+          retainer_monthly_amount: 0,
+          retainer_inflation_rate: 3.0,
+          retainer_index_manual_adjustment: 0,
+          retainer_index_manual_is_negative: false,
+          retainer_real_adjustment: 0,
+          retainer_real_adjustment_reason: '',
+          retainer_apply_inflation_index: true
+        };
+        
+        updates = { ...updates, ...resetFields };
       }
+      
+      // Apply all updates at once
+      setFormData(prev => ({ ...prev, ...updates }));
+
     } catch (error) {
       logger.error('Error loading group calculation:', error);
       console.error('❌ [FeesPage] Error loading group calculation:', error);
