@@ -380,7 +380,7 @@ export function LetterPreviewDialog({
 
         // GROUP NAME instead of client name!
         company_name: group.group_name_hebrew,
-        group_name: group.group_name_hebrew,
+        group_name: '', // Empty to prevent duplication in group letters
 
         // Amounts
         amount_original: formatNumber(totalAmount),
