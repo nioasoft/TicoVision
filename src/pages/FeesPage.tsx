@@ -971,7 +971,7 @@ export function FeesPage() {
         const groupInput = {
           group_id: selectedGroupId,
           year: formData.year,
-          audit_base_amount: formData.base_amount,
+          audit_base_amount: formData.base_amount, // Ensure this uses the form data
           audit_inflation_rate: formData.inflation_rate,
           audit_apply_inflation_index: formData.apply_inflation_index,
           audit_index_manual_adjustment: formData.index_manual_adjustment,
@@ -1006,10 +1006,10 @@ export function FeesPage() {
             title: 'הצלחה',
             description: 'חישוב קבוצתי נשמר בהצלחה',
           });
+          
+          // Reload the data to ensure UI is in sync
+          await loadGroupCalculation(selectedGroupId);
         }
-
-        resetForm();
-        loadInitialData();
         return;
       }
 
