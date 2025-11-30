@@ -594,7 +594,7 @@ export function FeesPage() {
         // Pre-fill form with existing calculation data
         setFormData(prev => ({
           ...prev,
-          base_amount: response.data.audit_base_amount || 0,
+          base_amount: response.data.audit_base_amount ?? 0,
           inflation_rate: response.data.audit_inflation_rate || 3.0,
           apply_inflation_index: response.data.audit_apply_inflation_index ?? true,
           index_manual_adjustment: response.data.audit_index_manual_adjustment || 0,
