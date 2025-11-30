@@ -829,16 +829,36 @@ export class TemplateService extends BaseService {
       // 6.5. Check if client requested adjustment exists (for red header)
       let hasClientAdjustment = false;
       if (feeCalculationId) {
-        const tenantId = await this.getTenantId();
-        const { data: feeCalculation, error } = await supabase
-          .from('fee_calculations')
-          .select('client_requested_adjustment')
-          .eq('id', feeCalculationId)
-          .eq('tenant_id', tenantId)
-          .single();
+        try {
+          const tenantId = await this.getTenantId();
+          // Try fetching from individual fee calculations first
+          const { data: feeCalculation, error } = await supabase
+            .from('fee_calculations')
+            .select('client_requested_adjustment')
+            .eq('id', feeCalculationId)
+            .eq('tenant_id', tenantId)
+            .maybeSingle();
 
-        hasClientAdjustment = feeCalculation && (feeCalculation.client_requested_adjustment || 0) < 0;
-        console.log('🔍 [Preview] Fee ID:', feeCalculationId, 'Has adjustment:', hasClientAdjustment);
+          if (!error && feeCalculation) {
+            hasClientAdjustment = (feeCalculation.client_requested_adjustment || 0) < 0;
+          } else {
+            // If not found or error (e.g. 406 because ID is UUID but table expects something else, or ID not found),
+            // Try fetching from GROUP fee calculations
+            const { data: groupCalculation, error: groupError } = await supabase
+              .from('group_fee_calculations')
+              .select('client_requested_adjustment')
+              .eq('id', feeCalculationId)
+              .eq('tenant_id', tenantId)
+              .maybeSingle();
+              
+            if (!groupError && groupCalculation) {
+               hasClientAdjustment = (groupCalculation.client_requested_adjustment || 0) < 0;
+            }
+          }
+          console.log('🔍 [Preview] Fee/Group ID:', feeCalculationId, 'Has adjustment:', hasClientAdjustment);
+        } catch (err) {
+          console.warn('⚠️ [Preview] Failed to check for client adjustment (ignoring):', err);
+        }
       }
 
       // 7. Build full HTML with custom header if client requested adjustment exists

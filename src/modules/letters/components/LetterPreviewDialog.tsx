@@ -550,8 +550,12 @@ export function LetterPreviewDialog({
       return savedLetterId;
     }
 
-    if (!variables || !feeId || !clientId || !previewHtml || !letterSelection) {
-      console.warn('⚠️ Missing data for saving letter');
+    // Check for necessary data (supports both client and group mode)
+    const hasClientData = !!feeId && !!clientId;
+    const hasGroupData = !!groupId && !!groupFeeCalculationId;
+
+    if (!variables || (!hasClientData && !hasGroupData) || !previewHtml || !letterSelection) {
+      console.warn('⚠️ Missing data for saving letter', { variables: !!variables, hasClientData, hasGroupData, previewHtml: !!previewHtml });
       return null;
     }
 
@@ -582,8 +586,11 @@ export function LetterPreviewDialog({
         .from('generated_letters')
         .insert({
           tenant_id: tenantId,
-          client_id: clientId,
-          fee_calculation_id: feeId,
+          client_id: clientId || null, // Can be null for group letters if schema allows, or use first client? Ideally schema allows null client_id if group_id exists
+          // Note: If schema requires client_id, we might need to handle this. Assuming it's nullable or we use groupId.
+          // Based on schema, client_id is nullable. We should probably add group_calculation_id column if it exists.
+          fee_calculation_id: feeId || null,
+          group_calculation_id: groupFeeCalculationId || null, // Save group fee ID
           template_id: null,
           template_type: templateType,
           subject: `מכתב שכר טרחה ${variables.tax_year}`,
@@ -618,14 +625,18 @@ export function LetterPreviewDialog({
       setVariables(updatedVariables);
 
       // Regenerate preview with letter_id included
-      const { data: previewData, error: previewError } = await templateService.previewLetterFromFiles(
-        templateType,
-        updatedVariables,
-        feeId
-      );
+      // Use the correct ID for preview regeneration
+      const calculationId = feeId || groupFeeCalculationId;
+      if (calculationId) {
+        const { data: previewData, error: previewError } = await templateService.previewLetterFromFiles(
+          templateType,
+          updatedVariables,
+          calculationId
+        );
 
-      if (!previewError && previewData) {
-        setPreviewHtml(previewData.html);
+        if (!previewError && previewData) {
+          setPreviewHtml(previewData.html);
+        }
       }
 
       return data.id;
