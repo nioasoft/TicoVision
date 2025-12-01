@@ -49,6 +49,9 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'dashboard', route: '/dashboard', label: 'לוח בקרה' },
   { menu: 'clients', route: '/clients', label: 'לקוחות' },
   { menu: 'clients:list', route: '/clients', label: 'רשימת לקוחות', parent: 'clients' },
+  { menu: 'clients:create', route: '/clients', label: 'הוספת לקוח', parent: 'clients' },
+  { menu: 'clients:edit', route: '/clients', label: 'עריכת לקוח', parent: 'clients' },
+  { menu: 'clients:delete', route: '/clients', label: 'מחיקת לקוח', parent: 'clients' },
   { menu: 'clients:groups', route: '/client-groups', label: 'ניהול קבוצות', parent: 'clients' },
   { menu: 'fees', route: '/fees/tracking', label: 'שכר טרחה' },
   { menu: 'fees:tracking', route: '/fees/tracking', label: 'מעקב שכר טרחה', parent: 'fees' },
@@ -72,7 +75,7 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
 export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: [
     'dashboard',
-    'clients', 'clients:list', 'clients:groups',
+    'clients', 'clients:list', 'clients:create', 'clients:edit', 'clients:delete', 'clients:groups',
     'fees', 'fees:tracking', 'fees:calculate', 'fees:collections',
     'letters', 'letters:templates', 'letters:simulator', 'letters:history',
     'foreign-workers',
@@ -84,7 +87,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'foreign-workers',
   ],
   bookkeeper: [
-    'clients', 'clients:list',
+    'clients', 'clients:list', 'clients:create', 'clients:edit',
     'foreign-workers',
     'files',
   ],

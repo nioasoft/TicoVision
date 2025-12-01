@@ -22,6 +22,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import type { Client } from '@/services';
 import { PAYMENT_ROLE_LABELS } from '@/lib/labels';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ClientsTableProps {
   clients: Client[];
@@ -38,7 +39,8 @@ interface ClientsTableProps {
 interface ClientRowProps {
   client: Client;
   isSelected: boolean;
-  isAdmin?: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
@@ -47,7 +49,7 @@ interface ClientRowProps {
 
 // Memoized row component to prevent unnecessary re-renders
 const ClientRow = React.memo<ClientRowProps>(
-  ({ client, isSelected, isAdmin, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
+  ({ client, isSelected, canEdit, canDelete, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
     const getStatusBadge = (status: string) => {
       const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
         active: 'default',
@@ -157,9 +159,9 @@ const ClientRow = React.memo<ClientRowProps>(
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onEdit(client)}>
                 <Edit className="ml-2 h-4 w-4" />
-                {isAdmin ? 'ערוך' : 'צפה'}
+                {canEdit ? 'ערוך' : 'צפה'}
               </DropdownMenuItem>
-              {isAdmin && (
+              {canDelete && (
                 <DropdownMenuItem
                   className="text-red-600"
                   onClick={() => onDelete(client)}
@@ -189,6 +191,9 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   onDelete,
   onGroupFilter,
 }) => {
+  const { isMenuVisible } = usePermissions();
+  const canEdit = isMenuVisible('clients:edit');
+  const canDelete = isMenuVisible('clients:delete');
   const allSelected = selectedClients.length === clients.length && clients.length > 0;
 
   return (
@@ -229,7 +234,8 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
                 key={client.id}
                 client={client}
                 isSelected={selectedClients.includes(client.id)}
-                isAdmin={isAdmin}
+                canEdit={canEdit}
+                canDelete={canDelete}
                 onToggleSelect={onToggleSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}

@@ -22,6 +22,8 @@ import type { Client } from '@/services';
 export default function ClientsPage() {
   const { role } = useAuth();
   const isAdmin = role === 'admin';
+  const { isMenuVisible } = usePermissions();
+  const canCreateClient = isMenuVisible('clients:create');
 
   const {
     // State
@@ -135,7 +137,7 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">ניהול לקוחות</h1>
-        {isAdmin && (
+        {canCreateClient && (
           <Button onClick={handleOpenAddDialog}>
             <Plus className="ml-2 h-4 w-4" />
             הוסף לקוח חדש
