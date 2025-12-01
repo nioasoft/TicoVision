@@ -227,7 +227,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (!formData.contact_phone?.trim()) errors.push('טלפון איש קשר');
       if (!formData.address?.street?.trim()) errors.push('כתובת');
       if (!formData.address?.city?.trim()) errors.push('עיר');
-      if (!formData.address?.postal_code?.trim()) errors.push('מיקוד');
+
 
       // Accountant validation - required fields ONLY in add mode
       // In edit mode, accountant contact already exists in the system
@@ -245,7 +245,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         }
       }
 
-      if (formData.address?.postal_code && !validateIsraeliPostalCode(formData.address.postal_code)) {
+      if (formData.address?.postal_code?.trim() && !validateIsraeliPostalCode(formData.address.postal_code)) {
         errors.push('מיקוד חייב להכיל 7 ספרות בדיוק');
       }
 
@@ -433,8 +433,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   required={true}
                   namePlaceholder="שם מלא"
                   emailPlaceholder="דוא״ל"
-                  phonePlaceholder="050-1234567"
-                  phoneSecondaryPlaceholder="03-6543210"
+                  phonePlaceholder=""
+                  phoneSecondaryPlaceholder=""
                 />
               </div>
 
@@ -486,7 +486,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               <div>
                 <Label htmlFor="address_postal_code" className="text-right block mb-2">
-                  מיקוד (7 ספרות) <span className="text-red-500">*</span>
+                  מיקוד (7 ספרות)
                 </Label>
                 <Input
                   id="address_postal_code"
@@ -801,7 +801,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     required={true}
                     namePlaceholder="שם מנהלת חשבונות"
                     emailPlaceholder="דוא״ל"
-                    phonePlaceholder="050-1234567"
+                    phonePlaceholder=""
                   />
                   </div>
                 </>
