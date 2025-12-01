@@ -1698,7 +1698,7 @@ export function FeesPage() {
                           <Input
                             id="previous_amount"
                             type="number"
-                            value={formData.previous_year_amount}
+                            value={formData.previous_year_amount === 0 ? '' : formData.previous_year_amount}
                             onChange={(e) => {
                               const val = e.target.value;
                               const newAmount = val === '' ? '' : parseFloat(val);
@@ -1757,7 +1757,7 @@ export function FeesPage() {
                             <Input
                               id="previous_discount"
                               type="number"
-                              value={formData.previous_year_discount}
+                              value={formData.previous_year_discount === 0 ? '' : formData.previous_year_discount}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 const newDiscount = val === '' ? '' : parseFloat(val);
@@ -1965,7 +1965,7 @@ export function FeesPage() {
                         <Input
                           id="retainer_monthly_amount"
                           type="number"
-                          value={formData.retainer_monthly_amount}
+                          value={formData.retainer_monthly_amount === 0 ? '' : formData.retainer_monthly_amount}
                           onChange={(e) => setFormData({ ...formData, retainer_monthly_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           placeholder=""
                         />
@@ -1993,7 +1993,7 @@ export function FeesPage() {
                         <Input
                           id="retainer_inflation_rate"
                           type="number"
-                          value={formData.retainer_inflation_rate}
+                          value={formData.retainer_inflation_rate === 0 ? '' : formData.retainer_inflation_rate}
                           onChange={(e) => setFormData({ ...formData, retainer_inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           step="0.1"
                           placeholder=""
@@ -2022,7 +2022,7 @@ export function FeesPage() {
                         <Input
                           id="retainer_index_manual_adjustment"
                           type="number"
-                          value={formData.retainer_index_manual_adjustment}
+                          value={formData.retainer_index_manual_adjustment === 0 ? '' : formData.retainer_index_manual_adjustment}
                           onChange={(e) => setFormData({ ...formData, retainer_index_manual_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           placeholder=""
                           disabled={!formData.retainer_apply_inflation_index}
@@ -2040,7 +2040,7 @@ export function FeesPage() {
                         <Input
                           id="retainer_real_adjustment"
                           type="number"
-                          value={formData.retainer_real_adjustment}
+                          value={formData.retainer_real_adjustment === 0 ? '' : formData.retainer_real_adjustment}
                           onChange={(e) => setFormData({ ...formData, retainer_real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           placeholder=""
                         />
@@ -2069,7 +2069,7 @@ export function FeesPage() {
                     <Input
                       id="base_amount"
                       type="number"
-                      value={formData.base_amount}
+                      value={formData.base_amount === 0 ? '' : formData.base_amount}
                       onChange={(e) => setFormData({ ...formData, base_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                       placeholder=""
                     />
@@ -2094,7 +2094,7 @@ export function FeesPage() {
                     <Input
                       id="inflation_rate"
                       type="number"
-                      value={formData.inflation_rate}
+                      value={formData.inflation_rate === 0 ? '' : formData.inflation_rate}
                       onChange={(e) => setFormData({ ...formData, inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                       step="0.1"
                       placeholder=""
@@ -2131,7 +2131,7 @@ export function FeesPage() {
                     <Input
                       id="index_manual_adjustment"
                       type="number"
-                      value={typeof formData.index_manual_adjustment === 'number' ? Math.abs(formData.index_manual_adjustment) : ''}
+                      value={formData.index_manual_adjustment === 0 ? '' : Math.abs(formData.index_manual_adjustment)}
                       onChange={(e) => {
                         const val = e.target.value;
                         const value = val === '' ? 0 : parseFloat(val); // Internal value for calculation, UI shows empty if empty
@@ -2160,7 +2160,7 @@ export function FeesPage() {
                     <Input
                       id="real_adjustment"
                       type="number"
-                      value={formData.real_adjustment}
+                      value={formData.real_adjustment === 0 ? '' : formData.real_adjustment}
                       onChange={(e) => setFormData({ ...formData, real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                       placeholder=""
                     />
@@ -2187,7 +2187,7 @@ export function FeesPage() {
                       type="number"
                       step="0.01"
                       max="0"
-                      value={formData.client_requested_adjustment}
+                      value={formData.client_requested_adjustment === 0 ? '' : formData.client_requested_adjustment}
                       onChange={(e) => {
                         const val = e.target.value;
                         const value = val === '' ? '' : parseFloat(val);
@@ -2253,7 +2253,7 @@ export function FeesPage() {
                         <Input
                           id="bookkeeping_base_amount"
                           type="number"
-                          value={formData.bookkeeping_base_amount}
+                          value={formData.bookkeeping_base_amount === 0 ? '' : formData.bookkeeping_base_amount}
                           onChange={(e) => setFormData({ ...formData, bookkeeping_base_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           placeholder=""
                         />
@@ -2278,7 +2278,7 @@ export function FeesPage() {
                         <Input
                           id="bookkeeping_inflation_rate"
                           type="number"
-                          value={formData.bookkeeping_inflation_rate}
+                          value={formData.bookkeeping_inflation_rate === 0 ? '' : formData.bookkeeping_inflation_rate}
                           onChange={(e) => setFormData({ ...formData, bookkeeping_inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           step="0.1"
                           placeholder=""
@@ -2294,7 +2294,7 @@ export function FeesPage() {
                         <Input
                           id="bookkeeping_real_adjustment"
                           type="number"
-                          value={formData.bookkeeping_real_adjustment}
+                          value={formData.bookkeeping_real_adjustment === 0 ? '' : formData.bookkeeping_real_adjustment}
                           onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           placeholder=""
                         />

@@ -200,7 +200,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   <Input
                     id="total-turnover-12"
                     type="number"
-                    value={value.scenario_12_plus?.total_turnover || ''}
+                    value={value.scenario_12_plus?.total_turnover === 0 ? '' : (value.scenario_12_plus?.total_turnover || '')}
                     onChange={(e) =>
                       onChange({
                         ...value,
@@ -286,7 +286,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                       type="number"
                       min="4"
                       max="11"
-                      value={value.scenario_4_to_11?.months_count || ''}
+                      value={value.scenario_4_to_11?.months_count === 0 ? '' : (value.scenario_4_to_11?.months_count || '')}
                       onChange={(e) => {
                         const newMonthsCount = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
                         const periodStart = value.scenario_4_to_11?.period_start || '';
@@ -314,7 +314,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   <Input
                     id="total-turnover-4"
                     type="number"
-                    value={value.scenario_4_to_11?.total_turnover || ''}
+                    value={value.scenario_4_to_11?.total_turnover === 0 ? '' : (value.scenario_4_to_11?.total_turnover || '')}
                     onChange={(e) =>
                       onChange({
                         ...value,
@@ -348,7 +348,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   <Input
                     id="estimated-costs"
                     type="number"
-                    value={value.scenario_up_to_3?.estimated_annual_costs || ''}
+                    value={value.scenario_up_to_3?.estimated_annual_costs === 0 ? '' : (value.scenario_up_to_3?.estimated_annual_costs || '')}
                     onChange={(e) =>
                       onChange({
                         ...value,
