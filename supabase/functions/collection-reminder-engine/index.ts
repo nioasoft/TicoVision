@@ -71,13 +71,61 @@ interface ProcessingStats {
   errors: string[];
 }
 
+// Cache for email settings (per function invocation)
+let cachedEmailSettings: { sender_email: string; sender_name: string; reply_to_email: string; alert_email: string } | null = null;
+
+/**
+ * Get email settings from tenant_settings table
+ */
+async function getEmailSettings(supabase: ReturnType<typeof createClient>): Promise<{
+  sender_email: string;
+  sender_name: string;
+  reply_to_email: string;
+  alert_email: string;
+}> {
+  if (cachedEmailSettings) {
+    return cachedEmailSettings;
+  }
+
+  const defaults = {
+    sender_email: 'tico@franco.co.il',
+    sender_name: 'תיקו פרנקו - משרד רואי חשבון',
+    reply_to_email: 'sigal@franco.co.il',
+    alert_email: 'sigal@franco.co.il'
+  };
+
+  try {
+    const { data, error } = await supabase
+      .from('tenant_settings')
+      .select('sender_email, sender_name, reply_to_email, alert_email')
+      .single();
+
+    if (error || !data) {
+      cachedEmailSettings = defaults;
+      return defaults;
+    }
+
+    cachedEmailSettings = {
+      sender_email: data.sender_email || defaults.sender_email,
+      sender_name: data.sender_name || defaults.sender_name,
+      reply_to_email: data.reply_to_email || defaults.reply_to_email,
+      alert_email: data.alert_email || defaults.alert_email
+    };
+    return cachedEmailSettings;
+  } catch {
+    cachedEmailSettings = defaults;
+    return defaults;
+  }
+}
+
 /**
  * Send reminder email via SendGrid
  */
 async function sendReminderEmail(
   to: string,
   templateId: string,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  emailSettings: { sender_email: string; sender_name: string }
 ): Promise<boolean> {
   try {
     if (!SENDGRID_API_KEY) {
@@ -97,8 +145,8 @@ async function sendReminderEmail(
           dynamic_template_data: variables,
         }],
         from: {
-          email: 'sigal@franco.co.il',
-          name: 'סיגל נגר - פרנקו ושות׳',
+          email: emailSettings.sender_email,
+          name: emailSettings.sender_name,
         },
         template_id: templateId,
       }),
@@ -125,7 +173,8 @@ async function sendAdminAlert(
   supabase: ReturnType<typeof createClient>,
   tenantId: string,
   alertType: string,
-  feeIds: string[]
+  feeIds: string[],
+  emailSettings: { sender_email: string; sender_name: string; alert_email: string }
 ): Promise<boolean> {
   try {
     // Get notification settings
@@ -140,7 +189,8 @@ async function sendAdminAlert(
       return false;
     }
 
-    const alertEmail = settings.alert_email_address || 'sigal@franco.co.il';
+    // Use notification_settings alert_email_address, fallback to tenant_settings alert_email
+    const alertEmail = settings.alert_email_address || emailSettings.alert_email;
 
     // Map alert types to Hebrew messages
     const alertMessages: Record<string, string> = {
@@ -158,7 +208,8 @@ async function sendAdminAlert(
         fee_count: feeIds.length,
         dashboard_link: `https://ticovision.vercel.app/collections?filter=${alertType}`,
         date: new Date().toLocaleDateString('he-IL'),
-      }
+      },
+      emailSettings
     );
 
     console.log(`✅ Admin alert sent for ${alertType}: ${feeIds.length} fees`);
@@ -205,6 +256,10 @@ async function processTenantReminders(
   stats: ProcessingStats
 ): Promise<void> {
   console.log(`\n📊 Processing tenant: ${tenantId}`);
+
+  // Get email settings for this invocation
+  const emailSettings = await getEmailSettings(supabase);
+  console.log(`📧 Email settings: from=${emailSettings.sender_email}, alert=${emailSettings.alert_email}`);
 
   // Get active reminder rules for this tenant
   const { data: rules, error: rulesError } = await supabase
@@ -299,7 +354,8 @@ async function processTenantReminders(
                 payment_link_cc_installments: `https://ticovision.vercel.app/payment/cc-installments/${fee.fee_calculation_id}`,
                 payment_link_checks: `https://ticovision.vercel.app/payment/checks/${fee.fee_calculation_id}`,
                 include_mistake_button: rule.actions.include_mistake_button || false,
-              }
+              },
+              emailSettings
             );
 
             if (emailSent) {
@@ -347,7 +403,8 @@ async function processTenantReminders(
               supabase,
               tenantId,
               rule.trigger_conditions.days_since_sent ? 'unopened_7d' : 'no_selection_14d',
-              [fee.fee_calculation_id]
+              [fee.fee_calculation_id],
+              emailSettings
             );
 
             if (alertSent) {
@@ -480,13 +537,15 @@ serve(async (req) => {
     // Send error summary to admin if failure rate > 10%
     if (failureRate > 10 && stats.errors.length > 0) {
       console.warn(`⚠️ High failure rate: ${failureRate.toFixed(2)}%`);
-      // Send error summary email
+      // Send error summary email - get email settings once
+      const emailSettings = await getEmailSettings(supabase);
       for (const tenant of tenants) {
         await sendAdminAlert(
           supabase,
           tenant.id,
           'high_failure_rate',
-          []
+          [],
+          emailSettings
         );
       }
     }

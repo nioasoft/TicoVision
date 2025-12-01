@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
 
 interface DisputeRequest {
@@ -36,7 +37,46 @@ const corsHeaders: CorsHeaders = {
 };
 
 /**
- * Send email notification to Sigal via SendGrid
+ * Get email settings from tenant_settings table
+ */
+async function getEmailSettings(): Promise<{
+  sender_email: string;
+  sender_name: string;
+  alert_email: string;
+}> {
+  const defaults = {
+    sender_email: 'tico@franco.co.il',
+    sender_name: 'תיקו פרנקו - משרד רואי חשבון',
+    alert_email: 'sigal@franco.co.il'
+  };
+
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return defaults;
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supabase
+      .from('tenant_settings')
+      .select('sender_email, sender_name, alert_email')
+      .single();
+
+    if (error || !data) {
+      return defaults;
+    }
+
+    return {
+      sender_email: data.sender_email || defaults.sender_email,
+      sender_name: data.sender_name || defaults.sender_name,
+      alert_email: data.alert_email || defaults.alert_email
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+/**
+ * Send email notification to admin via SendGrid
  */
 async function sendDisputeNotification(
   clientName: string,
@@ -45,7 +85,8 @@ async function sendDisputeNotification(
   paymentDate: string,
   paymentMethod: string,
   reference: string,
-  reason: string
+  reason: string,
+  emailSettings: { sender_email: string; sender_name: string; alert_email: string }
 ): Promise<void> {
   if (!SENDGRID_API_KEY) {
     console.warn('⚠️ SendGrid API key not configured, skipping email notification');
@@ -55,13 +96,13 @@ async function sendDisputeNotification(
   const emailData = {
     personalizations: [
       {
-        to: [{ email: 'sigal@franco.co.il', name: 'סיגל נגר' }],
+        to: [{ email: emailSettings.alert_email, name: 'מנהל מערכת' }],
         subject: '⚠️ לקוח טוען ששילם',
       },
     ],
     from: {
-      email: 'noreply@ticovision.com',
-      name: 'TicoVision - מערכת ניהול',
+      email: emailSettings.sender_email,
+      name: emailSettings.sender_name,
     },
     content: [
       {
@@ -304,8 +345,9 @@ serve(async (req) => {
 
     console.log(`📝 Dispute created: ${disputeData.id}`);
 
-    // Send email notification to Sigal
+    // Get email settings and send notification
     try {
+      const emailSettings = await getEmailSettings();
       await sendDisputeNotification(
         clientData?.contact_name || 'לקוח',
         clientData?.company_name || 'לא ידוע',
@@ -313,7 +355,8 @@ serve(async (req) => {
         claimed_payment_date,
         claimed_payment_method,
         claimed_reference,
-        dispute_reason
+        dispute_reason,
+        emailSettings
       );
     } catch (emailError) {
       console.error('Failed to send email notification:', emailError);

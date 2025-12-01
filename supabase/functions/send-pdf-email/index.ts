@@ -4,8 +4,11 @@
  */
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.2';
 
 const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 
 interface SendPdfEmailRequest {
   to: string;
@@ -61,6 +64,45 @@ async function fetchPdfAsBase64(url: string): Promise<string> {
 }
 
 /**
+ * Get email settings from tenant_settings table
+ */
+async function getEmailSettings(): Promise<{
+  sender_email: string;
+  sender_name: string;
+  reply_to_email: string;
+}> {
+  const defaults = {
+    sender_email: 'tico@franco.co.il',
+    sender_name: 'תיקו פרנקו - משרד רואי חשבון',
+    reply_to_email: 'sigal@franco.co.il'
+  };
+
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return defaults;
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supabase
+      .from('tenant_settings')
+      .select('sender_email, sender_name, reply_to_email')
+      .single();
+
+    if (error || !data) {
+      return defaults;
+    }
+
+    return {
+      sender_email: data.sender_email || defaults.sender_email,
+      sender_name: data.sender_name || defaults.sender_name,
+      reply_to_email: data.reply_to_email || defaults.reply_to_email
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+/**
  * Send email via SendGrid with PDF attachment
  */
 async function sendEmailWithPdf(
@@ -73,6 +115,8 @@ async function sendEmailWithPdf(
   if (!SENDGRID_API_KEY) {
     throw new Error('SENDGRID_API_KEY not configured');
   }
+
+  const emailSettings = await getEmailSettings();
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -99,11 +143,11 @@ async function sendEmailWithPdf(
       },
     ],
     from: {
-      email: 'shani@franco.co.il',
-      name: 'שני פרנקו - משרד רואי חשבון',
+      email: emailSettings.sender_email,
+      name: emailSettings.sender_name,
     },
     reply_to: {
-      email: 'sigal@franco.co.il',
+      email: emailSettings.reply_to_email,
       name: 'סיגל נגר',
     },
     content: [

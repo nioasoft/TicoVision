@@ -650,6 +650,49 @@ async function fetchImageBase64(url: string): Promise<string> {
 }
 
 /**
+ * Get email settings from tenant_settings table
+ */
+async function getEmailSettings(): Promise<{
+  sender_email: string;
+  sender_name: string;
+  reply_to_email: string;
+}> {
+  // Default values (fallback)
+  const defaults = {
+    sender_email: 'tico@franco.co.il',
+    sender_name: 'תיקו פרנקו - משרד רואי חשבון',
+    reply_to_email: 'sigal@franco.co.il'
+  };
+
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.warn('Supabase not configured, using default email settings');
+      return defaults;
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const { data, error } = await supabase
+      .from('tenant_settings')
+      .select('sender_email, sender_name, reply_to_email')
+      .single();
+
+    if (error || !data) {
+      console.warn('Failed to fetch email settings, using defaults:', error?.message);
+      return defaults;
+    }
+
+    return {
+      sender_email: data.sender_email || defaults.sender_email,
+      sender_name: data.sender_name || defaults.sender_name,
+      reply_to_email: data.reply_to_email || defaults.reply_to_email
+    };
+  } catch (err) {
+    console.error('Error fetching email settings:', err);
+    return defaults;
+  }
+}
+
+/**
  * Send email via SendGrid
  */
 async function sendEmail(
@@ -664,6 +707,10 @@ async function sendEmail(
   if (!SENDGRID_API_KEY) {
     throw new Error('SENDGRID_API_KEY not configured');
   }
+
+  // Get email settings from database
+  const emailSettings = await getEmailSettings();
+  console.log('📧 Using email settings:', { from: emailSettings.sender_email, replyTo: emailSettings.reply_to_email });
 
   // Fetch images as base64 from deployed app
   // These images are served from the Vercel deployment's public folder
@@ -687,11 +734,11 @@ async function sendEmail(
       }
     ],
     from: {
-      email: 'shani@franco.co.il',
-      name: 'שני פרנקו - משרד רואי חשבון'
+      email: emailSettings.sender_email,
+      name: emailSettings.sender_name
     },
     reply_to: {
-      email: 'sigal@franco.co.il',
+      email: emailSettings.reply_to_email,
       name: 'סיגל נגר'
     },
     content: [
