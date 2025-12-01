@@ -75,8 +75,12 @@ export class TenantContactService {
    */
   static async findByEmail(email: string): Promise<TenantContact | null> {
     try {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) return null;
+
       const { data: contactId, error } = await supabase.rpc('find_contact_by_email', {
-        contact_email: email,
+        p_tenant_id: tenantId,
+        p_email: email,
       });
 
       if (error || !contactId) return null;
@@ -100,8 +104,12 @@ export class TenantContactService {
    */
   static async findByPhone(phone: string): Promise<TenantContact | null> {
     try {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) return null;
+
       const { data: contactId, error } = await supabase.rpc('find_contact_by_phone', {
-        contact_phone: phone,
+        p_tenant_id: tenantId,
+        p_phone: phone,
       });
 
       if (error || !contactId) return null;
