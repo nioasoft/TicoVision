@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useClients } from '@/hooks/useClients';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ClientFilters } from '@/components/clients/ClientFilters';
 import { BulkActionsBar } from '@/components/clients/BulkActionsBar';
 import { ClientsTable } from '@/components/clients/ClientsTable';
