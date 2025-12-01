@@ -6,6 +6,7 @@
  * Passport number is unique per tenant (cannot exist at different clients)
  */
 
+import { auditService } from './audit.service';
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
 import type {
   ForeignWorker,
@@ -190,6 +191,70 @@ export class ForeignWorkerService {
       console.error('Error in getClientWorkers:', error);
       return [];
     }
+  }
+
+  /**
+   * Update an existing worker and log the change
+   */
+  static async updateWorker(workerId: string, updates: UpdateForeignWorkerDto): Promise<{ data: ForeignWorker | null; error: string | null }> {
+    try {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) return { data: null, error: 'לא נמצא מזהה tenant' };
+
+      // Get current state for audit
+      const { data: currentWorker, error: fetchError } = await supabase
+        .from('foreign_workers')
+        .select('*')
+        .eq('id', workerId)
+        .single();
+      
+      if (fetchError || !currentWorker) return { data: null, error: 'העובד לא נמצא' };
+
+      // Update
+      const { data: updatedWorker, error: updateError } = await supabase
+        .from('foreign_workers')
+        .update(updates)
+        .eq('id', workerId)
+        .select()
+        .single();
+
+      if (updateError) return { data: null, error: updateError.message };
+
+      // Log audit
+      const changes: Record<string, { old: any, new: any }> = {};
+      Object.keys(updates).forEach(key => {
+        const k = key as keyof UpdateForeignWorkerDto;
+        // Simple comparison
+        if (updates[k] !== undefined && updates[k] !== currentWorker[k as keyof ForeignWorker]) {
+          changes[k] = { old: currentWorker[k as keyof ForeignWorker], new: updates[k] };
+        }
+      });
+
+      if (Object.keys(changes).length > 0) {
+        await auditService.log(
+          'worker_update',
+          'foreign_workers',
+          workerId,
+          { 
+            changes, 
+            worker_name: currentWorker.full_name,
+            passport_number: currentWorker.passport_number
+          }
+        );
+      }
+
+      return { data: updatedWorker as ForeignWorker, error: null };
+    } catch (error) {
+      console.error('Error in updateWorker:', error);
+      return { data: null, error: error instanceof Error ? error.message : 'שגיאה לא צפויה' };
+    }
+  }
+
+  /**
+   * Get history of changes for a worker
+   */
+  static async getWorkerHistory(workerId: string) {
+    return auditService.getResourceHistory(workerId, 'foreign_workers');
   }
 
   /**

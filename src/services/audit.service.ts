@@ -13,7 +13,7 @@ export interface AuditLog {
   details?: Record<string, unknown>;
   ip_address?: string;
   user_agent?: string;
-  timestamp: string;
+  created_at: string;
 }
 
 export interface AuditFilter {
@@ -56,10 +56,10 @@ class AuditService extends BaseService {
         details,
         ip_address: this.getClientIP(),
         user_agent: navigator.userAgent,
-        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
       });
     } catch (error) {
-      logger.error('Failed to create audit log:', error);
+      console.error('Failed to create audit log:', error);
     }
   }
 
@@ -80,7 +80,7 @@ class AuditService extends BaseService {
         .from('audit_logs')
         .select('*', { count: 'exact' })
         .eq('tenant_id', tenantId)
-        .order('timestamp', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (filter) {
         if (filter.user_id) {
@@ -93,10 +93,10 @@ class AuditService extends BaseService {
           query = query.ilike('action', `%${filter.action}%`);
         }
         if (filter.date_from) {
-          query = query.gte('timestamp', filter.date_from);
+          query = query.gte('created_at', filter.date_from);
         }
         if (filter.date_to) {
-          query = query.lte('timestamp', filter.date_to);
+          query = query.lte('created_at', filter.date_to);
         }
       }
 
@@ -138,8 +138,8 @@ class AuditService extends BaseService {
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('user_id', userId)
-        .gte('timestamp', dateFrom.toISOString())
-        .order('timestamp', { ascending: false })
+        .gte('created_at', dateFrom.toISOString())
+        .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) {
@@ -164,7 +164,7 @@ class AuditService extends BaseService {
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('resource_id', resourceId)
-        .order('timestamp', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (module) {
         query = query.eq('module', module);
@@ -192,7 +192,7 @@ class AuditService extends BaseService {
         .from('audit_logs')
         .select('*')
         .eq('tenant_id', tenantId)
-        .gte('timestamp', dateFrom.toISOString());
+        .gte('created_at', dateFrom.toISOString());
 
       if (error) {
         return { data: null, error: this.handleError(error) };
@@ -218,7 +218,7 @@ class AuditService extends BaseService {
 
         // Get recent actions
         summary.recent_actions = logs
-          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 10);
       }
 
@@ -245,7 +245,7 @@ class AuditService extends BaseService {
 
       // CSV format
       const headers = [
-        'Timestamp',
+        'Created At',
         'User Email',
         'Action',
         'Module',
@@ -255,7 +255,7 @@ class AuditService extends BaseService {
       ];
 
       const rows = logsData.logs.map(log => [
-        this.formatDateTimeIsraeli(log.timestamp),
+        this.formatDateTimeIsraeli(log.created_at),
         log.user_email || '',
         log.action,
         log.module,
@@ -285,7 +285,7 @@ class AuditService extends BaseService {
         .from('audit_logs')
         .delete()
         .eq('tenant_id', tenantId)
-        .lt('timestamp', cutoffDate.toISOString())
+        .lt('created_at', cutoffDate.toISOString())
         .select();
 
       if (error) {
@@ -306,10 +306,12 @@ class AuditService extends BaseService {
     }
   }
 
-  private getClientIP(): string {
-    // In a real implementation, this would get the actual client IP
-    // For now, return a placeholder
-    return window.location.hostname;
+  private getClientIP(): string | undefined {
+    // Client-side cannot reliably get IP without external service
+    // Return undefined (which JSON.stringify removes, or Supabase treats as missing)
+    // Actually, Supabase insert expects optional, so undefined is fine if passed as value for optional key.
+    // But let's return null if we want explicit null in DB.
+    return undefined;
   }
 
   private formatDateTimeIsraeli(dateStr: string): string {
@@ -337,7 +339,7 @@ class AuditService extends BaseService {
       });
     } catch (error) {
       // Critical actions should be logged even if there's an error
-      logger.error('Failed to log critical action:', { action, module, details, error });
+      console.error('Failed to log critical action:', { action, module, details, error });
       
       // You might want to send this to an external service
       // or store it locally for later sync

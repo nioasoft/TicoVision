@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Combobox } from '@/components/ui/combobox';
-import { RotateCcw, Loader2, CheckCircle2, UserPlus, Save, RefreshCw } from 'lucide-react';
+import { RotateCcw, Loader2, CheckCircle2, UserPlus, Save, RefreshCw, Pencil, User } from 'lucide-react';
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 import type { SalaryReportVariables, WorkerData } from '@/types/foreign-workers.types';
@@ -13,6 +13,7 @@ import type { ForeignWorker } from '@/types/foreign-worker.types';
 import { useMonthRange } from '@/contexts/MonthRangeContext';
 import { monthlyDataService, MonthlyDataService } from '@/services/monthly-data.service';
 import { MonthRangeInitializer } from '@/components/foreign-workers/shared';
+import { WorkerEditDialog } from '@/components/foreign-workers/WorkerEditDialog';
 
 interface SalaryReportTabProps {
   value: Partial<SalaryReportVariables>;
@@ -43,12 +44,17 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
   // Salary data keyed by workerId -> monthKey -> {salary, supplement}
   const [salaryData, setSalaryData] = useState<SalaryDataMap>(new Map());
 
-  // Worker input state
+  // Worker selection state
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  
+  // New Worker Form State
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [passportInput, setPassportInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [nationalityInput, setNationalityInput] = useState('');
-  const [isNewWorker, setIsNewWorker] = useState(false);
+  
+  // Edit Dialog State
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +67,8 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
       loadBranchWorkers();
     } else {
       setBranchWorkers([]);
-      resetWorkerFields();
+      resetCreationForm();
+      setSelectedWorkerId(null);
     }
   }, [branchId]);
 
@@ -75,47 +82,58 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
     loadSalaryData();
   }, [branchId, range]);
 
-  // Sync with parent component when salaryData changes
+  // Sync with parent component when salaryData or selection changes
+  // CRITICAL: Only export the SELECTED worker's data to ensure single-worker letters
   useEffect(() => {
     if (!range || !displayMonths) return;
 
-    // Transform salaryData to WorkerData[] for parent
-    const workersData: WorkerData[] = [];
+    // Default dates if no worker selected
     const monthsToReport = displayMonths;
-
-    salaryData.forEach((monthMap, workerId) => {
-      const worker = branchWorkers.find(w => w.id === workerId);
-      if (!worker) return;
-
-      monthsToReport.forEach(date => {
-        const monthKey = MonthlyDataService.dateToMonthKey(date);
-        const data = monthMap.get(monthKey) || { salary: 0, supplement: 0 };
-
-        workersData.push({
-          id: workerId,
-          passport_number: worker.passport_number,
-          full_name: worker.full_name,
-          nationality: worker.nationality || '',
-          month: MonthlyDataService.dateToMMYear(date),
-          salary: data.salary,
-          supplement: data.supplement,
-        });
-      });
-    });
-
-    // Set period dates based on displayed range
     const periodStart = monthsToReport[0].toISOString().split('T')[0];
     const lastMonth = monthsToReport[monthsToReport.length - 1];
     const lastDay = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0).getDate();
     const periodEnd = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
+    if (!selectedWorkerId || isCreatingNew) {
+      // If no worker selected, pass empty list but valid dates
+      onChange({
+        ...value,
+        period_start: periodStart,
+        period_end: periodEnd,
+        workers_data: []
+      });
+      return;
+    }
+
+    const worker = branchWorkers.find(w => w.id === selectedWorkerId);
+    if (!worker) return;
+
+    // Build data for the SINGLE selected worker
+    const monthMap = salaryData.get(selectedWorkerId) || new Map();
+    const workersData: WorkerData[] = [];
+
+    monthsToReport.forEach(date => {
+      const monthKey = MonthlyDataService.dateToMonthKey(date);
+      const data = monthMap.get(monthKey) || { salary: 0, supplement: 0 };
+
+      workersData.push({
+        id: selectedWorkerId,
+        passport_number: worker.passport_number,
+        full_name: worker.full_name,
+        nationality: worker.nationality || '',
+        month: MonthlyDataService.dateToMMYear(date),
+        salary: data.salary,
+        supplement: data.supplement,
+      });
+    });
+
     onChange({
       ...value,
       period_start: periodStart,
       period_end: periodEnd,
-      workers_data: workersData
+      workers_data: workersData // Array of 1 worker
     });
-  }, [salaryData, range, displayMonths, branchWorkers]);
+  }, [salaryData, range, displayMonths, branchWorkers, selectedWorkerId, isCreatingNew]);
 
   const loadBranchWorkers = async () => {
     if (!branchId) return;
@@ -139,7 +157,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
       const { data, error } = await monthlyDataService.getBranchWorkerMonthlyData(
         branchId,
         undefined,
-        50 // Load more months to support extended history
+        50
       );
 
       if (error) {
@@ -148,7 +166,6 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
         return;
       }
 
-      // Build the nested map structure
       const newMap: SalaryDataMap = new Map();
 
       data?.forEach(record => {
@@ -172,130 +189,92 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
     }
   }, [branchId]);
 
-  const resetWorkerFields = () => {
-    setSelectedWorkerId(null);
+  const resetCreationForm = () => {
+    setIsCreatingNew(false);
     setPassportInput('');
     setNameInput('');
     setNationalityInput('');
-    setIsNewWorker(false);
   };
 
-  // Handle worker selection from combobox
-  const handleWorkerSelect = (workerId: string) => {
-    if (workerId === NEW_WORKER_VALUE) {
+  const handleWorkerSelect = (value: string) => {
+    if (value === NEW_WORKER_VALUE) {
       setSelectedWorkerId(null);
-      setPassportInput('');
-      setNameInput('');
-      setNationalityInput('');
-      setIsNewWorker(true);
-      return;
-    }
-
-    const worker = branchWorkers.find(w => w.id === workerId);
-    if (worker) {
-      setSelectedWorkerId(worker.id);
-      setPassportInput(worker.passport_number);
-      setNameInput(worker.full_name);
-      setNationalityInput(worker.nationality || '');
-      setIsNewWorker(false);
+      setIsCreatingNew(true);
+    } else {
+      setIsCreatingNew(false);
+      setSelectedWorkerId(value);
+      
+      // Initialize salary map for this worker if missing
+      if (!salaryData.has(value) && range) {
+        const newSalaryData = new Map(salaryData);
+        const monthMap = new Map<string, { salary: number; supplement: number }>();
+        range.months.forEach(date => {
+          monthMap.set(MonthlyDataService.dateToMonthKey(date), { salary: 0, supplement: 0 });
+        });
+        newSalaryData.set(value, monthMap);
+        setSalaryData(newSalaryData);
+      }
     }
   };
 
-  // Add worker to the salary data
-  const handleAddWorker = async () => {
-    if (!branchId || !clientId || !range) {
-      toast.error('יש לבחור סניף ולאתחל טווח חודשים');
+  const handleCreateWorker = async () => {
+    if (!branchId || !clientId) {
+      toast.error('יש לבחור סניף');
       return;
     }
 
-    if (!passportInput.trim()) {
-      toast.error('יש להזין מספר דרכון');
+    if (!passportInput.trim() || !nameInput.trim()) {
+      toast.error('נא למלא שדות חובה');
       return;
     }
 
-    if (!nameInput.trim()) {
-      toast.error('יש להזין שם מלא');
+    const result = await ForeignWorkerService.upsertWorker({
+      branch_id: branchId,
+      client_id: clientId,
+      passport_number: passportInput.trim(),
+      full_name: nameInput.trim(),
+      nationality: nationalityInput.trim() || undefined,
+    });
+
+    if (result.error) {
+      toast.error(result.error);
       return;
     }
 
-    let workerId = selectedWorkerId;
-    let workerName = nameInput;
-    let workerNationality = nationalityInput;
-
-    // If new worker, save to database first
-    if (isNewWorker || !workerId) {
-      const result = await ForeignWorkerService.upsertWorker({
-        branch_id: branchId,
-        client_id: clientId,
-        passport_number: passportInput.trim(),
-        full_name: nameInput.trim(),
-        nationality: nationalityInput.trim() || undefined,
-      });
-
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      if (result.data) {
-        workerId = result.data.id;
-        workerName = result.data.full_name;
-        workerNationality = result.data.nationality || '';
-        loadBranchWorkers(); // Refresh the workers list
-        toast.success('עובד חדש נשמר בהצלחה');
-      }
+    if (result.data) {
+      await loadBranchWorkers(); // Refresh list
+      handleWorkerSelect(result.data.id); // Select the new worker
+      toast.success('עובד נוצר בהצלחה');
     }
-
-    if (!workerId) {
-      toast.error('שגיאה ביצירת עובד');
-      return;
-    }
-
-    // Add worker to salary data with empty months
-    const newSalaryData = new Map(salaryData);
-    if (!newSalaryData.has(workerId)) {
-      const monthMap = new Map<string, { salary: number; supplement: number }>();
-      range.months.forEach(date => {
-        monthMap.set(MonthlyDataService.dateToMonthKey(date), { salary: 0, supplement: 0 });
-      });
-      newSalaryData.set(workerId, monthMap);
-      setSalaryData(newSalaryData);
-      setHasUnsavedChanges(true);
-      toast.success(`נוספו ${range.monthCount} חודשים עבור ${workerName}`);
-    } else {
-      toast.info('עובד זה כבר קיים בדוח');
-    }
-
-    // Reset input fields
-    resetWorkerFields();
   };
 
   const handleSalaryChange = (workerId: string, monthKey: string, field: 'salary' | 'supplement', value: number) => {
     const newSalaryData = new Map(salaryData);
-    const workerMonths = newSalaryData.get(workerId);
+    let workerMonths = newSalaryData.get(workerId);
 
-    if (workerMonths) {
-      const current = workerMonths.get(monthKey) || { salary: 0, supplement: 0 };
-      workerMonths.set(monthKey, { ...current, [field]: value });
-      setSalaryData(newSalaryData);
-      setHasUnsavedChanges(true);
+    if (!workerMonths) {
+      workerMonths = new Map();
+      newSalaryData.set(workerId, workerMonths);
     }
-  };
 
-  const resetRow = (workerId: string, monthKey: string) => {
-    handleSalaryChange(workerId, monthKey, 'salary', 0);
-    handleSalaryChange(workerId, monthKey, 'supplement', 0);
+    const current = workerMonths.get(monthKey) || { salary: 0, supplement: 0 };
+    workerMonths.set(monthKey, { ...current, [field]: value });
+    
+    setSalaryData(newSalaryData);
+    setHasUnsavedChanges(true);
   };
 
   const handleSave = async (): Promise<boolean> => {
-    if (!branchId || !clientId || !range) {
-      toast.error('לא נבחר סניף');
-      return false;
-    }
+    if (!branchId || !clientId || !range) return false;
 
+    // Only save the selected worker if one is selected, OR save all modified?
+    // User expects "Save" to save everything visible. But we are focusing on single worker.
+    // Ideally we save everything in `salaryData` that has changed, but to be safe and efficient,
+    // let's iterate all of them or just the selected one. 
+    // Given the UI focus, let's save ALL to ensure nothing is lost if they switched workers.
+    
     setIsSaving(true);
     try {
-      // Save each worker's data
       for (const [workerId, monthMap] of salaryData.entries()) {
         const records = Array.from(monthMap.entries()).map(([monthKey, data]) => ({
           month_date: monthKey,
@@ -310,11 +289,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
           records
         );
 
-        if (error) {
-          toast.error('שגיאה בשמירת נתונים');
-          console.error('Error saving salary data:', error);
-          return false;
-        }
+        if (error) throw error;
       }
 
       setHasUnsavedChanges(false);
@@ -329,15 +304,16 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
     }
   };
 
-  // Expose save function to parent via ref
   useImperativeHandle(ref, () => ({
     save: async () => {
-      if (!hasUnsavedChanges) return true; // Nothing to save
+      if (!hasUnsavedChanges) return true;
       return await handleSave();
     }
   }), [hasUnsavedChanges, branchId, clientId, range, salaryData]);
 
-  // If no range exists, show initializer
+  // Render Logic
+  const selectedWorker = branchWorkers.find(w => w.id === selectedWorkerId);
+  
   if (!isLoadingRange && !range && branchId) {
     return (
       <div className="space-y-6" dir="rtl">
@@ -367,7 +343,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
             <div>
               <CardTitle className="text-right">דוח שכר - מומחים זרים</CardTitle>
               <CardDescription className="text-right">
-                בחר עובד מהרשימה או הוסף חדש להזנת נתוני שכר חודשיים
+                בחר עובד להזנת נתוני שכר והפקת דוח
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -390,242 +366,181 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                 ) : (
                   <Save className="h-4 w-4 ml-1" />
                 )}
-                שמור
+                שמור שינויים
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Loading State */}
-          {isLoading || isLoadingRange ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : !range ? (
-            <div className="p-4 text-center text-muted-foreground">
-              יש לבחור לקוח לצפייה בנתונים
-            </div>
-          ) : (
-            <>
-              {/* Worker Input Row */}
-              <div className="p-4 bg-gray-50 border rounded-md space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-right">הוסף עובד לדוח</h4>
-                  {selectedWorkerId && !isNewWorker ? (
-                    <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50">
-                      <CheckCircle2 className="h-3 w-3 ml-1" />
-                      עובד מוכר
-                    </Badge>
-                  ) : isNewWorker && nameInput ? (
-                    <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 animate-pulse">
-                      <UserPlus className="h-3 w-3 ml-1" />
-                      עובד חדש
-                    </Badge>
-                  ) : null}
+          {/* Worker Selection */}
+          <div className="p-4 bg-gray-50 border rounded-md space-y-4">
+             <div className="flex items-center justify-between">
+                <h4 className="font-medium text-right flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  בחירת עובד
+                </h4>
+                {selectedWorker && (
+                   <Button 
+                     variant="ghost" 
+                     size="sm" 
+                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                     onClick={() => setEditDialogOpen(true)}
+                   >
+                     <Pencil className="h-3 w-3 ml-1" />
+                     ערוך פרטי עובד
+                   </Button>
+                )}
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>בחר עובד:</Label>
+                  <Combobox
+                      options={[
+                        { value: NEW_WORKER_VALUE, label: '➕ הוסף עובד חדש' },
+                        ...branchWorkers.map((worker) => ({
+                          value: worker.id,
+                          label: `${worker.full_name} - ${worker.passport_number}`,
+                        }))
+                      ]}
+                      value={isCreatingNew ? NEW_WORKER_VALUE : selectedWorkerId || undefined}
+                      onValueChange={handleWorkerSelect}
+                      placeholder="בחר עובד מהרשימה..."
+                      searchPlaceholder="חפש לפי שם או דרכון..."
+                      disabled={disabled || !branchId}
+                  />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                  {/* Worker Selection Combobox */}
-                  <div className="space-y-2">
-                    <Label className="text-right block">
-                      בחר עובד <span className="text-red-500">*</span>
-                    </Label>
-                    {isLoadingWorkers ? (
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-gray-50 h-10">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-sm text-gray-600">טוען...</span>
-                      </div>
-                    ) : (
-                      <Combobox
-                        options={[
-                          { value: NEW_WORKER_VALUE, label: '➕ הוסף עובד חדש' },
-                          ...branchWorkers.map((worker) => ({
-                            value: worker.id,
-                            label: `${worker.full_name} - ${worker.passport_number}`,
-                          }))
-                        ]}
-                        value={isNewWorker ? NEW_WORKER_VALUE : selectedWorkerId || undefined}
-                        onValueChange={handleWorkerSelect}
-                        placeholder={branchWorkers.length > 0 ? 'בחר עובד מהרשימה...' : 'אין עובדים - הוסף חדש'}
-                        searchPlaceholder="חפש לפי שם או דרכון..."
-                        emptyText="לא נמצא עובד"
-                        disabled={disabled || !branchId}
-                      />
-                    )}
-                  </div>
-
-                  {/* New worker fields */}
-                  {isNewWorker && (
-                    <>
-                      <div className="space-y-2">
-                        <Label className="text-right block">מספר דרכון <span className="text-red-500">*</span></Label>
-                        <Input
-                          value={passportInput}
-                          onChange={(e) => setPassportInput(e.target.value)}
-                          placeholder="הזן מספר דרכון"
-                          disabled={disabled || !branchId}
-                          className="text-right rtl:text-right"
-                          dir="rtl"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-right block">שם מלא <span className="text-red-500">*</span></Label>
-                        <Input
-                          value={nameInput}
-                          onChange={(e) => setNameInput(e.target.value)}
-                          placeholder="שם העובד"
-                          disabled={disabled || !branchId}
-                          className="text-right rtl:text-right"
-                          dir="rtl"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-right block">נתינות</Label>
-                        <Input
-                          value={nationalityInput}
-                          onChange={(e) => setNationalityInput(e.target.value)}
-                          placeholder="מדינה"
-                          disabled={disabled || !branchId}
-                          className="text-right rtl:text-right"
-                          dir="rtl"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {/* Add Worker Button */}
-                  <div>
-                    <Button
-                      onClick={handleAddWorker}
-                      disabled={disabled || !branchId || (isNewWorker ? (!passportInput || !nameInput) : !selectedWorkerId)}
-                      className="w-full"
-                    >
-                      הוסף לדוח
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Workers Data Table */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-right">
-                    נתוני שכר ({salaryData.size} עובדים, {displayMonths?.length || 0} חודשים)
-                  </h4>
-                  {hasUnsavedChanges && (
-                    <span className="text-sm text-amber-600">* יש שינויים שלא נשמרו</span>
-                  )}
-                </div>
-
-                {salaryData.size === 0 ? (
-                  <div className="p-8 text-center border-2 border-dashed rounded-md">
-                    <p className="text-gray-500 mb-2">לא נוספו עובדים עדיין</p>
-                    <p className="text-sm text-gray-400">
-                      בחר עובד מהרשימה למעלה והוסף לדוח
-                    </p>
-                  </div>
-                ) : (
-                  <div className="border rounded-md overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-2 py-2 text-right font-medium sticky right-0 bg-gray-50">עובד</th>
-                          <th className="px-2 py-2 text-right font-medium">חודש</th>
-                          <th className="px-2 py-2 text-right font-medium">שכר בסיס (₪)</th>
-                          <th className="px-2 py-2 text-right font-medium">תוספת (₪)</th>
-                          <th className="px-2 py-2 w-12 text-center">אפס</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from(salaryData.entries()).map(([workerId, monthMap]) => {
-                          const worker = branchWorkers.find(w => w.id === workerId);
-                          if (!worker) return null;
-
-                          return displayMonths?.map((date, monthIdx) => {
-                            const monthKey = MonthlyDataService.dateToMonthKey(date);
-                            const data = monthMap.get(monthKey) || { salary: 0, supplement: 0 };
-
-                            return (
-                              <tr
-                                key={`${workerId}-${monthKey}`}
-                                className={`border-t hover:bg-gray-50 ${monthIdx === 0 ? 'border-t-2 border-t-gray-300' : ''}`}
-                              >
-                                {monthIdx === 0 && (
-                                  <td
-                                    className="px-2 py-2 sticky right-0 bg-white font-medium"
-                                    rowSpan={displayMonths.length}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span>{worker.full_name}</span>
-                                      <span className="text-xs text-gray-500">{worker.passport_number}</span>
-                                    </div>
-                                  </td>
-                                )}
-                                <td className="px-2 py-2">
-                                  <span className="text-gray-700 font-medium">
-                                    {MonthlyDataService.dateToHebrew(date)}
-                                  </span>
-                                </td>
-                                <td className="px-2 py-2">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    value={data.salary}
-                                    onChange={(e) => handleSalaryChange(workerId, monthKey, 'salary', parseInt(e.target.value, 10) || 0)}
-                                    placeholder="0"
-                                    disabled={disabled}
-                                    className="text-right rtl:text-right text-sm h-8 w-24"
-                                    dir="rtl"
-                                  />
-                                </td>
-                                <td className="px-2 py-2">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    value={data.supplement}
-                                    onChange={(e) => handleSalaryChange(workerId, monthKey, 'supplement', parseInt(e.target.value, 10) || 0)}
-                                    placeholder="0"
-                                    disabled={disabled}
-                                    className="text-right rtl:text-right text-sm h-8 w-24"
-                                    dir="rtl"
-                                  />
-                                </td>
-                                <td className="px-2 py-2 text-center">
-                                  <Button
-                                    onClick={() => resetRow(workerId, monthKey)}
-                                    disabled={disabled}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    title="אפס שכר ותוספת"
-                                  >
-                                    <RotateCcw className="h-3 w-3 text-gray-500" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            );
-                          });
-                        })}
-                      </tbody>
-                    </table>
+                
+                {selectedWorker && (
+                  <div className="flex items-center gap-4 text-sm text-gray-600 bg-white p-2 rounded border">
+                    <div>
+                      <span className="font-medium block">מספר דרכון:</span>
+                      {selectedWorker.passport_number}
+                    </div>
+                    <div className="h-8 w-px bg-gray-200"></div>
+                    <div>
+                      <span className="font-medium block">נתינות:</span>
+                      {selectedWorker.nationality || '-'}
+                    </div>
                   </div>
                 )}
+             </div>
+
+             {/* Create New Worker Form */}
+             {isCreatingNew && (
+                <div className="mt-4 pt-4 border-t border-gray-200 animate-in fade-in slide-in-from-top-2">
+                  <h4 className="font-medium mb-3 text-blue-800">פרטי עובד חדש:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                      <div className="space-y-2">
+                        <Label>מספר דרכון <span className="text-red-500">*</span></Label>
+                        <Input value={passportInput} onChange={e => setPassportInput(e.target.value)} placeholder="מספר דרכון" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>שם מלא <span className="text-red-500">*</span></Label>
+                        <Input value={nameInput} onChange={e => setNameInput(e.target.value)} placeholder="שם מלא" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>נתינות</Label>
+                        <Input value={nationalityInput} onChange={e => setNationalityInput(e.target.value)} placeholder="מדינה" />
+                      </div>
+                      <Button onClick={handleCreateWorker} disabled={!passportInput || !nameInput}>
+                        צור והוסף
+                      </Button>
+                  </div>
+                </div>
+             )}
+          </div>
+
+          {/* Monthly Data Grid (Single Worker) */}
+          {selectedWorkerId && !isCreatingNew && displayMonths && (
+            <div className="animate-in fade-in">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-medium text-right">
+                  נתוני שכר - {selectedWorker?.full_name} ({displayMonths.length} חודשים)
+                </h4>
               </div>
 
-              {/* Info Box */}
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <h4 className="font-medium text-blue-900 mb-2 text-right">הוראות שימוש:</h4>
-                <ul className="space-y-1 text-sm text-blue-800 text-right list-disc list-inside">
-                  <li>בחר עובד קיים מהרשימה או לחץ "הוסף עובד חדש"</li>
-                  <li>לחץ "הוסף לדוח" כדי להוסיף את העובד עם כל החודשים בטווח</li>
-                  <li>מלא את השכר והתוספת לכל חודש</li>
-                  <li>לחץ "שמור" לשמירת השינויים בבסיס הנתונים</li>
-                </ul>
+              <div className="border rounded-md overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-700">
+                    <tr>
+                      <th className="px-4 py-3 text-right font-medium">חודש</th>
+                      <th className="px-4 py-3 text-right font-medium">שכר בסיס (₪)</th>
+                      <th className="px-4 py-3 text-right font-medium">תוספת (₪)</th>
+                      <th className="px-4 py-3 text-center w-20">איפוס</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {displayMonths.map((date) => {
+                      const monthKey = MonthlyDataService.dateToMonthKey(date);
+                      const data = salaryData.get(selectedWorkerId)?.get(monthKey) || { salary: 0, supplement: 0 };
+                      
+                      return (
+                        <tr key={monthKey} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-2 font-medium bg-gray-50/50">
+                            {MonthlyDataService.dateToHebrew(date)}
+                          </td>
+                          <td className="px-4 py-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={data.salary}
+                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'salary', parseInt(e.target.value, 10) || 0)}
+                              className="max-w-[150px] text-right"
+                              dir="rtl"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={data.supplement}
+                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'supplement', parseInt(e.target.value, 10) || 0)}
+                              className="max-w-[150px] text-right"
+                              dir="rtl"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-400 hover:text-red-500"
+                              onClick={() => {
+                                handleSalaryChange(selectedWorkerId, monthKey, 'salary', 0);
+                                handleSalaryChange(selectedWorkerId, monthKey, 'supplement', 0);
+                              }}
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </>
+            </div>
+          )}
+
+          {!selectedWorkerId && !isCreatingNew && (
+            <div className="text-center py-12 text-gray-500 bg-gray-50/50 border-2 border-dashed rounded-md">
+              <User className="h-12 w-12 mx-auto mb-3 opacity-20" />
+              <p>בחר עובד מהרשימה כדי להתחיל להזין נתונים</p>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <WorkerEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        worker={selectedWorker || null}
+        onWorkerUpdated={() => {
+          loadBranchWorkers(); // Refresh details
+          setEditDialogOpen(false);
+        }}
+      />
     </div>
   );
 });
