@@ -24,8 +24,10 @@ export interface PermissionConfig {
 
 export interface RolePermissions {
   role: UserRole;
-  hiddenMenus: string[];    // Menu keys to hide
-  hiddenRoutes: string[];   // Routes to block
+  hiddenMenus: string[];    // Menu keys to hide (removed from default)
+  hiddenRoutes: string[];   // Routes to block (removed from default)
+  addedMenus: string[];     // Menu keys to add (not in default)
+  addedRoutes: string[];    // Routes to allow (not in default)
 }
 
 export interface PermissionsMatrix {
@@ -131,11 +133,15 @@ class PermissionsService extends BaseService {
       const roleOverrides = settings?.features?.role_overrides?.[role] || {};
       const hiddenMenus: string[] = roleOverrides.hidden_menus || [];
       const hiddenRoutes: string[] = roleOverrides.hidden_routes || [];
+      const addedMenus: string[] = roleOverrides.added_menus || [];
+      const addedRoutes: string[] = roleOverrides.added_routes || [];
 
       const result: RolePermissions = {
         role,
         hiddenMenus,
         hiddenRoutes,
+        addedMenus,
+        addedRoutes,
       };
 
       // Update cache
@@ -157,19 +163,23 @@ class PermissionsService extends BaseService {
       return true;
     }
 
-    // Check default permissions first
-    const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
-    if (!defaultPermissions.includes(menuKey)) {
-      return false; // Not in defaults = never visible
-    }
-
-    // Check DB overrides
+    // Get permissions (cached)
     const { data: permissions } = await this.getRolePermissions(role);
-    if (permissions?.hiddenMenus.includes(menuKey)) {
-      return false; // Hidden by DB override
+    if (!permissions) return false;
+
+    // 1. Check if explicitly added
+    if (permissions.addedMenus.includes(menuKey)) {
+      return true;
     }
 
-    return true;
+    // 2. Check if explicitly hidden
+    if (permissions.hiddenMenus.includes(menuKey)) {
+      return false;
+    }
+
+    // 3. Check default permissions
+    const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
+    return defaultPermissions.includes(menuKey);
   }
 
   /**
@@ -187,19 +197,23 @@ class PermissionsService extends BaseService {
       return true; // Unknown route, allow by default
     }
 
-    // Check default permissions
-    const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
-    if (!defaultPermissions.includes(permission.menu)) {
-      return false;
-    }
-
-    // Check DB overrides
+    // Get permissions (cached)
     const { data: permissions } = await this.getRolePermissions(role);
-    if (permissions?.hiddenRoutes.includes(route)) {
+    if (!permissions) return false;
+
+    // 1. Check if explicitly added
+    if (permissions.addedRoutes.includes(route)) {
+      return true;
+    }
+
+    // 2. Check if explicitly hidden
+    if (permissions.hiddenRoutes.includes(route)) {
       return false;
     }
 
-    return true;
+    // 3. Check default permissions
+    const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[role] || [];
+    return defaultPermissions.includes(permission.menu);
   }
 
   /**
@@ -228,14 +242,17 @@ class PermissionsService extends BaseService {
         matrix[role] = {};
         const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role];
         const hiddenMenus: string[] = roleOverrides[role]?.hidden_menus || [];
+        const addedMenus: string[] = roleOverrides[role]?.added_menus || [];
 
         for (const perm of ALL_PERMISSIONS) {
           // Permission is enabled if:
-          // 1. It's in the default permissions for this role
-          // 2. It's not in the hidden_menus override
+          // 1. It is explicitly added OR
+          // 2. It is in defaults AND NOT hidden
           const isDefault = defaultPerms.includes(perm.menu);
           const isHidden = hiddenMenus.includes(perm.menu);
-          matrix[role][perm.menu] = isDefault && !isHidden;
+          const isAdded = addedMenus.includes(perm.menu);
+          
+          matrix[role][perm.menu] = isAdded || (isDefault && !isHidden);
         }
       }
 
@@ -250,7 +267,7 @@ class PermissionsService extends BaseService {
    */
   async updateRolePermissions(
     role: UserRole,
-    hiddenMenus: string[]
+    enabledMenus: string[]
   ): Promise<ServiceResponse<boolean>> {
     try {
       // Verify super admin
@@ -275,18 +292,33 @@ class PermissionsService extends BaseService {
 
       if (fetchError) throw fetchError;
 
+      // Calculate hidden and added lists based on defaults
+      const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
+      
+      // Hidden: Present in default, but NOT in enabled
+      const hiddenMenus = defaultPerms.filter(p => !enabledMenus.includes(p));
+      
+      // Added: NOT in default, but present in enabled
+      const addedMenus = enabledMenus.filter(p => !defaultPerms.includes(p));
+
+      // Calculate corresponding routes
+      const hiddenRoutes = ALL_PERMISSIONS
+        .filter(p => hiddenMenus.includes(p.menu))
+        .map(p => p.route);
+        
+      const addedRoutes = ALL_PERMISSIONS
+        .filter(p => addedMenus.includes(p.menu))
+        .map(p => p.route);
+
       // Merge new overrides
       const currentFeatures = settings?.features || {};
       const roleOverrides = currentFeatures.role_overrides || {};
 
-      // Calculate hidden routes from hidden menus
-      const hiddenRoutes = ALL_PERMISSIONS
-        .filter(p => hiddenMenus.includes(p.menu))
-        .map(p => p.route);
-
       roleOverrides[role] = {
         hidden_menus: hiddenMenus,
         hidden_routes: hiddenRoutes,
+        added_menus: addedMenus,
+        added_routes: addedRoutes,
       };
 
       const updatedFeatures = {
@@ -318,7 +350,9 @@ class PermissionsService extends BaseService {
 
       // Log action
       await this.logAction('update_permissions', role, {
-        hidden_menus: hiddenMenus,
+        enabled_count: enabledMenus.length,
+        hidden_count: hiddenMenus.length,
+        added_count: addedMenus.length
       });
 
       return { data: true, error: null };

@@ -135,10 +135,7 @@ export default function PermissionsPage() {
     return perm?.label || menuKey;
   };
 
-  // Check if permission is in default for role
-  const isInDefault = (role: UserRole, menuKey: string): boolean => {
-    return DEFAULT_ROLE_PERMISSIONS[role]?.includes(menuKey) || false;
-  };
+
 
   if (loading || !matrix) {
     return (
@@ -232,7 +229,7 @@ export default function PermissionsPage() {
         <CardHeader>
           <CardTitle className="text-xl text-gray-900">מטריצת הרשאות</CardTitle>
           <CardDescription className="text-gray-600">
-            סמן או בטל סימון כדי לשנות הרשאות. הרשאות מנהל (admin) אינן ניתנות לשינוי.
+            סמן או בטל סימון כדי לשנות הרשאות. ניתן להרחיב או לצמצם הרשאות לכל תפקיד (למעט מנהל).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -255,7 +252,6 @@ export default function PermissionsPage() {
                 getEffectiveValue={getEffectiveValue}
                 togglePermission={togglePermission}
                 getPermissionLabel={getPermissionLabel}
-                isInDefault={isInDefault}
               />
             </TabsContent>
 
@@ -269,7 +265,6 @@ export default function PermissionsPage() {
                   getEffectiveValue={getEffectiveValue}
                   togglePermission={togglePermission}
                   getPermissionLabel={getPermissionLabel}
-                  isInDefault={isInDefault}
                 />
               </TabsContent>
             ))}
@@ -350,7 +345,6 @@ interface PermissionsTableProps {
   getEffectiveValue: (role: UserRole, menuKey: string) => boolean;
   togglePermission: (role: UserRole, menuKey: string, currentValue: boolean) => void;
   getPermissionLabel: (menuKey: string) => string;
-  isInDefault: (role: UserRole, menuKey: string) => boolean;
 }
 
 function PermissionsTable({
@@ -360,7 +354,6 @@ function PermissionsTable({
   getEffectiveValue,
   togglePermission,
   getPermissionLabel,
-  isInDefault,
 }: PermissionsTableProps) {
   return (
     <div className="rounded-md border-2 border-gray-300">
@@ -386,7 +379,8 @@ function PermissionsTable({
                 </TableCell>
                 {roles.map(role => {
                   const isEnabled = getEffectiveValue(role.key, menuKey);
-                  const canEdit = role.key !== 'admin' && isInDefault(role.key, menuKey);
+                  // Allow editing for any non-admin role (can enable or disable anything)
+                  const canEdit = role.key !== 'admin';
                   const hasChange =
                     isEnabled !== (matrix[role.key]?.[menuKey] ?? false) && role.key !== 'admin';
 

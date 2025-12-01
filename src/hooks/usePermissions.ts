@@ -27,7 +27,7 @@ interface UsePermissionsReturn {
 
   // Admin functions
   loadMatrix: () => Promise<void>;
-  updatePermissions: (role: UserRole, hiddenMenus: string[]) => Promise<boolean>;
+  updatePermissions: (role: UserRole, enabledMenus: string[]) => Promise<boolean>;
   resetPermissions: (role: UserRole) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -142,8 +142,8 @@ export function usePermissions(): UsePermissionsReturn {
    * Update permissions for a role (admin only)
    */
   const updatePermissions = useCallback(
-    async (targetRole: UserRole, hiddenMenus: string[]): Promise<boolean> => {
-      const result = await permissionsService.updateRolePermissions(targetRole, hiddenMenus);
+    async (targetRole: UserRole, enabledMenus: string[]): Promise<boolean> => {
+      const result = await permissionsService.updateRolePermissions(targetRole, enabledMenus);
       if (result.data) {
         // Reload matrix after update
         await loadMatrix();
@@ -254,22 +254,25 @@ export function usePermissionsAdmin() {
     setSaving(true);
     try {
       for (const [role, changes] of pendingChanges) {
-        // Get current hidden menus from matrix
-        const currentHidden = Object.entries(matrix?.[role] || {})
-          .filter(([_, enabled]) => !enabled)
-          .map(([key]) => key);
-
-        // Apply toggles
-        const newHidden = new Set(currentHidden);
-        for (const menuKey of changes) {
-          if (newHidden.has(menuKey)) {
-            newHidden.delete(menuKey);
-          } else {
-            newHidden.add(menuKey);
+        // Calculate new enabled state for ALL permissions
+        const newEnabledMenus: string[] = [];
+        
+        for (const perm of ALL_PERMISSIONS) {
+          const menuKey = perm.menu;
+          // Current state from matrix (default + overrides)
+          const currentlyEnabled = matrix?.[role]?.[menuKey] ?? false;
+          // Is it toggled in pending changes?
+          const isToggled = changes.has(menuKey);
+          
+          // Final state: if toggled, flip current. Else keep current.
+          const finalState = isToggled ? !currentlyEnabled : currentlyEnabled;
+          
+          if (finalState) {
+            newEnabledMenus.push(menuKey);
           }
         }
 
-        await updatePermissions(role as UserRole, Array.from(newHidden));
+        await updatePermissions(role as UserRole, newEnabledMenus);
       }
 
       setPendingChanges(new Map());
