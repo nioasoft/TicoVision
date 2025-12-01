@@ -427,6 +427,11 @@ class FeeService extends BaseService {
         // Year-over-year changes
         year_over_year_change_percent: calculations.year_over_year_change_percent,
         year_over_year_change_amount: calculations.year_over_year_change_amount,
+        // Bank Transfer Only Option
+        bank_transfer_only: data.bank_transfer_only,
+        bank_transfer_discount_percentage: data.bank_transfer_discount_percentage,
+        bank_transfer_amount_before_vat: data.bank_transfer_amount_before_vat,
+        bank_transfer_amount_with_vat: data.bank_transfer_amount_with_vat,
         // Status and metadata
         status: 'draft' as FeeStatus,
         due_date: data.due_date,
