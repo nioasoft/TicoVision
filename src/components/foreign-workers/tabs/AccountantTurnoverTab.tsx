@@ -105,7 +105,7 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
     }
   }, [branchId]);
 
-  const handleAmountChange = (monthKey: string, amount: number) => {
+  const handleAmountChange = (monthKey: string, amount: number | '') => {
     const newMap = new Map(monthData);
     newMap.set(monthKey, amount);
     setMonthData(newMap);
@@ -121,10 +121,13 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
     setIsSaving(true);
     try {
       // Build records to upsert
-      const records = range.months.map(date => ({
-        month_date: MonthlyDataService.dateToMonthKey(date),
-        turnover_amount: monthData.get(MonthlyDataService.dateToMonthKey(date)) || 0
-      }));
+      const records = range.months.map(date => {
+        const val = monthData.get(MonthlyDataService.dateToMonthKey(date));
+        return {
+          month_date: MonthlyDataService.dateToMonthKey(date),
+          turnover_amount: typeof val === 'number' ? val : 0
+        };
+      });
 
       const { error } = await monthlyDataService.bulkUpsertBranchMonthlyReports(
         branchId,
@@ -160,7 +163,7 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
   }), [hasUnsavedChanges, branchId, clientId, range, monthData]);
 
   // Calculate total
-  const totalTurnover = Array.from(monthData.values()).reduce((sum, val) => sum + val, 0);
+  const totalTurnover = Array.from(monthData.values()).reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
 
   // If no range exists, show initializer
   if (!isLoadingRange && !range && branchId) {
@@ -252,7 +255,9 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
                     <tbody>
                       {displayMonths?.map((date) => {
                         const monthKey = MonthlyDataService.dateToMonthKey(date);
-                        const amount = monthData.get(monthKey) || 0;
+                        const val = monthData.get(monthKey);
+                        // Show empty string if missing, otherwise show the value (even if 0)
+                        const amount = val !== undefined ? val : '';
 
                         return (
                           <tr key={monthKey} className="border-t hover:bg-gray-50">
@@ -265,8 +270,8 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
                               <Input
                                 type="number"
                                 value={amount}
-                                onChange={(e) => handleAmountChange(monthKey, parseFloat(e.target.value) || 0)}
-                                placeholder="0"
+                                onChange={(e) => handleAmountChange(monthKey, e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                placeholder=""
                                 disabled={disabled}
                                 className="text-right rtl:text-right w-32"
                                 dir="rtl"

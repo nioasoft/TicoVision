@@ -122,8 +122,8 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
         full_name: worker.full_name,
         nationality: worker.nationality || '',
         month: MonthlyDataService.dateToMMYear(date),
-        salary: data.salary,
-        supplement: data.supplement,
+        salary: typeof data.salary === 'number' ? data.salary : 0,
+        supplement: typeof data.supplement === 'number' ? data.supplement : 0,
       });
     });
 
@@ -248,7 +248,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
     }
   };
 
-  const handleSalaryChange = (workerId: string, monthKey: string, field: 'salary' | 'supplement', value: number) => {
+  const handleSalaryChange = (workerId: string, monthKey: string, field: 'salary' | 'supplement', value: number | '') => {
     const newSalaryData = new Map(salaryData);
     let workerMonths = newSalaryData.get(workerId);
 
@@ -278,8 +278,8 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
       for (const [workerId, monthMap] of salaryData.entries()) {
         const records = Array.from(monthMap.entries()).map(([monthKey, data]) => ({
           month_date: monthKey,
-          salary: data.salary,
-          supplement: data.supplement
+          salary: typeof data.salary === 'number' ? data.salary : 0,
+          supplement: typeof data.supplement === 'number' ? data.supplement : 0
         }));
 
         const { error } = await monthlyDataService.bulkUpsertBranchWorkerMonthlyData(
@@ -485,9 +485,10 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                               type="number"
                               min="0"
                               value={data.salary}
-                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'salary', parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'salary', e.target.value === '' ? '' : parseFloat(e.target.value))}
                               className="max-w-[150px] text-right"
                               dir="rtl"
+                              placeholder=""
                             />
                           </td>
                           <td className="px-4 py-2">
@@ -495,9 +496,10 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                               type="number"
                               min="0"
                               value={data.supplement}
-                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'supplement', parseInt(e.target.value, 10) || 0)}
+                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'supplement', e.target.value === '' ? '' : parseFloat(e.target.value))}
                               className="max-w-[150px] text-right"
                               dir="rtl"
+                              placeholder=""
                             />
                           </td>
                           <td className="px-4 py-2 text-center">

@@ -288,7 +288,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                       max="11"
                       value={value.scenario_4_to_11?.months_count || ''}
                       onChange={(e) => {
-                        const newMonthsCount = parseInt(e.target.value, 10) || 0;
+                        const newMonthsCount = e.target.value === '' ? 0 : parseInt(e.target.value, 10);
                         const periodStart = value.scenario_4_to_11?.period_start || '';
 
                         onChange({
@@ -300,7 +300,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                           }
                         });
                       }}
-                      placeholder="4-11"
+                      placeholder=""
                       disabled={disabled}
                       className="text-right rtl:text-right"
                       dir="rtl"
@@ -320,11 +320,11 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                         ...value,
                         scenario_4_to_11: {
                           ...value.scenario_4_to_11!,
-                          total_turnover: parseFloat(e.target.value) || 0
+                          total_turnover: e.target.value === '' ? 0 : parseFloat(e.target.value)
                         }
                       })
                     }
-                    placeholder="0"
+                    placeholder=""
                     disabled={disabled}
                     className="text-right rtl:text-right"
                     dir="rtl"
@@ -355,12 +355,12 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                         scenario_up_to_3: {
                           ...value.scenario_up_to_3,
                           estimated_annual_turnover: value.scenario_up_to_3?.estimated_annual_turnover || 0,
-                          estimated_annual_costs: parseFloat(e.target.value) || 0,
+                          estimated_annual_costs: e.target.value === '' ? 0 : parseFloat(e.target.value),
                           estimate_basis: value.scenario_up_to_3?.estimate_basis || ''
                         }
                       })
                     }
-                    placeholder="0"
+                    placeholder=""
                     disabled={disabled}
                     className="text-right rtl:text-right"
                     dir="rtl"

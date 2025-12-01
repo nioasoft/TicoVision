@@ -413,8 +413,8 @@ export function FeesPage() {
         // Clear previous year fields when no data exists
         setFormData(prev => ({
           ...prev,
-          previous_year_amount: 0,
-          previous_year_discount: 0,
+          previous_year_amount: '',
+          previous_year_discount: '',
           previous_year_amount_after_discount: 0,
           previous_year_amount_with_vat: 0,
           previous_year_amount_with_vat_before_discount: 0
@@ -426,8 +426,8 @@ export function FeesPage() {
       // Clear previous year fields on error to avoid showing stale data
       setFormData(prev => ({
         ...prev,
-        previous_year_amount: 0,
-        previous_year_discount: 0,
+        previous_year_amount: '',
+        previous_year_discount: '',
         previous_year_amount_after_discount: 0,
         previous_year_amount_with_vat: 0,
         previous_year_amount_with_vat_before_discount: 0
@@ -887,22 +887,31 @@ export function FeesPage() {
   };
 
   const calculateFeeAmounts = () => {
+    // Helper to safely parse numeric inputs that might be strings/empty
+    const safeParse = (val: number | string): number => {
+      if (typeof val === 'number') return val;
+      if (!val) return 0;
+      return parseFloat(val) || 0;
+    };
+
+    const baseAmount = safeParse(formData.base_amount);
     const inflationRate = formData.apply_inflation_index ? (formData.inflation_rate || 3.0) : 0;
-    const realAdjustment = formData.real_adjustment || 0;
-    const clientAdjustment = formData.client_requested_adjustment || 0;
-    const discountPercentage = formData.discount_percentage || 0;
+    const realAdjustment = safeParse(formData.real_adjustment);
+    const clientAdjustment = safeParse(formData.client_requested_adjustment);
+    const discountPercentage = safeParse(formData.discount_percentage);
 
     // Step 1a: Apply automatic inflation adjustment (only if checkbox is checked)
-    const inflationAdjustmentAuto = formData.base_amount * (inflationRate / 100);
+    const inflationAdjustmentAuto = baseAmount * (inflationRate / 100);
 
     // Step 1b: Add manual index adjustment (only if inflation is enabled)
-    const indexManualAdjustment = formData.apply_inflation_index ? (formData.index_manual_adjustment || 0) : 0;
+    const indexManualAdjustmentRaw = safeParse(formData.index_manual_adjustment);
+    const indexManualAdjustment = formData.apply_inflation_index ? indexManualAdjustmentRaw : 0;
 
     // Step 1c: Total inflation adjustment (auto + manual)
     const inflationAdjustment = inflationAdjustmentAuto + indexManualAdjustment;
 
     // Step 2: Add real adjustment + client requested adjustment
-    const adjustedAmount = formData.base_amount + inflationAdjustment + realAdjustment + clientAdjustment;
+    const adjustedAmount = baseAmount + inflationAdjustment + realAdjustment + clientAdjustment;
 
     // Step 3: Apply discount
     const discountAmount = adjustedAmount * (discountPercentage / 100);
@@ -919,13 +928,15 @@ export function FeesPage() {
 
     // Calculate bookkeeping amounts (for internal clients - not retainer)
     let bookkeepingResults = null;
-    if (selectedClientDetails?.internal_external === 'internal' && !selectedClientDetails?.is_retainer && formData.bookkeeping_base_amount > 0) {
+    const bkBaseAmount = safeParse(formData.bookkeeping_base_amount);
+    
+    if (selectedClientDetails?.internal_external === 'internal' && !selectedClientDetails?.is_retainer && bkBaseAmount > 0) {
       const bkInflationRate = formData.bookkeeping_apply_inflation_index ? (formData.bookkeeping_inflation_rate || 3.0) : 0;
-      const bkRealAdjustment = formData.bookkeeping_real_adjustment || 0;
-      const bkDiscountPercentage = formData.bookkeeping_discount_percentage || 0;
+      const bkRealAdjustment = safeParse(formData.bookkeeping_real_adjustment);
+      const bkDiscountPercentage = safeParse(formData.bookkeeping_discount_percentage);
 
-      const bkInflationAdjustment = formData.bookkeeping_base_amount * (bkInflationRate / 100);
-      const bkAdjustedAmount = formData.bookkeeping_base_amount + bkInflationAdjustment + bkRealAdjustment;
+      const bkInflationAdjustment = bkBaseAmount * (bkInflationRate / 100);
+      const bkAdjustedAmount = bkBaseAmount + bkInflationAdjustment + bkRealAdjustment;
       const bkDiscountAmount = bkAdjustedAmount * (bkDiscountPercentage / 100);
       const bkFinalAmount = bkAdjustedAmount - bkDiscountAmount;
       const bkVatAmount = bkFinalAmount * 0.18;
@@ -943,20 +954,23 @@ export function FeesPage() {
 
     // Calculate retainer amounts (for retainer clients - replaces both audit and bookkeeping)
     let retainerResults = null;
-    if (selectedClientDetails?.is_retainer && formData.retainer_monthly_amount > 0) {
+    const rtMonthlyAmount = safeParse(formData.retainer_monthly_amount);
+    
+    if (selectedClientDetails?.is_retainer && rtMonthlyAmount > 0) {
       // Retainer: monthly amount × 12 = annual base
-      const annualRetainerBase = formData.retainer_monthly_amount * 12;
+      const annualRetainerBase = rtMonthlyAmount * 12;
       const rtInflationRate = formData.retainer_apply_inflation_index ? (formData.retainer_inflation_rate || 3.0) : 0;
-      const rtRealAdjustment = formData.retainer_real_adjustment || 0;
+      const rtRealAdjustment = safeParse(formData.retainer_real_adjustment);
 
       // Calculate automatic inflation adjustment
       const rtInflationAdjustment = annualRetainerBase * (rtInflationRate / 100);
 
       // Calculate manual index adjustment (with negative support via checkbox)
+      const rtManualAdjustmentRaw = safeParse(formData.retainer_index_manual_adjustment);
       const rtManualAdjustment = formData.retainer_apply_inflation_index
         ? (formData.retainer_index_manual_is_negative
-            ? -(formData.retainer_index_manual_adjustment || 0)
-            : (formData.retainer_index_manual_adjustment || 0))
+            ? -rtManualAdjustmentRaw
+            : rtManualAdjustmentRaw)
         : 0;
 
       const rtAdjustedAmount = annualRetainerBase + rtInflationAdjustment + rtManualAdjustment + rtRealAdjustment;
@@ -1398,32 +1412,32 @@ export function FeesPage() {
   const resetForm = () => {
     setFormData({
       client_id: '',
-      year: new Date().getFullYear() + 1, // Default: next year (tax year being calculated)
+      year: new Date().getFullYear() + 1,
       isNewClient: false,
-      previous_year_amount: 0,
-      previous_year_discount: 0,
+      previous_year_amount: '',
+      previous_year_discount: '',
       previous_year_amount_after_discount: 0,
       previous_year_amount_with_vat: 0,
       previous_year_amount_with_vat_before_discount: 0,
-      base_amount: 0,
+      base_amount: '',
       inflation_rate: 3.0,
-      index_manual_adjustment: 0,
-      real_adjustment: 0,
+      index_manual_adjustment: '',
+      real_adjustment: '',
       real_adjustment_reason: '',
-      discount_percentage: 0,
+      discount_percentage: '',
       apply_inflation_index: true,
       notes: '',
-      bookkeeping_base_amount: 0,
+      bookkeeping_base_amount: '',
       bookkeeping_inflation_rate: 3.0,
-      bookkeeping_real_adjustment: 0,
+      bookkeeping_real_adjustment: '',
       bookkeeping_real_adjustment_reason: '',
-      bookkeeping_discount_percentage: 0,
+      bookkeeping_discount_percentage: '',
       bookkeeping_apply_inflation_index: true,
-      retainer_monthly_amount: 0,
+      retainer_monthly_amount: '',
       retainer_inflation_rate: 3.0,
-      retainer_index_manual_adjustment: 0,
+      retainer_index_manual_adjustment: '',
       retainer_index_manual_is_negative: false,
-      retainer_real_adjustment: 0,
+      retainer_real_adjustment: '',
       retainer_real_adjustment_reason: '',
       retainer_apply_inflation_index: true
     });
@@ -1684,10 +1698,15 @@ export function FeesPage() {
                           <Input
                             id="previous_amount"
                             type="number"
-                            value={formData.previous_year_amount ?? ''}
+                            value={formData.previous_year_amount}
                             onChange={(e) => {
-                              const newAmount = parseFloat(e.target.value) || 0;
-                              const calculated = calculatePreviousYearFields(newAmount, formData.previous_year_discount);
+                              const val = e.target.value;
+                              const newAmount = val === '' ? '' : parseFloat(val);
+                              // Calculate dependent fields using 0 for empty amount
+                              const calcAmount = typeof newAmount === 'number' ? newAmount : 0;
+                              const calcDiscount = typeof formData.previous_year_discount === 'number' ? formData.previous_year_discount : 0;
+                              const calculated = calculatePreviousYearFields(calcAmount, calcDiscount);
+                              
                               setFormData({
                                 ...formData,
                                 previous_year_amount: newAmount,
@@ -1696,7 +1715,7 @@ export function FeesPage() {
                             }}
                             disabled={formData.isNewClient}
                             className={`text-lg ${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}`}
-                            placeholder="0"
+                            placeholder=""
                           />
                           <p className="text-xs text-gray-500 mt-2 rtl:text-right ltr:text-left">
                             זרימה: לפני מע"מ
@@ -1738,10 +1757,15 @@ export function FeesPage() {
                             <Input
                               id="previous_discount"
                               type="number"
-                              value={formData.previous_year_discount ?? ''}
+                              value={formData.previous_year_discount}
                               onChange={(e) => {
-                                const newDiscount = parseFloat(e.target.value) || 0;
-                                const calculated = calculatePreviousYearFields(formData.previous_year_amount, newDiscount);
+                                const val = e.target.value;
+                                const newDiscount = val === '' ? '' : parseFloat(val);
+                                // Calculate dependent fields using 0 for empty discount
+                                const calcAmount = typeof formData.previous_year_amount === 'number' ? formData.previous_year_amount : 0;
+                                const calcDiscount = typeof newDiscount === 'number' ? newDiscount : 0;
+                                const calculated = calculatePreviousYearFields(calcAmount, calcDiscount);
+                                
                                 setFormData({
                                   ...formData,
                                   previous_year_discount: newDiscount,
@@ -1753,7 +1777,7 @@ export function FeesPage() {
                               step="0.1"
                               disabled={formData.isNewClient}
                               className={`text-lg ${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
-                              placeholder="0"
+                              placeholder=""
                             />
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
                               %
@@ -1942,8 +1966,8 @@ export function FeesPage() {
                           id="retainer_monthly_amount"
                           type="number"
                           value={formData.retainer_monthly_amount}
-                          onChange={(e) => setFormData({ ...formData, retainer_monthly_amount: parseFloat(e.target.value) || 0 })}
-                          placeholder="0"
+                          onChange={(e) => setFormData({ ...formData, retainer_monthly_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                          placeholder=""
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           הזן סכום חודשי - המערכת תכפיל ב-12 לחישוב שנתי
@@ -1970,9 +1994,9 @@ export function FeesPage() {
                           id="retainer_inflation_rate"
                           type="number"
                           value={formData.retainer_inflation_rate}
-                          onChange={(e) => setFormData({ ...formData, retainer_inflation_rate: parseFloat(e.target.value) || 3.0 })}
+                          onChange={(e) => setFormData({ ...formData, retainer_inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           step="0.1"
-                          placeholder="3.0"
+                          placeholder=""
                           disabled={!formData.retainer_apply_inflation_index}
                           className={!formData.retainer_apply_inflation_index ? 'opacity-50' : ''}
                         />
@@ -1999,8 +2023,8 @@ export function FeesPage() {
                           id="retainer_index_manual_adjustment"
                           type="number"
                           value={formData.retainer_index_manual_adjustment}
-                          onChange={(e) => setFormData({ ...formData, retainer_index_manual_adjustment: parseFloat(e.target.value) || 0 })}
-                          placeholder="0"
+                          onChange={(e) => setFormData({ ...formData, retainer_index_manual_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                          placeholder=""
                           disabled={!formData.retainer_apply_inflation_index}
                           className={!formData.retainer_apply_inflation_index ? 'opacity-50' : ''}
                         />
@@ -2017,8 +2041,8 @@ export function FeesPage() {
                           id="retainer_real_adjustment"
                           type="number"
                           value={formData.retainer_real_adjustment}
-                          onChange={(e) => setFormData({ ...formData, retainer_real_adjustment: parseFloat(e.target.value) || 0 })}
-                          placeholder="0"
+                          onChange={(e) => setFormData({ ...formData, retainer_real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                          placeholder=""
                         />
                       </div>
 
@@ -2046,8 +2070,8 @@ export function FeesPage() {
                       id="base_amount"
                       type="number"
                       value={formData.base_amount}
-                      onChange={(e) => setFormData({ ...formData, base_amount: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
+                      onChange={(e) => setFormData({ ...formData, base_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      placeholder=""
                     />
                   </div>
 
@@ -2071,9 +2095,9 @@ export function FeesPage() {
                       id="inflation_rate"
                       type="number"
                       value={formData.inflation_rate}
-                      onChange={(e) => setFormData({ ...formData, inflation_rate: parseFloat(e.target.value) || 3.0 })}
+                      onChange={(e) => setFormData({ ...formData, inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                       step="0.1"
-                      placeholder="3.0"
+                      placeholder=""
                       disabled={!formData.apply_inflation_index}
                       className={!formData.apply_inflation_index ? 'opacity-50' : ''}
                     />
@@ -2107,17 +2131,18 @@ export function FeesPage() {
                     <Input
                       id="index_manual_adjustment"
                       type="number"
-                      value={Math.abs(formData.index_manual_adjustment) || 0}
+                      value={typeof formData.index_manual_adjustment === 'number' ? Math.abs(formData.index_manual_adjustment) : ''}
                       onChange={(e) => {
-                        const value = parseFloat(e.target.value) || 0;
-                        const isNegative = formData.index_manual_adjustment < 0;
+                        const val = e.target.value;
+                        const value = val === '' ? 0 : parseFloat(val); // Internal value for calculation, UI shows empty if empty
+                        const isNegative = typeof formData.index_manual_adjustment === 'number' && formData.index_manual_adjustment < 0;
                         setFormData({
                           ...formData,
-                          index_manual_adjustment: isNegative ? -value : value
+                          index_manual_adjustment: val === '' ? '' : (isNegative ? -value : value)
                         });
                       }}
                       step="100"
-                      placeholder="0"
+                      placeholder=""
                       min="0"
                       disabled={!formData.apply_inflation_index}
                       className={!formData.apply_inflation_index ? 'opacity-50' : ''}
@@ -2136,8 +2161,8 @@ export function FeesPage() {
                       id="real_adjustment"
                       type="number"
                       value={formData.real_adjustment}
-                      onChange={(e) => setFormData({ ...formData, real_adjustment: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
+                      onChange={(e) => setFormData({ ...formData, real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      placeholder=""
                     />
                   </div>
 
@@ -2162,15 +2187,16 @@ export function FeesPage() {
                       type="number"
                       step="0.01"
                       max="0"
-                      value={formData.client_requested_adjustment || ''}
+                      value={formData.client_requested_adjustment}
                       onChange={(e) => {
-                        const value = parseFloat(e.target.value) || 0;
-                        if (value <= 0) {
+                        const val = e.target.value;
+                        const value = val === '' ? '' : parseFloat(val);
+                        if (val === '' || (typeof value === 'number' && value <= 0)) {
                           setFormData({ ...formData, client_requested_adjustment: value });
                         }
                       }}
                       className="text-right"
-                      placeholder="0"
+                      placeholder=""
                     />
                   </div>
 
@@ -2228,8 +2254,8 @@ export function FeesPage() {
                           id="bookkeeping_base_amount"
                           type="number"
                           value={formData.bookkeeping_base_amount}
-                          onChange={(e) => setFormData({ ...formData, bookkeeping_base_amount: parseFloat(e.target.value) || 0 })}
-                          placeholder="0"
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_base_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                          placeholder=""
                         />
                       </div>
 
@@ -2253,9 +2279,9 @@ export function FeesPage() {
                           id="bookkeeping_inflation_rate"
                           type="number"
                           value={formData.bookkeeping_inflation_rate}
-                          onChange={(e) => setFormData({ ...formData, bookkeeping_inflation_rate: parseFloat(e.target.value) || 3.0 })}
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           step="0.1"
-                          placeholder="3.0"
+                          placeholder=""
                           disabled={!formData.bookkeeping_apply_inflation_index}
                           className={!formData.bookkeeping_apply_inflation_index ? 'opacity-50' : ''}
                         />
@@ -2269,8 +2295,8 @@ export function FeesPage() {
                           id="bookkeeping_real_adjustment"
                           type="number"
                           value={formData.bookkeeping_real_adjustment}
-                          onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment: parseFloat(e.target.value) || 0 })}
-                          placeholder="0"
+                          onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                          placeholder=""
                         />
                       </div>
 

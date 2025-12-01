@@ -80,10 +80,11 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const finalAmount = typeof amountPaid === 'number' ? amountPaid : 0;
       const paymentData = {
         clientId: props.clientId,
         feeCalculationId: props.feeCalculationId,
-        amountPaid,
+        amountPaid: finalAmount,
         paymentDate,
         paymentMethod,
         paymentReference,
@@ -96,7 +97,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
         // Create installments
         const installments = installmentService.generateInstallmentSchedule(
           numInstallments,
-          amountPaid,
+          finalAmount,
           paymentDate
         );
 
@@ -192,9 +193,9 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                   id="amountPaid"
                   type="number"
                   value={amountPaid}
-                  onChange={(e) => setAmountPaid(Number(e.target.value))}
+                  onChange={(e) => setAmountPaid(e.target.value === '' ? '' : parseFloat(e.target.value))}
                   className="rtl:text-right ltr:text-left"
-                  placeholder="0"
+                  placeholder=""
                 />
                 <div className="text-xs text-muted-foreground rtl:text-right ltr:text-left">
                   <AmountWithVATBreakdown beforeVat={vatBreakdown.beforeVat} />
@@ -260,7 +261,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                     className="rtl:text-right ltr:text-left"
                   />
                   <p className="text-xs text-muted-foreground rtl:text-right ltr:text-left">
-                    סכום לתשלום: {formatILS(Math.ceil(amountPaid / numInstallments))} × {numInstallments}
+                    סכום לתשלום: {formatILS(Math.ceil((typeof amountPaid === 'number' ? amountPaid : 0) / numInstallments))} × {numInstallments}
                   </p>
                 </div>
               )}
