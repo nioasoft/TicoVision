@@ -183,10 +183,13 @@ export function LetterPreviewDialog({
         return Math.round(num).toLocaleString('he-IL');
       };
 
-      // Calculate discounts
-      const amountAfterBank = Math.round(amountOriginal * 0.91);     // 9% discount
-      const amountAfterSingle = Math.round(amountOriginal * 0.92);   // 8% discount
-      const amountAfterPayments = Math.round(amountOriginal * 0.96); // 4% discount
+      // Calculate amount with VAT (18%)
+      const amountWithVat = Math.round(amountOriginal * 1.18);
+
+      // Calculate discounts on VAT-inclusive amount
+      const amountAfterBank = Math.round(amountWithVat * 0.91);     // 9% discount
+      const amountAfterSingle = Math.round(amountWithVat * 0.92);   // 8% discount
+      const amountAfterPayments = Math.round(amountWithVat * 0.96); // 4% discount
 
       // Calculate service_description based on template type
       const getServiceDescription = (type: string): string => {
@@ -217,6 +220,7 @@ export function LetterPreviewDialog({
 
         // Amounts (formatted as strings with commas)
         amount_original: formatNumber(amountOriginal),
+        amount_with_vat: formatNumber(amountWithVat),
         amount_after_bank: formatNumber(amountAfterBank),
         amount_after_single: formatNumber(amountAfterSingle),
         amount_after_payments: formatNumber(amountAfterPayments),
@@ -363,10 +367,13 @@ export function LetterPreviewDialog({
         return Math.round(num).toLocaleString('he-IL');
       };
 
-      // Calculate discounts
-      const amountAfterBank = Math.round(totalAmount * 0.91);
-      const amountAfterSingle = Math.round(totalAmount * 0.92);
-      const amountAfterPayments = Math.round(totalAmount * 0.96);
+      // Calculate amount with VAT (18%)
+      const amountWithVat = Math.round(totalAmount * 1.18);
+
+      // Calculate discounts on VAT-inclusive amount
+      const amountAfterBank = Math.round(amountWithVat * 0.91);
+      const amountAfterSingle = Math.round(amountWithVat * 0.92);
+      const amountAfterPayments = Math.round(amountWithVat * 0.96);
 
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
@@ -384,6 +391,7 @@ export function LetterPreviewDialog({
 
         // Amounts
         amount_original: formatNumber(totalAmount),
+        amount_with_vat: formatNumber(amountWithVat),
         amount_after_bank: formatNumber(amountAfterBank),
         amount_after_single: formatNumber(amountAfterSingle),
         amount_after_payments: formatNumber(amountAfterPayments),
