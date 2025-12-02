@@ -115,8 +115,8 @@ function App() {
                       </ErrorBoundary>
                     } />
 
-                    {/* Clients page - NOT accessible to accountant */}
-                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'bookkeeper', 'client']} />}>
+                    {/* Clients page - accessible if has permission */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper', 'client']} />}>
                       <Route path="/clients" element={
                         <ErrorBoundary>
                           <ClientsPage />
@@ -124,8 +124,8 @@ function App() {
                       } />
                     </Route>
 
-                    {/* Client Groups page - admin only */}
-                    <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                    {/* Client Groups page - accessible if has permission */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
                       <Route path="/client-groups" element={
                         <ErrorBoundary>
                           <ClientGroupsPage />
@@ -133,8 +133,8 @@ function App() {
                       } />
                     </Route>
 
-                    {/* Files Manager - accessible to admin, bookkeeper only */}
-                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'bookkeeper']} />}>
+                    {/* Files Manager - accessible if has permission */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
                       <Route path="/files" element={
                         <ErrorBoundary>
                           <FilesManagerPage />

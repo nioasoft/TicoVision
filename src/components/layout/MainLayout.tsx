@@ -18,7 +18,7 @@ import {
   ChevronUp,
   FolderOpen
 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -29,58 +29,64 @@ import {
 import { registrationService } from '@/services/registration.service';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { UserRole } from '@/types/user-role';
 
 interface SubmenuItem {
   name: string;
   href: string;
-  allowedRoles?: UserRole[]; // If not specified, inherits from parent
+  menuKey: string; // Permission key for dynamic permission checks
+  allowedRoles?: UserRole[]; // Fallback if not specified, inherits from parent
 }
 
 interface NavigationItem {
   name: string;
   href?: string;
-  icon: any;
-  allowedRoles: UserRole[];
+  icon: React.ElementType;
+  menuKey: string; // Permission key for dynamic permission checks
+  allowedRoles: UserRole[]; // Fallback for static checks
   showBadge?: boolean;
   submenu?: SubmenuItem[];
 }
 
 const navigation: NavigationItem[] = [
-  { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard, allowedRoles: ['admin'] as UserRole[] },
+  { name: 'לוח בקרה', href: '/dashboard', icon: LayoutDashboard, menuKey: 'dashboard', allowedRoles: ['admin'] as UserRole[] },
   {
     name: 'לקוחות',
     icon: Users,
+    menuKey: 'clients',
     allowedRoles: ['admin', 'bookkeeper', 'client'] as UserRole[],
     submenu: [
-      { name: 'רשימת לקוחות', href: '/clients' },
-      { name: 'ניהול קבוצות', href: '/client-groups', allowedRoles: ['admin'] as UserRole[] },
+      { name: 'רשימת לקוחות', href: '/clients', menuKey: 'clients:list' },
+      { name: 'ניהול קבוצות', href: '/client-groups', menuKey: 'clients:groups', allowedRoles: ['admin'] as UserRole[] },
     ]
   },
   {
     name: 'שכר טרחה',
     icon: Calculator,
+    menuKey: 'fees',
     allowedRoles: ['admin'] as UserRole[],
     submenu: [
-      { name: 'מעקב שכר טרחה', href: '/fees/tracking' },
-      { name: 'חישוב שכר טרחה', href: '/fees/calculate' },
-      { name: 'גביית תשלומים', href: '/collections' },
+      { name: 'מעקב שכר טרחה', href: '/fees/tracking', menuKey: 'fees:tracking' },
+      { name: 'חישוב שכר טרחה', href: '/fees/calculate', menuKey: 'fees:calculate' },
+      { name: 'גביית תשלומים', href: '/collections', menuKey: 'fees:collections' },
     ]
   },
   {
     name: 'מכתבים',
     icon: FileText,
+    menuKey: 'letters',
     allowedRoles: ['admin'] as UserRole[],
     submenu: [
-      { name: 'כתיבת מכתבים', href: '/letter-templates' },
-      { name: 'סימולציית מכתבים', href: '/component-simulator' },
-      { name: 'היסטוריית מכתבים', href: '/letter-history' },
+      { name: 'כתיבת מכתבים', href: '/letter-templates', menuKey: 'letters:templates' },
+      { name: 'סימולציית מכתבים', href: '/component-simulator', menuKey: 'letters:simulator' },
+      { name: 'היסטוריית מכתבים', href: '/letter-history', menuKey: 'letters:history' },
     ]
   },
-  { name: 'אישורי עובדים זרים', href: '/foreign-workers', icon: FileText, allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
-  { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
-  { name: 'משתמשים', href: '/users', icon: UserCog, allowedRoles: ['admin'] as UserRole[], showBadge: true },
-  { name: 'הגדרות', href: '/settings', icon: Settings, allowedRoles: ['admin'] as UserRole[] },
+  { name: 'אישורי עובדים זרים', href: '/foreign-workers', icon: FileText, menuKey: 'foreign-workers', allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
+  { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
+  { name: 'משתמשים', href: '/users', icon: UserCog, menuKey: 'users', allowedRoles: ['admin'] as UserRole[], showBadge: true },
+  { name: 'הגדרות', href: '/settings', icon: Settings, menuKey: 'settings', allowedRoles: ['admin'] as UserRole[] },
 ];
 
 const getRoleDisplayName = (role: UserRole | null): string => {
@@ -95,19 +101,13 @@ const getRoleDisplayName = (role: UserRole | null): string => {
 
 export function MainLayout() {
   const { user, signOut, role } = useAuth();
+  const { isMenuVisible, isSuperAdmin, loading: permissionsLoading } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [consecutiveErrors, setConsecutiveErrors] = useState(0);
-
-  // Memoize callbacks to prevent unnecessary re-renders
-  const checkSuperAdmin = useCallback(async () => {
-    const isSuper = await authService.isSuperAdmin();
-    setIsSuperAdmin(isSuper);
-  }, []);
 
   const loadPendingCount = useCallback(async () => {
     // Skip if tab is not visible (Page Visibility API)
@@ -134,9 +134,6 @@ export function MainLayout() {
   }, []);
 
   useEffect(() => {
-    // Check if super admin
-    checkSuperAdmin();
-
     // Load pending registrations count for admins
     if (role === 'admin') {
       loadPendingCount();
@@ -169,7 +166,7 @@ export function MainLayout() {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
-  }, [role, checkSuperAdmin, loadPendingCount, consecutiveErrors]);
+  }, [role, loadPendingCount, consecutiveErrors]);
 
   // Auto-open submenu if currently on a child page
   useEffect(() => {
@@ -190,9 +187,19 @@ export function MainLayout() {
     navigate('/login');
   };
 
-  const filteredNavigation = navigation.filter(
-    item => role && item.allowedRoles.includes(role)
-  );
+  // Filter navigation using dynamic permissions (from DB + defaults)
+  const filteredNavigation = useMemo(() => {
+    if (permissionsLoading) return [];
+
+    return navigation.filter(item => {
+      // Super admin sees everything
+      if (isSuperAdmin) return true;
+
+      // Use dynamic permission check from usePermissions hook
+      // This checks both defaults AND DB overrides
+      return isMenuVisible(item.menuKey);
+    });
+  }, [isMenuVisible, isSuperAdmin, permissionsLoading]);
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -284,7 +291,7 @@ export function MainLayout() {
                       <CollapsibleContent className="pt-1">
                         <ul className="space-y-1 pr-6">
                           {item.submenu
-                            .filter(subItem => !subItem.allowedRoles || (role && subItem.allowedRoles.includes(role)))
+                            .filter(subItem => isSuperAdmin || isMenuVisible(subItem.menuKey))
                             .map((subItem) => (
                             <li key={subItem.href}>
                               <NavLink

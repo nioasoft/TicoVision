@@ -4,6 +4,16 @@ import { supabase } from '@/lib/supabase';
 import { logger } from '@/lib/logger';
 import type { UserRole } from '@/types/user-role';
 
+/**
+ * Per-user permission settings stored in user_tenant_access.permissions
+ * These are user-specific overrides, separate from role-based permissions
+ */
+export interface UserPermissions {
+  /** If true, user can see all clients in the tenant. If false, only assigned clients. */
+  see_all_clients?: boolean;
+  // Additional per-user permissions can be added here
+}
+
 export interface User {
   id: string;
   tenant_id: string;
@@ -12,7 +22,7 @@ export interface User {
   phone?: string;
   role: UserRole;
   is_active: boolean;
-  permissions?: Record<string, unknown>;
+  permissions?: UserPermissions;
   created_at: string;
   updated_at: string;
   last_login?: string;
@@ -24,7 +34,7 @@ export interface CreateUserData {
   full_name: string;
   phone?: string;
   role: UserRole;
-  permissions?: Record<string, unknown>;
+  permissions?: UserPermissions;
 }
 
 export interface UpdateUserData {
@@ -32,7 +42,7 @@ export interface UpdateUserData {
   phone?: string;
   role?: UserRole;
   is_active?: boolean;
-  permissions?: Record<string, unknown>;
+  permissions?: UserPermissions;
 }
 
 export class UserService extends BaseService {

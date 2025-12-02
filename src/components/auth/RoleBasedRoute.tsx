@@ -1,5 +1,6 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { UserRole } from '@/types/user-role';
 
 interface RoleBasedRouteProps {
@@ -8,7 +9,11 @@ interface RoleBasedRouteProps {
 }
 
 export function RoleBasedRoute({ allowedRoles, redirectTo = '/clients' }: RoleBasedRouteProps) {
-  const { role, loading } = useAuth();
+  const { role, loading: authLoading } = useAuth();
+  const { isRouteAccessible, isSuperAdmin, loading: permissionsLoading } = usePermissions();
+  const location = useLocation();
+
+  const loading = authLoading || permissionsLoading;
 
   if (loading) {
     return (
@@ -18,8 +23,24 @@ export function RoleBasedRoute({ allowedRoles, redirectTo = '/clients' }: RoleBa
     );
   }
 
-  // If user has no role or role is not in allowedRoles, redirect
-  if (!role || !allowedRoles.includes(role)) {
+  // Super admin can access everything
+  if (isSuperAdmin) {
+    return <Outlet />;
+  }
+
+  // If user has no role, redirect
+  if (!role) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  // First check: Static role check (baseline security)
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  // Second check: Dynamic permission check (DB overrides)
+  // This respects custom permission settings from tenant_settings
+  if (!isRouteAccessible(location.pathname)) {
     return <Navigate to={redirectTo} replace />;
   }
 

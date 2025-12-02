@@ -91,18 +91,19 @@ export function usePermissions(): UsePermissionsReturn {
       // No role = no access
       if (!role) return false;
 
-      // Check default permissions first
-      const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
-      if (!defaultPerms.includes(menuKey)) {
-        return false;
+      // 1. Check if explicitly added (DB override to EXPAND)
+      if (permissions?.addedMenus.includes(menuKey)) {
+        return true;
       }
 
-      // Check DB overrides
+      // 2. Check if explicitly hidden (DB override to RESTRICT)
       if (permissions?.hiddenMenus.includes(menuKey)) {
         return false;
       }
 
-      return true;
+      // 3. Check default permissions
+      const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
+      return defaultPerms.includes(menuKey);
     },
     [role, permissions, isSuperAdmin]
   );
@@ -122,18 +123,19 @@ export function usePermissions(): UsePermissionsReturn {
       const permission = ALL_PERMISSIONS.find(p => p.route === route);
       if (!permission) return true; // Unknown route, allow
 
-      // Check default permissions
-      const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
-      if (!defaultPerms.includes(permission.menu)) {
-        return false;
+      // 1. Check if explicitly added (DB override to EXPAND)
+      if (permissions?.addedRoutes.includes(route)) {
+        return true;
       }
 
-      // Check DB overrides
+      // 2. Check if explicitly hidden (DB override to RESTRICT)
       if (permissions?.hiddenRoutes.includes(route)) {
         return false;
       }
 
-      return true;
+      // 3. Check default permissions
+      const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
+      return defaultPerms.includes(permission.menu);
     },
     [role, permissions, isSuperAdmin]
   );

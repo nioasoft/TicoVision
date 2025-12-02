@@ -243,18 +243,24 @@ class UserClientAssignmentService extends BaseService {
       const tenantId = await this.getTenantId();
       const currentUser = await this.getCurrentUserId();
 
-      // Get user role
-      const { data: roleData, error: roleError } = await supabase
+      // Get user role and permissions
+      const { data: userData, error: userError } = await supabase
         .from('user_tenant_access')
-        .select('role')
+        .select('role, permissions')
         .eq('user_id', currentUser)
         .eq('tenant_id', tenantId)
         .single();
 
-      if (roleError) throw roleError;
+      if (userError) throw userError;
 
-      // Admins have access to all clients
-      if (roleData?.role === 'admin') {
+      // Check if user can see all clients:
+      // 1. Admins always have access
+      // 2. Users with see_all_clients permission have access
+      const canSeeAllClients =
+        userData?.role === 'admin' ||
+        (userData?.permissions as { see_all_clients?: boolean })?.see_all_clients === true;
+
+      if (canSeeAllClients) {
         return { data: true, error: null };
       }
 
@@ -276,27 +282,34 @@ class UserClientAssignmentService extends BaseService {
   }
 
   /**
-   * Get clients for current user based on role
+   * Get clients for current user based on role and permissions
    * - Admin: all clients
-   * - Bookkeeper/other: only assigned clients
+   * - User with see_all_clients permission: all clients
+   * - Others: only assigned clients
    */
   async getAccessibleClients(): Promise<ServiceResponse<Array<{ id: string; company_name: string; tax_id: string }>>> {
     try {
       const tenantId = await this.getTenantId();
       const currentUser = await this.getCurrentUserId();
 
-      // Get user role
-      const { data: roleData, error: roleError } = await supabase
+      // Get user role and permissions
+      const { data: userData, error: userError } = await supabase
         .from('user_tenant_access')
-        .select('role')
+        .select('role, permissions')
         .eq('user_id', currentUser)
         .eq('tenant_id', tenantId)
         .single();
 
-      if (roleError) throw roleError;
+      if (userError) throw userError;
 
-      // Admins get all clients
-      if (roleData?.role === 'admin') {
+      // Check if user can see all clients:
+      // 1. Admins always see all
+      // 2. Users with see_all_clients permission see all
+      const canSeeAllClients =
+        userData?.role === 'admin' ||
+        (userData?.permissions as { see_all_clients?: boolean })?.see_all_clients === true;
+
+      if (canSeeAllClients) {
         const { data: clients, error: clientsError } = await supabase
           .from('clients')
           .select('id, company_name, tax_id')
@@ -332,6 +345,34 @@ class UserClientAssignmentService extends BaseService {
       }).sort((a, b) => a.company_name.localeCompare(b.company_name, 'he'));
 
       return { data: clients, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Check if the current user can see all clients
+   * @returns true if admin or has see_all_clients permission
+   */
+  async canSeeAllClients(): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const currentUser = await this.getCurrentUserId();
+
+      const { data: userData, error: userError } = await supabase
+        .from('user_tenant_access')
+        .select('role, permissions')
+        .eq('user_id', currentUser)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (userError) throw userError;
+
+      const canSeeAll =
+        userData?.role === 'admin' ||
+        (userData?.permissions as { see_all_clients?: boolean })?.see_all_clients === true;
+
+      return { data: canSeeAll, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }

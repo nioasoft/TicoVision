@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { User, CreateUserData, UpdateUserData } from '@/services/user.service';
+import type { User, CreateUserData, UpdateUserData, UserPermissions } from '@/services/user.service';
 import type { UserRole } from '@/types/user-role';
 
 // Add User Dialog Props
@@ -67,7 +68,9 @@ const INITIAL_ADD_FORM: CreateUserData = {
   full_name: '',
   phone: '',
   role: 'client',
-  permissions: {},
+  permissions: {
+    see_all_clients: false,
+  },
 };
 
 const INITIAL_EDIT_FORM: UpdateUserData = {
@@ -75,7 +78,9 @@ const INITIAL_EDIT_FORM: UpdateUserData = {
   phone: '',
   role: 'client',
   is_active: true,
-  permissions: {},
+  permissions: {
+    see_all_clients: false,
+  },
 };
 
 // Add User Dialog
@@ -270,7 +275,9 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
         phone: user.phone || '',
         role: user.role,
         is_active: user.is_active,
-        permissions: user.permissions || {},
+        permissions: {
+          see_all_clients: user.permissions?.see_all_clients ?? false,
+        },
       });
       setHasUnsavedChanges(false);
     } else if (!open) {
@@ -408,6 +415,33 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
                 </Select>
               </div>
             </div>
+
+            {/* Client Visibility Permission - Only show for non-admin roles */}
+            {formData.role !== 'admin' && (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-right block rtl:text-right ltr:text-left font-medium">
+                      צפייה בכל הלקוחות
+                    </Label>
+                    <p className="text-sm text-muted-foreground rtl:text-right ltr:text-left">
+                      {formData.permissions?.see_all_clients
+                        ? 'המשתמש רואה את כל לקוחות המשרד'
+                        : 'המשתמש רואה רק לקוחות שהוקצו לו'}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.permissions?.see_all_clients ?? false}
+                    onCheckedChange={(checked) =>
+                      handleFormChange('permissions', {
+                        ...formData.permissions,
+                        see_all_clients: checked,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="rtl:space-x-reverse ltr:space-x-2">
