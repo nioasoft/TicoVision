@@ -586,6 +586,30 @@ export class TemplateService extends BaseService {
         // Check if bank transfer only mode is enabled
         if (variables.bank_transfer_only) {
           paymentSection = await this.loadTemplateFile('components/payment-section-bank-only.html');
+
+          // Hide all discount-related lines when discount is 0%
+          if (variables.bank_discount === '0' || Number(variables.bank_discount) === 0) {
+            // Remove "Amount before discount" line
+            paymentSection = paymentSection.replace(
+              /<!-- Amount before discount -->[\s\S]*?<\/div>\s*\n/,
+              ''
+            );
+            // Remove "Discount info" line
+            paymentSection = paymentSection.replace(
+              /<!-- Discount info -->[\s\S]*?<\/div>\s*\n/,
+              ''
+            );
+            // Remove "Amount after discount" line
+            paymentSection = paymentSection.replace(
+              /<!-- Amount after discount \(no VAT\) -->[\s\S]*?<\/div>\s*\n/,
+              ''
+            );
+            // Change "סכום לתשלום כולל מע"מ כולל הנחה" to "סכום לתשלום כולל מע"מ"
+            paymentSection = paymentSection.replace(
+              'סכום לתשלום כולל מע"מ כולל הנחה',
+              'סכום לתשלום כולל מע"מ'
+            );
+          }
         } else {
           let paymentSectionFile = 'components/payment-section.html'; // fallback
           if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
@@ -781,6 +805,30 @@ export class TemplateService extends BaseService {
         // Check if bank transfer only mode is enabled
         if (variables.bank_transfer_only) {
           paymentSection = await this.loadTemplateFile('components/payment-section-bank-only.html');
+
+          // Hide all discount-related lines when discount is 0%
+          if (variables.bank_discount === '0' || Number(variables.bank_discount) === 0) {
+            // Remove "Amount before discount" line
+            paymentSection = paymentSection.replace(
+              /<!-- Amount before discount -->[\s\S]*?<\/div>\s*\n/,
+              ''
+            );
+            // Remove "Discount info" line
+            paymentSection = paymentSection.replace(
+              /<!-- Discount info -->[\s\S]*?<\/div>\s*\n/,
+              ''
+            );
+            // Remove "Amount after discount" line
+            paymentSection = paymentSection.replace(
+              /<!-- Amount after discount \(no VAT\) -->[\s\S]*?<\/div>\s*\n/,
+              ''
+            );
+            // Change "סכום לתשלום כולל מע"מ כולל הנחה" to "סכום לתשלום כולל מע"מ"
+            paymentSection = paymentSection.replace(
+              'סכום לתשלום כולל מע"מ כולל הנחה',
+              'סכום לתשלום כולל מע"מ'
+            );
+          }
         } else {
           let paymentSectionFile = 'components/payment-section.html'; // fallback
           if (templateType.includes('external_') || templateType.includes('internal_audit_')) {
