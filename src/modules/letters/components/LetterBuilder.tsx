@@ -120,18 +120,22 @@ export function LetterBuilder() {
   };
 
   /**
-   * Calculate discount amounts based on original amount
+   * Calculate discount amounts based on original amount (before VAT)
+   * Discounts are applied to the amount INCLUDING VAT (18%)
    */
-  const calculateDiscounts = (original: number) => {
+  const calculateDiscounts = (original: number, vatRate: number = 0.18) => {
     const formatNumber = (num: number): string => {
       return Math.round(num).toLocaleString('he-IL');
     };
 
+    const amountWithVat = Math.round(original * (1 + vatRate));
+
     return {
       amount_original: formatNumber(original),
-      amount_after_bank: formatNumber(original * 0.91),     // 9% discount
-      amount_after_single: formatNumber(original * 0.92),   // 8% discount
-      amount_after_payments: formatNumber(original * 0.96), // 4% discount
+      amount_with_vat: formatNumber(amountWithVat),              // Amount including VAT
+      amount_after_bank: formatNumber(amountWithVat * 0.91),     // 9% discount on VAT-inclusive amount
+      amount_after_single: formatNumber(amountWithVat * 0.92),   // 8% discount on VAT-inclusive amount
+      amount_after_payments: formatNumber(amountWithVat * 0.96), // 4% discount on VAT-inclusive amount
     };
   };
 

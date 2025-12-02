@@ -86,15 +86,19 @@ export function replaceVariables(
 }
 
 /**
- * Calculate payment discounts based on amount
- * @param amount - Original amount in ILS
- * @returns Object with discounted amounts
+ * Calculate payment discounts based on amount (before VAT)
+ * Discounts are applied to the amount INCLUDING VAT
+ * @param amount - Original amount in ILS (before VAT)
+ * @param vatRate - VAT rate (default: 18%)
+ * @returns Object with amount including VAT and discounted amounts
  */
-export function calculateDiscounts(amount: number) {
+export function calculateDiscounts(amount: number, vatRate: number = 0.18) {
+  const amountWithVat = Math.round(amount * (1 + vatRate));
   return {
-    amount_after_bank: Math.ceil(amount * 0.91),       // 9% discount
-    amount_after_single: Math.ceil(amount * 0.92),     // 8% discount
-    amount_after_payments: Math.ceil(amount * 0.96),   // 4% discount
+    amount_with_vat: amountWithVat,                        // Amount including VAT
+    amount_after_bank: Math.ceil(amountWithVat * 0.91),    // 9% discount on VAT-inclusive amount
+    amount_after_single: Math.ceil(amountWithVat * 0.92),  // 8% discount on VAT-inclusive amount
+    amount_after_payments: Math.ceil(amountWithVat * 0.96),// 4% discount on VAT-inclusive amount
   };
 }
 
