@@ -51,12 +51,12 @@
                         בתמורה משרדנו יעניק לכם הנחה של 9%.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
-                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}.
+                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_with_vat}}.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
                         והסכום לאחר ההנחה הוא ₪{{amount_after_bank}} כולל מע"מ.
                     </div>
-                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=bank_transfer&client_id={{client_id}}&amount={{amount_original}}&redirect_url=https://ticovision.vercel.app/bank-transfer-details.html" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=bank_transfer&client_id={{client_id}}&amount={{amount_with_vat}}&redirect_url=https://ticovision.vercel.app/bank-transfer-details.html" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
                         <table width="70%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
                             <tr>
                                 <td style="padding: 14px 16px;">
@@ -99,12 +99,12 @@
                         בתמורה משרדנו יעניק לכם הנחה של 8%.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
-                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}.
+                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_with_vat}}.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
                         והסכום לאחר ההנחה הוא ₪{{amount_after_single}} כולל מע"מ.
                     </div>
-                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=cc_single&client_id={{client_id}}&amount={{amount_original}}&redirect_url=https://ticovision.vercel.app/payment-credit-single.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=cc_single&client_id={{client_id}}&amount={{amount_with_vat}}&redirect_url=https://ticovision.vercel.app/payment-credit-single.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
                         <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
                             <tr>
                                 <td style="padding: 14px 16px;">
@@ -147,12 +147,12 @@
                         בתמורה משרדנו יעניק לכם הנחה של 4%.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
-                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_original}}.
+                        הסכום כולל מע"מ לפני הנחה הוא ₪{{amount_with_vat}}.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #395BF7; text-align: right; font-weight: 700; margin-bottom: 16px;">
                         והסכום לאחר ההנחה הוא ₪{{amount_after_payments}} כולל מע"מ.
                     </div>
-                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=cc_installments&client_id={{client_id}}&amount={{amount_original}}&redirect_url=https://ticovision.vercel.app/payment-credit-installments.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
+                    <a href="https://zbqfeebrhberddvfkuhe.supabase.co/functions/v1/track-payment-selection?fee_id={{fee_id}}&letter_id={{letter_id}}&method=cc_installments&client_id={{client_id}}&amount={{amount_with_vat}}&redirect_url=https://ticovision.vercel.app/payment-credit-installments.html" target="_blank" rel="noopener noreferrer" style="display: inline-block; text-decoration: none;">
                         <table width="30%" cellpadding="0" cellspacing="0" border="0" style="margin-right: 0; margin-left: auto; background-color: #000000; border-radius: 0px;">
                             <tr>
                                 <td style="padding: 14px 16px;">
@@ -192,7 +192,7 @@
                         תשלום רגיל בהמחאות: כמדי שנה {{num_checks}} המחאות שוות
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #000000; text-align: right; font-weight: 400; margin-bottom: 8px;">
-                        בסכום של ₪{{amount_original}} כולל מע"מ.
+                        בסכום של ₪{{amount_with_vat}} כולל מע"מ.
                     </div>
                     <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.6; color: #71717a; text-align: right; font-weight: 400; margin-bottom: 16px;">
                         תאריכי ההמחאות הינם לחמישי לכל חודש,
