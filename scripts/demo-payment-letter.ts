@@ -248,7 +248,7 @@ async function sendDemoPaymentLetter() {
 
     const msg = {
       to: TEST_EMAIL,
-      from: 'shani@franco.co.il',
+      from: 'sigal@franco.co.il',
       replyTo: 'sigal@franco.co.il',
       subject: `[DEMO - Cardcom Sandbox] שכר טרחתנו לשנת המס ${nextYear}`,
       html: letterHtml,

@@ -273,13 +273,15 @@ export function LetterBuilder() {
           <div className="space-y-4">
             <Label className="text-right block text-base font-semibold">2. הזן פרטים</Label>
 
-            {/* Client Selection */}
-            <ClientSelector
-              value={selectedClient?.id || null}
-              onChange={handleClientChange}
-              label="בחר לקוח"
-              placeholder="בחר לקוח או הקלד ידנית למטה..."
-            />
+            {/* Client Selection - highlighted with yellow background */}
+            <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 -mx-2">
+              <ClientSelector
+                value={selectedClient?.id || null}
+                onChange={handleClientChange}
+                label="בחר לקוח"
+                placeholder="בחר לקוח או הקלד ידנית למטה..."
+              />
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>

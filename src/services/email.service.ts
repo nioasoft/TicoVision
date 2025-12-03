@@ -47,7 +47,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
 
     const msg = {
       to: options.to,
-      from: options.from || 'shani@franco.co.il',
+      from: options.from || 'sigal@franco.co.il',
       replyTo: options.replyTo || 'sigal@franco.co.il',
       subject: options.subject,
       html: options.html,
@@ -99,7 +99,7 @@ export async function sendLetterEmail(
     to: clientEmail,
     subject: letterSubject,
     html: letterHtml,
-    from: 'shani@franco.co.il',
+    from: 'sigal@franco.co.il',
     replyTo: 'sigal@franco.co.il',
   });
 }

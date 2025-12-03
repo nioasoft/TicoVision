@@ -167,7 +167,7 @@ async function sendTestEmail() {
 
     const msg = {
       to: TEST_EMAIL,
-      from: 'shani@franco.co.il',
+      from: 'sigal@franco.co.il',
       replyTo: 'sigal@franco.co.il',
       subject: `[בדיקה] שכר טרחתנו לשנת המס ${nextYear}`,
       html: letterHtml,

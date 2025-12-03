@@ -499,7 +499,7 @@ export function LetterPreviewDialog({
   const getFinalRecipients = () => {
     const enabled = Array.from(getCurrentEnabledEmails());
     const manual = getCurrentManualEmails();
-    const reviewers = sendToReviewers ? ['sigal@franco.co.il', 'shani@franco.co.il'] : [];
+    const reviewers = sendToReviewers ? ['sigal@franco.co.il'] : [];
 
     // Combine all recipients and remove duplicates
     const allRecipients = [...enabled, ...manual, ...reviewers];
@@ -1171,7 +1171,7 @@ export function LetterPreviewDialog({
           id="send-to-reviewers"
         />
         <Label htmlFor="send-to-reviewers" className="cursor-pointer rtl:text-right flex-1">
-          שלח לשני וסיגל לבדיקה (sigal@franco.co.il, shani@franco.co.il)
+          שלח לסיגל לבדיקה (sigal@franco.co.il)
         </Label>
       </div>
 

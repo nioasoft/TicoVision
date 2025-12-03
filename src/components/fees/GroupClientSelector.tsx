@@ -215,10 +215,10 @@ export function GroupClientSelector({
   const isLoading = mode === 'client' ? isLoadingClients : isLoadingGroups;
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('space-y-4 bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4', className)}>
       {/* Mode Toggle */}
       <div className="flex flex-col gap-2">
-        <Label className="text-right">בחירת לקוח/קבוצה</Label>
+        <Label className="text-right font-semibold text-yellow-800">בחירת לקוח/קבוצה</Label>
         <Tabs
           value={mode}
           onValueChange={handleModeChange}
