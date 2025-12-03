@@ -1410,42 +1410,8 @@ export function FeesPage() {
   };
 
   const resetForm = () => {
-    setFormData({
-      client_id: '',
-      year: new Date().getFullYear() + 1,
-      isNewClient: false,
-      previous_year_amount: '',
-      previous_year_discount: '',
-      previous_year_amount_after_discount: 0,
-      previous_year_amount_with_vat: 0,
-      previous_year_amount_with_vat_before_discount: 0,
-      base_amount: '',
-      inflation_rate: 3.0,
-      index_manual_adjustment: '',
-      real_adjustment: '',
-      real_adjustment_reason: '',
-      discount_percentage: '',
-      apply_inflation_index: true,
-      notes: '',
-      bookkeeping_base_amount: '',
-      bookkeeping_inflation_rate: 3.0,
-      bookkeeping_real_adjustment: '',
-      bookkeeping_real_adjustment_reason: '',
-      bookkeeping_discount_percentage: '',
-      bookkeeping_apply_inflation_index: true,
-      retainer_monthly_amount: '',
-      retainer_inflation_rate: 3.0,
-      retainer_index_manual_adjustment: '',
-      retainer_index_manual_is_negative: false,
-      retainer_real_adjustment: '',
-      retainer_real_adjustment_reason: '',
-      retainer_apply_inflation_index: true
-    });
-    setCalculationResults(null);
-    setBookkeepingCalculationResults(null);
-    setRetainerCalculationResults(null);
-    setActiveTab('previous');
-    setPreviousYearDataSaved(false);
+    // Simple and reliable: refresh page to reset ALL state
+    window.location.reload();
   };
 
   const selectedClient = clients.find(c => c.id === formData.client_id);
