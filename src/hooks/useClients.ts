@@ -36,7 +36,7 @@ export interface UseClientsReturn {
 
   // CRUD Operations
   loadClients: () => Promise<void>;
-  createClient: (data: CreateClientDto) => Promise<boolean>;
+  createClient: (data: CreateClientDto) => Promise<{ success: boolean; clientId?: string }>;
   updateClient: (id: string, data: UpdateClientDto, originalClient: Client) => Promise<boolean>;
   deleteClient: (client: Client) => Promise<boolean>;
 
@@ -147,7 +147,7 @@ export function useClients(): UseClientsReturn {
   }, [debouncedSearchQuery, filters, currentPage, toast]);
 
   // Create client
-  const createClient = useCallback(async (data: CreateClientDto): Promise<boolean> => {
+  const createClient = useCallback(async (data: CreateClientDto): Promise<{ success: boolean; clientId?: string }> => {
     const response = await clientService.create(data);
     if (response.error) {
       toast({
@@ -155,7 +155,7 @@ export function useClients(): UseClientsReturn {
         description: response.error.message,
         variant: 'destructive',
       });
-      return false;
+      return { success: false };
     }
 
     toast({
@@ -164,7 +164,7 @@ export function useClients(): UseClientsReturn {
     });
 
     await loadClients();
-    return true;
+    return { success: true, clientId: response.data?.id };
   }, [toast, loadClients]);
 
   // Update client

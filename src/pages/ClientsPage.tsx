@@ -102,11 +102,11 @@ export default function ClientsPage() {
   };
 
   const handleAddClient = async (data: Parameters<typeof createClient>[0]) => {
-    const success = await createClient(data);
-    if (success) {
+    const result = await createClient(data);
+    if (result.success) {
       handleCloseAddDialog();
     }
-    return success;
+    return result;
   };
 
   const handleUpdateClient = async (data: Parameters<typeof createClient>[0]) => {

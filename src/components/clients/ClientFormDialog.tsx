@@ -58,6 +58,9 @@ import {
   formatIsraeliTaxId,
   stripTaxIdFormatting,
 } from '@/lib/validators';
+import { PdfImportButton } from './PdfImportButton';
+import type { ExtractedCompanyData } from '@/services/company-extraction.service';
+import { fileUploadService } from '@/services/file-upload.service';
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -66,7 +69,7 @@ interface ClientFormDialogProps {
   contacts: ClientContact[];
   phones: ClientPhone[];
   onClose: () => void;
-  onSubmit: (data: CreateClientDto) => Promise<boolean>;
+  onSubmit: (data: CreateClientDto) => Promise<boolean | { success: boolean; clientId?: string }>;
   onLoadContacts?: (clientId: string) => Promise<void>;
   onAddContact?: (clientId: string, contactData: CreateClientContactDto) => Promise<boolean>;
   onUpdateContact?: (contactId: string, contactData: Partial<CreateClientContactDto>) => Promise<boolean>;
@@ -134,6 +137,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [groups, setGroups] = useState<ClientGroup[]>([]); // NEW: רשימת קבוצות
+    const [importedPdfFile, setImportedPdfFile] = useState<File | null>(null); // PDF file to save after client creation
 
     // Memoized city options for Combobox
     // Include the current city value if it's not in the standard list (preserves existing data)
@@ -279,16 +283,38 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         };
 
         // Submit the client data (contact fields will be auto-saved by client.service)
-        const success = await onSubmit(submissionData);
+        const result = await onSubmit(submissionData);
+
+        // Handle both old (boolean) and new ({ success, clientId }) return types
+        const success = typeof result === 'boolean' ? result : result.success;
+        const clientId = typeof result === 'object' ? result.clientId : undefined;
 
         if (success) {
+          // If we have a PDF file and a client ID, upload it to company_registry
+          if (mode === 'add' && importedPdfFile && clientId) {
+            try {
+              console.log('Uploading PDF to company_registry for client:', clientId);
+              await fileUploadService.uploadFileToCategory(
+                importedPdfFile,
+                clientId,
+                'company_registry',
+                'תמצית רשם חברות'
+              );
+              console.log('PDF uploaded successfully');
+            } catch (uploadError) {
+              console.error('Failed to upload PDF:', uploadError);
+              // Don't fail the whole operation if PDF upload fails
+            }
+          }
+
           setFormData(INITIAL_FORM_DATA);
+          setImportedPdfFile(null);
           setHasUnsavedChanges(false);
         }
       } finally {
         setIsSubmitting(false);
       }
-    }, [formData, onSubmit, validateForm]);
+    }, [formData, onSubmit, validateForm, mode, importedPdfFile]);
 
     const handleFormChange = useCallback(<K extends keyof CreateClientDto>(
       field: K,
@@ -335,6 +361,26 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       onClose();
     }, [onClose]);
 
+    // Handle PDF data extraction
+    const handlePdfDataExtracted = useCallback((data: ExtractedCompanyData, file: File) => {
+      console.log('PDF extracted data:', data);
+      console.log('City from PDF:', data.address_city);
+
+      setFormData(prev => ({
+        ...prev,
+        company_name: data.company_name || prev.company_name,
+        // commercial_name stays empty - user will fill manually
+        tax_id: data.tax_id ? formatIsraeliTaxId(data.tax_id) : prev.tax_id,
+        address: {
+          street: data.address_street || prev.address?.street || '',
+          city: data.address_city || prev.address?.city || '',
+          postal_code: data.postal_code || prev.address?.postal_code || '',
+        },
+      }));
+      setImportedPdfFile(file); // Store file for later upload
+      setHasUnsavedChanges(true);
+    }, []);
+
     return (
       <>
         <Dialog open={open} onOpenChange={handleClose}>
@@ -349,6 +395,19 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
             </DialogHeader>
 
             <div className="grid grid-cols-3 gap-3 py-4">
+              {/* PDF Import Section - Only in Add mode */}
+              {mode === 'add' && (
+                <div className="col-span-3 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+                  <PdfImportButton
+                    onDataExtracted={handlePdfDataExtracted}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-xs text-gray-500 rtl:text-right flex-1">
+                    העלה PDF מרשם החברות למילוי אוטומטי של פרטי החברה
+                  </p>
+                </div>
+              )}
+
               {/* Category Header: Company Details */}
               <div className="col-span-3 mb-2">
                 <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
