@@ -1154,7 +1154,7 @@ export function LetterPreviewDialog({
 
                 if (contactCount > 0) parts.push(`${contactCount} מאנשי קשר`);
                 if (manualCount > 0) parts.push(`${manualCount} מיילים נוספים`);
-                if (sendToReviewers) parts.push('2 (שני וסיגל לבדיקה)');
+                if (sendToReviewers) parts.push('1 (סיגל לבדיקה)');
 
                 return parts.join(' + ');
               })()}
