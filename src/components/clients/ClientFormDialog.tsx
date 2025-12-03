@@ -94,6 +94,7 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   accountant_name: '',
   accountant_email: '',
   accountant_phone: '',
+  accountant_phone_secondary: '',
   address: {
     street: '',
     city: '',
@@ -168,6 +169,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           accountant_name: '',
           accountant_email: '',
           accountant_phone: '',
+          accountant_phone_secondary: '',
           address: client.address || { street: '', city: '', postal_code: '' },
           status: client.status,
           internal_external: client.internal_external || 'internal',
@@ -850,17 +852,23 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     nameValue={formData.accountant_name}
                     emailValue={formData.accountant_email}
                     phoneValue={formData.accountant_phone}
+                    phoneSecondaryValue={formData.accountant_phone_secondary}
                     onNameChange={(value) => handleFormChange('accountant_name', value)}
                     onEmailChange={(value) => handleFormChange('accountant_email', value)}
                     onPhoneChange={(value) => {
                       const formatted = formatIsraeliPhone(value);
                       handleFormChange('accountant_phone', formatted);
                     }}
+                    onPhoneSecondaryChange={(value) => {
+                      const formatted = formatIsraeliLandline(value);
+                      handleFormChange('accountant_phone_secondary', formatted);
+                    }}
                     contactType="accountant_manager"
                     required={true}
                     namePlaceholder="שם מנהלת חשבונות"
                     emailPlaceholder="דוא״ל"
                     phonePlaceholder=""
+                    phoneSecondaryPlaceholder=""
                   />
                   </div>
                 </>
