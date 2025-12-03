@@ -48,8 +48,8 @@ class CompanyExtractionService {
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const page = await pdf.getPage(1); // First page only
 
-    // Render at 3x scale for better OCR quality (higher = more accurate text extraction)
-    const viewport = page.getViewport({ scale: 3 });
+    // Render at 4x scale for better OCR quality (higher = more accurate text extraction)
+    const viewport = page.getViewport({ scale: 4 });
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
 
