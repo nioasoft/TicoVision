@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2, Save, RefreshCw } from 'lucide-react';
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
@@ -267,14 +268,11 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
                               </span>
                             </td>
                             <td className="px-4 py-2">
-                              <Input
-                                type="number"
+                              <MoneyInput
                                 value={amount}
-                                onChange={(e) => handleAmountChange(monthKey, e.target.value === '' ? '' : parseFloat(e.target.value))}
-                                placeholder=""
+                                onChange={(value) => handleAmountChange(monthKey, value)}
                                 disabled={disabled}
                                 className="text-right rtl:text-right w-32"
-                                dir="rtl"
                               />
                             </td>
                           </tr>

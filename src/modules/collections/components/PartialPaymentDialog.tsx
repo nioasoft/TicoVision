@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { collectionService } from '@/services/collection.service';
@@ -33,7 +34,7 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
   row,
   onSuccess,
 }) => {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -41,13 +42,12 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
     e.preventDefault();
     if (!row) return;
 
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0) {
+    if (amount === '' || amount <= 0) {
       toast.error('סכום לא תקין');
       return;
     }
 
-    if (amountNum > row.amount_remaining) {
+    if (amount > row.amount_remaining) {
       toast.error('הסכום גבוה מהיתרה הנותרת');
       return;
     }
@@ -55,7 +55,7 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
     setLoading(true);
     const result = await collectionService.markPartialPayment(
       row.fee_calculation_id,
-      amountNum,
+      amount,
       notes || undefined
     );
 
@@ -75,7 +75,7 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
 
   if (!row) return null;
 
-  const newRemaining = row.amount_remaining - parseFloat(amount || '0');
+  const newRemaining = row.amount_remaining - (typeof amount === 'number' ? amount : 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,14 +103,9 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="amount" className="rtl:text-right ltr:text-left">סכום ששולם כעת</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
+            <MoneyInput
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              required
+              onChange={(value) => setAmount(value)}
               className="rtl:text-right ltr:text-left"
             />
           </div>

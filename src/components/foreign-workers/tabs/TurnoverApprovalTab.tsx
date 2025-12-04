@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Textarea } from '@/components/ui/textarea';
 import type { TurnoverApprovalVariables, TurnoverApprovalScenario } from '@/types/foreign-workers.types';
 
@@ -197,23 +198,19 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   <Label htmlFor="total-turnover-12" className="text-right block">
                     סך מחזור (ש"ח) <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="total-turnover-12"
-                    type="number"
+                  <MoneyInput
                     value={value.scenario_12_plus?.total_turnover === 0 ? '' : (value.scenario_12_plus?.total_turnover || '')}
-                    onChange={(e) =>
+                    onChange={(newValue) =>
                       onChange({
                         ...value,
                         scenario_12_plus: {
                           ...value.scenario_12_plus!,
-                          total_turnover: parseFloat(e.target.value) || 0
+                          total_turnover: typeof newValue === 'number' ? newValue : 0
                         }
                       })
                     }
-                    placeholder="0"
                     disabled={disabled}
                     className="text-right rtl:text-right"
-                    dir="rtl"
                   />
                 </div>
               </CardContent>
@@ -311,23 +308,19 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   <Label htmlFor="total-turnover-4" className="text-right block">
                     סך מחזור (ש"ח) <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="total-turnover-4"
-                    type="number"
+                  <MoneyInput
                     value={value.scenario_4_to_11?.total_turnover === 0 ? '' : (value.scenario_4_to_11?.total_turnover || '')}
-                    onChange={(e) =>
+                    onChange={(newValue) =>
                       onChange({
                         ...value,
                         scenario_4_to_11: {
                           ...value.scenario_4_to_11!,
-                          total_turnover: e.target.value === '' ? 0 : parseFloat(e.target.value)
+                          total_turnover: typeof newValue === 'number' ? newValue : 0
                         }
                       })
                     }
-                    placeholder=""
                     disabled={disabled}
                     className="text-right rtl:text-right"
-                    dir="rtl"
                   />
                 </div>
               </CardContent>
@@ -345,25 +338,21 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   <Label htmlFor="estimated-costs" className="text-right block">
                     עלות הקמת העסק (ש"ח) <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="estimated-costs"
-                    type="number"
+                  <MoneyInput
                     value={value.scenario_up_to_3?.estimated_annual_costs === 0 ? '' : (value.scenario_up_to_3?.estimated_annual_costs || '')}
-                    onChange={(e) =>
+                    onChange={(newValue) =>
                       onChange({
                         ...value,
                         scenario_up_to_3: {
                           ...value.scenario_up_to_3,
                           estimated_annual_turnover: value.scenario_up_to_3?.estimated_annual_turnover || 0,
-                          estimated_annual_costs: e.target.value === '' ? 0 : parseFloat(e.target.value),
+                          estimated_annual_costs: typeof newValue === 'number' ? newValue : 0,
                           estimate_basis: value.scenario_up_to_3?.estimate_basis || ''
                         }
                       })
                     }
-                    placeholder=""
                     disabled={disabled}
                     className="text-right rtl:text-right"
-                    dir="rtl"
                   />
                 </div>
                 <div className="space-y-2">

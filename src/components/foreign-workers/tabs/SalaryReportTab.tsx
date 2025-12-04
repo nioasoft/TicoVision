@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Combobox } from '@/components/ui/combobox';
@@ -481,25 +482,19 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                             {MonthlyDataService.dateToHebrew(date)}
                           </td>
                           <td className="px-4 py-2">
-                            <Input
-                              type="number"
-                              min="0"
+                            <MoneyInput
                               value={data.salary}
-                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'salary', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                              onChange={(value) => handleSalaryChange(selectedWorkerId, monthKey, 'salary', value)}
+                              min={0}
                               className="max-w-[150px] text-right"
-                              dir="rtl"
-                              placeholder=""
                             />
                           </td>
                           <td className="px-4 py-2">
-                            <Input
-                              type="number"
-                              min="0"
+                            <MoneyInput
                               value={data.supplement}
-                              onChange={(e) => handleSalaryChange(selectedWorkerId, monthKey, 'supplement', e.target.value === '' ? '' : parseFloat(e.target.value))}
+                              onChange={(value) => handleSalaryChange(selectedWorkerId, monthKey, 'supplement', value)}
+                              min={0}
                               className="max-w-[150px] text-right"
-                              dir="rtl"
-                              placeholder=""
                             />
                           </td>
                           <td className="px-4 py-2 text-center">

@@ -4,6 +4,7 @@ import { formatILS } from '@/lib/formatters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
@@ -48,6 +49,7 @@ import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewD
 import { selectLetterTemplate, type LetterSelectionResult } from '@/modules/letters/utils/letter-selector';
 import type { LetterTemplateType } from '@/modules/letters/types/letter.types';
 import { BankTransferDiscountCalculator, type BankTransferAmounts } from '@/components/fees/BankTransferDiscountCalculator';
+import { CustomPaymentText } from '@/components/fees/CustomPaymentText';
 import { GroupClientSelector, type SelectionMode } from '@/components/fees/GroupClientSelector';
 import { GroupMembersList } from '@/components/fees/GroupMembersList';
 import { groupFeeService, type ClientGroup, type GroupFeeCalculation } from '@/services/group-fee.service';
@@ -198,6 +200,9 @@ export function FeesPage() {
   const [bankTransferOnly, setBankTransferOnly] = useState(false);
   const [bankTransferDiscount, setBankTransferDiscount] = useState<number>(9);
   const [bankTransferAmounts, setBankTransferAmounts] = useState<BankTransferAmounts | null>(null);
+
+  // Custom Payment Text (HTML from TipTap editor)
+  const [customPaymentText, setCustomPaymentText] = useState<string>('');
 
   const { toast } = useToast();
 
@@ -486,6 +491,9 @@ export function FeesPage() {
           retainer_apply_inflation_index: draft.retainer_calculation?.apply_inflation_index ?? true,
         }));
 
+        // Load custom payment text if exists
+        setCustomPaymentText(draft.custom_payment_text || '');
+
         toast({
           title: 'נטען חישוב קודם',
           description: 'חישוב שטרם נשלח נטען מהמערכת',
@@ -542,6 +550,9 @@ export function FeesPage() {
             retainer_apply_inflation_index: latest.retainer_calculation?.apply_inflation_index ?? true,
           }));
 
+          // Load custom payment text if exists
+          setCustomPaymentText(latest.custom_payment_text || '');
+
           toast({
             title: 'נטען חישוב קודם',
             description: 'חישוב שנשלח ללקוח נטען לעיון. שמירה תיצור חישוב חדש.',
@@ -554,6 +565,8 @@ export function FeesPage() {
             client_requested_adjustment: 0,
             client_requested_adjustment_note: ''
           }));
+          // Clear custom payment text
+          setCustomPaymentText('');
         }
       }
     } catch (error) {
@@ -1086,7 +1099,8 @@ export function FeesPage() {
           bookkeeping_discount_percentage: formData.bookkeeping_discount_percentage,
           client_requested_adjustment: formData.client_requested_adjustment,
           client_requested_adjustment_note: formData.client_requested_adjustment_note,
-          notes: formData.notes
+          notes: formData.notes,
+          custom_payment_text: customPaymentText || null
         };
 
         const response = await groupFeeService.saveGroupCalculation(groupInput);
@@ -1143,7 +1157,9 @@ export function FeesPage() {
         retainer_index_manual_is_negative: formData.retainer_index_manual_is_negative,
         retainer_real_adjustment: formData.retainer_real_adjustment,
         retainer_real_adjustment_reason: formData.retainer_real_adjustment_reason,
-        retainer_apply_inflation_index: formData.retainer_apply_inflation_index
+        retainer_apply_inflation_index: formData.retainer_apply_inflation_index,
+        // Custom payment text (HTML) - appears above payment section in letter
+        custom_payment_text: customPaymentText || null
       };
 
       // Check if updating existing draft or creating new
@@ -1284,7 +1300,8 @@ export function FeesPage() {
           client_requested_adjustment_note: formData.client_requested_adjustment_note,
           bank_transfer_only: bankTransferOnly,
           bank_transfer_discount_percentage: bankTransferOnly ? bankTransferDiscount : undefined,
-          notes: formData.notes
+          notes: formData.notes,
+          custom_payment_text: customPaymentText || null
         };
 
         const response = await groupFeeService.saveGroupCalculation(groupInput);
@@ -1346,7 +1363,9 @@ export function FeesPage() {
         bank_transfer_only: bankTransferOnly,
         bank_transfer_discount_percentage: bankTransferOnly ? bankTransferDiscount : undefined,
         bank_transfer_amount_before_vat: bankTransferAmounts?.afterDiscountNoVat,
-        bank_transfer_amount_with_vat: bankTransferAmounts?.afterDiscountWithVat
+        bank_transfer_amount_with_vat: bankTransferAmounts?.afterDiscountWithVat,
+        // Custom payment text (HTML) - appears above payment section in letter
+        custom_payment_text: customPaymentText || null
       };
 
       // Check if updating existing draft or creating new
@@ -1661,18 +1680,14 @@ export function FeesPage() {
                             </Label>
                             <Coins className="h-6 w-6 text-blue-500" />
                           </div>
-                          <Input
-                            id="previous_amount"
-                            type="number"
+                          <MoneyInput
                             value={formData.previous_year_amount === 0 ? '' : formData.previous_year_amount}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const newAmount = val === '' ? '' : parseFloat(val);
+                            onChange={(newAmount) => {
                               // Calculate dependent fields using 0 for empty amount
                               const calcAmount = typeof newAmount === 'number' ? newAmount : 0;
                               const calcDiscount = typeof formData.previous_year_discount === 'number' ? formData.previous_year_discount : 0;
                               const calculated = calculatePreviousYearFields(calcAmount, calcDiscount);
-                              
+
                               setFormData({
                                 ...formData,
                                 previous_year_amount: newAmount,
@@ -1681,7 +1696,6 @@ export function FeesPage() {
                             }}
                             disabled={formData.isNewClient}
                             className={`text-lg ${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''}`}
-                            placeholder=""
                           />
                           <p className="text-xs text-gray-500 mt-2 rtl:text-right ltr:text-left">
                             זרימה: לפני מע"מ
@@ -1928,12 +1942,9 @@ export function FeesPage() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="retainer_monthly_amount">סכום חודשי ריטיינר (יוכפל ב-12) *</Label>
-                        <Input
-                          id="retainer_monthly_amount"
-                          type="number"
+                        <MoneyInput
                           value={formData.retainer_monthly_amount === 0 ? '' : formData.retainer_monthly_amount}
-                          onChange={(e) => setFormData({ ...formData, retainer_monthly_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                          placeholder=""
+                          onChange={(value) => setFormData({ ...formData, retainer_monthly_amount: value })}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           הזן סכום חודשי - המערכת תכפיל ב-12 לחישוב שנתי
@@ -1985,12 +1996,9 @@ export function FeesPage() {
                             </Label>
                           </div>
                         </div>
-                        <Input
-                          id="retainer_index_manual_adjustment"
-                          type="number"
+                        <MoneyInput
                           value={formData.retainer_index_manual_adjustment === 0 ? '' : formData.retainer_index_manual_adjustment}
-                          onChange={(e) => setFormData({ ...formData, retainer_index_manual_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                          placeholder=""
+                          onChange={(value) => setFormData({ ...formData, retainer_index_manual_adjustment: value })}
                           disabled={!formData.retainer_apply_inflation_index}
                           className={!formData.retainer_apply_inflation_index ? 'opacity-50' : ''}
                         />
@@ -2003,12 +2011,9 @@ export function FeesPage() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="retainer_real_adjustment">תוספת ריאלית</Label>
-                        <Input
-                          id="retainer_real_adjustment"
-                          type="number"
+                        <MoneyInput
                           value={formData.retainer_real_adjustment === 0 ? '' : formData.retainer_real_adjustment}
-                          onChange={(e) => setFormData({ ...formData, retainer_real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                          placeholder=""
+                          onChange={(value) => setFormData({ ...formData, retainer_real_adjustment: value })}
                         />
                       </div>
 
@@ -2032,12 +2037,9 @@ export function FeesPage() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="base_amount">סכום בסיס לפני הנחה ולפני מע״מ *</Label>
-                    <Input
-                      id="base_amount"
-                      type="number"
+                    <MoneyInput
                       value={formData.base_amount === 0 ? '' : formData.base_amount}
-                      onChange={(e) => setFormData({ ...formData, base_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                      placeholder=""
+                      onChange={(value) => setFormData({ ...formData, base_amount: value })}
                     />
                   </div>
 
@@ -2094,22 +2096,17 @@ export function FeesPage() {
                         </Label>
                       </div>
                     </div>
-                    <Input
-                      id="index_manual_adjustment"
-                      type="number"
+                    <MoneyInput
                       value={formData.index_manual_adjustment === 0 ? '' : Math.abs(formData.index_manual_adjustment)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const value = val === '' ? 0 : parseFloat(val); // Internal value for calculation, UI shows empty if empty
+                      onChange={(value) => {
+                        const numValue = typeof value === 'number' ? value : 0;
                         const isNegative = typeof formData.index_manual_adjustment === 'number' && formData.index_manual_adjustment < 0;
                         setFormData({
                           ...formData,
-                          index_manual_adjustment: val === '' ? '' : (isNegative ? -value : value)
+                          index_manual_adjustment: value === '' ? '' : (isNegative ? -numValue : numValue)
                         });
                       }}
-                      step="100"
-                      placeholder=""
-                      min="0"
+                      min={0}
                       disabled={!formData.apply_inflation_index}
                       className={!formData.apply_inflation_index ? 'opacity-50' : ''}
                     />
@@ -2123,12 +2120,9 @@ export function FeesPage() {
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="real_adjustment">תוספת ריאלית</Label>
-                    <Input
-                      id="real_adjustment"
-                      type="number"
+                    <MoneyInput
                       value={formData.real_adjustment === 0 ? '' : formData.real_adjustment}
-                      onChange={(e) => setFormData({ ...formData, real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                      placeholder=""
+                      onChange={(value) => setFormData({ ...formData, real_adjustment: value })}
                     />
                   </div>
 
@@ -2148,21 +2142,14 @@ export function FeesPage() {
                       תיקון שכר טרחה לבקשת הלקוח (ש"ח)
                       <span className="text-xs text-gray-500 mr-2">רק ערכים שליליים</span>
                     </Label>
-                    <Input
-                      id="client_requested_adjustment"
-                      type="number"
-                      step="0.01"
-                      max="0"
-                      value={formData.client_requested_adjustment === 0 ? '' : formData.client_requested_adjustment}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const value = val === '' ? '' : parseFloat(val);
-                        if (val === '' || (typeof value === 'number' && value <= 0)) {
-                          setFormData({ ...formData, client_requested_adjustment: value });
-                        }
+                    <MoneyInput
+                      value={formData.client_requested_adjustment === 0 ? '' : Math.abs(formData.client_requested_adjustment)}
+                      onChange={(value) => {
+                        // Always store as negative since this is a reduction
+                        const numValue = typeof value === 'number' ? -value : '';
+                        setFormData({ ...formData, client_requested_adjustment: numValue });
                       }}
                       className="text-right"
-                      placeholder=""
                     />
                   </div>
 
@@ -2216,12 +2203,9 @@ export function FeesPage() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="bookkeeping_base_amount">סכום חודשי הנהלת חשבונות (יוכפל ב-12) *</Label>
-                        <Input
-                          id="bookkeeping_base_amount"
-                          type="number"
+                        <MoneyInput
                           value={formData.bookkeeping_base_amount === 0 ? '' : formData.bookkeeping_base_amount}
-                          onChange={(e) => setFormData({ ...formData, bookkeeping_base_amount: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                          placeholder=""
+                          onChange={(value) => setFormData({ ...formData, bookkeeping_base_amount: value })}
                         />
                       </div>
 
@@ -2257,12 +2241,9 @@ export function FeesPage() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="bookkeeping_real_adjustment">תוספת ריאלית הנהלת חשבונות</Label>
-                        <Input
-                          id="bookkeeping_real_adjustment"
-                          type="number"
+                        <MoneyInput
                           value={formData.bookkeeping_real_adjustment === 0 ? '' : formData.bookkeeping_real_adjustment}
-                          onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment: e.target.value === '' ? '' : parseFloat(e.target.value) })}
-                          placeholder=""
+                          onChange={(value) => setFormData({ ...formData, bookkeeping_real_adjustment: value })}
                         />
                       </div>
 
@@ -2873,6 +2854,16 @@ export function FeesPage() {
                     </div>
                   )}
                 </div>
+            )}
+
+            {/* Custom Payment Text - Manual text to add above payment section */}
+            {calculationResults && (
+              <div className="mt-6">
+                <CustomPaymentText
+                  value={customPaymentText}
+                  onChange={setCustomPaymentText}
+                />
+              </div>
             )}
 
             {/* Bank Transfer Only Option */}

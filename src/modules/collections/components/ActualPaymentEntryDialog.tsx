@@ -12,6 +12,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -189,13 +190,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                 <Label htmlFor="amountPaid" className="rtl:text-right ltr:text-left block">
                   סכום ששולם
                 </Label>
-                <Input
-                  id="amountPaid"
-                  type="number"
+                <MoneyInput
                   value={amountPaid}
-                  onChange={(e) => setAmountPaid(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                  onChange={(value) => setAmountPaid(value)}
                   className="rtl:text-right ltr:text-left"
-                  placeholder=""
                 />
                 <div className="text-xs text-muted-foreground rtl:text-right ltr:text-left">
                   <AmountWithVATBreakdown beforeVat={vatBreakdown.beforeVat} />
