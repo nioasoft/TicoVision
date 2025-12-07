@@ -239,7 +239,11 @@ function ForeignWorkersPageContent({
       }
 
       // Save PDF reference to File Manager under "אישורי עובדים זרים" category
-      const pdfFileName = `${tab.label}_${formState.sharedData.company_name}.pdf`;
+      // Include worker name in filename for salary reports
+      const workerName = formState.documentData.salaryReport?.workers_data?.[0]?.full_name;
+      const pdfFileName = workerName
+        ? `${tab.label}_${workerName}_${formState.sharedData.company_name}.pdf`
+        : `${tab.label}_${formState.sharedData.company_name}.pdf`;
       const storagePath = `letter-pdfs/${result.data.id}.pdf`;
       const description = `${tab.label} - ${formState.sharedData.document_date}`;
 
