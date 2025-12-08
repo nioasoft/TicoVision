@@ -6,7 +6,7 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
-import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type } from 'lucide-react';
+import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet } from './extensions/BlueBullet';
@@ -198,6 +198,41 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             title="כותרת 2"
           >
             <Heading2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="h-6 w-px bg-border mx-1" />
+
+        {/* Text Alignment */}
+        <div className="flex items-center gap-1 rtl:flex-row-reverse">
+          <Button
+            type="button"
+            variant={editor.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => editor.chain().focus().setTextAlign('right').run()}
+            title="יישור לימין"
+          >
+            <AlignRight className="h-4 w-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant={editor.isActive({ textAlign: 'center' }) ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => editor.chain().focus().setTextAlign('center').run()}
+            title="מרכוז"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant={editor.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => editor.chain().focus().setTextAlign('left').run()}
+            title="יישור לשמאל"
+          >
+            <AlignLeft className="h-4 w-4" />
           </Button>
         </div>
 
