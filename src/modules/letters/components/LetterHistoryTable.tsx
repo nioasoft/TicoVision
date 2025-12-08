@@ -211,8 +211,8 @@ export function LetterHistoryTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="rtl:text-right ltr:text-left">
-                      {/* Edit button - only for universal builder letters (custom_text) */}
-                      {onEditLetter && letter.template_type === 'custom_text' && (
+                      {/* Edit button - for custom letters (custom_text and custom types) */}
+                      {onEditLetter && (letter.template_type === 'custom_text' || letter.template_type === 'custom') && (
                         <DropdownMenuItem onClick={() => onEditLetter(letter.id)}>
                           <Edit className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
                           ערוך

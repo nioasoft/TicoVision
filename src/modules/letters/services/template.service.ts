@@ -623,13 +623,14 @@ export class TemplateService extends BaseService {
         }
       }
 
-      // 4. Check if client requested adjustment exists (for red header)
+      // 4. Check if client requested adjustment exists (for red header) and get custom payment text
       let hasClientAdjustment = false;
+      let customPaymentTextHtml = '';
       console.log('🔍 [Red Header] Checking for client adjustment...', { feeCalculationId });
       if (feeCalculationId) {
         const { data: feeCalculation, error } = await supabase
           .from('fee_calculations')
-          .select('client_requested_adjustment')
+          .select('client_requested_adjustment, custom_payment_text')
           .eq('id', feeCalculationId)
           .eq('tenant_id', tenantId)
           .single();
@@ -637,6 +638,12 @@ export class TemplateService extends BaseService {
         console.log('🔍 [Red Header] Query result:', { feeCalculation, error });
         hasClientAdjustment = feeCalculation && (feeCalculation.client_requested_adjustment || 0) < 0;
         console.log('🔍 [Red Header] hasClientAdjustment:', hasClientAdjustment);
+
+        // Wrap custom payment text in HTML if provided
+        if (feeCalculation?.custom_payment_text) {
+          customPaymentTextHtml = this.wrapCustomPaymentText(feeCalculation.custom_payment_text);
+          console.log('🔍 [Custom Text] Custom payment text found, wrapped length:', customPaymentTextHtml.length);
+        }
       }
 
       // 5. Detect service type automatically
@@ -671,7 +678,9 @@ export class TemplateService extends BaseService {
         ),
         // Add fee_id and client_id for payment tracking links
         fee_id: feeCalculationId || variables.fee_id,
-        client_id: clientId || variables.client_id
+        client_id: clientId || variables.client_id,
+        // Custom payment text (HTML) - appears above payment section
+        custom_payment_text: customPaymentTextHtml
       };
 
       // 7. Build full HTML with custom header if client requested adjustment exists
@@ -681,7 +690,8 @@ export class TemplateService extends BaseService {
       let fullHtml = this.buildFullHTML(header, body, paymentSection, footer, customHeaderHtml);
 
       // 8. Replace all variables
-      fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
+      // Allow HTML in custom_payment_text (already sanitized/wrapped by wrapCustomPaymentText)
+      fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables, ['custom_payment_text']);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
       // 8. Save generated letter
@@ -691,10 +701,13 @@ export class TemplateService extends BaseService {
           tenant_id: tenantId,
           client_id: clientId,
           template_id: null, // No template_id for file-based system
+          template_type: templateType, // Save template type for filtering/editing
           fee_calculation_id: feeCalculationId,
+          status: 'draft', // Default status for new letters
           variables_used: fullVariables,
           generated_content_html: fullHtml,
           generated_content_text: plainText,
+          body_content_html: body, // Save body separately for editing (without Header/Footer)
           payment_link: fullVariables.payment_link,
           created_at: new Date().toISOString(),
           created_by: (await supabase.auth.getUser()).data.user?.id
@@ -745,6 +758,26 @@ export class TemplateService extends BaseService {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear();
     return `${day}.${month}.${year}`;
+  }
+
+  /**
+   * Wrap custom payment text (from TipTap editor) in HTML for email template
+   * The text appears above the "אשר על כן..." line in the payment section
+   */
+  private wrapCustomPaymentText(html: string): string {
+    if (!html || html.trim() === '' || html === '<p></p>') {
+      return '';
+    }
+
+    return `
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+            <tr>
+                <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; line-height: 1.6; text-align: right; color: #09090b;">
+                    ${html}
+                </td>
+            </tr>
+        </table>
+    `;
   }
 
   /**
@@ -874,39 +907,58 @@ export class TemplateService extends BaseService {
         client_id: variables.client_id
       };
 
-      // 6.5. Check if client requested adjustment exists (for red header)
+      // 6.5. Check if client requested adjustment exists (for red header) and get custom payment text
       let hasClientAdjustment = false;
+      let customPaymentTextHtml = '';
       if (feeCalculationId) {
         try {
           const tenantId = await this.getTenantId();
           // Try fetching from individual fee calculations first
           const { data: feeCalculation, error } = await supabase
             .from('fee_calculations')
-            .select('client_requested_adjustment')
+            .select('client_requested_adjustment, custom_payment_text')
             .eq('id', feeCalculationId)
             .eq('tenant_id', tenantId)
             .maybeSingle();
 
           if (!error && feeCalculation) {
             hasClientAdjustment = (feeCalculation.client_requested_adjustment || 0) < 0;
+            // Wrap custom payment text if exists
+            if (feeCalculation.custom_payment_text) {
+              customPaymentTextHtml = this.wrapCustomPaymentText(feeCalculation.custom_payment_text);
+            }
           } else {
             // If not found or error (e.g. 406 because ID is UUID but table expects something else, or ID not found),
             // Try fetching from GROUP fee calculations
             const { data: groupCalculation, error: groupError } = await supabase
               .from('group_fee_calculations')
-              .select('client_requested_adjustment')
+              .select('client_requested_adjustment, custom_payment_text')
               .eq('id', feeCalculationId)
               .eq('tenant_id', tenantId)
               .maybeSingle();
-              
+
             if (!groupError && groupCalculation) {
                hasClientAdjustment = (groupCalculation.client_requested_adjustment || 0) < 0;
+               // Wrap custom payment text if exists
+               if (groupCalculation.custom_payment_text) {
+                 customPaymentTextHtml = this.wrapCustomPaymentText(groupCalculation.custom_payment_text);
+               }
             }
           }
-          console.log('🔍 [Preview] Fee/Group ID:', feeCalculationId, 'Has adjustment:', hasClientAdjustment);
+          console.log('🔍 [Preview] Fee/Group ID:', feeCalculationId, 'Has adjustment:', hasClientAdjustment, 'Custom text:', !!customPaymentTextHtml);
         } catch (err) {
           console.warn('⚠️ [Preview] Failed to check for client adjustment (ignoring):', err);
         }
+      }
+
+      // Add custom payment text to variables
+      // Use custom_payment_text from variables if provided, otherwise from DB, otherwise empty string
+      if (variables.custom_payment_text) {
+        fullVariables.custom_payment_text = this.wrapCustomPaymentText(variables.custom_payment_text as string);
+      } else if (customPaymentTextHtml) {
+        fullVariables.custom_payment_text = customPaymentTextHtml;
+      } else {
+        fullVariables.custom_payment_text = ''; // Empty string to remove placeholder
       }
 
       // 7. Build full HTML with custom header if client requested adjustment exists
@@ -914,9 +966,10 @@ export class TemplateService extends BaseService {
       let fullHtml = this.buildFullHTML(header, body, paymentSection, footer, customHeaderHtml);
 
       // 8. Replace all variables
-      fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables);
+      // Allow HTML in custom_payment_text (already sanitized/wrapped by wrapCustomPaymentText)
+      fullHtml = TemplateParser.replaceVariables(fullHtml, fullVariables, ['custom_payment_text']);
 
-      // 8. Keep CID references in HTML (for email + PDF generation)
+      // 9. Keep CID references in HTML (for email + PDF generation)
       // convertHtmlForDisplay will convert CID → Supabase URLs for browser display
       // generate-pdf Edge Function will convert CID → Supabase URLs for PDF
 
