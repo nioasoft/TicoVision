@@ -25,8 +25,8 @@ import type {
   OverdueClient,
   PaymentDispute,
   AlertType,
-  PAYMENT_DISCOUNTS,
 } from '@/types/collection.types';
+import { PAYMENT_DISCOUNTS } from '@/types/collection.types';
 
 class CollectionService extends BaseService {
   constructor() {
