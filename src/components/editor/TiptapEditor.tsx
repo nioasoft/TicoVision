@@ -141,8 +141,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
   return (
     <div className={cn('border rounded-lg', className)} dir="rtl">
-      {/* Toolbar */}
-      <div className="border-b bg-muted/50 p-2 flex items-center gap-1 flex-wrap rtl:flex-row-reverse">
+      {/* Toolbar - sticky for long letters */}
+      <div className="sticky top-0 z-10 border-b bg-muted/50 p-2 flex items-center gap-1 flex-wrap rtl:flex-row-reverse">
         {/* Text formatting */}
         <div className="flex items-center gap-1 rtl:flex-row-reverse">
           <Button
