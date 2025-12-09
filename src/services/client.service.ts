@@ -484,18 +484,111 @@ export class ClientService extends BaseService {
       const tenantId = await this.getTenantId();
       const { page = 1, pageSize = 20 } = pagination || {};
 
-      // Build base query with group join
+      // Check user permissions
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('No authenticated user');
+
+      const { data: userData } = await supabase
+        .from('user_tenant_access')
+        .select('role, permissions')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      // Check if user can see all clients:
+      // 1. Admins always see all
+      // 2. Users with see_all_clients permission see all
+      const canSeeAllClients =
+        userData?.role === 'admin' ||
+        (userData?.permissions as { see_all_clients?: boolean })?.see_all_clients === true;
+
+      if (canSeeAllClients) {
+        // Full access - return all clients
+        let query = supabase
+          .from('clients')
+          .select('*, group:client_groups(*)', { count: 'exact' })
+          .eq('tenant_id', tenantId);
+
+        if (filters) {
+          query = this.buildFilterQuery(query, filters);
+        }
+        if (pagination) {
+          query = this.buildPaginationQuery(query, pagination);
+        }
+
+        const { data: clients, error, count } = await query;
+
+        if (error) {
+          return { data: null, error: this.handleError(error) };
+        }
+
+        return {
+          data: {
+            clients: clients || [],
+            total: count || 0,
+            page,
+            pageSize,
+          },
+          error: null,
+        };
+      }
+
+      // Limited access - get accessible client IDs first
+      // 1. Direct client assignments
+      const { data: directAssignments } = await supabase
+        .from('user_client_assignments')
+        .select('client_id')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId);
+
+      const directClientIds = (directAssignments || []).map(a => a.client_id);
+
+      // 2. Group-based access
+      const { data: groupAssignments } = await supabase
+        .from('user_group_assignments')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId);
+
+      const assignedGroupIds = (groupAssignments || []).map(a => a.group_id);
+
+      let groupClientIds: string[] = [];
+      if (assignedGroupIds.length > 0) {
+        const { data: clientsInGroups } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .in('group_id', assignedGroupIds);
+
+        groupClientIds = (clientsInGroups || []).map(c => c.id);
+      }
+
+      // Merge and deduplicate
+      const accessibleClientIds = [...new Set([...directClientIds, ...groupClientIds])];
+
+      if (accessibleClientIds.length === 0) {
+        // No accessible clients
+        return {
+          data: {
+            clients: [],
+            total: 0,
+            page,
+            pageSize,
+          },
+          error: null,
+        };
+      }
+
+      // Query only accessible clients
       let query = supabase
         .from('clients')
         .select('*, group:client_groups(*)', { count: 'exact' })
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', tenantId)
+        .in('id', accessibleClientIds);
 
-      // Apply filters
       if (filters) {
         query = this.buildFilterQuery(query, filters);
       }
-
-      // Apply pagination and sorting
       if (pagination) {
         query = this.buildPaginationQuery(query, pagination);
       }
