@@ -6,7 +6,7 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
-import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
@@ -301,6 +301,31 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             title="קו מפריד אופקי"
           >
             <Minus className="h-4 w-4" />
+          </Button>
+
+          {/* Add period at end of each line */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              const { from, to } = editor.state.selection;
+              const selectedText = editor.state.doc.textBetween(from, to, '\n');
+              if (selectedText) {
+                const lines = selectedText.split('\n');
+                const withPeriods = lines.map(line => {
+                  const trimmed = line.trimEnd();
+                  if (trimmed && !trimmed.endsWith('.') && !trimmed.endsWith('?') && !trimmed.endsWith('!') && !trimmed.endsWith(':')) {
+                    return trimmed + '.';
+                  }
+                  return line;
+                }).join('\n');
+                editor.chain().focus().insertContentAt({ from, to }, withPeriods).run();
+              }
+            }}
+            title="הוסף נקודה בסוף כל שורה"
+          >
+            <Circle className="h-3 w-3 fill-current" />
           </Button>
         </div>
 
