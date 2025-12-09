@@ -41,13 +41,16 @@ export function UsersPage() {
     selectedRole,
     registrationSearchTerm,
     clientSearchTerm,
+    groupSearchTerm,
     filteredUsers,
     filteredRegistrations,
     filteredClients,
+    filteredGroups,
     setSearchTerm,
     setSelectedRole,
     setRegistrationSearchTerm,
     setClientSearchTerm,
+    setGroupSearchTerm,
 
     // CRUD Operations
     createUser,
@@ -62,6 +65,10 @@ export function UsersPage() {
     setPrimaryClientId,
     loadUserAssignments,
     saveClientAssignments,
+
+    // Group Assignments
+    selectedGroups,
+    handleGroupToggle,
 
     // Registration Management
     approveRegistration,
@@ -310,12 +317,17 @@ export function UsersPage() {
         selectedClients={selectedClients}
         primaryClientId={primaryClientId}
         searchTerm={clientSearchTerm}
+        groups={filteredGroups}
+        selectedGroups={selectedGroups}
+        groupSearchTerm={groupSearchTerm}
         onClose={() => {
           setShowAssignClientsDialog(false);
           setSelectedUser(null);
         }}
         onSearchChange={setClientSearchTerm}
+        onGroupSearchChange={setGroupSearchTerm}
         onClientToggle={handleClientToggle}
+        onGroupToggle={handleGroupToggle}
         onPrimaryChange={setPrimaryClientId}
         onSave={handleSaveClientAssignments}
       />

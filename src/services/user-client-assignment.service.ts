@@ -33,6 +33,33 @@ export interface AssignableClient {
   is_assigned: boolean;
 }
 
+// Group assignment types
+export interface UserGroupAssignment {
+  id: string;
+  user_id: string;
+  group_id: string;
+  tenant_id: string;
+  assigned_by: string | null;
+  assigned_at: string;
+  notes: string | null;
+}
+
+export interface AssignedGroup {
+  group_id: string;
+  group_name: string;
+  assignment_id: string;
+  assigned_at: string;
+  member_count: number;
+}
+
+export interface AssignableGroup {
+  id: string;
+  group_name_hebrew: string;
+  primary_owner: string;
+  member_count: number;
+  is_assigned: boolean;
+}
+
 class UserClientAssignmentService extends BaseService {
   constructor() {
     super('user_client_assignments');
@@ -236,7 +263,7 @@ class UserClientAssignmentService extends BaseService {
 
   /**
    * Check if current user has access to a specific client
-   * Used for bookkeepers to verify client access
+   * Checks direct assignment and group-based assignment
    */
   async hasAccessToClient(clientId: string): Promise<ServiceResponse<boolean>> {
     try {
@@ -264,8 +291,8 @@ class UserClientAssignmentService extends BaseService {
         return { data: true, error: null };
       }
 
-      // For other roles, check assignment
-      const { data, error } = await supabase
+      // Check direct client assignment
+      const { data: directAssignment, error: directError } = await supabase
         .from('user_client_assignments')
         .select('id')
         .eq('user_id', currentUser)
@@ -273,9 +300,39 @@ class UserClientAssignmentService extends BaseService {
         .eq('tenant_id', tenantId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (directError) throw directError;
+      if (directAssignment) {
+        return { data: true, error: null };
+      }
 
-      return { data: !!data, error: null };
+      // Check group-based assignment
+      // First get the client's group_id
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('group_id')
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (clientError) throw clientError;
+
+      // If client is in a group, check if user is assigned to that group
+      if (client?.group_id) {
+        const { data: groupAssignment, error: groupError } = await supabase
+          .from('user_group_assignments')
+          .select('id')
+          .eq('user_id', currentUser)
+          .eq('group_id', client.group_id)
+          .eq('tenant_id', tenantId)
+          .maybeSingle();
+
+        if (groupError) throw groupError;
+        if (groupAssignment) {
+          return { data: true, error: null };
+        }
+      }
+
+      return { data: false, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
@@ -285,9 +342,9 @@ class UserClientAssignmentService extends BaseService {
    * Get clients for current user based on role and permissions
    * - Admin: all clients
    * - User with see_all_clients permission: all clients
-   * - Others: only assigned clients
+   * - Others: directly assigned clients + clients in assigned groups
    */
-  async getAccessibleClients(): Promise<ServiceResponse<Array<{ id: string; company_name: string; tax_id: string }>>> {
+  async getAccessibleClients(): Promise<ServiceResponse<Array<{ id: string; company_name: string; tax_id: string; source?: 'direct' | 'group' }>>> {
     try {
       const tenantId = await this.getTenantId();
       const currentUser = await this.getCurrentUserId();
@@ -317,11 +374,11 @@ class UserClientAssignmentService extends BaseService {
           .order('company_name');
 
         if (clientsError) throw clientsError;
-        return { data: clients || [], error: null };
+        return { data: (clients || []).map(c => ({ ...c, source: 'direct' as const })), error: null };
       }
 
-      // Others get only assigned clients
-      const { data: assignments, error: assignError } = await supabase
+      // Get directly assigned clients
+      const { data: directAssignments, error: directError } = await supabase
         .from('user_client_assignments')
         .select(`
           clients!inner(
@@ -333,18 +390,45 @@ class UserClientAssignmentService extends BaseService {
         .eq('user_id', currentUser)
         .eq('tenant_id', tenantId);
 
-      if (assignError) throw assignError;
+      if (directError) throw directError;
 
-      const clients = (assignments || []).map((a: Record<string, unknown>) => {
+      // Get groups assigned to user
+      const assignedGroupIds = await this.getAssignedGroupIds(currentUser, tenantId);
+
+      // Get clients in those groups
+      let groupClients: Array<{ id: string; company_name: string; tax_id: string }> = [];
+      if (assignedGroupIds.length > 0) {
+        const { data: clientsInGroups, error: groupClientsError } = await supabase
+          .from('clients')
+          .select('id, company_name, tax_id')
+          .eq('tenant_id', tenantId)
+          .in('group_id', assignedGroupIds);
+
+        if (groupClientsError) throw groupClientsError;
+        groupClients = clientsInGroups || [];
+      }
+
+      // Build direct clients list
+      const directClients = (directAssignments || []).map((a: Record<string, unknown>) => {
         const client = a.clients as Record<string, string>;
         return {
           id: client.id,
           company_name: client.company_name,
           tax_id: client.tax_id || '',
+          source: 'direct' as const,
         };
-      }).sort((a, b) => a.company_name.localeCompare(b.company_name, 'he'));
+      });
 
-      return { data: clients, error: null };
+      // Merge and deduplicate (direct assignments take priority)
+      const directClientIds = new Set(directClients.map(c => c.id));
+      const uniqueGroupClients = groupClients
+        .filter(c => !directClientIds.has(c.id))
+        .map(c => ({ ...c, source: 'group' as const }));
+
+      const allClients = [...directClients, ...uniqueGroupClients]
+        .sort((a, b) => a.company_name.localeCompare(b.company_name, 'he'));
+
+      return { data: allClients, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
@@ -376,6 +460,193 @@ class UserClientAssignmentService extends BaseService {
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
+  }
+
+  // ==================== GROUP ASSIGNMENT METHODS ====================
+
+  /**
+   * Get all groups assigned to a specific user
+   */
+  async getAssignedGroups(userId: string): Promise<ServiceResponse<AssignedGroup[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('user_group_assignments')
+        .select(`
+          id,
+          group_id,
+          assigned_at,
+          client_groups!inner(
+            group_name_hebrew,
+            id
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('tenant_id', tenantId);
+
+      if (error) throw error;
+
+      // Get member counts for each group
+      const groupIds = (data || []).map(item => (item.client_groups as { id: string }).id);
+
+      let memberCounts: Record<string, number> = {};
+      if (groupIds.length > 0) {
+        const { data: clients, error: countError } = await supabase
+          .from('clients')
+          .select('group_id')
+          .eq('tenant_id', tenantId)
+          .in('group_id', groupIds);
+
+        if (countError) throw countError;
+
+        memberCounts = (clients || []).reduce((acc, client) => {
+          if (client.group_id) {
+            acc[client.group_id] = (acc[client.group_id] || 0) + 1;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+      }
+
+      const assignedGroups: AssignedGroup[] = (data || []).map((item: Record<string, unknown>) => ({
+        group_id: item.group_id as string,
+        group_name: (item.client_groups as { group_name_hebrew: string })?.group_name_hebrew || '',
+        assignment_id: item.id as string,
+        assigned_at: item.assigned_at as string,
+        member_count: memberCounts[(item.client_groups as { id: string })?.id] || 0,
+      }));
+
+      return { data: assignedGroups, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get list of all groups with assignment status for a user
+   * Used in admin UI to show checkboxes
+   */
+  async getGroupsWithAssignmentStatus(userId: string): Promise<ServiceResponse<AssignableGroup[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get all groups
+      const { data: groups, error: groupsError } = await supabase
+        .from('client_groups')
+        .select('id, group_name_hebrew, primary_owner')
+        .eq('tenant_id', tenantId)
+        .order('group_name_hebrew');
+
+      if (groupsError) throw groupsError;
+
+      // Get assigned group IDs for this user
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from('user_group_assignments')
+        .select('group_id')
+        .eq('user_id', userId)
+        .eq('tenant_id', tenantId);
+
+      if (assignmentsError) throw assignmentsError;
+
+      // Get member counts for each group
+      const groupIds = (groups || []).map(g => g.id);
+      let memberCounts: Record<string, number> = {};
+      if (groupIds.length > 0) {
+        const { data: clients, error: countError } = await supabase
+          .from('clients')
+          .select('group_id')
+          .eq('tenant_id', tenantId)
+          .in('group_id', groupIds);
+
+        if (countError) throw countError;
+
+        memberCounts = (clients || []).reduce((acc, client) => {
+          if (client.group_id) {
+            acc[client.group_id] = (acc[client.group_id] || 0) + 1;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+      }
+
+      const assignedIds = new Set((assignments || []).map(a => a.group_id));
+
+      const result: AssignableGroup[] = (groups || []).map(group => ({
+        id: group.id,
+        group_name_hebrew: group.group_name_hebrew,
+        primary_owner: group.primary_owner || '',
+        member_count: memberCounts[group.id] || 0,
+        is_assigned: assignedIds.has(group.id),
+      }));
+
+      return { data: result, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Bulk update group assignments for a user
+   * Replaces all current group assignments with the new list
+   */
+  async updateGroupAssignments(
+    userId: string,
+    groupIds: string[]
+  ): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const currentUser = await this.getCurrentUserId();
+
+      // Delete all existing group assignments for this user
+      const { error: deleteError } = await supabase
+        .from('user_group_assignments')
+        .delete()
+        .eq('user_id', userId)
+        .eq('tenant_id', tenantId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new group assignments if any
+      if (groupIds.length > 0) {
+        const assignments = groupIds.map(groupId => ({
+          user_id: userId,
+          group_id: groupId,
+          tenant_id: tenantId,
+          assigned_by: currentUser,
+          assigned_at: new Date().toISOString(),
+          notes: null,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('user_group_assignments')
+          .insert(assignments);
+
+        if (insertError) throw insertError;
+      }
+
+      await this.logAction('bulk_update_group_assignments', userId, {
+        group_count: groupIds.length,
+        assigned_by: currentUser,
+      });
+
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get IDs of groups assigned to a user
+   * Used internally for access control
+   */
+  private async getAssignedGroupIds(userId: string, tenantId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('user_group_assignments')
+      .select('group_id')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId);
+
+    if (error) throw error;
+    return (data || []).map(item => item.group_id);
   }
 
   private async getCurrentUserId(): Promise<string> {

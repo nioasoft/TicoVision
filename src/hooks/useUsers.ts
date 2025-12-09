@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { userService, type User, type CreateUserData, type UpdateUserData } from '@/services/user.service';
 import { registrationService, type PendingRegistration, type UserClientAssignment } from '@/services/registration.service';
 import { clientService, type Client } from '@/services/client.service';
+import { userClientAssignmentService, type AssignableGroup } from '@/services/user-client-assignment.service';
 import type { UserRole } from '@/types/user-role';
 
 export interface UseUsersReturn {
@@ -14,6 +15,7 @@ export interface UseUsersReturn {
   registrations: PendingRegistration[];
   rejectedRegistrations: PendingRegistration[];
   availableClients: Client[];
+  availableGroups: AssignableGroup[];
   userAssignments: UserClientAssignment[];
   loading: boolean;
   pendingCount: number;
@@ -24,14 +26,17 @@ export interface UseUsersReturn {
   selectedRole: UserRole | 'all';
   registrationSearchTerm: string;
   clientSearchTerm: string;
+  groupSearchTerm: string;
   filteredUsers: User[];
   filteredRegistrations: PendingRegistration[];
   filteredClients: Client[];
+  filteredGroups: AssignableGroup[];
 
   setSearchTerm: (term: string) => void;
   setSelectedRole: (role: UserRole | 'all') => void;
   setRegistrationSearchTerm: (term: string) => void;
   setClientSearchTerm: (term: string) => void;
+  setGroupSearchTerm: (term: string) => void;
 
   // CRUD Operations
   loadUsers: () => Promise<void>;
@@ -47,6 +52,11 @@ export interface UseUsersReturn {
   setPrimaryClientId: (clientId: string | undefined) => void;
   loadUserAssignments: (userId: string) => Promise<void>;
   saveClientAssignments: (userId: string) => Promise<boolean>;
+
+  // Group Assignments
+  selectedGroups: string[];
+  setSelectedGroups: (groups: string[]) => void;
+  handleGroupToggle: (groupId: string) => void;
 
   // Registration Management
   loadRegistrations: () => Promise<void>;
@@ -64,6 +74,7 @@ export function useUsers(): UseUsersReturn {
   const [registrations, setRegistrations] = useState<PendingRegistration[]>([]);
   const [rejectedRegistrations, setRejectedRegistrations] = useState<PendingRegistration[]>([]);
   const [availableClients, setAvailableClients] = useState<Client[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<AssignableGroup[]>([]);
   const [userAssignments, setUserAssignments] = useState<UserClientAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
@@ -74,15 +85,20 @@ export function useUsers(): UseUsersReturn {
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
   const [registrationSearchTerm, setRegistrationSearchTerm] = useState('');
   const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [groupSearchTerm, setGroupSearchTerm] = useState('');
 
   // Client Assignment
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [primaryClientId, setPrimaryClientId] = useState<string | undefined>();
 
+  // Group Assignment
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+
   // Debounce search terms
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const debouncedRegistrationSearchTerm = useDebounce(registrationSearchTerm, 300);
   const debouncedClientSearchTerm = useDebounce(clientSearchTerm, 300);
+  const debouncedGroupSearchTerm = useDebounce(groupSearchTerm, 300);
 
   // Computed - Filtered Users
   const filteredUsers = useMemo(() => {
@@ -110,6 +126,14 @@ export function useUsers(): UseUsersReturn {
       client.company_name.toLowerCase().includes(debouncedClientSearchTerm.toLowerCase())
     );
   }, [availableClients, debouncedClientSearchTerm]);
+
+  // Computed - Filtered Groups
+  const filteredGroups = useMemo(() => {
+    return availableGroups.filter((group) =>
+      group.group_name_hebrew.toLowerCase().includes(debouncedGroupSearchTerm.toLowerCase()) ||
+      group.primary_owner.toLowerCase().includes(debouncedGroupSearchTerm.toLowerCase())
+    );
+  }, [availableGroups, debouncedGroupSearchTerm]);
 
   // Load data on mount
   useEffect(() => {
@@ -226,32 +250,60 @@ export function useUsers(): UseUsersReturn {
     }
   }, []);
 
-  // Load user client assignments
+  // Load user client and group assignments
   const loadUserAssignments = useCallback(async (userId: string) => {
-    const response = await registrationService.getUserClientAssignments(userId);
-    if (response.data) {
-      setUserAssignments(response.data);
-      setSelectedClients(response.data.map((a) => a.client_id));
-      const primary = response.data.find((a) => a.is_primary);
+    // Load client assignments
+    const clientResponse = await registrationService.getUserClientAssignments(userId);
+    if (clientResponse.data) {
+      setUserAssignments(clientResponse.data);
+      setSelectedClients(clientResponse.data.map((a) => a.client_id));
+      const primary = clientResponse.data.find((a) => a.is_primary);
       setPrimaryClientId(primary?.client_id);
+    }
+
+    // Load group assignments
+    const groupResponse = await userClientAssignmentService.getGroupsWithAssignmentStatus(userId);
+    if (groupResponse.data) {
+      setAvailableGroups(groupResponse.data);
+      setSelectedGroups(groupResponse.data.filter(g => g.is_assigned).map(g => g.id));
     }
   }, []);
 
-  // Save client assignments
+  // Save client and group assignments
   const saveClientAssignments = useCallback(async (userId: string): Promise<boolean> => {
-    const response = await registrationService.assignClientsToUser(
+    // Save client assignments
+    const clientResponse = await registrationService.assignClientsToUser(
       userId,
       selectedClients,
       primaryClientId
     );
-    if (response.error) {
+    if (clientResponse.error) {
       toast.error('שגיאה בשמירת שיוך לקוחות');
       return false;
     }
 
-    toast.success('שיוך לקוחות נשמר בהצלחה');
+    // Save group assignments
+    const groupResponse = await userClientAssignmentService.updateGroupAssignments(
+      userId,
+      selectedGroups
+    );
+    if (groupResponse.error) {
+      toast.error('שגיאה בשמירת שיוך קבוצות');
+      return false;
+    }
+
+    toast.success('שיוך לקוחות וקבוצות נשמר בהצלחה');
     return true;
-  }, [selectedClients, primaryClientId]);
+  }, [selectedClients, primaryClientId, selectedGroups]);
+
+  // Toggle group selection
+  const handleGroupToggle = useCallback((groupId: string) => {
+    setSelectedGroups(prev =>
+      prev.includes(groupId)
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  }, []);
 
   // Load registrations
   const loadRegistrations = useCallback(async () => {
@@ -324,6 +376,7 @@ export function useUsers(): UseUsersReturn {
     registrations,
     rejectedRegistrations,
     availableClients,
+    availableGroups,
     userAssignments,
     loading,
     pendingCount,
@@ -334,13 +387,16 @@ export function useUsers(): UseUsersReturn {
     selectedRole,
     registrationSearchTerm,
     clientSearchTerm,
+    groupSearchTerm,
     filteredUsers,
     filteredRegistrations,
     filteredClients,
+    filteredGroups,
     setSearchTerm,
     setSelectedRole,
     setRegistrationSearchTerm,
     setClientSearchTerm,
+    setGroupSearchTerm,
 
     // CRUD Operations
     loadUsers,
@@ -356,6 +412,11 @@ export function useUsers(): UseUsersReturn {
     setPrimaryClientId,
     loadUserAssignments,
     saveClientAssignments,
+
+    // Group Assignments
+    selectedGroups,
+    setSelectedGroups,
+    handleGroupToggle,
 
     // Registration Management
     loadRegistrations,
