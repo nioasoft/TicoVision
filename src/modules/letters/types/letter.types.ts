@@ -121,6 +121,9 @@ export interface LetterVariables {
   sender_address?: string;
   sender_phone?: string;
   sender_email?: string;
+
+  // Custom Payment Text (HTML) - Injected above payment section
+  custom_payment_text?: string;
 }
 
 export interface LetterVariableSchema {

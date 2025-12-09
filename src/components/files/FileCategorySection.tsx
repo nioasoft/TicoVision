@@ -60,19 +60,27 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
     setError(null);
     setFiles([]);
 
-    if (isGroupMode) {
-      // In group mode, we don't display a file list currently
-      setIsLoading(false);
-      return;
-    }
-
-    if (!clientId) {
+    // Both group mode and client mode now load files
+    if (!clientId && !groupId) {
       setIsLoading(false);
       return;
     }
 
     try {
-      const { data, error: fetchError } = await fileUploadService.getFilesByCategory(clientId, category);
+      let data: ClientAttachment[] | null = null;
+      let fetchError: Error | null = null;
+
+      if (isGroupMode && groupId) {
+        // Load group files
+        const result = await fileUploadService.getFilesByGroupCategory(groupId, category);
+        data = result.data;
+        fetchError = result.error;
+      } else if (clientId) {
+        // Load client files
+        const result = await fileUploadService.getFilesByCategory(clientId, category);
+        data = result.data;
+        fetchError = result.error;
+      }
 
       if (fetchError) throw fetchError;
 
@@ -104,8 +112,8 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
 
     try {
       if (isGroupMode && groupId) {
-        // Group Upload
-        const { data, error: uploadError } = await fileUploadService.uploadFileToGroupCategory(
+        // Group Upload - file is stored at group level
+        const { error: uploadError } = await fileUploadService.uploadFileToGroupCategory(
           file,
           groupId,
           category,
@@ -121,11 +129,8 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
           status: 'success'
         }]);
 
-        if (data) {
-          toast.success(`הקובץ הועלה בהצלחה ל-${data.successful} לקוחות (${data.failed} נכשלו)`);
-        } else {
-          toast.success('הקובץ הועלה בהצלחה ללקוחות הקבוצה');
-        }
+        toast.success('הקובץ הועלה בהצלחה לקבוצה');
+        loadFiles(); // Reload files to show the new group file
 
       } else if (clientId) {
         // Single Client Upload
@@ -237,14 +242,14 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
       {/* Upload Section */}
       <div className="space-y-3">
         <Label className="rtl:text-right block">
-          {isGroupMode ? 'העלאת קובץ לכל לקוחות הקבוצה' : 'העלאת קובץ חדש'}
+          {isGroupMode ? 'העלאת קובץ לקבוצה' : 'העלאת קובץ חדש'}
         </Label>
         
         {isGroupMode && (
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2 flex items-start gap-2 rtl:flex-row-reverse text-blue-800">
             <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
             <p className="text-sm rtl:text-right">
-              שים לב: העלאת קובץ במצב קבוצה תוסיף את הקובץ לכל הלקוחות הפעילים בקבוצה זו. פעולה זו עשויה לקחת זמן כתלות במספר הלקוחות.
+              הקובץ יישמר ברמת הקבוצה ויהיה זמין לכל חברי הקבוצה.
             </p>
           </div>
         )}
@@ -268,10 +273,11 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
         />
       </div>
 
-      {/* Files List - Only show in Client Mode */}
-      {!isGroupMode && (
-        <div className="space-y-4">
-          <h4 className="font-medium rtl:text-right">קבצים ({files.length})</h4>
+      {/* Files List - Show for both Client and Group Mode */}
+      <div className="space-y-4">
+        <h4 className="font-medium rtl:text-right">
+          {isGroupMode ? 'קבצי קבוצה' : 'קבצים'} ({files.length})
+        </h4>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
@@ -402,8 +408,7 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
               ))}
             </div>
           )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

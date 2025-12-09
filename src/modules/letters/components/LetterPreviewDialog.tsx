@@ -259,6 +259,9 @@ export function LetterPreviewDialog({
 
         // Service description (for all letter types)
         service_description: getServiceDescription(templateType),
+
+        // Custom payment text (appears above payment section)
+        custom_payment_text: fee.custom_payment_text || undefined,
       };
 
       setVariables(letterVariables);
@@ -419,6 +422,9 @@ export function LetterPreviewDialog({
         }),
 
         service_description: 'שירותי ראיית החשבון',
+
+        // Custom payment text (appears above payment section)
+        custom_payment_text: groupCalc.custom_payment_text || undefined,
       };
 
       setVariables(letterVariables);

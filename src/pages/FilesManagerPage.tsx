@@ -82,21 +82,25 @@ export default function FilesManagerPage() {
             </TabsList>
 
             <TabsContent value="client">
-              <ClientSelector
-                value={selectedClient?.id || null}
-                onChange={setSelectedClient}
-                label="בחר לקוח"
-                placeholder="חפש לקוח לפי שם או ח.פ..."
-              />
+              <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4">
+                <ClientSelector
+                  value={selectedClient?.id || null}
+                  onChange={setSelectedClient}
+                  label="בחר לקוח"
+                  placeholder="חפש לקוח לפי שם או ח.פ..."
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="group">
-              <GroupSelector
-                value={selectedGroup?.id || null}
-                onChange={setSelectedGroup}
-                label="בחר קבוצה"
-                placeholder="חפש קבוצה לפי שם..."
-              />
+              <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4">
+                <GroupSelector
+                  value={selectedGroup?.id || null}
+                  onChange={setSelectedGroup}
+                  label="בחר קבוצה"
+                  placeholder="חפש קבוצה לפי שם..."
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

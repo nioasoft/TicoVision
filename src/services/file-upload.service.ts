@@ -28,58 +28,130 @@ export class FileUploadService extends BaseService {
   }
 
   /**
-   * Upload file to all clients in a group
+   * Upload file directly to a group (group-level file, not distributed to clients)
    */
   async uploadFileToGroupCategory(
     file: File,
     groupId: string,
     category: FileCategory,
     description: string
-  ): Promise<ServiceResponse<{ successful: number; failed: number }>> {
+  ): Promise<ServiceResponse<ClientAttachment>> {
     try {
-      // Get all clients in the group
-      const { data: clients, error: groupError } = await clientService.getClientsByGroup(groupId);
-
-      if (groupError) throw groupError;
-      if (!clients || clients.length === 0) {
-        throw new Error('לא נמצאו לקוחות בקבוצה זו');
+      // Validate file
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        throw new Error(validation.error);
       }
 
-      let successful = 0;
-      let failed = 0;
+      // Validate description length (50 chars max)
+      if (description.length > 50) {
+        throw new Error('התיאור חייב להיות עד 50 תווים');
+      }
 
-      // Upload for each client
-      // We process sequentially to avoid overwhelming the server/browser
-      for (const client of clients) {
-        try {
-          // Clone the file because upload consumes it? No, File object is reusable.
-          // But duplicate upload calls might be an issue?
-          // Actually, uploadFileToCategory does: upload to storage, then insert DB record.
-          // The storage path includes client_id, so it's a unique path per client.
-          // So we are uploading the same file content multiple times to different paths.
-          // This is correct for isolation, though inefficient for storage.
-          // Given the requirements, this is the safest way.
+      const tenantId = await this.getTenantId();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
 
-          const { error } = await this.uploadFileToCategory(
-            file,
-            client.id,
-            category,
-            description
-          );
+      if (!userId) {
+        throw new Error('משתמש לא מחובר');
+      }
 
-          if (error) {
-            console.error(`Failed to upload for client ${client.company_name}:`, error);
-            failed++;
-          } else {
-            successful++;
-          }
-        } catch (err) {
-          console.error(`Failed to upload for client ${client.company_name}:`, err);
-          failed++;
+      // Validate category exists
+      if (!FILE_CATEGORIES[category]) {
+        throw new Error('קטגוריה לא חוקית');
+      }
+
+      // Generate unique filename
+      const uniqueFilename = generateUniqueFilename(file.name);
+
+      // Build storage path for group: {tenant_id}/groups/{group_id}/{category}/{filename}
+      const storagePath = `${tenantId}/groups/${groupId}/${category}/${uniqueFilename}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from(this.STORAGE_BUCKET)
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Create database record with group_id (not client_id)
+      const attachmentData = {
+        tenant_id: tenantId,
+        group_id: groupId,  // Group-level file
+        client_id: null,    // No client for group files
+        file_name: file.name,
+        file_type: file.type as FileType,
+        file_size: file.size,
+        storage_path: storagePath,
+        file_category: category,
+        description: description,
+        upload_context: 'client_form' as UploadContext,
+        version: 1,
+        is_latest: true,
+        uploaded_by: userId
+      };
+
+      const { data, error: dbError } = await supabase
+        .from(this.tableName)
+        .insert(attachmentData)
+        .select()
+        .single();
+
+      if (dbError) {
+        // Rollback: delete uploaded file if database insert fails
+        await supabase.storage
+          .from(this.STORAGE_BUCKET)
+          .remove([storagePath]);
+
+        throw dbError;
+      }
+
+      // Log action
+      await this.logAction(
+        'upload_file_group_category',
+        data.id,
+        {
+          file_name: file.name,
+          group_id: groupId,
+          category: category,
+          description: description
         }
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get all files for a specific group and category
+   */
+  async getFilesByGroupCategory(
+    groupId: string,
+    category: FileCategory
+  ): Promise<ServiceResponse<ClientAttachment[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('group_id', groupId)
+        .eq('file_category', category)
+        .eq('is_latest', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
       }
 
-      return { data: { successful, failed }, error: null };
+      return { data: data || [], error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }

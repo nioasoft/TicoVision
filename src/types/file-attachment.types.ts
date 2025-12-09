@@ -83,7 +83,7 @@ export const ALLOWED_FILE_TYPES: FileType[] = [
   'application/pdf'
 ];
 
-export const MAX_FILE_SIZE = 1024 * 1024; // 1MB in bytes
+export const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
 
 export const FILE_TYPE_LABELS: Record<FileType, string> = {
   'image/jpeg': 'תמונה (JPG)',

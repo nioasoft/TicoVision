@@ -615,7 +615,7 @@ export function LetterHistoryPage() {
                   <h4 className="font-medium">פילטרים מתקדמים</h4>
 
                   {/* Client Filter */}
-                  <div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <Label className="mb-2 block rtl:text-right ltr:text-left">סינון לפי לקוח</Label>
                     <ClientSelector
                       value={selectedClientId}

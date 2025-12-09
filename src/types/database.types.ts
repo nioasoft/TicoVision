@@ -178,13 +178,14 @@ export type Database = {
       }
       client_attachments: {
         Row: {
-          client_id: string
+          client_id: string | null
           created_at: string | null
           description: string | null
           file_category: Database["public"]["Enums"]["file_category"]
           file_name: string
           file_size: number
           file_type: string
+          group_id: string | null
           id: string
           is_latest: boolean | null
           notes: string | null
@@ -198,13 +199,14 @@ export type Database = {
           year_context: number | null
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           created_at?: string | null
           description?: string | null
           file_category?: Database["public"]["Enums"]["file_category"]
           file_name: string
           file_size: number
           file_type: string
+          group_id?: string | null
           id?: string
           is_latest?: boolean | null
           notes?: string | null
@@ -218,13 +220,14 @@ export type Database = {
           year_context?: number | null
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           created_at?: string | null
           description?: string | null
           file_category?: Database["public"]["Enums"]["file_category"]
           file_name?: string
           file_size?: number
           file_type?: string
+          group_id?: string | null
           id?: string
           is_latest?: boolean | null
           notes?: string | null
@@ -243,6 +246,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_attachments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
             referencedColumns: ["id"]
           },
           {
@@ -759,6 +769,7 @@ export type Database = {
           accountant_email: string | null
           accountant_name: string | null
           accountant_phone: string | null
+          accountant_phone_secondary: string | null
           activity_level: string | null
           address: Json | null
           annual_revenue: number | null
@@ -804,6 +815,7 @@ export type Database = {
           accountant_email?: string | null
           accountant_name?: string | null
           accountant_phone?: string | null
+          accountant_phone_secondary?: string | null
           activity_level?: string | null
           address?: Json | null
           annual_revenue?: number | null
@@ -849,6 +861,7 @@ export type Database = {
           accountant_email?: string | null
           accountant_name?: string | null
           accountant_phone?: string | null
+          accountant_phone_secondary?: string | null
           activity_level?: string | null
           address?: Json | null
           annual_revenue?: number | null
@@ -981,6 +994,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           current_year_data: Json | null
+          custom_payment_text: string | null
           deviation_alert_level: string | null
           discount_amount: number | null
           discount_percentage: number | null
@@ -1051,6 +1065,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           current_year_data?: Json | null
+          custom_payment_text?: string | null
           deviation_alert_level?: string | null
           discount_amount?: number | null
           discount_percentage?: number | null
@@ -1121,6 +1136,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           current_year_data?: Json | null
+          custom_payment_text?: string | null
           deviation_alert_level?: string | null
           discount_amount?: number | null
           discount_percentage?: number | null
@@ -1589,6 +1605,7 @@ export type Database = {
           client_requested_adjustment_note: string | null
           created_at: string | null
           created_by: string | null
+          custom_payment_text: string | null
           group_id: string
           id: string
           notes: string | null
@@ -1630,6 +1647,7 @@ export type Database = {
           client_requested_adjustment_note?: string | null
           created_at?: string | null
           created_by?: string | null
+          custom_payment_text?: string | null
           group_id: string
           id?: string
           notes?: string | null
@@ -1671,6 +1689,7 @@ export type Database = {
           client_requested_adjustment_note?: string | null
           created_at?: string | null
           created_by?: string | null
+          custom_payment_text?: string | null
           group_id?: string
           id?: string
           notes?: string | null
@@ -2645,6 +2664,7 @@ export type Database = {
           job_title: string | null
           notes: string | null
           phone: string | null
+          phone_secondary: string | null
           search_vector: unknown
           tenant_id: string
           updated_at: string
@@ -2659,6 +2679,7 @@ export type Database = {
           job_title?: string | null
           notes?: string | null
           phone?: string | null
+          phone_secondary?: string | null
           search_vector?: unknown
           tenant_id: string
           updated_at?: string
@@ -2673,6 +2694,7 @@ export type Database = {
           job_title?: string | null
           notes?: string | null
           phone?: string | null
+          phone_secondary?: string | null
           search_vector?: unknown
           tenant_id?: string
           updated_at?: string
@@ -2690,6 +2712,7 @@ export type Database = {
       tenant_settings: {
         Row: {
           accent_color: string | null
+          alert_email: string | null
           billing_plan: string | null
           company_address: Json | null
           company_email: string | null
@@ -2708,7 +2731,10 @@ export type Database = {
           locale: string | null
           logo_url: string | null
           primary_color: string | null
+          reply_to_email: string | null
           secondary_color: string | null
+          sender_email: string | null
+          sender_name: string | null
           tenant_id: string | null
           timezone: string | null
           trial_ends_at: string | null
@@ -2716,6 +2742,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string | null
+          alert_email?: string | null
           billing_plan?: string | null
           company_address?: Json | null
           company_email?: string | null
@@ -2734,7 +2761,10 @@ export type Database = {
           locale?: string | null
           logo_url?: string | null
           primary_color?: string | null
+          reply_to_email?: string | null
           secondary_color?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
           tenant_id?: string | null
           timezone?: string | null
           trial_ends_at?: string | null
@@ -2742,6 +2772,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string | null
+          alert_email?: string | null
           billing_plan?: string | null
           company_address?: Json | null
           company_email?: string | null
@@ -2760,7 +2791,10 @@ export type Database = {
           locale?: string | null
           logo_url?: string | null
           primary_color?: string | null
+          reply_to_email?: string | null
           secondary_color?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
           tenant_id?: string | null
           timezone?: string | null
           trial_ends_at?: string | null
@@ -3589,17 +3623,17 @@ export type Database = {
       get_group_contacts_detailed: {
         Args: { p_group_id: string }
         Returns: {
+          assignment_id: string
           contact_id: string
           contact_type: string
           created_at: string
           email: string
-          email_preference: string
           full_name: string
           is_primary: boolean
           job_title: string
           notes: string
           phone: string
-          role_at_group: string
+          phone_secondary: string
         }[]
       }
       get_or_create_default_branch: {

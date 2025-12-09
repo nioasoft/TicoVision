@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { ContactsManager } from '@/components/ContactsManager';
 import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
@@ -139,6 +141,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [groups, setGroups] = useState<ClientGroup[]>([]); // NEW: רשימת קבוצות
     const [importedPdfFile, setImportedPdfFile] = useState<File | null>(null); // PDF file to save after client creation
+    const [taxIdExists, setTaxIdExists] = useState(false); // NEW: בדיקת כפילות מספר עוסק
+    const [isCheckingTaxId, setIsCheckingTaxId] = useState(false);
+    const taxIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Memoized city options for Combobox
     // Include the current city value if it's not in the standard list (preserves existing data)
@@ -212,6 +217,48 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       loadGroups();
     }, []);
 
+    // Check for duplicate tax_id in add mode (debounced)
+    useEffect(() => {
+      // Only check in add mode
+      if (mode !== 'add') {
+        setTaxIdExists(false);
+        return;
+      }
+
+      // Clear previous timeout
+      if (taxIdCheckTimeoutRef.current) {
+        clearTimeout(taxIdCheckTimeoutRef.current);
+      }
+
+      // Strip formatting and check if we have 9 digits
+      const plainTaxId = stripTaxIdFormatting(formData.tax_id);
+      if (plainTaxId.length !== 9) {
+        setTaxIdExists(false);
+        setIsCheckingTaxId(false);
+        return;
+      }
+
+      // Debounced check
+      setIsCheckingTaxId(true);
+      taxIdCheckTimeoutRef.current = setTimeout(async () => {
+        try {
+          const exists = await clientService.checkTaxIdExists(plainTaxId);
+          setTaxIdExists(exists);
+        } catch (error) {
+          console.error('Error checking tax_id existence:', error);
+          setTaxIdExists(false);
+        } finally {
+          setIsCheckingTaxId(false);
+        }
+      }, 500); // 500ms debounce
+
+      return () => {
+        if (taxIdCheckTimeoutRef.current) {
+          clearTimeout(taxIdCheckTimeoutRef.current);
+        }
+      };
+    }, [formData.tax_id, mode]);
+
     const handleClose = useCallback(() => {
       if (hasUnsavedChanges) {
         setShowExitConfirm(true);
@@ -243,6 +290,11 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
       }
 
+      // Check for duplicate tax_id (only in add mode)
+      if (mode === 'add' && taxIdExists) {
+        errors.push('לקוח עם מספר עוסק זה כבר קיים במערכת');
+      }
+
       // Format validation - strip formatting before checking
       if (formData.tax_id) {
         const plainTaxId = stripTaxIdFormatting(formData.tax_id);
@@ -262,7 +314,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       }
 
       return { valid: errors.length === 0, errors };
-    }, [formData]);
+    }, [formData, mode, taxIdExists]);
 
     const handleSubmit = useCallback(async () => {
       // Validate form first
@@ -434,7 +486,21 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   placeholder="51-2345678-9"
                   required
                   dir="ltr"
+                  className={taxIdExists ? 'border-red-500' : ''}
                 />
+                {taxIdExists && (
+                  <Alert variant="destructive" className="mt-2 py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="rtl:text-right mr-2">
+                      לקוח עם מספר עוסק זה כבר קיים במערכת
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {isCheckingTaxId && (
+                  <p className="text-xs text-gray-500 mt-1 rtl:text-right">
+                    בודק...
+                  </p>
+                )}
               </div>
 
               <div>

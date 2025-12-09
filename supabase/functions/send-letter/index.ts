@@ -38,6 +38,7 @@ interface SendLetterRequest {
   // Common fields
   clientId?: string;
   feeCalculationId?: string;
+  groupCalculationId?: string; // Group fee calculation ID (for group letters)
   letterId?: string; // Existing letter ID (prevents duplicate INSERT)
 }
 
@@ -102,14 +103,26 @@ function escapeHtml(unsafe: string | number): string {
 
 /**
  * Replace variables in HTML with HTML escaping to prevent XSS
+ * @param html - HTML template with {{variable}} placeholders
+ * @param variables - Object with variable values
+ * @param allowHtmlVariables - Array of variable names that can contain HTML (won't be escaped)
  */
-function replaceVariables(html: string, variables: Record<string, any>): string {
+function replaceVariables(
+  html: string,
+  variables: Record<string, any>,
+  allowHtmlVariables: string[] = []
+): string {
   let result = html;
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-    // Escape HTML for all variables except those that explicitly need HTML
-    // (custom_header_lines content is pre-sanitized in generateCustomHeaderLinesHtml)
-    result = result.replace(regex, escapeHtml(value));
+    // Allow HTML for whitelisted variables (e.g., custom_payment_text)
+    // These are pre-sanitized/wrapped by the frontend
+    if (allowHtmlVariables.includes(key)) {
+      result = result.replace(regex, String(value || ''));
+    } else {
+      // Escape HTML for all other variables to prevent XSS
+      result = result.replace(regex, escapeHtml(value));
+    }
   }
   return result;
 }
@@ -195,6 +208,27 @@ function increaseFontSizesInHTML(html: string): string {
   }
 
   return html;
+}
+
+/**
+ * Wrap custom payment text (from TipTap editor) in HTML for email template
+ * The text appears above the "אשר על כן..." line in the payment section
+ * Must match template.service.ts wrapCustomPaymentText()
+ */
+function wrapCustomPaymentText(html: string): string {
+  if (!html || html.trim() === '' || html === '<p></p>') {
+    return '';
+  }
+
+  return `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+          <tr>
+              <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; line-height: 1.6; text-align: right; color: #09090b;">
+                  ${html}
+              </td>
+          </tr>
+      </table>
+  `;
 }
 
 /**
@@ -508,7 +542,7 @@ async function buildCustomLetterHtml(
 </body>
 </html>`;
 
-  return replaceVariables(fullHtml, variables);
+  return replaceVariables(fullHtml, variables, ['custom_payment_text']);
 }
 
 /**
@@ -575,37 +609,76 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
   const bodyFile = bodyFileMap[templateType] || 'annual-fee.html';
   const body = await fetchTemplate(`bodies/${bodyFile}`);
 
-  // Check if fee_id exists and query for client_requested_adjustment
+  // Check if fee_id exists and query for client_requested_adjustment + custom_payment_text
   let customHeaderHtml = '';
+  let customPaymentTextHtml = '';
 
-  if (variables.fee_id && SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && authHeader) {
     try {
-      console.log('🔍 [Edge] Checking client adjustment for fee:', variables.fee_id);
+      // Create Supabase client with Authorization header for RLS
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } }
+      });
 
-      if (!authHeader) {
-        console.warn('⚠️ [Edge] No auth header - skipping client adjustment check');
-      } else {
-        // Create Supabase client with Authorization header for RLS
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          global: { headers: { Authorization: authHeader } }
-        });
+      // Check fee_calculations for individual clients
+      if (variables.fee_id) {
+        console.log('🔍 [Edge] Checking fee_calculations for:', variables.fee_id);
 
         const { data: feeCalc, error } = await supabase
           .from('fee_calculations')
-          .select('client_requested_adjustment')
+          .select('client_requested_adjustment, custom_payment_text')
           .eq('id', variables.fee_id)
           .maybeSingle();
 
         console.log('🔍 [Edge] Fee calc result:', { feeCalc, error: error?.message });
 
-        if (feeCalc && feeCalc.client_requested_adjustment < 0) {
-          console.log('🔍 [Edge] Client adjustment found:', feeCalc.client_requested_adjustment);
-          customHeaderHtml = buildCorrectionHeaderHtml();
+        if (feeCalc) {
+          if (feeCalc.client_requested_adjustment < 0) {
+            console.log('🔍 [Edge] Client adjustment found:', feeCalc.client_requested_adjustment);
+            customHeaderHtml = buildCorrectionHeaderHtml();
+          }
+          if (feeCalc.custom_payment_text) {
+            console.log('🔍 [Edge] Custom payment text found:', feeCalc.custom_payment_text.substring(0, 50) + '...');
+            customPaymentTextHtml = wrapCustomPaymentText(feeCalc.custom_payment_text);
+          }
+        }
+      }
+
+      // Check group_fee_calculations for groups
+      if (variables.group_calculation_id) {
+        console.log('🔍 [Edge] Checking group_fee_calculations for:', variables.group_calculation_id);
+
+        const { data: groupCalc, error } = await supabase
+          .from('group_fee_calculations')
+          .select('client_requested_adjustment, custom_payment_text')
+          .eq('id', variables.group_calculation_id)
+          .maybeSingle();
+
+        console.log('🔍 [Edge] Group calc result:', { groupCalc, error: error?.message });
+
+        if (groupCalc) {
+          if (groupCalc.client_requested_adjustment && groupCalc.client_requested_adjustment < 0) {
+            console.log('🔍 [Edge] Group client adjustment found:', groupCalc.client_requested_adjustment);
+            customHeaderHtml = buildCorrectionHeaderHtml();
+          }
+          if (groupCalc.custom_payment_text) {
+            console.log('🔍 [Edge] Group custom payment text found:', groupCalc.custom_payment_text.substring(0, 50) + '...');
+            customPaymentTextHtml = wrapCustomPaymentText(groupCalc.custom_payment_text);
+          }
         }
       }
     } catch (error) {
-      console.error('❌ [Edge] Error checking client adjustment:', error);
+      console.error('❌ [Edge] Error checking fee/group data:', error);
     }
+  }
+
+  // Add custom_payment_text to variables if found from DB
+  // This will be replaced in the payment section template
+  if (customPaymentTextHtml) {
+    variables.custom_payment_text = customPaymentTextHtml;
+  } else if (!variables.custom_payment_text) {
+    // Ensure placeholder is replaced with empty string if no custom text
+    variables.custom_payment_text = '';
   }
 
   // Replace {{custom_header_lines}} with red header or empty string
@@ -636,7 +709,7 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
 </body>
 </html>`;
 
-  return replaceVariables(fullHtml, variables);
+  return replaceVariables(fullHtml, variables, ['custom_payment_text']);
 }
 
 /**
@@ -851,6 +924,7 @@ serve(async (req) => {
       isHtml,
       clientId,
       feeCalculationId,
+      groupCalculationId,
       letterId // Existing letter ID (if provided, skip INSERT)
     } = requestData;
 
@@ -914,13 +988,14 @@ serve(async (req) => {
         previous_year: currentYear,
         tax_year: nextYear,
         ...(variables || {}),  // User variables override defaults
-        // Add fee_id and client_id for payment tracking links
+        // Add fee_id, client_id, and group_calculation_id for payment tracking links
         fee_id: feeCalculationId || (variables && variables.fee_id),
-        client_id: clientId || (variables && variables.client_id)
+        client_id: clientId || (variables && variables.client_id),
+        group_calculation_id: groupCalculationId || (variables && variables.group_calculation_id)
       };
 
       // Replace variables in the parsed HTML
-      const bodyWithVariables = replaceVariables(parsedBodyHtml, finalVariables);
+      const bodyWithVariables = replaceVariables(parsedBodyHtml, finalVariables, ['custom_payment_text']);
 
       // Generate subject lines HTML if provided
       const subjectLinesHtml = subjectLines ? buildSubjectLinesHTML(subjectLines) : '';
@@ -979,11 +1054,12 @@ serve(async (req) => {
       console.log('   Mode: Template');
       console.log('   Template:', templateType);
 
-      // Add fee_id and client_id to variables for payment tracking links
+      // Add fee_id, client_id, and group_calculation_id to variables for payment tracking links
       const enrichedVariables = {
         ...variables!,
         fee_id: feeCalculationId || variables!.fee_id,
-        client_id: clientId || variables!.client_id
+        client_id: clientId || variables!.client_id,
+        group_calculation_id: groupCalculationId || variables!.group_calculation_id
       };
 
       // Get auth header for RLS authentication

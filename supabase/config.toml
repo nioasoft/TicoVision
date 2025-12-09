@@ -31,3 +31,6 @@ verify_jwt = false
 
 [functions.track-payment-selection]
 verify_jwt = false
+
+[functions.pdf-footer-poc]
+verify_jwt = false

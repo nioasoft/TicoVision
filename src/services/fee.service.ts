@@ -119,6 +119,8 @@ export interface FeeCalculation {
   bank_transfer_discount_percentage?: number;
   bank_transfer_amount_before_vat?: number;
   bank_transfer_amount_with_vat?: number;
+  // Custom payment text (HTML) - appears above payment section in letter
+  custom_payment_text?: string;
   // Status tracking
   status: FeeStatus;
   due_date?: string;
@@ -193,6 +195,8 @@ export interface CreateFeeCalculationDto {
   bank_transfer_discount_percentage?: number;
   bank_transfer_amount_before_vat?: number;
   bank_transfer_amount_with_vat?: number;
+  // Custom payment text (HTML) - appears above payment section in letter
+  custom_payment_text?: string;
 }
 
 export interface UpdateFeeCalculationDto extends Partial<CreateFeeCalculationDto> {
@@ -444,7 +448,9 @@ class FeeService extends BaseService {
         },
         bookkeeping_calculation: bookkeepingCalc,
         retainer_calculation: retainerCalc,
-        created_by: currentUserId
+        created_by: currentUserId,
+        // Custom payment text (HTML) - appears above payment section in letter
+        custom_payment_text: data.custom_payment_text || null
       };
 
       const { data: fee, error } = await supabase

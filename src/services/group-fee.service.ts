@@ -82,6 +82,8 @@ export interface GroupFeeCalculationInput {
   client_requested_adjustment_note?: string;
   // Notes
   notes?: string;
+  // Custom payment text (HTML) - appears above payment section in letter
+  custom_payment_text?: string | null;
 }
 
 // Calculated amounts
@@ -538,6 +540,8 @@ class GroupFeeService extends BaseService {
         client_requested_adjustment_note: input.client_requested_adjustment_note || null,
         // Notes
         notes: input.notes || null,
+        // Custom payment text (HTML) - appears above payment section in letter
+        custom_payment_text: input.custom_payment_text || null,
         // Status
         status: 'draft' as GroupFeeStatus
       };
