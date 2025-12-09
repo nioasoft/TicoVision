@@ -2297,27 +2297,24 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               );
                             })}
 
-                            {/* Manually added emails with X button to remove */}
+                            {/* Manually added emails as chips */}
                             {selectedRecipients
                               .filter(email => !clientContacts.some(c => c.email === email))
                               .map((email) => (
-                                <div
+                                <span
                                   key={email}
-                                  className="flex items-center justify-between gap-2 p-2 bg-white hover:bg-gray-50 rounded border"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200 text-xs"
                                 >
-                                  <div className="flex-1 text-right">
-                                    <div className="text-xs text-gray-600 truncate">{email}</div>
-                                    <div className="text-xs text-blue-600">(נוסף ידנית)</div>
-                                  </div>
+                                  <span dir="ltr">{email}</span>
                                   <button
                                     type="button"
                                     onClick={() => setSelectedRecipients(selectedRecipients.filter(e => e !== email))}
-                                    className="text-red-500 hover:text-red-700 rtl:mr-2 ltr:ml-2"
+                                    className="text-blue-500 hover:text-red-600 hover:bg-red-50 rounded-full p-0.5 transition-colors"
                                     title="הסר מייל"
                                   >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-3 w-3" />
                                   </button>
-                                </div>
+                                </span>
                               ))}
                           </div>
                         </div>
