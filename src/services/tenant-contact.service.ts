@@ -486,7 +486,38 @@ export class TenantContactService {
 
       if (error) throw error;
 
-      return data || [];
+      // Map the RPC result to AssignedGroupContact format
+      return (data || []).map((row: {
+        assignment_id: string;
+        contact_id: string;
+        full_name: string;
+        email: string | null;
+        phone: string | null;
+        phone_secondary: string | null;
+        contact_type: string;
+        job_title: string | null;
+        is_primary: boolean;
+        notes: string | null;
+        created_at: string;
+      }) => ({
+        id: row.contact_id,
+        tenant_id: '', // Not returned by RPC, not needed for display
+        full_name: row.full_name,
+        email: row.email,
+        phone: row.phone,
+        phone_secondary: row.phone_secondary,
+        contact_type: row.contact_type,
+        job_title: row.job_title,
+        notes: row.notes,
+        created_at: row.created_at,
+        updated_at: row.created_at,
+        created_by: null,
+        // Assignment-specific fields
+        assignment_id: row.assignment_id,
+        is_primary: row.is_primary,
+        assignment_notes: row.notes,
+        other_groups_count: 0, // Not calculated in RPC
+      }));
     } catch (error) {
       console.error('Error getting group contacts:', error);
       return [];

@@ -44,6 +44,36 @@ export function formatILSInteger(amount: number): string {
 }
 
 /**
+ * Format Israeli phone number with hyphen after prefix
+ * @param phone - Phone number to format
+ * @returns Formatted string like "03-1234567" or "050-1234567"
+ */
+export function formatPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return '';
+
+  // Remove all non-digit characters except leading +
+  const cleaned = phone.replace(/[^\d+]/g, '');
+
+  // Handle Israeli mobile (05X) - 10 digits
+  if (/^05\d{8}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+  }
+
+  // Handle Israeli landline (0X) - 9 digits (e.g., 03, 04, 08, 09)
+  if (/^0[2-9]\d{7}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 2)}-${cleaned.slice(2)}`;
+  }
+
+  // Handle Israeli landline with area code (07X) - 10 digits
+  if (/^07\d{8}$/.test(cleaned)) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+  }
+
+  // If already formatted or unknown format, return as-is
+  return phone;
+}
+
+/**
  * Format date in Israeli format (DD/MM/YYYY)
  * @param date - Date to format
  * @returns Formatted string like "15/01/2025"

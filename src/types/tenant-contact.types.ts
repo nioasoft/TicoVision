@@ -15,6 +15,7 @@ export interface TenantContact {
   full_name: string;
   email: string | null;
   phone: string | null;
+  phone_secondary: string | null;
   contact_type: ContactType;
   job_title: string | null;
   notes: string | null;
@@ -92,15 +93,18 @@ export interface CreateTenantContactDto {
   full_name: string;
   email?: string | null;
   phone?: string | null;
+  phone_secondary?: string | null;
   contact_type: ContactType;
   job_title?: string | null;
   notes?: string | null;
+  is_primary?: boolean;
 }
 
 export interface UpdateTenantContactDto {
   full_name?: string;
   email?: string | null;
   phone?: string | null;
+  phone_secondary?: string | null;
   contact_type?: ContactType;
   job_title?: string | null;
   notes?: string | null;

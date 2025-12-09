@@ -7,6 +7,7 @@ import TenantContactService from '@/services/tenant-contact.service';
 import type { ContactType } from '@/services/client.service';
 import type { TenantContact } from '@/types/tenant-contact.types';
 import { cn } from '@/lib/utils';
+import { formatPhoneNumber } from '@/lib/formatters';
 
 interface ContactAutocompleteInputProps {
   label: string;
@@ -84,11 +85,14 @@ export function ContactAutocompleteInput({
       onNameChange(contact.full_name);
       onEmailChange(contact.email || '');
       onPhoneChange(contact.phone || '');
+      if (onPhoneSecondaryChange) {
+        onPhoneSecondaryChange(contact.phone_secondary || '');
+      }
       setSelectedFromList(true);
       setOpen(false);
       setSearchQuery('');
     },
-    [onNameChange, onEmailChange, onPhoneChange]
+    [onNameChange, onEmailChange, onPhoneChange, onPhoneSecondaryChange]
   );
 
   // Track when user types manually (not from list)
@@ -194,7 +198,7 @@ export function ContactAutocompleteInput({
                           <div className="font-medium">{contact.full_name}</div>
                           <div className="flex gap-2 text-xs text-muted-foreground rtl:flex-row-reverse rtl:justify-end">
                             {contact.email && <span>{contact.email}</span>}
-                            {contact.phone && <span>{contact.phone}</span>}
+                            {contact.phone && <span dir="ltr">{formatPhoneNumber(contact.phone)}</span>}
                           </div>
                         </div>
                       </CommandItem>

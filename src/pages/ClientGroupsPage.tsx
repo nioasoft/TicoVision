@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { clientService, type ClientGroup, type Client } from '@/services';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -41,7 +42,6 @@ import { AddClientsToGroupDialog } from '@/components/groups/AddClientsToGroupDi
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 import { useClients } from '@/hooks/useClients';
 import { ContactsManager } from '@/components/ContactsManager';
-import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import TenantContactService from '@/services/tenant-contact.service';
 import type { AssignedGroupContact, CreateTenantContactDto } from '@/types/tenant-contact.types';
 
@@ -61,15 +61,15 @@ export default function ClientGroupsPage() {
   const [groupContacts, setGroupContacts] = useState<AssignedGroupContact[]>([]);
   const [formData, setFormData] = useState({
     group_name_hebrew: '',
-    primary_owner: '',
-    primary_owner_email: '',
-    primary_owner_phone: '',
     combined_billing: true,
     combined_letters: true,
     company_structure_link: '',
     canva_link: '',
     notes: '',
   });
+  const [groupNameExists, setGroupNameExists] = useState(false);
+  const [isCheckingGroupName, setIsCheckingGroupName] = useState(false);
+  const groupNameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   // Use clients hook for contact management in edit dialog
@@ -85,6 +85,47 @@ export default function ClientGroupsPage() {
   useEffect(() => {
     loadGroups();
   }, []);
+
+  // Check for duplicate group name (debounced)
+  useEffect(() => {
+    // Only check when adding (not editing) and when dialog is open
+    if (!isAddDialogOpen) {
+      setGroupNameExists(false);
+      return;
+    }
+
+    // Clear previous timeout
+    if (groupNameCheckTimeoutRef.current) {
+      clearTimeout(groupNameCheckTimeoutRef.current);
+    }
+
+    // Need at least 2 characters
+    if (formData.group_name_hebrew.trim().length < 2) {
+      setGroupNameExists(false);
+      setIsCheckingGroupName(false);
+      return;
+    }
+
+    // Debounced check
+    setIsCheckingGroupName(true);
+    groupNameCheckTimeoutRef.current = setTimeout(async () => {
+      try {
+        const exists = await clientService.checkGroupNameExists(formData.group_name_hebrew.trim());
+        setGroupNameExists(exists);
+      } catch (error) {
+        logger.error('Error checking group name existence:', error);
+        setGroupNameExists(false);
+      } finally {
+        setIsCheckingGroupName(false);
+      }
+    }, 500);
+
+    return () => {
+      if (groupNameCheckTimeoutRef.current) {
+        clearTimeout(groupNameCheckTimeoutRef.current);
+      }
+    };
+  }, [formData.group_name_hebrew, isAddDialogOpen]);
 
   const loadGroups = async () => {
     setLoading(true);
@@ -136,11 +177,18 @@ export default function ClientGroupsPage() {
   };
 
   const handleAddGroup = async () => {
-    // 1. Extract only database-compatible fields (exclude email/phone which are for contact creation)
-    const { primary_owner_email, primary_owner_phone, ...groupData } = formData;
+    // Check for duplicate group name before submitting
+    if (groupNameExists) {
+      toast({
+        title: 'שגיאה',
+        description: 'קבוצה עם שם זה כבר קיימת במערכת',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // 2. Create the group first
-    const response = await clientService.createGroup(groupData);
+    // Create the group
+    const response = await clientService.createGroup(formData);
     if (response.error || !response.data) {
       toast({
         title: 'שגיאה',
@@ -150,59 +198,31 @@ export default function ClientGroupsPage() {
       return;
     }
 
-    // 2. Auto-create contact and assignment for primary_owner
-    if (formData.primary_owner) {
-      try {
-        // Create or find the contact in tenant_contacts
-        const contact = await TenantContactService.createOrGet({
-          full_name: formData.primary_owner,
-          email: formData.primary_owner_email || null,
-          phone: formData.primary_owner_phone || null,
-          contact_type: 'owner',
-        });
-
-        if (contact) {
-          // Assign to group as primary owner
-          await TenantContactService.assignToGroup({
-            group_id: response.data.id,
-            contact_id: contact.id,
-            is_primary: true,
-          });
-          logger.info('Primary owner assigned to group:', {
-            group_id: response.data.id,
-            contact_id: contact.id,
-            contact_name: contact.full_name,
-          });
-        }
-      } catch (error) {
-        logger.error('Error assigning primary owner to group:', error);
-        // Don't fail the whole operation - group is created
-        toast({
-          title: 'אזהרה',
-          description: 'הקבוצה נוצרה אך הקישור לבעל השליטה נכשל',
-          variant: 'default',
-        });
-      }
-    }
-
     toast({
       title: 'קבוצה נוספה בהצלחה',
-      description: `${formData.group_name_hebrew} נוספה למערכת`,
+      description: `${formData.group_name_hebrew} נוספה למערכת. כעת ניתן להוסיף אנשי קשר.`,
     });
 
     setIsAddDialogOpen(false);
     resetForm();
-    loadGroups();
+    await loadGroups();
+
+    // Open edit dialog to add contacts
+    openEditDialog(response.data);
   };
 
   const handleUpdateGroup = async () => {
     if (!selectedGroup) return;
 
-    // Extract only database-compatible fields
-    const { primary_owner_email, primary_owner_phone, ...groupData } = formData;
+    // Get primary owner name from contacts (managed by ContactsManager)
+    const primaryContact = groupContacts.find(c => c.is_primary);
+    const groupData = {
+      ...formData,
+      primary_owner: primaryContact?.full_name || '',
+    };
 
     const response = await clientService.updateGroup(selectedGroup.id, groupData);
-    
+
     if (response.error) {
       toast({
         title: 'שגיאה',
@@ -250,9 +270,6 @@ export default function ClientGroupsPage() {
   const resetForm = () => {
     setFormData({
       group_name_hebrew: '',
-      primary_owner: '',
-      primary_owner_email: '',
-      primary_owner_phone: '',
       combined_billing: true,
       combined_letters: true,
       company_structure_link: '',
@@ -264,21 +281,19 @@ export default function ClientGroupsPage() {
 
   const openEditDialog = async (group: ClientGroup) => {
     setSelectedGroup(group);
+
+    // Load group contacts (managed by ContactsManager)
+    const contacts = await TenantContactService.getGroupContacts(group.id);
+    setGroupContacts(contacts);
+
     setFormData({
       group_name_hebrew: group.group_name_hebrew,
-      primary_owner: group.primary_owner || '',
-      primary_owner_email: '',
-      primary_owner_phone: '',
       combined_billing: group.combined_billing,
       combined_letters: group.combined_letters,
       company_structure_link: group.company_structure_link || '',
       canva_link: group.canva_link || '',
       notes: group.notes || '',
     });
-
-    // Load group contacts
-    const contacts = await TenantContactService.getGroupContacts(group.id);
-    setGroupContacts(contacts);
 
     setIsEditDialogOpen(true);
   };
@@ -351,6 +366,26 @@ export default function ClientGroupsPage() {
 
   const handleUpdateGroupContact = async (assignmentId: string, updates: Partial<CreateTenantContactDto>) => {
     try {
+      // Find the contact to get the contact_id
+      const contact = groupContacts.find(c => c.assignment_id === assignmentId);
+      logger.info('handleUpdateGroupContact called:', { assignmentId, updates, contact, groupContacts });
+
+      if (!contact) {
+        throw new Error('Contact not found');
+      }
+
+      // Update the contact details in tenant_contacts
+      logger.info('Updating contact details:', { contactId: contact.id, updates });
+      const updateResult = await TenantContactService.update(contact.id, {
+        full_name: updates.full_name,
+        email: updates.email,
+        phone: updates.phone,
+        phone_secondary: updates.phone_secondary,
+        contact_type: updates.contact_type,
+      });
+      logger.info('Update result:', updateResult);
+
+      // Update the assignment (is_primary, notes)
       await TenantContactService.updateGroupAssignment(assignmentId, {
         is_primary: updates.is_primary,
         notes: updates.notes,
@@ -664,20 +699,29 @@ export default function ClientGroupsPage() {
                 onChange={(e) => setFormData({ ...formData, group_name_hebrew: e.target.value })}
                 dir="rtl"
                 required
+                className={groupNameExists ? 'border-red-500' : ''}
               />
+              {groupNameExists && (
+                <Alert variant="destructive" className="mt-2 py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="rtl:text-right mr-2">
+                    קבוצה עם שם זה כבר קיימת במערכת
+                  </AlertDescription>
+                </Alert>
+              )}
+              {isCheckingGroupName && (
+                <p className="text-xs text-gray-500 mt-1 rtl:text-right">
+                  בודק...
+                </p>
+              )}
             </div>
 
-            <ContactAutocompleteInput
-              label="בעלים ראשי"
-              nameValue={formData.primary_owner}
-              emailValue={formData.primary_owner_email}
-              phoneValue={formData.primary_owner_phone}
-              onNameChange={(value) => setFormData(prev => ({ ...prev, primary_owner: value }))}
-              onEmailChange={(value) => setFormData(prev => ({ ...prev, primary_owner_email: value }))}
-              onPhoneChange={(value) => setFormData(prev => ({ ...prev, primary_owner_phone: value }))}
-              contactType="owner"
-              required
-            />
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="rtl:text-right mr-2 text-blue-800">
+                אנשי קשר ובעלי שליטה יתווספו בשלב הבא
+              </AlertDescription>
+            </Alert>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -776,18 +820,6 @@ export default function ClientGroupsPage() {
                 required
               />
             </div>
-
-            <ContactAutocompleteInput
-              label="בעלים ראשי"
-              nameValue={formData.primary_owner}
-              emailValue={formData.primary_owner_email}
-              phoneValue={formData.primary_owner_phone}
-              onNameChange={(value) => setFormData(prev => ({ ...prev, primary_owner: value }))}
-              onEmailChange={(value) => setFormData(prev => ({ ...prev, primary_owner_email: value }))}
-              onPhoneChange={(value) => setFormData(prev => ({ ...prev, primary_owner_phone: value }))}
-              contactType="owner"
-              required
-            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -8,6 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandItem } from '@/components/u
 import TenantContactService from '@/services/tenant-contact.service';
 import type { TenantContact } from '@/types/tenant-contact.types';
 import { cn } from '@/lib/utils';
+import { formatPhoneNumber } from '@/lib/formatters';
 import {
   Select,
   SelectContent,
@@ -63,6 +64,9 @@ export function ContactsManager({
   onDelete,
   onSetPrimary,
 }: ContactsManagerProps) {
+  // Debug: log contacts received
+  console.log('ContactsManager received contacts:', contacts);
+
   // Dynamic labels based on resource type
   const primaryContactLabel = resourceType === 'group' ? 'בעל שליטה ראשי' : 'איש קשר ראשי';
   const setPrimaryLabel = resourceType === 'group' ? 'הגדר כבעל שליטה ראשי' : 'הגדר כאיש קשר ראשי';
@@ -74,6 +78,7 @@ export function ContactsManager({
     full_name: '',
     email: '',
     phone: '',
+    phone_secondary: '',
     email_preference: 'all',
     is_primary: false,
     notes: '',
@@ -119,6 +124,7 @@ export function ContactsManager({
       full_name: contact.full_name,
       email: contact.email || '',
       phone: contact.phone || '',
+      phone_secondary: contact.phone_secondary || '',
       contact_type: contact.contact_type,
     });
     setSelectedFromList(true);
@@ -144,6 +150,7 @@ export function ContactsManager({
       full_name: '',
       email: '',
       phone: '',
+      phone_secondary: '',
       email_preference: 'all',
       is_primary: false,
       notes: '',
@@ -175,7 +182,9 @@ export function ContactsManager({
       return;
     }
 
-    await onUpdate(selectedContact.id, formData);
+    // For groups, use assignment_id if available, otherwise use contact id
+    const updateId = selectedContact.assignment_id || selectedContact.id;
+    await onUpdate(updateId, formData);
     setIsEditDialogOpen(false);
     setSelectedContact(null);
     resetForm();
@@ -188,6 +197,7 @@ export function ContactsManager({
       full_name: contact.full_name,
       email: contact.email || '',
       phone: contact.phone || '',
+      phone_secondary: contact.phone_secondary || '',
       email_preference: contact.email_preference || 'all',
       is_primary: contact.is_primary,
       notes: contact.notes || '',
@@ -195,9 +205,11 @@ export function ContactsManager({
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = async (contactId: string) => {
+  const handleDelete = async (contact: ClientContact) => {
     if (window.confirm('האם אתה בטוח שברצונך למחוק את איש הקשר?')) {
-      await onDelete(contactId);
+      // For groups, use assignment_id if available
+      const deleteId = contact.assignment_id || contact.id;
+      await onDelete(deleteId);
     }
   };
 
@@ -264,7 +276,15 @@ export function ContactsManager({
                         <div>
                           <span className="font-medium">טלפון:</span>{' '}
                           <a href={`tel:${contact.phone}`} className="text-blue-600 hover:underline" dir="ltr">
-                            {contact.phone}
+                            {formatPhoneNumber(contact.phone)}
+                          </a>
+                        </div>
+                      )}
+                      {contact.phone_secondary && (
+                        <div>
+                          <span className="font-medium">קווי:</span>{' '}
+                          <a href={`tel:${contact.phone_secondary}`} className="text-blue-600 hover:underline" dir="ltr">
+                            {formatPhoneNumber(contact.phone_secondary)}
                           </a>
                         </div>
                       )}
@@ -283,7 +303,7 @@ export function ContactsManager({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => onSetPrimary(contact.id)}
+                        onClick={() => onSetPrimary(contact.assignment_id || contact.id)}
                         title={setPrimaryLabel}
                       >
                         <Star className="h-4 w-4" />
@@ -301,7 +321,7 @@ export function ContactsManager({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(contact.id)}
+                      onClick={() => handleDelete(contact)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -322,8 +342,8 @@ export function ContactsManager({
             <DialogDescription className="rtl:text-right">הזן את פרטי איש הקשר החדש</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Row 1: Contact Type, Name with Autocomplete, Email, Phone */}
-            <div className="grid grid-cols-4 gap-3">
+            {/* Row 1: Contact Type, Name with Autocomplete, Email, Phone, Phone Secondary */}
+            <div className="grid grid-cols-5 gap-3">
               <div>
                 <Label htmlFor="add_contact_type" className="text-right block mb-2">
                   סוג איש קשר *
@@ -397,7 +417,7 @@ export function ContactsManager({
                                 <div className="font-medium">{contact.full_name}</div>
                                 <div className="flex gap-2 text-xs text-muted-foreground rtl:flex-row-reverse rtl:justify-end">
                                   {contact.email && <span>{contact.email}</span>}
-                                  {contact.phone && <span>{contact.phone}</span>}
+                                  {contact.phone && <span dir="ltr">{formatPhoneNumber(contact.phone)}</span>}
                                 </div>
                               </div>
                             </CommandItem>
@@ -428,7 +448,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="add_phone" className="text-right block mb-2">
-                  טלפון *
+                  טלפון נייד *
                 </Label>
                 <Input
                   id="add_phone"
@@ -439,14 +459,30 @@ export function ContactsManager({
                   }
                   required
                   dir="ltr"
+                  placeholder="050-1234567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="add_phone_secondary" className="text-right block mb-2">
+                  טלפון קווי
+                </Label>
+                <Input
+                  id="add_phone_secondary"
+                  type="tel"
+                  value={formData.phone_secondary}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone_secondary: e.target.value })
+                  }
+                  dir="ltr"
+                  placeholder="03-1234567"
                 />
               </div>
             </div>
 
             {/* Row 2: Email Preferences (span full width), Primary Contact Checkbox */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               {resourceType === 'client' && (
-                <div className="col-span-3">
+                <div className="col-span-4">
                   <Label className="text-right block mb-3">העדפות מייל</Label>
                   <RadioGroup
                     value={formData.email_preference}
@@ -470,7 +506,7 @@ export function ContactsManager({
                   </RadioGroup>
                 </div>
               )}
-              <div className={cn("flex items-center gap-2", resourceType === 'group' && "col-span-4")}>
+              <div className={cn("flex items-center gap-2", resourceType === 'group' && "col-span-5")}>
                 <Checkbox
                   id="add_is_primary"
                   checked={formData.is_primary}
@@ -529,8 +565,8 @@ export function ContactsManager({
             <DialogDescription className="rtl:text-right">עדכן את פרטי איש הקשר</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Row 1: Contact Type, Name, Email, Phone */}
-            <div className="grid grid-cols-4 gap-3">
+            {/* Row 1: Contact Type, Name, Email, Phone, Phone Secondary */}
+            <div className="grid grid-cols-5 gap-3">
               <div>
                 <Label htmlFor="edit_contact_type" className="text-right block mb-2">
                   סוג איש קשר *
@@ -585,7 +621,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="edit_phone" className="text-right block mb-2">
-                  טלפון *
+                  טלפון נייד *
                 </Label>
                 <Input
                   id="edit_phone"
@@ -596,14 +632,30 @@ export function ContactsManager({
                   }
                   required
                   dir="ltr"
+                  placeholder="050-1234567"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_phone_secondary" className="text-right block mb-2">
+                  טלפון קווי
+                </Label>
+                <Input
+                  id="edit_phone_secondary"
+                  type="tel"
+                  value={formData.phone_secondary}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone_secondary: e.target.value })
+                  }
+                  dir="ltr"
+                  placeholder="03-1234567"
                 />
               </div>
             </div>
 
             {/* Row 2: Email Preferences (span full width), Primary Contact Checkbox */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               {resourceType === 'client' && (
-                <div className="col-span-3">
+                <div className="col-span-4">
                   <Label className="text-right block mb-3">העדפות מייל</Label>
                   <RadioGroup
                     value={formData.email_preference}
@@ -627,7 +679,7 @@ export function ContactsManager({
                   </RadioGroup>
                 </div>
               )}
-              <div className={cn("flex items-center gap-2", resourceType === 'group' && "col-span-4")}>
+              <div className={cn("flex items-center gap-2", resourceType === 'group' && "col-span-5")}>
                 <Checkbox
                   id="edit_is_primary"
                   checked={formData.is_primary}

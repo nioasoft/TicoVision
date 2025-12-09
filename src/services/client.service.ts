@@ -53,6 +53,7 @@ export interface ClientContact {
   full_name: string;
   email?: string;
   phone?: string;
+  phone_secondary?: string;
   email_preference: EmailPreference;
   is_primary: boolean;
   is_active: boolean;
@@ -60,6 +61,8 @@ export interface ClientContact {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  // For group contacts - the assignment ID
+  assignment_id?: string;
 }
 
 export interface CreateClientContactDto {
@@ -67,6 +70,7 @@ export interface CreateClientContactDto {
   full_name: string;
   email?: string;
   phone?: string;
+  phone_secondary?: string;
   email_preference?: EmailPreference;
   is_primary?: boolean;
   is_active?: boolean;
@@ -210,6 +214,15 @@ export class ClientService extends BaseService {
         return {
           data: null,
           error: new Error('Invalid Israeli tax ID. Must be 9 digits.')
+        };
+      }
+
+      // Check for duplicate tax_id
+      const taxIdExists = await this.checkTaxIdExists(data.tax_id);
+      if (taxIdExists) {
+        return {
+          data: null,
+          error: new Error('לקוח עם מספר עוסק זה כבר קיים במערכת')
         };
       }
 
@@ -575,6 +588,74 @@ export class ClientService extends BaseService {
     }
   }
 
+  /**
+   * Check if a tax_id already exists for this tenant
+   * @param taxId - The tax ID to check
+   * @param excludeClientId - Optional client ID to exclude (for updates)
+   * @returns true if tax_id exists, false otherwise
+   */
+  async checkTaxIdExists(taxId: string, excludeClientId?: string): Promise<boolean> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('clients')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('tax_id', taxId);
+
+      if (excludeClientId) {
+        query = query.neq('id', excludeClientId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) {
+        console.error('Error checking tax_id existence:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Error checking tax_id existence:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if a group name already exists for this tenant
+   * @param groupName - The group name (Hebrew) to check
+   * @param excludeGroupId - Optional group ID to exclude (for updates)
+   * @returns true if group name exists, false otherwise
+   */
+  async checkGroupNameExists(groupName: string, excludeGroupId?: string): Promise<boolean> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('client_groups')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('group_name_hebrew', groupName);
+
+      if (excludeGroupId) {
+        query = query.neq('id', excludeGroupId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) {
+        console.error('Error checking group name existence:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Error checking group name existence:', error);
+      return false;
+    }
+  }
+
   async updateStatus(id: string, status: 'active' | 'inactive' | 'pending'): Promise<ServiceResponse<Client>> {
     return this.update(id, { status });
   }
@@ -674,6 +755,15 @@ export class ClientService extends BaseService {
   }): Promise<ServiceResponse<ClientGroup>> {
     try {
       const tenantId = await this.getTenantId();
+
+      // Check for duplicate group name
+      const groupNameExists = await this.checkGroupNameExists(data.group_name_hebrew);
+      if (groupNameExists) {
+        return {
+          data: null,
+          error: new Error('קבוצה עם שם זה כבר קיימת במערכת')
+        };
+      }
 
       const { data: group, error } = await supabase
         .from('client_groups')
