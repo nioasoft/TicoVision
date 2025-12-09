@@ -9,8 +9,8 @@ import Highlight from '@tiptap/extension-highlight';
 import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { BlueBullet } from './extensions/BlueBullet';
-import { BlueBulletButton } from './BlueBulletButton';
+import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
+import { ColoredBulletButtons } from './ColoredBulletButtons';
 
 // Import ProseMirror CSS for proper white-space handling
 import 'prosemirror-view/style/prosemirror.css';
@@ -105,6 +105,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       multicolor: true, // Allow multiple highlight colors
     }),
     BlueBullet,
+    DarkRedBullet,
+    BlackBullet,
   ], []); // Empty dependency array - extensions never change
 
   const editor = useEditor({
@@ -287,8 +289,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             <ListOrdered className="h-4 w-4" />
           </Button>
 
-          {/* Blue Bullet */}
-          <BlueBulletButton editor={editor} />
+          {/* Colored Bullets (Blue, Dark Red, Black) */}
+          <ColoredBulletButtons editor={editor} />
 
           {/* Horizontal Rule */}
           <Button
