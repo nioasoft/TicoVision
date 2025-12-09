@@ -6,7 +6,7 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
-import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight, Circle } from 'lucide-react';
+import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
@@ -303,29 +303,46 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             <Minus className="h-4 w-4" />
           </Button>
 
-          {/* Add period at end of each line */}
+          {/* Add period at end of each line (preserves formatting) */}
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => {
-              const { from, to } = editor.state.selection;
-              const selectedText = editor.state.doc.textBetween(from, to, '\n');
-              if (selectedText) {
-                const lines = selectedText.split('\n');
-                const withPeriods = lines.map(line => {
-                  const trimmed = line.trimEnd();
-                  if (trimmed && !trimmed.endsWith('.') && !trimmed.endsWith('?') && !trimmed.endsWith('!') && !trimmed.endsWith(':')) {
-                    return trimmed + '.';
+              const { state } = editor;
+              const { from, to } = state.selection;
+
+              // Find all text nodes in selection and add period at end of each block
+              const tr = state.tr;
+              let offset = 0;
+
+              state.doc.nodesBetween(from, to, (node, pos) => {
+                // Only process text-containing blocks (paragraphs, bullets, etc.)
+                if (node.isBlock && node.textContent) {
+                  const text = node.textContent.trimEnd();
+                  const lastChar = text.slice(-1);
+
+                  // Skip if already ends with punctuation
+                  if (text && !'.?!:'.includes(lastChar)) {
+                    // Find the actual end position of text in this node
+                    const nodeEnd = pos + node.nodeSize - 1;
+                    const textEnd = pos + 1 + node.textContent.length;
+
+                    // Insert period at end of text content
+                    tr.insertText('.', textEnd + offset);
+                    offset += 1;
                   }
-                  return line;
-                }).join('\n');
-                editor.chain().focus().insertContentAt({ from, to }, withPeriods).run();
+                }
+                return true;
+              });
+
+              if (offset > 0) {
+                editor.view.dispatch(tr);
               }
             }}
             title="הוסף נקודה בסוף כל שורה"
           >
-            <Circle className="h-3 w-3 fill-current" />
+            <span className="text-base font-bold leading-none">.</span>
           </Button>
         </div>
 
