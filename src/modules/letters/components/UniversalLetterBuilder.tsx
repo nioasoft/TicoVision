@@ -17,16 +17,19 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X, Users, UserPlus, FileDown } from 'lucide-react';
+import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, ArrowUp, ArrowDown, Type, Printer, HelpCircle, MessageCircle, X, Users, UserPlus, FileDown, Building2 } from 'lucide-react';
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
 import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
+import { Combobox } from '@/components/ui/combobox';
 import { clientService } from '@/services';
 import type { Client } from '@/services/client.service';
 import { TenantContactService } from '@/services/tenant-contact.service';
 import type { AssignedContact } from '@/types/tenant-contact.types';
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
+import { groupFeeService, type ClientGroup, type GroupMemberClient } from '@/services/group-fee.service';
+import { GroupMembersList } from '@/components/fees/GroupMembersList';
 
 const templateService = new TemplateService();
 const pdfService = new PDFGenerationService();
@@ -99,6 +102,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     }
   ]);
 
+  // Track if user manually edited the subject line (stops auto-sync from email subject)
+  const [userEditedSubjectLine, setUserEditedSubjectLine] = useState(false);
+
   // State - Configuration
   const [includesPayment, setIncludesPayment] = useState(false);
   const [amount, setAmount] = useState<number>(50000);
@@ -141,10 +147,16 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [manualEmailInput, setManualEmailInput] = useState('');
   const [showManualEmailInput, setShowManualEmailInput] = useState(false);
 
-  // State - Recipient Mode (client from list vs manual recipient)
-  const [recipientMode, setRecipientMode] = useState<'client' | 'manual'>('client');
+  // State - Recipient Mode (client from list, group, or manual recipient)
+  const [recipientMode, setRecipientMode] = useState<'client' | 'group' | 'manual'>('client');
   const [showModeWarning, setShowModeWarning] = useState(false);
-  const [pendingMode, setPendingMode] = useState<'client' | 'manual' | null>(null);
+  const [pendingMode, setPendingMode] = useState<'client' | 'group' | 'manual' | null>(null);
+
+  // State - Group selection (for 'group' mode)
+  const [groups, setGroups] = useState<ClientGroup[]>([]);
+  const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [groupMembers, setGroupMembers] = useState<GroupMemberClient[]>([]);
 
   // State - Manual recipient fields (for 'manual' mode)
   const [manualCompanyName, setManualCompanyName] = useState('');
@@ -159,6 +171,15 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   useEffect(() => {
     loadSavedTemplates();
   }, []);
+
+  /**
+   * Load groups when mode changes to 'group'
+   */
+  useEffect(() => {
+    if (recipientMode === 'group' && groups.length === 0) {
+      loadGroups();
+    }
+  }, [recipientMode]);
 
   /**
    * Load letter for editing when editLetterId prop is provided
@@ -245,6 +266,73 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     } catch (error) {
       console.error('Error loading saved templates:', error);
       toast.error('שגיאה בטעינת תבניות שמורות');
+    }
+  };
+
+  /**
+   * Load all groups available for selection
+   */
+  const loadGroups = async () => {
+    setIsLoadingGroups(true);
+    try {
+      const currentYear = new Date().getFullYear();
+      const { data, error } = await groupFeeService.getAvailableGroups(currentYear);
+      if (error) throw error;
+      if (data) {
+        // Sort by Hebrew name
+        const sorted = data.sort((a, b) =>
+          (a.group_name_hebrew || '').localeCompare(b.group_name_hebrew || '', 'he')
+        );
+        setGroups(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading groups:', error);
+      toast.error('שגיאה בטעינת קבוצות');
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
+
+  /**
+   * Handle group selection - load members and collect emails from all members
+   */
+  const handleGroupChange = async (group: ClientGroup | null) => {
+    setSelectedGroup(group);
+
+    if (group) {
+      setIsLoadingContacts(true);
+      try {
+        // Load group with member details
+        const { data: fullGroup, error } = await groupFeeService.getGroupWithMembers(group.id);
+        if (error) throw error;
+
+        if (fullGroup?.clients) {
+          setGroupMembers(fullGroup.clients);
+
+          // Collect emails from ALL group members
+          const allEmails: string[] = [];
+          for (const client of fullGroup.clients) {
+            const emails = await TenantContactService.getClientEmails(client.id, 'important');
+            allEmails.push(...emails);
+          }
+
+          // Remove duplicates
+          const uniqueEmails = [...new Set(allEmails)];
+          setSelectedRecipients(uniqueEmails);
+
+          toast.success(`נטענו ${uniqueEmails.length} נמענים מ-${fullGroup.clients.length} חברות`);
+        }
+      } catch (error) {
+        console.error('Error loading group details:', error);
+        toast.error('שגיאה בטעינת פרטי הקבוצה');
+        setGroupMembers([]);
+        setSelectedRecipients([]);
+      } finally {
+        setIsLoadingContacts(false);
+      }
+    } else {
+      setGroupMembers([]);
+      setSelectedRecipients([]);
     }
   };
 
@@ -336,6 +424,19 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
+   * Get recipient name based on current mode
+   */
+  const getRecipientName = (): string => {
+    if (recipientMode === 'group' && selectedGroup) {
+      return selectedGroup.group_name_hebrew || selectedGroup.group_name || '';
+    }
+    if (recipientMode === 'manual') {
+      return manualCompanyName;
+    }
+    return companyName; // client mode
+  };
+
+  /**
    * Calculate discount amounts
    */
   const calculateDiscounts = (original: number) => {
@@ -393,7 +494,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+        company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
@@ -446,7 +547,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+        company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
@@ -537,7 +638,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     try {
       // Build variables
       const variables: Record<string, string | number> = {
-        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+        company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
@@ -782,10 +883,10 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
-   * Handle switching between client mode and manual mode
+   * Handle switching between client, group, and manual modes
    * Shows warning dialog if current mode has data
    */
-  const handleModeSwitch = (newMode: 'client' | 'manual') => {
+  const handleModeSwitch = (newMode: 'client' | 'group' | 'manual') => {
     // If already in target mode, do nothing
     if (recipientMode === newMode) return;
 
@@ -793,18 +894,24 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     const hasClientData =
       selectedClient !== null ||
       companyName.trim() !== '' ||
-      selectedRecipients.length > 0 ||
+      (recipientMode === 'client' && selectedRecipients.length > 0) ||
       customHeaderLines.length > 0;
+
+    const hasGroupData =
+      selectedGroup !== null ||
+      (recipientMode === 'group' && selectedRecipients.length > 0);
 
     const hasManualData =
       manualCompanyName.trim() !== '' ||
       manualEmails.trim() !== '' ||
+      (recipientMode === 'manual' && selectedRecipients.length > 0) ||
       manualCustomHeaderLines.length > 0;
 
     // Show warning if switching away from mode with data
     const shouldWarn =
-      (recipientMode === 'client' && hasClientData && newMode === 'manual') ||
-      (recipientMode === 'manual' && hasManualData && newMode === 'client');
+      (recipientMode === 'client' && hasClientData) ||
+      (recipientMode === 'group' && hasGroupData) ||
+      (recipientMode === 'manual' && hasManualData);
 
     if (shouldWarn) {
       setPendingMode(newMode);
@@ -832,14 +939,20 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setSelectedRecipients([]);
       setClientContacts([]);
       setWhatsappPhone('');
+    } else if (recipientMode === 'group') {
+      // Clearing group mode data
+      setSelectedGroup(null);
+      setGroupMembers([]);
+      setSelectedRecipients([]);
     } else {
       // Clearing manual mode data
       setManualCompanyName('');
       setManualCommercialName('');
-      setTaggedClientId(null); // ⭐ Clear client tagging
+      setTaggedClientId(null);
       setManualShowCommercialName(false);
       setManualCustomHeaderLines([]);
       setManualEmails('');
+      setSelectedRecipients([]);
     }
 
     // Switch to new mode
@@ -919,13 +1032,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       return;
     }
 
-    // Validate recipient info (either client OR manual company name)
+    // Validate recipient info based on mode
     if (recipientMode === 'manual' && !manualCompanyName.trim()) {
       toast.error('נא להזין שם נמען');
       return;
     }
     if (recipientMode === 'client' && !selectedClient?.id) {
       toast.error('נא לבחור לקוח');
+      return;
+    }
+    if (recipientMode === 'group' && !selectedGroup?.id) {
+      toast.error('נא לבחור קבוצה');
       return;
     }
 
@@ -937,7 +1054,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       // Build variables (used for both new and existing letters)
       const variables: Record<string, string | number> = {
-        company_name: recipientMode === 'manual' ? manualCompanyName : companyName,
+        company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
         commercial_name: showCommercialName ? commercialName : ''
       };
@@ -1310,6 +1427,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   const handleUpdateSubjectLineContent = (id: string, content: string) => {
+    // Mark as manually edited if user edits the first subject line
+    const line = subjectLines.find(l => l.id === id);
+    if (line && line.order === 0) {
+      setUserEditedSubjectLine(true);
+    }
+
     setSubjectLines(subjectLines.map(line =>
       line.id === id ? { ...line, content } : line
     ));
@@ -1368,7 +1491,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 <Input
                   id="email_subject"
                   value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    setEmailSubject(newValue);
+
+                    // Copy to subject line as long as user hasn't manually edited it
+                    if (!userEditedSubjectLine) {
+                      setSubjectLines(subjectLines.map(line =>
+                        line.order === 0 ? { ...line, content: newValue } : line
+                      ));
+                    }
+                  }}
                   placeholder="שכר טרחתנו לשנת המס 2026"
                   dir="rtl"
                   required
@@ -1412,27 +1545,27 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
           </div>
 
-          {/* Step 2: Two-Column Layout - Client vs Manual */}
+          {/* Step 2: Three-Column Layout - Client vs Group vs Manual */}
           <div className="space-y-4">
             <Label className="text-right rtl:text-right block text-base font-semibold">
-              2. בחר לקוח מהרשימה או הזן נמען אחר
+              2. בחר לקוח, קבוצה או הזן נמען אחר
             </Label>
 
-            {/* Two-Column Grid */}
-            <div className="grid grid-cols-2 gap-6">
+            {/* Three-Column Grid */}
+            <div className="grid grid-cols-3 gap-4">
 
               {/* RIGHT COLUMN: Client from List */}
               <div
                 onClick={() => handleModeSwitch('client')}
-                className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   recipientMode === 'client'
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-lg font-semibold mb-4 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
-                  <Users className="h-5 w-5" />
-                  לקוח מהרשימה
+                <h3 className="text-base font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
+                  <Building2 className="h-5 w-5" />
+                  לקוח בודד
                 </h3>
 
                 <div className={recipientMode !== 'client' ? 'pointer-events-none' : ''}>
@@ -1491,18 +1624,107 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 </div>
               </div>
 
+              {/* MIDDLE COLUMN: Group Selection */}
+              <div
+                onClick={() => handleModeSwitch('group')}
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  recipientMode === 'group'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300 bg-gray-100 opacity-60'
+                }`}
+              >
+                <h3 className="text-base font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
+                  <Users className="h-5 w-5" />
+                  קבוצה
+                </h3>
+
+                <div className={recipientMode !== 'group' ? 'pointer-events-none' : ''}>
+                  <div className="space-y-4">
+                    {/* Group Selector */}
+                    {isLoadingGroups ? (
+                      <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm text-gray-600">טוען קבוצות...</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <Label className="text-right block mb-2">בחר קבוצה</Label>
+                        <Combobox
+                          options={groups.map((group) => ({
+                            value: group.id,
+                            label: `${group.group_name_hebrew} (${group.member_count || group.clients?.length || 0} חברות)`,
+                          }))}
+                          value={selectedGroup?.id || undefined}
+                          onValueChange={(groupId) => {
+                            const group = groups.find(g => g.id === groupId);
+                            handleGroupChange(group || null);
+                          }}
+                          placeholder="בחר קבוצה מהרשימה..."
+                          searchPlaceholder="חיפוש קבוצה..."
+                          emptyText="לא נמצאה קבוצה"
+                          disabled={recipientMode !== 'group'}
+                        />
+                        {groups.length === 0 && !isLoadingGroups && (
+                          <p className="text-sm text-gray-500 text-right mt-2">
+                            אין קבוצות לקוחות במערכת.{' '}
+                            <a href="/client-groups" className="text-blue-600 hover:underline">
+                              צור קבוצה חדשה
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Group Members Display */}
+                    {selectedGroup && (
+                      <div className="mt-3">
+                        <GroupMembersList
+                          groupId={selectedGroup.id}
+                          compact={true}
+                          showHeader={false}
+                        />
+                      </div>
+                    )}
+
+                    {/* Recipients from group */}
+                    {selectedGroup && selectedRecipients.length > 0 && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <Label className="text-sm font-semibold text-green-900 mb-2 block text-right">
+                          נמענים מהקבוצה ({selectedRecipients.length}):
+                        </Label>
+                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                          {selectedRecipients.slice(0, 10).map((email) => (
+                            <span
+                              key={email}
+                              className="inline-flex items-center bg-white px-2 py-0.5 rounded-full border text-xs"
+                            >
+                              {email}
+                            </span>
+                          ))}
+                          {selectedRecipients.length > 10 && (
+                            <span className="text-xs text-gray-500">
+                              +{selectedRecipients.length - 10} נוספים
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               {/* LEFT COLUMN: Manual Recipient */}
               <div
                 onClick={() => handleModeSwitch('manual')}
-                className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   recipientMode === 'manual'
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-lg font-semibold mb-4 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
+                <h3 className="text-base font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <UserPlus className="h-5 w-5" />
-                  נמען אחר (כללי)
+                  נמען אחר
                 </h3>
 
                 <div className={recipientMode !== 'manual' ? 'pointer-events-none' : ''}>
@@ -1765,7 +1987,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   return (
                     <div
                       key={line.id}
-                      className={`flex items-center gap-2 p-3 bg-white border rounded ${!isFirstLine ? 'pr-20' : ''}`}
+                      className="flex items-center gap-2 p-3 bg-white border rounded"
                     >
                       {/* Move Up/Down Buttons */}
                       <div className="flex flex-col gap-1">
@@ -1798,29 +2020,37 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         <div className="space-y-2">
                           {/* שורה ראשונה עם Label "הנדון:" */}
                           {isFirstLine && (
-                            <div className="flex items-center gap-2">
-                              <Label className="font-bold text-blue-600 text-lg whitespace-nowrap">
-                                הנדון:
-                              </Label>
-                              <Input
-                                value={line.content}
-                                onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
-                                placeholder="הזן נושא המכתב (דוגמה: עדכון שכר טרחה לשנת 2026)"
-                                dir="rtl"
-                                className="flex-1 text-right"
-                              />
+                            <div className="flex flex-col gap-1 flex-1">
+                              <div className="flex items-center gap-2">
+                                <Label className="font-bold text-blue-600 text-lg whitespace-nowrap">
+                                  הנדון:
+                                </Label>
+                                <Input
+                                  value={line.content}
+                                  onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
+                                  placeholder="הזן נושא המכתב (דוגמה: עדכון שכר טרחה לשנת 2026)"
+                                  dir="rtl"
+                                  className="flex-1 text-right"
+                                  maxLength={45}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-400 text-left">{line.content.length}/45</span>
                             </div>
                           )}
 
                           {/* שורות נוספות - ללא Label */}
                           {!isFirstLine && (
-                            <Input
-                              value={line.content}
-                              onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
-                              placeholder="שורה נוספת (תתיישר מתחת לטקסט)"
-                              dir="rtl"
-                              className="text-right"
-                            />
+                            <div className="flex flex-col gap-1 flex-1">
+                              <Input
+                                value={line.content}
+                                onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
+                                placeholder="שורה נוספת (תתיישר מתחת לטקסט)"
+                                dir="rtl"
+                                className="text-right mr-14"
+                                maxLength={45}
+                              />
+                              <span className="text-xs text-gray-400 text-left">{line.content.length}/45</span>
+                            </div>
                           )}
 
                           {/* Formatting Options - Bold & Underline only */}
