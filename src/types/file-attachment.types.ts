@@ -174,18 +174,20 @@ export function generateUniqueFilename(originalName: string): string {
 }
 
 // ===================================
-// File Categories (8 Fixed Categories)
+// File Categories (10 Fixed Categories)
 // ===================================
 
 export type FileCategory =
   | 'company_registry'          // רשם החברות
-  | 'financial_report'          // דוחות כספיים
-  | 'bookkeeping_card'          // כרטיסי הנה"ח
+  | 'financial_report'          // דו"ח כספי מבוקר אחרון
+  | 'bookkeeping_card'          // כרטיסי הנהח"ש אצלנו
   | 'quote_invoice'             // הצעות מחיר / תעודות חיוב
   | 'payment_proof_2026'        // אסמכתאות תשלום 2026
   | 'holdings_presentation'     // מצגת החזקות
   | 'general'                   // כללי
-  | 'foreign_worker_docs';      // אישורי עובדים זרים
+  | 'foreign_worker_docs'       // אישורי עובדים זרים
+  | 'protocols'                 // פרוטוקולים
+  | 'agreements';               // הסכמים
 
 export interface CategoryConfig {
   key: FileCategory;
@@ -198,42 +200,52 @@ export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
   company_registry: {
     key: 'company_registry',
     label: 'רשם החברות',
-    description: 'תעודת רישום חברה, תקנון, פרוטוקולים מאסיפות',
+    description: '',
   },
   financial_report: {
     key: 'financial_report',
-    label: 'דוחות כספיים',
-    description: 'דוח ביקורת שנתי, דוחות כספיים מבוקרים',
+    label: 'דו"ח כספי מבוקר אחרון',
+    description: '',
   },
   bookkeeping_card: {
     key: 'bookkeeping_card',
-    label: 'כרטיסי הנה"ח',
-    description: 'כרטיסי הנהלת חשבונות מפורטים לפי שנת מס',
+    label: 'כרטיסי הנהח"ש אצלנו',
+    description: '',
   },
   quote_invoice: {
     key: 'quote_invoice',
     label: 'הצעות מחיר / תעודות חיוב',
-    description: 'הצעות מחיר, תעודות חיוב, חשבוניות רלוונטיות',
+    description: '',
   },
   payment_proof_2026: {
     key: 'payment_proof_2026',
     label: 'אסמכתאות תשלום 2026',
-    description: 'אישורי העברה בנקאית, קבלות אשראי, צילומי המחאות',
+    description: '',
   },
   holdings_presentation: {
     key: 'holdings_presentation',
     label: 'מצגת החזקות',
-    description: 'מצגות להחזקות, תרשימי מבנה ארגוני, דיאגרמות',
+    description: '',
   },
   general: {
     key: 'general',
     label: 'כללי',
-    description: 'מסמכים נוספים שאינם משויכים לקטגוריה ספציפית',
+    description: '',
   },
   foreign_worker_docs: {
     key: 'foreign_worker_docs',
     label: 'אישורי עובדים זרים',
-    description: 'אישורי מחזור, עובדים ישראלים, דו"ח שכר ומסמכים נוספים לרשות האוכלוסין',
+    description: '',
+  },
+  protocols: {
+    key: 'protocols',
+    label: 'פרוטוקולים',
+    description: '',
+  },
+  agreements: {
+    key: 'agreements',
+    label: 'הסכמים',
+    description: '',
   },
 };
 

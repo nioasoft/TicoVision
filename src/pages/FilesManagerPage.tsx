@@ -130,13 +130,13 @@ export default function FilesManagerPage() {
                       key={cat.key}
                       onClick={() => setSelectedCategory(cat.key as FileCategory)}
                       className={cn(
-                        "w-full text-right px-4 py-3 rounded-lg transition-colors flex items-center gap-2",
+                        "w-full text-right px-4 py-3 rounded-lg transition-colors flex items-center gap-2 bg-yellow-100 text-blue-900",
                         selectedCategory === cat.key
-                          ? "bg-primary text-white font-medium"
-                          : "hover:bg-gray-100 text-gray-700"
+                          ? "border-2 border-blue-900 font-bold"
+                          : "hover:bg-yellow-200 border-2 border-transparent"
                       )}
                     >
-                      <FileText className="h-4 w-4 flex-shrink-0" />
+                      <FileText className="h-4 w-4 flex-shrink-0 text-red-500" />
                       <span className="truncate">{cat.label}</span>
                     </button>
                   ))}

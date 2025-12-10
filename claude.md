@@ -157,16 +157,19 @@ const PAYMENT_DISCOUNTS = {
 
 **Full details**: See Migration 083 docs
 
-## 📁 File Manager (7 Categories)
+## 📁 File Manager (10 Categories)
 | Category | Hebrew |
 |----------|--------|
 | company_registry | רשם החברות |
-| financial_report | דוח כספי מבוקר |
-| bookkeeping_card | כרטיס הנהח"ש |
-| quote_invoice | הצעת מחיר / חיוב |
-| payment_proof_2026 | אסמכתאות תשלום |
+| financial_report | דו"ח כספי מבוקר אחרון |
+| bookkeeping_card | כרטיסי הנהח"ש אצלנו |
+| quote_invoice | הצעות מחיר / תעודות חיוב |
+| payment_proof_2026 | אסמכתאות תשלום 2026 |
 | holdings_presentation | מצגת החזקות |
 | general | כללי |
+| foreign_worker_docs | אישורי עובדים זרים |
+| protocols | פרוטוקולים |
+| agreements | הסכמים |
 
 **Route**: `/files` | **Service**: `file-upload.service.ts`
 

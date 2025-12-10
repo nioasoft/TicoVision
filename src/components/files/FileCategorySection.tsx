@@ -22,7 +22,7 @@ import {
 import { Loader2, Download, Trash2, Edit2, Save, X, FileText, Info } from 'lucide-react';
 import { fileUploadService } from '@/services/file-upload.service';
 import type { ClientAttachment, FileCategory } from '@/types/file-attachment.types';
-import { getCategoryLabel, getCategoryDescription } from '@/types/file-attachment.types';
+import { getCategoryLabel } from '@/types/file-attachment.types';
 import { formatFileSize } from '@/types/file-attachment.types';
 import { toast } from 'sonner';
 
@@ -236,7 +236,6 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
       {/* Category Header */}
       <div className="rtl:text-right">
         <h3 className="text-lg font-semibold rtl:text-right">{getCategoryLabel(category)}</h3>
-        <p className="text-sm text-gray-500 rtl:text-right">{getCategoryDescription(category)}</p>
       </div>
 
       {/* Upload Section */}
