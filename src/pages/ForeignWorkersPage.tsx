@@ -258,7 +258,7 @@ function ForeignWorkersPageContent({
             ...formState.documentData.salaryReport,
             // Add contact info for signature section
             senior_manager_name: clientContacts.primaryContact?.full_name || '______________________',
-            senior_manager_title: clientContacts.primaryContact?.role_at_client || clientContacts.primaryContact?.job_title || '___________________',
+            senior_manager_title: 'מנהל',
             finance_manager_name: clientContacts.accountantManager?.full_name || '______________________',
             finance_manager_title: clientContacts.accountantManager?.job_title || 'מנהלת חשבונות',
           };
@@ -369,7 +369,7 @@ function ForeignWorkersPageContent({
             ...formState.documentData.salaryReport,
             // Add contact info for signature section
             senior_manager_name: clientContacts.primaryContact?.full_name || '______________________',
-            senior_manager_title: clientContacts.primaryContact?.role_at_client || clientContacts.primaryContact?.job_title || '___________________',
+            senior_manager_title: 'מנהל',
             finance_manager_name: clientContacts.accountantManager?.full_name || '______________________',
             finance_manager_title: clientContacts.accountantManager?.job_title || 'מנהלת חשבונות',
           };
