@@ -107,6 +107,53 @@ function ForeignWorkersPageContent({
     }
   });
 
+  // Client contacts for signature section (salary report)
+  const [clientContacts, setClientContacts] = useState<{
+    primaryContact: { full_name: string; job_title?: string; role_at_client?: string } | null;
+    accountantManager: { full_name: string; job_title?: string } | null;
+  }>({ primaryContact: null, accountantManager: null });
+
+  // Fetch client contacts when client changes
+  useEffect(() => {
+    const fetchClientContacts = async () => {
+      if (!selectedClientId) {
+        setClientContacts({ primaryContact: null, accountantManager: null });
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('get_client_contacts_detailed', {
+          p_client_id: selectedClientId
+        });
+
+        if (error) {
+          console.error('Error fetching client contacts:', error);
+          return;
+        }
+
+        const contacts = data || [];
+        const primary = contacts.find((c: { is_primary: boolean }) => c.is_primary);
+        const accountant = contacts.find((c: { contact_type: string }) => c.contact_type === 'accountant_manager');
+
+        setClientContacts({
+          primaryContact: primary ? {
+            full_name: primary.full_name,
+            job_title: primary.job_title,
+            role_at_client: primary.role_at_client
+          } : null,
+          accountantManager: accountant ? {
+            full_name: accountant.full_name,
+            job_title: accountant.job_title
+          } : null
+        });
+      } catch (err) {
+        console.error('Error fetching client contacts:', err);
+      }
+    };
+
+    fetchClientContacts();
+  }, [selectedClientId]);
+
   // Check if shared data is complete
   const isSharedDataComplete =
     selectedClientId &&
@@ -206,7 +253,15 @@ function ForeignWorkersPageContent({
           variables = { ...variables, ...formState.documentData.turnoverApproval };
           break;
         case 'foreign_worker_salary_report':
-          variables = { ...variables, ...formState.documentData.salaryReport };
+          variables = {
+            ...variables,
+            ...formState.documentData.salaryReport,
+            // Add contact info for signature section
+            senior_manager_name: clientContacts.primaryContact?.full_name || '______________________',
+            senior_manager_title: clientContacts.primaryContact?.role_at_client || clientContacts.primaryContact?.job_title || '___________________',
+            finance_manager_name: clientContacts.accountantManager?.full_name || '______________________',
+            finance_manager_title: clientContacts.accountantManager?.job_title || 'מנהלת חשבונות',
+          };
           break;
       }
 
@@ -239,8 +294,10 @@ function ForeignWorkersPageContent({
       }
 
       // Save PDF reference to File Manager under "אישורי עובדים זרים" category
-      // Include worker name in filename for salary reports
-      const workerName = formState.documentData.salaryReport?.workers_data?.[0]?.full_name;
+      // Include worker name in filename ONLY for salary reports (index 4)
+      const workerName = activeTab === 4
+        ? formState.documentData.salaryReport?.workers_data?.[0]?.full_name
+        : undefined;
       const pdfFileName = workerName
         ? `${tab.label}_${workerName}_${formState.sharedData.company_name}.pdf`
         : `${tab.label}_${formState.sharedData.company_name}.pdf`;
@@ -307,7 +364,15 @@ function ForeignWorkersPageContent({
           variables = { ...variables, ...formState.documentData.turnoverApproval };
           break;
         case 'foreign_worker_salary_report':
-          variables = { ...variables, ...formState.documentData.salaryReport };
+          variables = {
+            ...variables,
+            ...formState.documentData.salaryReport,
+            // Add contact info for signature section
+            senior_manager_name: clientContacts.primaryContact?.full_name || '______________________',
+            senior_manager_title: clientContacts.primaryContact?.role_at_client || clientContacts.primaryContact?.job_title || '___________________',
+            finance_manager_name: clientContacts.accountantManager?.full_name || '______________________',
+            finance_manager_title: clientContacts.accountantManager?.job_title || 'מנהלת חשבונות',
+          };
           break;
       }
 

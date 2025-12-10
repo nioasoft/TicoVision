@@ -189,6 +189,14 @@ export interface SalaryReportVariables extends ForeignWorkerSharedData {
 
   /** Array of worker salary data for all workers in the period */
   workers_data: WorkerData[];
+
+  /** Contact info for signature section - Senior Manager (primary contact) */
+  senior_manager_name?: string;
+  senior_manager_title?: string;
+
+  /** Contact info for signature section - Finance Manager (accountant_manager) */
+  finance_manager_name?: string;
+  finance_manager_title?: string;
 }
 
 // ============================================================================
