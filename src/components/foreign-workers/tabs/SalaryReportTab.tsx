@@ -5,7 +5,8 @@ import { MoneyInput } from '@/components/ui/money-input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Combobox } from '@/components/ui/combobox';
-import { RotateCcw, Loader2, CheckCircle2, UserPlus, Save, RefreshCw, Pencil, User } from 'lucide-react';
+import { RotateCcw, Loader2, CheckCircle2, UserPlus, Save, RefreshCw, Pencil, User, Copy } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { toast } from 'sonner';
 import type { SalaryReportVariables, WorkerData } from '@/types/foreign-workers.types';
@@ -261,9 +262,47 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
 
     const current = workerMonths.get(monthKey) || { salary: 0, supplement: 0 };
     workerMonths.set(monthKey, { ...current, [field]: value });
-    
+
     setSalaryData(newSalaryData);
     setHasUnsavedChanges(true);
+  };
+
+  const copyFirstToAllMonths = (field: 'salary' | 'supplement') => {
+    if (!selectedWorkerId || !displayMonths) return;
+
+    // מצא את הערך מהחודש הראשון שיש בו ערך
+    let sourceValue = 0;
+    for (const date of displayMonths) {
+      const monthKey = MonthlyDataService.dateToMonthKey(date);
+      const value = salaryData.get(selectedWorkerId)?.get(monthKey)?.[field] || 0;
+      if (value > 0) {
+        sourceValue = value;
+        break;
+      }
+    }
+
+    if (sourceValue === 0) {
+      toast.error('אין ערך להעתקה');
+      return;
+    }
+
+    // העתק לכל החודשים
+    const newSalaryData = new Map(salaryData);
+    let workerMonths = newSalaryData.get(selectedWorkerId);
+    if (!workerMonths) {
+      workerMonths = new Map();
+      newSalaryData.set(selectedWorkerId, workerMonths);
+    }
+
+    displayMonths.forEach((date) => {
+      const monthKey = MonthlyDataService.dateToMonthKey(date);
+      const current = workerMonths!.get(monthKey) || { salary: 0, supplement: 0 };
+      workerMonths!.set(monthKey, { ...current, [field]: sourceValue });
+    });
+
+    setSalaryData(newSalaryData);
+    setHasUnsavedChanges(true);
+    toast.success(`הערך ${sourceValue.toLocaleString()} הועתק לכל החודשים`);
   };
 
   const handleSave = async (): Promise<boolean> => {
@@ -462,13 +501,52 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                 </h4>
               </div>
 
+              <TooltipProvider>
               <div className="border rounded-md overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
                       <th className="px-4 py-3 text-right font-medium">חודש</th>
-                      <th className="px-4 py-3 text-right font-medium">שכר בסיס (₪)</th>
-                      <th className="px-4 py-3 text-right font-medium">תוספת (₪)</th>
+                      <th className="px-4 py-3 text-right font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>שכר בסיס (₪)</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => copyFirstToAllMonths('salary')}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>העתק לכל החודשים</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </th>
+                      <th className="px-4 py-3 text-right font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>תוספת (₪)</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                onClick={() => copyFirstToAllMonths('supplement')}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>העתק לכל החודשים</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </th>
                       <th className="px-4 py-3 text-center w-20">איפוס</th>
                     </tr>
                   </thead>
@@ -517,6 +595,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                   </tbody>
                 </table>
               </div>
+              </TooltipProvider>
             </div>
           )}
 
