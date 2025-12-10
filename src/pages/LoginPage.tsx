@@ -281,7 +281,6 @@ export function LoginPage() {
                     <Input
                       id="reg-phone"
                       type="tel"
-                      placeholder="050-1234567"
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       disabled={isLoading}

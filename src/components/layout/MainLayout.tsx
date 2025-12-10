@@ -16,7 +16,10 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
-  FolderOpen
+  FolderOpen,
+  Receipt,
+  MailPlus,
+  MessageSquarePlus
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -57,8 +60,8 @@ const navigation: NavigationItem[] = [
     menuKey: 'clients',
     allowedRoles: ['admin', 'bookkeeper', 'client'] as UserRole[],
     submenu: [
-      { name: 'רשימת לקוחות', href: '/clients', menuKey: 'clients:list' },
-      { name: 'ניהול קבוצות', href: '/client-groups', menuKey: 'clients:groups', allowedRoles: ['admin'] as UserRole[] },
+      { name: 'לקוח בודד', href: '/clients', menuKey: 'clients:list' },
+      { name: 'קבוצה', href: '/client-groups', menuKey: 'clients:groups', allowedRoles: ['admin'] as UserRole[] },
     ]
   },
   {
@@ -84,6 +87,9 @@ const navigation: NavigationItem[] = [
     ]
   },
   { name: 'אישורי עובדים זרים', href: '/foreign-workers', icon: FileText, menuKey: 'foreign-workers', allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
+  { name: 'מקדמות מ"ה שוטפות 2026', href: '/tax-advances-2026', icon: Receipt, menuKey: 'tax-advances', allowedRoles: ['admin'] as UserRole[] },
+  { name: 'מכתבים אוטומטיים', href: '/auto-letters', icon: MailPlus, menuKey: 'auto-letters', allowedRoles: ['admin'] as UserRole[] },
+  { name: 'פניות/זירוז/דחיפה', href: '/follow-ups', icon: MessageSquarePlus, menuKey: 'follow-ups', allowedRoles: ['admin'] as UserRole[] },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, menuKey: 'users', allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, menuKey: 'settings', allowedRoles: ['admin'] as UserRole[] },
@@ -239,7 +245,7 @@ export function MainLayout() {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-2">
+            <ul className="space-y-1 divide-y divide-gray-100">
               {/* Super Admin Link */}
               {isSuperAdmin && (
                 <li>
@@ -263,7 +269,7 @@ export function MainLayout() {
               )}
               
               {filteredNavigation.map((item) => (
-                <li key={item.href || item.name}>
+                <li key={item.href || item.name} className="py-1 first:pt-0 last:pb-0">
                   {item.submenu ? (
                     // Navigation item with submenu
                     <Collapsible

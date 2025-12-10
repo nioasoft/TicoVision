@@ -51,10 +51,11 @@ export function Combobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          variant="ghost"
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between rtl:text-right ltr:text-left h-11 rounded-md border border-[hsl(40,80%,85%)] bg-[hsl(45,100%,96%)] px-3 py-2 text-[17px] shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-[hsl(45,95%,50%)] focus:ring-offset-2",
+            "w-full justify-between rtl:text-right ltr:text-left h-11 rounded-md border border-[hsl(40,80%,85%)] bg-[hsl(45,100%,96%)] px-3 py-2 text-[17px] shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-[hsl(45,95%,50%)] focus:ring-offset-2 hover:bg-[hsl(45,100%,94%)]",
             value ? "text-foreground" : "text-muted-foreground",
             className
           )}

@@ -44,6 +44,7 @@ import { useClients } from '@/hooks/useClients';
 import { ContactsManager } from '@/components/ContactsManager';
 import TenantContactService from '@/services/tenant-contact.service';
 import type { AssignedGroupContact, CreateTenantContactDto } from '@/types/tenant-contact.types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ClientGroupsPage() {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
@@ -71,6 +72,8 @@ export default function ClientGroupsPage() {
   const [isCheckingGroupName, setIsCheckingGroupName] = useState(false);
   const groupNameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
 
   // Use clients hook for contact management in edit dialog
   const {
@@ -327,6 +330,19 @@ export default function ClientGroupsPage() {
     if (!selectedGroup) return;
 
     try {
+      // Check if trying to add as primary when there's already a primary
+      if (contactData.is_primary) {
+        const existingPrimary = groupContacts.find(c => c.is_primary);
+        if (existingPrimary) {
+          toast({
+            title: 'לא ניתן להגדיר כבעל שליטה ראשי',
+            description: `${existingPrimary.full_name} כבר מוגדר כבעל שליטה ראשי. יש להסיר אותו קודם או להוסיף את איש הקשר החדש ללא סימון כראשי.`,
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
       // Create or get contact
       const contact = await TenantContactService.createOrGet(contactData);
       if (!contact) {
@@ -439,10 +455,20 @@ export default function ClientGroupsPage() {
     try {
       await TenantContactService.setGroupPrimary(assignmentId);
 
-      // Reload contacts
+      // Reload contacts and update group's primary_owner field
       if (selectedGroup) {
         const updatedContacts = await TenantContactService.getGroupContacts(selectedGroup.id);
         setGroupContacts(updatedContacts);
+
+        // Find the new primary and update the group record
+        const newPrimary = updatedContacts.find(c => c.is_primary);
+        if (newPrimary) {
+          await clientService.updateGroup(selectedGroup.id, {
+            primary_owner: newPrimary.full_name,
+          });
+          // Reload groups to reflect the change in the list
+          await loadGroups();
+        }
       }
 
       toast({
@@ -541,15 +567,6 @@ export default function ClientGroupsPage() {
                       </CollapsibleTrigger>
                       
                       <div className="flex items-center gap-4">
-                        <div className="flex gap-2">
-                          {group.combined_billing && (
-                            <Badge variant="outline">חיוב מאוחד</Badge>
-                          )}
-                          {group.combined_letters && (
-                            <Badge variant="outline">מכתבים מאוחדים</Badge>
-                          )}
-                        </div>
-                        
                         <div className="text-sm text-muted-foreground">
                           בעל שליטה: {group.primary_owner}
                         </div>
@@ -561,9 +578,10 @@ export default function ClientGroupsPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => window.open(group.company_structure_link, '_blank')}
-                              title="מבנה החברה"
+                              title="מצגת החזקות"
                             >
                               <Building2 className="h-4 w-4 text-blue-500" />
+                              <span className="mr-1">מצגת החזקות</span>
                             </Button>
                           )}
                           {group.canva_link && (
@@ -571,9 +589,10 @@ export default function ClientGroupsPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => window.open(group.canva_link, '_blank')}
-                              title="קנבה"
+                              title="Canva"
                             >
                               <FileImage className="h-4 w-4 text-purple-500" />
+                              <span className="mr-1">Canva</span>
                             </Button>
                           )}
                         </div>
@@ -587,13 +606,15 @@ export default function ClientGroupsPage() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openDeleteDialog(group)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-500" />
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openDeleteDialog(group)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -725,7 +746,7 @@ export default function ClientGroupsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="company_structure_link">לינק למבנה החברה (אופציונלי)</Label>
+                <Label htmlFor="company_structure_link">לינק למצגת החזקות (אופציונלי)</Label>
                 <Input
                   id="company_structure_link"
                   type="url"
@@ -736,7 +757,7 @@ export default function ClientGroupsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="canva_link">לינק לקנבה (אופציונלי)</Label>
+                <Label htmlFor="canva_link">לינק ל-Canva (אופציונלי)</Label>
                 <Input
                   id="canva_link"
                   type="url"
@@ -748,34 +769,6 @@ export default function ClientGroupsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="combined_billing"
-                  checked={formData.combined_billing}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, combined_billing: checked })
-                  }
-                />
-                <Label htmlFor="combined_billing" className="mr-2">
-                  חיוב מאוחד לקבוצה
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="combined_letters"
-                  checked={formData.combined_letters}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, combined_letters: checked })
-                  }
-                />
-                <Label htmlFor="combined_letters" className="mr-2">
-                  שליחת מכתבים מאוחדת
-                </Label>
-              </div>
-            </div>
-            
             <div>
               <Label htmlFor="notes">הערות</Label>
               <Textarea
@@ -823,7 +816,7 @@ export default function ClientGroupsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit_company_structure_link">לינק למבנה החברה (אופציונלי)</Label>
+                <Label htmlFor="edit_company_structure_link">לינק למצגת החזקות (אופציונלי)</Label>
                 <Input
                   id="edit_company_structure_link"
                   type="url"
@@ -834,7 +827,7 @@ export default function ClientGroupsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit_canva_link">לינק לקנבה (אופציונלי)</Label>
+                <Label htmlFor="edit_canva_link">לינק ל-Canva (אופציונלי)</Label>
                 <Input
                   id="edit_canva_link"
                   type="url"
@@ -846,34 +839,6 @@ export default function ClientGroupsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="edit_combined_billing"
-                  checked={formData.combined_billing}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, combined_billing: checked })
-                  }
-                />
-                <Label htmlFor="edit_combined_billing" className="mr-2">
-                  חיוב מאוחד לקבוצה
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="edit_combined_letters"
-                  checked={formData.combined_letters}
-                  onCheckedChange={(checked) => 
-                    setFormData({ ...formData, combined_letters: checked })
-                  }
-                />
-                <Label htmlFor="edit_combined_letters" className="mr-2">
-                  שליחת מכתבים מאוחדת
-                </Label>
-              </div>
-            </div>
-            
             <div>
               <Label htmlFor="edit_notes">הערות</Label>
               <Textarea

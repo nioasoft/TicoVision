@@ -2408,7 +2408,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       type="tel"
                       value={whatsappPhone}
                       onChange={(e) => setWhatsappPhone(e.target.value)}
-                      placeholder="050-1234567"
                       dir="ltr"
                       className="text-left font-mono text-sm"
                     />

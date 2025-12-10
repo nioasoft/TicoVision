@@ -459,7 +459,6 @@ export function ContactsManager({
                   }
                   required
                   dir="ltr"
-                  placeholder="050-1234567"
                 />
               </div>
               <div>
@@ -474,7 +473,6 @@ export function ContactsManager({
                     setFormData({ ...formData, phone_secondary: e.target.value })
                   }
                   dir="ltr"
-                  placeholder="03-1234567"
                 />
               </div>
             </div>
@@ -632,7 +630,6 @@ export function ContactsManager({
                   }
                   required
                   dir="ltr"
-                  placeholder="050-1234567"
                 />
               </div>
               <div>
@@ -647,7 +644,6 @@ export function ContactsManager({
                     setFormData({ ...formData, phone_secondary: e.target.value })
                   }
                   dir="ltr"
-                  placeholder="03-1234567"
                 />
               </div>
             </div>

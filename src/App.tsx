@@ -33,6 +33,7 @@ const ClientGroupsPage = lazy(() => import('@/pages/ClientGroupsPage'));
 const FilesManagerPage = lazy(() => import('@/pages/FilesManagerPage'));
 const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
 const WelcomePage = lazy(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
+const UnderConstructionPage = lazy(() => import('@/pages/UnderConstructionPage'));
 
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
@@ -217,6 +218,23 @@ function App() {
                       <Route path="/collections/disputes" element={
                         <ErrorBoundary>
                           <DisputesPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Under Construction pages */}
+                      <Route path="/tax-advances-2026" element={
+                        <ErrorBoundary>
+                          <UnderConstructionPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/auto-letters" element={
+                        <ErrorBoundary>
+                          <UnderConstructionPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/follow-ups" element={
+                        <ErrorBoundary>
+                          <UnderConstructionPage />
                         </ErrorBoundary>
                       } />
 

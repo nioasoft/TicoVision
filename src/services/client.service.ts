@@ -1075,25 +1075,34 @@ export class ClientService extends BaseService {
 
   /**
    * Get all contacts for a specific client
+   * Uses the new shared contacts system (tenant_contacts + client_contact_assignments)
    */
   async getClientContacts(clientId: string): Promise<ServiceResponse<ClientContact[]>> {
     try {
-      const tenantId = await this.getTenantId();
+      // Use new system: tenant_contacts + client_contact_assignments
+      const assignedContacts = await TenantContactService.getClientContacts(clientId);
 
-      const { data: contacts, error } = await supabase
-        .from('client_contacts')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('client_id', clientId)
-        .eq('is_active', true)
-        .order('is_primary', { ascending: false })
-        .order('created_at', { ascending: true });
+      // Map AssignedContact to ClientContact format
+      const contacts: ClientContact[] = assignedContacts.map(ac => ({
+        id: ac.id,
+        tenant_id: ac.tenant_id,
+        client_id: clientId,
+        contact_type: ac.contact_type,
+        full_name: ac.full_name,
+        email: ac.email || undefined,
+        phone: ac.phone || undefined,
+        phone_secondary: ac.phone_secondary || undefined,
+        email_preference: ac.email_preference,
+        is_primary: ac.is_primary,
+        is_active: true, // Assignments are active by default
+        notes: ac.assignment_notes || ac.notes || undefined,
+        created_at: ac.created_at,
+        updated_at: ac.updated_at,
+        created_by: ac.created_by || undefined,
+        assignment_id: ac.assignment_id,
+      }));
 
-      if (error) {
-        return { data: null, error: this.handleError(error) };
-      }
-
-      return { data: contacts || [], error: null };
+      return { data: contacts, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }

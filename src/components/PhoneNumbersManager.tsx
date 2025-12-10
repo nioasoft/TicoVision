@@ -238,7 +238,6 @@ export function PhoneNumbersManager({
                 onChange={(e) =>
                   setFormData({ ...formData, phone_number: e.target.value })
                 }
-                placeholder="050-1234567"
                 required
                 dir="ltr"
               />
