@@ -15,6 +15,7 @@ import { useMonthRange } from '@/contexts/MonthRangeContext';
 import { monthlyDataService, MonthlyDataService } from '@/services/monthly-data.service';
 import { MonthRangeInitializer } from '@/components/foreign-workers/shared';
 import { WorkerEditDialog } from '@/components/foreign-workers/WorkerEditDialog';
+import { formatDateWithSlashes } from '@/modules/letters/utils/date-formatter';
 
 interface SalaryReportTabProps {
   value: Partial<SalaryReportVariables>;
@@ -88,12 +89,12 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
   useEffect(() => {
     if (!range || !displayMonths) return;
 
-    // Default dates if no worker selected
+    // Default dates if no worker selected - format as DD/MM/YYYY for Israeli display
     const monthsToReport = displayMonths;
-    const periodStart = monthsToReport[0].toISOString().split('T')[0];
+    const periodStart = formatDateWithSlashes(monthsToReport[0]);
     const lastMonth = monthsToReport[monthsToReport.length - 1];
     const lastDay = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0).getDate();
-    const periodEnd = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const periodEnd = formatDateWithSlashes(new Date(lastMonth.getFullYear(), lastMonth.getMonth(), lastDay));
 
     if (!selectedWorkerId || isCreatingNew) {
       // If no worker selected, pass empty list but valid dates
