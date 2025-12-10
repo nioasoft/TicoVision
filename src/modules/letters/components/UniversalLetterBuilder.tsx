@@ -1563,7 +1563,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-base font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
+                <h3 className="text-lg font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <Building2 className="h-5 w-5" />
                   לקוח בודד
                 </h3>
@@ -1633,7 +1633,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-base font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
+                <h3 className="text-lg font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <Users className="h-5 w-5" />
                   קבוצה
                 </h3>
@@ -1648,7 +1648,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       </div>
                     ) : (
                       <div>
-                        <Label className="text-right block mb-2">בחר קבוצה</Label>
+                        <Label className="text-right block mb-2 text-base">בחר קבוצה</Label>
                         <Combobox
                           options={groups.map((group) => ({
                             value: group.id,
@@ -1722,7 +1722,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     : 'border-gray-300 bg-gray-100 opacity-60'
                 }`}
               >
-                <h3 className="text-base font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
+                <h3 className="text-lg font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <UserPlus className="h-5 w-5" />
                   נמען אחר
                 </h3>
@@ -1731,7 +1731,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   <div className="space-y-4">
                     {/* Manual Company Name */}
                     <div>
-                      <Label htmlFor="manual_company_name" className="text-right block">
+                      <Label htmlFor="manual_company_name" className="text-right block text-base">
                         שם הנמען
                       </Label>
                       <Input
