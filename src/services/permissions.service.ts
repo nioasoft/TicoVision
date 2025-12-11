@@ -53,6 +53,10 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'clients:edit', route: '/clients', label: 'עריכת לקוח', parent: 'clients' },
   { menu: 'clients:delete', route: '/clients', label: 'מחיקת לקוח', parent: 'clients' },
   { menu: 'clients:groups', route: '/client-groups', label: 'ניהול קבוצות', parent: 'clients' },
+  { menu: 'contacts', route: '/contacts', label: 'אנשי קשר', parent: 'clients' },
+  { menu: 'contacts:create', route: '/contacts', label: 'הוספת איש קשר', parent: 'contacts' },
+  { menu: 'contacts:edit', route: '/contacts', label: 'עריכת איש קשר', parent: 'contacts' },
+  { menu: 'contacts:delete', route: '/contacts', label: 'מחיקת איש קשר', parent: 'contacts' },
   { menu: 'fees', route: '/fees/tracking', label: 'שכר טרחה' },
   { menu: 'fees:tracking', route: '/fees/tracking', label: 'מעקב שכר טרחה', parent: 'fees' },
   { menu: 'fees:calculate', route: '/fees/calculate', label: 'חישוב שכר טרחה', parent: 'fees' },
@@ -76,6 +80,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: [
     'dashboard',
     'clients', 'clients:list', 'clients:create', 'clients:edit', 'clients:delete', 'clients:groups',
+    'contacts', 'contacts:create', 'contacts:edit', 'contacts:delete',
     'fees', 'fees:tracking', 'fees:calculate', 'fees:collections',
     'letters', 'letters:templates', 'letters:simulator', 'letters:history',
     'foreign-workers',

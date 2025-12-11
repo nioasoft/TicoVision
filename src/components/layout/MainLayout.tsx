@@ -62,6 +62,7 @@ const navigation: NavigationItem[] = [
     submenu: [
       { name: 'לקוח בודד', href: '/clients', menuKey: 'clients:list' },
       { name: 'קבוצה', href: '/client-groups', menuKey: 'clients:groups', allowedRoles: ['admin'] as UserRole[] },
+      { name: 'אנשי קשר', href: '/contacts', menuKey: 'contacts', allowedRoles: ['admin'] as UserRole[] },
     ]
   },
   {

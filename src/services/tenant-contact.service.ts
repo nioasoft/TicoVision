@@ -22,6 +22,118 @@ import type {
 
 export class TenantContactService {
   /**
+   * Get all contacts for the tenant with pagination and client count
+   */
+  static async getAll(params: {
+    page?: number;
+    pageSize?: number;
+    searchQuery?: string;
+    contactType?: string;
+  } = {}): Promise<{ contacts: ContactSearchResult[]; total: number }> {
+    const { page = 1, pageSize = 20, searchQuery, contactType } = params;
+
+    try {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) {
+        console.warn('⚠️ No tenant_id available');
+        return { contacts: [], total: 0 };
+      }
+
+      // Build query
+      let query = supabase
+        .from('tenant_contacts')
+        .select(`
+          *,
+          client_contact_assignments(id)
+        `, { count: 'exact' })
+        .eq('tenant_id', tenantId)
+        .order('full_name', { ascending: true });
+
+      // Apply search filter
+      if (searchQuery && searchQuery.trim()) {
+        const search = searchQuery.trim();
+        query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%`);
+      }
+
+      // Apply contact type filter
+      if (contactType && contactType !== 'all') {
+        query = query.eq('contact_type', contactType);
+      }
+
+      // Apply pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, count, error } = await query;
+
+      if (error) {
+        console.error('❌ Error fetching contacts:', error);
+        throw error;
+      }
+
+      // Transform to include client_count
+      const contacts: ContactSearchResult[] = (data || []).map((contact: TenantContact & { client_contact_assignments?: { id: string }[] }) => ({
+        ...contact,
+        client_count: contact.client_contact_assignments?.length || 0,
+        client_contact_assignments: undefined, // Remove from result
+      }));
+
+      return {
+        contacts,
+        total: count || 0,
+      };
+    } catch (error) {
+      console.error('💥 Error in getAll:', error);
+      return { contacts: [], total: 0 };
+    }
+  }
+
+  /**
+   * Get a single contact with all client assignments
+   */
+  static async getContactWithAssignments(contactId: string): Promise<{
+    contact: TenantContact;
+    assignments: Array<ClientContactAssignment & { client: { id: string; company_name: string; company_name_hebrew: string | null } }>;
+  } | null> {
+    try {
+      // Get contact
+      const { data: contact, error: contactError } = await supabase
+        .from('tenant_contacts')
+        .select('*')
+        .eq('id', contactId)
+        .single();
+
+      if (contactError || !contact) {
+        console.error('❌ Error fetching contact:', contactError);
+        return null;
+      }
+
+      // Get assignments with client info
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from('client_contact_assignments')
+        .select(`
+          *,
+          client:clients(id, company_name, company_name_hebrew)
+        `)
+        .eq('contact_id', contactId);
+
+      if (assignmentsError) {
+        console.error('❌ Error fetching assignments:', assignmentsError);
+        return null;
+      }
+
+      return {
+        contact,
+        assignments: assignments || [],
+      };
+    } catch (error) {
+      console.error('💥 Error in getContactWithAssignments:', error);
+      return null;
+    }
+  }
+
+  /**
    * Search contacts (autocomplete)
    * Uses database function for optimized search with Hebrew support
    */

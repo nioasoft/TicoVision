@@ -30,6 +30,7 @@ const PaymentPage = lazy(() => import('@/pages/payment-page'));
 const PaymentSuccessPage = lazy(() => import('@/pages/PaymentSuccessPage'));
 const PaymentErrorPage = lazy(() => import('@/pages/PaymentErrorPage'));
 const ClientGroupsPage = lazy(() => import('@/pages/ClientGroupsPage'));
+const ContactsPage = lazy(() => import('@/pages/ContactsPage'));
 const FilesManagerPage = lazy(() => import('@/pages/FilesManagerPage'));
 const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
 const WelcomePage = lazy(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
@@ -157,6 +158,13 @@ function App() {
                       <Route path="/dashboard" element={
                         <ErrorBoundary>
                           <DashboardPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Contacts Management - Admin only */}
+                      <Route path="/contacts" element={
+                        <ErrorBoundary>
+                          <ContactsPage />
                         </ErrorBoundary>
                       } />
 
