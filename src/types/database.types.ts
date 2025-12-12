@@ -804,6 +804,7 @@ export type Database = {
           preferred_language: string | null
           receives_letters: boolean | null
           shareholders: string[] | null
+          signature_path: string | null
           status: string
           tags: string[] | null
           tax_id: string
@@ -850,6 +851,7 @@ export type Database = {
           preferred_language?: string | null
           receives_letters?: boolean | null
           shareholders?: string[] | null
+          signature_path?: string | null
           status?: string
           tags?: string[] | null
           tax_id: string
@@ -896,6 +898,7 @@ export type Database = {
           preferred_language?: string | null
           receives_letters?: boolean | null
           shareholders?: string[] | null
+          signature_path?: string | null
           status?: string
           tags?: string[] | null
           tax_id?: string
@@ -2666,6 +2669,7 @@ export type Database = {
           phone: string | null
           phone_secondary: string | null
           search_vector: unknown
+          signature_path: string | null
           tenant_id: string
           updated_at: string
         }
@@ -2681,6 +2685,7 @@ export type Database = {
           phone?: string | null
           phone_secondary?: string | null
           search_vector?: unknown
+          signature_path?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -2696,6 +2701,7 @@ export type Database = {
           phone?: string | null
           phone_secondary?: string | null
           search_vector?: unknown
+          signature_path?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -3551,6 +3557,7 @@ export type Database = {
           notes: string
           phone: string
           role_at_client: string
+          signature_path: string
         }[]
       }
       get_client_month_range: {
@@ -3676,13 +3683,14 @@ export type Database = {
         Returns: {
           assignment_id: string
           contact_id: string
-          contact_type: string
+          contact_type: Database["public"]["Enums"]["contact_type"]
           created_at: string
           email: string
           full_name: string
           is_primary: boolean
           job_title: string
           notes: string
+          other_groups_count: number
           phone: string
           phone_secondary: string
         }[]
@@ -3919,6 +3927,8 @@ export type Database = {
         | "holdings_presentation"
         | "general"
         | "foreign_worker_docs"
+        | "protocols"
+        | "agreements"
       group_fee_status:
         | "draft"
         | "calculated"
@@ -4096,6 +4106,8 @@ export const Constants = {
         "holdings_presentation",
         "general",
         "foreign_worker_docs",
+        "protocols",
+        "agreements",
       ],
       group_fee_status: [
         "draft",

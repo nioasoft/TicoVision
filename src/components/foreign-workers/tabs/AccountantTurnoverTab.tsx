@@ -163,8 +163,13 @@ export const AccountantTurnoverTab = forwardRef<AccountantTurnoverTabRef, Accoun
     }
   }), [hasUnsavedChanges, branchId, clientId, range, monthData]);
 
-  // Calculate total
-  const totalTurnover = Array.from(monthData.values()).reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
+  // Calculate total - ONLY for displayed months (not all loaded data)
+  const totalTurnover = displayMonths
+    ? displayMonths.reduce((sum, date) => {
+        const val = monthData.get(MonthlyDataService.dateToMonthKey(date));
+        return sum + (typeof val === 'number' ? val : 0);
+      }, 0)
+    : 0;
 
   // If no range exists, show initializer
   if (!isLoadingRange && !range && branchId) {

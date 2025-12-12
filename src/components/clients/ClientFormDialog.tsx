@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { SignatureUpload } from '@/components/SignatureUpload';
 import { ContactsManager } from '@/components/ContactsManager';
 import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
@@ -145,6 +146,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [isCheckingTaxId, setIsCheckingTaxId] = useState(false);
     const taxIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Signature/stamp state
+    const [signaturePath, setSignaturePath] = useState<string | null>(null);
+
     // Memoized city options for Combobox
     // Include the current city value if it's not in the standard list (preserves existing data)
     const cityOptions = useMemo(() => {
@@ -188,6 +192,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           group_id: client.group_id || undefined, // NEW: טעינת קבוצה
           payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
         });
+        // Load signature path
+        setSignaturePath(client.signature_path || null);
         setHasUnsavedChanges(false);
 
         // Load contacts for edit mode
@@ -412,8 +418,31 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       setFormData(INITIAL_FORM_DATA);
       setHasUnsavedChanges(false);
       setShowExitConfirm(false);
+      setSignaturePath(null);
       onClose();
     }, [onClose]);
+
+    // Handle signature upload
+    const handleSignatureUpload = useCallback(async (file: File) => {
+      if (!client?.id) return;
+      const result = await fileUploadService.uploadClientSignature(file, client.id);
+      if (result.data) {
+        setSignaturePath(result.data);
+      } else if (result.error) {
+        throw result.error;
+      }
+    }, [client?.id]);
+
+    // Handle signature delete
+    const handleSignatureDelete = useCallback(async () => {
+      if (!client?.id) return;
+      const result = await fileUploadService.deleteClientSignature(client.id);
+      if (result.data) {
+        setSignaturePath(null);
+      } else if (result.error) {
+        throw result.error;
+      }
+    }, [client?.id]);
 
     // Handle PDF data extraction
     const handlePdfDataExtracted = useCallback((data: ExtractedCompanyData, file: File) => {
@@ -953,6 +982,18 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   dir="rtl"
                 />
               </div>
+
+              {/* Company Stamp - Edit mode only */}
+              {mode === 'edit' && client && (
+                <div className="col-span-3">
+                  <SignatureUpload
+                    currentSignaturePath={signaturePath}
+                    onUpload={handleSignatureUpload}
+                    onDelete={handleSignatureDelete}
+                    label="חותמת החברה"
+                  />
+                </div>
+              )}
 
               {/* File uploads are now managed through the centralized File Manager (/files)
                   This keeps all client documents organized in one place with 7 categories:

@@ -23,8 +23,220 @@ interface ServiceResponse<T> {
 export class FileUploadService extends BaseService {
   private readonly STORAGE_BUCKET = 'client-attachments';
 
+  // Signature upload constants
+  private readonly SIGNATURE_MAX_SIZE = 500 * 1024; // 500KB
+  private readonly SIGNATURE_ALLOWED_TYPE = 'image/png';
+
   constructor() {
     super('client_attachments');
+  }
+
+  // ===================================
+  // Signature Upload Methods
+  // ===================================
+
+  /**
+   * Validate signature file (PNG only, max 500KB)
+   */
+  private validateSignatureFile(file: File): { valid: boolean; error?: string } {
+    if (file.type !== this.SIGNATURE_ALLOWED_TYPE) {
+      return { valid: false, error: 'יש להעלות קובץ PNG בלבד' };
+    }
+    if (file.size > this.SIGNATURE_MAX_SIZE) {
+      const sizeKB = Math.round(file.size / 1024);
+      return { valid: false, error: `הקובץ גדול מדי (${sizeKB}KB). מקסימום: 500KB` };
+    }
+    return { valid: true };
+  }
+
+  /**
+   * Upload signature for a contact
+   */
+  async uploadContactSignature(
+    file: File,
+    contactId: string
+  ): Promise<ServiceResponse<string>> {
+    try {
+      const validation = this.validateSignatureFile(file);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+
+      const tenantId = await this.getTenantId();
+      const timestamp = Date.now();
+      const storagePath = `${tenantId}/signatures/contacts/${contactId}/signature-${timestamp}.png`;
+
+      // Get existing signature path to delete old file
+      const { data: contact } = await supabase
+        .from('tenant_contacts')
+        .select('signature_path')
+        .eq('id', contactId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      // Delete old signature if exists
+      if (contact?.signature_path) {
+        await supabase.storage
+          .from(this.STORAGE_BUCKET)
+          .remove([contact.signature_path]);
+      }
+
+      // Upload new signature
+      const { error: uploadError } = await supabase.storage
+        .from(this.STORAGE_BUCKET)
+        .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      // Update database
+      const { error: dbError } = await supabase
+        .from('tenant_contacts')
+        .update({ signature_path: storagePath })
+        .eq('id', contactId)
+        .eq('tenant_id', tenantId);
+
+      if (dbError) {
+        // Rollback: delete uploaded file
+        await supabase.storage.from(this.STORAGE_BUCKET).remove([storagePath]);
+        throw dbError;
+      }
+
+      await this.logAction('upload_contact_signature', contactId);
+      return { data: storagePath, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Upload signature/stamp for a client
+   */
+  async uploadClientSignature(
+    file: File,
+    clientId: string
+  ): Promise<ServiceResponse<string>> {
+    try {
+      const validation = this.validateSignatureFile(file);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+
+      const tenantId = await this.getTenantId();
+      const timestamp = Date.now();
+      const storagePath = `${tenantId}/signatures/clients/${clientId}/signature-${timestamp}.png`;
+
+      // Get existing signature path to delete old file
+      const { data: client } = await supabase
+        .from('clients')
+        .select('signature_path')
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      // Delete old signature if exists
+      if (client?.signature_path) {
+        await supabase.storage
+          .from(this.STORAGE_BUCKET)
+          .remove([client.signature_path]);
+      }
+
+      // Upload new signature
+      const { error: uploadError } = await supabase.storage
+        .from(this.STORAGE_BUCKET)
+        .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      // Update database
+      const { error: dbError } = await supabase
+        .from('clients')
+        .update({ signature_path: storagePath })
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId);
+
+      if (dbError) {
+        // Rollback: delete uploaded file
+        await supabase.storage.from(this.STORAGE_BUCKET).remove([storagePath]);
+        throw dbError;
+      }
+
+      await this.logAction('upload_client_signature', clientId);
+      return { data: storagePath, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Delete signature for a contact
+   */
+  async deleteContactSignature(contactId: string): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get current path
+      const { data: contact } = await supabase
+        .from('tenant_contacts')
+        .select('signature_path')
+        .eq('id', contactId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (contact?.signature_path) {
+        // Delete from storage
+        await supabase.storage
+          .from(this.STORAGE_BUCKET)
+          .remove([contact.signature_path]);
+
+        // Update database
+        await supabase
+          .from('tenant_contacts')
+          .update({ signature_path: null })
+          .eq('id', contactId)
+          .eq('tenant_id', tenantId);
+      }
+
+      await this.logAction('delete_contact_signature', contactId);
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Delete signature/stamp for a client
+   */
+  async deleteClientSignature(clientId: string): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get current path
+      const { data: client } = await supabase
+        .from('clients')
+        .select('signature_path')
+        .eq('id', clientId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (client?.signature_path) {
+        // Delete from storage
+        await supabase.storage
+          .from(this.STORAGE_BUCKET)
+          .remove([client.signature_path]);
+
+        // Update database
+        await supabase
+          .from('clients')
+          .update({ signature_path: null })
+          .eq('id', clientId)
+          .eq('tenant_id', tenantId);
+      }
+
+      await this.logAction('delete_client_signature', clientId);
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
   }
 
   /**
@@ -438,6 +650,50 @@ export class FileUploadService extends BaseService {
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }
+  }
+
+  /**
+   * Get signature as base64 data URI for PDF embedding
+   * Returns null if signature doesn't exist or path is empty
+   */
+  async getSignatureAsBase64(storagePath: string | null): Promise<ServiceResponse<string | null>> {
+    if (!storagePath) {
+      return { data: null, error: null };
+    }
+
+    try {
+      // Get signed URL first
+      const urlResult = await this.getFileUrl(storagePath);
+      if (urlResult.error || !urlResult.data) {
+        return { data: null, error: urlResult.error };
+      }
+
+      // Fetch image and convert to base64
+      const response = await fetch(urlResult.data);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch signature: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const base64 = await this.blobToBase64(blob);
+
+      return { data: base64, error: null };
+    } catch (error) {
+      console.error('Error converting signature to base64:', error);
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Convert Blob to base64 data URI
+   */
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
   /**

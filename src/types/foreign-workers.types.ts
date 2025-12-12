@@ -197,6 +197,11 @@ export interface SalaryReportVariables extends ForeignWorkerSharedData {
   /** Contact info for signature section - Finance Manager (accountant_manager) */
   finance_manager_name?: string;
   finance_manager_title?: string;
+
+  /** Signature base64 data URIs for PDF embedding */
+  senior_manager_signature?: string;
+  finance_manager_signature?: string;
+  company_stamp_signature?: string;
 }
 
 // ============================================================================

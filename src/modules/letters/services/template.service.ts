@@ -1527,7 +1527,7 @@ export class TemplateService extends BaseService {
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
         <!-- Subject line -->
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">${linesHtml}</div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 21px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">${linesHtml}</div>
     </td>
 </tr>`;
   }
@@ -1804,7 +1804,10 @@ export class TemplateService extends BaseService {
         'israeli_workers_rows',        // Israeli workers table
         'scenario_content',            // Turnover approval scenarios
         'workers_data_rows',           // Salary report table
-        'recipient'                    // Recipient address (with <b>, <u> tags)
+        'recipient',                   // Recipient address (with <b>, <u> tags)
+        'senior_manager_signature_display',   // Senior manager signature image
+        'finance_manager_signature_display',  // Finance manager signature image
+        'company_stamp_display'               // Company stamp signature image
       ];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
@@ -1932,6 +1935,19 @@ export class TemplateService extends BaseService {
         processed.workers_data_rows = this.buildWorkersDataRows(
           (variables as SalaryReportVariables).workers_data
         );
+        // Process signature display HTML - show image if exists, empty space if not
+        // Use max-height to preserve aspect ratio, width:auto to scale proportionally
+        // max-width set to 100% to fit container, or use larger value for flexibility
+        const salaryVars = variables as SalaryReportVariables;
+        processed.senior_manager_signature_display = salaryVars.senior_manager_signature
+          ? `<img src="${salaryVars.senior_manager_signature}" style="max-height: 50px; max-width: 100%; width: auto; height: auto;" alt="חתימה" />`
+          : '';
+        processed.finance_manager_signature_display = salaryVars.finance_manager_signature
+          ? `<img src="${salaryVars.finance_manager_signature}" style="max-height: 50px; max-width: 100%; width: auto; height: auto;" alt="חתימה" />`
+          : '';
+        processed.company_stamp_display = salaryVars.company_stamp_signature
+          ? `<img src="${salaryVars.company_stamp_signature}" style="max-height: 60px; max-width: 100%; width: auto; height: auto;" alt="חותמת" />`
+          : '';
         break;
 
       // living_business doesn't need dynamic content

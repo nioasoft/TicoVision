@@ -2031,10 +2031,10 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                   placeholder="הזן נושא המכתב (דוגמה: עדכון שכר טרחה לשנת 2026)"
                                   dir="rtl"
                                   className="flex-1 text-right"
-                                  maxLength={45}
+                                  maxLength={70}
                                 />
                               </div>
-                              <span className="text-xs text-gray-400 text-left">{line.content.length}/45</span>
+                              <span className="text-xs text-gray-400 text-left">{line.content.length}/70</span>
                             </div>
                           )}
 
@@ -2047,9 +2047,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                 placeholder="שורה נוספת (תתיישר מתחת לטקסט)"
                                 dir="rtl"
                                 className="text-right mr-14"
-                                maxLength={45}
+                                maxLength={70}
                               />
-                              <span className="text-xs text-gray-400 text-left">{line.content.length}/45</span>
+                              <span className="text-xs text-gray-400 text-left">{line.content.length}/70</span>
                             </div>
                           )}
 

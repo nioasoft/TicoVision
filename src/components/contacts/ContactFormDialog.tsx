@@ -5,6 +5,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Unlink, Check, X } from 'lucide-react';
+import { SignatureUpload } from '@/components/SignatureUpload';
+import { fileUploadService } from '@/services/file-upload.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -119,6 +121,9 @@ export function ContactFormDialog({
   const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
   const [editingRoleValue, setEditingRoleValue] = useState('');
 
+  // Signature state
+  const [signaturePath, setSignaturePath] = useState<string | null>(null);
+
   // Load contact data when editing
   useEffect(() => {
     if (mode === 'edit' && contact) {
@@ -131,12 +136,15 @@ export function ContactFormDialog({
         contact_type: contact.contact_type || 'other',
         notes: contact.notes || '',
       });
+      // Load signature path from contact details
+      setSignaturePath(contactDetails?.contact?.signature_path || null);
       setHasUnsavedChanges(false);
     } else if (mode === 'add') {
       setFormData(INITIAL_FORM_DATA);
+      setSignaturePath(null);
       setHasUnsavedChanges(false);
     }
-  }, [mode, contact, open]);
+  }, [mode, contact, contactDetails, open]);
 
   // Handle form field change
   const handleFieldChange = useCallback((field: keyof FormData, value: string) => {
@@ -218,6 +226,28 @@ export function ContactFormDialog({
     setEditingRoleId(null);
     setEditingRoleValue('');
   }, []);
+
+  // Handle signature upload
+  const handleSignatureUpload = useCallback(async (file: File) => {
+    if (!contact?.id) return;
+    const result = await fileUploadService.uploadContactSignature(file, contact.id);
+    if (result.data) {
+      setSignaturePath(result.data);
+    } else if (result.error) {
+      throw result.error;
+    }
+  }, [contact?.id]);
+
+  // Handle signature delete
+  const handleSignatureDelete = useCallback(async () => {
+    if (!contact?.id) return;
+    const result = await fileUploadService.deleteContactSignature(contact.id);
+    if (result.data) {
+      setSignaturePath(null);
+    } else if (result.error) {
+      throw result.error;
+    }
+  }, [contact?.id]);
 
   const isFormValid = formData.full_name.trim().length > 0;
 
@@ -352,6 +382,16 @@ export function ContactFormDialog({
                   rows={3}
                 />
               </div>
+
+              {/* Signature Upload - Edit mode only */}
+              {mode === 'edit' && contact && (
+                <SignatureUpload
+                  currentSignaturePath={signaturePath}
+                  onUpload={handleSignatureUpload}
+                  onDelete={handleSignatureDelete}
+                  label="חתימה"
+                />
+              )}
             </div>
 
             {/* Client Assignments Section (Edit mode only) */}

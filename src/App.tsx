@@ -153,6 +153,30 @@ function App() {
                       } />
                     </Route>
 
+                    {/* Letters routes - accessible based on permissions */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
+                      <Route path="/letters" element={
+                        <ErrorBoundary>
+                          <LettersPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/letter-templates" element={
+                        <ErrorBoundary>
+                          <LetterTemplatesPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/letter-history" element={
+                        <ErrorBoundary>
+                          <LetterHistoryPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/component-simulator" element={
+                        <ErrorBoundary>
+                          <ComponentSimulatorPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+
                     {/* Admin-only routes */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
                       <Route path="/dashboard" element={
@@ -181,26 +205,6 @@ function App() {
                       } />
                       {/* Legacy redirect: /fees → /fees/tracking */}
                       <Route path="/fees" element={<Navigate to="/fees/tracking" replace />} />
-                      <Route path="/letters" element={
-                        <ErrorBoundary>
-                          <LettersPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/letter-templates" element={
-                        <ErrorBoundary>
-                          <LetterTemplatesPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/letter-history" element={
-                        <ErrorBoundary>
-                          <LetterHistoryPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/component-simulator" element={
-                        <ErrorBoundary>
-                          <ComponentSimulatorPage />
-                        </ErrorBoundary>
-                      } />
                       <Route path="/users" element={
                         <ErrorBoundary>
                           <UsersPage />

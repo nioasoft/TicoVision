@@ -123,6 +123,8 @@ serve(async (req) => {
       'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
       'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
       'cid:tico_signature': `${baseUrl}/storage/v1/object/public/${bucket}/tico_signature.png`,
+      // Also map relative paths used by TiptapEditor toolbar
+      '/brand/tico_signature.png': `${baseUrl}/storage/v1/object/public/${bucket}/tico_signature.png`,
     };
 
     // Remove STATIC header/footer from HTML for PDF (they'll be added via displayHeaderFooter)
@@ -177,6 +179,19 @@ serve(async (req) => {
             /* Side margins */
             margin-left: 9mm;
             margin-right: 9mm;
+          }
+          /* Image styling to prevent layout issues */
+          img {
+            display: inline;
+            vertical-align: middle;
+            max-width: 100%;
+          }
+          .inline-block {
+            display: inline !important;
+          }
+          /* Prevent page breaks inside paragraphs */
+          p {
+            break-inside: avoid;
           }
         </style>
       </head>

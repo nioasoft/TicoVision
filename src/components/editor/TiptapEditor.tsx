@@ -6,7 +6,60 @@ import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
-import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import Image from '@tiptap/extension-image';
+
+// Custom Image extension with width/height support and text alignment
+const ResizableImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width'),
+        renderHTML: attributes => {
+          if (!attributes.width) return {};
+          return { width: attributes.width };
+        },
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('height'),
+        renderHTML: attributes => {
+          if (!attributes.height) return {};
+          return { height: attributes.height };
+        },
+      },
+      textAlign: {
+        default: 'right',
+        parseHTML: element => element.getAttribute('data-text-align') || element.style.textAlign || 'right',
+        renderHTML: attributes => {
+          if (!attributes.textAlign) return {};
+          return { 'data-text-align': attributes.textAlign };
+        },
+      },
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          const styles: string[] = ['display: block'];
+          if (attributes.width) styles.push(`width: ${attributes.width}px`);
+          if (attributes.height) styles.push(`height: ${attributes.height}px`);
+          // Apply text alignment as margin for block images
+          if (attributes.textAlign === 'center') {
+            styles.push('margin-left: auto', 'margin-right: auto');
+          } else if (attributes.textAlign === 'left') {
+            styles.push('margin-left: 0', 'margin-right: auto');
+          } else {
+            // right (default for RTL)
+            styles.push('margin-left: auto', 'margin-right: 0');
+          }
+          return { style: styles.join('; ') };
+        },
+      },
+    };
+  },
+});
+import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight, Stamp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
@@ -94,7 +147,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       strike: false, // Disable strike (we don't use it, reduces extensions)
     }),
     TextAlign.configure({
-      types: ['paragraph'], // Only apply to paragraphs - headings conflict with Heading extension
+      types: ['paragraph', 'image'], // Apply to paragraphs and images
       alignments: ['left', 'center', 'right'],
       defaultAlignment: 'right', // RTL default
     }),
@@ -107,6 +160,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     BlueBullet,
     DarkRedBullet,
     BlackBullet,
+    ResizableImage.configure({
+      inline: false, // Block-level for text alignment to work
+      allowBase64: false,
+      HTMLAttributes: {
+        style: 'display: block;',
+      },
+    }),
   ], []); // Empty dependency array - extensions never change
 
   const editor = useEditor({
@@ -301,6 +361,24 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             title="קו מפריד אופקי"
           >
             <Minus className="h-4 w-4" />
+          </Button>
+
+          {/* Tico Signature/Stamp */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              editor.chain().focus().setImage({
+                src: '/brand/tico_signature.png',
+                alt: 'חתימת תיקו',
+                width: '88',
+                height: '39',
+              }).run();
+            }}
+            title="הוסף חתימת תיקו"
+          >
+            <Stamp className="h-4 w-4" />
           </Button>
 
           {/* Add period at end of each line (preserves formatting) */}

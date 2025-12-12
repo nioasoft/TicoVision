@@ -109,29 +109,31 @@ function ForeignWorkersPageContent({
 
   // Client contacts for signature section (salary report)
   const [clientContacts, setClientContacts] = useState<{
-    primaryContact: { full_name: string; job_title?: string; role_at_client?: string } | null;
-    accountantManager: { full_name: string; job_title?: string } | null;
-  }>({ primaryContact: null, accountantManager: null });
+    primaryContact: { full_name: string; job_title?: string; role_at_client?: string; signature_path?: string | null } | null;
+    accountantManager: { full_name: string; job_title?: string; signature_path?: string | null } | null;
+    clientSignaturePath?: string | null;  // Company stamp from clients table
+  }>({ primaryContact: null, accountantManager: null, clientSignaturePath: null });
 
   // Fetch client contacts when client changes
   useEffect(() => {
     const fetchClientContacts = async () => {
       if (!selectedClientId) {
-        setClientContacts({ primaryContact: null, accountantManager: null });
+        setClientContacts({ primaryContact: null, accountantManager: null, clientSignaturePath: null });
         return;
       }
 
       try {
-        const { data, error } = await supabase.rpc('get_client_contacts_detailed', {
-          p_client_id: selectedClientId
-        });
+        // Fetch contacts and client signature in parallel
+        const [contactsResult, clientResult] = await Promise.all([
+          supabase.rpc('get_client_contacts_detailed', { p_client_id: selectedClientId }),
+          supabase.from('clients').select('signature_path').eq('id', selectedClientId).single()
+        ]);
 
-        if (error) {
-          console.error('Error fetching client contacts:', error);
-          return;
+        if (contactsResult.error) {
+          console.error('Error fetching client contacts:', contactsResult.error);
         }
 
-        const contacts = data || [];
+        const contacts = contactsResult.data || [];
         const primary = contacts.find((c: { is_primary: boolean }) => c.is_primary);
         const accountant = contacts.find((c: { contact_type: string }) => c.contact_type === 'accountant_manager');
 
@@ -139,12 +141,15 @@ function ForeignWorkersPageContent({
           primaryContact: primary ? {
             full_name: primary.full_name,
             job_title: primary.job_title,
-            role_at_client: primary.role_at_client
+            role_at_client: primary.role_at_client,
+            signature_path: primary.signature_path
           } : null,
           accountantManager: accountant ? {
             full_name: accountant.full_name,
-            job_title: accountant.job_title
-          } : null
+            job_title: accountant.job_title,
+            signature_path: accountant.signature_path
+          } : null,
+          clientSignaturePath: clientResult.data?.signature_path || null
         });
       } catch (err) {
         console.error('Error fetching client contacts:', err);
@@ -253,14 +258,30 @@ function ForeignWorkersPageContent({
           variables = { ...variables, ...formState.documentData.turnoverApproval };
           break;
         case 'foreign_worker_salary_report':
+          // Fetch signatures as base64 in parallel
+          const [seniorSigResult, financeSigResult, companySigResult] = await Promise.all([
+            clientContacts.primaryContact?.signature_path
+              ? fileUploadService.getSignatureAsBase64(clientContacts.primaryContact.signature_path)
+              : Promise.resolve({ data: null, error: null }),
+            clientContacts.accountantManager?.signature_path
+              ? fileUploadService.getSignatureAsBase64(clientContacts.accountantManager.signature_path)
+              : Promise.resolve({ data: null, error: null }),
+            clientContacts.clientSignaturePath
+              ? fileUploadService.getSignatureAsBase64(clientContacts.clientSignaturePath)
+              : Promise.resolve({ data: null, error: null })
+          ]);
+
           variables = {
             ...variables,
             ...formState.documentData.salaryReport,
             // Add contact info for signature section
             senior_manager_name: clientContacts.primaryContact?.full_name || '______________________',
             senior_manager_title: 'מנהל',
+            senior_manager_signature: seniorSigResult.data || '',
             finance_manager_name: clientContacts.accountantManager?.full_name || '______________________',
             finance_manager_title: clientContacts.accountantManager?.job_title || 'מנהלת חשבונות',
+            finance_manager_signature: financeSigResult.data || '',
+            company_stamp_signature: companySigResult.data || '',
           };
           break;
       }
@@ -364,14 +385,30 @@ function ForeignWorkersPageContent({
           variables = { ...variables, ...formState.documentData.turnoverApproval };
           break;
         case 'foreign_worker_salary_report':
+          // Fetch signatures as base64 in parallel for preview
+          const [seniorSigPreview, financeSigPreview, companySigPreview] = await Promise.all([
+            clientContacts.primaryContact?.signature_path
+              ? fileUploadService.getSignatureAsBase64(clientContacts.primaryContact.signature_path)
+              : Promise.resolve({ data: null, error: null }),
+            clientContacts.accountantManager?.signature_path
+              ? fileUploadService.getSignatureAsBase64(clientContacts.accountantManager.signature_path)
+              : Promise.resolve({ data: null, error: null }),
+            clientContacts.clientSignaturePath
+              ? fileUploadService.getSignatureAsBase64(clientContacts.clientSignaturePath)
+              : Promise.resolve({ data: null, error: null })
+          ]);
+
           variables = {
             ...variables,
             ...formState.documentData.salaryReport,
             // Add contact info for signature section
             senior_manager_name: clientContacts.primaryContact?.full_name || '______________________',
             senior_manager_title: 'מנהל',
+            senior_manager_signature: seniorSigPreview.data || '',
             finance_manager_name: clientContacts.accountantManager?.full_name || '______________________',
             finance_manager_title: clientContacts.accountantManager?.job_title || 'מנהלת חשבונות',
+            finance_manager_signature: financeSigPreview.data || '',
+            company_stamp_signature: companySigPreview.data || '',
           };
           break;
       }
