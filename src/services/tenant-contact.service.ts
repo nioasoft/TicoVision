@@ -273,8 +273,11 @@ export class TenantContactService {
       }
 
       // Create new contact with tenant_id
+      // Filter out fields that don't belong in tenant_contacts table
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { email_preference, is_primary, ...contactFields } = contactData;
       const contactWithTenant = {
-        ...contactData,
+        ...contactFields,
         tenant_id: tenantId,
       };
 
