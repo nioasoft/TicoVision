@@ -18,7 +18,9 @@ import type {
   UpdateAssignmentDto,
   UpdateGroupAssignmentDto,
   ContactSearchParams,
+  EmailPreference,
 } from '../types/tenant-contact.types';
+import type { ContactType } from './client.service';
 
 export class TenantContactService {
   /**
@@ -474,7 +476,46 @@ export class TenantContactService {
 
       if (error) throw error;
 
-      return data || [];
+      // Map RPC result to AssignedContact format
+      // RPC returns contact_id and assignment_id separately
+      return (data || []).map((row: {
+        contact_id: string;
+        assignment_id: string;
+        full_name: string;
+        email: string | null;
+        phone: string | null;
+        phone_secondary: string | null;
+        contact_type: ContactType;
+        job_title: string | null;
+        is_primary: boolean;
+        email_preference: string;
+        role_at_client: string | null;
+        notes: string | null;
+        assignment_notes: string | null;
+        created_at: string;
+        updated_at: string;
+        created_by: string | null;
+        tenant_id: string;
+      }): AssignedContact => ({
+        id: row.contact_id,
+        tenant_id: row.tenant_id,
+        full_name: row.full_name,
+        email: row.email,
+        phone: row.phone,
+        phone_secondary: row.phone_secondary,
+        contact_type: row.contact_type,
+        job_title: row.job_title,
+        notes: row.notes,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        created_by: row.created_by,
+        assignment_id: row.assignment_id,
+        is_primary: row.is_primary,
+        email_preference: row.email_preference as EmailPreference,
+        role_at_client: row.role_at_client,
+        assignment_notes: row.assignment_notes,
+        other_clients_count: 0, // Not provided by this RPC
+      }));
     } catch (error) {
       console.error('Error getting client contacts:', error);
       return [];

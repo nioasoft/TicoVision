@@ -1319,28 +1319,59 @@ export class ClientService extends BaseService {
   }
 
   /**
-   * Delete a contact (soft delete by setting is_active to false)
+   * Delete a contact assignment (removes contact from client)
+   * Uses the new shared contacts system - deletes the assignment, not the contact itself
+   * The assignmentId parameter is expected to be an assignment_id from client_contact_assignments
    */
-  async deleteContact(contactId: string): Promise<ServiceResponse<void>> {
+  async deleteContact(assignmentId: string): Promise<ServiceResponse<void>> {
     try {
       const tenantId = await this.getTenantId();
 
-      // Get the contact's client_id before deleting
-      const { data: existingContact } = await supabase
+      // 1. Try to get the assignment from the new system
+      const { data: assignment } = await supabase
+        .from('client_contact_assignments')
+        .select(`
+          client_id,
+          contact_id,
+          tenant_contacts!inner(full_name)
+        `)
+        .eq('id', assignmentId)
+        .single();
+
+      if (assignment) {
+        // New system: delete the assignment (unassign from client)
+        const success = await TenantContactService.unassignFromClient(assignmentId);
+
+        if (!success) {
+          return { data: null, error: new Error('Failed to delete contact assignment') };
+        }
+
+        // Log the action
+        const contactName = (assignment.tenant_contacts as { full_name: string })?.full_name || 'Unknown';
+        await this.logAction('delete_contact', assignment.client_id, {
+          contact_id: assignment.contact_id,
+          contact_name: contactName
+        });
+
+        return { data: undefined, error: null };
+      }
+
+      // 2. Fallback: try old client_contacts table for backwards compatibility
+      const { data: oldContact } = await supabase
         .from('client_contacts')
         .select('client_id, full_name')
-        .eq('id', contactId)
+        .eq('id', assignmentId)
         .eq('tenant_id', tenantId)
         .single();
 
-      if (!existingContact) {
+      if (!oldContact) {
         return { data: null, error: new Error('Contact not found') };
       }
 
       const { error } = await supabase
         .from('client_contacts')
         .update({ is_active: false })
-        .eq('id', contactId)
+        .eq('id', assignmentId)
         .eq('tenant_id', tenantId);
 
       if (error) {
@@ -1348,9 +1379,9 @@ export class ClientService extends BaseService {
       }
 
       // Log the action
-      await this.logAction('delete_contact', existingContact.client_id, {
-        contact_id: contactId,
-        contact_name: existingContact.full_name
+      await this.logAction('delete_contact', oldContact.client_id, {
+        contact_id: assignmentId,
+        contact_name: oldContact.full_name
       });
 
       return { data: undefined, error: null };
