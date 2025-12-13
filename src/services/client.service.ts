@@ -852,6 +852,11 @@ export class ClientService extends BaseService {
     company_structure_link?: string; // Link to company structure
     canva_link?: string; // Link to Canva
     notes?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      postal_code?: string;
+    };
   }): Promise<ServiceResponse<ClientGroup>> {
     try {
       const tenantId = await this.getTenantId();
@@ -897,6 +902,11 @@ export class ClientService extends BaseService {
       company_structure_link?: string; // Link to company structure
       canva_link?: string; // Link to Canva
       notes?: string;
+      address?: {
+        street?: string;
+        city?: string;
+        postal_code?: string;
+      };
     }>
   ): Promise<ServiceResponse<ClientGroup>> {
     try {

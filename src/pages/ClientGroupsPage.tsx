@@ -799,7 +799,7 @@ export default function ClientGroupsPage() {
                     label: city,
                   }))}
                   value={formData.address?.city || ''}
-                  onChange={(value) =>
+                  onValueChange={(value) =>
                     setFormData({
                       ...formData,
                       address: { ...formData.address, city: value }
@@ -931,7 +931,7 @@ export default function ClientGroupsPage() {
                     label: city,
                   }))}
                   value={formData.address?.city || ''}
-                  onChange={(value) =>
+                  onValueChange={(value) =>
                     setFormData({
                       ...formData,
                       address: { ...formData.address, city: value }
