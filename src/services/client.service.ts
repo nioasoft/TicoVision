@@ -1127,39 +1127,72 @@ export class ClientService extends BaseService {
 
   /**
    * Add a new contact to a client
+   * Uses the new shared contacts system (tenant_contacts + client_contact_assignments)
    */
   async addContact(clientId: string, data: CreateClientContactDto): Promise<ServiceResponse<ClientContact>> {
     try {
       const tenantId = await this.getTenantId();
 
-      // If this contact is marked as primary, unset other primary contacts for this client
+      // 1. Create or get the contact in tenant_contacts
+      const tenantContact = await TenantContactService.createOrGet({
+        full_name: data.full_name,
+        email: data.email || null,
+        phone: data.phone || null,
+        phone_secondary: data.phone_secondary || null,
+        contact_type: data.contact_type,
+        notes: data.notes || null,
+      });
+
+      if (!tenantContact) {
+        return { data: null, error: new Error('Failed to create or get contact') };
+      }
+
+      // 2. If this contact is marked as primary, unset other primary contacts for this client
       if (data.is_primary) {
         await supabase
-          .from('client_contacts')
+          .from('client_contact_assignments')
           .update({ is_primary: false })
-          .eq('tenant_id', tenantId)
           .eq('client_id', clientId)
           .eq('is_primary', true);
       }
 
-      const { data: contact, error } = await supabase
-        .from('client_contacts')
-        .insert({
-          ...data,
-          tenant_id: tenantId,
-          client_id: clientId,
-        })
-        .select()
-        .single();
+      // 3. Assign the contact to the client
+      const assignment = await TenantContactService.assignToClient({
+        client_id: clientId,
+        contact_id: tenantContact.id,
+        is_primary: data.is_primary ?? false,
+        email_preference: data.email_preference ?? 'all',
+        notes: data.notes || null,
+      });
 
-      if (error) {
-        return { data: null, error: this.handleError(error) };
+      if (!assignment) {
+        return { data: null, error: new Error('Failed to assign contact to client') };
       }
 
-      // Log the action
-      await this.logAction('add_contact', clientId, { contact_id: contact.id, contact_name: data.full_name });
+      // 4. Build the ClientContact response
+      const clientContact: ClientContact = {
+        id: tenantContact.id,
+        tenant_id: tenantId,
+        client_id: clientId,
+        contact_type: tenantContact.contact_type,
+        full_name: tenantContact.full_name,
+        email: tenantContact.email || undefined,
+        phone: tenantContact.phone || undefined,
+        phone_secondary: tenantContact.phone_secondary || undefined,
+        email_preference: assignment.email_preference as EmailPreference,
+        is_primary: assignment.is_primary,
+        is_active: true,
+        notes: data.notes || undefined,
+        created_at: tenantContact.created_at,
+        updated_at: tenantContact.updated_at,
+        created_by: tenantContact.created_by || undefined,
+        assignment_id: assignment.id,
+      };
 
-      return { data: contact, error: null };
+      // Log the action
+      await this.logAction('add_contact', clientId, { contact_id: tenantContact.id, contact_name: data.full_name });
+
+      return { data: clientContact, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
@@ -1167,55 +1200,119 @@ export class ClientService extends BaseService {
 
   /**
    * Update an existing contact
+   * Uses the new shared contacts system (tenant_contacts + client_contact_assignments)
+   * The contactId parameter is expected to be an assignment_id from client_contact_assignments
    */
-  async updateContact(contactId: string, data: UpdateClientContactDto): Promise<ServiceResponse<ClientContact>> {
+  async updateContact(assignmentId: string, data: UpdateClientContactDto): Promise<ServiceResponse<ClientContact>> {
     try {
       const tenantId = await this.getTenantId();
 
-      // Get the contact's client_id and current is_primary status
-      const { data: existingContact } = await supabase
-        .from('client_contacts')
-        .select('client_id, is_primary')
-        .eq('id', contactId)
-        .eq('tenant_id', tenantId)
+      // 1. Get the assignment to find the contact_id and client_id
+      const { data: assignment } = await supabase
+        .from('client_contact_assignments')
+        .select('contact_id, client_id, is_primary')
+        .eq('id', assignmentId)
         .single();
 
-      if (!existingContact) {
-        return { data: null, error: new Error('Contact not found') };
+      if (!assignment) {
+        // Fallback: try old client_contacts table for backwards compatibility
+        const { data: oldContact } = await supabase
+          .from('client_contacts')
+          .select('client_id, is_primary')
+          .eq('id', assignmentId)
+          .eq('tenant_id', tenantId)
+          .single();
+
+        if (oldContact) {
+          // Use old system - filter out phone_secondary which doesn't exist in old table
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { phone_secondary, ...oldData } = data;
+          const { data: contact, error } = await supabase
+            .from('client_contacts')
+            .update(oldData)
+            .eq('id', assignmentId)
+            .eq('tenant_id', tenantId)
+            .select()
+            .single();
+
+          if (error) {
+            return { data: null, error: this.handleError(error) };
+          }
+          return { data: contact, error: null };
+        }
+
+        return { data: null, error: new Error('Contact assignment not found') };
       }
 
-      // If this contact is being set as primary, unset other primary contacts
+      // 2. If this contact is being set as primary, unset other primary contacts
       if (data.is_primary) {
         await supabase
-          .from('client_contacts')
+          .from('client_contact_assignments')
           .update({ is_primary: false })
-          .eq('tenant_id', tenantId)
-          .eq('client_id', existingContact.client_id)
+          .eq('client_id', assignment.client_id)
           .eq('is_primary', true)
-          .neq('id', contactId);
+          .neq('id', assignmentId);
       }
 
-      const { data: contact, error } = await supabase
-        .from('client_contacts')
-        .update(data)
-        .eq('id', contactId)
-        .eq('tenant_id', tenantId)
-        .select()
-        .single();
+      // 3. Update the tenant_contact (contact details)
+      const contactUpdates: Record<string, unknown> = {};
+      if (data.full_name !== undefined) contactUpdates.full_name = data.full_name;
+      if (data.email !== undefined) contactUpdates.email = data.email || null;
+      if (data.phone !== undefined) contactUpdates.phone = data.phone || null;
+      if (data.phone_secondary !== undefined) contactUpdates.phone_secondary = data.phone_secondary || null;
+      if (data.contact_type !== undefined) contactUpdates.contact_type = data.contact_type;
 
-      if (error) {
-        return { data: null, error: this.handleError(error) };
+      if (Object.keys(contactUpdates).length > 0) {
+        await TenantContactService.update(assignment.contact_id, contactUpdates);
       }
+
+      // 4. Update the assignment (assignment-specific details)
+      const assignmentUpdates: Record<string, unknown> = {};
+      if (data.is_primary !== undefined) assignmentUpdates.is_primary = data.is_primary;
+      if (data.email_preference !== undefined) assignmentUpdates.email_preference = data.email_preference;
+      if (data.notes !== undefined) assignmentUpdates.notes = data.notes || null;
+
+      if (Object.keys(assignmentUpdates).length > 0) {
+        await TenantContactService.updateAssignment(assignmentId, assignmentUpdates);
+      }
+
+      // 5. Get the updated contact data
+      const contacts = await TenantContactService.getClientContacts(assignment.client_id);
+      const updatedContact = contacts.find(c => c.assignment_id === assignmentId);
+
+      if (!updatedContact) {
+        return { data: null, error: new Error('Failed to retrieve updated contact') };
+      }
+
+      // 6. Map to ClientContact
+      const clientContact: ClientContact = {
+        id: updatedContact.id,
+        tenant_id: tenantId,
+        client_id: assignment.client_id,
+        contact_type: updatedContact.contact_type,
+        full_name: updatedContact.full_name,
+        email: updatedContact.email || undefined,
+        phone: updatedContact.phone || undefined,
+        phone_secondary: updatedContact.phone_secondary || undefined,
+        email_preference: updatedContact.email_preference,
+        is_primary: updatedContact.is_primary,
+        is_active: true,
+        notes: updatedContact.assignment_notes || updatedContact.notes || undefined,
+        created_at: updatedContact.created_at,
+        updated_at: updatedContact.updated_at,
+        created_by: updatedContact.created_by || undefined,
+        assignment_id: updatedContact.assignment_id,
+      };
 
       // If this is/was a primary contact, sync to client table
-      if (existingContact.is_primary || data.is_primary) {
-        await this.syncPrimaryContactToClient(existingContact.client_id);
+      if (assignment.is_primary || data.is_primary) {
+        await this.syncPrimaryContactToClient(assignment.client_id);
       }
 
       // Log the action
-      await this.logAction('update_contact', existingContact.client_id, { contact_id: contactId });
+      await this.logAction('update_contact', assignment.client_id, { contact_id: assignment.contact_id });
 
-      return { data: contact, error: null };
+      return { data: clientContact, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
