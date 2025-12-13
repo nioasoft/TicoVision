@@ -174,7 +174,7 @@ export function generateUniqueFilename(originalName: string): string {
 }
 
 // ===================================
-// File Categories (10 Fixed Categories)
+// File Categories (11 Fixed Categories)
 // ===================================
 
 export type FileCategory =
@@ -187,7 +187,8 @@ export type FileCategory =
   | 'general'                   // כללי
   | 'foreign_worker_docs'       // אישורי עובדים זרים
   | 'protocols'                 // פרוטוקולים
-  | 'agreements';               // הסכמים
+  | 'agreements'                // הסכמים
+  | 'letters';                  // מכתבים / תכתובות
 
 export interface CategoryConfig {
   key: FileCategory;
@@ -246,6 +247,11 @@ export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
     key: 'agreements',
     label: 'הסכמים',
     description: '',
+  },
+  letters: {
+    key: 'letters',
+    label: 'מכתבים / תכתובות',
+    description: 'מכתבי שכר טרחה ותכתובות עם לקוחות',
   },
 };
 

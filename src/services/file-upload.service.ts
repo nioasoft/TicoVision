@@ -1005,6 +1005,108 @@ export class FileUploadService extends BaseService {
   }
 
   /**
+   * File letter PDF to client/group "letters" category
+   * Links the existing PDF in letter-pdfs bucket to client_attachments
+   * and updates generated_letters with filing info
+   */
+  async fileLetterPdf(params: {
+    letterId: string;
+    clientId: string | null;
+    groupId: string | null;
+    pdfUrl: string;
+    letterSubject: string;
+  }): Promise<ServiceResponse<ClientAttachment>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+
+      if (!userId) {
+        throw new Error('משתמש לא מחובר');
+      }
+
+      // Must have either client or group
+      if (!params.clientId && !params.groupId) {
+        throw new Error('חובה לבחור לקוח או קבוצה לשמירת ה-PDF');
+      }
+
+      // Generate descriptive file name
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
+      const truncatedSubject = params.letterSubject.slice(0, 30).replace(/[^א-תa-zA-Z0-9\s]/g, '').trim();
+      const fileName = `letter-${truncatedSubject}-${dateStr}-${timeStr}.pdf`;
+
+      // Extract storage path from PDF URL
+      // URL format: https://xxx.supabase.co/storage/v1/object/public/letter-pdfs/{tenant_id}/{filename}
+      // Or: letter-pdfs/{tenant_id}/{filename}
+      let storagePath = params.pdfUrl;
+      if (params.pdfUrl.includes('/letter-pdfs/')) {
+        const pathParts = params.pdfUrl.split('/letter-pdfs/');
+        storagePath = 'letter-pdfs/' + pathParts[pathParts.length - 1];
+      }
+
+      // Create database record pointing to the PDF in letter-pdfs bucket
+      const attachmentData: Record<string, unknown> = {
+        tenant_id: tenantId,
+        client_id: params.clientId,
+        group_id: params.groupId,
+        file_name: fileName,
+        file_type: 'application/pdf' as FileType,
+        file_size: 1, // Minimal size - actual size unknown
+        storage_path: storagePath,
+        file_category: 'letters' as FileCategory,
+        description: params.letterSubject.slice(0, 50), // Max 50 chars
+        upload_context: 'client_form' as UploadContext,
+        version: 1,
+        is_latest: true,
+        uploaded_by: userId
+      };
+
+      const { data, error: dbError } = await supabase
+        .from(this.tableName)
+        .insert(attachmentData)
+        .select()
+        .single();
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Update generated_letters with filing info
+      const { error: updateError } = await supabase
+        .from('generated_letters')
+        .update({
+          pdf_filed_at: now.toISOString(),
+          pdf_filed_to_attachment_id: data.id,
+          pdf_file_name: fileName
+        })
+        .eq('id', params.letterId)
+        .eq('tenant_id', tenantId);
+
+      if (updateError) {
+        console.error('Error updating letter with filing info:', updateError);
+        // Don't throw - the file was saved successfully
+      }
+
+      // Log action
+      await this.logAction(
+        'file_letter_pdf',
+        data.id,
+        {
+          letter_id: params.letterId,
+          file_name: fileName,
+          client_id: params.clientId,
+          group_id: params.groupId
+        }
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
    * Get statistics of files per category for a client
    */
   async getCategoryStats(clientId: string): Promise<ServiceResponse<Record<FileCategory, number>>> {
@@ -1032,7 +1134,10 @@ export class FileUploadService extends BaseService {
         payment_proof_2026: 0,
         holdings_presentation: 0,
         general: 0,
-        foreign_worker_docs: 0
+        foreign_worker_docs: 0,
+        protocols: 0,
+        agreements: 0,
+        letters: 0
       };
 
       // Count files per category

@@ -1,52 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PDFDocument } from 'https://esm.sh/pdf-lib@1.17.1';
 import { HEADER_PDF_BASE64 } from './header-image.ts';
 import { FOOTER_PDF_BASE64 } from './footer-image.ts';
 import { BULLET_BLUE_BASE64 } from './bullet-image.ts';
-
-// Helper: Convert base64 data URI to Uint8Array
-function base64ToUint8Array(base64DataUri: string): Uint8Array {
-  const base64 = base64DataUri.split(',')[1];
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-// Post-processing: Add full footer image to the last page only
-async function addFullFooterToLastPage(
-  pdfBytes: ArrayBuffer,
-  footerImageBase64: string
-): Promise<Uint8Array> {
-  // 1. Load PDF
-  const pdfDoc = await PDFDocument.load(pdfBytes);
-  const pages = pdfDoc.getPages();
-  const lastPage = pages[pages.length - 1];
-
-  console.log(`📊 PDF has ${pages.length} pages, adding full footer to last page`);
-
-  // 2. Embed footer image
-  const footerBytes = base64ToUint8Array(footerImageBase64);
-  const footerImage = await pdfDoc.embedPng(footerBytes);
-
-  // 3. Calculate dimensions
-  const { width } = lastPage.getSize();
-  const footerHeight = 51 * 2.83465; // 51mm in points (1mm = 2.83465 points)
-
-  // 4. Draw footer at bottom of last page (covers simple footer)
-  lastPage.drawImage(footerImage, {
-    x: 0,
-    y: 0,
-    width: width,
-    height: footerHeight,
-  });
-
-  // 5. Return modified PDF
-  return await pdfDoc.save();
-}
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -171,10 +127,10 @@ serve(async (req) => {
           }
           @page {
             size: A4;
-            /* Top: Header (34mm) + padding (4mm) = 38mm - reduced for more body space */
-            margin-top: 38mm;
-            /* Bottom: Space for footer - balanced between content space and footer overlap */
-            margin-bottom: 21mm;
+            /* Top: Header (34mm) + padding (6mm) = 40mm */
+            margin-top: 40mm;
+            /* Bottom: Space for full footer on all pages */
+            margin-bottom: 53mm;
             /* Side margins */
             margin-left: 9mm;
             margin-right: 9mm;
@@ -200,10 +156,10 @@ serve(async (req) => {
             break-inside: auto;
           }
 
-          /* Prevent breaks inside table rows - each row stays together */
+          /* Allow table rows to break across pages for proper content flow */
           tr {
-            break-inside: avoid;
-            page-break-inside: avoid;
+            break-inside: auto;
+            page-break-inside: auto;
           }
 
           /* Paragraphs stay together */
@@ -253,16 +209,14 @@ serve(async (req) => {
               </div>
             `,
             footerTemplate: `
-              <div style="width: 100%; font-size: 10px; text-align: center; border-top: 1px solid #333; padding-top: 5px; direction: rtl; background: white; font-family: Arial, sans-serif;">
-                <span>עמוד <span class="pageNumber"></span> מתוך <span class="totalPages"></span></span>
-                <span style="margin: 0 10px;">|</span>
-                <span style="font-weight: bold;">משרד רואי חשבון פרנקו ושות' בע"מ</span>
+              <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
+                <img src="${FOOTER_PDF_BASE64}" style="width: 100%; display: block;" />
               </div>
             `,
             margin: {
-              top: '38mm',    // Header (34mm) + padding (4mm) - reduced for more body space
+              top: '40mm',    // Header (34mm) + padding (6mm)
               right: '0mm',   // No side margins (handled in @page)
-              bottom: '21mm', // Balanced footer space
+              bottom: '53mm', // Full footer on all pages
               left: '0mm'     // No side margins (handled in @page)
             }
           },
@@ -275,19 +229,14 @@ serve(async (req) => {
       throw new Error(`Browserless API error: ${browserlessResponse.status} - ${errorText}`);
     }
 
-    const initialPdfBuffer = await browserlessResponse.arrayBuffer();
-    console.log('Initial PDF generated successfully');
-
-    // 6b. Post-process: Add full footer to last page only
-    console.log('Adding full footer to last page...');
-    const finalPdfBytes = await addFullFooterToLastPage(initialPdfBuffer, FOOTER_PDF_BASE64);
-    console.log('PDF post-processing complete');
+    const pdfBuffer = await browserlessResponse.arrayBuffer();
+    console.log('PDF generated successfully with full footer on all pages');
 
     // 7. Upload PDF to Supabase Storage
     const fileName = `${letterId}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('letter-pdfs') // Correct bucket name (created in migration 091)
-      .upload(fileName, finalPdfBytes, {
+      .upload(fileName, new Uint8Array(pdfBuffer), {
         contentType: 'application/pdf',
         upsert: true
       });
