@@ -30,6 +30,7 @@ import type { AssignedContact } from '@/types/tenant-contact.types';
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 import { groupFeeService, type ClientGroup, type GroupMemberClient } from '@/services/group-fee.service';
 import { GroupMembersList } from '@/components/fees/GroupMembersList';
+import { PdfFilingDialog } from './PdfFilingDialog';
 
 const templateService = new TemplateService();
 const pdfService = new PDFGenerationService();
@@ -145,6 +146,14 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
   // State - WhatsApp
   const [whatsappPhone, setWhatsappPhone] = useState('');
+
+  // State - PDF Filing Dialog
+  const [showPdfFilingDialog, setShowPdfFilingDialog] = useState(false);
+  const [pdfFilingData, setPdfFilingData] = useState<{
+    letterId: string;
+    pdfUrl: string;
+    letterSubject: string;
+  } | null>(null);
 
   // State - Manual email input
   const [manualEmailInput, setManualEmailInput] = useState('');
@@ -619,6 +628,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
           groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
+          recipientEmails: selectedRecipients.length > 0 ? selectedRecipients : null, // ⭐ Save recipients for edit restoration
           variables,
           includesPayment,
           customHeaderLines: headerLinesToSave,
@@ -1198,6 +1208,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       toast.success('PDF מוכן להורדה');
       window.open(urlWithTimestamp, '_blank');
+
+      // Show PDF filing dialog if there's a client or group to save to
+      const hasDestination = selectedClient?.id || taggedClientId || (recipientMode === 'group' && selectedGroup?.id);
+      if (hasDestination && letterId) {
+        setPdfFilingData({
+          letterId,
+          pdfUrl,
+          letterSubject: emailSubject || 'מכתב',
+        });
+        setShowPdfFilingDialog(true);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('שגיאה ביצירת PDF');
@@ -1267,20 +1288,50 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         }
       }
 
-      // Load client if exists
-      if (letter.client_id) {
+      // Restore recipient mode and data based on what was saved
+      if (letter.group_id) {
+        // GROUP MODE: Load group with members
+        setRecipientMode('group');
+        const { data: group, error: groupError } = await groupFeeService.getGroupWithMembers(letter.group_id);
+        if (group && !groupError) {
+          setSelectedGroup(group);
+          // If there were specific recipients selected, restore them
+          if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
+            setSelectedRecipients(letter.recipient_emails);
+          }
+        }
+      } else if (letter.client_id) {
+        // CLIENT MODE: Load client
+        setRecipientMode('client');
         const { data: client } = await clientService.getById(letter.client_id);
         if (client) {
           setSelectedClient(client);
-        }
-      }
 
-      // Load recipients
-      if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
-        if (letter.client_id) {
-          setSelectedRecipients(letter.recipient_emails);
-        } else {
+          // Auto-fill company name fields
+          setCompanyName(client.company_name_hebrew || client.company_name);
+          if (client.commercial_name) {
+             setCommercialName(client.commercial_name);
+          }
+
+          // Restore selected recipients for this client
+          if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
+            setSelectedRecipients(letter.recipient_emails);
+          }
+        }
+      } else {
+        // MANUAL MODE: No client or group - must be manual recipient mode
+        // This handles cases where:
+        // 1. User entered manual recipient name without adding emails
+        // 2. User entered both name and emails
+        setRecipientMode('manual');
+        // Restore company name from variables_used
+        if (letter.variables_used && typeof letter.variables_used === 'object' && 'company_name' in letter.variables_used) {
+          setManualCompanyName(String((letter.variables_used as Record<string, unknown>).company_name) || '');
+        }
+        // Restore recipients if any were saved
+        if (letter.recipient_emails && Array.isArray(letter.recipient_emails) && letter.recipient_emails.length > 0) {
           setManualEmails(letter.recipient_emails.join(', '));
+          setSelectedRecipients(letter.recipient_emails);
         }
       }
 
@@ -2764,6 +2815,24 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* PDF Filing Dialog */}
+      {pdfFilingData && (
+        <PdfFilingDialog
+          open={showPdfFilingDialog}
+          onOpenChange={setShowPdfFilingDialog}
+          letterId={pdfFilingData.letterId}
+          clientId={selectedClient?.id || taggedClientId || null}
+          groupId={recipientMode === 'group' ? selectedGroup?.id || null : null}
+          clientName={selectedClient?.company_name}
+          groupName={selectedGroup?.group_name_hebrew || selectedGroup?.group_name}
+          pdfUrl={pdfFilingData.pdfUrl}
+          letterSubject={pdfFilingData.letterSubject}
+          onSuccess={() => {
+            setPdfFilingData(null);
+          }}
+        />
+      )}
     </div>
   );
 }
