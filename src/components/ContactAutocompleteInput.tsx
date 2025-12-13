@@ -41,8 +41,8 @@ export function ContactAutocompleteInput({
   contactType,
   required = false,
   disabled = false,
-  namePlaceholder = 'שם מלא',
-  emailPlaceholder = 'דוא"ל',
+  namePlaceholder = '',
+  emailPlaceholder = '',
   phonePlaceholder = '',
   phoneSecondaryPlaceholder = '',
 }: ContactAutocompleteInputProps) {

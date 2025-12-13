@@ -326,7 +326,7 @@ export function LoginPage() {
                         <Input
                           id="reg-tax"
                           type="text"
-                          placeholder="123456789"
+                          placeholder=""
                           value={regTaxId}
                           onChange={(e) => setRegTaxId(e.target.value)}
                           disabled={isLoading}

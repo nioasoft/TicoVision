@@ -508,7 +508,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   }}
                   onKeyDown={handleKeyDown}
                   maxLength={11}
-                  placeholder="51-2345678-9"
+                  placeholder=""
                   required
                   dir="ltr"
                   className={taxIdExists ? 'border-red-500' : ''}

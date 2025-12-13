@@ -348,7 +348,7 @@ export function ContactFormDialog({
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleFieldChange('phone', e.target.value)}
-                    placeholder="050-0000000"
+                    placeholder=""
                     dir="ltr"
                     className="text-left"
                   />
@@ -362,7 +362,7 @@ export function ContactFormDialog({
                     id="phone_secondary"
                     value={formData.phone_secondary}
                     onChange={(e) => handleFieldChange('phone_secondary', e.target.value)}
-                    placeholder="050-0000000"
+                    placeholder=""
                     dir="ltr"
                     className="text-left"
                   />
