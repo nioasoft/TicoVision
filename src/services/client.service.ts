@@ -90,6 +90,11 @@ export interface ClientGroup {
   company_structure_link?: string; // Link to company structure (optional)
   canva_link?: string; // Link to Canva (optional)
   notes?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    postal_code?: string;
+  };
   created_at: string;
   updated_at: string;
   created_by?: string;

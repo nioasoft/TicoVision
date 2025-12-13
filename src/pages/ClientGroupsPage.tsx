@@ -45,6 +45,8 @@ import { ContactsManager } from '@/components/ContactsManager';
 import TenantContactService from '@/services/tenant-contact.service';
 import type { AssignedGroupContact, CreateTenantContactDto } from '@/types/tenant-contact.types';
 import { useAuth } from '@/contexts/AuthContext';
+import { Combobox } from '@/components/ui/combobox';
+import { ISRAELI_CITIES_SORTED } from '@/data/israeli-cities';
 
 export default function ClientGroupsPage() {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
@@ -67,6 +69,11 @@ export default function ClientGroupsPage() {
     company_structure_link: '',
     canva_link: '',
     notes: '',
+    address: {
+      street: '',
+      city: '',
+      postal_code: '',
+    },
   });
   const [groupNameExists, setGroupNameExists] = useState(false);
   const [isCheckingGroupName, setIsCheckingGroupName] = useState(false);
@@ -291,6 +298,11 @@ export default function ClientGroupsPage() {
       company_structure_link: '',
       canva_link: '',
       notes: '',
+      address: {
+        street: '',
+        city: '',
+        postal_code: '',
+      },
     });
     setGroupContacts([]);
   };
@@ -309,6 +321,7 @@ export default function ClientGroupsPage() {
       company_structure_link: group.company_structure_link || '',
       canva_link: group.canva_link || '',
       notes: group.notes || '',
+      address: group.address || { street: '', city: '', postal_code: '' },
     });
 
     setIsEditDialogOpen(true);
@@ -761,6 +774,61 @@ export default function ClientGroupsPage() {
               )}
             </div>
 
+            {/* Address Section */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="address_street">רחוב</Label>
+                <Input
+                  id="address_street"
+                  value={formData.address?.street || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, street: e.target.value }
+                    })
+                  }
+                  dir="rtl"
+                  placeholder="שם הרחוב ומספר"
+                />
+              </div>
+              <div>
+                <Label htmlFor="address_city">עיר</Label>
+                <Combobox
+                  options={ISRAELI_CITIES_SORTED.map((city) => ({
+                    value: city,
+                    label: city,
+                  }))}
+                  value={formData.address?.city || ''}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, city: value }
+                    })
+                  }
+                  placeholder="בחר עיר"
+                  searchPlaceholder="חפש עיר..."
+                  emptyText="לא נמצאה עיר"
+                />
+              </div>
+              <div>
+                <Label htmlFor="address_postal_code">מיקוד</Label>
+                <Input
+                  id="address_postal_code"
+                  value={formData.address?.postal_code || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, postal_code: value }
+                    });
+                  }}
+                  maxLength={7}
+                  dir="ltr"
+                  placeholder="1234567"
+                />
+              </div>
+            </div>
+
             <Alert className="bg-blue-50 border-blue-200">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="rtl:text-right mr-2 text-blue-800">
@@ -836,6 +904,61 @@ export default function ClientGroupsPage() {
                 dir="rtl"
                 required
               />
+            </div>
+
+            {/* Address Section */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="edit_address_street">רחוב</Label>
+                <Input
+                  id="edit_address_street"
+                  value={formData.address?.street || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, street: e.target.value }
+                    })
+                  }
+                  dir="rtl"
+                  placeholder="שם הרחוב ומספר"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_address_city">עיר</Label>
+                <Combobox
+                  options={ISRAELI_CITIES_SORTED.map((city) => ({
+                    value: city,
+                    label: city,
+                  }))}
+                  value={formData.address?.city || ''}
+                  onChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, city: value }
+                    })
+                  }
+                  placeholder="בחר עיר"
+                  searchPlaceholder="חפש עיר..."
+                  emptyText="לא נמצאה עיר"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_address_postal_code">מיקוד</Label>
+                <Input
+                  id="edit_address_postal_code"
+                  value={formData.address?.postal_code || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setFormData({
+                      ...formData,
+                      address: { ...formData.address, postal_code: value }
+                    });
+                  }}
+                  maxLength={7}
+                  dir="ltr"
+                  placeholder="1234567"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

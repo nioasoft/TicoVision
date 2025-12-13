@@ -447,6 +447,7 @@ export type Database = {
       }
       client_groups: {
         Row: {
+          address: Json | null
           canva_link: string | null
           combined_billing: boolean | null
           combined_letters: boolean | null
@@ -456,12 +457,13 @@ export type Database = {
           group_name_hebrew: string
           id: string
           notes: string | null
-          primary_owner: string
+          primary_owner: string | null
           secondary_owners: string[] | null
           tenant_id: string
           updated_at: string | null
         }
         Insert: {
+          address?: Json | null
           canva_link?: string | null
           combined_billing?: boolean | null
           combined_letters?: boolean | null
@@ -471,12 +473,13 @@ export type Database = {
           group_name_hebrew: string
           id?: string
           notes?: string | null
-          primary_owner: string
+          primary_owner?: string | null
           secondary_owners?: string[] | null
           tenant_id: string
           updated_at?: string | null
         }
         Update: {
+          address?: Json | null
           canva_link?: string | null
           combined_billing?: boolean | null
           combined_letters?: boolean | null
@@ -486,7 +489,7 @@ export type Database = {
           group_name_hebrew?: string
           id?: string
           notes?: string | null
-          primary_owner?: string
+          primary_owner?: string | null
           secondary_owners?: string[] | null
           tenant_id?: string
           updated_at?: string | null
@@ -973,6 +976,53 @@ export type Database = {
           },
         ]
       }
+      document_permissions: {
+        Row: {
+          allowed_roles: string[]
+          created_at: string | null
+          created_by: string | null
+          denied_roles: string[]
+          id: string
+          permission_scope: string
+          scope_id: string
+          tenant_id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_roles?: string[]
+          created_at?: string | null
+          created_by?: string | null
+          denied_roles?: string[]
+          id?: string
+          permission_scope: string
+          scope_id: string
+          tenant_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_roles?: string[]
+          created_at?: string | null
+          created_by?: string | null
+          denied_roles?: string[]
+          id?: string
+          permission_scope?: string
+          scope_id?: string
+          tenant_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_calculations: {
         Row: {
           actual_payment_id: string | null
@@ -1407,6 +1457,7 @@ export type Database = {
           client_id: string | null
           created_at: string | null
           created_by: string | null
+          document_type_id: string | null
           fee_calculation_id: string | null
           generated_content_html: string
           generated_content_text: string | null
@@ -1440,6 +1491,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          document_type_id?: string | null
           fee_calculation_id?: string | null
           generated_content_html: string
           generated_content_text?: string | null
@@ -1473,6 +1525,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          document_type_id?: string | null
           fee_calculation_id?: string | null
           generated_content_html?: string
           generated_content_text?: string | null
@@ -3331,6 +3384,14 @@ export type Database = {
         Args: { p_actual_amount: number; p_fee_calculation_id: string }
         Returns: Json
       }
+      check_document_permission: {
+        Args: {
+          p_category_id: string
+          p_document_type_id: string
+          p_user_role: string
+        }
+        Returns: boolean
+      }
       check_email_availability: {
         Args: { p_email: string }
         Returns: {
@@ -3897,6 +3958,10 @@ export type Database = {
       }
       user_has_client_access: {
         Args: { p_client_id: string; p_user_id?: string }
+        Returns: boolean
+      }
+      user_has_letters_permission: {
+        Args: { p_tenant_id: string; p_user_id: string }
         Returns: boolean
       }
       validate_israeli_tax_id: { Args: { tax_id: string }; Returns: boolean }
