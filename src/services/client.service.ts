@@ -429,6 +429,60 @@ export class ClientService extends BaseService {
         return { data: null, error: this.handleError(error) };
       }
 
+      // Sync primary contact (owner) using shared contacts system
+      if (data.contact_name && data.contact_email) {
+        try {
+          console.log('📧 Syncing primary contact for client:', client.company_name);
+
+          // Create or find owner in tenant_contacts
+          const owner = await TenantContactService.createOrGet({
+            full_name: data.contact_name,
+            email: data.contact_email,
+            phone: data.contact_phone || null,
+            contact_type: 'owner',
+            job_title: 'איש קשר מהותי',
+          });
+
+          if (owner) {
+            // Check if assignment already exists
+            const existingContacts = await TenantContactService.getClientContacts(client.id);
+            const existingPrimary = existingContacts.find(c => c.is_primary);
+
+            if (existingPrimary) {
+              // Update existing primary contact assignment if contact changed
+              if (existingPrimary.id !== owner.id) {
+                // Remove old primary assignment
+                await TenantContactService.unassignFromClient(existingPrimary.assignment_id);
+                // Create new primary assignment
+                await TenantContactService.assignToClient({
+                  client_id: client.id,
+                  contact_id: owner.id,
+                  is_primary: true,
+                  email_preference: 'all',
+                  role_at_client: 'בעל הבית',
+                });
+                console.log('✅ Primary contact replaced successfully');
+              } else {
+                console.log('✅ Primary contact already assigned, no changes needed');
+              }
+            } else {
+              // No existing primary - create new assignment
+              await TenantContactService.assignToClient({
+                client_id: client.id,
+                contact_id: owner.id,
+                is_primary: true,
+                email_preference: 'all',
+                role_at_client: 'בעל הבית',
+              });
+              console.log('✅ Primary contact assigned successfully');
+            }
+          }
+        } catch (contactError) {
+          console.error('⚠️ Failed to sync primary contact:', contactError);
+          // Don't fail client update if contact sync fails
+        }
+      }
+
       await this.logAction('update_client', id, { changes: data });
 
       return { data: client, error: null };
