@@ -560,40 +560,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Category Header: Primary Contact */}
-              <div className="col-span-3 mt-4 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
-                  איש קשר מהותי (בעל הבית)
-                </h3>
-              </div>
-
-              {/* Row 2: Primary Contact (Owner) with Autocomplete (3 cols) */}
-              <div className="col-span-3">
-                <ContactAutocompleteInput
-                  label=""
-                  nameValue={formData.contact_name}
-                  emailValue={formData.contact_email}
-                  phoneValue={formData.contact_phone}
-                  phoneSecondaryValue={formData.contact_phone_secondary}
-                  onNameChange={(value) => handleFormChange('contact_name', value)}
-                  onEmailChange={(value) => handleFormChange('contact_email', value)}
-                  onPhoneChange={(value) => {
-                    const formatted = formatIsraeliPhone(value);
-                    handleFormChange('contact_phone', formatted);
-                  }}
-                  onPhoneSecondaryChange={(value) => {
-                    const formatted = formatIsraeliLandline(value);
-                    handleFormChange('contact_phone_secondary', formatted);
-                  }}
-                  contactType="owner"
-                  required={true}
-                  namePlaceholder="שם מלא"
-                  emailPlaceholder="דוא״ל"
-                  phonePlaceholder=""
-                  phoneSecondaryPlaceholder=""
-                />
-              </div>
-
               {/* Category Header: Address Details */}
               <div className="col-span-3 mt-4 mb-2">
                 <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
@@ -601,7 +567,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </h3>
               </div>
 
-              {/* Row 3: Address, City, Postal Code (3 cols) */}
+              {/* Row 2: Address, City, Postal Code (3 cols) */}
               <div>
                 <Label htmlFor="address_street" className="text-right block mb-2">
                   כתובת <span className="text-red-500">*</span>
@@ -667,6 +633,40 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     מיקוד ישראלי חייב להכיל 7 ספרות בדיוק
                   </p>
                 )}
+              </div>
+
+              {/* Category Header: Primary Contact */}
+              <div className="col-span-3 mt-4 mb-2">
+                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                  איש קשר מהותי (בעל הבית)
+                </h3>
+              </div>
+
+              {/* Row 3: Primary Contact (Owner) with Autocomplete (3 cols) */}
+              <div className="col-span-3">
+                <ContactAutocompleteInput
+                  label=""
+                  nameValue={formData.contact_name}
+                  emailValue={formData.contact_email}
+                  phoneValue={formData.contact_phone}
+                  phoneSecondaryValue={formData.contact_phone_secondary}
+                  onNameChange={(value) => handleFormChange('contact_name', value)}
+                  onEmailChange={(value) => handleFormChange('contact_email', value)}
+                  onPhoneChange={(value) => {
+                    const formatted = formatIsraeliPhone(value);
+                    handleFormChange('contact_phone', formatted);
+                  }}
+                  onPhoneSecondaryChange={(value) => {
+                    const formatted = formatIsraeliLandline(value);
+                    handleFormChange('contact_phone_secondary', formatted);
+                  }}
+                  contactType="owner"
+                  required={true}
+                  namePlaceholder="שם מלא"
+                  emailPlaceholder="דוא״ל"
+                  phonePlaceholder=""
+                  phoneSecondaryPlaceholder=""
+                />
               </div>
 
               {/* Category Header: Additional Information */}
