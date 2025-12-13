@@ -1358,13 +1358,16 @@ export class TemplateService extends BaseService {
       const currentYear = new Date().getFullYear();
       const nextYear = currentYear + 1;
 
-      const fullVariables: Record<string, string | number> = {
+      const fullVariables: Record<string, string | number | unknown[]> = {
         ...params.variables,
         letter_date: params.variables.letter_date || this.formatIsraeliDate(new Date()),
         year: params.variables.year || nextYear,
         tax_year: params.variables.tax_year || nextYear,
         client_id: params.variables.client_id,
-        fee_id: params.variables.fee_id
+        fee_id: params.variables.fee_id,
+        // Save subjectLines and customHeaderLines for editing
+        subjectLines: params.subjectLines || [],
+        customHeaderLines: params.customHeaderLines || []
       };
 
       // 7. Build full HTML with custom header lines and subject lines
@@ -1563,7 +1566,7 @@ export class TemplateService extends BaseService {
 
       const styles: string[] = [
         'font-family: \'David Libre\', \'Heebo\', \'Assistant\', sans-serif',
-        'font-size: 24px',
+        'font-size: 21px', // Match company_name font size in header.html
         'text-align: right',
         'direction: rtl',
         'margin: 0',

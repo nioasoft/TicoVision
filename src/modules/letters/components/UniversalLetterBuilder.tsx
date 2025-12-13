@@ -89,6 +89,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [companyName, setCompanyName] = useState('');
   const [commercialName, setCommercialName] = useState('');
   const [showCommercialName, setShowCommercialName] = useState(false);
+  const [addressLine, setAddressLine] = useState('');
+  const [showAddress, setShowAddress] = useState(false);
   const [customHeaderLines, setCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
   const [subjectLines, setSubjectLines] = useState<import('../types/letter.types').SubjectLine[]>([
     {
@@ -512,11 +514,24 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         Object.assign(variables, discounts);
       }
 
+      // Build customHeaderLines including address if shown
+      let headerLinesForPreview = [...customHeaderLines];
+      if (showAddress && addressLine) {
+        headerLinesForPreview = headerLinesForPreview.filter(line => line.id !== 'address-line-auto');
+        headerLinesForPreview.push({
+          id: 'address-line-auto',
+          type: 'text' as const,
+          content: addressLine,
+          formatting: { bold: true, color: 'black' as const, underline: false },
+          order: headerLinesForPreview.length
+        });
+      }
+
       const { data, error } = await templateService.previewCustomLetter({
         plainText: letterContent, // Send HTML content
         variables,
         includesPayment,
-        customHeaderLines, // Pass custom header lines to preview
+        customHeaderLines: headerLinesForPreview, // Pass custom header lines to preview
         subjectLines, // Pass subject lines to preview
         isHtml: true // Content is HTML from Tiptap
       });
@@ -558,6 +573,21 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         Object.assign(variables, discounts);
       }
 
+      // Build customHeaderLines including address if shown
+      let headerLinesToSave = [...customHeaderLines];
+      if (showAddress && addressLine) {
+        // Remove existing address line if present
+        headerLinesToSave = headerLinesToSave.filter(line => line.id !== 'address-line-auto');
+        // Add address as header line
+        headerLinesToSave.push({
+          id: 'address-line-auto',
+          type: 'text' as const,
+          content: addressLine,
+          formatting: { bold: true, color: 'black' as const, underline: false },
+          order: headerLinesToSave.length
+        });
+      }
+
       // ✅ CRITICAL: Check if letter already exists (saved before)
       if (savedLetterId) {
         // UPDATE existing letter
@@ -567,7 +597,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           letterId: savedLetterId,
           plainText: letterContent,
           subjectLines,
-          customHeaderLines,
+          customHeaderLines: headerLinesToSave,
           variables,
           includesPayment,
           isHtml: true
@@ -588,7 +618,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
           variables,
           includesPayment,
-          customHeaderLines,
+          customHeaderLines: headerLinesToSave,
           subjectLines,
           subject: emailSubject || 'מכתב חדש',
           isHtml: true,
@@ -654,6 +684,19 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         Object.assign(variables, discounts);
       }
 
+      // Build customHeaderLines including address if shown
+      let headerLinesForEmail = [...customHeaderLines];
+      if (showAddress && addressLine) {
+        headerLinesForEmail = headerLinesForEmail.filter(line => line.id !== 'address-line-auto');
+        headerLinesForEmail.push({
+          id: 'address-line-auto',
+          type: 'text' as const,
+          content: addressLine,
+          formatting: { bold: true, color: 'black' as const, underline: false },
+          order: headerLinesForEmail.length
+        });
+      }
+
       // Get fresh session token for authorization
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -669,7 +712,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           customText: letterContent, // Send HTML content
           variables,
           includesPayment,
-          customHeaderLines, // Pass custom header lines to Edge Function
+          customHeaderLines: headerLinesForEmail, // Pass custom header lines to Edge Function
           subjectLines, // Pass subject lines to Edge Function
           saveAsTemplate: saveAsTemplate ? {
             name: templateName,
@@ -1065,6 +1108,19 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         Object.assign(variables, discounts);
       }
 
+      // Build customHeaderLines including address if shown
+      let headerLinesForPdf = [...customHeaderLines];
+      if (showAddress && addressLine) {
+        headerLinesForPdf = headerLinesForPdf.filter(line => line.id !== 'address-line-auto');
+        headerLinesForPdf.push({
+          id: 'address-line-auto',
+          type: 'text' as const,
+          content: addressLine,
+          formatting: { bold: true, color: 'black' as const, underline: false },
+          order: headerLinesForPdf.length
+        });
+      }
+
       if (!letterId) {
         // ✅ NEW LETTER: Save letter to database
         console.log('✅ Creating new letter for PDF generation');
@@ -1073,7 +1129,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
           variables,
           includesPayment,
-          customHeaderLines,
+          customHeaderLines: headerLinesForPdf,
           subjectLines, // ✅ CRITICAL: Pass subject lines for "הנדון" section
           subject: emailSubject || 'מכתב חדש',
           saveAsTemplate: undefined,
@@ -1096,7 +1152,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           letterId,
           plainText: letterContent,
           subjectLines, // ✅ CRITICAL: Pass updated subject lines
-          customHeaderLines,
+          customHeaderLines: headerLinesForPdf,
           variables,
           includesPayment,
           isHtml: true
@@ -1186,7 +1242,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       // Load custom header lines if saved (variables_used contains customHeaderLines array)
       if (letter.variables_used?.customHeaderLines && Array.isArray(letter.variables_used.customHeaderLines)) {
-        setCustomHeaderLines(letter.variables_used.customHeaderLines);
+        const savedHeaderLines = letter.variables_used.customHeaderLines;
+        // Extract address line if exists
+        const addressLineData = savedHeaderLines.find((line: { id: string }) => line.id === 'address-line-auto');
+        if (addressLineData && addressLineData.content) {
+          setAddressLine(addressLineData.content);
+          setShowAddress(true);
+          // Remove address from customHeaderLines (it's managed separately)
+          setCustomHeaderLines(savedHeaderLines.filter((line: { id: string }) => line.id !== 'address-line-auto'));
+        } else {
+          setCustomHeaderLines(savedHeaderLines);
+        }
       }
 
       // Load client if exists
@@ -1620,6 +1686,50 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         </div>
                       )}
                     </div>
+
+                    {/* Address Line */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="show_address"
+                          checked={showAddress}
+                          onCheckedChange={(checked) => setShowAddress(checked as boolean)}
+                          disabled={recipientMode !== 'client'}
+                        />
+                        <Label htmlFor="show_address" className="text-right cursor-pointer">
+                          הוסף כתובת
+                        </Label>
+                        {selectedClient?.address && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const addr = selectedClient.address;
+                              const formatted = [addr?.street, addr?.city, addr?.postal_code].filter(Boolean).join(', ');
+                              setAddressLine(formatted);
+                              setShowAddress(true);
+                            }}
+                            disabled={recipientMode !== 'client'}
+                          >
+                            הכנס מהלקוח
+                          </Button>
+                        )}
+                      </div>
+
+                      {showAddress && (
+                        <div>
+                          <Input
+                            id="address_line"
+                            value={addressLine}
+                            onChange={(e) => setAddressLine(e.target.value)}
+                            placeholder="רחוב, עיר, מיקוד"
+                            dir="rtl"
+                            disabled={recipientMode !== 'client'}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1683,6 +1793,49 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           compact={true}
                           showHeader={false}
                         />
+                      </div>
+                    )}
+
+                    {/* Group Address Line */}
+                    {selectedGroup && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="show_group_address"
+                            checked={showAddress}
+                            onCheckedChange={(checked) => setShowAddress(checked as boolean)}
+                          />
+                          <Label htmlFor="show_group_address" className="text-right cursor-pointer">
+                            הוסף כתובת
+                          </Label>
+                          {selectedGroup?.address && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const addr = selectedGroup.address;
+                                const formatted = [addr?.street, addr?.city, addr?.postal_code].filter(Boolean).join(', ');
+                                setAddressLine(formatted);
+                                setShowAddress(true);
+                              }}
+                            >
+                              הכנס מהקבוצה
+                            </Button>
+                          )}
+                        </div>
+
+                        {showAddress && (
+                          <div>
+                            <Input
+                              id="group_address_line"
+                              value={addressLine}
+                              onChange={(e) => setAddressLine(e.target.value)}
+                              placeholder="רחוב, עיר, מיקוד"
+                              dir="rtl"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
 
