@@ -288,13 +288,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (!formData.address?.city?.trim()) errors.push('עיר');
 
 
-      // Accountant validation - required fields ONLY in add mode
-      // In edit mode, accountant contact already exists in the system
-      if (mode === 'add') {
-        if (!formData.accountant_name?.trim()) errors.push('שם מנהלת חשבונות');
-        if (!formData.accountant_email?.trim()) errors.push('אימייל מנהלת חשבונות');
-        if (!formData.accountant_phone?.trim()) errors.push('טלפון מנהלת חשבונות');
-      }
+      // Accountant validation - OPTIONAL in add mode
+      // Can be added later via contacts management
+      // (No validation needed - fields are optional)
 
       // Check for duplicate tax_id (only in add mode)
       if (mode === 'add' && taxIdExists) {
@@ -959,8 +955,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       handleFormChange('accountant_phone_secondary', formatted);
                     }}
                     contactType="accountant_manager"
-                    required={true}
-                    namePlaceholder="שם מנהלת חשבונות"
+                    required={false}
+                    namePlaceholder="שם מנהלת חשבונות (אופציונלי)"
                     emailPlaceholder="דוא״ל"
                     phonePlaceholder=""
                     phoneSecondaryPlaceholder=""

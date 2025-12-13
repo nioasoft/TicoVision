@@ -154,10 +154,11 @@ export interface CreateClientDto {
   contact_email: string;
   contact_phone?: string;
   contact_phone_secondary?: string;
-  // Accountant fields (required from client creation)
-  accountant_name: string;
-  accountant_email: string;
-  accountant_phone: string;
+  // Accountant fields (optional - can be added later via contacts management)
+  accountant_name?: string;
+  accountant_email?: string;
+  accountant_phone?: string;
+  accountant_phone_secondary?: string;
   email?: string;
   phone?: string;
   address?: {
@@ -226,16 +227,14 @@ export class ClientService extends BaseService {
         };
       }
 
-      // Validate required fields
+      // Validate required fields (accountant is optional - can be added later)
       const requiredFields: Array<{ key: keyof CreateClientDto | string; label: string }> = [
         { key: 'company_name', label: 'שם החברה' },
         { key: 'commercial_name', label: 'שם מסחרי' },
         { key: 'contact_name', label: 'שם איש קשר' },
         { key: 'contact_email', label: 'אימייל איש קשר' },
         { key: 'contact_phone', label: 'טלפון איש קשר' },
-        { key: 'accountant_name', label: 'שם מנהלת חשבונות' },
-        { key: 'accountant_email', label: 'אימייל מנהלת חשבונות' },
-        { key: 'accountant_phone', label: 'טלפון מנהלת חשבונות' },
+        // Accountant fields are OPTIONAL - can be added later via contacts management
       ];
 
       const missingFields = requiredFields.filter(({ key }) => {
@@ -334,8 +333,9 @@ export class ClientService extends BaseService {
         }
       }
 
-      // Auto-create accountant contact using shared contacts system
-      if (data.accountant_name && data.accountant_email) {
+      // Auto-create accountant contact using shared contacts system (OPTIONAL)
+      // Only create if accountant details are provided
+      if (data.accountant_name?.trim() && data.accountant_email?.trim()) {
         try {
           console.log('📧 Creating accountant contact for client:', client.company_name);
 
@@ -378,6 +378,8 @@ export class ClientService extends BaseService {
           // Don't fail client creation if contact creation fails
           // But log it prominently so we can debug
         }
+      } else {
+        console.log('ℹ️ No accountant contact provided - will be added later via contacts management');
       }
 
       await this.logAction('create_client', client.id, { company_name: data.company_name });
