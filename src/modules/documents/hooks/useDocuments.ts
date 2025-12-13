@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { letterHistoryService, LetterHistoryFilters } from '@/services/letter-history.service';
-import { DocFile, FolderItem } from '../types';
+import { letterHistoryService } from '@/services/letter-history.service';
+import type { LetterHistoryFilters } from '@/services/letter-history.service';
+import type { DocFile, FolderItem } from '../types';
 
 export function useDocuments(currentFolder: FolderItem) {
   const [documents, setDocuments] = useState<DocFile[]>([]);
@@ -69,7 +70,7 @@ export function useDocuments(currentFolder: FolderItem) {
           status,
           type,
           url: letter.pdf_url, // Assuming service returns this or we construct it
-          author: letter.created_by,
+          author: letter.created_by_name || letter.created_by,
           rawLetter: letter
         };
       });

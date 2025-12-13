@@ -1457,6 +1457,7 @@ export type Database = {
           client_id: string | null
           created_at: string | null
           created_by: string | null
+          created_by_name: string | null
           document_type_id: string | null
           fee_calculation_id: string | null
           generated_content_html: string
@@ -1470,6 +1471,9 @@ export type Database = {
           opened_at: string | null
           parent_letter_id: string | null
           payment_link: string | null
+          pdf_file_name: string | null
+          pdf_filed_at: string | null
+          pdf_filed_to_attachment_id: string | null
           pdf_url: string | null
           recipient_emails: Json | null
           rendering_engine: string | null
@@ -1492,6 +1496,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_name?: string | null
           document_type_id?: string | null
           fee_calculation_id?: string | null
           generated_content_html: string
@@ -1505,6 +1510,9 @@ export type Database = {
           opened_at?: string | null
           parent_letter_id?: string | null
           payment_link?: string | null
+          pdf_file_name?: string | null
+          pdf_filed_at?: string | null
+          pdf_filed_to_attachment_id?: string | null
           pdf_url?: string | null
           recipient_emails?: Json | null
           rendering_engine?: string | null
@@ -1527,6 +1535,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_name?: string | null
           document_type_id?: string | null
           fee_calculation_id?: string | null
           generated_content_html?: string
@@ -1540,6 +1549,9 @@ export type Database = {
           opened_at?: string | null
           parent_letter_id?: string | null
           payment_link?: string | null
+          pdf_file_name?: string | null
+          pdf_filed_at?: string | null
+          pdf_filed_to_attachment_id?: string | null
           pdf_url?: string | null
           recipient_emails?: Json | null
           rendering_engine?: string | null
@@ -1583,6 +1595,13 @@ export type Database = {
             columns: ["parent_letter_id"]
             isOneToOne: false
             referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_letters_pdf_filed_to_attachment_id_fkey"
+            columns: ["pdf_filed_to_attachment_id"]
+            isOneToOne: false
+            referencedRelation: "client_attachments"
             referencedColumns: ["id"]
           },
           {
@@ -3617,9 +3636,12 @@ export type Database = {
       get_client_contacts_detailed: {
         Args: { p_client_id: string }
         Returns: {
+          assignment_id: string
+          assignment_notes: string
           contact_id: string
           contact_type: Database["public"]["Enums"]["contact_type"]
           created_at: string
+          created_by: string
           email: string
           email_preference: string
           full_name: string
@@ -3627,8 +3649,11 @@ export type Database = {
           job_title: string
           notes: string
           phone: string
+          phone_secondary: string
           role_at_client: string
           signature_path: string
+          tenant_id: string
+          updated_at: string
         }[]
       }
       get_client_month_range: {
@@ -4004,6 +4029,7 @@ export type Database = {
         | "foreign_worker_docs"
         | "protocols"
         | "agreements"
+        | "letters"
       group_fee_status:
         | "draft"
         | "calculated"
@@ -4183,6 +4209,7 @@ export const Constants = {
         "foreign_worker_docs",
         "protocols",
         "agreements",
+        "letters",
       ],
       group_fee_status: [
         "draft",

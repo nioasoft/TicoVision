@@ -235,7 +235,8 @@ export class TemplateService extends BaseService {
           generated_content_text: plainText,
           payment_link: variables.payment_link,
           created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();
@@ -532,6 +533,24 @@ export class TemplateService extends BaseService {
             .tagline-desktop { display: none !important; }
             .tagline-mobile { display: inline !important; }
         }
+
+        /* Specific styles for User Generated Tables (inside letter body) */
+        .letter-body-content table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin-bottom: 1em !important;
+        }
+        .letter-body-content table td, 
+        .letter-body-content table th {
+            border: 1px solid black !important;
+            padding: 5px !important;
+            vertical-align: top !important;
+        }
+        /* Header cells in user tables */
+        .letter-body-content table th {
+            background-color: #f3f4f6 !important; /* Light gray for headers */
+            font-weight: bold !important;
+        }
     </style>
 </head>
 <body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;">
@@ -542,11 +561,23 @@ export class TemplateService extends BaseService {
                     <!-- HEADER START -->
                     ${headerWithCustomLines}
                     <!-- HEADER END -->
-                    <!-- BODY START -->
+                    
+                    <!-- SUBJECT LINES START -->
                     ${subjectLinesHtml || ''}
-                    ${body}
-                    ${paymentSection}
+                    <!-- SUBJECT LINES END -->
+
+                    <!-- BODY START -->
+                    <tr>
+                        <td class="letter-body-content" style="padding: 10px 0; font-size: 16px; line-height: 1.5;">
+                            ${body}
+                        </td>
+                    </tr>
                     <!-- BODY END -->
+
+                    <!-- PAYMENT START -->
+                    ${paymentSection}
+                    <!-- PAYMENT END -->
+
                     <!-- FOOTER START -->
                     ${footer}
                     <!-- FOOTER END -->
@@ -710,7 +741,8 @@ export class TemplateService extends BaseService {
           body_content_html: body, // Save body separately for editing (without Header/Footer)
           payment_link: fullVariables.payment_link,
           created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();
@@ -1274,7 +1306,8 @@ export class TemplateService extends BaseService {
         body_content_html: bodyHtml, // ✅ NEW: Save body separately for editing (without Header/Footer)
         payment_link: fullVariables.payment_link as string | undefined,
         created_at: new Date().toISOString(),
-        created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
+        created_by: (await supabase.auth.getUser()).data.user?.id,
+        created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
       };
 
       console.log('🔍 [DB Insert] Inserting to generated_letters:', {
@@ -1707,7 +1740,8 @@ export class TemplateService extends BaseService {
           subject: params.updates.emailSubject || originalLetter.subject,
           recipient_emails: originalLetter.recipient_emails,
           status: 'draft',
-          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email || ''
+          created_by: (await supabase.auth.getUser()).data.user?.id || '',
+          created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();
@@ -1847,7 +1881,8 @@ export class TemplateService extends BaseService {
           generated_content_text: plainText,
           payment_link: null, // No payment links for informational documents
           created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();
