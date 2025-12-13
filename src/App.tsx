@@ -41,6 +41,10 @@ const CollectionDashboard = lazy(() => import('@/modules/collections/pages/Colle
 const NotificationSettings = lazy(() => import('@/modules/collections/pages/NotificationSettings').then(m => ({ default: m.NotificationSettings })));
 const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage').then(m => ({ default: m.DisputesPage })));
 
+// Documents System pages
+const DocumentsHubPage = lazy(() => import('@/modules/documents/pages/DocumentsHubPage'));
+const DocumentCategoryPage = lazy(() => import('@/modules/documents/pages/DocumentCategoryPage'));
+
 // Loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -144,8 +148,19 @@ function App() {
                       } />
                     </Route>
 
-                    {/* Foreign Workers - accessible to admin, accountant and bookkeeper */}
+                    {/* Documents System - accessible to admin, accountant and bookkeeper */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
+                      <Route path="/documents" element={
+                        <ErrorBoundary>
+                          <DocumentsHubPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/documents/:categoryId" element={
+                        <ErrorBoundary>
+                          <DocumentCategoryPage />
+                        </ErrorBoundary>
+                      } />
+                      {/* Legacy route - redirect to new location */}
                       <Route path="/foreign-workers" element={
                         <ErrorBoundary>
                           <ForeignWorkersPage />
