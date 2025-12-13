@@ -185,13 +185,40 @@ serve(async (req) => {
             display: inline;
             vertical-align: middle;
             max-width: 100%;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
           .inline-block {
             display: inline !important;
           }
-          /* Prevent page breaks inside paragraphs */
+
+          /* =================================
+             PAGE BREAK CONTROL
+             ================================= */
+
+          /* Allow the outer table wrapper to break between rows */
+          table {
+            break-inside: auto;
+          }
+
+          /* Prevent breaks inside table rows - each row stays together */
+          tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+
+          /* Paragraphs stay together */
           p {
             break-inside: avoid;
+            page-break-inside: avoid;
+            orphans: 3;
+            widows: 3;
+          }
+
+          /* List items stay together */
+          li {
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
         </style>
       </head>

@@ -136,10 +136,12 @@ function buildHeading(content: string): string {
   const styledContent = parseInlineStyles(content);
   return `<!-- Section Heading -->
 <tr>
-    <td>
-        <div style="font-family: ${fonts.family}; font-size: ${heading.fontSize}; line-height: ${heading.lineHeight}; font-weight: ${heading.fontWeight}; color: ${heading.color}; text-align: right;">
+    <td style="padding-top: 20px;">
+        <div style="font-family: ${fonts.family}; font-size: ${heading.fontSize}; line-height: ${heading.lineHeight}; font-weight: ${heading.fontWeight}; color: ${heading.color}; text-align: right; margin-bottom: 20px;">
             ${styledContent}
-        </div>`;
+        </div>
+    </td>
+</tr>`;
 }
 
 /**
