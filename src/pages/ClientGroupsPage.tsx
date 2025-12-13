@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,10 +70,23 @@ export default function ClientGroupsPage() {
   });
   const [groupNameExists, setGroupNameExists] = useState(false);
   const [isCheckingGroupName, setIsCheckingGroupName] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const groupNameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { role } = useAuth();
   const isAdmin = role === 'admin';
+
+  // Filter groups based on search query
+  const filteredGroups = useMemo(() => {
+    if (!searchQuery.trim()) return groups;
+    const query = searchQuery.toLowerCase();
+    return groups.filter(
+      (group) =>
+        group.group_name_hebrew.toLowerCase().includes(query) ||
+        group.primary_owner?.toLowerCase().includes(query) ||
+        group.notes?.toLowerCase().includes(query)
+    );
+  }, [groups, searchQuery]);
 
   // Use clients hook for contact management in edit dialog
   const {
@@ -496,6 +509,17 @@ export default function ClientGroupsPage() {
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="חיפוש לפי שם קבוצה או בעל שליטה..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pr-10"
+        />
+      </div>
+
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
@@ -532,13 +556,13 @@ export default function ClientGroupsPage() {
       <div className="border rounded-lg">
         {loading ? (
           <div className="p-8 text-center">טוען נתונים...</div>
-        ) : groups.length === 0 ? (
+        ) : filteredGroups.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
-            לא נמצאו קבוצות. לחץ על "הוסף קבוצה חדשה" כדי ליצור קבוצה ראשונה.
+            {searchQuery ? 'לא נמצאו קבוצות התואמות את החיפוש' : 'לא נמצאו קבוצות. לחץ על "הוסף קבוצה חדשה" כדי ליצור קבוצה ראשונה.'}
           </div>
         ) : (
           <div className="divide-y">
-            {groups.map((group) => {
+            {filteredGroups.map((group) => {
               const clients = groupClients.get(group.id) || [];
               const isExpanded = expandedGroups.has(group.id);
               
