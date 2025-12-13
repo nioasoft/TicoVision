@@ -98,7 +98,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       content: '',
       formatting: {
         bold: true,
-        underline: false
+        underline: false,
+        color: 'blue'
       },
       order: 0
     }
@@ -1452,7 +1453,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       content: '',
       formatting: {
         bold: true,
-        underline: false
+        underline: false,
+        color: 'blue'
       },
       order: subjectLines.length
     };
@@ -1525,6 +1527,21 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         return {
           ...line,
           formatting: { ...line.formatting, [key]: value }
+        };
+      }
+      return line;
+    }));
+  };
+
+  const handleUpdateSubjectLineColor = (
+    id: string,
+    color: 'red' | 'blue' | 'black'
+  ) => {
+    setSubjectLines(subjectLines.map(line => {
+      if (line.id === id && line.formatting) {
+        return {
+          ...line,
+          formatting: { ...line.formatting, color }
         };
       }
       return line;
@@ -2131,7 +2148,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             <div className="mt-4 p-4 border rounded-lg bg-blue-50">
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
-                  4. שורות הנדון (26px, כחול #395BF7)
+                  4. שורות הנדון (26px)
                 </Label>
                 <Button
                   type="button"
@@ -2245,7 +2262,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               </Label>
                             </div>
 
-                            <span className="text-xs text-gray-500">(צבע קבוע: כחול #395BF7)</span>
+                            <Button type="button" size="sm" variant={line.formatting?.color === 'black' ? 'default' : 'outline'} onClick={() => handleUpdateSubjectLineColor(line.id, 'black')}>שחור</Button>
+                            <Button type="button" size="sm" variant={line.formatting?.color === 'red' ? 'default' : 'outline'} onClick={() => handleUpdateSubjectLineColor(line.id, 'red')} className="text-red-600">אדום</Button>
+                            <Button type="button" size="sm" variant={line.formatting?.color === 'blue' ? 'default' : 'outline'} onClick={() => handleUpdateSubjectLineColor(line.id, 'blue')} className="text-blue-600">כחול</Button>
                           </div>
                         </div>
                       </div>

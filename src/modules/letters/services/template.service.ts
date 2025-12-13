@@ -1490,21 +1490,32 @@ export class TemplateService extends BaseService {
 
   /**
    * Build HTML for subject lines (הנדון)
-   * Converts SubjectLine[] to styled HTML with blue color (#395BF7), 26px font, and borders
+   * Converts SubjectLine[] to styled HTML with selectable colors (red/blue/black), 26px font, and borders
    */
   buildSubjectLinesHTML(lines: import('../types/letter.types').SubjectLine[]): string {
     if (!lines || lines.length === 0) {
       return '';
     }
 
+    // Helper to get color hex value
+    const getColorHex = (color: 'red' | 'blue' | 'black' | undefined): string => {
+      switch (color) {
+        case 'red': return '#FF0000';
+        case 'black': return '#000000';
+        case 'blue':
+        default: return '#395BF7';
+      }
+    };
+
     // Sort by order
     const sortedLines = [...lines].sort((a, b) => a.order - b.order);
 
     const linesHtml = sortedLines.map((line, index) => {
       const isFirstLine = index === 0;
+      const color = getColorHex(line.formatting?.color);
 
       // Build inline styles for each line
-      const styles: string[] = [];
+      const styles: string[] = [`color: ${color}`];
 
       if (line.formatting?.bold) {
         styles.push('font-weight: 700');
@@ -1514,15 +1525,15 @@ export class TemplateService extends BaseService {
         styles.push('text-decoration: underline');
       }
 
-      const styleStr = styles.length > 0 ? ` style="${styles.join('; ')};"` : '';
+      const styleStr = styles.join('; ');
 
-      // שורה ראשונה: "הנדון: {טקסט}" (בלי בולט!)
+      // שורה ראשונה: "הנדון: {טקסט}"
       if (isFirstLine) {
-        return `הנדון: ${line.content || ''}`;
+        return `<span style="${styleStr}">הנדון: ${line.content || ''}</span>`;
       }
 
       // שורות נוספות: <br/> + רווח invisible + טקסט (ליישור מושלם)
-      return `<br/><span style="opacity: 0;">הנדון: </span>${line.content || ''}`;
+      return `<br/><span style="opacity: 0;">הנדון: </span><span style="${styleStr}">${line.content || ''}</span>`;
     }).join(''); // NO NEWLINES - join with empty string for Puppeteer compatibility
 
     // Return complete subject lines section with borders
@@ -1534,7 +1545,7 @@ export class TemplateService extends BaseService {
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
         <!-- Subject line -->
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.1; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 10px;">${linesHtml}</div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.1; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 10px;">${linesHtml}</div>
     </td>
 </tr>`;
   }

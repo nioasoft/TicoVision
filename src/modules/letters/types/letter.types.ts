@@ -230,7 +230,7 @@ export interface SubjectLine {
   formatting?: {
     bold: boolean;
     underline: boolean;
-    // Color is always #395BF7 (blue) - no selection needed
+    color: 'red' | 'blue' | 'black'; // Color selection like custom header lines
   };
   order: number; // Display order (0, 1, 2, ...)
 }
