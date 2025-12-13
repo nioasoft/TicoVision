@@ -171,11 +171,10 @@ serve(async (req) => {
           }
           @page {
             size: A4;
-            /* Top: Header (34mm) + padding (8mm) = 42mm */
-            margin-top: 42mm;
-            /* Bottom: Simple footer height (12mm) */
-            /* Full footer (51mm) will be added to last page via pdf-lib post-processing */
-            margin-bottom: 12mm;
+            /* Top: Header (34mm) + padding (4mm) = 38mm - reduced for more body space */
+            margin-top: 38mm;
+            /* Bottom: Space for footer - balanced between content space and footer overlap */
+            margin-bottom: 21mm;
             /* Side margins */
             margin-left: 9mm;
             margin-right: 9mm;
@@ -261,9 +260,9 @@ serve(async (req) => {
               </div>
             `,
             margin: {
-              top: '42mm',    // Header (34mm) + padding (8mm) for more space below header
+              top: '38mm',    // Header (34mm) + padding (4mm) - reduced for more body space
               right: '0mm',   // No side margins (handled in @page)
-              bottom: '12mm', // Simple footer height (reduced for less space above footer)
+              bottom: '21mm', // Balanced footer space
               left: '0mm'     // No side margins (handled in @page)
             }
           },

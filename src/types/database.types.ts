@@ -1462,6 +1462,7 @@ export type Database = {
           generated_content_html: string
           generated_content_text: string | null
           group_calculation_id: string | null
+          group_id: string | null
           id: string
           is_latest: boolean | null
           last_opened_at: string | null
@@ -1496,6 +1497,7 @@ export type Database = {
           generated_content_html: string
           generated_content_text?: string | null
           group_calculation_id?: string | null
+          group_id?: string | null
           id?: string
           is_latest?: boolean | null
           last_opened_at?: string | null
@@ -1530,6 +1532,7 @@ export type Database = {
           generated_content_html?: string
           generated_content_text?: string | null
           group_calculation_id?: string | null
+          group_id?: string | null
           id?: string
           is_latest?: boolean | null
           last_opened_at?: string | null
@@ -1566,6 +1569,13 @@ export type Database = {
             columns: ["group_calculation_id"]
             isOneToOne: false
             referencedRelation: "group_fee_calculations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_letters_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
             referencedColumns: ["id"]
           },
           {

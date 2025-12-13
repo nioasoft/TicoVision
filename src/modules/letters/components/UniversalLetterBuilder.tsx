@@ -596,6 +596,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const updateResult = await templateService.updateLetterContent({
           letterId: savedLetterId,
           plainText: letterContent,
+          groupId: recipientMode === 'group' ? selectedGroup?.id : null,
           subjectLines,
           customHeaderLines: headerLinesToSave,
           variables,
@@ -616,6 +617,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
+          groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
           variables,
           includesPayment,
           customHeaderLines: headerLinesToSave,
@@ -829,6 +831,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const result = await templateService.generateFromCustomText({
         plainText: letterData.plainText,
         clientId: letterData.clientId!,
+        groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
         variables,
         includesPayment: letterData.includesPayment,
         customHeaderLines: letterData.customHeaderLines,
@@ -982,11 +985,15 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setSelectedRecipients([]);
       setClientContacts([]);
       setWhatsappPhone('');
+      setAddressLine('');
+      setShowAddress(false);
     } else if (recipientMode === 'group') {
       // Clearing group mode data
       setSelectedGroup(null);
       setGroupMembers([]);
       setSelectedRecipients([]);
+      setAddressLine('');
+      setShowAddress(false);
     } else {
       // Clearing manual mode data
       setManualCompanyName('');
@@ -996,6 +1003,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setManualCustomHeaderLines([]);
       setManualEmails('');
       setSelectedRecipients([]);
+      setAddressLine('');
+      setShowAddress(false);
     }
 
     // Switch to new mode
@@ -1127,6 +1136,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
+          groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
           variables,
           includesPayment,
           customHeaderLines: headerLinesForPdf,
@@ -1151,6 +1161,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const updateResult = await templateService.updateLetterContent({
           letterId,
           plainText: letterContent,
+          groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
           subjectLines, // ✅ CRITICAL: Pass updated subject lines
           customHeaderLines: headerLinesForPdf,
           variables,

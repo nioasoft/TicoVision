@@ -1156,6 +1156,7 @@ export class TemplateService extends BaseService {
   async generateFromCustomText(params: {
     plainText: string;
     clientId: string | null;
+    groupId?: string | null; // Group ID when sending to a group
     variables: Record<string, string | number>;
     includesPayment: boolean;
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
@@ -1254,6 +1255,7 @@ export class TemplateService extends BaseService {
       const insertData = {
         tenant_id: tenantId,
         client_id: params.clientId || null, // Nullable for general/manual recipient letters
+        group_id: params.groupId || null, // Group ID when sending to a group
         template_id: null, // No template_id for custom letters
         template_type: 'custom_text', // Required when template_id is null (CHECK constraint)
         fee_calculation_id: null,
@@ -1320,6 +1322,7 @@ export class TemplateService extends BaseService {
   async updateLetterContent(params: {
     letterId: string;
     plainText: string;
+    groupId?: string | null; // Group ID when updating a group letter
     subjectLines?: import('../types/letter.types').SubjectLine[];
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
     variables: Record<string, string | number>;
@@ -1385,6 +1388,7 @@ export class TemplateService extends BaseService {
           generated_content_text: plainText,
           body_content_html: bodyHtml, // ✅ NEW: Update body separately for editing
           variables_used: fullVariables,
+          group_id: params.groupId || null, // Update group_id if provided
           pdf_url: null // ✅ CRITICAL: Clear old PDF to force regeneration
         })
         .eq('id', params.letterId)
