@@ -1526,11 +1526,11 @@ export class TemplateService extends BaseService {
     // CRITICAL: linesHtml must be on same line as <div> for Puppeteer PDF rendering
     return `<!-- Subject Lines (הנדון) -->
 <tr>
-    <td style="padding-top: 20px;">
+    <td style="padding-top: 10px;">
         <!-- Top border above subject -->
-        <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
+        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
         <!-- Subject line -->
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 21px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">${linesHtml}</div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.1; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 10px;">${linesHtml}</div>
     </td>
 </tr>`;
   }
@@ -1566,7 +1566,8 @@ export class TemplateService extends BaseService {
 
       const styles: string[] = [
         'font-family: \'David Libre\', \'Heebo\', \'Assistant\', sans-serif',
-        'font-size: 21px', // Match company_name font size in header.html
+        'font-size: 20px', // Match company_name font size in header.html
+        'line-height: 1.1',
         'text-align: right',
         'direction: rtl',
         'margin: 0',
@@ -1594,7 +1595,7 @@ export class TemplateService extends BaseService {
 
       return `
 <tr>
-    <td style="padding: 2px 0; text-align: right;">
+    <td style="padding: 1px 0; text-align: right;">
         <div style="${styles.join('; ')}">${line.content || ''}</div>
     </td>
 </tr>`;
