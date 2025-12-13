@@ -7,7 +7,7 @@ import {
   Users, 
   Building2, 
   Star, 
-  ChevronRight, 
+  ChevronLeft, 
   ChevronDown,
   Search
 } from 'lucide-react';
@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { FolderItem, FolderType } from '../types';
+import type { FolderItem, FolderType } from '../types';
 import { clientService } from '@/services/client.service';
 
 interface SidebarProps {
@@ -30,7 +30,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
   const [clients, setClients] = useState<any[]>([]);
   const [expandedSections, setExpandedSections] = useState({
     groups: true,
-    clients: false
+    clients: true
   });
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -68,32 +68,32 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
   );
 
   return (
-    <div className={cn("flex flex-col h-full bg-slate-50/50 border-l", className)}>
+    <div className={cn("flex flex-col h-full bg-slate-50/50 border-l", className)} dir="rtl">
       {/* Search Header */}
       <div className="p-4">
         <div className="relative">
-          <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="חיפוש תיקייה..."
-            className="pr-9 bg-white shadow-sm"
+            className="pl-9 pr-3 bg-white shadow-sm text-right"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      <ScrollArea className="flex-1 px-3">
+      <ScrollArea className="flex-1 px-2">
         <div className="space-y-6 pb-6">
           
           {/* Main Navigation */}
           <div className="space-y-1">
-            <h3 className="px-2 text-xs font-semibold text-muted-foreground mb-2">גישה מהירה</h3>
+            <h3 className="px-2 text-xs font-semibold text-muted-foreground mb-2 text-right">גישה מהירה</h3>
             {navItems.map((item) => (
               <Button
                 key={item.id}
                 variant={currentFolder.id === item.id ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-2 h-9 font-normal",
+                  "w-full justify-start gap-2 h-9 font-normal text-right",
                   currentFolder.id === item.id && "bg-blue-100/50 text-blue-700 hover:bg-blue-100"
                 )}
                 onClick={() => onSelectFolder({ id: item.id, type: item.type as FolderType, name: item.name })}
@@ -110,10 +110,10 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
           <div className="space-y-1">
             <button 
               onClick={() => toggleSection('groups')}
-              className="flex items-center justify-between w-full px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center justify-between w-full px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors text-right"
             >
               <span>קבוצות ({filteredGroups.length})</span>
-              {expandedSections.groups ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              {expandedSections.groups ? <ChevronDown className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </button>
             
             {expandedSections.groups && (
@@ -126,17 +126,17 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                       "w-full justify-start gap-2 h-8 text-sm font-normal px-2",
                       currentFolder.id === group.id && "bg-blue-100/50 text-blue-700"
                     )}
-                    onClick={() => onSelectFolder({ 
-                      id: group.id, 
-                      type: 'group', 
-                      name: group.group_name_hebrew 
+                    onClick={() => onSelectFolder({
+                      id: group.id,
+                      type: 'group',
+                      name: group.group_name_hebrew
                     })}
                   >
+                    <span className="truncate">{group.group_name_hebrew}</span>
                     <FolderOpen className={cn(
-                      "h-4 w-4",
+                      "h-4 w-4 shrink-0",
                       currentFolder.id === group.id ? "text-blue-500 fill-blue-100" : "text-slate-400"
                     )} />
-                    <span className="truncate">{group.group_name_hebrew}</span>
                   </Button>
                 ))}
               </div>
@@ -147,10 +147,10 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
           <div className="space-y-1">
             <button 
               onClick={() => toggleSection('clients')}
-              className="flex items-center justify-between w-full px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center justify-between w-full px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors text-right"
             >
               <span>לקוחות ({filteredClients.length})</span>
-              {expandedSections.clients ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              {expandedSections.clients ? <ChevronDown className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </button>
             
             {expandedSections.clients && (
@@ -163,17 +163,17 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                       "w-full justify-start gap-2 h-8 text-sm font-normal px-2",
                       currentFolder.id === client.id && "bg-blue-100/50 text-blue-700"
                     )}
-                    onClick={() => onSelectFolder({ 
-                      id: client.id, 
-                      type: 'client', 
-                      name: client.company_name 
+                    onClick={() => onSelectFolder({
+                      id: client.id,
+                      type: 'client',
+                      name: client.company_name
                     })}
                   >
+                    <span className="truncate">{client.company_name}</span>
                     <Building2 className={cn(
-                      "h-4 w-4",
+                      "h-4 w-4 shrink-0",
                       currentFolder.id === client.id ? "text-blue-500" : "text-slate-400"
                     )} />
-                    <span className="truncate">{client.company_name}</span>
                   </Button>
                 ))}
               </div>

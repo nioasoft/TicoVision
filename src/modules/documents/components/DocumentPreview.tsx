@@ -1,22 +1,23 @@
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { 
-  FileText, 
-  Calendar, 
-  User, 
-  Download, 
-  Send, 
-  Printer, 
+import {
+  FileText,
+  Calendar,
+  User,
+  Download,
+  Send,
+  Printer,
   Edit,
   Trash2,
   ExternalLink,
-  Eye
+  Eye,
+  Building2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { DocFile } from '../types';
+import type { DocFile } from '../types';
 
 interface DocumentPreviewProps {
   file: DocFile | null;
@@ -85,24 +86,27 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
             </div>
           </div>
 
-          {/* Preview Thumbnail */}
-          <div className="aspect-[1/1.41] bg-white rounded-lg border shadow-sm flex items-center justify-center relative group overflow-hidden cursor-pointer"
+          {/* Document Preview - Live iframe */}
+          <div className="aspect-[1/1.41] bg-white rounded-lg border shadow-sm relative group overflow-hidden cursor-pointer"
                onClick={() => window.open(`/letters/view/${file.id}`, '_blank')}>
-            <div className="absolute inset-0 bg-slate-100 flex items-center justify-center">
-               <FileText className="h-16 w-16 text-slate-300" />
-               <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="secondary" size="sm" className="gap-2">
-                    <Eye className="h-4 w-4" />
-                    הצג מסמך
-                  </Button>
-               </div>
+            <iframe
+              src={`/letters/view/${file.id}?preview=true`}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }}
+              title="תצוגה מקדימה"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="secondary" size="sm" className="gap-2 pointer-events-auto">
+                <Eye className="h-4 w-4" />
+                פתח במסך מלא
+              </Button>
             </div>
           </div>
 
           <Separator />
 
           {/* Meta Data */}
-          <div className="space-y-4 text-sm">
+          <div className="space-y-4 text-sm text-right" dir="rtl">
             <div className="grid grid-cols-2 gap-y-4">
               <div className="col-span-2">
                 <label className="text-xs text-muted-foreground block mb-1">לקוח</label>
@@ -134,7 +138,7 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
                 <label className="text-xs text-muted-foreground block mb-1">נוצר ע"י</label>
                 <div className="flex items-center gap-2">
                   <User className="h-3.5 w-3.5 text-slate-400" />
-                  <span>מערכת</span>
+                  <span>{file.author && !file.author.match(/^[0-9a-f-]{36}$/i) ? file.author : 'מערכת'}</span>
                 </div>
               </div>
             </div>

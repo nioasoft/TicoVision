@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DocumentsSidebar } from '../components/DocumentsSidebar';
 import { DocumentsView } from '../components/DocumentsView';
 import { DocumentPreview } from '../components/DocumentPreview';
 import { useDocuments } from '../hooks/useDocuments';
-import { FolderItem, ViewMode, DocFile } from '../types';
+import type { FolderItem, ViewMode, DocFile } from '../types';
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 import { letterHistoryService } from '@/services/letter-history.service';
 import { toast } from 'sonner';
@@ -25,6 +25,13 @@ export default function DocumentsHubPage() {
 
   // Data Hook
   const { documents, isLoading, refresh } = useDocuments(currentFolder);
+
+  // Auto-select first document when documents load
+  useEffect(() => {
+    if (documents.length > 0 && !selectedFileId) {
+      setSelectedFileId(documents[0].id);
+    }
+  }, [documents, selectedFileId]);
 
   // Computed
   const selectedFile = documents.find(d => d.id === selectedFileId) || null;

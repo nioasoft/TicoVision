@@ -235,7 +235,7 @@ export class TemplateService extends BaseService {
           generated_content_text: plainText,
           payment_link: variables.payment_link,
           created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();
@@ -710,7 +710,7 @@ export class TemplateService extends BaseService {
           body_content_html: body, // Save body separately for editing (without Header/Footer)
           payment_link: fullVariables.payment_link,
           created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();
@@ -1157,6 +1157,7 @@ export class TemplateService extends BaseService {
     plainText: string;
     clientId: string | null;
     groupId?: string | null; // Group ID when sending to a group
+    recipientEmails?: string[]; // Recipient email addresses (for manual recipients)
     variables: Record<string, string | number>;
     includesPayment: boolean;
     customHeaderLines?: import('../types/letter.types').CustomHeaderLine[];
@@ -1256,6 +1257,7 @@ export class TemplateService extends BaseService {
         tenant_id: tenantId,
         client_id: params.clientId || null, // Nullable for general/manual recipient letters
         group_id: params.groupId || null, // Group ID when sending to a group
+        recipient_emails: params.recipientEmails || null, // Recipients for edit restoration
         template_id: null, // No template_id for custom letters
         template_type: 'custom_text', // Required when template_id is null (CHECK constraint)
         fee_calculation_id: null,
@@ -1272,7 +1274,7 @@ export class TemplateService extends BaseService {
         body_content_html: bodyHtml, // ✅ NEW: Save body separately for editing (without Header/Footer)
         payment_link: fullVariables.payment_link as string | undefined,
         created_at: new Date().toISOString(),
-        created_by: (await supabase.auth.getUser()).data.user?.id
+        created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
       };
 
       console.log('🔍 [DB Insert] Inserting to generated_letters:', {
@@ -1705,7 +1707,7 @@ export class TemplateService extends BaseService {
           subject: params.updates.emailSubject || originalLetter.subject,
           recipient_emails: originalLetter.recipient_emails,
           status: 'draft',
-          created_by: (await supabase.auth.getUser()).data.user?.id || ''
+          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email || ''
         })
         .select()
         .single();
@@ -1845,7 +1847,7 @@ export class TemplateService extends BaseService {
           generated_content_text: plainText,
           payment_link: null, // No payment links for informational documents
           created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
         })
         .select()
         .single();

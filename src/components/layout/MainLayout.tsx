@@ -19,7 +19,10 @@ import {
   FolderOpen,
   Receipt,
   MailPlus,
-  MessageSquarePlus
+  MessageSquarePlus,
+  Building2,
+  FileSignature,
+  ScrollText
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -84,13 +87,24 @@ const navigation: NavigationItem[] = [
     submenu: [
       { name: 'כתיבת מכתבים', href: '/letter-templates', menuKey: 'letters:templates' },
       { name: 'סימולציית מכתבים', href: '/component-simulator', menuKey: 'letters:simulator' },
-      { name: 'היסטוריית מכתבים', href: '/letter-history', menuKey: 'letters:history' },
+      { name: 'היסטוריית מכתבים', href: '/documents', menuKey: 'letters:history' },
     ]
   },
-  { name: 'אישורי עובדים זרים', href: '/foreign-workers', icon: FileText, menuKey: 'foreign-workers', allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
-  { name: 'מקדמות מ"ה שוטפות 2026', href: '/tax-advances-2026', icon: Receipt, menuKey: 'tax-advances', allowedRoles: ['admin'] as UserRole[] },
-  { name: 'מכתבים אוטומטיים', href: '/auto-letters', icon: MailPlus, menuKey: 'auto-letters', allowedRoles: ['admin'] as UserRole[] },
-  { name: 'פניות/זירוז/דחיפה', href: '/follow-ups', icon: MessageSquarePlus, menuKey: 'follow-ups', allowedRoles: ['admin'] as UserRole[] },
+  {
+    name: 'מכתבים ואישורים',
+    icon: ScrollText,
+    menuKey: 'documents',
+    allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[],
+    submenu: [
+      { name: 'אישורי עובדים זרים', href: '/foreign-workers', menuKey: 'documents:foreign-workers' },
+      { name: 'אישורי מס', href: '/documents/tax-approvals', menuKey: 'documents:tax-approvals' },
+      { name: 'אישורים לבנקים/מוסדות', href: '/documents/bank-approvals', menuKey: 'documents:bank-approvals' },
+      { name: 'מכתבי התחייבות', href: '/documents/commitment-letters', menuKey: 'documents:commitment-letters' },
+      { name: 'מקדמות מ"ה שוטפות 2026', href: '/tax-advances-2026', menuKey: 'documents:tax-advances' },
+      { name: 'מכתבים אוטומטיים', href: '/auto-letters', menuKey: 'documents:auto-letters' },
+      { name: 'פניות/זירוז/דחיפה', href: '/follow-ups', menuKey: 'documents:follow-ups' },
+    ]
+  },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, menuKey: 'users', allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, menuKey: 'settings', allowedRoles: ['admin'] as UserRole[] },
@@ -352,7 +366,7 @@ export function MainLayout() {
           <div className="border-t p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="text-sm">
-                <p className="font-medium">{user?.email}</p>
+                <p className="font-medium">{user?.user_metadata?.full_name || user?.email}</p>
                 <p className="text-gray-500 text-xs">{getRoleDisplayName(role)}</p>
               </div>
             </div>
