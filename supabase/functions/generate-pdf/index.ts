@@ -16,6 +16,23 @@ function base64ToUint8Array(base64DataUri: string): Uint8Array {
   return bytes;
 }
 
+// Helper: Sanitize string for use in filename (keep Hebrew, English, numbers)
+function sanitizeFilename(str: string): string {
+  return str
+    .replace(/[^א-תa-zA-Z0-9\s-]/g, '') // Remove special chars, keep Hebrew
+    .trim()
+    .replace(/\s+/g, '-')               // Replace spaces with dashes
+    .slice(0, 30);                       // Limit length
+}
+
+// Helper: Format timestamp for filename (YYYYMMDD-HHMMSS)
+function formatTimestamp(isoDate: string): string {
+  const d = new Date(isoDate);
+  const date = d.toISOString().slice(0, 10).replace(/-/g, '');    // YYYYMMDD
+  const time = d.toTimeString().slice(0, 8).replace(/:/g, '');     // HHMMSS
+  return `${date}-${time}`;
+}
+
 // Post-processing: Add full footer image to the last page only
 async function addFullFooterToLastPage(
   pdfBytes: ArrayBuffer,
@@ -101,6 +118,38 @@ serve(async (req) => {
     if (fetchError || !letter) {
       throw new Error(`Letter not found: ${letterId}`);
     }
+
+    // 3b. Fetch client/group name for descriptive filename
+    let entityName = 'unknown';
+    if (letter.client_id) {
+      // Single client letter
+      const { data: client } = await supabase
+        .from('clients')
+        .select('company_name')
+        .eq('id', letter.client_id)
+        .single();
+      if (client?.company_name) {
+        entityName = sanitizeFilename(client.company_name);
+      }
+    } else if (letter.group_id) {
+      // Group letter
+      const { data: group } = await supabase
+        .from('client_groups')
+        .select('group_name_hebrew')
+        .eq('id', letter.group_id)
+        .single();
+      if (group?.group_name_hebrew) {
+        entityName = sanitizeFilename(group.group_name_hebrew);
+      } else {
+        entityName = 'group';
+      }
+    }
+
+    // 3c. Build descriptive filename: {name}-{type}-{timestamp}.pdf
+    const docType = sanitizeFilename(letter.template_type || letter.subject || 'document');
+    const timestamp = formatTimestamp(letter.created_at || new Date().toISOString());
+    const descriptiveFileName = `${entityName}-${docType}-${timestamp}.pdf`;
+    console.log(`Building filename: ${descriptiveFileName}`);
 
     // 4. Get HTML with public URLs (not CID)
     let html = letter.generated_content_html;
@@ -324,11 +373,12 @@ serve(async (req) => {
     const finalPdfBytes = await addFullFooterToLastPage(initialPdfBuffer, FOOTER_PDF_BASE64);
     console.log('PDF post-processing complete');
 
-    // 7. Upload PDF to Supabase Storage
-    const fileName = `${letterId}.pdf`;
+    // 7. Upload PDF to Supabase Storage with descriptive filename
+    // Use UUID as storage key (avoid conflicts), save descriptive name for downloads
+    const storageFileName = `${letterId}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('letter-pdfs') // Correct bucket name (created in migration 091)
-      .upload(fileName, finalPdfBytes, {
+      .upload(storageFileName, finalPdfBytes, {
         contentType: 'application/pdf',
         upsert: true
       });
@@ -340,15 +390,16 @@ serve(async (req) => {
     // 8. Get public URL
     const { data: urlData } = supabase.storage
       .from('letter-pdfs') // Correct bucket name (created in migration 091)
-      .getPublicUrl(fileName);
+      .getPublicUrl(storageFileName);
 
     const pdfUrl = urlData.publicUrl;
 
-    // 9. Update database with PDF URL
+    // 9. Update database with PDF URL and descriptive filename
     const { error: updateError } = await supabase
       .from('generated_letters')
       .update({
-        pdf_url: pdfUrl
+        pdf_url: pdfUrl,
+        pdf_file_name: descriptiveFileName  // Save descriptive name for downloads
       })
       .eq('id', letterId);
 
@@ -356,12 +407,15 @@ serve(async (req) => {
       console.error('Failed to update database:', updateError);
     }
 
+    console.log(`PDF generated: ${descriptiveFileName}`);
+
     // 10. Return success
     return new Response(
       JSON.stringify({
         success: true,
         pdfUrl,
-        letterId
+        letterId,
+        fileName: descriptiveFileName  // Return descriptive filename
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

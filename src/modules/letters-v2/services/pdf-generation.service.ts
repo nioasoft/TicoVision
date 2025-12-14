@@ -240,19 +240,31 @@ export class PDFGenerationService {
    *
    * Generates a signed URL for downloading the PDF.
    * URL expires after specified duration.
+   * Uses the descriptive pdf_file_name for the download filename.
    *
    * @param letterId - ID of the letter
    * @param expiresIn - Expiry time in seconds (default: 3600 = 1 hour)
    * @returns Signed download URL or null if PDF doesn't exist
    */
   async getDownloadUrl(letterId: string, expiresIn = 3600): Promise<string | null> {
-    const pdfUrl = await this.getPDFUrl(letterId);
-    if (!pdfUrl) return null;
+    // Fetch both pdf_url and pdf_file_name for descriptive download name
+    const { data: letter, error: fetchError } = await supabase
+      .from('generated_letters')
+      .select('pdf_url, pdf_file_name')
+      .eq('id', letterId)
+      .single();
 
-    const fileName = this.extractFileNameFromUrl(pdfUrl);
-    if (!fileName) return null;
+    if (fetchError || !letter?.pdf_url) return null;
 
-    const { data, error } = await supabase.storage.from(this.bucket).createSignedUrl(fileName, expiresIn);
+    const storageFileName = this.extractFileNameFromUrl(letter.pdf_url);
+    if (!storageFileName) return null;
+
+    // Use descriptive name for download, fallback to storage filename
+    const downloadName = letter.pdf_file_name || storageFileName;
+
+    const { data, error } = await supabase.storage.from(this.bucket).createSignedUrl(storageFileName, expiresIn, {
+      download: downloadName, // This sets Content-Disposition header with descriptive filename
+    });
 
     if (error || !data) return null;
 
