@@ -67,10 +67,13 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'letters:history', route: '/letter-history', label: 'היסטוריית מכתבים', parent: 'letters' },
   // Documents System (מכתבים ואישורים)
   { menu: 'documents', route: '/documents', label: 'מכתבים ואישורים' },
-  { menu: 'documents:foreign-workers', route: '/documents/foreign-workers', label: 'אישורי עובדים זרים', parent: 'documents' },
+  { menu: 'documents:foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים', parent: 'documents' },
   { menu: 'documents:tax-approvals', route: '/documents/tax-approvals', label: 'אישורי מס', parent: 'documents' },
   { menu: 'documents:bank-approvals', route: '/documents/bank-approvals', label: 'אישורים לבנקים/מוסדות', parent: 'documents' },
   { menu: 'documents:commitment-letters', route: '/documents/commitment-letters', label: 'מכתבי התחייבות', parent: 'documents' },
+  { menu: 'documents:tax-advances', route: '/tax-advances-2026', label: 'מקדמות מ"ה שוטפות 2026', parent: 'documents' },
+  { menu: 'documents:auto-letters', route: '/auto-letters', label: 'מכתבים אוטומטיים', parent: 'documents' },
+  { menu: 'documents:follow-ups', route: '/follow-ups', label: 'פניות/זירוז/דחיפה', parent: 'documents' },
   // Legacy route for backward compatibility
   { menu: 'foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים (ישן)' },
   { menu: 'files', route: '/files', label: 'מנהל הקבצים' },
@@ -92,6 +95,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'letters', 'letters:templates', 'letters:simulator', 'letters:history',
     // Documents System
     'documents', 'documents:foreign-workers', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
+    'documents:tax-advances', 'documents:auto-letters', 'documents:follow-ups',
     'foreign-workers', // Legacy
     'files',
     'users',
