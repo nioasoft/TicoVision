@@ -1200,6 +1200,7 @@ export class TemplateService extends BaseService {
     };
     isHtml?: boolean; // If true, plainText is already HTML from Tiptap
     saveWithStatus?: import('../types/letter.types').LetterStatus; // Save with specific status (draft/saved)
+    name?: string; // ⭐ User-defined letter name for easy identification
   }): Promise<ServiceResponse<GeneratedLetter>> {
     try {
       const tenantId = await this.getTenantId();
@@ -1291,6 +1292,7 @@ export class TemplateService extends BaseService {
         template_id: null, // No template_id for custom letters
         template_type: 'custom_text', // Required when template_id is null (CHECK constraint)
         fee_calculation_id: null,
+        name: params.name || null, // ⭐ User-defined letter name
         subject: params.subject || 'מכתב חדש', // Email subject / letter title
         status: params.saveWithStatus || 'draft', // Use provided status or default to draft
         rendering_engine: 'legacy', // CHECK constraint: 'legacy' | 'unified'
@@ -1361,6 +1363,7 @@ export class TemplateService extends BaseService {
     variables: Record<string, string | number>;
     includesPayment: boolean;
     isHtml?: boolean;
+    name?: string; // ⭐ User-defined letter name for easy identification
   }): Promise<ServiceResponse<{ id: string; html: string }>> {
     try {
       const tenantId = await this.getTenantId();
@@ -1422,7 +1425,8 @@ export class TemplateService extends BaseService {
           body_content_html: params.plainText, // ✅ Save RAW HTML from Tiptap (not wrapped) for clean editing
           variables_used: fullVariables,
           group_id: params.groupId || null, // Update group_id if provided
-          pdf_url: null // ✅ CRITICAL: Clear old PDF to force regeneration
+          pdf_url: null, // ✅ CRITICAL: Clear old PDF to force regeneration
+          ...(params.name !== undefined && { name: params.name }) // ⭐ Update letter name if provided
         })
         .eq('id', params.letterId)
         .eq('tenant_id', tenantId)

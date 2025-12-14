@@ -1,6 +1,6 @@
 export type ViewMode = 'grid' | 'list';
 
-export type FolderType = 'recent' | 'drafts' | 'sent' | 'saved' | 'group' | 'client' | 'category';
+export type FolderType = 'recent' | 'drafts' | 'sent' | 'saved' | 'group' | 'client' | 'category' | 'general';
 
 export interface FolderItem {
   id: string;

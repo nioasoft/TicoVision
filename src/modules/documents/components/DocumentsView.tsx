@@ -46,7 +46,7 @@ export function DocumentsView({
     if (sortField === 'date') {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
-    return a.subject.localeCompare(b.subject);
+    return a.title.localeCompare(b.title);
   });
 
   return (
@@ -150,7 +150,7 @@ export function DocumentsView({
               >
                 <div className="col-span-4 font-medium text-slate-700 flex items-center gap-2 overflow-hidden">
                   <FileText className="h-4 w-4 text-red-400 flex-shrink-0" />
-                  <span className="truncate">{doc.subject}</span>
+                  <span className="truncate">{doc.title}</span>
                 </div>
                 <div className="col-span-3 text-slate-500 truncate">
                    {doc.clientName}

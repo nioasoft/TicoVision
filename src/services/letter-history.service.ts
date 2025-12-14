@@ -17,6 +17,7 @@ export interface LetterHistoryFilters {
   dateTo?: string;
   searchQuery?: string;
   feeLettersOnly?: boolean; // Filter to show only fee letters
+  isGeneral?: boolean; // Filter for letters without client or group (general letters)
 }
 
 export interface LetterHistoryItem extends GeneratedLetter {
@@ -100,6 +101,11 @@ class LetterHistoryService {
       // NEW: Filter for fee letters only
       if (filters.feeLettersOnly) {
         query = query.not('fee_calculation_id', 'is', null);
+      }
+
+      // NEW: Filter for general letters (no client and no group)
+      if (filters.isGeneral) {
+        query = query.is('client_id', null).is('group_id', null);
       }
 
       // Full-text search using search_vector (faster and supports Hebrew)

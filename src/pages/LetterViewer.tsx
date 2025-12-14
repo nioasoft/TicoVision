@@ -126,6 +126,10 @@ export default function LetterViewer() {
       'cid:tagline': `${baseUrl}/storage/v1/object/public/${bucket}/tagline.png`,
       'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
       'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
+      // Bullet star images for styled lists
+      'cid:bullet_star_blue': `${baseUrl}/storage/v1/object/public/${bucket}/Bullet_star_blue.png`,
+      'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
+      'cid:bullet_star_darkred': `${baseUrl}/storage/v1/object/public/${bucket}/Bullet_star_darkred.png`,
     };
 
     let result = html;

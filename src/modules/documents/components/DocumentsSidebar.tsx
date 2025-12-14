@@ -8,7 +8,8 @@ import {
   Star,
   ChevronLeft,
   ChevronDown,
-  Search
+  Search,
+  Inbox
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -75,6 +76,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
     { id: 'drafts', type: 'drafts', name: 'טיוטות', icon: FileText },
     { id: 'saved', type: 'saved', name: 'שמורים', icon: Star },
     { id: 'sent', type: 'sent', name: 'נשלחו', icon: Send },
+    { id: 'general', type: 'general', name: 'מכתבים כלליים', icon: Inbox },
   ];
 
   const filteredGroups = groups.filter(g =>

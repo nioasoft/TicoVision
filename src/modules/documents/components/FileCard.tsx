@@ -44,7 +44,7 @@ export function FileCard({ file, selected, onSelect, onDoubleClick }: FileCardPr
       {/* Content */}
       <div className="space-y-1 text-right">
         <h4 className="text-sm font-medium leading-tight line-clamp-2 text-slate-700 group-hover:text-blue-700">
-          {file.subject}
+          {file.title}
         </h4>
         <p className="text-xs text-slate-400">
           {format(new Date(file.createdAt), 'dd/MM/yyyy')}

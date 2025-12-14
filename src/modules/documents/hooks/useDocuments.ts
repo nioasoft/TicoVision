@@ -34,6 +34,9 @@ export function useDocuments(currentFolder: FolderItem) {
         case 'group':
           filters.groupId = currentFolder.id;
           break;
+        case 'general':
+          filters.isGeneral = true;
+          break;
       }
 
       const { data } = await letterHistoryService.getAllLetters(
@@ -44,10 +47,9 @@ export function useDocuments(currentFolder: FolderItem) {
 
       // Transform to DocFile format
       const docs: DocFile[] = data.map(letter => {
-        // Compute display title: Date - Client - Subject
-        const date = new Date(letter.created_at).toLocaleDateString('he-IL');
-        const clientName = letter.client_name || letter.company_name || 'ללא שם';
-        const title = `${date} - ${clientName} - ${letter.subject || 'ללא נושא'}`;
+        // Use letter name if available, otherwise fallback to subject
+        const title = letter.name || letter.subject || 'ללא שם';
+        const clientName = letter.client_name || letter.company_name || '';
 
         // Determine type based on PDF existence
         const type = 'pdf'; 

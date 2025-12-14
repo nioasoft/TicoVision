@@ -62,9 +62,11 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm leading-tight break-words mb-1">
-              {file.subject}
+              {file.title}
             </h3>
-            <p className="text-xs text-muted-foreground truncate">{file.title}</p>
+            {file.subject && file.subject !== file.title && (
+              <p className="text-xs text-muted-foreground truncate">נושא: {file.subject}</p>
+            )}
           </div>
         </div>
       </div>

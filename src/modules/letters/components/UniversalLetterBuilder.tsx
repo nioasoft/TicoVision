@@ -3,7 +3,7 @@
  * Build custom letters from plain text with Markdown-like syntax
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -335,6 +335,28 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [manualCommercialName, setManualCommercialName] = useState('');
   const [manualCustomHeaderLines, setManualCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
   const [taggedClientId, setTaggedClientId] = useState<string | null>(null); // ⭐ NEW: Client tagging for manual letters
+
+  // State - Letter name and unsaved changes tracking
+  const [letterName, setLetterName] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
+  const [showSaveOptionsDialog, setShowSaveOptionsDialog] = useState(false);
+
+  // Browser tab close warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Helper to mark dirty state
+  const markDirty = useCallback(() => {
+    if (!isDirty) setIsDirty(true);
+  }, [isDirty]);
 
   /**
    * Load saved templates on mount
@@ -725,11 +747,28 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
-   * Save letter to history without sending
+   * Generate new letter name with incremented number
    */
-  const handleSaveLetter = async () => {
+  const generateNewLetterName = (name: string): string => {
+    const match = name.match(/^(.+?)\s*\((\d+)\)$/);
+    if (match) {
+      return `${match[1]} (${parseInt(match[2]) + 1})`;
+    }
+    return `${name} (2)`;
+  };
+
+  /**
+   * Perform the actual save operation
+   */
+  const performSave = async (createNewCopy: boolean = false) => {
     if (!letterContent || letterContent.trim() === '' || letterContent === '<p></p>' || letterContent === '<p><br></p>') {
       toast.error('נא להזין תוכן למכתב');
+      return;
+    }
+
+    // Validate letter name
+    if (!letterName.trim()) {
+      toast.error('יש להזין שם למכתב');
       return;
     }
 
@@ -763,8 +802,15 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         });
       }
 
-      // ✅ CRITICAL: Check if letter already exists (saved before)
-      if (savedLetterId) {
+      // Determine the name to use
+      let nameToSave = letterName.trim();
+      if (createNewCopy) {
+        nameToSave = generateNewLetterName(letterName);
+        setLetterName(nameToSave);
+      }
+
+      // ✅ CRITICAL: Check if letter already exists (saved before) AND not creating new copy
+      if (savedLetterId && !createNewCopy) {
         // UPDATE existing letter
         console.log('🔄 Updating existing letter:', savedLetterId);
 
@@ -776,7 +822,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           customHeaderLines: headerLinesToSave,
           variables,
           includesPayment,
-          isHtml: true
+          isHtml: true,
+          name: nameToSave // ⭐ Save letter name
         });
 
         if (updateResult.error) {
@@ -784,10 +831,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           return;
         }
 
+        setIsDirty(false); // ✅ Reset dirty state
         toast.success('המכתב עודכן בהצלחה');
       } else {
-        // INSERT new letter (first save)
-        console.log('✅ Creating new letter (first save)');
+        // INSERT new letter (first save or creating copy)
+        console.log(createNewCopy ? '📋 Creating copy of letter' : '✅ Creating new letter (first save)');
 
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
@@ -800,7 +848,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           subjectLines,
           subject: emailSubject || 'מכתב חדש',
           isHtml: true,
-          saveWithStatus: 'saved' // ⭐ Save as 'saved' not 'draft'
+          saveWithStatus: 'saved', // ⭐ Save as 'saved' not 'draft'
+          name: nameToSave // ⭐ Save letter name
         });
 
         if (result.error || !result.data) {
@@ -809,7 +858,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         }
 
         setSavedLetterId(result.data.id);
-        toast.success('המכתב נשמר בהיסטוריית מכתבים');
+        setIsDirty(false); // ✅ Reset dirty state
+        toast.success(createNewCopy ? 'נוצר העתק חדש בהצלחה' : 'המכתב נשמר בהיסטוריית מכתבים');
       }
 
     } catch (error) {
@@ -818,6 +868,26 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     } finally {
       setIsSaving(false);
     }
+  };
+
+  /**
+   * Save letter to history without sending
+   */
+  const handleSaveLetter = async () => {
+    // Validate letter name first
+    if (!letterName.trim()) {
+      toast.error('יש להזין שם למכתב');
+      return;
+    }
+
+    // If letter already saved, show options dialog
+    if (savedLetterId) {
+      setShowSaveOptionsDialog(true);
+      return;
+    }
+
+    // First save - proceed directly
+    await performSave(false);
   };
 
   /**
@@ -1425,6 +1495,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Load basic fields
       setEmailSubject(letter.subject || '');
       setCompanyName(letter.client?.company_name || '');
+      setLetterName(letter.name || ''); // ⭐ Load letter name for edit
+      setIsDirty(false); // ⭐ Reset dirty state - content is fresh from DB
 
       // Load content - prefer body_content_html for editing (without Header/Footer/Payment)
       // This allows clean editing of only the body content in Tiptap editor
@@ -1872,6 +1944,27 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Letter Name - Required for saving */}
+          <div>
+            <Label htmlFor="letter-name" className="text-right rtl:text-right block text-sm font-medium mb-2">
+              שם המכתב *
+            </Label>
+            <Input
+              id="letter-name"
+              value={letterName}
+              onChange={(e) => {
+                setLetterName(e.target.value);
+                markDirty();
+              }}
+              placeholder="לדוגמא: מכתב דרישה לתשלום - לקוח ABC"
+              className="text-right"
+              dir="rtl"
+            />
+            <p className="text-xs text-muted-foreground mt-1 text-right">
+              שם זה ישמש לזיהוי המכתב במסמכים שלך
+            </p>
+          </div>
+
           {/* Step 1: Email Subject + Template Selection - Two Columns */}
           <div>
             <Label className="text-right rtl:text-right block text-base font-semibold mb-4">
@@ -2604,6 +2697,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               value={letterContent}
               onChange={(content) => {
                 setLetterContent(content);
+                markDirty(); // ✅ Track unsaved changes
                 // Mark content as edited when user makes changes
                 if (!hasUserEditedContent && originalBodyContent) {
                   setHasUserEditedContent(true);
@@ -2711,9 +2805,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
                 <Button
                   onClick={handleSaveLetter}
-                  disabled={isSaving || !letterContent.trim()}
+                  disabled={isSaving || !letterContent.trim() || !letterName.trim()}
                   variant="default"
-                  className="w-full"
+                  className="w-full relative"
                 >
                   {isSaving ? (
                     <>
@@ -2724,6 +2818,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     <>
                       <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
                       שמור מכתב
+                      {isDirty && (
+                        <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full" />
+                      )}
                     </>
                   )}
                 </Button>
@@ -3090,6 +3187,42 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           }}
         />
       )}
+
+      {/* Save Options Dialog - overwrite or create copy */}
+      <Dialog open={showSaveOptionsDialog} onOpenChange={setShowSaveOptionsDialog}>
+        <DialogContent className="text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>שמירת מכתב</DialogTitle>
+            <DialogDescription>
+              המכתב "{letterName}" כבר שמור. מה ברצונך לעשות?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              variant="default"
+              onClick={async () => {
+                setShowSaveOptionsDialog(false);
+                await performSave(false); // Update existing
+              }}
+              className="w-full"
+            >
+              <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+              עדכן את הקיים
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setShowSaveOptionsDialog(false);
+                await performSave(true); // Create copy
+              }}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+              צור העתק חדש
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
