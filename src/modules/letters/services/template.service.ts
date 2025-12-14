@@ -567,11 +567,7 @@ export class TemplateService extends BaseService {
                     <!-- SUBJECT LINES END -->
 
                     <!-- BODY START -->
-                    <tr>
-                        <td class="letter-body-content" style="padding: 10px 0; font-size: 16px; line-height: 1.5;">
-                            ${body}
-                        </td>
-                    </tr>
+                    ${body}
                     <!-- BODY END -->
 
                     <!-- PAYMENT START -->
@@ -1036,13 +1032,15 @@ export class TemplateService extends BaseService {
       html = html.replace(/class=""/g, ''); // Remove empty class attributes
 
       // Wrap in table row/cell with David Libre font (CRITICAL: Must be <tr><td> to fit in table structure)
-      html = `<tr><td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
+      // IMPORTANT: class="letter-body-content" is required for CSS table styling to work!
+      html = `<tr><td class="letter-body-content" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
     } else {
       // Otherwise parse Markdown to HTML (legacy support)
       html = parseMarkdownToHTML(text);
 
       // Also wrap Markdown output in table row/cell with David Libre font
-      html = `<tr><td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
+      // IMPORTANT: class="letter-body-content" is required for CSS table styling to work!
+      html = `<tr><td class="letter-body-content" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
     }
 
     return html;
@@ -1303,7 +1301,7 @@ export class TemplateService extends BaseService {
         variables_used: fullVariables,
         generated_content_html: fullHtml,
         generated_content_text: plainText,
-        body_content_html: bodyHtml, // ✅ NEW: Save body separately for editing (without Header/Footer)
+        body_content_html: params.plainText, // ✅ Save RAW HTML from Tiptap (not wrapped) for clean editing
         payment_link: fullVariables.payment_link as string | undefined,
         created_at: new Date().toISOString(),
         created_by: (await supabase.auth.getUser()).data.user?.id,
@@ -1421,7 +1419,7 @@ export class TemplateService extends BaseService {
         .update({
           generated_content_html: fullHtml,
           generated_content_text: plainText,
-          body_content_html: bodyHtml, // ✅ NEW: Update body separately for editing
+          body_content_html: params.plainText, // ✅ Save RAW HTML from Tiptap (not wrapped) for clean editing
           variables_used: fullVariables,
           group_id: params.groupId || null, // Update group_id if provided
           pdf_url: null // ✅ CRITICAL: Clear old PDF to force regeneration
@@ -1711,7 +1709,7 @@ export class TemplateService extends BaseService {
         const header = await this.loadTemplateFile('components/header.html');
         const footer = await this.loadTemplateFile('components/footer.html');
         const bodyHtml = this.parseTextToHTML(params.updates.plainText);
-        newBodyHtml = bodyHtml; // Save for body_content_html
+        newBodyHtml = params.updates.plainText; // ✅ Save RAW HTML (not wrapped) for clean editing
 
         let paymentSection = '';
         if (params.updates.includesPayment !== undefined ? params.updates.includesPayment : originalLetter.variables_used?.includesPayment) {
@@ -1736,7 +1734,7 @@ export class TemplateService extends BaseService {
           variables_used: variables,
           generated_content_html: generatedHtml,
           generated_content_text: params.updates.plainText || originalLetter.generated_content_text,
-          body_content_html: newBodyHtml || originalLetter.body_content_html, // ✅ NEW: Save body separately
+          body_content_html: newBodyHtml || originalLetter.body_content_html, // ✅ RAW HTML for clean editing
           subject: params.updates.emailSubject || originalLetter.subject,
           recipient_emails: originalLetter.recipient_emails,
           status: 'draft',

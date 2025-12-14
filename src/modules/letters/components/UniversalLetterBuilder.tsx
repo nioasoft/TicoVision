@@ -77,6 +77,163 @@ const getContactTypeLabel = (contactType: string): string => {
   return labels[contactType] || contactType;
 };
 
+/**
+ * Convert old table-based bullet format from text-to-html-parser.ts to clean HTML
+ *
+ * The old parser created bullets using tables like:
+ * <table><tr><td><img bullet></td><td>content</td></tr></table>
+ *
+ * This function converts them to simple paragraphs with bullet markers
+ * that Tiptap can properly edit.
+ */
+const convertBulletTablesToHtml = (html: string): string => {
+  let result = html;
+
+  console.log('🔧 [convertBulletTablesToHtml] Input length:', html.length);
+  console.log('🔧 [convertBulletTablesToHtml] Has <table>:', html.includes('<table'));
+  console.log('🔧 [convertBulletTablesToHtml] Has bullet img:', html.includes('alt="•"'));
+
+  // Step 1: Remove HTML comments (like <!-- Section Heading -->, <!-- Paragraph -->)
+  result = result.replace(/<!--[\s\S]*?-->/g, '');
+
+  // Step 2: Extract and convert bullet tables FIRST (before processing other elements)
+  // The bullet table structure has 2-column rows: column 1 = bullet icon, column 2 = content
+  // Match tables that contain bullet images and extract content
+  result = result.replace(
+    /<table[^>]*>[\s\S]*?<\/table>/gi,
+    (tableMatch) => {
+      // TYPE 2: Single-cell tables containing only bullet characters (from Tiptap or legacy data)
+      // These appear as <table><tr><td>•</td></tr></table> and should be removed entirely
+      const strippedContent = tableMatch
+        .replace(/<[^>]+>/g, '') // Remove all HTML tags
+        .replace(/\s/g, ''); // Remove all whitespace
+      if (/^[•\-\*]+$/.test(strippedContent)) {
+        console.log('🔧 [convertBulletTablesToHtml] Removing single-cell bullet table');
+        return '';
+      }
+
+      // TYPE 1: Check if this table contains bullet icons (indicator it's a bullet list)
+      if (!tableMatch.includes('alt="•"') && !tableMatch.includes('bullet_star')) {
+        // Not a bullet table - preserve it (it's a user-created table)
+        console.log('🔧 [convertBulletTablesToHtml] Preserving user table');
+        return tableMatch;
+      }
+
+      console.log('🔧 [convertBulletTablesToHtml] Converting bullet table...');
+
+      // Extract all content cells (the second td in each row)
+      const bulletItems: string[] = [];
+
+      // Pattern to match each row with bullet icon and content
+      // More flexible: allows any whitespace and attribute order
+      const rowRegex = /<tr[^>]*>[\s\S]*?<td[^>]*>[\s\S]*?<img[^>]*>[\s\S]*?<\/td>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>[\s\S]*?<\/tr>/gi;
+      let rowMatch;
+
+      while ((rowMatch = rowRegex.exec(tableMatch)) !== null) {
+        let content = rowMatch[1].trim();
+        // Remove leading/trailing whitespace and clean up
+        content = content.replace(/^\s+|\s+$/g, '');
+        // Remove leading bullet characters that might already be in the content
+        content = content.replace(/^[•\-\*]\s*/g, '');
+        if (content) {
+          // Output as plain paragraph - no bullet prefix needed
+          // (original styled bullets preserved in originalBodyContent for preview)
+          bulletItems.push(`<p>${content}</p>`);
+        }
+      }
+
+      if (bulletItems.length > 0) {
+        console.log('🔧 [convertBulletTablesToHtml] Extracted', bulletItems.length, 'bullet items');
+        return bulletItems.join('\n');
+      }
+
+      // Fallback: if we couldn't extract rows, return empty (remove the bullet table)
+      console.log('🔧 [convertBulletTablesToHtml] No bullet items extracted, removing table');
+      return '';
+    }
+  );
+
+  // Step 3: Convert section headings (wrapped in tr>td>div with 20px font)
+  // Pattern matches: <tr><td style="padding-top: 20px;"><div style="...font-size: 20px...">content</div></td></tr>
+  result = result.replace(
+    /<tr[^>]*>\s*<td[^>]*>\s*<div[^>]*font-size:\s*20px[^>]*>([\s\S]*?)<\/div>\s*<\/td>\s*<\/tr>/gi,
+    '<h2>$1</h2>'
+  );
+
+  // Step 4: Convert paragraphs (wrapped in tr>td>div with 16px font)
+  result = result.replace(
+    /<tr[^>]*>\s*<td[^>]*>\s*<div[^>]*font-size:\s*16px[^>]*>([\s\S]*?)<\/div>\s*<\/td>\s*<\/tr>/gi,
+    '<p>$1</p>'
+  );
+
+  // Step 5: Clean up remaining table wrapper rows (outer tr>td structure)
+  // These are the wrapper rows that contained the above elements
+  result = result.replace(/<tr[^>]*>\s*<td[^>]*padding-top[^>]*>\s*<\/td>\s*<\/tr>/gi, '');
+
+  // Step 6: Clean up border divs - convert to <hr> or remove
+  result = result.replace(/<div[^>]*border-top[^>]*>[\s\S]*?<\/div>/gi, '<hr>');
+
+  // Step 7: Clean up orphaned closing tags from table structure
+  result = result.replace(/<\/td>\s*<\/tr>\s*$/gi, '');
+  result = result.replace(/^\s*<\/td>\s*<\/tr>/gi, '');
+
+  // Step 8: Clean up bullet icon images that were left over
+  // These have alt="•" or src="cid:bullet_star"
+  result = result.replace(/<img[^>]*alt="[•*-]"[^>]*>/gi, '');
+  result = result.replace(/<img[^>]*bullet_star[^>]*>/gi, '');
+
+  // Step 9: Clean up table cells containing ONLY bullet characters (leftovers from conversion)
+  result = result.replace(/<td[^>]*>[\s]*[•*-][\s]*<\/td>/gi, '');
+
+  // Step 10: Clean up empty table cells and rows left from bullet table conversion
+  result = result.replace(/<td[^>]*>\s*<\/td>/gi, '');
+  result = result.replace(/<tr[^>]*>\s*<\/tr>/gi, '');
+  result = result.replace(/<tbody[^>]*>\s*<\/tbody>/gi, '');
+  result = result.replace(/<table[^>]*>\s*<\/table>/gi, '');
+
+  // Step 11: Clean up any remaining tables that only contain bullet rows
+  // (tables with just single-cell rows containing bullets)
+  result = result.replace(/<table[^>]*>[\s\S]*?<\/table>/gi, (tableMatch) => {
+    // If the entire table content is just bullet characters/whitespace/empty cells, remove it
+    const stripped = tableMatch
+      .replace(/<[^>]+>/g, '') // Remove all HTML tags
+      .replace(/[\s•*-]/g, ''); // Remove whitespace and bullet chars
+    if (stripped.length === 0) {
+      console.log('🔧 [convertBulletTablesToHtml] Removing empty/bullet-only table');
+      return '';
+    }
+    return tableMatch;
+  });
+
+  // Step 12: Clean up multiple consecutive empty paragraphs/breaks
+  result = result.replace(/(<p>\s*<\/p>\s*)+/gi, '');
+  result = result.replace(/(<br\s*\/?>\s*)+/gi, '<br>');
+
+  // Step 13: Clean up excessive whitespace
+  result = result.replace(/\n\s*\n\s*\n/g, '\n\n');
+
+  // Step 14: Remove any remaining standalone bullet characters that might confuse Tiptap
+  // These could appear between tags: >•< or in empty paragraphs <p>•</p>
+  result = result.replace(/<p>\s*[•]\s*<\/p>/gi, ''); // Remove paragraphs with just bullet
+  result = result.replace(/>\s*[•]\s*</g, '><'); // Remove bullets between tags
+
+  // Step 15: Strip <p> wrappers from inside colored bullet divs
+  // BlueBullet/DarkRedBullet/BlackBullet extensions expect inline content, not block elements
+  // Convert: <div data-type="blue-bullet"><p>content</p></div>
+  // To:      <div data-type="blue-bullet">content</div>
+  result = result.replace(
+    /<div([^>]*data-type="(?:blue|darkred|black)-bullet"[^>]*)>\s*<p[^>]*>([\s\S]*?)<\/p>\s*<\/div>/gi,
+    '<div$1>$2</div>'
+  );
+
+  console.log('🔧 [convertBulletTablesToHtml] Output length:', result.length);
+  console.log('🔧 [convertBulletTablesToHtml] Still has <table>:', result.includes('<table'));
+  console.log('🔧 [convertBulletTablesToHtml] Still has bullet img:', result.includes('alt="•"'));
+  console.log('🔧 [convertBulletTablesToHtml] Still has bullet char:', result.includes('•'));
+
+  return result.trim();
+};
+
 interface UniversalLetterBuilderProps {
   editLetterId?: string | null;
 }
@@ -87,6 +244,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
   // State - Text content
   const [letterContent, setLetterContent] = useState(''); // Changed from plainText to letterContent (HTML from Tiptap)
+  const [originalBodyContent, setOriginalBodyContent] = useState<string | null>(null); // Original content from DB (for preview with styled bullets)
+  const [hasUserEditedContent, setHasUserEditedContent] = useState(false); // Track if user edited the content
   const [companyName, setCompanyName] = useState('');
   const [commercialName, setCommercialName] = useState('');
   const [showCommercialName, setShowCommercialName] = useState(false);
@@ -537,8 +696,14 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         });
       }
 
+      // Use originalBodyContent for preview if available AND user hasn't edited
+      // This keeps styled bullets for old letters while respecting user edits
+      const contentForPreview = (originalBodyContent && !hasUserEditedContent)
+        ? originalBodyContent
+        : letterContent;
+
       const { data, error } = await templateService.previewCustomLetter({
-        plainText: letterContent, // Send HTML content
+        plainText: contentForPreview, // Use original styled content for preview
         variables,
         includesPayment,
         customHeaderLines: headerLinesForPreview, // Pass custom header lines to preview
@@ -1249,6 +1414,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setEditMode(true);
       setEditingLetterId(letterId);
       setParentLetterId(letter.parent_letter_id || letterId);
+      setHasUserEditedContent(false); // Reset edit tracking when loading a letter
 
       // Load basic fields
       setEmailSubject(letter.subject || '');
@@ -1257,7 +1423,67 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Load content - prefer body_content_html for editing (without Header/Footer/Payment)
       // This allows clean editing of only the body content in Tiptap editor
       if (letter.body_content_html) {
-        setLetterContent(letter.body_content_html); // ✅ Body only - no Header/Footer!
+        let content = letter.body_content_html;
+
+        console.log('📄 [loadLetterForEdit] Original body_content_html length:', content.length);
+        console.log('📄 [loadLetterForEdit] First 500 chars:', content.substring(0, 500));
+
+        // Strip ALL <tr><td> wrappers - may have multiple layers from old saves
+        // Loop until no more wrappers are found (handles double/triple wrapping bugs)
+        let strippedLayers = 0;
+        const maxLayers = 5; // Safety limit
+
+        while (strippedLayers < maxLayers) {
+          const trimmed = content.trim();
+
+          // Check if content starts with a wrapper pattern
+          if (!trimmed.startsWith('<tr>') && !trimmed.startsWith('<!-- Tiptap Content -->') &&
+              !trimmed.startsWith('<!-- Section Heading -->') && !trimmed.startsWith('<!-- Paragraph -->')) {
+            break; // No more wrappers
+          }
+
+          // Try to extract content from <td class="letter-body-content">...</td>
+          const matchWithClass = content.match(/<td[^>]*class="letter-body-content"[^>]*>([\s\S]*)<\/td>\s*<\/tr>\s*$/);
+          if (matchWithClass) {
+            content = matchWithClass[1];
+            strippedLayers++;
+            console.log('📄 [loadLetterForEdit] Stripped layer', strippedLayers, '(with class)');
+            continue;
+          }
+
+          // Fallback: extract from <tr><td>...</td></tr> without class
+          const matchSimple = content.match(/<tr>\s*<td[^>]*>([\s\S]*)<\/td>\s*<\/tr>\s*$/);
+          if (matchSimple) {
+            content = matchSimple[1];
+            strippedLayers++;
+            console.log('📄 [loadLetterForEdit] Stripped layer', strippedLayers, '(simple)');
+            continue;
+          }
+
+          break; // No regex match, stop
+        }
+
+        console.log('📄 [loadLetterForEdit] Stripped', strippedLayers, 'wrapper layers. Length:', content.length);
+        console.log('📄 [loadLetterForEdit] Content has <table>:', content.includes('<table'));
+
+        // Store ORIGINAL content for preview/PDF (keeps styled bullets with blue stars)
+        setOriginalBodyContent(content);
+
+        // Convert table-based bullets to clean HTML for Tiptap editing
+        // Old letters use tables for bullet styling - these show as ugly tables in Tiptap
+        // After conversion, bullets appear as regular text that Tiptap can edit
+        const convertedContent = convertBulletTablesToHtml(content);
+        console.log('📄 [loadLetterForEdit] After conversion, has <table>:', convertedContent.includes('<table'));
+        console.log('📄 [loadLetterForEdit] Converted content first 2000 chars:', convertedContent.substring(0, 2000));
+
+        // LOG: Check if there are any remaining table tags and what they contain
+        const tableMatches = convertedContent.match(/<table[^>]*>[\s\S]*?<\/table>/gi);
+        if (tableMatches) {
+          console.log('📄 [loadLetterForEdit] Found remaining tables:', tableMatches.length);
+          tableMatches.forEach((t, i) => console.log(`📄 Table ${i + 1}:`, t.substring(0, 200)));
+        }
+
+        setLetterContent(convertedContent); // ✅ Clean content for Tiptap!
       } else if (letter.generated_content_html) {
         // Fallback for old letters created before migration 101
         setLetterContent(letter.generated_content_html);
@@ -2351,7 +2577,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </Label>
             <TiptapEditor
               value={letterContent}
-              onChange={setLetterContent}
+              onChange={(content) => {
+                setLetterContent(content);
+                // Mark content as edited when user makes changes
+                if (!hasUserEditedContent && originalBodyContent) {
+                  setHasUserEditedContent(true);
+                }
+              }}
               placeholder="הקלד את תוכן המכתב..."
               minHeight="400px"
             />

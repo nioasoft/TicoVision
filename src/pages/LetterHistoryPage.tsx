@@ -43,6 +43,8 @@ import { ResendLetterDialog } from '@/modules/letters/components/ResendLetterDia
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 import { ClientSelector } from '@/components/ClientSelector';
 import { Checkbox } from '@/components/ui/checkbox';
+import { clientService, type ClientGroup } from '@/services/client.service';
+import { Combobox } from '@/components/ui/combobox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, Filter, List, Users, Calendar as CalendarListIcon, ArrowUpDown } from 'lucide-react';
@@ -53,13 +55,16 @@ export function LetterHistoryPage() {
   const navigate = useNavigate();
   const pdfService = new PDFGenerationService();
 
-  // State
-  const [activeTab, setActiveTab] = useState<'sent' | 'drafts'>('sent');
+  // State - 4 tabs: all, drafts, saved, sent
+  const [activeTab, setActiveTab] = useState<'all' | 'drafts' | 'saved' | 'sent'>('all');
   const [loading, setLoading] = useState(true);
-  const [sentLetters, setSentLetters] = useState<LetterHistoryItem[]>([]);
-  const [draftLetters, setDraftLetters] = useState<LetterHistoryItem[]>([]);
-  const [totalSent, setTotalSent] = useState(0);
-  const [totalDrafts, setTotalDrafts] = useState(0);
+  const [letters, setLetters] = useState<LetterHistoryItem[]>([]);
+  const [totalLetters, setTotalLetters] = useState(0);
+
+  // Group filter
+  const [groups, setGroups] = useState<ClientGroup[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [isLoadingGroups, setIsLoadingGroups] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,7 +113,30 @@ export function LetterHistoryPage() {
   useEffect(() => {
     loadData();
     loadStatistics();
-  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, selectedClientId, selectedStatuses, dateFrom, dateTo, currentPage, sortField, sortDirection]);
+  }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, selectedClientId, selectedGroupId, selectedStatuses, dateFrom, dateTo, currentPage, sortField, sortDirection]);
+
+  /**
+   * Load groups for group filter
+   */
+  useEffect(() => {
+    loadGroups();
+  }, []);
+
+  /**
+   * Load groups
+   */
+  const loadGroups = async () => {
+    try {
+      setIsLoadingGroups(true);
+      const { data, error } = await clientService.getGroups();
+      if (error) throw error;
+      setGroups(data || []);
+    } catch (error) {
+      console.error('Error loading groups:', error);
+    } finally {
+      setIsLoadingGroups(false);
+    }
+  };
 
   /**
    * Load letter data
@@ -116,34 +144,48 @@ export function LetterHistoryPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Build filters
+      // Build filters based on activeTab
       const filters: LetterHistoryFilters = {
-        status: activeTab === 'sent' ? undefined : ['draft', 'saved'], // Updated: include both draft and saved
         searchQuery: searchQuery || undefined,
         templateType: templateFilter !== 'all' ? templateFilter : undefined,
-        feeLettersOnly: showOnlyFeeLetters || undefined, // NEW: Filter for fee letters
+        feeLettersOnly: showOnlyFeeLetters || undefined,
       };
 
-      // ⭐ NEW: Advanced filters
+      // Status filter based on tab
+      switch (activeTab) {
+        case 'all':
+          // No status filter - show all
+          break;
+        case 'drafts':
+          filters.status = 'draft';
+          break;
+        case 'saved':
+          filters.status = 'saved';
+          break;
+        case 'sent':
+          filters.status = ['sent_email', 'sent_whatsapp', 'sent_print'];
+          break;
+      }
+
+      // Client filter
       if (selectedClientId) {
         filters.clientId = selectedClientId;
       }
 
-      // ⭐ NEW: Status multi-select (only if not controlled by activeTab)
-      if (selectedStatuses.length > 0 && activeTab === 'sent') {
-        // For sent tab, use selected statuses if any
-        filters.status = selectedStatuses;
-      } else if (selectedStatuses.length > 0 && activeTab === 'drafts') {
-        // For drafts tab, intersect with draft statuses
-        const draftStatuses = ['draft', 'saved'];
-        filters.status = selectedStatuses.filter(s => draftStatuses.includes(s));
+      // Group filter
+      if (selectedGroupId) {
+        filters.groupId = selectedGroupId;
       }
 
-      // ⭐ NEW: Date range filter (overrides preset dateFilter if set)
+      // Status multi-select from advanced filters (overrides tab filter)
+      if (selectedStatuses.length > 0) {
+        filters.status = selectedStatuses;
+      }
+
+      // Date range filter (overrides preset dateFilter if set)
       if (dateFrom) {
         filters.dateFrom = dateFrom.toISOString();
       } else if (dateFilter !== 'all') {
-        // Fallback to preset date filter if custom range not set
         const now = new Date();
         if (dateFilter === 'today') {
           filters.dateFrom = new Date(now.setHours(0, 0, 0, 0)).toISOString();
@@ -160,12 +202,7 @@ export function LetterHistoryPage() {
         filters.dateTo = dateTo.toISOString();
       }
 
-      // For sent tab, show only sent emails (unless status multi-select is active)
-      if (activeTab === 'sent' && selectedStatuses.length === 0) {
-        filters.status = 'sent_email'; // Updated: use new status value
-      }
-
-      // ⭐ Use selected sorting
+      // Load data with sorting
       const { data, total, error } = await letterHistoryService.getAllLetters(
         filters,
         { page: currentPage, pageSize },
@@ -174,13 +211,8 @@ export function LetterHistoryPage() {
 
       if (error) throw error;
 
-      if (activeTab === 'sent') {
-        setSentLetters(data);
-        setTotalSent(total);
-      } else {
-        setDraftLetters(data);
-        setTotalDrafts(total);
-      }
+      setLetters(data);
+      setTotalLetters(total);
     } catch (error) {
       console.error('Error loading letters:', error);
       toast.error('שגיאה בטעינת המכתבים');
@@ -226,10 +258,10 @@ export function LetterHistoryPage() {
    * Select/deselect all drafts
    */
   const toggleSelectAll = () => {
-    if (selectedDraftIds.length === draftLetters.length) {
+    if (selectedDraftIds.length === letters.length) {
       setSelectedDraftIds([]); // Deselect all
     } else {
-      setSelectedDraftIds(draftLetters.map(d => d.id)); // Select all
+      setSelectedDraftIds(letters.map(d => d.id)); // Select all
     }
   };
 
@@ -369,17 +401,21 @@ export function LetterHistoryPage() {
     setTemplateFilter('all');
     setDateFilter('all');
     setShowOnlyFeeLetters(false);
-    // ⭐ NEW: Reset advanced filters
+    // Reset advanced filters
     setSelectedClientId(null);
+    setSelectedGroupId(null);
     setSelectedStatuses([]);
     setDateFrom(undefined);
     setDateTo(undefined);
     setCurrentPage(1);
   };
 
-  const currentLetters = activeTab === 'sent' ? sentLetters : draftLetters;
-  const currentTotal = activeTab === 'sent' ? totalSent : totalDrafts;
+  const currentLetters = letters;
+  const currentTotal = totalLetters;
   const totalPages = Math.ceil(currentTotal / pageSize);
+
+  // Check if we're in a drafts-related tab
+  const isDraftsMode = activeTab === 'drafts' || activeTab === 'saved';
 
   /**
    * ⭐ NEW: Group letters by client
@@ -587,6 +623,33 @@ export function LetterHistoryPage() {
               </SelectContent>
             </Select>
 
+            {/* Client Filter - Visible */}
+            <div className="w-[200px]">
+              <ClientSelector
+                value={selectedClientId}
+                onChange={(client) => setSelectedClientId(client?.id || null)}
+                placeholder="סינון לפי לקוח..."
+              />
+            </div>
+
+            {/* Group Filter - Visible */}
+            <Select
+              value={selectedGroupId || 'all'}
+              onValueChange={(value) => setSelectedGroupId(value === 'all' ? null : value)}
+            >
+              <SelectTrigger className="w-[200px] rtl:text-right ltr:text-left">
+                <SelectValue placeholder="סינון לפי קבוצה..." />
+              </SelectTrigger>
+              <SelectContent className="rtl:text-right ltr:text-left">
+                <SelectItem value="all">כל הקבוצות</SelectItem>
+                {groups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.group_name_hebrew || group.group_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {/* Fee Letters Filter Toggle */}
             <div className="flex items-center gap-2 rtl:flex-row-reverse">
               <Switch
@@ -599,13 +662,13 @@ export function LetterHistoryPage() {
               </Label>
             </div>
 
-            {/* ⭐ NEW: Advanced Filters Button */}
+            {/* ⭐ Advanced Filters Button - Date range and sent status filter */}
             <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Filter className="h-4 w-4" />
                   פילטרים מתקדמים
-                  {(selectedClientId || selectedStatuses.length > 0 || dateFrom || dateTo) && (
+                  {(selectedStatuses.length > 0 || dateFrom || dateTo) && (
                     <span className="flex h-2 w-2 rounded-full bg-blue-600" />
                   )}
                 </Button>
@@ -613,16 +676,6 @@ export function LetterHistoryPage() {
               <PopoverContent className="w-96 rtl:text-right ltr:text-left" align="end">
                 <div className="space-y-4">
                   <h4 className="font-medium">פילטרים מתקדמים</h4>
-
-                  {/* Client Filter */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <Label className="mb-2 block rtl:text-right ltr:text-left">סינון לפי לקוח</Label>
-                    <ClientSelector
-                      value={selectedClientId}
-                      onChange={(client) => setSelectedClientId(client?.id || null)}
-                      placeholder="בחר לקוח..."
-                    />
-                  </div>
 
                   {/* Status Multi-Select (only for sent tab) */}
                   {activeTab === 'sent' && (
@@ -702,12 +755,11 @@ export function LetterHistoryPage() {
                   </div>
 
                   {/* Clear Advanced Filters */}
-                  {(selectedClientId || selectedStatuses.length > 0 || dateFrom || dateTo) && (
+                  {(selectedStatuses.length > 0 || dateFrom || dateTo) && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedClientId(null);
                         setSelectedStatuses([]);
                         setDateFrom(undefined);
                         setDateTo(undefined);
@@ -721,7 +773,7 @@ export function LetterHistoryPage() {
               </PopoverContent>
             </Popover>
 
-            {(searchQuery || templateFilter !== 'all' || dateFilter !== 'all' || selectedClientId || selectedStatuses.length > 0 || dateFrom || dateTo || showOnlyFeeLetters) && (
+            {(searchQuery || templateFilter !== 'all' || dateFilter !== 'all' || selectedClientId || selectedGroupId || selectedStatuses.length > 0 || dateFrom || dateTo || showOnlyFeeLetters) && (
               <Button variant="ghost" onClick={resetFilters}>
                 נקה הכל
               </Button>
@@ -789,85 +841,31 @@ export function LetterHistoryPage() {
             </div>
           </div>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'sent' | 'drafts')}>
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="sent" className="gap-2">
+          {/* 4 Tabs: הכל | טיוטות | שמורים | נשלחו */}
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'drafts' | 'saved' | 'sent')}>
+            <TabsList className="grid w-full max-w-2xl grid-cols-4">
+              <TabsTrigger value="all" className="gap-2">
                 <FileText className="h-4 w-4" />
-                מכתבים שנשלחו ({stats.sent})
+                הכל ({stats.total})
               </TabsTrigger>
               <TabsTrigger value="drafts" className="gap-2">
                 <Clock className="h-4 w-4" />
-                טיוטות ({stats.drafts})
+                טיוטות
+              </TabsTrigger>
+              <TabsTrigger value="saved" className="gap-2">
+                <FileText className="h-4 w-4" />
+                שמורים
+              </TabsTrigger>
+              <TabsTrigger value="sent" className="gap-2">
+                <FileText className="h-4 w-4" />
+                נשלחו ({stats.sent})
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="sent" className="mt-6">
-              {loading ? (
-                <div className="flex justify-center py-12">
-                  <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              ) : viewMode === 'flat' ? (
-                // ⭐ Flat view - regular table
-                <LetterHistoryTable
-                  letters={currentLetters}
-                  onViewLetter={handleViewLetter}
-                  onResendLetter={handleResendLetter}
-                  onEditLetter={handleEditLetter}
-                  onPrintLetter={handlePrintLetter}
-                  onGeneratePDF={handleGeneratePDF}
-                  isDraftsMode={false}
-                />
-              ) : viewMode === 'by_client' ? (
-                // ⭐ Grouped by client
-                <div className="space-y-6">
-                  {groupByClient(currentLetters).map(group => (
-                    <div key={group.key} className="space-y-2">
-                      <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
-                        <Users className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-semibold">{group.label}</h3>
-                        <span className="text-sm text-muted-foreground">({group.count} מכתבים)</span>
-                      </div>
-                      <LetterHistoryTable
-                        letters={group.letters}
-                        onViewLetter={handleViewLetter}
-                        onResendLetter={handleResendLetter}
-                        onEditLetter={handleEditLetter}
-                        onPrintLetter={handlePrintLetter}
-                        onGeneratePDF={handleGeneratePDF}
-                        isDraftsMode={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                // ⭐ Grouped by date
-                <div className="space-y-6">
-                  {groupByDate(currentLetters).map(group => (
-                    <div key={group.key} className="space-y-2">
-                      <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
-                        <CalendarListIcon className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-semibold">{group.label}</h3>
-                        <span className="text-sm text-muted-foreground">({group.count} מכתבים)</span>
-                      </div>
-                      <LetterHistoryTable
-                        letters={group.letters}
-                        onViewLetter={handleViewLetter}
-                        onResendLetter={handleResendLetter}
-                        onEditLetter={handleEditLetter}
-                        onPrintLetter={handlePrintLetter}
-                        onGeneratePDF={handleGeneratePDF}
-                        isDraftsMode={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="drafts" className="mt-6">
+            {/* Single content area for all tabs */}
+            <div className="mt-6">
               {/* Bulk actions for drafts */}
-              {draftLetters.length > 0 && (
+              {isDraftsMode && letters.length > 0 && (
                 <div className="flex items-center gap-2 mb-4">
                   <Button
                     variant={isSelectMode ? 'default' : 'outline'}
@@ -894,7 +892,7 @@ export function LetterHistoryPage() {
                         size="sm"
                         onClick={toggleSelectAll}
                       >
-                        {selectedDraftIds.length === draftLetters.length
+                        {selectedDraftIds.length === letters.length
                           ? 'בטל הכל'
                           : 'בחר הכל'}
                       </Button>
@@ -927,7 +925,7 @@ export function LetterHistoryPage() {
                   onEditLetter={handleEditLetter}
                   onDeleteDraft={handleDeleteDraft}
                   onGeneratePDF={handleGeneratePDF}
-                  isDraftsMode={true}
+                  isDraftsMode={isDraftsMode}
                   isSelectMode={isSelectMode}
                   selectedIds={selectedDraftIds}
                   onToggleSelect={toggleDraftSelection}
@@ -940,7 +938,7 @@ export function LetterHistoryPage() {
                       <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
                         <Users className="h-5 w-5 text-muted-foreground" />
                         <h3 className="font-semibold">{group.label}</h3>
-                        <span className="text-sm text-muted-foreground">({group.count} טיוטות)</span>
+                        <span className="text-sm text-muted-foreground">({group.count} מכתבים)</span>
                       </div>
                       <LetterHistoryTable
                         letters={group.letters}
@@ -949,7 +947,7 @@ export function LetterHistoryPage() {
                         onEditLetter={handleEditLetter}
                         onDeleteDraft={handleDeleteDraft}
                         onGeneratePDF={handleGeneratePDF}
-                        isDraftsMode={true}
+                        isDraftsMode={isDraftsMode}
                         isSelectMode={isSelectMode}
                         selectedIds={selectedDraftIds}
                         onToggleSelect={toggleDraftSelection}
@@ -965,7 +963,7 @@ export function LetterHistoryPage() {
                       <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2">
                         <CalendarListIcon className="h-5 w-5 text-muted-foreground" />
                         <h3 className="font-semibold">{group.label}</h3>
-                        <span className="text-sm text-muted-foreground">({group.count} טיוטות)</span>
+                        <span className="text-sm text-muted-foreground">({group.count} מכתבים)</span>
                       </div>
                       <LetterHistoryTable
                         letters={group.letters}
@@ -974,7 +972,7 @@ export function LetterHistoryPage() {
                         onEditLetter={handleEditLetter}
                         onDeleteDraft={handleDeleteDraft}
                         onGeneratePDF={handleGeneratePDF}
-                        isDraftsMode={true}
+                        isDraftsMode={isDraftsMode}
                         isSelectMode={isSelectMode}
                         selectedIds={selectedDraftIds}
                         onToggleSelect={toggleDraftSelection}
@@ -983,7 +981,7 @@ export function LetterHistoryPage() {
                   ))}
                 </div>
               )}
-            </TabsContent>
+            </div>
           </Tabs>
 
           {/* Pagination */}

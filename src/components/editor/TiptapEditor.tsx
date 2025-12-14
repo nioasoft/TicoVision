@@ -7,6 +7,22 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 
 // Custom Image extension with width/height support and text alignment
 const ResizableImage = Image.extend({
@@ -59,7 +75,35 @@ const ResizableImage = Image.extend({
     };
   },
 });
-import { Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, AlignRight, Stamp } from 'lucide-react';
+
+// Custom TableCell extension with background color support
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      backgroundColor: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-background-color'),
+        renderHTML: attributes => {
+          if (!attributes.backgroundColor) {
+            return {};
+          }
+          return {
+            'data-background-color': attributes.backgroundColor,
+            style: `background-color: ${attributes.backgroundColor}`,
+          };
+        },
+      },
+    };
+  },
+});
+
+import { 
+  Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, 
+  Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, 
+  AlignRight, Stamp, Table as TableIcon, Trash2, Plus, Split, Merge,
+  ArrowDown, ArrowUp, ArrowLeft, ArrowRight, PanelTop, PanelLeft, BoxSelect
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
@@ -167,6 +211,15 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         style: 'display: block;',
       },
     }),
+    Table.configure({
+      resizable: true,
+      HTMLAttributes: {
+        class: 'border-collapse table-auto w-full',
+      },
+    }),
+    TableRow,
+    TableHeader,
+    CustomTableCell, // Use CustomTableCell instead of TableCell
   ], []); // Empty dependency array - extensions never change
 
   const editor = useEditor({
@@ -351,6 +404,131 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
           {/* Colored Bullets (Blue, Dark Red, Black) */}
           <ColoredBulletButtons editor={editor} />
+        </div>
+
+        <div className="h-6 w-px bg-border mx-1" />
+
+        {/* Table Menu */}
+        <div className="flex items-center gap-1 rtl:flex-row-reverse">
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant={editor.isActive('table') ? 'secondary' : 'ghost'}
+                size="sm"
+                title="טבלה"
+              >
+                <TableIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
+              <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+                <Plus className="h-4 w-4 ml-2" />
+                הוסף טבלה (3x3)
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>
+                <ArrowRight className="h-4 w-4 ml-2" />
+                הוסף עמודה מימין
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
+                <ArrowLeft className="h-4 w-4 ml-2" />
+                הוסף עמודה משמאל
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()} className="text-red-600">
+                <Trash2 className="h-4 w-4 ml-2" />
+                מחק עמודה
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
+                <ArrowUp className="h-4 w-4 ml-2" />
+                הוסף שורה מעל
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
+                <ArrowDown className="h-4 w-4 ml-2" />
+                הוסף שורה מתחת
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()} className="text-red-600">
+                <Trash2 className="h-4 w-4 ml-2" />
+                מחק שורה
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+
+              {/* Advanced Properties */}
+              <DropdownMenuLabel>מאפיינים</DropdownMenuLabel>
+              
+              {/* Cell Background Color */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Palette className="h-4 w-4 ml-2" />
+                  צבע רקע לתא
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', null).run()}>
+                    <span className="w-4 h-4 rounded border border-gray-300 mr-2 flex items-center justify-center text-[10px]">❌</span>
+                    ללא צבע
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#f3f4f6').run()}>
+                    <div className="w-4 h-4 rounded border bg-gray-100 ml-2" />
+                    אפור בהיר
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#dbeafe').run()}>
+                    <div className="w-4 h-4 rounded border bg-blue-100 ml-2" />
+                    כחול בהיר
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#dcfce7').run()}>
+                    <div className="w-4 h-4 rounded border bg-green-100 ml-2" />
+                    ירוק בהיר
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#fee2e2').run()}>
+                    <div className="w-4 h-4 rounded border bg-red-100 ml-2" />
+                    אדום בהיר
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#fef9c3').run()}>
+                    <div className="w-4 h-4 rounded border bg-yellow-100 ml-2" />
+                    צהוב בהיר
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              {/* Header Toggles */}
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeaderRow().run()} disabled={!editor.can().toggleHeaderRow()}>
+                <PanelTop className="h-4 w-4 ml-2" />
+                הפוך שורה לכותרת
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeaderColumn().run()} disabled={!editor.can().toggleHeaderColumn()}>
+                <PanelLeft className="h-4 w-4 ml-2" />
+                הפוך עמודה לכותרת
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeaderCell().run()} disabled={!editor.can().toggleHeaderCell()}>
+                <BoxSelect className="h-4 w-4 ml-2" />
+                הפוך תא לכותרת
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={() => editor.chain().focus().mergeCells().run()} disabled={!editor.can().mergeCells()}>
+                <Merge className="h-4 w-4 ml-2" />
+                מזג תאים
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().splitCell().run()} disabled={!editor.can().splitCell()}>
+                <Split className="h-4 w-4 ml-2" />
+                פצל תאים
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()} className="text-red-600">
+                <Trash2 className="h-4 w-4 ml-2" />
+                מחק טבלה
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Horizontal Rule */}
           <Button

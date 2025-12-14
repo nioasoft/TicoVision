@@ -172,6 +172,7 @@ export function LetterHistoryTable({
             <TableHead className="rtl:text-right ltr:text-left">נושא</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">סוג מכתב</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">לקוח</TableHead>
+            <TableHead className="rtl:text-right ltr:text-left">קבוצה</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">תאריך</TableHead>
             <TableHead className="rtl:text-right ltr:text-left w-[80px]">גרסה</TableHead>
           </TableRow>
@@ -309,6 +310,13 @@ export function LetterHistoryTable({
               {/* Client */}
               <TableCell className="rtl:text-right ltr:text-left font-medium">
                 {letter.client_company || letter.client_name || 'לא צוין'}
+              </TableCell>
+
+              {/* Group */}
+              <TableCell className="rtl:text-right ltr:text-left">
+                {letter.group_name_hebrew || (
+                  <span className="text-muted-foreground">-</span>
+                )}
               </TableCell>
 
               {/* Date */}

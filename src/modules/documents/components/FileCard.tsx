@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { FileText, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DocFile } from '../types';
+import type { DocFile } from '../types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -42,7 +42,7 @@ export function FileCard({ file, selected, onSelect, onDoubleClick }: FileCardPr
       </div>
 
       {/* Content */}
-      <div className="space-y-1">
+      <div className="space-y-1 text-right">
         <h4 className="text-sm font-medium leading-tight line-clamp-2 text-slate-700 group-hover:text-blue-700">
           {file.subject}
         </h4>

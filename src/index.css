@@ -151,3 +151,120 @@ input[type="number"] {
   border-top: 1px solid hsl(var(--color-border));
   margin: 1.5rem 0;
 }
+
+/* Tiptap Editor - Table Styles */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  min-width: 1em;
+  border: 1px solid black;
+  padding: 3px 5px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror th {
+  font-weight: bold;
+  text-align: right; /* Default RTL */
+  background-color: hsl(var(--color-muted));
+}
+
+.ProseMirror .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: #adf;
+  pointer-events: none;
+}
+
+/* ============================================
+   Colored Bullet Items (BlueBullet, DarkRedBullet, BlackBullet)
+   Show the actual bullet icon, hide table borders
+   ============================================ */
+
+/* Base styles for all colored bullet items */
+.ProseMirror .blue-bullet-item,
+.ProseMirror .darkred-bullet-item,
+.ProseMirror .black-bullet-item {
+  margin-bottom: 8px;
+}
+
+/* Remove table borders for colored bullet layout tables */
+.ProseMirror .blue-bullet-item table,
+.ProseMirror .darkred-bullet-item table,
+.ProseMirror .black-bullet-item table {
+  border: none !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.ProseMirror .blue-bullet-item table td,
+.ProseMirror .darkred-bullet-item table td,
+.ProseMirror .black-bullet-item table td {
+  border: none !important;
+  padding: 0 !important;
+  vertical-align: top !important;
+}
+
+/* Show the bullet icon */
+.ProseMirror .blue-bullet-item img,
+.ProseMirror .darkred-bullet-item img,
+.ProseMirror .black-bullet-item img {
+  display: block !important;
+  width: 11px !important;
+  height: 11px !important;
+  margin-top: 4px;
+}
+
+/* ============================================
+   Preview & Email - Colored Bullet Tables (no borders)
+   These are tables that contain bullet icons from template.service
+   ============================================ */
+
+/* Tables containing bullet icons should not have visible borders */
+.select-text table:has(img[alt="•"]),
+.letter-body-content table:has(img[alt="•"]) {
+  border: none !important;
+  border-collapse: collapse !important;
+}
+
+.select-text table:has(img[alt="•"]) td,
+.letter-body-content table:has(img[alt="•"]) td {
+  border: none !important;
+  padding: 2px 8px 2px 0 !important;
+  vertical-align: top !important;
+}
+
+/* Also target tables where first cell contains bullet image */
+.select-text table td:first-child:has(img[alt="•"]),
+.letter-body-content table td:first-child:has(img[alt="•"]) {
+  width: 20px !important;
+  padding-top: 4px !important;
+  padding-right: 0 !important;
+}
+
+/* ============================================ */
+
+.ProseMirror p {
+  margin: 0;
+}

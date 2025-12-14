@@ -6,7 +6,7 @@ import {
   ArrowUpDown,
   Filter
 } from 'lucide-react';
-import { DocFile, ViewMode, FolderItem } from '../types';
+import type { DocFile, ViewMode, FolderItem } from '../types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
@@ -130,8 +130,8 @@ export function DocumentsView({
           </div>
         ) : (
           /* List View */
-          <div className="bg-white rounded-lg border shadow-sm divide-y">
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50 text-xs font-medium text-slate-500 rounded-t-lg">
+          <div className="bg-white rounded-lg border shadow-sm divide-y" dir="rtl">
+            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-slate-50 text-xs font-medium text-slate-500 rounded-t-lg text-right">
               <div className="col-span-4">שם המסמך</div>
               <div className="col-span-3">לקוח/קבוצה</div>
               <div className="col-span-2">סטטוס</div>
@@ -142,7 +142,7 @@ export function DocumentsView({
               <div 
                 key={doc.id}
                 className={cn(
-                  "grid grid-cols-12 gap-4 px-4 py-3 text-sm items-center hover:bg-slate-50 cursor-pointer transition-colors",
+                  "grid grid-cols-12 gap-4 px-4 py-3 text-sm items-center hover:bg-slate-50 cursor-pointer transition-colors text-right",
                   selectedFileId === doc.id && "bg-blue-50/50 hover:bg-blue-50"
                 )}
                 onClick={() => onSelectFile(doc)}
@@ -166,7 +166,7 @@ export function DocumentsView({
                 </div>
                 <div className="col-span-1 text-left">
                   <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <ChevronRight className="h-4 w-4 text-slate-300" />
+                    <ChevronRight className="h-4 w-4 text-slate-300 rotate-180" />
                   </Button>
                 </div>
               </div>

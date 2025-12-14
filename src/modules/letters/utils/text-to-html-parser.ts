@@ -192,8 +192,22 @@ function closeBulletSection(): string {
 /**
  * Parse plain text to HTML
  * Main function that orchestrates the parsing
+ *
+ * @param plainText - The text to parse (or HTML content if isHtml is true)
+ * @param isHtml - If true, treats plainText as already-parsed HTML (from Tiptap) and skips markdown parsing
  */
-export function parseTextToHTML(plainText: string): string {
+export function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
+  // If content is already HTML (from Tiptap), just wrap it in a container and return
+  // This preserves the tables, lists, and formatting created by the WYSIWYG editor
+  if (isHtml) {
+    return `<!-- Tiptap Content -->
+    <tr>
+      <td class="letter-body-content" style="padding: 10px 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.2; color: #09090b;">
+        ${plainText}
+      </td>
+    </tr>`;
+  }
+
   const lines = plainText.split('\n');
   const parsedLines = lines.map(line => parseLineType(line));
 

@@ -12,15 +12,17 @@ export interface LetterHistoryFilters {
   status?: 'draft' | 'saved' | 'sent_email' | 'sent_whatsapp' | 'sent_print' | string[] | string; // Updated: new status values + array support
   templateType?: string;
   clientId?: string;
+  groupId?: string; // NEW: Filter by group
   dateFrom?: string;
   dateTo?: string;
   searchQuery?: string;
-  feeLettersOnly?: boolean; // NEW: Filter to show only fee letters
+  feeLettersOnly?: boolean; // Filter to show only fee letters
 }
 
 export interface LetterHistoryItem extends GeneratedLetter {
   client_name?: string;
   client_company?: string;
+  group_name_hebrew?: string;
 }
 
 export interface PaginationParams {
@@ -48,7 +50,7 @@ class LetterHistoryService {
         throw new Error('No tenant ID found');
       }
 
-      // Build query
+      // Build query with client and group joins
       let query = supabase
         .from('generated_letters')
         .select(`
@@ -57,6 +59,10 @@ class LetterHistoryService {
             id,
             company_name,
             tax_id
+          ),
+          group:client_groups (
+            id,
+            group_name_hebrew
           )
         `, { count: 'exact' })
         .eq('tenant_id', tenantId);
@@ -77,6 +83,10 @@ class LetterHistoryService {
 
       if (filters.clientId) {
         query = query.eq('client_id', filters.clientId);
+      }
+
+      if (filters.groupId) {
+        query = query.eq('group_id', filters.groupId);
       }
 
       if (filters.dateFrom) {
@@ -122,11 +132,12 @@ class LetterHistoryService {
 
       if (error) throw error;
 
-      // Transform data to include client_name
+      // Transform data to include client_name and group info
       const transformedData: LetterHistoryItem[] = (data || []).map((letter: any) => ({
         ...letter,
         client_name: letter.client?.company_name,
         client_company: letter.client?.company_name,
+        group_name_hebrew: letter.group?.group_name_hebrew,
       }));
 
       return {
