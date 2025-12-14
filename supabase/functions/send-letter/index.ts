@@ -232,16 +232,43 @@ function wrapCustomPaymentText(html: string): string {
 }
 
 /**
- * Replace Base64 BlueBullet images with CID reference for email compatibility
+ * Replace SVG/PNG bullet images with CID references based on data-type attribute
  * Gmail and Outlook block Base64 images, so we use CID attachments instead
  *
- * @param html - HTML content with Base64 bullet images
- * @returns HTML with CID references (cid:bullet_star_blue)
+ * Handles all bullet colors:
+ * - blue-bullet → cid:bullet_star_blue
+ * - darkred-bullet → cid:bullet_star_darkred
+ * - black-bullet → cid:bullet_star
+ *
+ * @param html - HTML content with Base64 bullet images (SVG or PNG)
+ * @returns HTML with CID references
  */
-function replaceBlueBulletWithCID(html: string): string {
-  // Replace all Base64 PNG images (from BlueBullet extension) with CID reference
-  // The actual image is already attached to email as 'bullet_star_blue' (line 519, 591)
-  return html.replace(/src="data:image\/png;base64,[^"]+"/gi, 'src="cid:bullet_star_blue"');
+function replaceAllBulletsWithCID(html: string): string {
+  // Blue bullets (data-type="blue-bullet")
+  html = html.replace(
+    /(<div[^>]*data-type="blue-bullet"[^>]*>[\s\S]*?)src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
+    '$1src="cid:bullet_star_blue"'
+  );
+
+  // Dark red bullets (data-type="darkred-bullet")
+  html = html.replace(
+    /(<div[^>]*data-type="darkred-bullet"[^>]*>[\s\S]*?)src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
+    '$1src="cid:bullet_star_darkred"'
+  );
+
+  // Black bullets (data-type="black-bullet")
+  html = html.replace(
+    /(<div[^>]*data-type="black-bullet"[^>]*>[\s\S]*?)src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
+    '$1src="cid:bullet_star"'
+  );
+
+  // Fallback: any remaining SVG/PNG Base64 images → blue (most common)
+  html = html.replace(
+    /src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
+    'src="cid:bullet_star_blue"'
+  );
+
+  return html;
 }
 
 /**
@@ -272,9 +299,11 @@ function replaceHrWithDiv(html: string): string {
  */
 function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
   // If already HTML from Tiptap, process for email compatibility
+  // NOTE: We do NOT call increaseFontSizesInHTML() here because Tiptap already
+  // outputs HTML with correct font sizes. Adding 3px was causing fonts to be too large.
   if (isHtml) {
-    let html = increaseFontSizesInHTML(plainText);
-    html = replaceBlueBulletWithCID(html); // Replace Base64 images with CID
+    let html = plainText; // Use as-is - fonts are already correct from Tiptap
+    html = replaceAllBulletsWithCID(html); // Replace Base64 images with CID
     html = replaceHrWithDiv(html); // Replace <hr> tags with styled divs
     return html;
   }
@@ -788,7 +817,7 @@ async function sendEmail(
   // Fetch images as base64 from deployed app
   // These images are served from the Vercel deployment's public folder
   const baseUrl = Deno.env.get('APP_URL') || 'https://ticovision.vercel.app';
-  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue, ticoSignature] = await Promise.all([
+  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue, bulletStarDarkRed, ticoSignature] = await Promise.all([
     fetchImageBase64(`${baseUrl}/brand/tico_logo_240.png`),
     fetchImageBase64(`${baseUrl}/brand/Tico_logo_png_new.png`),
     fetchImageBase64(`${baseUrl}/brand/franco-logo-hires.png`),
@@ -796,6 +825,7 @@ async function sendEmail(
     fetchImageBase64(`${baseUrl}/brand/tagline.png`),
     fetchImageBase64(`${baseUrl}/brand/bullet-star.png`),
     fetchImageBase64(`${baseUrl}/brand/Bullet_star_blue.png`),
+    fetchImageBase64(`${baseUrl}/brand/Bullet_star_darkred.png`),
     fetchImageBase64(`${baseUrl}/brand/tico_signature.png`)
   ]);
 
@@ -869,6 +899,13 @@ async function sendEmail(
         type: 'image/png',
         disposition: 'inline',
         content_id: 'bullet_star_blue'
+      },
+      {
+        content: bulletStarDarkRed,
+        filename: 'bullet_star_darkred.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'bullet_star_darkred'
       },
       {
         content: ticoSignature,
