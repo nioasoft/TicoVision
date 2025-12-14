@@ -44,6 +44,7 @@ export function usePermissions(): UsePermissionsReturn {
    */
   const loadPermissions = useCallback(async () => {
     if (!role) {
+      console.log('🔐 [Permissions] No role set, skipping permission load');
       setLoading(false);
       return;
     }
@@ -54,6 +55,13 @@ export function usePermissions(): UsePermissionsReturn {
         permissionsService.getRolePermissions(role),
         authService.isSuperAdmin(),
       ]);
+
+      console.log('🔐 [Permissions] Loaded:', {
+        role,
+        isSuperAdmin: superAdminResult,
+        hiddenMenus: permResult.data?.hiddenMenus,
+        addedMenus: permResult.data?.addedMenus,
+      });
 
       if (permResult.data) {
         setPermissions(permResult.data);
@@ -89,7 +97,10 @@ export function usePermissions(): UsePermissionsReturn {
       if (isSuperAdmin) return true;
 
       // No role = no access
-      if (!role) return false;
+      if (!role) {
+        console.log(`🔐 [Menu] ${menuKey} HIDDEN - no role`);
+        return false;
+      }
 
       // 1. Check if explicitly added (DB override to EXPAND)
       if (permissions?.addedMenus.includes(menuKey)) {
@@ -98,12 +109,17 @@ export function usePermissions(): UsePermissionsReturn {
 
       // 2. Check if explicitly hidden (DB override to RESTRICT)
       if (permissions?.hiddenMenus.includes(menuKey)) {
+        console.log(`🔐 [Menu] ${menuKey} HIDDEN - in hiddenMenus`);
         return false;
       }
 
       // 3. Check default permissions
       const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
-      return defaultPerms.includes(menuKey);
+      const visible = defaultPerms.includes(menuKey);
+      if (!visible && menuKey === 'documents') {
+        console.log(`🔐 [Menu] ${menuKey} HIDDEN - not in defaultPerms for role ${role}`);
+      }
+      return visible;
     },
     [role, permissions, isSuperAdmin]
   );
