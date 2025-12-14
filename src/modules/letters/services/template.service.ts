@@ -24,6 +24,17 @@ import type {
   MonthlyWorkers,
   WorkerData
 } from '@/types/foreign-workers.types';
+import type {
+  TzlulTemplateType,
+  TzlulVariables,
+  ViolationCorrectionVariables,
+  SummerBonusVariables,
+  ExcellenceBonusVariables,
+  EmployeePaymentsVariables,
+  TransferredAmountsVariables,
+  EmployeePaymentRow
+} from '@/types/tzlul-approvals.types';
+import { TZLUL_CLIENT_NAME, TZLUL_TAX_ID } from '@/types/tzlul-approvals.types';
 import { TemplateParser } from '../utils/template-parser';
 import { parseTextToHTML as parseMarkdownToHTML, replaceVariables as replaceVarsInText } from '../utils/text-to-html-parser';
 
@@ -2226,5 +2237,268 @@ export class TemplateService extends BaseService {
         </td>
       </tr>
     `;
+  }
+
+  // ============================================================================
+  // TZLUL APPROVALS DOCUMENTS (אישורים חברת צלול)
+  // ============================================================================
+
+  /**
+   * Generate Tzlul Approval Document
+   * Creates approval documents for Tzlul Cleaning company
+   * NO payment sections - these are informational documents
+   */
+  async generateTzlulDocument(
+    templateType: TzlulTemplateType,
+    clientId: string,
+    variables: TzlulVariables
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // 1. Load header (using foreign workers header - same format)
+      const header = await this.loadTemplateFile('components/foreign-workers-header.html');
+
+      // 2. Load body based on template type
+      const bodyFile = this.getTzlulBodyFileName(templateType);
+      const body = await this.loadTemplateFile(`bodies/tzlul/${bodyFile}`);
+
+      // 3. Load footer (same as regular letters - compact PDF footer)
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 4. Build dynamic content
+      const processedVariables = await this.processTzlulVariables(templateType, variables);
+
+      // 5. Build full HTML
+      let fullHtml = this.buildTzlulHTML(header, body, footer);
+
+      // 6. Replace all variables - WHITELIST HTML VARIABLES
+      const htmlVariables = [
+        'recipient',                   // Recipient address (with <b>, <u> tags)
+        'employee_payments_rows',      // Employee payments table rows
+        'invoice_numbers_text'         // Formatted invoice numbers text
+      ];
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. Save generated letter
+      const { data: generatedLetter, error: saveError } = await supabase
+        .from('generated_letters')
+        .insert({
+          tenant_id: tenantId,
+          client_id: clientId,
+          template_id: null,
+          template_type: templateType,
+          fee_calculation_id: null,
+          variables_used: processedVariables,
+          generated_content_html: fullHtml,
+          generated_content_text: plainText,
+          payment_link: null,
+          created_at: new Date().toISOString(),
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
+        })
+        .select()
+        .single();
+
+      if (saveError) throw saveError;
+
+      await this.logAction('generate_tzlul_document', generatedLetter.id, {
+        template_type: templateType,
+        client_id: clientId
+      });
+
+      return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get body file name from Tzlul template type
+   */
+  private getTzlulBodyFileName(templateType: TzlulTemplateType): string {
+    const bodyMap: Record<TzlulTemplateType, string> = {
+      'tzlul_violation_correction': 'violation-correction.html',
+      'tzlul_summer_bonus': 'summer-bonus.html',
+      'tzlul_excellence_bonus': 'excellence-bonus.html',
+      'tzlul_employee_payments': 'employee-payments.html',
+      'tzlul_transferred_amounts': 'transferred-amounts.html'
+    };
+
+    return bodyMap[templateType];
+  }
+
+  /**
+   * Build full HTML for Tzlul document
+   */
+  private buildTzlulHTML(header: string, body: string, footer: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אישורים חברת צלול</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; direction: rtl;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="750" cellpadding="0" cellspacing="0" border="0" style="max-width: 750px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+  }
+
+  /**
+   * Process Tzlul variables - build dynamic content
+   */
+  private async processTzlulVariables(
+    templateType: TzlulTemplateType,
+    variables: TzlulVariables
+  ): Promise<Record<string, unknown>> {
+    const processed: Record<string, unknown> = { ...variables };
+
+    // Add auto-generated date if not provided
+    if (!processed.document_date) {
+      processed.document_date = this.formatIsraeliDate(new Date());
+    } else if (typeof processed.document_date === 'string') {
+      processed.document_date = this.formatIsraeliDate(new Date(processed.document_date));
+    }
+
+    // Build recipient based on template type and variables
+    processed.recipient = this.getTzlulRecipient(templateType, variables);
+
+    // Build dynamic content based on template type
+    switch (templateType) {
+      case 'tzlul_summer_bonus': {
+        const summerVars = variables as SummerBonusVariables;
+        // Build invoice numbers text
+        if (summerVars.invoice_numbers && summerVars.invoice_numbers.length > 0) {
+          const invoiceTexts = summerVars.invoice_numbers.map((num, idx) =>
+            `בחשבונית מספר ${num}`
+          );
+          processed.invoice_numbers_text = invoiceTexts.join(' ו');
+        }
+        // Format total amount
+        if (typeof summerVars.total_amount === 'number') {
+          processed.total_amount = summerVars.total_amount.toLocaleString('he-IL');
+        }
+        break;
+      }
+
+      case 'tzlul_employee_payments': {
+        const empVars = variables as EmployeePaymentsVariables;
+        if (empVars.employees_table && empVars.employees_table.length > 0) {
+          processed.employee_payments_rows = this.buildEmployeePaymentsRows(empVars.employees_table);
+        }
+        break;
+      }
+
+      case 'tzlul_violation_correction': {
+        const violationVars = variables as ViolationCorrectionVariables;
+        // Format violations date if it's a date string
+        if (violationVars.violations_date) {
+          // Keep as is if already formatted, or format if it's an ISO date
+          if (violationVars.violations_date.includes('-')) {
+            processed.violations_date = this.formatIsraeliDate(new Date(violationVars.violations_date));
+          }
+        }
+        break;
+      }
+
+      case 'tzlul_excellence_bonus': {
+        const excellenceVars = variables as ExcellenceBonusVariables;
+        // Format statement date if needed
+        if (excellenceVars.statement_date && excellenceVars.statement_date.includes('-')) {
+          processed.statement_date = this.formatIsraeliDate(new Date(excellenceVars.statement_date));
+        }
+        break;
+      }
+
+      case 'tzlul_transferred_amounts': {
+        const transferVars = variables as TransferredAmountsVariables;
+        // Format dates if needed (they might already be in DD/MM/YY format)
+        // Keep as is since user enters them in the expected format
+        break;
+      }
+    }
+
+    return processed;
+  }
+
+  /**
+   * Get recipient HTML for Tzlul documents
+   */
+  private getTzlulRecipient(templateType: TzlulTemplateType, variables: TzlulVariables): string {
+    // For documents with custom recipient lines
+    if (templateType === 'tzlul_violation_correction') {
+      const vars = variables as ViolationCorrectionVariables;
+      if (vars.recipient_lines && vars.recipient_lines.length > 0) {
+        return vars.recipient_lines
+          .filter(line => line.trim())
+          .map(line => `<b>${line}</b>`)
+          .join('<br/>');
+      }
+    }
+
+    if (templateType === 'tzlul_employee_payments') {
+      const vars = variables as EmployeePaymentsVariables;
+      if (vars.recipient_lines && vars.recipient_lines.length > 0) {
+        return vars.recipient_lines
+          .filter(line => line.trim())
+          .map(line => `<b>${line}</b>`)
+          .join('<br/>');
+      }
+    }
+
+    // Default recipients by template type
+    switch (templateType) {
+      case 'tzlul_summer_bonus':
+        return `<b>לכבוד</b><br/><b>צלול ניקיון ואחזקה בע"מ</b><br/><b>אור יהודה</b><br/><br/><b>א.ג.נ,</b>`;
+
+      case 'tzlul_excellence_bonus':
+        return `<b>לכבוד,</b><br/><b>חברת צלול ניקיון ואחזקה בע"מ</b><br/><br/><b>א.ג.נ.,</b>`;
+
+      case 'tzlul_transferred_amounts':
+        return `<b>לכבוד</b><br/><b>החברה למשק וכלכלה של השלטון המקומי בע"מ</b><br/><b>היחידה לאכיפת זכויות עובדים</b>`;
+
+      default:
+        return `<b>לכבוד</b><br/><br/><b>א.ג.נ,</b>`;
+    }
+  }
+
+  /**
+   * Build employee payments table rows HTML
+   */
+  private buildEmployeePaymentsRows(employees: EmployeePaymentRow[]): string {
+    return employees.map(emp => `
+      <tr>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${emp.name}
+        </td>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${emp.id_number}
+        </td>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${emp.month}
+        </td>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ₪ ${typeof emp.amount === 'number' ? emp.amount.toLocaleString('he-IL', { minimumFractionDigits: 2 }) : emp.amount}
+        </td>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${emp.payment_date}
+        </td>
+      </tr>
+    `).join('');
   }
 }

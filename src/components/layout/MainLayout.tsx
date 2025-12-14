@@ -97,6 +97,7 @@ const navigation: NavigationItem[] = [
     allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[],
     submenu: [
       { name: 'אישורי עובדים זרים', href: '/foreign-workers', menuKey: 'documents:foreign-workers' },
+      { name: 'אישורים חברת צלול', href: '/tzlul-approvals', menuKey: 'documents:tzlul-approvals' },
       { name: 'אישורי מס', href: '/documents/tax-approvals', menuKey: 'documents:tax-approvals' },
       { name: 'אישורים לבנקים/מוסדות', href: '/documents/bank-approvals', menuKey: 'documents:bank-approvals' },
       { name: 'מכתבי התחייבות', href: '/documents/commitment-letters', menuKey: 'documents:commitment-letters' },

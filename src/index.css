@@ -64,6 +64,39 @@ body {
   font-family: var(--font-hebrew);
 }
 
+/* RTL Input placeholder alignment - force right alignment for Hebrew */
+input::placeholder,
+textarea::placeholder,
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder,
+input::-moz-placeholder,
+textarea::-moz-placeholder,
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+  text-align: right !important;
+  direction: rtl !important;
+  unicode-bidi: plaintext !important;
+}
+
+/* All inputs should be RTL by default in this Hebrew app */
+input,
+textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Force placeholder text to flow from right */
+input[dir="rtl"],
+textarea[dir="rtl"] {
+  text-align: right !important;
+}
+
+input[dir="rtl"]::placeholder,
+textarea[dir="rtl"]::placeholder {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
 /* Hebrew-specific styles */
 .hebrew {
   font-family: var(--font-hebrew);

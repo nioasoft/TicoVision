@@ -21,6 +21,7 @@ const LetterTemplatesPage = lazy(() => import('@/pages/LetterTemplatesPage').the
 const LetterHistoryPage = lazy(() => import('@/pages/LetterHistoryPage').then(m => ({ default: m.LetterHistoryPage })));
 const ComponentSimulatorPage = lazy(() => import('@/pages/ComponentSimulatorPage').then(m => ({ default: m.ComponentSimulatorPage })));
 const ForeignWorkersPage = lazy(() => import('@/pages/ForeignWorkersPage').then(m => ({ default: m.ForeignWorkersPage })));
+const TzlulApprovalsPage = lazy(() => import('@/pages/TzlulApprovalsPage').then(m => ({ default: m.TzlulApprovalsPage })));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
@@ -164,6 +165,12 @@ function App() {
                       <Route path="/foreign-workers" element={
                         <ErrorBoundary>
                           <ForeignWorkersPage />
+                        </ErrorBoundary>
+                      } />
+                      {/* Tzlul company approvals - for Tzlul cleaning company only */}
+                      <Route path="/tzlul-approvals" element={
+                        <ErrorBoundary>
+                          <TzlulApprovalsPage />
                         </ErrorBoundary>
                       } />
                     </Route>
