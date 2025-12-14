@@ -232,37 +232,37 @@ function wrapCustomPaymentText(html: string): string {
 }
 
 /**
- * Replace SVG/PNG bullet images with CID references based on data-type attribute
+ * Replace SVG/PNG bullet images with CID references for email compatibility
  * Gmail and Outlook block Base64 images, so we use CID attachments instead
  *
- * Handles all bullet colors:
- * - blue-bullet → cid:bullet_star_blue
- * - darkred-bullet → cid:bullet_star_darkred
- * - black-bullet → cid:bullet_star
+ * Detects bullet color from data-type attribute:
+ * - data-type="blue-bullet" → cid:bullet_star_blue
+ * - data-type="darkred-bullet" → cid:bullet_star_darkred
+ * - data-type="black-bullet" → cid:bullet_star
  *
  * @param html - HTML content with Base64 bullet images (SVG or PNG)
  * @returns HTML with CID references
  */
 function replaceAllBulletsWithCID(html: string): string {
-  // Blue bullets (data-type="blue-bullet")
+  // Blue bullets → cid:bullet_star_blue
   html = html.replace(
     /(<div[^>]*data-type="blue-bullet"[^>]*>[\s\S]*?)src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
     '$1src="cid:bullet_star_blue"'
   );
 
-  // Dark red bullets (data-type="darkred-bullet")
+  // Dark red bullets → cid:bullet_star_darkred
   html = html.replace(
     /(<div[^>]*data-type="darkred-bullet"[^>]*>[\s\S]*?)src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
     '$1src="cid:bullet_star_darkred"'
   );
 
-  // Black bullets (data-type="black-bullet")
+  // Black bullets → cid:bullet_star (the original black star)
   html = html.replace(
     /(<div[^>]*data-type="black-bullet"[^>]*>[\s\S]*?)src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
     '$1src="cid:bullet_star"'
   );
 
-  // Fallback: any remaining SVG/PNG Base64 images → blue (most common)
+  // Fallback: any remaining Base64 images (not in colored bullet divs) → blue
   html = html.replace(
     /src="data:image\/(?:svg\+xml|png);base64,[^"]+"/gi,
     'src="cid:bullet_star_blue"'

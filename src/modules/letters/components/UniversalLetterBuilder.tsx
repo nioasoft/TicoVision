@@ -889,15 +889,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         ? originalBodyContent
         : letterContent;
 
-      // Debug: Log what content is being sent
-      console.log('📧 [Email Debug] originalBodyContent exists:', !!originalBodyContent);
-      console.log('📧 [Email Debug] hasUserEditedContent:', hasUserEditedContent);
-      console.log('📧 [Email Debug] Using originalBodyContent:', !!originalBodyContent && !hasUserEditedContent);
-      console.log('📧 [Email Debug] Content has blue-bullet:', contentForEmail.includes('blue-bullet'));
-      console.log('📧 [Email Debug] Content has Base64:', contentForEmail.includes('data:image'));
-      console.log('📧 [Email Debug] Content has CID:', contentForEmail.includes('cid:'));
-      console.log('📧 [Email Debug] First 500 chars:', contentForEmail.substring(0, 500));
-
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails, // Array of emails (from client or manual)
