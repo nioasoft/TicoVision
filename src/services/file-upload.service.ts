@@ -1044,6 +1044,21 @@ export class FileUploadService extends BaseService {
         const pathParts = params.pdfUrl.split('/letter-pdfs/');
         storagePath = 'letter-pdfs/' + pathParts[pathParts.length - 1];
       }
+      // Remove cache-busting query params (e.g., ?t=123456)
+      storagePath = storagePath.split('?')[0];
+
+      // Check if storage path already exists, add suffix if needed
+      const { count } = await supabase
+        .from(this.tableName)
+        .select('*', { count: 'exact', head: true })
+        .eq('storage_path', storagePath);
+
+      if (count && count > 0) {
+        // Add version suffix: path.pdf → path-2.pdf
+        const basePath = storagePath.replace('.pdf', '');
+        storagePath = `${basePath}-${count + 1}.pdf`;
+        console.log('📝 Storage path already exists, using versioned path:', storagePath);
+      }
 
       // Create database record pointing to the PDF in letter-pdfs bucket
       const attachmentData: Record<string, unknown> = {
