@@ -239,7 +239,14 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      const html = editor.getHTML();
+      // Debug: Log when content contains bullets
+      if (html.includes('blue-bullet') || html.includes('darkred-bullet') || html.includes('black-bullet')) {
+        console.log('🎨 [TiptapEditor] Bullet content detected!');
+        console.log('🎨 [TiptapEditor] Has Base64 image:', html.includes('data:image'));
+        console.log('🎨 [TiptapEditor] First 500 chars:', html.substring(0, 500));
+      }
+      onChange(html);
     },
   });
 

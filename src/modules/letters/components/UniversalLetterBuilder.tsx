@@ -883,11 +883,26 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       }
 
       // Send via Edge Function - it will parse, build, send, and save
+      // Use same logic as preview - originalBodyContent preserves styled bullets from saved letters
+      // letterContent has bullets stripped by convertBulletTablesToHtml for Tiptap editing
+      const contentForEmail = (originalBodyContent && !hasUserEditedContent)
+        ? originalBodyContent
+        : letterContent;
+
+      // Debug: Log what content is being sent
+      console.log('📧 [Email Debug] originalBodyContent exists:', !!originalBodyContent);
+      console.log('📧 [Email Debug] hasUserEditedContent:', hasUserEditedContent);
+      console.log('📧 [Email Debug] Using originalBodyContent:', !!originalBodyContent && !hasUserEditedContent);
+      console.log('📧 [Email Debug] Content has blue-bullet:', contentForEmail.includes('blue-bullet'));
+      console.log('📧 [Email Debug] Content has Base64:', contentForEmail.includes('data:image'));
+      console.log('📧 [Email Debug] Content has CID:', contentForEmail.includes('cid:'));
+      console.log('📧 [Email Debug] First 500 chars:', contentForEmail.substring(0, 500));
+
       const { data, error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails, // Array of emails (from client or manual)
           recipientName: recipientMode === 'manual' ? manualCompanyName : companyName,
-          customText: letterContent, // Send HTML content
+          customText: contentForEmail, // Send HTML content with styled bullets
           variables,
           includesPayment,
           customHeaderLines: headerLinesForEmail, // Pass custom header lines to Edge Function
@@ -1527,7 +1542,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           }
         }
       } else if (letter.client_id) {
-        // CLIENT MODE: Load client
+        // CLIENT MODE: Load client and their contacts
         setRecipientMode('client');
         const { data: client } = await clientService.getById(letter.client_id);
         if (client) {
@@ -1536,12 +1551,31 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           // Auto-fill company name fields
           setCompanyName(client.company_name_hebrew || client.company_name);
           if (client.commercial_name) {
-             setCommercialName(client.commercial_name);
+            setCommercialName(client.commercial_name);
           }
 
-          // Restore selected recipients for this client
-          if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
-            setSelectedRecipients(letter.recipient_emails);
+          // Load current contacts for this client
+          setIsLoadingContacts(true);
+          try {
+            const contacts = await TenantContactService.getClientContacts(client.id);
+            setClientContacts(contacts.filter(c => c.email));
+
+            // Restore saved recipients OR load auto-selected if none saved
+            if (letter.recipient_emails && Array.isArray(letter.recipient_emails) && letter.recipient_emails.length > 0) {
+              setSelectedRecipients(letter.recipient_emails);
+            } else {
+              // Load auto-selected emails as fallback
+              const autoEmails = await TenantContactService.getClientEmails(client.id, 'important');
+              setSelectedRecipients(autoEmails);
+            }
+          } catch (error) {
+            console.error('Error loading contacts:', error);
+            // Fallback to saved recipients
+            if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
+              setSelectedRecipients(letter.recipient_emails);
+            }
+          } finally {
+            setIsLoadingContacts(false);
           }
         }
       } else {
@@ -2256,7 +2290,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             }}
                             placeholder="example@email.com"
                             dir="ltr"
-                            className="flex-1 text-left"
+                            className="flex-1 text-left min-w-64"
                           />
                           <Button
                             type="button"
