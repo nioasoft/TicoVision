@@ -794,6 +794,157 @@ async function getEmailSettings(): Promise<{
   }
 }
 
+// ============================================================================
+// SHORT LINKS SYSTEM - Solves Outlook URL-breaking issue
+// ============================================================================
+
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+/**
+ * Generate a random short code (8 alphanumeric characters)
+ * Excludes ambiguous characters: 0, O, I, l, 1
+ */
+function generateShortCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * Create short links for all payment method URLs in the letter
+ * Returns a map of payment_method → short_url
+ */
+async function createShortLinksForPayment(
+  feeId: string | null,
+  groupCalculationId: string | null,
+  letterId: string | null,
+  clientId: string | null,
+  amountWithVat: number | string
+): Promise<Record<string, string>> {
+  const shortLinks: Record<string, string> = {};
+
+  // Skip if no Supabase config
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('⚠️ Supabase not configured, skipping short link creation');
+    return shortLinks;
+  }
+
+  // Skip if no fee calculation (non-payment letters)
+  if (!feeId && !groupCalculationId) {
+    console.log('ℹ️ No fee calculation, skipping short link creation');
+    return shortLinks;
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const baseTrackingUrl = `${SUPABASE_URL}/functions/v1/track-payment-selection`;
+
+  const methods = ['bank_transfer', 'cc_single', 'cc_installments', 'checks'];
+  const redirectUrls: Record<string, string> = {
+    'bank_transfer': 'https://ticovision.vercel.app/bank-transfer-details.html',
+    'cc_single': 'https://ticovision.vercel.app/payment-credit-single.html',
+    'cc_installments': 'https://ticovision.vercel.app/payment-credit-installments.html',
+    'checks': 'https://ticovision.vercel.app/check-details.html'
+  };
+
+  for (const method of methods) {
+    try {
+      // Build original tracking URL
+      const params = new URLSearchParams();
+      if (feeId) params.set('fee_id', feeId);
+      if (groupCalculationId) params.set('group_calculation_id', groupCalculationId);
+      if (letterId) params.set('letter_id', letterId);
+      params.set('method', method);
+      if (clientId) params.set('client_id', clientId);
+      params.set('amount', String(amountWithVat));
+      params.set('redirect_url', redirectUrls[method]);
+
+      const originalUrl = `${baseTrackingUrl}?${params.toString()}`;
+
+      // Generate unique short code (with retry for collisions)
+      let shortCode = generateShortCode();
+      let attempts = 0;
+
+      while (attempts < 3) {
+        const { error } = await supabase
+          .from('short_links')
+          .insert({
+            short_code: shortCode,
+            original_url: originalUrl,
+            fee_calculation_id: feeId || null,
+            group_calculation_id: groupCalculationId || null,
+            letter_id: letterId || null,
+            client_id: clientId || null,
+            payment_method: method
+          });
+
+        if (!error) {
+          // Success - save the short URL
+          shortLinks[method] = `${SUPABASE_URL}/functions/v1/s/${shortCode}`;
+          console.log(`✅ Created short link for ${method}: ${shortCode}`);
+          break;
+        }
+
+        // If unique constraint violation, retry with new code
+        if (error.code === '23505') {
+          shortCode = generateShortCode();
+          attempts++;
+          console.warn(`⚠️ Short code collision, retrying (${attempts}/3)`);
+        } else {
+          console.error(`❌ Failed to create short link for ${method}:`, error);
+          break;
+        }
+      }
+    } catch (err) {
+      console.error(`❌ Error creating short link for ${method}:`, err);
+    }
+  }
+
+  return shortLinks;
+}
+
+/**
+ * Replace long tracking URLs with short links in HTML
+ */
+function replacePaymentUrlsWithShortLinks(
+  html: string,
+  shortLinks: Record<string, string>
+): string {
+  if (Object.keys(shortLinks).length === 0) {
+    return html; // No short links, return original
+  }
+
+  let result = html;
+
+  // Replace each payment method URL with its short link
+  let replacementCount = 0;
+  for (const [method, shortUrl] of Object.entries(shortLinks)) {
+    // Match the tracking URL pattern for this method
+    // Pattern: href="https://...track-payment-selection?...method=bank_transfer..."
+    const pattern = new RegExp(
+      `href="[^"]*track-payment-selection[^"]*method=${method}[^"]*"`,
+      'g'
+    );
+
+    const matches = result.match(pattern);
+    if (matches) {
+      console.log(`📎 Found ${matches.length} URLs for ${method}, replacing with ${shortUrl}`);
+      replacementCount += matches.length;
+    } else {
+      console.warn(`⚠️ No URLs found for ${method} - pattern: ${pattern.source}`);
+    }
+
+    result = result.replace(pattern, `href="${shortUrl}"`);
+  }
+
+  console.log(`📎 Replaced ${replacementCount} payment URLs with short links`);
+  return result;
+}
+
+// ============================================================================
+
 /**
  * Send email via SendGrid
  */
@@ -914,7 +1065,14 @@ async function sendEmail(
         disposition: 'inline',
         content_id: 'tico_signature'
       }
-    ]
+    ],
+    // Disable SendGrid click tracking - we use our own short links for tracking
+    // This prevents SendGrid from wrapping our URLs in long tracking URLs that break Outlook
+    tracking_settings: {
+      click_tracking: {
+        enable: false
+      }
+    }
   };
 
   const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -1111,6 +1269,28 @@ serve(async (req) => {
       subject = isBookkeeping
         ? `שלום רב ${companyName} - הודעת חיוב הנהלת חשבונות לשנת המס ${year} כמדי שנה 😊`
         : `שלום רב ${companyName} - הודעת חיוב לשנת המס ${year} כמדי שנה 😊`;
+    }
+
+    // Create short links for payment URLs (solves Outlook URL-breaking issue)
+    // Check both request fields and variables for IDs (frontend may pass in either)
+    const amountWithVat = variables?.amount_with_vat || 0;
+    const effectiveFeeId = feeCalculationId || variables?.fee_id || null;
+    const effectiveGroupId = groupCalculationId || variables?.group_calculation_id || null;
+    const effectiveClientId = clientId || variables?.client_id || null;
+
+    console.log('📎 Short links check:', { effectiveFeeId, effectiveGroupId, effectiveClientId, amountWithVat });
+
+    const shortLinks = await createShortLinksForPayment(
+      effectiveFeeId,
+      effectiveGroupId,
+      letterId || null,
+      effectiveClientId,
+      amountWithVat
+    );
+
+    // Replace long tracking URLs with short links
+    if (Object.keys(shortLinks).length > 0) {
+      letterHtml = replacePaymentUrlsWithShortLinks(letterHtml, shortLinks);
     }
 
     // Send email
