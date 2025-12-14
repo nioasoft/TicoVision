@@ -35,6 +35,9 @@ interface SendLetterRequest {
   subjectLines?: any[]; // Subject lines (הנדון)
   saveAsTemplate?: { name: string; description?: string; subject?: string; };
   isHtml?: boolean; // If true, customText is already HTML from Tiptap
+  // Simple mode - for transactional emails without letter template
+  subject?: string; // Email subject line (used in simpleMode)
+  simpleMode?: boolean; // Skip letter template, send plain formatted email
   // Common fields
   clientId?: string;
   feeCalculationId?: string;
@@ -73,6 +76,27 @@ function getCorsHeaders(origin: string | null): CorsHeaders {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Credentials': 'true',
   };
+}
+
+/**
+ * Build simple HTML email without letter template
+ * Used for transactional emails (registration, notifications, etc.)
+ * @param content - Plain text content (newlines will be converted to <br>)
+ * @returns HTML email body
+ */
+function buildSimpleEmailHtml(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 20px; direction: rtl; background-color: #ffffff; font-family: Arial, 'Heebo', sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; text-align: right; line-height: 1.6; font-size: 16px; color: #333;">
+    ${content.replace(/\n/g, '<br>')}
+  </div>
+</body>
+</html>`;
 }
 
 /**
@@ -1117,6 +1141,8 @@ serve(async (req) => {
       subjectLines,
       saveAsTemplate,
       isHtml,
+      subject: requestSubject, // Email subject (used in simpleMode)
+      simpleMode, // Skip letter template for transactional emails
       clientId,
       feeCalculationId,
       groupCalculationId,
@@ -1161,6 +1187,31 @@ serve(async (req) => {
     }
 
     console.log('📧 Sending letter to:', recipientEmails.join(', '));
+
+    // SIMPLE MODE: Plain email without letter template (for transactional emails)
+    if (simpleMode && customText) {
+      console.log('   Mode: Simple (transactional email)');
+
+      const letterHtml = buildSimpleEmailHtml(customText);
+      const subject = requestSubject || 'הודעה מ-TicoVision';
+
+      // Send email
+      await sendEmail(recipientEmails, subject, letterHtml);
+
+      console.log('✅ Simple email sent successfully');
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Simple email sent successfully',
+          recipients: recipientEmails
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
     let letterHtml: string;
     let subject: string;

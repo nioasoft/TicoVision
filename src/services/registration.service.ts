@@ -288,7 +288,8 @@ class RegistrationService {
    */
   private async sendApprovalConfirmationEmail(email: string, fullName: string): Promise<void> {
     try {
-      const loginUrl = `${window.location.origin}/login`;
+      // Use production URL, not window.location.origin (which could be localhost)
+      const loginUrl = 'https://ticovision.vercel.app/login';
       const { data: sessionData } = await supabase.auth.getSession();
 
       const response = await fetch(
@@ -313,7 +314,7 @@ class RegistrationService {
 
 בברכה,
 צוות TicoVision`,
-            isHtml: false,
+            simpleMode: true, // Use simple email mode - no letter template
             includesPayment: false
           })
         }
