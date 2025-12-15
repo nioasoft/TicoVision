@@ -94,6 +94,9 @@ function ForeignWorkersPageContent({
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
+  const [generatedLetterId, setGeneratedLetterId] = useState<string | null>(null);
+  const [generatedHtmlContent, setGeneratedHtmlContent] = useState<string>('');
+  const [generatedSubject, setGeneratedSubject] = useState<string>('');
   const [formState, setFormState] = useState<ForeignWorkerFormState>({
     selectedClientId: null,
     activeTab: 0,
@@ -303,6 +306,11 @@ function ForeignWorkersPageContent({
       if (!result.data?.id) {
         throw new Error('Missing letter ID');
       }
+
+      // Save letter ID, HTML content and subject for email sending
+      setGeneratedLetterId(result.data.id);
+      setGeneratedHtmlContent(result.data.generated_content_html || '');
+      setGeneratedSubject(result.data.subject || '');
 
       const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf', {
         body: { letterId: result.data.id },
@@ -719,6 +727,9 @@ function ForeignWorkersPageContent({
         pdfName={generatedPdfName}
         clientName={formState.sharedData.company_name || ''}
         clientId={selectedClientId || undefined}
+        htmlContent={generatedHtmlContent}
+        letterId={generatedLetterId || undefined}
+        defaultSubject={generatedSubject || FOREIGN_WORKER_TABS[formState.activeTab]?.label || 'מסמך עובדים זרים'}
       />
 
       {/* Month Range Deletion Confirmation Dialog */}

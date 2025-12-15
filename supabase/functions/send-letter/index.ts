@@ -1247,11 +1247,23 @@ serve(async (req) => {
       const subjectLinesHtml = subjectLines ? buildSubjectLinesHTML(subjectLines) : '';
       console.log('🔍 [Edge Function] Subject lines HTML:', subjectLinesHtml ? 'generated' : 'empty');
 
-      // Build full letter with header + body + optional payment + footer
-      letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false, customHeaderLines, subjectLinesHtml);
+      // Check if HTML is already a complete letter (from ForeignWorkersPage, TzlulApprovalsPage, CompanyOnboardingPage)
+      // These pages send pre-built HTML that already includes header, logo, "לכבוד", body, and footer
+      const isCompleteLetterHtml = isHtml &&
+        (bodyWithVariables.includes('cid:tico_logo_new') ||
+         bodyWithVariables.includes('<!DOCTYPE'));
 
-      // Generate subject from variables or default
-      subject = finalVariables.subject || `שכר טרחתנו לשנת המס ${finalVariables.year}`;
+      if (isCompleteLetterHtml) {
+        // HTML is already complete - use as-is, don't wrap again
+        letterHtml = bodyWithVariables;
+        console.log('   Using pre-built complete letter HTML (skipping header/footer wrapping)');
+      } else {
+        // HTML is partial (from Tiptap editor in UniversalLetterBuilder) - wrap with header/footer
+        letterHtml = await buildCustomLetterHtml(bodyWithVariables, finalVariables, includesPayment || false, customHeaderLines, subjectLinesHtml);
+      }
+
+      // Generate subject: priority is requestSubject > finalVariables.subject > default
+      subject = requestSubject || finalVariables.subject || `שכר טרחתנו לשנת המס ${finalVariables.year}`;
 
       // Save as template if requested
       if (saveAsTemplate && SUPABASE_URL && SUPABASE_ANON_KEY) {

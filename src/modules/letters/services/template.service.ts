@@ -35,8 +35,30 @@ import type {
   EmployeePaymentRow
 } from '@/types/tzlul-approvals.types';
 import { TZLUL_CLIENT_NAME, TZLUL_TAX_ID } from '@/types/tzlul-approvals.types';
+import type {
+  CompanyOnboardingTemplateType,
+  CompanyOnboardingVariables,
+  VatRegistrationVariables
+} from '@/types/company-onboarding.types';
 import { TemplateParser } from '../utils/template-parser';
 import { parseTextToHTML as parseMarkdownToHTML, replaceVariables as replaceVarsInText } from '../utils/text-to-html-parser';
+
+// Label mappings for email subjects - used when saving generated letters
+const FOREIGN_WORKER_LABELS: Record<ForeignWorkerTemplateType, string> = {
+  'foreign_worker_accountant_turnover': 'דוח מחזורים רו"ח',
+  'foreign_worker_israeli_workers': 'דוח עובדים ישראליים',
+  'foreign_worker_living_business': 'עסק חי 2025',
+  'foreign_worker_turnover_approval': 'אישור מחזור/עלויות',
+  'foreign_worker_salary_report': 'דוח שכר'
+};
+
+const TZLUL_LABELS: Record<TzlulTemplateType, string> = {
+  'tzlul_violation_correction': 'מכתב תיקון הפרות',
+  'tzlul_summer_bonus': 'חוות דעת מענק קיץ',
+  'tzlul_excellence_bonus': 'חוות דעת מענק מצויינות',
+  'tzlul_employee_payments': 'אישור תשלומים לעובדים',
+  'tzlul_transferred_amounts': 'אישור העברת סכומים'
+};
 
 export class TemplateService extends BaseService {
   constructor() {
@@ -829,6 +851,7 @@ export class TemplateService extends BaseService {
       'cid:tico_logo_new': '/brand/Tico_logo_png_new.png',
       'cid:bullet_star': '/brand/bullet-star.png',
       'cid:bullet_star_blue': '/brand/Bullet_star_blue.png',
+      'cid:bullet_star_darkred': '/brand/Bullet_star_darkred.png',
       'cid:franco_logo': '/brand/franco-logo-hires.png',
       'cid:franco_logo_new': '/brand/Tico_franco_co.png',
       'cid:tagline': '/brand/tagline.png',
@@ -1893,6 +1916,7 @@ export class TemplateService extends BaseService {
           generated_content_html: fullHtml,
           generated_content_text: plainText,
           payment_link: null, // No payment links for informational documents
+          subject: FOREIGN_WORKER_LABELS[templateType], // Email subject from label
           created_at: new Date().toISOString(),
           created_by: (await supabase.auth.getUser()).data.user?.id,
           created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
@@ -2244,17 +2268,49 @@ export class TemplateService extends BaseService {
   // ============================================================================
 
   /**
+   * Check if a Tzlul letter already exists for this client
+   */
+  async checkExistingTzlulLetter(
+    templateType: TzlulTemplateType,
+    clientId: string
+  ): Promise<ServiceResponse<GeneratedLetter | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('generated_letters')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('template_type', templateType)
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return { data: data || null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
    * Generate Tzlul Approval Document
    * Creates approval documents for Tzlul Cleaning company
    * NO payment sections - these are informational documents
+   * @param options.previewOnly - If true, only generate HTML without saving to DB
+   * @param options.existingLetterId - If provided, update existing letter instead of creating new
    */
   async generateTzlulDocument(
     templateType: TzlulTemplateType,
     clientId: string,
-    variables: TzlulVariables
+    variables: TzlulVariables,
+    options?: { previewOnly?: boolean; existingLetterId?: string }
   ): Promise<ServiceResponse<GeneratedLetter>> {
     try {
       const tenantId = await this.getTenantId();
+      const { previewOnly = false, existingLetterId } = options || {};
 
       // 1. Load header (using foreign workers header - same format)
       const header = await this.loadTemplateFile('components/foreign-workers-header.html');
@@ -2281,32 +2337,87 @@ export class TemplateService extends BaseService {
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
-      // 7. Save generated letter
-      const { data: generatedLetter, error: saveError } = await supabase
-        .from('generated_letters')
-        .insert({
-          tenant_id: tenantId,
-          client_id: clientId,
-          template_id: null,
-          template_type: templateType,
-          fee_calculation_id: null,
-          variables_used: processedVariables,
-          generated_content_html: fullHtml,
-          generated_content_text: plainText,
-          payment_link: null,
-          created_at: new Date().toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-          created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
-        })
-        .select()
-        .single();
+      // 7. If preview only, return without saving
+      if (previewOnly) {
+        return {
+          data: {
+            id: 'preview',
+            tenant_id: tenantId,
+            client_id: clientId,
+            group_calculation_id: null,
+            template_id: null,
+            template_type: templateType,
+            fee_calculation_id: null,
+            variables_used: processedVariables,
+            generated_content_html: fullHtml,
+            generated_content_text: plainText,
+            payment_link: null,
+            subject: TZLUL_LABELS[templateType], // Email subject from label
+            status: 'draft',
+            created_at: new Date().toISOString(),
+            created_by: null,
+            created_by_name: null
+          } as GeneratedLetter,
+          error: null
+        };
+      }
 
-      if (saveError) throw saveError;
-
-      await this.logAction('generate_tzlul_document', generatedLetter.id, {
+      const user = await supabase.auth.getUser();
+      const letterData = {
+        tenant_id: tenantId,
+        client_id: clientId,
+        template_id: null,
         template_type: templateType,
-        client_id: clientId
-      });
+        fee_calculation_id: null,
+        variables_used: processedVariables,
+        generated_content_html: fullHtml,
+        generated_content_text: plainText,
+        payment_link: null,
+        subject: TZLUL_LABELS[templateType], // Email subject from label
+        status: 'saved' as const,
+        created_by: user.data.user?.id,
+        created_by_name: user.data.user?.user_metadata?.full_name || user.data.user?.email
+      };
+
+      let generatedLetter: GeneratedLetter;
+
+      // 8. Update existing or insert new
+      if (existingLetterId) {
+        // Update existing letter
+        const { data, error: updateError } = await supabase
+          .from('generated_letters')
+          .update(letterData)
+          .eq('id', existingLetterId)
+          .eq('tenant_id', tenantId)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        generatedLetter = data;
+
+        await this.logAction('update_tzlul_document', generatedLetter.id, {
+          template_type: templateType,
+          client_id: clientId
+        });
+      } else {
+        // Insert new letter
+        const { data, error: saveError } = await supabase
+          .from('generated_letters')
+          .insert({
+            ...letterData,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        generatedLetter = data;
+
+        await this.logAction('generate_tzlul_document', generatedLetter.id, {
+          template_type: templateType,
+          client_id: clientId
+        });
+      }
 
       return { data: generatedLetter, error: null };
     } catch (error) {
@@ -2500,5 +2611,267 @@ export class TemplateService extends BaseService {
         </td>
       </tr>
     `).join('');
+  }
+
+  // ============================================================================
+  // COMPANY ONBOARDING DOCUMENTS
+  // ============================================================================
+
+  /**
+   * Check if a Company Onboarding letter already exists for this client/group
+   */
+  async checkExistingCompanyOnboardingLetter(
+    templateType: CompanyOnboardingTemplateType,
+    clientId: string | null,
+    groupId: string | null
+  ): Promise<ServiceResponse<GeneratedLetter | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('generated_letters')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('template_type', templateType)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (clientId) {
+        query = query.eq('client_id', clientId);
+      } else if (groupId) {
+        query = query.eq('group_calculation_id', groupId);
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) throw error;
+
+      return { data: data || null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Generate Company Onboarding document (VAT Registration, etc.)
+   * Supports both client and group recipients
+   * @param options.previewOnly - If true, only generate HTML without saving to DB
+   * @param options.existingLetterId - If provided, update existing letter instead of creating new
+   */
+  async generateCompanyOnboardingDocument(
+    templateType: CompanyOnboardingTemplateType,
+    clientId: string | null,
+    groupId: string | null,
+    variables: CompanyOnboardingVariables,
+    options?: { previewOnly?: boolean; existingLetterId?: string }
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { previewOnly = false, existingLetterId } = options || {};
+
+      // 1. Load header (using standard letter header)
+      const header = await this.loadTemplateFile('components/header.html');
+
+      // 2. Load body based on template type
+      const bodyFile = this.getCompanyOnboardingBodyFileName(templateType);
+      let body = await this.loadTemplateFile(`bodies/company-onboarding/${bodyFile}`);
+
+      // 3. Handle conditional WOLT section
+      if (templateType === 'company_onboarding_vat_registration') {
+        const vatVars = variables as VatRegistrationVariables;
+        if (vatVars.show_wolt_section) {
+          // Load and insert WOLT section
+          const woltSection = await this.loadTemplateFile('bodies/company-onboarding/wolt-section.html');
+          body = body.replace('{{wolt_section}}', woltSection);
+        } else {
+          // Remove WOLT placeholder
+          body = body.replace('{{wolt_section}}', '');
+        }
+      }
+
+      // 4. Load footer (same as regular letters)
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 5. Process variables
+      const processedVariables = this.processCompanyOnboardingVariables(templateType, variables);
+
+      // 6. Build full HTML
+      let fullHtml = this.buildCompanyOnboardingHTML(header, body, footer);
+
+      // 7. Replace all variables - WHITELIST HTML VARIABLES for recipient line
+      const htmlVariables = ['custom_header_lines'];
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 8. If preview only, return without saving
+      if (previewOnly) {
+        return {
+          data: {
+            id: 'preview',
+            tenant_id: tenantId,
+            client_id: clientId,
+            group_calculation_id: groupId,
+            template_id: null,
+            template_type: templateType,
+            fee_calculation_id: null,
+            variables_used: processedVariables,
+            generated_content_html: fullHtml,
+            generated_content_text: plainText,
+            payment_link: null,
+            subject: (variables as VatRegistrationVariables).subject || 'מכתב קליטת חברה',
+            status: 'draft',
+            created_at: new Date().toISOString(),
+            created_by: null,
+            created_by_name: null
+          } as GeneratedLetter,
+          error: null
+        };
+      }
+
+      const user = await supabase.auth.getUser();
+      const letterData = {
+        tenant_id: tenantId,
+        client_id: clientId,
+        group_calculation_id: groupId,
+        template_id: null,
+        template_type: templateType,
+        fee_calculation_id: null,
+        variables_used: processedVariables,
+        generated_content_html: fullHtml,
+        generated_content_text: plainText,
+        payment_link: null,
+        subject: (variables as VatRegistrationVariables).subject || 'מכתב קליטת חברה',
+        status: 'saved' as const,
+        created_by: user.data.user?.id,
+        created_by_name: user.data.user?.user_metadata?.full_name || user.data.user?.email
+      };
+
+      let generatedLetter: GeneratedLetter;
+
+      // 9. Update existing or insert new
+      if (existingLetterId) {
+        // Update existing letter
+        const { data, error: updateError } = await supabase
+          .from('generated_letters')
+          .update(letterData)
+          .eq('id', existingLetterId)
+          .eq('tenant_id', tenantId)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        generatedLetter = data;
+
+        await this.logAction('update_company_onboarding_document', generatedLetter.id, {
+          template_type: templateType,
+          client_id: clientId,
+          group_id: groupId
+        });
+      } else {
+        // Insert new letter
+        const { data, error: saveError } = await supabase
+          .from('generated_letters')
+          .insert({
+            ...letterData,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        generatedLetter = data;
+
+        await this.logAction('generate_company_onboarding_document', generatedLetter.id, {
+          template_type: templateType,
+          client_id: clientId,
+          group_id: groupId
+        });
+      }
+
+      return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get body file name from Company Onboarding template type
+   */
+  private getCompanyOnboardingBodyFileName(templateType: CompanyOnboardingTemplateType): string {
+    const bodyMap: Record<CompanyOnboardingTemplateType, string> = {
+      'company_onboarding_vat_registration': 'vat-registration.html'
+    };
+
+    return bodyMap[templateType];
+  }
+
+  /**
+   * Build full HTML for Company Onboarding document
+   */
+  private buildCompanyOnboardingHTML(header: string, body: string, footer: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מכתב קליטת חברה</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; direction: rtl;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="750" cellpadding="0" cellspacing="0" border="0" style="max-width: 750px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+  }
+
+  /**
+   * Process Company Onboarding variables - build dynamic content
+   */
+  private processCompanyOnboardingVariables(
+    templateType: CompanyOnboardingTemplateType,
+    variables: CompanyOnboardingVariables
+  ): Record<string, unknown> {
+    const processed: Record<string, unknown> = { ...variables };
+
+    // Format document date to Israeli format
+    if (!processed.document_date) {
+      processed.letter_date = this.formatIsraeliDate(new Date());
+    } else if (typeof processed.document_date === 'string') {
+      processed.letter_date = this.formatIsraeliDate(new Date(processed.document_date as string));
+    }
+
+    // Build custom header lines for recipient line (contact person + title)
+    // font-size: 20px to match the main recipient section in header.html
+    if (variables.recipient_line && variables.recipient_line.trim()) {
+      processed.custom_header_lines = `
+        <tr>
+          <td colspan="2" style="padding-top: 5px;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.1; font-weight: 700; color: #000000; text-align: right;">
+              ${variables.recipient_line}
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      processed.custom_header_lines = '';
+    }
+
+    // Clear group_name if not applicable (when using client)
+    if (!processed.group_name) {
+      processed.group_name = '';
+    }
+
+    return processed;
   }
 }

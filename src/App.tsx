@@ -22,6 +22,7 @@ const LetterHistoryPage = lazy(() => import('@/pages/LetterHistoryPage').then(m 
 const ComponentSimulatorPage = lazy(() => import('@/pages/ComponentSimulatorPage').then(m => ({ default: m.ComponentSimulatorPage })));
 const ForeignWorkersPage = lazy(() => import('@/pages/ForeignWorkersPage').then(m => ({ default: m.ForeignWorkersPage })));
 const TzlulApprovalsPage = lazy(() => import('@/pages/TzlulApprovalsPage').then(m => ({ default: m.TzlulApprovalsPage })));
+const CompanyOnboardingPage = lazy(() => import('@/pages/CompanyOnboardingPage'));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
@@ -171,6 +172,12 @@ function App() {
                       <Route path="/tzlul-approvals" element={
                         <ErrorBoundary>
                           <TzlulApprovalsPage />
+                        </ErrorBoundary>
+                      } />
+                      {/* Company Onboarding Letters */}
+                      <Route path="/company-onboarding" element={
+                        <ErrorBoundary>
+                          <CompanyOnboardingPage />
                         </ErrorBoundary>
                       } />
                     </Route>

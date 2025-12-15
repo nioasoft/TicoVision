@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight, Plus, X } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight, Plus, X, FileText, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import TenantContactService from '@/services/tenant-contact.service';
@@ -22,6 +23,11 @@ interface SharePdfDialogProps {
   pdfName: string;
   clientName: string;
   clientId?: string;
+  // New props for HTML email support
+  htmlContent?: string;           // HTML content to send in email body
+  letterId?: string;              // ID of the letter in generated_letters
+  defaultSubject?: string;        // Default email subject
+  onEmailSent?: () => void;       // Callback after email is sent
 }
 
 export function SharePdfDialog({
@@ -31,10 +37,19 @@ export function SharePdfDialog({
   pdfName,
   clientName,
   clientId,
+  htmlContent,
+  letterId,
+  defaultSubject,
+  onEmailSent,
 }: SharePdfDialogProps) {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Email type selection (PDF attachment or HTML in body)
+  const [emailType, setEmailType] = useState<'pdf' | 'html'>('pdf');
+  // Email subject (editable)
+  const [emailSubject, setEmailSubject] = useState('');
 
   // Client emails from contact system
   const [clientEmails, setClientEmails] = useState<string[]>([]);
@@ -53,14 +68,20 @@ export function SharePdfDialog({
     if (open && clientId) {
       loadClientEmails();
     }
+    // Set default subject when dialog opens
+    if (open && defaultSubject && !emailSubject) {
+      setEmailSubject(defaultSubject);
+    }
     // Reset state when dialog closes
     if (!open) {
       setShowEmailInput(false);
       setSelectedEmails(new Set());
       setAdditionalEmails([]);
       setShowAddEmail(false);
+      setEmailType('pdf');
+      setEmailSubject('');
     }
-  }, [open, clientId]);
+  }, [open, clientId, defaultSubject]);
 
   const loadClientEmails = async () => {
     if (!clientId) return;
@@ -175,29 +196,56 @@ export function SharePdfDialog({
       return;
     }
 
+    const subject = emailSubject || defaultSubject || `מסמך - ${clientName}`;
+
     setSending(true);
     let successCount = 0;
     let errorCount = 0;
 
     try {
-      // Send to each email
-      for (const email of allEmails) {
-        try {
-          const { data, error } = await supabase.functions.invoke('send-pdf-email', {
-            body: {
-              to: email,
-              subject: `מסמך עובדים זרים - ${clientName}`,
-              pdfUrl,
-              pdfName,
-            },
-          });
+      // Check if we're sending HTML
+      if (emailType === 'html' && htmlContent) {
+        // Send HTML via send-letter Edge Function
+        const session = await supabase.auth.getSession();
 
-          if (error) throw error;
-          if (!data?.success) throw new Error(data?.error || 'Failed to send email');
-          successCount++;
-        } catch (err) {
-          console.error(`Error sending to ${email}:`, err);
-          errorCount++;
+        const { data, error } = await supabase.functions.invoke('send-letter', {
+          body: {
+            recipientEmails: allEmails,
+            customText: htmlContent,
+            isHtml: true,
+            clientId,
+            letterId,
+            subject,
+          },
+          headers: {
+            Authorization: `Bearer ${session.data.session?.access_token}`,
+          },
+        });
+
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Failed to send email');
+
+        successCount = allEmails.length;
+      } else {
+        // Send PDF attachment via send-pdf-email Edge Function
+        for (const email of allEmails) {
+          try {
+            const { data, error } = await supabase.functions.invoke('send-pdf-email', {
+              body: {
+                to: email,
+                subject,
+                pdfUrl,
+                pdfName,
+              },
+            });
+
+            if (error) throw error;
+            if (!data?.success) throw new Error(data?.error || 'Failed to send email');
+            successCount++;
+          } catch (err) {
+            console.error(`Error sending to ${email}:`, err);
+            errorCount++;
+          }
         }
       }
 
@@ -207,6 +255,9 @@ export function SharePdfDialog({
         setSelectedEmails(new Set());
         setAdditionalEmails([]);
         setShowAddEmail(false);
+        setEmailType('pdf');
+        setEmailSubject('');
+        onEmailSent?.();
       } else if (successCount > 0 && errorCount > 0) {
         toast.warning(`נשלח ל-${successCount} נמענים, נכשל עבור ${errorCount}`);
       } else {
@@ -229,23 +280,51 @@ export function SharePdfDialog({
       return;
     }
 
+    const subject = emailSubject || defaultSubject || `מסמך - ${clientName}`;
+
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-pdf-email', {
-        body: {
-          to: legacyEmail,
-          subject: `מסמך עובדים זרים - ${clientName}`,
-          pdfUrl,
-          pdfName,
-        },
-      });
+      if (emailType === 'html' && htmlContent) {
+        // Send HTML via send-letter Edge Function
+        const session = await supabase.auth.getSession();
 
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Failed to send email');
+        const { data, error } = await supabase.functions.invoke('send-letter', {
+          body: {
+            recipientEmails: [legacyEmail],
+            customText: htmlContent,
+            isHtml: true,
+            clientId,
+            letterId,
+            subject,
+          },
+          headers: {
+            Authorization: `Bearer ${session.data.session?.access_token}`,
+          },
+        });
+
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Failed to send email');
+      } else {
+        // Send PDF attachment
+        const { data, error } = await supabase.functions.invoke('send-pdf-email', {
+          body: {
+            to: legacyEmail,
+            subject,
+            pdfUrl,
+            pdfName,
+          },
+        });
+
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Failed to send email');
+      }
 
       toast.success('המייל נשלח בהצלחה!');
       setShowEmailInput(false);
       setLegacyEmail('');
+      setEmailType('pdf');
+      setEmailSubject('');
+      onEmailSent?.();
     } catch (error) {
       console.error('Send email error:', error);
       toast.error('שגיאה בשליחת המייל');
@@ -260,6 +339,8 @@ export function SharePdfDialog({
     setSelectedEmails(new Set());
     setAdditionalEmails([]);
     setShowAddEmail(false);
+    setEmailType('pdf');
+    setEmailSubject('');
     onClose();
   };
 
@@ -346,6 +427,47 @@ export function SharePdfDialog({
               </div>
             ) : (
               <>
+                {/* Email type selection - only show if htmlContent is available */}
+                {htmlContent && (
+                  <div className="space-y-2 border-b pb-3">
+                    <Label className="text-right block font-medium">סוג שליחה:</Label>
+                    <RadioGroup
+                      value={emailType}
+                      onValueChange={(v) => setEmailType(v as 'pdf' | 'html')}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="pdf" id="email-pdf" />
+                        <Label htmlFor="email-pdf" className="cursor-pointer flex items-center gap-1">
+                          <FileText className="h-4 w-4" />
+                          PDF כצרופה
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="html" id="email-html" />
+                        <Label htmlFor="email-html" className="cursor-pointer flex items-center gap-1">
+                          <Code className="h-4 w-4" />
+                          HTML בגוף המייל
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                )}
+
+                {/* Email subject */}
+                <div className="space-y-2">
+                  <Label htmlFor="email-subject" className="text-right block font-medium">נושא המייל:</Label>
+                  <Input
+                    id="email-subject"
+                    type="text"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    placeholder={defaultSubject || `מסמך - ${clientName}`}
+                    className="text-right"
+                    disabled={sending}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-right block font-medium">בחר נמענים:</Label>
                   <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
@@ -438,6 +560,49 @@ export function SharePdfDialog({
               <ArrowRight className="ml-1 h-4 w-4" />
               חזור
             </Button>
+
+            {/* Email type selection - only show if htmlContent is available */}
+            {htmlContent && (
+              <div className="space-y-2 border-b pb-3">
+                <Label className="text-right block font-medium">סוג שליחה:</Label>
+                <RadioGroup
+                  value={emailType}
+                  onValueChange={(v) => setEmailType(v as 'pdf' | 'html')}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="pdf" id="legacy-email-pdf" />
+                    <Label htmlFor="legacy-email-pdf" className="cursor-pointer flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      PDF כצרופה
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="html" id="legacy-email-html" />
+                    <Label htmlFor="legacy-email-html" className="cursor-pointer flex items-center gap-1">
+                      <Code className="h-4 w-4" />
+                      HTML בגוף המייל
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
+
+            {/* Email subject */}
+            <div className="space-y-2">
+              <Label htmlFor="legacy-email-subject" className="text-right block">
+                נושא המייל
+              </Label>
+              <Input
+                id="legacy-email-subject"
+                type="text"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder={defaultSubject || `מסמך - ${clientName}`}
+                className="text-right"
+                disabled={sending}
+              />
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-right block">

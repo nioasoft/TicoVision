@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { 
-  LayoutGrid, 
-  List as ListIcon, 
+import {
+  LayoutGrid,
+  List as ListIcon,
   ChevronRight,
   ArrowUpDown,
-  Filter
+  Filter,
+  FileText
 } from 'lucide-react';
 import type { DocFile, ViewMode, FolderItem } from '../types';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { FileCard } from './FileCard';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 interface DocumentsViewProps {

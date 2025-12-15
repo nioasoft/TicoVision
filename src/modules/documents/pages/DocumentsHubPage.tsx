@@ -20,7 +20,7 @@ export default function DocumentsHubPage() {
     type: 'recent',
     name: 'אחרונים'
   });
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
 
   // Data Hook

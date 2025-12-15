@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -54,6 +64,16 @@ export function TzlulApprovalsPage() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
+  const [generatedLetterId, setGeneratedLetterId] = useState<string | null>(null);
+  const [generatedHtmlContent, setGeneratedHtmlContent] = useState<string>('');
+  const [generatedSubject, setGeneratedSubject] = useState<string>('');
+
+  // Existing letter dialog state
+  const [existingLetterDialog, setExistingLetterDialog] = useState<{
+    open: boolean;
+    existingLetterId: string | null;
+    existingLetterDate: string | null;
+  }>({ open: false, existingLetterId: null, existingLetterDate: null });
 
   // Check access to Tzlul client on mount
   useEffect(() => {
@@ -157,12 +177,9 @@ export function TzlulApprovalsPage() {
   // Check if can generate (has date and document data)
   const canGenerate = formState.sharedData.document_date && isCurrentDocumentValid();
 
-  // Generate document and PDF
-  const handleGenerateDocument = async () => {
-    if (!canGenerate || !tzlulClientId) {
-      toast.error('נא למלא את כל השדות הנדרשים');
-      return;
-    }
+  // Generate document and PDF - main logic
+  const executeGenerateDocument = async (existingLetterId?: string) => {
+    if (!tzlulClientId) return;
 
     setGenerating(true);
 
@@ -175,23 +192,30 @@ export function TzlulApprovalsPage() {
         ...getDocumentData(),
       } as TzlulVariables;
 
-      // Generate document
+      // Generate document (with optional existing letter ID for update)
       const result = await templateService.generateTzlulDocument(
         letterType.templateType,
         tzlulClientId,
-        variables
+        variables,
+        { existingLetterId }
       );
 
       if (result.error) {
         throw result.error;
       }
 
-      toast.success(`המסמך "${letterType.label}" נוצר בהצלחה!`);
+      const actionText = existingLetterId ? 'עודכן' : 'נוצר';
+      toast.success(`המסמך "${letterType.label}" ${actionText} בהצלחה!`);
 
       // Generate PDF using Edge Function
-      if (!result.data?.id) {
+      if (!result.data?.id || result.data.id === 'preview') {
         throw new Error('Missing letter ID');
       }
+
+      // Save letter ID, HTML content and subject for email sending
+      setGeneratedLetterId(result.data.id);
+      setGeneratedHtmlContent(result.data.generated_content_html || '');
+      setGeneratedSubject(result.data.subject || '');
 
       const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf', {
         body: { letterId: result.data.id },
@@ -232,7 +256,56 @@ export function TzlulApprovalsPage() {
     }
   };
 
-  // Generate preview
+  // Generate document - checks for existing letter first
+  const handleGenerateDocument = async () => {
+    if (!canGenerate || !tzlulClientId) {
+      toast.error('נא למלא את כל השדות הנדרשים');
+      return;
+    }
+
+    setGenerating(true);
+
+    try {
+      const letterType = TZLUL_LETTER_TYPES[formState.selectedLetterType];
+
+      // Check if letter already exists for this client
+      const existingResult = await templateService.checkExistingTzlulLetter(
+        letterType.templateType,
+        tzlulClientId
+      );
+
+      if (existingResult.data) {
+        // Letter exists - ask user what to do
+        setGenerating(false);
+        setExistingLetterDialog({
+          open: true,
+          existingLetterId: existingResult.data.id,
+          existingLetterDate: existingResult.data.created_at
+        });
+        return;
+      }
+
+      // No existing letter - create new
+      await executeGenerateDocument();
+    } catch (error) {
+      console.error('Error checking existing letter:', error);
+      // If check fails, proceed with creating new
+      await executeGenerateDocument();
+    }
+  };
+
+  // Handle user choice from existing letter dialog
+  const handleExistingLetterChoice = async (choice: 'update' | 'new') => {
+    setExistingLetterDialog({ open: false, existingLetterId: null, existingLetterDate: null });
+
+    if (choice === 'update') {
+      await executeGenerateDocument(existingLetterDialog.existingLetterId || undefined);
+    } else {
+      await executeGenerateDocument();
+    }
+  };
+
+  // Generate preview (without saving to DB)
   const handlePreview = async () => {
     if (!canGenerate || !tzlulClientId) {
       toast.error('נא למלא את כל השדות הנדרשים');
@@ -250,11 +323,12 @@ export function TzlulApprovalsPage() {
         ...getDocumentData(),
       } as TzlulVariables;
 
-      // Generate preview HTML
+      // Generate preview HTML (without saving to DB)
       const result = await templateService.generateTzlulDocument(
         letterType.templateType,
         tzlulClientId,
-        variables
+        variables,
+        { previewOnly: true }
       );
 
       if (result.error || !result.data) {
@@ -545,7 +619,36 @@ export function TzlulApprovalsPage() {
         pdfName={generatedPdfName}
         clientName={TZLUL_CLIENT_NAME}
         clientId={tzlulClientId || undefined}
+        htmlContent={generatedHtmlContent}
+        letterId={generatedLetterId || undefined}
+        defaultSubject={generatedSubject || TZLUL_LETTER_TYPES[formState.selectedLetterType].label}
       />
+
+      {/* Existing Letter Dialog */}
+      <AlertDialog open={existingLetterDialog.open} onOpenChange={(open) => !open && setExistingLetterDialog({ open: false, existingLetterId: null, existingLetterDate: null })}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-right">קיים מכתב קודם</AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              קיים כבר מכתב מסוג זה מתאריך{' '}
+              {existingLetterDialog.existingLetterDate
+                ? new Date(existingLetterDialog.existingLetterDate).toLocaleDateString('he-IL')
+                : ''}.
+              <br />
+              האם לעדכן את המכתב הקיים או ליצור מכתב חדש?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction onClick={() => handleExistingLetterChoice('update')}>
+              עדכן קיים
+            </AlertDialogAction>
+            <AlertDialogAction onClick={() => handleExistingLetterChoice('new')} className="bg-secondary text-secondary-foreground hover:bg-secondary/80">
+              צור חדש
+            </AlertDialogAction>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
