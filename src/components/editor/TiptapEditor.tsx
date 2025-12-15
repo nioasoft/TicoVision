@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -7,6 +7,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Extension } from '@tiptap/core';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 import { Table } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
@@ -98,12 +99,14 @@ const CustomTableCell = TableCell.extend({
   },
 });
 
-import { 
-  Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2, 
-  Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter, 
+import {
+  Bold, Italic, UnderlineIcon, List, ListOrdered, Heading1, Heading2,
+  Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter,
   AlignRight, Stamp, Table as TableIcon, Trash2, Plus, Split, Merge,
-  ArrowDown, ArrowUp, ArrowLeft, ArrowRight, PanelTop, PanelLeft, BoxSelect
+  ArrowDown, ArrowUp, ArrowLeft, ArrowRight, PanelTop, PanelLeft, BoxSelect,
+  Link as LinkIcon, Square, Unlink
 } from 'lucide-react';
+import { LinkDialog } from './LinkDialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
@@ -204,6 +207,14 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     BlueBullet,
     DarkRedBullet,
     BlackBullet,
+    Link.configure({
+      openOnClick: false, // Don't open links on click in editor
+      HTMLAttributes: {
+        class: 'text-blue-600 underline cursor-pointer',
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      },
+    }),
     ResizableImage.configure({
       inline: false, // Block-level for text alignment to work
       allowBase64: false,
@@ -249,6 +260,68 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       editor.commands.setContent(value);
     }
   }, [editor, value]);
+
+  // Link dialog state
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkDialogMode, setLinkDialogMode] = useState<'link' | 'button'>('link');
+  const [linkInitialText, setLinkInitialText] = useState('');
+
+  // Open link dialog
+  const openLinkDialog = useCallback((mode: 'link' | 'button') => {
+    if (!editor) return;
+
+    // Get selected text
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, ' ');
+
+    setLinkDialogMode(mode);
+    setLinkInitialText(selectedText);
+    setLinkDialogOpen(true);
+  }, [editor]);
+
+  // Handle link dialog confirm
+  const handleLinkConfirm = useCallback((data: { url: string; text: string; style: 'link' | 'button'; buttonColor?: string }) => {
+    if (!editor) return;
+
+    const { from, to } = editor.state.selection;
+    const hasSelection = from !== to;
+
+    if (data.style === 'link') {
+      // Simple text link
+      if (hasSelection) {
+        // Apply link to selected text
+        editor.chain().focus().setLink({ href: data.url }).run();
+      } else {
+        // Insert new link with text
+        editor
+          .chain()
+          .focus()
+          .insertContent(`<a href="${data.url}" target="_blank" rel="noopener noreferrer">${data.text}</a>`)
+          .run();
+      }
+    } else {
+      // Styled button
+      const isOutline = data.buttonColor === 'outline';
+      const buttonHtml = `<a href="${data.url}" target="_blank" rel="noopener noreferrer" style="
+        display: inline-block;
+        background-color: ${isOutline ? 'transparent' : data.buttonColor};
+        color: ${isOutline ? '#395BF7' : 'white'};
+        ${isOutline ? 'border: 2px solid #395BF7;' : ''}
+        padding: 10px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+      ">${data.text}</a>`;
+
+      editor.chain().focus().insertContent(buttonHtml).run();
+    }
+  }, [editor]);
+
+  // Remove link from selected text
+  const removeLink = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().unsetLink().run();
+  }, [editor]);
 
   if (!editor) {
     return null;
@@ -404,6 +477,44 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
           {/* Colored Bullets (Blue, Dark Red, Black) */}
           <ColoredBulletButtons editor={editor} />
+        </div>
+
+        <div className="h-6 w-px bg-border mx-1" />
+
+        {/* Links & Buttons */}
+        <div className="flex items-center gap-1 rtl:flex-row-reverse">
+          <Button
+            type="button"
+            variant={editor.isActive('link') ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => openLinkDialog('link')}
+            title="הוסף קישור"
+          >
+            <LinkIcon className="h-4 w-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => openLinkDialog('button')}
+            title="הוסף כפתור עם קישור"
+          >
+            <Square className="h-4 w-4" />
+          </Button>
+
+          {editor.isActive('link') && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={removeLink}
+              title="הסר קישור"
+              className="text-red-500 hover:text-red-600"
+            >
+              <Unlink className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         <div className="h-6 w-px bg-border mx-1" />
@@ -745,6 +856,15 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
       {/* Editor content */}
       <EditorContent editor={editor} />
+
+      {/* Link Dialog */}
+      <LinkDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        onConfirm={handleLinkConfirm}
+        initialText={linkInitialText}
+        mode={linkDialogMode}
+      />
     </div>
   );
 };

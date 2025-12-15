@@ -45,6 +45,7 @@
     "@tiptap/extension-heading": "^3.10.5",
     "@tiptap/extension-highlight": "^3.10.5",
     "@tiptap/extension-image": "^3.13.0",
+    "@tiptap/extension-link": "^3.13.0",
     "@tiptap/extension-list-item": "^3.10.5",
     "@tiptap/extension-table": "^3.13.0",
     "@tiptap/extension-table-cell": "^3.13.0",
