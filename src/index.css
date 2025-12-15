@@ -152,6 +152,26 @@ input[type="number"] {
   margin: 1.5rem 0;
 }
 
+/* Tiptap Editor - Link Buttons */
+.ProseMirror a[data-button="true"] {
+  display: inline-block !important;
+  padding: 10px 24px !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+}
+
+/* Preview and Email - Link Buttons */
+.select-text a[data-button="true"],
+[dir="rtl"] a[data-button="true"] {
+  display: inline-block !important;
+  padding: 10px 24px !important;
+  border-radius: 8px !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+}
+
 /* Tiptap Editor - Table Styles */
 .ProseMirror table {
   border-collapse: collapse;

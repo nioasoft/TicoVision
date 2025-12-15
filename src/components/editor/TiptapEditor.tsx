@@ -207,10 +207,31 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     BlueBullet,
     DarkRedBullet,
     BlackBullet,
-    Link.configure({
+    Link.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          style: {
+            default: null,
+            parseHTML: element => element.getAttribute('style'),
+            renderHTML: attributes => {
+              if (!attributes.style) return {};
+              return { style: attributes.style };
+            },
+          },
+          'data-button': {
+            default: null,
+            parseHTML: element => element.getAttribute('data-button'),
+            renderHTML: attributes => {
+              if (!attributes['data-button']) return {};
+              return { 'data-button': attributes['data-button'] };
+            },
+          },
+        };
+      },
+    }).configure({
       openOnClick: false, // Don't open links on click in editor
       HTMLAttributes: {
-        class: 'text-blue-600 underline cursor-pointer',
         target: '_blank',
         rel: 'noopener noreferrer',
       },
@@ -300,18 +321,15 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
           .run();
       }
     } else {
-      // Styled button
+      // Styled button - all styles on one line for PDF compatibility
       const isOutline = data.buttonColor === 'outline';
-      const buttonHtml = `<a href="${data.url}" target="_blank" rel="noopener noreferrer" style="
-        display: inline-block;
-        background-color: ${isOutline ? 'transparent' : data.buttonColor};
-        color: ${isOutline ? '#395BF7' : 'white'};
-        ${isOutline ? 'border: 2px solid #395BF7;' : ''}
-        padding: 10px 24px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 500;
-      ">${data.text}</a>`;
+      const bgColor = isOutline ? 'transparent' : data.buttonColor;
+      const textColor = isOutline ? '#395BF7' : '#ffffff';
+      const border = isOutline ? 'border: 2px solid #395BF7;' : '';
+
+      const buttonStyle = `display: inline-block; background-color: ${bgColor}; color: ${textColor}; ${border} padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;`;
+
+      const buttonHtml = `<a href="${data.url}" target="_blank" rel="noopener noreferrer" data-button="true" style="${buttonStyle}">${data.text}</a>`;
 
       editor.chain().focus().insertContent(buttonHtml).run();
     }
