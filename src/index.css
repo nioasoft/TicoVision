@@ -97,6 +97,31 @@ textarea[dir="rtl"]::placeholder {
   direction: rtl !important;
 }
 
+/* Force right alignment for date inputs with dir="ltr" */
+input[type="date"][dir="ltr"] {
+  text-align: right !important;
+}
+
+input[type="date"][dir="ltr"]::-webkit-datetime-edit {
+  text-align: right !important;
+  direction: ltr;
+}
+
+input[type="date"][dir="ltr"]::-webkit-datetime-edit-fields-wrapper {
+  text-align: right !important;
+  direction: ltr;
+}
+
+input[type="date"][dir="ltr"]::-webkit-datetime-edit-text {
+  text-align: right !important;
+}
+
+input[type="date"][dir="ltr"]::-webkit-datetime-edit-month-field,
+input[type="date"][dir="ltr"]::-webkit-datetime-edit-day-field,
+input[type="date"][dir="ltr"]::-webkit-datetime-edit-year-field {
+  text-align: right !important;
+}
+
 /* Hebrew-specific styles */
 .hebrew {
   font-family: var(--font-hebrew);
