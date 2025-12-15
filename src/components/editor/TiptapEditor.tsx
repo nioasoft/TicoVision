@@ -111,6 +111,9 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
 import { ColoredBulletButtons } from './ColoredBulletButtons';
+import { LineHeight } from './extensions/LineHeight';
+import { StyledDivider } from './extensions/StyledDivider';
+import { ColorBlock } from './extensions/ColorBlock';
 
 // Import ProseMirror CSS for proper white-space handling
 import 'prosemirror-view/style/prosemirror.css';
@@ -185,13 +188,14 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       horizontalRule: true, // Enable horizontal rule
       paragraph: {
         HTMLAttributes: {
-          style: 'margin-bottom: 1em; min-height: 1em;', // Preserve spacing + min height for empty paragraphs
+          style: 'margin-bottom: 0.3em; min-height: 1em;', // Small gap between paragraphs + min height for empty paragraphs
         },
       },
       hardBreak: {
         keepMarks: true, // Preserve formatting across line breaks
       },
       strike: false, // Disable strike (we don't use it, reduces extensions)
+      link: false, // Disable - we use custom Link extension below
     }),
     TextAlign.configure({
       types: ['paragraph', 'image'], // Apply to paragraphs and images
@@ -201,6 +205,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     Color,
     TextStyle,
     FontSize, // Custom font size extension
+    LineHeight, // Line spacing extension
+    StyledDivider, // Colored dividers
+    ColorBlock, // Background color blocks
     Highlight.configure({
       multicolor: true, // Allow multiple highlight colors
     }),
@@ -263,7 +270,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
           'prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none',
           'rtl:text-right ltr:text-left',
           'font-[\'David_Libre\',\'Heebo\',\'Assistant\',sans-serif]',
-          'text-base leading-relaxed',
+          'text-base leading-[1.2]',
           'p-4'
         ),
         dir: 'rtl',
@@ -444,29 +451,47 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
 
         <div className="h-6 w-px bg-border mx-1" />
 
-        {/* Font Size */}
+        {/* Font Size Dropdown */}
         <div className="flex items-center gap-1 rtl:flex-row-reverse">
-          <Button
-            type="button"
-            variant={editor.getAttributes('textStyle').fontSize === '16px' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => editor.chain().focus().setFontSize('16px').run()}
-            title="גודל רגיל (16px)"
+          <select
+            className="h-8 px-2 text-sm border rounded bg-background hover:bg-accent cursor-pointer"
+            value={editor.getAttributes('textStyle').fontSize || '16px'}
+            onChange={(e) => {
+              const size = e.target.value;
+              if (size === '16px') {
+                editor.chain().focus().unsetFontSize().run();
+              } else {
+                editor.chain().focus().setFontSize(size).run();
+              }
+            }}
+            title="גודל טקסט"
           >
-            <Type className="h-4 w-4" />
-            <span className="text-xs mr-0.5">רגיל</span>
-          </Button>
+            <option value="12px">12 קטן מאוד</option>
+            <option value="14px">14 קטן</option>
+            <option value="16px">16 רגיל</option>
+            <option value="18px">18 בינוני</option>
+            <option value="20px">20 גדול</option>
+            <option value="24px">24 כותרת משנה</option>
+            <option value="28px">28 כותרת</option>
+          </select>
+        </div>
 
-          <Button
-            type="button"
-            variant={editor.getAttributes('textStyle').fontSize === '19px' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => editor.chain().focus().setFontSize('19px').run()}
-            title="גודל גדול (19px)"
+        {/* Line Spacing Dropdown */}
+        <div className="flex items-center gap-1 rtl:flex-row-reverse">
+          <select
+            className="h-8 px-2 text-sm border rounded bg-background hover:bg-accent cursor-pointer"
+            value={editor.getAttributes('paragraph').lineHeight || '1.2'}
+            onChange={(e) => {
+              const height = e.target.value;
+              editor.chain().focus().setLineHeight(height).run();
+            }}
+            title="רווח בין שורות"
           >
-            <Type className="h-4 w-4" />
-            <span className="text-xs mr-0.5">גדול</span>
-          </Button>
+            <option value="1">צפוף</option>
+            <option value="1.2">רגיל</option>
+            <option value="1.6">מרווח</option>
+            <option value="2">מאוד מרווח</option>
+          </select>
         </div>
 
         <div className="h-6 w-px bg-border mx-1" />
@@ -622,6 +647,23 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
                     <div className="w-4 h-4 rounded border bg-yellow-100 ml-2" />
                     צהוב בהיר
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#EEEDD8').run()}>
+                    <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#EEEDD8' }} />
+                    בז'
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#FFEDD5').run()}>
+                    <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#FFEDD5' }} />
+                    כתום בהיר
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#EDE9FE').run()}>
+                    <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#EDE9FE' }} />
+                    סגול בהיר
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('backgroundColor', '#CCFBF1').run()}>
+                    <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#CCFBF1' }} />
+                    טורקיז
+                  </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
@@ -659,16 +701,52 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Horizontal Rule */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            title="קו מפריד אופקי"
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
+          {/* Styled Dividers Dropdown */}
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                title="קו מפריד"
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="start">
+              <DropdownMenuLabel>עובי קו</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '1px', color: '#000000' }).run()}>
+                <div className="w-full h-[1px] bg-black ml-2" />
+                דק (1px)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#000000' }).run()}>
+                <div className="w-full h-[2px] bg-black ml-2" />
+                בינוני (2px)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '4px', color: '#000000' }).run()}>
+                <div className="w-full h-[4px] bg-black ml-2" />
+                עבה (4px)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>קו צבעוני</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#395BF7' }).run()}>
+                <div className="w-full h-[2px] ml-2" style={{ backgroundColor: '#395BF7' }} />
+                כחול
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#DC2626' }).run()}>
+                <div className="w-full h-[2px] ml-2" style={{ backgroundColor: '#DC2626' }} />
+                אדום
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#71717a' }).run()}>
+                <div className="w-full h-[2px] ml-2" style={{ backgroundColor: '#71717a' }} />
+                אפור
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#16A34A' }).run()}>
+                <div className="w-full h-[2px] ml-2" style={{ backgroundColor: '#16A34A' }} />
+                ירוק
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Tico Signature/Stamp */}
           <Button
@@ -751,6 +829,16 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               type="button"
               variant="ghost"
               size="sm"
+              onClick={() => editor.chain().focus().setColor('#71717a').run()}
+              title="אפור"
+              className="w-6 h-6 p-0"
+            >
+              <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: '#71717a' }} />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => editor.chain().focus().setColor('#395BF7').run()}
               title="כחול"
               className="w-6 h-6 p-0"
@@ -771,12 +859,46 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               type="button"
               variant="ghost"
               size="sm"
+              onClick={() => editor.chain().focus().setColor('#BB0B0B').run()}
+              title="אדום כהה"
+              className="w-6 h-6 p-0"
+            >
+              <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: '#BB0B0B' }} />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => editor.chain().focus().setColor('#16A34A').run()}
               title="ירוק"
               className="w-6 h-6 p-0"
             >
               <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: '#16A34A' }} />
             </Button>
+            {/* Color Picker */}
+            <div className="relative">
+              <input
+                type="color"
+                className="absolute opacity-0 w-6 h-6 cursor-pointer"
+                value={editor.getAttributes('textStyle').color || '#000000'}
+                onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+                title="בחר צבע מותאם"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 pointer-events-none"
+                title="בחר צבע מותאם"
+              >
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-dashed border-gray-400"
+                  style={{
+                    background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)'
+                  }}
+                />
+              </Button>
+            </div>
             <Button
               type="button"
               variant="ghost"
@@ -842,6 +964,47 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               <Highlighter className="h-3 w-3" />
             </Button>
           </div>
+
+          {/* Color Block Dropdown */}
+          <DropdownMenu dir="rtl">
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant={editor.isActive('colorBlock') ? 'secondary' : 'ghost'}
+                size="sm"
+                title="בלוק צבעוני"
+              >
+                <Square className="h-4 w-4 fill-current opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-40" align="start">
+              <DropdownMenuLabel>בלוק צבעוני</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleColorBlock({ backgroundColor: '#EEEDD8' }).run()}>
+                <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#EEEDD8' }} />
+                בז'
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleColorBlock({ backgroundColor: '#f0f0f0' }).run()}>
+                <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#f0f0f0' }} />
+                אפור בהיר
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleColorBlock({ backgroundColor: '#DBEAFE' }).run()}>
+                <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#DBEAFE' }} />
+                כחול בהיר
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => editor.chain().focus().toggleColorBlock({ backgroundColor: '#FEF3C7' }).run()}>
+                <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: '#FEF3C7' }} />
+                צהוב בהיר
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => editor.chain().focus().unsetColorBlock().run()}
+                disabled={!editor.isActive('colorBlock')}
+              >
+                <span className="w-4 h-4 rounded border border-gray-300 mr-2 flex items-center justify-center text-[10px]">❌</span>
+                הסר בלוק
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="h-6 w-px bg-border mx-1" />

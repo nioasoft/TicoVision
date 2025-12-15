@@ -833,7 +833,7 @@ export class TemplateService extends BaseService {
     return `
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
             <tr>
-                <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; line-height: 1.6; text-align: right; color: #09090b;">
+                <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 19px; line-height: 1.2; text-align: right; color: #09090b;">
                     ${html}
                 </td>
             </tr>
@@ -1067,14 +1067,14 @@ export class TemplateService extends BaseService {
 
       // Wrap in table row/cell with David Libre font (CRITICAL: Must be <tr><td> to fit in table structure)
       // IMPORTANT: class="letter-body-content" is required for CSS table styling to work!
-      html = `<tr><td class="letter-body-content" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
+      html = `<tr><td class="letter-body-content" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.2; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
     } else {
       // Otherwise parse Markdown to HTML (legacy support)
       html = parseMarkdownToHTML(text);
 
       // Also wrap Markdown output in table row/cell with David Libre font
       // IMPORTANT: class="letter-body-content" is required for CSS table styling to work!
-      html = `<tr><td class="letter-body-content" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
+      html = `<tr><td class="letter-body-content" style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.2; text-align: right; direction: rtl; padding: 20px 0;">${html}</td></tr>`;
     }
 
     return html;

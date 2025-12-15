@@ -382,7 +382,7 @@ export class TemplateParser {
         background: white;
         direction: rtl;
         text-align: right;
-        line-height: 1.8;
+        line-height: 1.2;
       }
 
       .letter-header {
