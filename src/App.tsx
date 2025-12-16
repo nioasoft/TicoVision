@@ -38,8 +38,13 @@ const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
 const WelcomePage = lazy(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
 const UnderConstructionPage = lazy(() => import('@/pages/UnderConstructionPage'));
 
+// Help System
+const HelpPage = lazy(() => import('@/modules/help/pages/HelpPage'));
+
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
+const TodaysWorklistPage = lazy(() => import('@/modules/collections/pages/TodaysWorklistPage').then(m => ({ default: m.TodaysWorklistPage })));
+const CollectionReportsPage = lazy(() => import('@/modules/collections/pages/CollectionReportsPage').then(m => ({ default: m.CollectionReportsPage })));
 const NotificationSettings = lazy(() => import('@/modules/collections/pages/NotificationSettings').then(m => ({ default: m.NotificationSettings })));
 const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage').then(m => ({ default: m.DisputesPage })));
 
@@ -122,6 +127,15 @@ function App() {
                         <WelcomePage />
                       </ErrorBoundary>
                     } />
+
+                    {/* Help page - accessible to admin and accountant only */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant']} />}>
+                      <Route path="/help" element={
+                        <ErrorBoundary>
+                          <HelpPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
 
                     {/* Clients page - accessible if has permission */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper', 'client']} />}>
@@ -249,6 +263,16 @@ function App() {
                       <Route path="/collections" element={
                         <ErrorBoundary>
                           <CollectionDashboard />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/collections/today" element={
+                        <ErrorBoundary>
+                          <TodaysWorklistPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/collections/reports" element={
+                        <ErrorBoundary>
+                          <CollectionReportsPage />
                         </ErrorBoundary>
                       } />
                       <Route path="/collections/settings" element={

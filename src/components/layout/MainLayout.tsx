@@ -22,7 +22,8 @@ import {
   MessageSquarePlus,
   Building2,
   FileSignature,
-  ScrollText
+  ScrollText,
+  HelpCircle
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -110,6 +111,7 @@ const navigation: NavigationItem[] = [
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, menuKey: 'users', allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, menuKey: 'settings', allowedRoles: ['admin'] as UserRole[] },
+  { name: 'עזרה והדרכה', href: '/help', icon: HelpCircle, menuKey: 'help', allowedRoles: ['admin', 'accountant'] as UserRole[] },
 ];
 
 const getRoleDisplayName = (role: UserRole | null): string => {
