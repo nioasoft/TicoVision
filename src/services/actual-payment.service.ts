@@ -33,6 +33,9 @@ export interface RecordPaymentData {
   paymentMethod: PaymentMethod;
   paymentReference?: string;
 
+  // Discount that was actually applied (may differ from client selection)
+  appliedDiscountPercent?: number;
+
   // Installments (optional)
   numInstallments?: number;
 
@@ -141,6 +144,7 @@ class ActualPaymentService extends BaseService {
           payment_date: data.paymentDate.toISOString(),
           payment_method: data.paymentMethod,
           payment_reference: data.paymentReference,
+          applied_discount_percent: data.appliedDiscountPercent,
           num_installments: data.numInstallments,
           attachment_ids: data.attachmentIds || [],
           notes: data.notes,

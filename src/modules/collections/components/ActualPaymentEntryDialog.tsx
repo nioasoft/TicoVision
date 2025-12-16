@@ -24,11 +24,12 @@ import { AmountDisplay, AmountWithVATBreakdown } from '@/components/payments/Amo
 import { DeviationBadge } from '@/components/payments/DeviationBadge';
 import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
 import { FileAttachmentList } from '@/components/payments/FileAttachmentList';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { actualPaymentService } from '@/services/actual-payment.service';
 import { installmentService } from '@/services/installment.service';
 import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
-import { PAYMENT_METHOD_LABELS } from '@/types/payment.types';
+import { PAYMENT_METHOD_LABELS, PAYMENT_DISCOUNTS } from '@/types/payment.types';
 import { formatILS } from '@/lib/formatters';
 
 interface ActualPaymentEntryDialogProps {
@@ -45,18 +46,54 @@ interface ActualPaymentEntryDialogProps {
 }
 
 export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
+  // Determine if client already selected discount via email
+  const clientSelectedDiscount = props.paymentMethodSelected != null;
+
   // State
   const [paymentDate, setPaymentDate] = useState<Date>(new Date());
-  const [amountPaid, setAmountPaid] = useState<number>(props.expectedAmount);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     props.paymentMethodSelected || 'bank_transfer'
   );
+  // Manual discount selection - defaults to expected or derived from payment method
+  const [appliedDiscountPercent, setAppliedDiscountPercent] = useState<number>(
+    clientSelectedDiscount
+      ? props.expectedDiscount
+      : PAYMENT_DISCOUNTS[paymentMethod]
+  );
+
+  // Calculate expected amount after discount
+  const calculatedExpectedAmount = useMemo(() => {
+    return props.originalAmount * (1 - appliedDiscountPercent / 100);
+  }, [props.originalAmount, appliedDiscountPercent]);
+
+  const [amountPaid, setAmountPaid] = useState<number>(calculatedExpectedAmount);
   const [paymentReference, setPaymentReference] = useState<string>('');
   const [hasInstallments, setHasInstallments] = useState(false);
   const [numInstallments, setNumInstallments] = useState(8);
   const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handler for payment method change - updates discount if not client-selected
+  const handlePaymentMethodChange = (method: PaymentMethod) => {
+    setPaymentMethod(method);
+    if (!clientSelectedDiscount) {
+      const newDiscount = PAYMENT_DISCOUNTS[method];
+      setAppliedDiscountPercent(newDiscount);
+      // Also update amount paid to match new expected
+      const newExpected = props.originalAmount * (1 - newDiscount / 100);
+      setAmountPaid(newExpected);
+    }
+  };
+
+  // Handler for manual discount change
+  const handleDiscountChange = (discountStr: string) => {
+    const discount = parseFloat(discountStr);
+    setAppliedDiscountPercent(discount);
+    // Update amount paid to match new expected
+    const newExpected = props.originalAmount * (1 - discount / 100);
+    setAmountPaid(newExpected);
+  };
 
   // Calculated values
   const vatBreakdown = useMemo(
@@ -65,10 +102,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
   );
 
   const deviation = useMemo(() => {
-    const diff = props.expectedAmount - amountPaid;
-    const percent = props.expectedAmount > 0 ? (diff / props.expectedAmount) * 100 : 0;
+    const diff = calculatedExpectedAmount - amountPaid;
+    const percent = calculatedExpectedAmount > 0 ? (diff / calculatedExpectedAmount) * 100 : 0;
     return { amount: diff, percent };
-  }, [amountPaid, props.expectedAmount]);
+  }, [amountPaid, calculatedExpectedAmount]);
 
   const alertLevel: AlertLevel = useMemo(() => {
     const absPercent = Math.abs(deviation.percent);
@@ -92,6 +129,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
         numInstallments: hasInstallments ? numInstallments : undefined,
         attachmentIds,
         notes,
+        appliedDiscountPercent, // Pass the discount that was actually applied
       };
 
       if (hasInstallments && numInstallments > 0) {
@@ -142,26 +180,66 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
             <h3 className="text-sm font-medium mb-3 rtl:text-right ltr:text-left">
               📊 סיכום חישוב שכר טרחה
             </h3>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-3 text-sm">
               <div className="flex justify-between items-center">
-                <span className="rtl:text-right ltr:text-left">סכום מקורי:</span>
+                <span className="rtl:text-right ltr:text-left">סכום מקורי (לפני הנחה):</span>
                 <AmountDisplay beforeVat={props.originalAmount} size="sm" />
               </div>
-              {props.paymentMethodSelected && (
+
+              {/* Client selected discount via email */}
+              {clientSelectedDiscount ? (
                 <>
                   <div className="flex justify-between items-center">
-                    <span className="rtl:text-right ltr:text-left">שיטת תשלום שנבחרה:</span>
-                    <PaymentMethodBadge method={props.paymentMethodSelected} />
+                    <span className="rtl:text-right ltr:text-left">📧 שיטת תשלום שנבחרה ע"י הלקוח:</span>
+                    <PaymentMethodBadge method={props.paymentMethodSelected!} />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="rtl:text-right ltr:text-left">הנחה מצופה:</span>
-                    <span>{props.expectedDiscount}%</span>
+                    <span className="rtl:text-right ltr:text-left">הנחה שנבחרה:</span>
+                    <span className="font-medium text-green-600">{props.expectedDiscount}%</span>
                   </div>
                 </>
+              ) : (
+                /* Manual discount selection */
+                <div className="space-y-2 pt-2 border-t">
+                  <Label className="rtl:text-right ltr:text-left block text-sm font-medium">
+                    📝 בחירת הנחה ידנית (הלקוח לא בחר במייל):
+                  </Label>
+                  <RadioGroup
+                    value={appliedDiscountPercent.toString()}
+                    onValueChange={handleDiscountChange}
+                    className="flex flex-wrap gap-3"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <RadioGroupItem value="9" id="discount-9" />
+                      <Label htmlFor="discount-9" className="cursor-pointer text-sm">
+                        9% - העברה בנקאית
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <RadioGroupItem value="8" id="discount-8" />
+                      <Label htmlFor="discount-8" className="cursor-pointer text-sm">
+                        8% - כ.אשראי אחד
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <RadioGroupItem value="4" id="discount-4" />
+                      <Label htmlFor="discount-4" className="cursor-pointer text-sm">
+                        4% - תשלומים
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <RadioGroupItem value="0" id="discount-0" />
+                      <Label htmlFor="discount-0" className="cursor-pointer text-sm">
+                        0% - צ'קים
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
               )}
+
               <div className="flex justify-between items-center font-medium pt-2 border-t">
-                <span className="rtl:text-right ltr:text-left">סכום מצופה:</span>
-                <AmountDisplay beforeVat={props.expectedAmount} size="sm" />
+                <span className="rtl:text-right ltr:text-left">סכום אחרי הנחה ({appliedDiscountPercent}%):</span>
+                <AmountDisplay beforeVat={calculatedExpectedAmount} size="sm" />
               </div>
             </div>
           </Card>
@@ -203,17 +281,17 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
 
             <div className="space-y-2">
               <Label htmlFor="paymentMethod" className="rtl:text-right ltr:text-left block">
-                שיטת תשלום
+                שיטת תשלום בפועל
               </Label>
-              <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+              <Select value={paymentMethod} onValueChange={(v) => handlePaymentMethodChange(v as PaymentMethod)}>
                 <SelectTrigger className="rtl:text-right ltr:text-left">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
-                  <SelectItem value="bank_transfer">{PAYMENT_METHOD_LABELS.bank_transfer} (9%)</SelectItem>
-                  <SelectItem value="cc_single">{PAYMENT_METHOD_LABELS.cc_single} (8%)</SelectItem>
-                  <SelectItem value="cc_installments">{PAYMENT_METHOD_LABELS.cc_installments} (4%)</SelectItem>
-                  <SelectItem value="checks">{PAYMENT_METHOD_LABELS.checks} (0%)</SelectItem>
+                  <SelectItem value="bank_transfer">{PAYMENT_METHOD_LABELS.bank_transfer}</SelectItem>
+                  <SelectItem value="cc_single">{PAYMENT_METHOD_LABELS.cc_single}</SelectItem>
+                  <SelectItem value="cc_installments">{PAYMENT_METHOD_LABELS.cc_installments}</SelectItem>
+                  <SelectItem value="checks">{PAYMENT_METHOD_LABELS.checks}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -302,7 +380,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle className="rtl:text-right ltr:text-left">⚠️ התראת סטייה</AlertTitle>
               <AlertDescription className="rtl:text-right ltr:text-left">
-                הלקוח שילם {formatILS(amountPaid)} במקום {formatILS(props.expectedAmount)}
+                הלקוח שילם {formatILS(amountPaid)} במקום {formatILS(calculatedExpectedAmount)}
                 <br />
                 סטייה:{' '}
                 <DeviationBadge
