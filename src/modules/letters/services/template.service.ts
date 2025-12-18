@@ -1875,7 +1875,12 @@ export class TemplateService extends BaseService {
       const header = await this.loadTemplateFile('components/foreign-workers-header.html');
 
       // 2. Load body based on template type
-      const bodyFile = this.getForeignWorkerBodyFileName(templateType);
+      // Special case: Letter C (up_to_3 scenario) uses different template
+      let bodyFile = this.getForeignWorkerBodyFileName(templateType);
+      if (templateType === 'foreign_worker_turnover_approval' &&
+          (variables as TurnoverApprovalVariables).scenario === 'up_to_3') {
+        bodyFile = 'turnover-approval-setup-costs.html';
+      }
       const body = await this.loadTemplateFile(`bodies/foreign-workers/${bodyFile}`);
 
       // 3. Load footer (same as regular letters - compact PDF footer)
@@ -2022,6 +2027,11 @@ export class TemplateService extends BaseService {
         processed.scenario_content = this.buildScenarioContent(
           variables as TurnoverApprovalVariables
         );
+        // For Letter C (up_to_3), format the estimated_annual_costs for the template
+        const turnoverVars = variables as TurnoverApprovalVariables;
+        if (turnoverVars.scenario === 'up_to_3' && turnoverVars.scenario_up_to_3) {
+          processed.estimated_annual_costs = turnoverVars.scenario_up_to_3.estimated_annual_costs.toLocaleString('he-IL');
+        }
         break;
 
       case 'foreign_worker_salary_report':
@@ -2214,18 +2224,11 @@ export class TemplateService extends BaseService {
     }
 
     if (scenario === 'up_to_3' && variables.scenario_up_to_3) {
-      const s = variables.scenario_up_to_3;
+      // Letter C uses a dedicated template (turnover-approval-setup-costs.html)
+      // that includes the cost amount directly. This content is just the footer text about attachments.
       return `
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-bottom: 20px;">
-          <div style="margin-bottom: 10px;">
-            עלות הקמת העסק בספרי החברה הינו <u><b>${s.estimated_annual_costs.toLocaleString('he-IL')}</b></u> ש"ח.
-          </div>
-          <div style="font-size: 14px; color: #666666; margin-bottom: 30px;">
-            (בהתבסס על: ${s.estimate_basis})
-          </div>
-          <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify;">
-            <b>לאישור זה מצורפים, בחתימה לשם זיהוי, פירוט המחזור הכספי מפעילות אסייתית כמופיע בספרי החברה לחודשים הרלוונטיים / טופס פחת מפורט, ליום הוצאת האישור, הכולל את פירוט עלויות הקמת העסק.</b>
-          </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify; margin-top: 30px;">
+          לאישור זה מצורפים: טופס פחת מפורט, ליום הוצאת האישור, הכולל את פירוט עלויות הקמת העסק.
         </div>
       `;
     }

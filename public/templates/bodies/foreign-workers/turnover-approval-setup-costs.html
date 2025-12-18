@@ -1,0 +1,48 @@
+<!-- Letter Body: Setup Costs Approval - Letter C (אישור עלות הקמה - מכתב ג') -->
+<!-- Template Type: foreign_worker_turnover_approval (scenario: up_to_3) -->
+<!-- Variables: {{company_name}}, {{tax_id}}, {{estimated_annual_costs}}, {{scenario_content}} -->
+<!-- Note: This template is used specifically for Letter C (up_to_3 scenario) - no "אגף היתרים" header -->
+
+<!-- BODY: Subject (no אגף היתרים / נספח א' headers) -->
+<tr>
+    <td style="padding-top: 20px;">
+        <!-- Top border above title -->
+        <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
+        <!-- Subject line with bottom border (fee letter style) -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">
+            הנדון: אישור על עלות הקמה של מסעדת {{company_name}} {{tax_id}}
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Opening Paragraph with cost amount -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; text-align: justify;">
+            לבקשתכם וכרואי החשבון של חברתכם הרינו לאשר כי עלות ההקמה בעסק, כפי שמופיע בספרי החברה, הסתכמה עד כה <u><b>{{estimated_annual_costs}}</b></u> ש"ח.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Scenario Content (footer text about attachments) -->
+<tr>
+    <td style="padding-top: 30px;">
+        {{scenario_content}}
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 60px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

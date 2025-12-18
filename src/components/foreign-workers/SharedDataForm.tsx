@@ -13,7 +13,7 @@ interface SharedDataFormProps {
   selectedClientId: string | null;
   onClientSelect: (clientId: string | null) => void;
   selectedBranchId: string | null;
-  onBranchChange: (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean) => void;
+  onBranchChange: (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean, isSingleBranch: boolean) => void;
 }
 
 export function SharedDataForm({
@@ -45,7 +45,7 @@ export function SharedDataForm({
    */
   const handleClientChange = (client: Client | null) => {
     // Always reset branch when client changes (whether to a new client or null)
-    onBranchChange(null, null, null, true);
+    onBranchChange(null, null, null, true, false);
     
     if (client) {
       onClientSelect(client.id);
@@ -69,13 +69,16 @@ export function SharedDataForm({
   /**
    * Handle branch selection from BranchSelector
    */
-  const handleBranchChange = (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean) => {
-    // Update the company name to include branch name (for ALL branches, including default)
+  const handleBranchChange = (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean, isSingleBranch: boolean) => {
+    // Update the company name to include branch name
+    // Skip appending branch name if it's a single auto-created default "ראשי" branch
     if (baseCompanyName && branchName) {
-      // Format: "Company Name - Branch Name"
+      const shouldIncludeBranch = !isSingleBranch || !isDefault;
       onChange({
         ...value,
-        company_name: `${baseCompanyName} - ${branchName}`
+        company_name: shouldIncludeBranch
+          ? `${baseCompanyName} - ${branchName}`
+          : baseCompanyName
       });
     } else if (baseCompanyName) {
       // Reset to base company name only if no branch name
@@ -86,7 +89,7 @@ export function SharedDataForm({
     }
 
     // Call the parent handler
-    onBranchChange(branchId, clientId, branchName, isDefault);
+    onBranchChange(branchId, clientId, branchName, isDefault, isSingleBranch);
   };
 
   /**

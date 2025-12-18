@@ -81,7 +81,7 @@ function ForeignWorkersPageContent({
   }, [selectedBranchId, selectedClientId, setBranchId]);
 
   // Handler for combined client and branch selection
-  const handleBranchChange = (branchId: string | null, clientId: string | null, _branchName: string | null, _isDefault: boolean) => {
+  const handleBranchChange = (branchId: string | null, clientId: string | null, _branchName: string | null, _isDefault: boolean, _isSingleBranch: boolean) => {
     setSelectedBranchId(branchId);
     if (clientId !== selectedClientId) {
       setSelectedClientId(clientId);

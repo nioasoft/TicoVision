@@ -18,8 +18,8 @@ interface BranchSelectorProps {
   clientId: string | null;
   /** Currently selected branch ID */
   value: string | null;
-  /** Callback when branch selection changes - includes branch name and isDefault flag */
-  onChange: (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean) => void;
+  /** Callback when branch selection changes - includes branch name, isDefault flag, and isSingleBranch flag */
+  onChange: (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean, isSingleBranch: boolean) => void;
   /** Whether to show the management button */
   showManagement?: boolean;
   /** Placeholder text */
@@ -68,7 +68,7 @@ export function BranchSelector({
         // If no branch selected and there's a default, select it
         if (!value && branchList.length > 0) {
           const defaultBranch = branchList.find(b => b.is_default) || branchList[0];
-          onChange(defaultBranch.id, clientId, defaultBranch.name, defaultBranch.is_default);
+          onChange(defaultBranch.id, clientId, defaultBranch.name, defaultBranch.is_default, branchList.length === 1);
         }
       } catch (error) {
         console.error('Error loading branches:', error);
@@ -84,7 +84,7 @@ export function BranchSelector({
   // Handle branch selection
   const handleSelect = (branchId: string) => {
     const branch = branches.find(b => b.id === branchId);
-    onChange(branchId, clientId, branch?.name || null, branch?.is_default || false);
+    onChange(branchId, clientId, branch?.name || null, branch?.is_default || false, branches.length === 1);
   };
 
   // Handle branches update from management dialog
@@ -98,7 +98,7 @@ export function BranchSelector({
     if (value && !branchList.find(b => b.id === value)) {
       const defaultBranch = branchList.find(b => b.is_default) || branchList[0];
       if (defaultBranch) {
-        onChange(defaultBranch.id, clientId, defaultBranch.name, defaultBranch.is_default);
+        onChange(defaultBranch.id, clientId, defaultBranch.name, defaultBranch.is_default, branchList.length === 1);
       }
     }
   };
