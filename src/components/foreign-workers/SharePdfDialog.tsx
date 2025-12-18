@@ -81,7 +81,10 @@ export function SharePdfDialog({
 
   // Load client emails when dialog opens
   useEffect(() => {
-    if (open && clientId) {
+    // Only load client emails if there's NO defaultEmail provided
+    // When defaultEmail is set (e.g., Capital Declaration), use it directly
+    // and don't load client contacts
+    if (open && clientId && !defaultEmail) {
       loadClientEmails();
     }
     // Set default subject when dialog opens
