@@ -2877,4 +2877,137 @@ export class TemplateService extends BaseService {
 
     return processed;
   }
+
+  // ============================================================================
+  // CAPITAL DECLARATION DOCUMENTS
+  // ============================================================================
+
+  /**
+   * Generate Capital Declaration document (הצהרת הון)
+   * @param clientId - Optional client ID for linking to history
+   * @param groupId - Optional group ID for linking to history
+   * @param variables - Template variables including portal_link
+   * @param options.previewOnly - If true, only generate HTML without saving to DB
+   */
+  async generateCapitalDeclarationDocument(
+    clientId: string | null,
+    groupId: string | null,
+    variables: Record<string, unknown>,
+    options?: { previewOnly?: boolean }
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const { previewOnly = false } = options || {};
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1. Load header
+      const header = await this.loadTemplateFile('components/header.html');
+
+      // 2. Load capital declaration body
+      const body = await this.loadTemplateFile('bodies/capital-declaration/capital-declaration.html');
+
+      // 3. Load footer
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 4. Process variables
+      const processedVariables: Record<string, unknown> = {
+        ...variables,
+        letter_date: this.formatIsraeliDate(new Date()),
+        custom_header_lines: '',
+        group_name: variables.group_name || '', // Default to empty if no group
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildCapitalDeclarationHTML(header, body, footer);
+
+      // 6. Replace all variables
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. If preview only, return without saving to DB
+      if (previewOnly) {
+        return {
+          data: {
+            id: 'preview',
+            generated_content_html: fullHtml,
+            generated_content_text: plainText,
+            variables_used: processedVariables,
+            subject: (variables.subject as string) || 'הצהרת הון',
+          } as GeneratedLetter,
+          error: null,
+        };
+      }
+
+      // 8. Get user name for created_by_name
+      let createdByName = user?.email || 'Unknown';
+      if (user?.id) {
+        const { data: uta } = await supabase
+          .from('user_tenant_access')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .eq('tenant_id', tenantId)
+          .maybeSingle();
+        if (uta?.display_name) {
+          createdByName = uta.display_name;
+        }
+      }
+
+      // 8. Save to database
+      const letterData = {
+        tenant_id: tenantId,
+        template_type: 'capital_declaration',
+        client_id: clientId,
+        group_calculation_id: groupId,
+        variables_used: processedVariables,
+        generated_content_html: fullHtml,
+        generated_content_text: plainText,
+        subject: (variables.subject as string) || 'הצהרת הון',
+        status: 'saved',
+        created_by: user?.id,
+        created_by_name: createdByName,
+      };
+
+      const { data, error } = await supabase
+        .from('generated_letters')
+        .insert(letterData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { data: data as GeneratedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Build full HTML for Capital Declaration document
+   */
+  private buildCapitalDeclarationHTML(header: string, body: string, footer: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הצהרת הון</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; direction: rtl;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="750" cellpadding="0" cellspacing="0" border="0" style="max-width: 750px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+  }
 }

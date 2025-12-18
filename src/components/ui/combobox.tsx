@@ -45,7 +45,9 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  const selectedOption = options.find((option) => option.value === value)
+  // Safety check: ensure options is always an array
+  const safeOptions = options || []
+  const selectedOption = safeOptions.find((option) => option.value === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -78,7 +80,7 @@ export function Combobox({
               {emptyText}
             </CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {safeOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.label}

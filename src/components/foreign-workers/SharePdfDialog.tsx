@@ -15,10 +15,13 @@ import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight, Plus, X, File
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import TenantContactService from '@/services/tenant-contact.service';
+import { fileUploadService } from '@/services/file-upload.service';
+import type { FileCategory } from '@/types/file-attachment.types';
 
 interface SharePdfDialogProps {
   open: boolean;
-  onClose: () => void;
+  onClose?: () => void;
+  onOpenChange?: (open: boolean) => void; // Alternative to onClose
   pdfUrl: string;
   pdfName: string;
   clientName: string;
@@ -28,11 +31,17 @@ interface SharePdfDialogProps {
   letterId?: string;              // ID of the letter in generated_letters
   defaultSubject?: string;        // Default email subject
   onEmailSent?: () => void;       // Callback after email is sent
+  // Additional props for capital declaration and other uses
+  defaultEmail?: string;          // Pre-fill recipient email
+  defaultEmailType?: 'pdf' | 'html'; // Default email type (pdf or html)
+  savePdfToFolder?: boolean;      // Always save PDF to file manager when sending
+  fileCategory?: string;          // Category for file manager (e.g., 'capital_declaration')
 }
 
 export function SharePdfDialog({
   open,
   onClose,
+  onOpenChange,
   pdfUrl,
   pdfName,
   clientName,
@@ -41,6 +50,10 @@ export function SharePdfDialog({
   letterId,
   defaultSubject,
   onEmailSent,
+  defaultEmail,
+  defaultEmailType = 'pdf',
+  savePdfToFolder = false,
+  fileCategory,
 }: SharePdfDialogProps) {
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [sending, setSending] = useState(false);
@@ -60,6 +73,9 @@ export function SharePdfDialog({
   const [additionalEmails, setAdditionalEmails] = useState<string[]>([]);
   const [showAddEmail, setShowAddEmail] = useState(false);
 
+  // Legacy single email send (fallback when no clientId)
+  const [legacyEmail, setLegacyEmail] = useState('');
+
   // Check if Web Share API is available
   const canShare = typeof navigator !== 'undefined' && !!navigator.share;
 
@@ -72,16 +88,25 @@ export function SharePdfDialog({
     if (open && defaultSubject && !emailSubject) {
       setEmailSubject(defaultSubject);
     }
+    // Set default email type when dialog opens
+    if (open && defaultEmailType) {
+      setEmailType(defaultEmailType);
+    }
+    // Set default email (for legacy mode) when dialog opens
+    if (open && defaultEmail && !legacyEmail) {
+      setLegacyEmail(defaultEmail);
+    }
     // Reset state when dialog closes
     if (!open) {
       setShowEmailInput(false);
       setSelectedEmails(new Set());
       setAdditionalEmails([]);
       setShowAddEmail(false);
-      setEmailType('pdf');
+      setEmailType(defaultEmailType || 'pdf');
       setEmailSubject('');
+      setLegacyEmail('');
     }
-  }, [open, clientId, defaultSubject]);
+  }, [open, clientId, defaultSubject, defaultEmailType, defaultEmail]);
 
   const loadClientEmails = async () => {
     if (!clientId) return;
@@ -148,6 +173,39 @@ export function SharePdfDialog({
         console.error('Share error:', error);
         toast.error('שגיאה בשיתוף');
       }
+    }
+  };
+
+  // Helper function to save PDF to file manager
+  const savePdfToFileManager = async () => {
+    if (!savePdfToFolder || !clientId || !pdfUrl) return;
+
+    try {
+      // Fetch the PDF
+      const response = await fetch(pdfUrl);
+      if (!response.ok) throw new Error('Failed to fetch PDF');
+
+      const blob = await response.blob();
+      const file = new File([blob], pdfName, { type: 'application/pdf' });
+
+      // Determine category - default to 'letters' if not specified
+      const category: FileCategory = (fileCategory as FileCategory) || 'letters';
+
+      // Upload to file manager
+      const { error } = await fileUploadService.uploadFileToCategory(
+        file,
+        clientId,
+        category,
+        defaultSubject || pdfName.replace('.pdf', '')
+      );
+
+      if (error) {
+        console.error('Error saving PDF to folder:', error);
+        // Don't show error to user - email was sent successfully
+      }
+    } catch (error) {
+      console.error('Error saving PDF to folder:', error);
+      // Don't show error to user - email was sent successfully
     }
   };
 
@@ -251,15 +309,19 @@ export function SharePdfDialog({
 
       if (successCount > 0 && errorCount === 0) {
         toast.success(`המייל נשלח בהצלחה ל-${successCount} נמענים!`);
+        // Save PDF to file manager if enabled
+        await savePdfToFileManager();
         setShowEmailInput(false);
         setSelectedEmails(new Set());
         setAdditionalEmails([]);
         setShowAddEmail(false);
-        setEmailType('pdf');
+        setEmailType(defaultEmailType || 'pdf');
         setEmailSubject('');
         onEmailSent?.();
       } else if (successCount > 0 && errorCount > 0) {
         toast.warning(`נשלח ל-${successCount} נמענים, נכשל עבור ${errorCount}`);
+        // Still save PDF even if some emails failed
+        await savePdfToFileManager();
       } else {
         toast.error('שגיאה בשליחת המייל');
       }
@@ -270,9 +332,6 @@ export function SharePdfDialog({
       setSending(false);
     }
   };
-
-  // Legacy single email send (fallback when no clientId)
-  const [legacyEmail, setLegacyEmail] = useState('');
 
   const handleLegacySendEmail = async () => {
     if (!legacyEmail || !legacyEmail.includes('@')) {
@@ -320,9 +379,11 @@ export function SharePdfDialog({
       }
 
       toast.success('המייל נשלח בהצלחה!');
+      // Save PDF to file manager if enabled
+      await savePdfToFileManager();
       setShowEmailInput(false);
       setLegacyEmail('');
-      setEmailType('pdf');
+      setEmailType(defaultEmailType || 'pdf');
       setEmailSubject('');
       onEmailSent?.();
     } catch (error) {
@@ -339,9 +400,11 @@ export function SharePdfDialog({
     setSelectedEmails(new Set());
     setAdditionalEmails([]);
     setShowAddEmail(false);
-    setEmailType('pdf');
+    setEmailType(defaultEmailType || 'pdf');
     setEmailSubject('');
-    onClose();
+    // Support both onClose and onOpenChange props
+    onClose?.();
+    onOpenChange?.(false);
   };
 
   const totalSelectedCount = selectedEmails.size + additionalEmails.filter(e => e.trim() && isValidEmail(e.trim())).length;

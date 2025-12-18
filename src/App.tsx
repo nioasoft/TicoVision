@@ -38,6 +38,12 @@ const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
 const WelcomePage = lazy(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
 const UnderConstructionPage = lazy(() => import('@/pages/UnderConstructionPage'));
 
+// Capital Declaration System
+const CapitalDeclarationPage = lazy(() => import('@/pages/CapitalDeclarationPage').then(m => ({ default: m.CapitalDeclarationPage })));
+const CapitalDeclarationsListPage = lazy(() => import('@/pages/CapitalDeclarationsListPage').then(m => ({ default: m.CapitalDeclarationsListPage })));
+const CapitalDeclarationDetailPage = lazy(() => import('@/pages/CapitalDeclarationDetailPage').then(m => ({ default: m.CapitalDeclarationDetailPage })));
+const CapitalDeclarationPortal = lazy(() => import('@/pages/CapitalDeclarationPortal').then(m => ({ default: m.CapitalDeclarationPortal })));
+
 // Help System
 const HelpPage = lazy(() => import('@/modules/help/pages/HelpPage'));
 
@@ -92,6 +98,12 @@ function App() {
                 <Route path="/letters/view/:id" element={
                   <ErrorBoundary>
                     <LetterViewer />
+                  </ErrorBoundary>
+                } />
+                {/* Capital Declaration Portal - Public */}
+                <Route path="/capital-declaration/:token" element={
+                  <ErrorBoundary>
+                    <CapitalDeclarationPortal />
                   </ErrorBoundary>
                 } />
                 <Route path="/login" element={
@@ -187,6 +199,22 @@ function App() {
                       <Route path="/company-onboarding" element={
                         <ErrorBoundary>
                           <CompanyOnboardingPage />
+                        </ErrorBoundary>
+                      } />
+                      {/* Capital Declaration System */}
+                      <Route path="/capital-declaration" element={
+                        <ErrorBoundary>
+                          <CapitalDeclarationPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/capital-declarations" element={
+                        <ErrorBoundary>
+                          <CapitalDeclarationsListPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/capital-declarations/:id" element={
+                        <ErrorBoundary>
+                          <CapitalDeclarationDetailPage />
                         </ErrorBoundary>
                       } />
                     </Route>

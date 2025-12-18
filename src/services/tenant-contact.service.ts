@@ -149,6 +149,8 @@ export class TenantContactService {
     try {
       // Get tenant_id for the new function signature (Migration 116)
       const tenantId = await getCurrentTenantId();
+      console.log('🏢 Tenant ID for search:', tenantId);
+
       if (!tenantId) {
         console.warn('⚠️ No tenant_id available for contact search');
         return [];
@@ -159,7 +161,7 @@ export class TenantContactService {
         p_search_term: query,
       });
 
-      console.log('📡 RPC response:', { data, error });
+      console.log('📡 RPC response:', { data, error, tenantId, query });
 
       if (error) {
         console.error('❌ RPC error:', error);

@@ -19,7 +19,7 @@ interface ContactAutocompleteInputProps {
   onEmailChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
   onPhoneSecondaryChange?: (value: string) => void;
-  contactType: ContactType;
+  contactType?: ContactType;
   required?: boolean;
   disabled?: boolean;
   namePlaceholder?: string;

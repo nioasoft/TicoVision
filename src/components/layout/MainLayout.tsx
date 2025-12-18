@@ -108,6 +108,16 @@ const navigation: NavigationItem[] = [
       { name: 'פניות/זירוז/דחיפה', href: '/follow-ups', menuKey: 'documents:follow-ups' },
     ]
   },
+  {
+    name: 'הצהרת הון',
+    icon: FileSignature,
+    menuKey: 'capital-declaration',
+    allowedRoles: ['admin', 'accountant'] as UserRole[],
+    submenu: [
+      { name: 'יצירת הצהרה', href: '/capital-declaration', menuKey: 'capital-declaration:create' },
+      { name: 'ניהול הצהרות', href: '/capital-declarations', menuKey: 'capital-declaration:manage' },
+    ]
+  },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, menuKey: 'users', allowedRoles: ['admin'] as UserRole[], showBadge: true },
   { name: 'הגדרות', href: '/settings', icon: Settings, menuKey: 'settings', allowedRoles: ['admin'] as UserRole[] },
