@@ -40,7 +40,7 @@ export function LoginPage() {
     try {
       await signIn(email, password);
       toast.success('התחברת בהצלחה!');
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       toast.error('שגיאה בהתחברות. אנא בדוק את הפרטים ונסה שוב.');
       logger.error('Login error:', error);
