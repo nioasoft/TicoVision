@@ -74,6 +74,13 @@ export class LetterRenderingService {
         disposition: 'inline',
         content_id: 'bullet_star_blue',
       },
+      {
+        content: imagesBase64.bullet_star_darkred,
+        filename: 'bullet_star_darkred.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'bullet_star_darkred',
+      },
     ];
 
     return { html, attachments };

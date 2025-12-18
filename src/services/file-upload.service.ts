@@ -531,6 +531,71 @@ export class FileUploadService extends BaseService {
   }
 
   /**
+   * Delete multiple files at once (bulk delete)
+   */
+  async bulkDeleteFiles(attachmentIds: string[]): Promise<ServiceResponse<{ deleted: number; failed: number }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      if (!attachmentIds.length) {
+        return { data: { deleted: 0, failed: 0 }, error: null };
+      }
+
+      // Get all attachment details
+      const { data: attachments, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .in('id', attachmentIds);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!attachments || attachments.length === 0) {
+        throw new Error('קבצים לא נמצאו');
+      }
+
+      // Collect storage paths for deletion
+      const storagePaths = attachments.map((a) => a.storage_path);
+
+      // Delete from storage (supports multiple files)
+      const { error: storageError } = await supabase.storage
+        .from(this.STORAGE_BUCKET)
+        .remove(storagePaths);
+
+      if (storageError) {
+        throw storageError;
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from(this.tableName)
+        .delete()
+        .eq('tenant_id', tenantId)
+        .in('id', attachmentIds);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Log action
+      await this.logAction(
+        'bulk_delete_files',
+        attachmentIds[0],
+        {
+          count: attachments.length,
+          file_names: attachments.map((a) => a.file_name)
+        }
+      );
+
+      return { data: { deleted: attachments.length, failed: 0 }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
    * Get all files for a client
    */
   async getFilesByClient(
@@ -977,9 +1042,10 @@ export class FileUploadService extends BaseService {
         uploaded_by: userId
       };
 
+      // Use upsert to handle updates to existing PDFs (same storage_path)
       const { data, error: dbError } = await supabase
         .from(this.tableName)
-        .insert(attachmentData)
+        .upsert(attachmentData, { onConflict: 'storage_path' })
         .select()
         .single();
 

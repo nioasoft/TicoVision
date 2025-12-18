@@ -23,6 +23,7 @@ export class ImageServiceV2 {
     tagline: 'tagline.png',
     bullet_star_blue: 'Bullet_star_blue.png',
     bullet_star: 'bullet-star.png',
+    bullet_star_darkred: 'Bullet_star_darkred.png',
   };
 
   /**

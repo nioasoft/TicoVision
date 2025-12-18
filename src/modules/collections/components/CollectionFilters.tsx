@@ -80,13 +80,14 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
               זמן משליחה
             </Label>
             <Select
-              value={filters.time_range || '15-30'}
+              value={filters.time_range || 'all'}
               onValueChange={(value) => onFiltersChange({ time_range: value as typeof filters.time_range })}
             >
               <SelectTrigger id="time-range-filter" className="rtl:text-right ltr:text-left">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rtl:text-right ltr:text-left">
+                <SelectItem value="all">הכל</SelectItem>
                 <SelectItem value="0-7">0-7 ימים</SelectItem>
                 <SelectItem value="8-14">8-14 ימים</SelectItem>
                 <SelectItem value="15-30">15-30 ימים</SelectItem>

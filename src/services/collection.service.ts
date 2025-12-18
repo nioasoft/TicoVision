@@ -116,37 +116,36 @@ class CollectionService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Build base query
+      // Query from the view which already has unique clients (one row per client)
       let query = supabase
-        .from('fee_calculations')
-        .select('status, total_amount, partial_payment_amount')
-        .eq('tenant_id', tenantId)
-        .not('status', 'eq', 'draft');
+        .from('collection_dashboard_view')
+        .select('payment_status, amount_original, amount_paid')
+        .eq('tenant_id', tenantId);
 
-      // Apply date range if provided
+      // Apply date range if provided (on letter_sent_date)
       if (dateRange) {
         query = query
-          .gte('created_at', dateRange.from)
-          .lte('created_at', dateRange.to);
+          .gte('letter_sent_date', dateRange.from)
+          .lte('letter_sent_date', dateRange.to);
       }
 
-      const { data: fees, error } = await query;
+      const { data: rows, error } = await query;
 
       if (error) {
         return { data: null, error: this.handleError(error) };
       }
 
-      // Calculate financial metrics
-      const total_expected = fees?.reduce((sum, fee) => sum + Number(fee.total_amount), 0) || 0;
-      const total_received = fees
-        ?.filter((fee) => fee.status === 'paid')
-        .reduce((sum, fee) => sum + Number(fee.total_amount), 0) || 0;
+      // Calculate financial metrics (from unique clients only)
+      const total_expected = rows?.reduce((sum, row) => sum + Number(row.amount_original || 0), 0) || 0;
+      const total_received = rows
+        ?.filter((row) => row.payment_status === 'paid')
+        .reduce((sum, row) => sum + Number(row.amount_original || 0), 0) || 0;
       const total_pending = total_expected - total_received;
       const collection_rate = total_expected > 0 ? (total_received / total_expected) * 100 : 0;
 
-      // Calculate client counts
-      const clients_sent = fees?.length || 0;
-      const clients_paid = fees?.filter((fee) => fee.status === 'paid').length || 0;
+      // Calculate client counts (now correctly counting unique clients)
+      const clients_sent = rows?.length || 0;
+      const clients_paid = rows?.filter((row) => row.payment_status === 'paid').length || 0;
       const clients_pending = clients_sent - clients_paid;
 
       // Calculate alerts (requires additional queries)
@@ -565,6 +564,261 @@ class CollectionService extends BaseService {
     }
   }
 
+  // ==================== Bulk Operations ====================
+
+  /**
+   * Send reminders to multiple clients at once
+   *
+   * @param feeIds - Array of fee calculation IDs
+   * @param reminderType - Type of reminder to send
+   * @returns Results for each fee
+   */
+  async bulkSendReminders(
+    feeIds: string[],
+    reminderType: 'gentle' | 'payment_selection' | 'payment_request' | 'urgent'
+  ): Promise<ServiceResponse<{ success: string[]; failed: string[] }>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const success: string[] = [];
+      const failed: string[] = [];
+
+      for (const feeId of feeIds) {
+        try {
+          // Get fee details for sending
+          const { data: fee, error: feeError } = await supabase
+            .from('fee_calculations')
+            .select(`
+              id,
+              client_id,
+              total_amount,
+              clients!inner (
+                company_name,
+                contact_email
+              )
+            `)
+            .eq('id', feeId)
+            .eq('tenant_id', tenantId)
+            .single();
+
+          if (feeError || !fee) {
+            failed.push(feeId);
+            continue;
+          }
+
+          // Log the reminder in payment_reminders table
+          await supabase.from('payment_reminders').insert({
+            tenant_id: tenantId,
+            fee_calculation_id: feeId,
+            client_id: fee.client_id,
+            reminder_type: 'manual',
+            sent_via: 'email',
+          });
+
+          // Update reminder count
+          await supabase
+            .from('fee_calculations')
+            .update({
+              reminder_count: supabase.rpc('increment_reminder_count', { fee_id: feeId }),
+              last_reminder_sent_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', feeId)
+            .eq('tenant_id', tenantId);
+
+          success.push(feeId);
+        } catch {
+          failed.push(feeId);
+        }
+      }
+
+      return { data: { success, failed }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Mark multiple fees as paid at once
+   *
+   * @param feeIds - Array of fee calculation IDs
+   * @returns Results for each fee
+   */
+  async bulkMarkAsPaid(
+    feeIds: string[]
+  ): Promise<ServiceResponse<{ success: string[]; failed: string[] }>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const success: string[] = [];
+      const failed: string[] = [];
+
+      for (const feeId of feeIds) {
+        const result = await this.markAsPaid(feeId, {
+          payment_date: new Date().toISOString(),
+        });
+
+        if (result.error) {
+          failed.push(feeId);
+        } else {
+          success.push(feeId);
+        }
+      }
+
+      return { data: { success, failed }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Add a note to multiple clients at once
+   *
+   * @param feeIds - Array of fee calculation IDs
+   * @param note - Note content
+   * @returns Results for each fee
+   */
+  async bulkAddNote(
+    feeIds: string[],
+    note: string
+  ): Promise<ServiceResponse<{ success: string[]; failed: string[] }>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+      const success: string[] = [];
+      const failed: string[] = [];
+
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      for (const feeId of feeIds) {
+        try {
+          // Get fee details to get client_id
+          const { data: fee, error: feeError } = await supabase
+            .from('fee_calculations')
+            .select('client_id')
+            .eq('id', feeId)
+            .eq('tenant_id', tenantId)
+            .single();
+
+          if (feeError || !fee) {
+            failed.push(feeId);
+            continue;
+          }
+
+          // Add the note as an interaction
+          await supabase.from('client_interactions').insert({
+            tenant_id: tenantId,
+            client_id: fee.client_id,
+            fee_calculation_id: feeId,
+            interaction_type: 'note',
+            direction: 'outbound',
+            subject: 'הערה (פעולה מרובה)',
+            content: note,
+            interacted_at: new Date().toISOString(),
+            created_by: user.id,
+          });
+
+          success.push(feeId);
+        } catch {
+          failed.push(feeId);
+        }
+      }
+
+      return { data: { success, failed }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Record a payment promise for a fee
+   *
+   * @param feeId - Fee calculation ID
+   * @param promiseDate - Promised payment date
+   * @param note - Optional note
+   * @returns Success status
+   */
+  async recordPaymentPromise(
+    feeId: string,
+    promiseDate: Date,
+    note?: string
+  ): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        return { data: false, error: new Error('User not authenticated') };
+      }
+
+      const { error } = await supabase
+        .from('fee_calculations')
+        .update({
+          promised_payment_date: promiseDate.toISOString().split('T')[0],
+          promise_note: note,
+          promise_created_at: new Date().toISOString(),
+          promise_created_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', feeId)
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        return { data: false, error: this.handleError(error) };
+      }
+
+      // Log action
+      await this.logAction('record_payment_promise', feeId, {
+        promised_date: promiseDate.toISOString(),
+        note,
+      });
+
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: false, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get fees with overdue payment promises
+   *
+   * @returns List of fees with overdue promises
+   */
+  async getOverduePromises(): Promise<ServiceResponse<Record<string, unknown>[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const today = new Date().toISOString().split('T')[0];
+
+      const { data, error } = await supabase
+        .from('fee_calculations')
+        .select(`
+          id,
+          client_id,
+          total_amount,
+          promised_payment_date,
+          promise_note,
+          clients!inner (
+            company_name,
+            company_name_hebrew,
+            contact_email
+          )
+        `)
+        .eq('tenant_id', tenantId)
+        .not('promised_payment_date', 'is', null)
+        .lt('promised_payment_date', today)
+        .not('status', 'in', '("paid","cancelled")')
+        .order('promised_payment_date', { ascending: true });
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
   /**
    * Get deviation alerts for collection page
    *
@@ -654,32 +908,58 @@ class CollectionService extends BaseService {
     }
 
     // Time range filter (based on letter_sent_date)
-    if (filters.time_range && filters.time_range !== 'custom') {
+    // Skip filter when 'all' or 'custom' is selected
+    if (filters.time_range && filters.time_range !== 'custom' && filters.time_range !== 'all') {
       const now = new Date();
-      let daysAgo: number;
+
+      // Define time ranges with start and end days
+      // Example: '15-30' means 15-30 days ago (letter_sent_date between 15 and 30 days ago)
+      let minDaysAgo: number | null = null;
+      let maxDaysAgo: number | null = null;
 
       switch (filters.time_range) {
         case '0-7':
-          daysAgo = 7;
+          minDaysAgo = 0;
+          maxDaysAgo = 7;
           break;
         case '8-14':
-          daysAgo = 14;
+          minDaysAgo = 8;
+          maxDaysAgo = 14;
           break;
         case '15-30':
-          daysAgo = 30;
+          minDaysAgo = 15;
+          maxDaysAgo = 30;
           break;
         case '31-60':
-          daysAgo = 60;
+          minDaysAgo = 31;
+          maxDaysAgo = 60;
           break;
         case '60+':
-          daysAgo = 999999;
+          minDaysAgo = 60;
+          maxDaysAgo = null; // No upper limit
           break;
         default:
-          daysAgo = 30;
+          minDaysAgo = 15;
+          maxDaysAgo = 30;
       }
 
-      const dateThreshold = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
-      q = q.gte('letter_sent_date', dateThreshold.toISOString());
+      // Apply date range filter
+      // For "15-30 days ago": letter_sent_date is between (now-30days) and (now-15days)
+      if (minDaysAgo !== null) {
+        // maxDate = now - minDaysAgo (the more recent end of the range)
+        const recentBoundary = new Date(now.getTime() - minDaysAgo * 24 * 60 * 60 * 1000);
+
+        if (maxDaysAgo !== null) {
+          // oldBoundary = now - maxDaysAgo (the older end of the range)
+          const oldBoundary = new Date(now.getTime() - maxDaysAgo * 24 * 60 * 60 * 1000);
+          // Range filter: letter_sent_date >= oldBoundary AND <= recentBoundary
+          q = q.gte('letter_sent_date', oldBoundary.toISOString())
+               .lte('letter_sent_date', recentBoundary.toISOString());
+        } else {
+          // '60+' case: letter_sent_date <= 60 days ago (anything older than 60 days)
+          q = q.lte('letter_sent_date', recentBoundary.toISOString());
+        }
+      }
     }
 
     return q;
@@ -788,23 +1068,23 @@ class CollectionService extends BaseService {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-    // Count unopened (7+ days)
+    // Count unopened (7+ days) - using view for unique clients
     const { count: unopenedCount } = await supabase
-      .from('fee_calculations')
+      .from('collection_dashboard_view')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-      .eq('status', 'sent')
+      .eq('payment_status', 'sent')
       .is('payment_method_selected', null)
-      .lte('created_at', sevenDaysAgo.toISOString());
+      .lte('letter_sent_date', sevenDaysAgo.toISOString());
 
-    // Count no selection (14+ days)
+    // Count no selection (14+ days) - using view for unique clients
     const { count: noSelectionCount } = await supabase
-      .from('fee_calculations')
+      .from('collection_dashboard_view')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-      .in('status', ['sent'])
+      .eq('payment_status', 'sent')
       .is('payment_method_selected', null)
-      .lte('created_at', fourteenDaysAgo.toISOString());
+      .lte('letter_sent_date', fourteenDaysAgo.toISOString());
 
     // Count abandoned (selected but not paid)
     const { count: abandonedCount } = await supabase

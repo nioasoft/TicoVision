@@ -1,6 +1,7 @@
 /**
  * FileCategorySection Component
  * Displays files for a specific category with upload, edit, and delete capabilities
+ * Supports multi-select for bulk delete operations
  */
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,7 @@ import { FileUploadZone } from './FileUploadZone';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Download, Trash2, Edit2, Save, X, FileText, Info } from 'lucide-react';
+import { Loader2, Download, Trash2, Edit2, Save, X, FileText, Info, CheckSquare, Square } from 'lucide-react';
 import { fileUploadService } from '@/services/file-upload.service';
 import type { ClientAttachment, FileCategory } from '@/types/file-attachment.types';
 import { getCategoryLabel } from '@/types/file-attachment.types';
@@ -47,6 +49,11 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
   const [uploadDescription, setUploadDescription] = useState('');
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const [editingDescription, setEditingDescription] = useState('');
+
+  // Multi-select state
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   const isGroupMode = !!groupId;
 
@@ -231,6 +238,51 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
     }
   };
 
+  // Multi-select handlers
+  const toggleFileSelection = (fileId: string) => {
+    setSelectedFiles((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(fileId)) {
+        newSet.delete(fileId);
+      } else {
+        newSet.add(fileId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllFiles = () => {
+    setSelectedFiles(new Set(files.map((f) => f.id)));
+  };
+
+  const deselectAllFiles = () => {
+    setSelectedFiles(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedFiles.size === 0) return;
+
+    setIsBulkDeleting(true);
+    try {
+      const { data, error } = await fileUploadService.bulkDeleteFiles(Array.from(selectedFiles));
+
+      if (error) throw error;
+
+      toast.success(`${data?.deleted || 0} קבצים נמחקו בהצלחה`);
+      setSelectedFiles(new Set());
+      setShowBulkDeleteDialog(false);
+      loadFiles();
+    } catch (err) {
+      console.error('Bulk delete error:', err);
+      toast.error('שגיאה במחיקת הקבצים');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const allSelected = files.length > 0 && selectedFiles.size === files.length;
+  const someSelected = selectedFiles.size > 0 && selectedFiles.size < files.length;
+
   return (
     <div className="space-y-6">
       {/* Category Header */}
@@ -274,9 +326,32 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
 
       {/* Files List - Show for both Client and Group Mode */}
       <div className="space-y-4">
-        <h4 className="font-medium rtl:text-right">
-          {isGroupMode ? 'קבצי קבוצה' : 'קבצים'} ({files.length})
-        </h4>
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium rtl:text-right">
+            {isGroupMode ? 'קבצי קבוצה' : 'קבצים'} ({files.length})
+          </h4>
+          {/* Select All / Deselect All */}
+          {files.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={allSelected ? deselectAllFiles : selectAllFiles}
+              className="flex items-center gap-2 rtl:flex-row-reverse"
+            >
+              {allSelected ? (
+                <>
+                  <Square className="h-4 w-4" />
+                  בטל בחירה
+                </>
+              ) : (
+                <>
+                  <CheckSquare className="h-4 w-4" />
+                  בחר הכל
+                </>
+              )}
+            </Button>
+          )}
+        </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
@@ -296,9 +371,17 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
               {files.map((file) => (
                 <div
                   key={file.id}
-                  className="p-4 bg-white border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                  className={`p-4 bg-white border rounded-lg hover:border-gray-300 transition-colors ${
+                    selectedFiles.has(file.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                  }`}
                 >
                   <div className="flex items-start gap-3">
+                    {/* Checkbox for selection */}
+                    <Checkbox
+                      checked={selectedFiles.has(file.id)}
+                      onCheckedChange={() => toggleFileSelection(file.id)}
+                      className="mt-1 flex-shrink-0"
+                    />
                     <FileText className="h-5 w-5 text-gray-400 flex-shrink-0 mt-0.5" />
 
                     <div className="flex-1 min-w-0">
@@ -408,6 +491,63 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
             </div>
           )}
       </div>
+
+      {/* Floating Bulk Actions Bar */}
+      {selectedFiles.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <div className="bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-4 rtl:flex-row-reverse">
+            <span className="text-sm">
+              {selectedFiles.size} קבצים נבחרו
+            </span>
+            <div className="h-4 w-px bg-gray-600" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={deselectAllFiles}
+              className="text-white hover:text-gray-300 hover:bg-gray-800"
+            >
+              בטל בחירה
+            </Button>
+            <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-400 hover:text-red-300 hover:bg-gray-800 flex items-center gap-2 rtl:flex-row-reverse"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  מחק נבחרים
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rtl:text-right">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="rtl:text-right">מחיקת קבצים</AlertDialogTitle>
+                  <AlertDialogDescription className="rtl:text-right">
+                    האם אתה בטוח שברצונך למחוק {selectedFiles.size} קבצים? פעולה זו לא ניתנת לביטול.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="rtl:space-x-reverse">
+                  <AlertDialogCancel className="rtl:ml-2" disabled={isBulkDeleting}>ביטול</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleBulkDelete}
+                    className="bg-red-600 hover:bg-red-700"
+                    disabled={isBulkDeleting}
+                  >
+                    {isBulkDeleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        מוחק...
+                      </>
+                    ) : (
+                      `מחק ${selectedFiles.size} קבצים`
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

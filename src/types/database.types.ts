@@ -20,6 +20,7 @@ export type Database = {
           amount_paid: number
           amount_vat: number
           amount_with_vat: number
+          applied_discount_percent: number | null
           attachment_ids: string[] | null
           client_id: string
           created_at: string
@@ -41,6 +42,7 @@ export type Database = {
           amount_paid: number
           amount_vat: number
           amount_with_vat: number
+          applied_discount_percent?: number | null
           attachment_ids?: string[] | null
           client_id: string
           created_at?: string
@@ -62,6 +64,7 @@ export type Database = {
           amount_paid?: number
           amount_vat?: number
           amount_with_vat?: number
+          applied_discount_percent?: number | null
           attachment_ids?: string[] | null
           client_id?: string
           created_at?: string
@@ -1080,6 +1083,10 @@ export type Database = {
           previous_year_base: number | null
           previous_year_data: Json | null
           previous_year_discount: number | null
+          promise_created_at: string | null
+          promise_created_by: string | null
+          promise_note: string | null
+          promised_payment_date: string | null
           real_adjustment: number | null
           real_adjustment_reason: string | null
           real_adjustments: Json | null
@@ -1151,6 +1158,10 @@ export type Database = {
           previous_year_base?: number | null
           previous_year_data?: Json | null
           previous_year_discount?: number | null
+          promise_created_at?: string | null
+          promise_created_by?: string | null
+          promise_note?: string | null
+          promised_payment_date?: string | null
           real_adjustment?: number | null
           real_adjustment_reason?: string | null
           real_adjustments?: Json | null
@@ -1222,6 +1233,10 @@ export type Database = {
           previous_year_base?: number | null
           previous_year_data?: Json | null
           previous_year_discount?: number | null
+          promise_created_at?: string | null
+          promise_created_by?: string | null
+          promise_note?: string | null
+          promised_payment_date?: string | null
           real_adjustment?: number | null
           real_adjustment_reason?: string | null
           real_adjustments?: Json | null
@@ -1467,6 +1482,7 @@ export type Database = {
           id: string
           is_latest: boolean | null
           last_opened_at: string | null
+          name: string | null
           open_count: number | null
           opened_at: string | null
           parent_letter_id: string | null
@@ -1506,6 +1522,7 @@ export type Database = {
           id?: string
           is_latest?: boolean | null
           last_opened_at?: string | null
+          name?: string | null
           open_count?: number | null
           opened_at?: string | null
           parent_letter_id?: string | null
@@ -1545,6 +1562,7 @@ export type Database = {
           id?: string
           is_latest?: boolean | null
           last_opened_at?: string | null
+          name?: string | null
           open_count?: number | null
           opened_at?: string | null
           parent_letter_id?: string | null
@@ -2636,6 +2654,94 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      short_links: {
+        Row: {
+          click_count: number | null
+          client_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          fee_calculation_id: string | null
+          group_calculation_id: string | null
+          id: string
+          last_clicked_at: string | null
+          letter_id: string | null
+          original_url: string
+          payment_method: string | null
+          short_code: string
+        }
+        Insert: {
+          click_count?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          fee_calculation_id?: string | null
+          group_calculation_id?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          letter_id?: string | null
+          original_url: string
+          payment_method?: string | null
+          short_code: string
+        }
+        Update: {
+          click_count?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          fee_calculation_id?: string | null
+          group_calculation_id?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          letter_id?: string | null
+          original_url?: string
+          payment_method?: string | null
+          short_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "short_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_links_fee_calculation_id_fkey"
+            columns: ["fee_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "collection_dashboard_view"
+            referencedColumns: ["fee_calculation_id"]
+          },
+          {
+            foreignKeyName: "short_links_fee_calculation_id_fkey"
+            columns: ["fee_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "fee_calculations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_links_fee_calculation_id_fkey"
+            columns: ["fee_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "fee_tracking_enhanced_view"
+            referencedColumns: ["fee_calculation_id"]
+          },
+          {
+            foreignKeyName: "short_links_group_calculation_id_fkey"
+            columns: ["group_calculation_id"]
+            isOneToOne: false
+            referencedRelation: "group_fee_calculations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_links_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
             referencedColumns: ["id"]
           },
         ]
@@ -3884,6 +3990,10 @@ export type Database = {
         }[]
       }
       hash_password: { Args: { password: string }; Returns: string }
+      increment_short_link_click: {
+        Args: { p_short_code: string }
+        Returns: undefined
+      }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
       is_tenant_admin: { Args: { p_user_id: string }; Returns: boolean }
       list_users_with_auth: {

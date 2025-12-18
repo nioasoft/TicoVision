@@ -33,7 +33,7 @@ interface KPICardProps {
 }
 
 /**
- * Compact, clickable KPI Card component (matching FeeTrackingPage style)
+ * KPI Card component with more spacious layout
  */
 const KPICard: React.FC<KPICardProps> = ({
   title,
@@ -59,19 +59,19 @@ const KPICard: React.FC<KPICardProps> = ({
       )}
       onClick={isClickable ? onClick : undefined}
     >
-      <CardHeader className="pb-1">
-        <CardTitle className="text-xs text-gray-600 rtl:text-right ltr:text-left flex items-center justify-between min-w-0">
-          <span className="flex items-center gap-1 min-w-0">
-            <Icon className={cn('h-3.5 w-3.5 flex-shrink-0', iconColor)} />
-            <span className="truncate">{title}</span>
-          </span>
-          <span className={cn('text-lg font-bold whitespace-nowrap', valueColor)}>
-            {value}
-          </span>
-        </CardTitle>
+      <CardHeader className="pb-2 pt-4">
+        <div className="flex items-center gap-2 rtl:flex-row-reverse">
+          <Icon className={cn('h-5 w-5 flex-shrink-0', iconColor)} />
+          <CardTitle className="text-sm font-medium text-gray-600 rtl:text-right ltr:text-left">
+            {title}
+          </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent className="pt-1">
-        <p className="text-[10px] text-gray-500 rtl:text-right ltr:text-left">{subtitle}</p>
+      <CardContent className="pt-0 pb-4">
+        <div className={cn('text-2xl font-bold rtl:text-right ltr:text-left', valueColor)}>
+          {value}
+        </div>
+        <p className="text-xs text-gray-500 rtl:text-right ltr:text-left mt-1">{subtitle}</p>
       </CardContent>
     </Card>
   );
@@ -88,14 +88,15 @@ export const KPICards: React.FC<KPICardsProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[...Array(8)].map((_, i) => (
           <Card key={i} className="animate-pulse">
-            <CardHeader className="pb-1">
-              <div className="h-3 bg-gray-200 rounded w-16"></div>
+            <CardHeader className="pb-2 pt-4">
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
             </CardHeader>
-            <CardContent className="pt-1">
-              <div className="h-4 bg-gray-200 rounded w-12"></div>
+            <CardContent className="pt-0 pb-4">
+              <div className="h-6 bg-gray-200 rounded w-24 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-16"></div>
             </CardContent>
           </Card>
         ))}
@@ -110,7 +111,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
     kpis.alerts_disputes;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-2">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {/* All / Total */}
       <KPICard
         title="הכל"

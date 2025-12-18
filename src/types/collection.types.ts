@@ -129,7 +129,7 @@ export interface ClientInteraction {
   fee_calculation_id?: string;
 
   // Interaction details
-  interaction_type: 'phone_call' | 'email_sent' | 'meeting' | 'note';
+  interaction_type: 'phone_call' | 'email_sent' | 'meeting' | 'note' | 'whatsapp' | 'other';
   direction?: 'outbound' | 'inbound';
 
   subject: string;
@@ -340,7 +340,7 @@ export interface CollectionFilters {
   payment_method?: PaymentMethod | 'all' | 'not_selected';
 
   // Time range filter (days since sent)
-  time_range?: '0-7' | '8-14' | '15-30' | '31-60' | '60+' | 'custom';
+  time_range?: 'all' | '0-7' | '8-14' | '15-30' | '31-60' | '60+' | 'custom';
   custom_date_from?: string;
   custom_date_to?: string;
 
@@ -402,7 +402,7 @@ export interface MarkPartialPaymentDto {
 export interface AddClientInteractionDto {
   client_id: string;
   fee_id?: string;
-  interaction_type: 'phone_call' | 'email_sent' | 'meeting' | 'note';
+  interaction_type: 'phone_call' | 'email_sent' | 'meeting' | 'note' | 'whatsapp' | 'other';
   direction?: 'outbound' | 'inbound';
   subject: string;
   content?: string;

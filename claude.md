@@ -214,6 +214,13 @@ http://localhost:5173/login   # Login
 http://localhost:5173/        # Dashboard (after auth)
 ```
 
+## 📋 Phase 2+ Planned Features
+| Feature | Plan Location | Status |
+|---------|---------------|--------|
+| Google Drive Integration | `~/.claude/plans/jaunty-gliding-toucan.md` | Planned |
+
+**Google Drive**: Save PDFs directly to Google Drive with Picker UI (hybrid approach - auto folder per client + user selection)
+
 ## Detailed Documentation
 | Topic | Location |
 |-------|----------|

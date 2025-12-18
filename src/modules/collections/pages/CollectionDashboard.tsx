@@ -7,11 +7,15 @@ import React, { useEffect, useState } from 'react';
 import { KPICards, type KPICardFilter } from '../components/KPICards';
 import { CollectionFilters } from '../components/CollectionFilters';
 import { CollectionTable } from '../components/CollectionTable';
+import { BulkActionsBar } from '../components/BulkActionsBar';
+import { ClientActionsDialog } from '../components/ClientActionsDialog';
 import { ActualPaymentEntryDialog } from '../components/ActualPaymentEntryDialog';
 import { InstallmentDetailsDialog } from '../components/InstallmentDetailsDialog';
 import { LogInteractionDialog } from '../components/LogInteractionDialog';
 import { SendReminderDialog } from '../components/SendReminderDialog';
+import { SendWhatsAppDialog } from '../components/SendWhatsAppDialog';
 import { HistoryDialog } from '../components/HistoryDialog';
+import { PromisePaymentDialog } from '../components/PromisePaymentDialog';
 import { useCollectionStore } from '../store/collectionStore';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
@@ -38,6 +42,10 @@ export const CollectionDashboard: React.FC = () => {
   } = useCollectionStore();
 
   // Dialog states
+  const [clientActionsDialog, setClientActionsDialog] = useState<{
+    open: boolean;
+    row: CollectionRow | null;
+  }>({ open: false, row: null });
   const [paymentEntryDialog, setPaymentEntryDialog] = useState<{ open: boolean; row: CollectionRow | null }>({
     open: false,
     row: null,
@@ -59,12 +67,17 @@ export const CollectionDashboard: React.FC = () => {
     open: boolean;
     row: CollectionRow | null;
   }>({ open: false, row: null });
+  const [promiseDialog, setPromiseDialog] = useState<{
+    open: boolean;
+    row: CollectionRow | null;
+  }>({ open: false, row: null });
+  const [whatsAppDialog, setWhatsAppDialog] = useState<{
+    open: boolean;
+    row: CollectionRow | null;
+  }>({ open: false, row: null });
 
   // KPI Card selection state
   const [selectedCard, setSelectedCard] = useState<KPICardFilter>('all');
-
-  // Expandable rows state
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Fetch data on mount
   useEffect(() => {
@@ -72,20 +85,12 @@ export const CollectionDashboard: React.FC = () => {
   }, [fetchDashboardData]);
 
   // Handlers
-  const handlePaymentEntry = (row: CollectionRow) => {
-    setPaymentEntryDialog({ open: true, row });
+  const handleClientClick = (row: CollectionRow) => {
+    setClientActionsDialog({ open: true, row });
   };
 
-  const handleToggleExpand = (feeId: string) => {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(feeId)) {
-        next.delete(feeId);
-      } else {
-        next.add(feeId);
-      }
-      return next;
-    });
+  const handlePaymentEntry = (row: CollectionRow) => {
+    setPaymentEntryDialog({ open: true, row });
   };
 
   const handleSendReminder = (row: CollectionRow) => {
@@ -98,6 +103,14 @@ export const CollectionDashboard: React.FC = () => {
 
   const handleViewHistory = (row: CollectionRow) => {
     setHistoryDialog({ open: true, row });
+  };
+
+  const handleRecordPromise = (row: CollectionRow) => {
+    setPromiseDialog({ open: true, row });
+  };
+
+  const handleSendWhatsApp = (row: CollectionRow) => {
+    setWhatsAppDialog({ open: true, row });
   };
 
   const handleDialogSuccess = async () => {
@@ -177,18 +190,12 @@ export const CollectionDashboard: React.FC = () => {
           <CollectionTable
             rows={dashboardData.rows}
             selectedRows={selectedRows}
-            expandedRows={expandedRows}
             loading={loading}
             sort={sort}
             onSort={setSort}
             onSelectAll={selectAll}
             onToggleSelect={toggleRowSelection}
-            onToggleExpand={handleToggleExpand}
-            onMarkAsPaid={handlePaymentEntry}
-            onMarkPartialPayment={handlePaymentEntry}
-            onSendReminder={handleSendReminder}
-            onLogInteraction={handleLogInteraction}
-            onViewHistory={handleViewHistory}
+            onClientClick={handleClientClick}
           />
 
           {/* Pagination */}
@@ -225,6 +232,18 @@ export const CollectionDashboard: React.FC = () => {
       )}
 
       {/* Dialogs */}
+      <ClientActionsDialog
+        open={clientActionsDialog.open}
+        onOpenChange={(open) => setClientActionsDialog({ open, row: open ? clientActionsDialog.row : null })}
+        row={clientActionsDialog.row}
+        onMarkAsPaid={handlePaymentEntry}
+        onMarkPartialPayment={handlePaymentEntry}
+        onSendReminder={handleSendReminder}
+        onSendWhatsApp={handleSendWhatsApp}
+        onLogInteraction={handleLogInteraction}
+        onViewHistory={handleViewHistory}
+        onRecordPromise={handleRecordPromise}
+      />
       {paymentEntryDialog.row && (
         <ActualPaymentEntryDialog
           open={paymentEntryDialog.open}
@@ -264,6 +283,26 @@ export const CollectionDashboard: React.FC = () => {
         open={historyDialog.open}
         onOpenChange={(open) => setHistoryDialog({ open, row: null })}
         row={historyDialog.row}
+      />
+      <PromisePaymentDialog
+        open={promiseDialog.open}
+        onOpenChange={(open) => setPromiseDialog({ open, row: null })}
+        row={promiseDialog.row}
+        onSuccess={handleDialogSuccess}
+      />
+      <SendWhatsAppDialog
+        open={whatsAppDialog.open}
+        onOpenChange={(open) => setWhatsAppDialog({ open, row: null })}
+        row={whatsAppDialog.row}
+        onSuccess={handleDialogSuccess}
+      />
+
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedRows.length}
+        selectedIds={selectedRows}
+        onClearSelection={clearSelection}
+        onActionComplete={refreshData}
       />
     </div>
   );

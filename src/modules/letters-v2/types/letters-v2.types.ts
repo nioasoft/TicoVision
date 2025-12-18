@@ -56,4 +56,5 @@ export type ImageName =
   | 'franco_logo'
   | 'tagline'
   | 'bullet_star_blue'
-  | 'bullet_star';
+  | 'bullet_star'
+  | 'bullet_star_darkred';

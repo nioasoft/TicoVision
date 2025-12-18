@@ -3,7 +3,7 @@
  * Main data table for collection dashboard with sorting, pagination, and row actions
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -16,52 +16,28 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   ArrowUpDown,
-  MoreHorizontal,
-  CheckCircle,
-  Coins,
-  Mail,
-  MessageSquare,
-  History,
   AlertTriangle,
-  ChevronDown,
-  ChevronRight,
 } from 'lucide-react';
 import type { CollectionRow, CollectionSort } from '@/types/collection.types';
 import {
   formatILS,
   formatIsraeliDate,
-  getPaymentMethodShortLabel,
   getStatusLabel,
   getStatusVariant,
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { PaymentMethodBadge, DiscountBadge } from '@/components/payments/PaymentMethodBadge';
-import { CollectionExpandableRow } from './CollectionExpandableRow';
 
 interface CollectionTableProps {
   rows: CollectionRow[];
   selectedRows: string[];
-  expandedRows: Set<string>;
   loading?: boolean;
   sort: CollectionSort;
   onSort: (sort: CollectionSort) => void;
   onSelectAll: () => void;
   onToggleSelect: (feeId: string) => void;
-  onToggleExpand: (feeId: string) => void;
-  onMarkAsPaid: (row: CollectionRow) => void;
-  onMarkPartialPayment: (row: CollectionRow) => void;
-  onSendReminder: (row: CollectionRow) => void;
-  onLogInteraction: (row: CollectionRow) => void;
-  onViewHistory: (row: CollectionRow) => void;
+  onClientClick: (row: CollectionRow) => void;
 }
 
 /**
@@ -95,52 +71,26 @@ const SortableHeader: React.FC<{
 const CollectionTableRow: React.FC<{
   row: CollectionRow;
   isSelected: boolean;
-  isExpanded: boolean;
   onToggleSelect: (feeId: string) => void;
-  onToggleExpand: (feeId: string) => void;
-  onMarkAsPaid: (row: CollectionRow) => void;
-  onMarkPartialPayment: (row: CollectionRow) => void;
-  onSendReminder: (row: CollectionRow) => void;
-  onLogInteraction: (row: CollectionRow) => void;
-  onViewHistory: (row: CollectionRow) => void;
+  onClientClick: (row: CollectionRow) => void;
 }> = ({
   row,
   isSelected,
-  isExpanded,
   onToggleSelect,
-  onToggleExpand,
-  onMarkAsPaid,
-  onMarkPartialPayment,
-  onSendReminder,
-  onLogInteraction,
-  onViewHistory,
+  onClientClick,
 }) => {
   return (
-    <>
-      <TableRow className={cn('hover:bg-gray-50', isSelected && 'bg-blue-50', isExpanded && 'border-b-0')}>
-        {/* Expand Icon */}
-        <TableCell className="w-10 py-2 px-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={() => onToggleExpand(row.fee_calculation_id)}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
-        </TableCell>
-
-        {/* Checkbox */}
-        <TableCell className="w-12 py-2 px-3">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(row.fee_calculation_id)}
-          />
-        </TableCell>
+    <TableRow
+      className={cn('hover:bg-gray-50 cursor-pointer', isSelected && 'bg-blue-50')}
+      onClick={() => onClientClick(row)}
+    >
+      {/* Checkbox */}
+      <TableCell className="w-12 py-2 px-3" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggleSelect(row.fee_calculation_id)}
+        />
+      </TableCell>
 
       {/* Client Name */}
       <TableCell className="min-w-[200px] py-2 px-3">
@@ -182,8 +132,8 @@ const CollectionTableRow: React.FC<{
 
       {/* Status */}
       <TableCell className="w-32 rtl:text-right ltr:text-left py-2 px-3">
-        <Badge variant={getStatusVariant(row.payment_status as any)} className="rtl:text-right ltr:text-left text-[10px] py-0 px-1.5">
-          {getStatusLabel(row.payment_status as any)}
+        <Badge variant={getStatusVariant(row.payment_status as Parameters<typeof getStatusVariant>[0])} className="rtl:text-right ltr:text-left text-[10px] py-0 px-1.5">
+          {getStatusLabel(row.payment_status as Parameters<typeof getStatusLabel>[0])}
         </Badge>
       </TableCell>
 
@@ -197,57 +147,7 @@ const CollectionTableRow: React.FC<{
           </div>
         )}
       </TableCell>
-
-      {/* Actions */}
-      <TableCell className="w-24 rtl:text-right ltr:text-left py-2 px-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 px-2">
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rtl:text-right ltr:text-left">
-            <DropdownMenuLabel className="rtl:text-right ltr:text-left">פעולות</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onMarkAsPaid(row)} className="rtl:flex-row-reverse gap-2">
-              <CheckCircle className="h-4 w-4" />
-              <span className="rtl:text-right ltr:text-left">סימון כשולם</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onMarkPartialPayment(row)} className="rtl:flex-row-reverse gap-2">
-              <Coins className="h-4 w-4" />
-              <span className="rtl:text-right ltr:text-left">רישום תשלום חלקי</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSendReminder(row)} className="rtl:flex-row-reverse gap-2">
-              <Mail className="h-4 w-4" />
-              <span className="rtl:text-right ltr:text-left">שליחת תזכורת</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onLogInteraction(row)} className="rtl:flex-row-reverse gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span className="rtl:text-right ltr:text-left">רישום אינטראקציה</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onViewHistory(row)} className="rtl:flex-row-reverse gap-2">
-              <History className="h-4 w-4" />
-              <span className="rtl:text-right ltr:text-left">הצגת היסטוריה</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
     </TableRow>
-
-      {/* Expandable Row Content */}
-      {isExpanded && (
-        <TableRow>
-          <TableCell colSpan={10} className="p-0 bg-muted/30">
-            <CollectionExpandableRow
-              feeCalculationId={row.fee_calculation_id}
-              actualPaymentId={undefined} // Will be fetched from within component
-              clientName={row.company_name_hebrew || row.client_name}
-            />
-          </TableCell>
-        </TableRow>
-      )}
-    </>
   );
 };
 
@@ -257,18 +157,12 @@ const CollectionTableRow: React.FC<{
 export const CollectionTable: React.FC<CollectionTableProps> = ({
   rows,
   selectedRows,
-  expandedRows,
   loading = false,
   sort,
   onSort,
   onSelectAll,
   onToggleSelect,
-  onToggleExpand,
-  onMarkAsPaid,
-  onMarkPartialPayment,
-  onSendReminder,
-  onLogInteraction,
-  onViewHistory,
+  onClientClick,
 }) => {
   const allSelected = selectedRows.length === rows.length && rows.length > 0;
 
@@ -293,7 +187,6 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
       <Table className="text-sm">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-10 py-2 px-2"></TableHead>
             <TableHead className="w-12 py-2 px-3">
               <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
             </TableHead>
@@ -320,7 +213,6 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
               </SortableHeader>
             </TableHead>
             <TableHead className="w-24 rtl:text-right ltr:text-left py-2 px-3">התראות</TableHead>
-            <TableHead className="w-24 rtl:text-right ltr:text-left py-2 px-3">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -329,14 +221,8 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
               key={row.fee_calculation_id}
               row={row}
               isSelected={selectedRows.includes(row.fee_calculation_id)}
-              isExpanded={expandedRows.has(row.fee_calculation_id)}
               onToggleSelect={onToggleSelect}
-              onToggleExpand={onToggleExpand}
-              onMarkAsPaid={onMarkAsPaid}
-              onMarkPartialPayment={onMarkPartialPayment}
-              onSendReminder={onSendReminder}
-              onLogInteraction={onLogInteraction}
-              onViewHistory={onViewHistory}
+              onClientClick={onClientClick}
             />
           ))}
         </TableBody>

@@ -453,9 +453,14 @@ class FeeService extends BaseService {
         custom_payment_text: data.custom_payment_text || null
       };
 
+      // Use upsert to update existing fee_calculation if one exists for this client+year
+      // The unique constraint (tenant_id, client_id, year) ensures only one per client per year
       const { data: fee, error } = await supabase
         .from('fee_calculations')
-        .insert(feeData)
+        .upsert(feeData, {
+          onConflict: 'tenant_id,client_id,year',
+          ignoreDuplicates: false // Update existing record
+        })
         .select()
         .single();
 
@@ -463,10 +468,14 @@ class FeeService extends BaseService {
         return { data: null, error: this.handleError(error) };
       }
 
-      await this.logAction('create_fee_calculation', fee.id, { 
+      // Check if this was an update or insert by looking at created_at vs updated_at
+      const isUpdate = fee.created_at !== fee.updated_at;
+
+      await this.logAction(isUpdate ? 'update_fee_calculation' : 'create_fee_calculation', fee.id, {
         client_id: data.client_id,
         final_amount: calculations.final_amount,
-        year: data.year
+        year: data.year,
+        was_upsert: isUpdate
       });
 
       return { data: fee, error: null };

@@ -41,7 +41,7 @@ interface CollectionState {
 const DEFAULT_FILTERS: CollectionFilters = {
   status: 'all',
   payment_method: 'all',
-  time_range: '15-30',
+  time_range: 'all',
   amount_range: 'all',
   alert_type: 'all',
 };

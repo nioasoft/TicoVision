@@ -265,8 +265,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     }
   ]);
 
-  // Track if user manually edited the subject line (stops auto-sync from email subject)
-  const [userEditedSubjectLine, setUserEditedSubjectLine] = useState(false);
+  // Track if user manually edited the email subject (stops auto-sync from הנדון)
+  const [userEditedEmailSubject, setUserEditedEmailSubject] = useState(false);
 
   // State - Configuration
   const [includesPayment, setIncludesPayment] = useState(false);
@@ -1494,6 +1494,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       // Load basic fields
       setEmailSubject(letter.subject || '');
+      setUserEditedEmailSubject(true); // Prevent הנדון from overwriting loaded subject
       setCompanyName(letter.client?.company_name || '');
       setLetterName(letter.name || ''); // ⭐ Load letter name for edit
       setIsDirty(false); // ⭐ Reset dirty state - content is fresh from DB
@@ -1880,10 +1881,10 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   const handleUpdateSubjectLineContent = (id: string, content: string) => {
-    // Mark as manually edited if user edits the first subject line
+    // If editing the first subject line (הנדון), sync to email subject
     const line = subjectLines.find(l => l.id === id);
-    if (line && line.order === 0) {
-      setUserEditedSubjectLine(true);
+    if (line && line.order === 0 && !userEditedEmailSubject) {
+      setEmailSubject(content);
     }
 
     setSubjectLines(subjectLines.map(line =>
@@ -1944,100 +1945,10 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Letter Name - Required for saving */}
-          <div>
-            <Label htmlFor="letter-name" className="text-right rtl:text-right block text-sm font-medium mb-2">
-              שם המכתב *
-            </Label>
-            <Input
-              id="letter-name"
-              value={letterName}
-              onChange={(e) => {
-                setLetterName(e.target.value);
-                markDirty();
-              }}
-              placeholder="לדוגמא: מכתב דרישה לתשלום - לקוח ABC"
-              className="text-right"
-              dir="rtl"
-            />
-            <p className="text-xs text-muted-foreground mt-1 text-right">
-              שם זה ישמש לזיהוי המכתב במסמכים שלך
-            </p>
-          </div>
-
-          {/* Step 1: Email Subject + Template Selection - Two Columns */}
-          <div>
-            <Label className="text-right rtl:text-right block text-base font-semibold mb-4">
-              1. נושא המייל ובחירת תבנית
-            </Label>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* RIGHT COLUMN: Email Subject */}
-              <div>
-                <Label htmlFor="email_subject" className="text-right rtl:text-right block text-sm font-medium mb-2">
-                  נושא המייל <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="email_subject"
-                  value={emailSubject}
-                  onChange={(e) => {
-                    const newValue = e.target.value;
-                    setEmailSubject(newValue);
-
-                    // Copy to subject line as long as user hasn't manually edited it
-                    if (!userEditedSubjectLine) {
-                      setSubjectLines(subjectLines.map(line =>
-                        line.order === 0 ? { ...line, content: newValue } : line
-                      ));
-                    }
-                  }}
-                  placeholder="שכר טרחתנו לשנת המס 2026"
-                  dir="rtl"
-                  required
-                />
-              </div>
-
-              {/* LEFT COLUMN: Template Selection */}
-              <div>
-                <Label className="text-right rtl:text-right block text-sm font-medium mb-2">
-                  בחר תבנית שמורה (אופציונלי)
-                </Label>
-                <div className="flex gap-2 rtl:flex-row-reverse">
-                  <Select
-                    value={selectedTemplateId}
-                    onValueChange={handleLoadTemplate}
-                    disabled={savedTemplates.length === 0}
-                  >
-                    <SelectTrigger dir="rtl" className="flex-1">
-                      <SelectValue placeholder={savedTemplates.length > 0 ? "בחר תבנית..." : "אין תבניות שמורות"} />
-                    </SelectTrigger>
-                    <SelectContent dir="rtl">
-                      {savedTemplates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedTemplateId && (
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDeleteTemplate(selectedTemplateId)}
-                      title="מחק תבנית"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 2: Three-Column Layout - Client vs Group vs Manual */}
+          {/* Step 1: Three-Column Layout - Client vs Group vs Manual */}
           <div className="space-y-4">
             <Label className="text-right rtl:text-right block text-base font-semibold">
-              2. בחר לקוח, קבוצה או הזן נמען אחר
+              1. בחר לקוח, קבוצה או הזן נמען אחר
             </Label>
 
             {/* Three-Column Grid */}
@@ -2429,11 +2340,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
             </div>
 
-            {/* Custom Header Lines - Step 3 */}
+            {/* Custom Header Lines - Step 2 */}
             <div className="mt-4 p-4 border rounded-lg bg-gray-50">
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
-                  3. שורות נוספות מתחת לשם הנמען (אופציונלי)
+                  2. שורות נוספות מתחת לשם הנמען (אופציונלי)
                 </Label>
                 <div className="flex gap-2">
                   <Button
@@ -2539,11 +2450,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               )}
             </div>
 
-            {/* Subject Lines Section (הנדון) - Step 4 */}
+            {/* Subject Lines Section (הנדון) - Step 3 */}
             <div className="mt-4 p-4 border rounded-lg bg-blue-50">
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
-                  4. שורות הנדון (26px)
+                  3. שורות הנדון
                 </Label>
                 <Button
                   type="button"
@@ -2688,11 +2599,55 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
           </div>
 
-          {/* Step 5: Letter Content with TiptapEditor */}
-          <div className="space-y-2">
-            <Label className="text-right rtl:text-right block text-base font-semibold">
-              5. כתוב את תוכן המכתב
-            </Label>
+          {/* Step 4: Letter Content with TiptapEditor */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-right rtl:text-right block text-base font-semibold">
+                4. כתוב את תוכן המכתב
+              </Label>
+
+              {/* Template Selection + Save as Template */}
+              <div className="flex items-center gap-3">
+                <div className="flex gap-2 rtl:flex-row-reverse items-center">
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={handleLoadTemplate}
+                    disabled={savedTemplates.length === 0}
+                  >
+                    <SelectTrigger dir="rtl" className="w-48">
+                      <SelectValue placeholder={savedTemplates.length > 0 ? "בחר תבנית..." : "אין תבניות"} />
+                    </SelectTrigger>
+                    <SelectContent dir="rtl">
+                      {savedTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedTemplateId && (
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteTemplate(selectedTemplateId)}
+                      title="מחק תבנית"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleSaveTemplateClick}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                  שמור כתבנית
+                </Button>
+              </div>
+            </div>
+
             <TiptapEditor
               value={letterContent}
               onChange={(content) => {
@@ -2708,133 +2663,128 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             />
           </div>
 
-          {/* Step 6: Payment Section - DISABLED + Save Template Button */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-right rtl:text-right block text-base font-semibold opacity-50">
-                6. הגדרות תשלום (בפיתוח)
-              </Label>
-
-              {/* Save Template Button - LEFT SIDE */}
-              <div className="ltr:ml-auto rtl:mr-auto">
-                <Button
-                  onClick={handleSaveTemplateClick}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-                  שמור כתבנית
-                </Button>
-                {saveAsTemplate && (
-                  <p className="text-xs text-green-600 mt-1">✓ התבנית תישמר</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 opacity-50 pointer-events-none">
-              <Checkbox
-                id="includes_payment"
-                checked={false}
-                disabled
-              />
-              <Label htmlFor="includes_payment" className="text-right rtl:text-right text-muted-foreground">
-                כלול סעיף תשלום (בפיתוח - בקרוב)
-              </Label>
-            </div>
-          </div>
-
-          {/* Steps 7-10: Combined into 4-Column Grid */}
+          {/* Step 5: Actions Grid */}
           <div className="space-y-4">
             <Label className="text-right rtl:text-right block text-base font-semibold">
-              7. שמירה, תצוגה מקדימה, שליחה
+              5. פעולות
             </Label>
 
             {/* Overall border container */}
             <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50/30">
-              <div className="grid grid-cols-4 gap-4">
-                {/* COLUMN 1 (RIGHT in RTL): Save as PDF */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* COLUMN 1 (RIGHT in RTL): View & Save */}
                 <div className="space-y-4 border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
-                <h3 className="text-lg font-semibold mb-4 rtl:text-right">שמור כ-PDF</h3>
+                  <h3 className="text-lg font-semibold mb-4 rtl:text-right">צפה ושמור</h3>
 
-                <Button
-                  onClick={handleGeneratePDF}
-                  disabled={generatingPdf || !letterContent.trim()}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {generatingPdf ? (
-                    <>
-                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
-                      יוצר PDF...
-                    </>
-                  ) : (
-                    <>
-                      <FileDown className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-                      שמור PDF
-                    </>
+                  {/* Letter Name - Required for saving */}
+                  <div>
+                    <Label htmlFor="letter-name" className="text-right rtl:text-right block text-sm font-medium mb-2">
+                      שם המכתב <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="letter-name"
+                      value={letterName}
+                      onChange={(e) => {
+                        setLetterName(e.target.value);
+                        markDirty();
+                      }}
+                      placeholder="לדוגמא: מכתב דרישה לתשלום"
+                      className="text-right"
+                      dir="rtl"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handlePreview}
+                    disabled={isLoadingPreview || !letterContent.trim()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isLoadingPreview ? (
+                      <>
+                        <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                        טוען...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        תצוגה מקדימה
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={handleSaveLetter}
+                    disabled={isSaving || !letterContent.trim() || !letterName.trim()}
+                    variant="default"
+                    className="w-full relative"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                        שומר...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        שמור מכתב
+                        {isDirty && (
+                          <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full" />
+                        )}
+                      </>
+                    )}
+                  </Button>
+
+                  {savedLetterId && (
+                    <p className="text-xs text-green-600 text-center">
+                      ✓ המכתב נשמר בהיסטוריה
+                    </p>
                   )}
-                </Button>
 
-                <p className="text-xs text-gray-600 text-right">
-                  המכתב יישמר אוטומטית לפני יצירת PDF
-                </p>
-              </div>
+                  <Button
+                    onClick={handleGeneratePDF}
+                    disabled={generatingPdf || !letterContent.trim()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {generatingPdf ? (
+                      <>
+                        <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                        יוצר PDF...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                        שמור PDF
+                      </>
+                    )}
+                  </Button>
+                </div>
 
-              {/* COLUMN 2: Preview */}
-              <div className="space-y-4 border-2 border-purple-200 rounded-lg p-3 bg-purple-50/30">
-                <h3 className="text-lg font-semibold mb-4 rtl:text-right">תצוגה מקדימה</h3>
+                {/* COLUMN 2: Email */}
+                <div className="space-y-4 border-2 border-purple-200 rounded-lg p-3 bg-purple-50/30">
+                  <h3 className="text-lg font-semibold mb-4 rtl:text-right">שליחת מייל</h3>
 
-                <Button
-                  onClick={handlePreview}
-                  disabled={isLoadingPreview || !letterContent.trim()}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isLoadingPreview ? (
-                    <>
-                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
-                      טוען...
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-                      הצג תצוגה
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={handleSaveLetter}
-                  disabled={isSaving || !letterContent.trim() || !letterName.trim()}
-                  variant="default"
-                  className="w-full relative"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
-                      שומר...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-                      שמור מכתב
-                      {isDirty && (
-                        <span className="absolute top-1 left-1 w-2 h-2 bg-red-500 rounded-full" />
-                      )}
-                    </>
-                  )}
-                </Button>
-
-                {savedLetterId && (
-                  <p className="text-xs text-green-600 text-center">
-                    ✓ המכתב נשמר בהיסטוריה
-                  </p>
-                )}
-              </div>
-
-              {/* COLUMN 3: Email Recipients + Send Email */}
-              <div className="space-y-4 border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
-                <h3 className="text-lg font-semibold mb-4 rtl:text-right">נמעני מייל</h3>
+                  {/* Email Subject */}
+                  <div>
+                    <Label htmlFor="email_subject" className="text-right rtl:text-right block text-sm font-medium mb-2">
+                      נושא המייל <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="email_subject"
+                      value={emailSubject}
+                      onChange={(e) => {
+                        setEmailSubject(e.target.value);
+                        // Mark as manually edited to stop auto-sync from הנדון
+                        setUserEditedEmailSubject(true);
+                      }}
+                      placeholder="שכר טרחתנו לשנת המס 2026"
+                      dir="rtl"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1 text-right">
+                      מסונכרן אוטומטית מ"הנדון"
+                    </p>
+                  </div>
 
                 {recipientMode === 'client' && selectedClient && (
                   <>
@@ -2982,7 +2932,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 </Button>
               </div>
 
-              {/* COLUMN 4 (LEFT in RTL): WhatsApp */}
+              {/* COLUMN 3 (LEFT in RTL): WhatsApp */}
               <div className="space-y-4 border-2 border-purple-200 rounded-lg p-3 bg-purple-50/30">
                 <h3 className="text-lg font-semibold mb-4 rtl:text-right">וואטסאפ</h3>
 
