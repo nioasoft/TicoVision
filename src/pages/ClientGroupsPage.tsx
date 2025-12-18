@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle, Search, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,6 +68,7 @@ export default function ClientGroupsPage() {
     combined_letters: true,
     company_structure_link: '',
     canva_link: '',
+    google_drive_link: '',
     notes: '',
     address: {
       street: '',
@@ -297,6 +298,7 @@ export default function ClientGroupsPage() {
       combined_letters: true,
       company_structure_link: '',
       canva_link: '',
+      google_drive_link: '',
       notes: '',
       address: {
         street: '',
@@ -320,6 +322,7 @@ export default function ClientGroupsPage() {
       combined_letters: group.combined_letters,
       company_structure_link: group.company_structure_link || '',
       canva_link: group.canva_link || '',
+      google_drive_link: group.google_drive_link || '',
       notes: group.notes || '',
       address: group.address || { street: '', city: '', postal_code: '' },
     });
@@ -632,6 +635,17 @@ export default function ClientGroupsPage() {
                               <span className="mr-1">Canva</span>
                             </Button>
                           )}
+                          {group.google_drive_link && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => window.open(group.google_drive_link, '_blank')}
+                              title="Google Drive"
+                            >
+                              <FolderOpen className="h-4 w-4 text-green-600" />
+                              <span className="mr-1">Drive</span>
+                            </Button>
+                          )}
                         </div>
 
                         {/* Action buttons */}
@@ -836,7 +850,7 @@ export default function ClientGroupsPage() {
               </AlertDescription>
             </Alert>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="company_structure_link">לינק למצגת החזקות (אופציונלי)</Label>
                 <Input
@@ -856,6 +870,17 @@ export default function ClientGroupsPage() {
                   value={formData.canva_link}
                   onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
                   placeholder="https://..."
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <Label htmlFor="google_drive_link">לינק ל-Google Drive</Label>
+                <Input
+                  id="google_drive_link"
+                  type="url"
+                  value={formData.google_drive_link}
+                  onChange={(e) => setFormData({ ...formData, google_drive_link: e.target.value })}
+                  placeholder="https://drive.google.com/..."
                   dir="ltr"
                 />
               </div>
@@ -961,7 +986,7 @@ export default function ClientGroupsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="edit_company_structure_link">לינק למצגת החזקות (אופציונלי)</Label>
                 <Input
@@ -981,6 +1006,17 @@ export default function ClientGroupsPage() {
                   value={formData.canva_link}
                   onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
                   placeholder="https://..."
+                  dir="ltr"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_google_drive_link">לינק ל-Google Drive</Label>
+                <Input
+                  id="edit_google_drive_link"
+                  type="url"
+                  value={formData.google_drive_link}
+                  onChange={(e) => setFormData({ ...formData, google_drive_link: e.target.value })}
+                  placeholder="https://drive.google.com/..."
                   dir="ltr"
                 />
               </div>

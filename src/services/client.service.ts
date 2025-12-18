@@ -89,6 +89,7 @@ export interface ClientGroup {
   combined_letters: boolean;
   company_structure_link?: string; // Link to company structure (optional)
   canva_link?: string; // Link to Canva (optional)
+  google_drive_link?: string; // Link to Google Drive folder (optional)
   notes?: string;
   address?: {
     street?: string;
@@ -143,6 +144,7 @@ export interface Client {
   preferred_language?: 'he' | 'en';
   assigned_accountant?: string;
   notes?: string;
+  google_drive_link?: string; // Link to Google Drive folder (optional)
   tags?: string[];
   created_by?: string;
   updated_by?: string;
@@ -194,6 +196,7 @@ export interface CreateClientDto {
   preferred_language?: 'he' | 'en';
   assigned_accountant?: string;
   notes?: string;
+  google_drive_link?: string; // Link to Google Drive folder (optional)
   tags?: string[];
 }
 

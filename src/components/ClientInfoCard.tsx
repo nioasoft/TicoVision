@@ -1,5 +1,6 @@
-import { Building2, Users, Briefcase, Link2 } from 'lucide-react';
+import { Building2, Users, Briefcase, Link2, FolderOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Client } from '@/services/client.service';
 
@@ -48,6 +49,21 @@ export function ClientInfoCard({ client, relatedCompanies = [] }: ClientInfoCard
   return (
     <Card className="bg-gray-50 border-gray-200 rtl:text-right ltr:text-left">
       <CardContent className="p-4">
+        {/* Google Drive Link Button */}
+        {client.google_drive_link && (
+          <div className="mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(client.google_drive_link, '_blank')}
+              className="gap-2"
+            >
+              <FolderOpen className="h-4 w-4 text-green-600" />
+              Google Drive
+            </Button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Right Column - Client Type & Status */}
           <div className="space-y-3">

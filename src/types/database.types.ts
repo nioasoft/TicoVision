@@ -179,6 +179,259 @@ export type Database = {
           },
         ]
       }
+      capital_declaration_communications: {
+        Row: {
+          communicated_at: string | null
+          communication_type: string
+          content: string | null
+          created_at: string | null
+          created_by: string | null
+          declaration_id: string
+          direction: string | null
+          id: string
+          letter_id: string | null
+          outcome: string | null
+          subject: string | null
+          tenant_id: string
+        }
+        Insert: {
+          communicated_at?: string | null
+          communication_type: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          declaration_id: string
+          direction?: string | null
+          id?: string
+          letter_id?: string | null
+          outcome?: string | null
+          subject?: string | null
+          tenant_id: string
+        }
+        Update: {
+          communicated_at?: string | null
+          communication_type?: string
+          content?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          declaration_id?: string
+          direction?: string | null
+          id?: string
+          letter_id?: string | null
+          outcome?: string | null
+          subject?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_declaration_communications_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "capital_declarations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declaration_communications_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declaration_communications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capital_declaration_documents: {
+        Row: {
+          category: Database["public"]["Enums"]["capital_declaration_category"]
+          declaration_id: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          notes: string | null
+          storage_path: string
+          tenant_id: string
+          uploaded_at: string
+          uploaded_by_ip: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["capital_declaration_category"]
+          declaration_id: string
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          notes?: string | null
+          storage_path: string
+          tenant_id: string
+          uploaded_at?: string
+          uploaded_by_ip?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["capital_declaration_category"]
+          declaration_id?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          notes?: string | null
+          storage_path?: string
+          tenant_id?: string
+          uploaded_at?: string
+          uploaded_by_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_declaration_documents_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "capital_declarations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declaration_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capital_declarations: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          client_id: string | null
+          contact_email: string | null
+          contact_id: string | null
+          contact_name: string
+          contact_phone: string | null
+          contact_phone_secondary: string | null
+          created_at: string
+          created_by: string | null
+          declaration_date: string
+          google_drive_link: string | null
+          group_id: string | null
+          id: string
+          internal_due_date: string | null
+          letter_id: string | null
+          notes: string | null
+          portal_access_count: number | null
+          portal_accessed_at: string | null
+          priority: string | null
+          public_token: string
+          status: string
+          subject: string
+          tax_authority_due_date: string | null
+          tax_authority_due_date_document_path: string | null
+          tax_year: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          contact_phone_secondary?: string | null
+          created_at?: string
+          created_by?: string | null
+          declaration_date: string
+          google_drive_link?: string | null
+          group_id?: string | null
+          id?: string
+          internal_due_date?: string | null
+          letter_id?: string | null
+          notes?: string | null
+          portal_access_count?: number | null
+          portal_accessed_at?: string | null
+          priority?: string | null
+          public_token: string
+          status?: string
+          subject?: string
+          tax_authority_due_date?: string | null
+          tax_authority_due_date_document_path?: string | null
+          tax_year: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          client_id?: string | null
+          contact_email?: string | null
+          contact_id?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          contact_phone_secondary?: string | null
+          created_at?: string
+          created_by?: string | null
+          declaration_date?: string
+          google_drive_link?: string | null
+          group_id?: string | null
+          id?: string
+          internal_due_date?: string | null
+          letter_id?: string | null
+          notes?: string | null
+          portal_access_count?: number | null
+          portal_accessed_at?: string | null
+          priority?: string | null
+          public_token?: string
+          status?: string
+          subject?: string
+          tax_authority_due_date?: string | null
+          tax_authority_due_date_document_path?: string | null
+          tax_year?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_declarations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declarations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declarations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declarations_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declarations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_attachments: {
         Row: {
           client_id: string | null
@@ -457,6 +710,7 @@ export type Database = {
           company_structure_link: string | null
           created_at: string | null
           created_by: string | null
+          google_drive_link: string | null
           group_name_hebrew: string
           id: string
           notes: string | null
@@ -473,6 +727,7 @@ export type Database = {
           company_structure_link?: string | null
           created_at?: string | null
           created_by?: string | null
+          google_drive_link?: string | null
           group_name_hebrew: string
           id?: string
           notes?: string | null
@@ -489,6 +744,7 @@ export type Database = {
           company_structure_link?: string | null
           created_at?: string | null
           created_by?: string | null
+          google_drive_link?: string | null
           group_name_hebrew?: string
           id?: string
           notes?: string | null
@@ -796,6 +1052,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           employee_count: number | null
+          google_drive_link: string | null
           group_id: string | null
           id: string
           incorporation_date: string | null
@@ -843,6 +1100,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           employee_count?: number | null
+          google_drive_link?: string | null
           group_id?: string | null
           id?: string
           incorporation_date?: string | null
@@ -890,6 +1148,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           employee_count?: number | null
+          google_drive_link?: string | null
           group_id?: string | null
           id?: string
           incorporation_date?: string | null
@@ -1296,6 +1555,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fee_calculations_archived: {
+        Row: {
+          amount_after_selected_discount: number | null
+          archived_at: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          last_reminder_sent_at: string | null
+          partial_payment_amount: number | null
+          payment_method_selected: string | null
+          reminder_count: number | null
+          status: string | null
+          tenant_id: string | null
+          total_amount: number | null
+          updated_at: string | null
+          year: number | null
+        }
+        Insert: {
+          amount_after_selected_discount?: number | null
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id: string
+          last_reminder_sent_at?: string | null
+          partial_payment_amount?: number | null
+          payment_method_selected?: string | null
+          reminder_count?: number | null
+          status?: string | null
+          tenant_id?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          year?: number | null
+        }
+        Update: {
+          amount_after_selected_discount?: number | null
+          archived_at?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_reminder_sent_at?: string | null
+          partial_payment_amount?: number | null
+          payment_method_selected?: string | null
+          reminder_count?: number | null
+          status?: string | null
+          tenant_id?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          year?: number | null
+        }
+        Relationships: []
       }
       fee_types: {
         Row: {
@@ -3831,6 +4141,34 @@ export type Database = {
           clients_sent_count: number
         }[]
       }
+      get_declaration_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          contact_name: string
+          declaration_date: string
+          id: string
+          portal_accessed_at: string
+          status: string
+          tax_year: number
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
+      get_declaration_communication_count: {
+        Args: { p_declaration_id: string }
+        Returns: number
+      }
+      get_declaration_document_counts: {
+        Args: { p_declaration_id: string }
+        Returns: {
+          category: Database["public"]["Enums"]["capital_declaration_category"]
+          count: number
+        }[]
+      }
+      get_declaration_last_communication: {
+        Args: { p_declaration_id: string }
+        Returns: string
+      }
       get_fee_summary: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -3936,6 +4274,14 @@ export type Database = {
           role: string
           tenant_id: string
           user_id: string
+        }[]
+      }
+      get_user_email: { Args: { p_user_id: string }; Returns: string }
+      get_user_info: {
+        Args: { p_user_id: string }
+        Returns: {
+          email: string
+          full_name: string
         }[]
       }
       get_user_role: {
@@ -4061,6 +4407,10 @@ export type Database = {
         }
         Returns: string
       }
+      track_declaration_portal_access: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       update_user_role_and_metadata: {
         Args: {
           p_full_name?: string
@@ -4112,6 +4462,13 @@ export type Database = {
       validate_israeli_tax_id: { Args: { tax_id: string }; Returns: boolean }
     }
     Enums: {
+      capital_declaration_category:
+        | "bank"
+        | "real_estate"
+        | "insurance"
+        | "vehicles"
+        | "abroad"
+        | "other"
       client_report_type: "accountant_turnover" | "israeli_workers"
       client_type:
         | "company"
@@ -4290,6 +4647,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      capital_declaration_category: [
+        "bank",
+        "real_estate",
+        "insurance",
+        "vehicles",
+        "abroad",
+        "other",
+      ],
       client_report_type: ["accountant_turnover", "israeli_workers"],
       client_type: [
         "company",

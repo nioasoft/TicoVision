@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, MoreHorizontal, MessageCircle, Mail } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, MessageCircle, Mail, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -146,6 +146,19 @@ const ClientRow = React.memo<ClientRowProps>(
             '-'
           )}
         </TableCell>
+        <TableCell className="w-12">
+          {client.google_drive_link && (
+            <a
+              href={client.google_drive_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-600 hover:text-green-700 transition-colors"
+              title="Google Drive"
+            >
+              <FolderOpen className="h-4 w-4" />
+            </a>
+          )}
+        </TableCell>
         <TableCell className="w-20">{getStatusBadge(client.status)}</TableCell>
         <TableCell className="w-16 text-left">
           <DropdownMenu>
@@ -211,6 +224,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
             <TableHead className="w-28">איש קשר</TableHead>
             <TableHead className="w-32">טלפון</TableHead>
             <TableHead className="flex-1 min-w-[180px]">אימייל</TableHead>
+            <TableHead className="w-12">Drive</TableHead>
             <TableHead className="w-20">סטטוס</TableHead>
             <TableHead className="w-16 text-left">פעולות</TableHead>
           </TableRow>
@@ -218,13 +232,13 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center">
+              <TableCell colSpan={10} className="text-center">
                 טוען נתונים...
               </TableCell>
             </TableRow>
           ) : clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center">
+              <TableCell colSpan={10} className="text-center">
                 לא נמצאו לקוחות
               </TableCell>
             </TableRow>
