@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleBasedRoute } from '@/components/auth/RoleBasedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -59,14 +59,9 @@ const PageLoader = () => (
   </div>
 );
 
-// Default redirect based on user role
+// Default redirect - all users go to welcome page
 function DefaultRedirect() {
-  const { role } = useAuth();
-
-  if (role === 'accountant') {
-    return <Navigate to="/welcome" replace />;
-  }
-  return <Navigate to="/clients" replace />;
+  return <Navigate to="/welcome" replace />;
 }
 
 function App() {
