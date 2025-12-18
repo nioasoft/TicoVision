@@ -282,7 +282,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       // Required fields validation
       if (!formData.tax_id?.trim()) errors.push('מספר מזהה');
       if (!formData.company_name?.trim()) errors.push('שם החברה');
-      if (!formData.commercial_name?.trim()) errors.push('שם מסחרי');
       if (!formData.contact_name?.trim()) errors.push('שם איש קשר');
       if (!formData.contact_email?.trim()) errors.push('אימייל איש קשר');
       if (!formData.contact_phone?.trim()) errors.push('טלפון איש קשר');
@@ -561,14 +560,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               <div>
                 <Label htmlFor="commercial_name" className="text-right block mb-2">
-                  שם מסחרי <span className="text-red-500">*</span>
+                  שם מסחרי
                 </Label>
                 <Input
                   id="commercial_name"
                   value={formData.commercial_name || ''}
                   onChange={(e) => handleFormChange('commercial_name', e.target.value)}
                   onKeyDown={handleKeyDown}
-                  required
                   dir="rtl"
                 />
               </div>
