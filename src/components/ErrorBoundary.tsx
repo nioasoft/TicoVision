@@ -2,6 +2,23 @@ import { Component, ReactNode } from 'react';
 import { logger } from '@/lib/logger';
 import { ErrorFallback } from './ErrorFallback';
 
+/** Session storage key to track reload attempts and prevent infinite loops */
+const CHUNK_ERROR_RELOAD_KEY = 'chunk-error-reload';
+
+/**
+ * Checks if an error is related to failed chunk/module loading.
+ * This typically happens after a new deployment when cached pages reference old chunks.
+ */
+const isChunkLoadError = (error: Error): boolean => {
+  return (
+    error.name === 'ChunkLoadError' ||
+    error.message.includes('Loading chunk') ||
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Expected a JavaScript-or-Wasm module') ||
+    error.message.includes('Loading CSS chunk')
+  );
+};
+
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
@@ -34,6 +51,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: { componentStack: string }) {
+    // Check if this is a chunk load error (happens after deployment)
+    if (isChunkLoadError(error)) {
+      // Only auto-reload once to prevent infinite loops
+      const hasReloaded = sessionStorage.getItem(CHUNK_ERROR_RELOAD_KEY);
+      if (!hasReloaded) {
+        logger.warn('Chunk load error detected, reloading page...', {
+          errorMessage: error.message,
+        });
+        sessionStorage.setItem(CHUNK_ERROR_RELOAD_KEY, 'true');
+        window.location.reload();
+        return;
+      }
+      // Clear the flag after showing error (for next time)
+      setTimeout(() => sessionStorage.removeItem(CHUNK_ERROR_RELOAD_KEY), 5000);
+    }
+
     // Log the error to our logging service
     logger.error('React Error Boundary caught an error', error, {
       componentStack: errorInfo.componentStack,

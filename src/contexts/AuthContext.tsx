@@ -4,6 +4,19 @@ import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
 import { logger } from '@/lib/logger';
 
+/**
+ * Clears all Supabase auth tokens from localStorage.
+ * Supabase uses the format: sb-<project-ref>-auth-token
+ */
+const clearSupabaseSession = () => {
+  // Clear all Supabase auth tokens (handles multiple project refs)
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+      localStorage.removeItem(key);
+    }
+  });
+};
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -32,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         logger.error('Session error:', error.message);
         // Clear all session data from storage
-        localStorage.removeItem('supabase.auth.token');
+        clearSupabaseSession();
         // Sign out to ensure clean state
         supabase.auth.signOut();
         setSession(null);
@@ -49,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }).catch((error) => {
       logger.error('Auth initialization error:', error);
       // Clear session on any error
-      localStorage.removeItem('supabase.auth.token');
+      clearSupabaseSession();
       setLoading(false);
     });
 
@@ -60,12 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Handle failed token refresh
       if (event === 'TOKEN_REFRESHED' && !session) {
         logger.warn('Token refresh failed - clearing session');
-        localStorage.removeItem('supabase.auth.token');
+        clearSupabaseSession();
       }
 
       // Handle signed out event
       if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('supabase.auth.token');
+        clearSupabaseSession();
       }
 
       setSession(session);
