@@ -2938,21 +2938,10 @@ export class TemplateService extends BaseService {
         };
       }
 
-      // 8. Get user name for created_by_name
-      let createdByName = user?.email || 'Unknown';
-      if (user?.id) {
-        const { data: uta } = await supabase
-          .from('user_tenant_access')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .eq('tenant_id', tenantId)
-          .maybeSingle();
-        if (uta?.display_name) {
-          createdByName = uta.display_name;
-        }
-      }
+      // 8. Get user name for created_by_name (using email)
+      const createdByName = user?.email || 'Unknown';
 
-      // 8. Save to database
+      // 9. Save to database
       const letterData = {
         tenant_id: tenantId,
         template_type: 'capital_declaration',
@@ -3066,19 +3055,8 @@ export class TemplateService extends BaseService {
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
-      // 7. Get user name for created_by_name
-      let createdByName = user?.email || 'Unknown';
-      if (user?.id) {
-        const { data: uta } = await supabase
-          .from('user_tenant_access')
-          .select('display_name')
-          .eq('user_id', user.id)
-          .eq('tenant_id', tenantId)
-          .maybeSingle();
-        if (uta?.display_name) {
-          createdByName = uta.display_name;
-        }
-      }
+      // 7. Get user name for created_by_name (using email)
+      const createdByName = user?.email || 'Unknown';
 
       // 8. Save to database
       const letterData = {
