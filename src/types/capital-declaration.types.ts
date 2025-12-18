@@ -24,7 +24,17 @@ export type CapitalDeclarationStatus =
   | 'in_progress'        // הלקוח התחיל
   | 'waiting_documents'  // ממתין למסמכים
   | 'reviewing'          // בבדיקה
-  | 'completed';         // הושלם
+  | 'completed'          // הושלם
+  | 'waiting';           // ממתין (בהמתנה - לקוח ביקש לדחות או אין זמן לטפל)
+
+/** Declaration priority levels */
+export type DeclarationPriority = 'normal' | 'urgent' | 'critical';
+
+/** Communication types for tracking */
+export type DeclarationCommunicationType = 'letter' | 'phone_call' | 'whatsapp' | 'note';
+
+/** Communication direction */
+export type CommunicationDirection = 'outbound' | 'inbound';
 
 /** Category configuration for UI */
 export interface CategoryConfig {
@@ -93,7 +103,8 @@ export const DECLARATION_STATUS_LABELS: Record<CapitalDeclarationStatus, string>
   in_progress: 'הלקוח התחיל',
   waiting_documents: 'ממתין למסמכים',
   reviewing: 'בבדיקה',
-  completed: 'הושלם'
+  completed: 'הושלם',
+  waiting: 'ממתין'
 };
 
 /** Status colors for badges */
@@ -103,7 +114,45 @@ export const DECLARATION_STATUS_COLORS: Record<CapitalDeclarationStatus, string>
   in_progress: 'bg-yellow-100 text-yellow-800',
   waiting_documents: 'bg-orange-100 text-orange-800',
   reviewing: 'bg-purple-100 text-purple-800',
-  completed: 'bg-green-100 text-green-800'
+  completed: 'bg-green-100 text-green-800',
+  waiting: 'bg-slate-100 text-slate-800'
+};
+
+/** Priority labels in Hebrew */
+export const PRIORITY_LABELS: Record<DeclarationPriority, string> = {
+  normal: 'רגיל',
+  urgent: 'דחוף',
+  critical: 'בהול'
+};
+
+/** Priority colors for badges */
+export const PRIORITY_COLORS: Record<DeclarationPriority, string> = {
+  normal: '',  // No special color
+  urgent: 'bg-orange-100 text-orange-800 border-orange-300',
+  critical: 'bg-red-100 text-red-800 border-red-300'
+};
+
+/** Priority row background colors */
+export const PRIORITY_ROW_COLORS: Record<DeclarationPriority, string> = {
+  normal: '',
+  urgent: 'bg-orange-50',
+  critical: 'bg-red-50'
+};
+
+/** Communication type labels in Hebrew */
+export const COMMUNICATION_TYPE_LABELS: Record<DeclarationCommunicationType, string> = {
+  letter: 'מכתב',
+  phone_call: 'שיחת טלפון',
+  whatsapp: 'WhatsApp',
+  note: 'הערה'
+};
+
+/** Communication type icons (Lucide icon names) */
+export const COMMUNICATION_TYPE_ICONS: Record<DeclarationCommunicationType, string> = {
+  letter: 'Mail',
+  phone_call: 'Phone',
+  whatsapp: 'MessageCircle',
+  note: 'FileText'
 };
 
 // ============================================================================
@@ -133,8 +182,18 @@ export interface CapitalDeclaration {
   google_drive_link: string | null;
   notes: string | null;
 
-  // Status
+  // Status & Priority
   status: CapitalDeclarationStatus;
+  priority: DeclarationPriority;
+
+  // Assignment
+  assigned_to: string | null;
+  assigned_at: string | null;
+
+  // Due Dates
+  tax_authority_due_date: string | null;        // Official deadline from tax authority
+  tax_authority_due_date_document_path: string | null;  // Screenshot of request
+  internal_due_date: string | null;             // Internal deadline set by manager
 
   // Portal
   public_token: string;
@@ -148,6 +207,39 @@ export interface CapitalDeclaration {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+}
+
+/** Communication record entity */
+export interface DeclarationCommunication {
+  id: string;
+  tenant_id: string;
+  declaration_id: string;
+  communication_type: DeclarationCommunicationType;
+  direction: CommunicationDirection;
+  subject: string | null;
+  content: string | null;
+  outcome: string | null;
+  letter_id: string | null;
+  communicated_at: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** Communication with user details for display */
+export interface CommunicationWithUser extends DeclarationCommunication {
+  created_by_name?: string;
+}
+
+/** DTO for creating a new communication */
+export interface CreateCommunicationDto {
+  declaration_id: string;
+  communication_type: DeclarationCommunicationType;
+  direction?: CommunicationDirection;
+  subject?: string;
+  content?: string;
+  outcome?: string;
+  letter_id?: string;
+  communicated_at?: string; // ISO string, defaults to now
 }
 
 /** Uploaded document entity */
@@ -215,6 +307,10 @@ export interface DeclarationWithCounts extends CapitalDeclaration {
   categories_complete: number;
   client_name?: string;
   group_name?: string;
+  // Dashboard fields
+  assigned_to_name?: string;
+  last_communication_at?: string | null;
+  communication_count?: number;
 }
 
 // ============================================================================

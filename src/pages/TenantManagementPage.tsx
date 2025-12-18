@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+import {
   Building2,
   Users,
   Settings,
@@ -24,7 +24,6 @@ import {
   Phone,
   Globe,
   Palette,
-  Database,
   Shield
 } from 'lucide-react';
 import { TenantManagementService, type UserAccess } from '@/services/tenant-management.service';

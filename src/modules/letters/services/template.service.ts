@@ -2982,6 +2982,134 @@ export class TemplateService extends BaseService {
   }
 
   /**
+   * Preview capital declaration template (without saving to DB)
+   * Used for previewing reminder letters and other capital declaration templates
+   */
+  async previewCapitalDeclarationTemplate(
+    templateName: string,
+    variables: Record<string, unknown>
+  ): Promise<ServiceResponse<string>> {
+    try {
+      // 1. Load header
+      const header = await this.loadTemplateFile('components/header.html');
+
+      // 2. Load body based on template name
+      const body = await this.loadTemplateFile(`bodies/capital-declaration/${templateName}.html`);
+
+      // 3. Load footer
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 4. Process variables - include header variables
+      const processedVariables: Record<string, unknown> = {
+        ...variables,
+        letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
+        // Header variables - use contact_name as company_name for personal letters
+        company_name: variables.company_name || variables.contact_name || '',
+        group_name: variables.group_name || '',
+        custom_header_lines: variables.custom_header_lines || '',
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildCapitalDeclarationHTML(header, body, footer);
+
+      // 6. Replace all variables
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables);
+
+      // 7. Replace CID images with web paths for browser preview
+      fullHtml = this.replaceCidWithWebPaths(fullHtml);
+
+      return { data: fullHtml, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Generate capital declaration document from template name (with saving to DB)
+   */
+  async generateCapitalDeclarationFromTemplate(
+    templateName: string,
+    variables: Record<string, unknown>,
+    options?: {
+      clientId?: string;
+      groupId?: string;
+      letterName?: string;
+    }
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1. Load header
+      const header = await this.loadTemplateFile('components/header.html');
+
+      // 2. Load body based on template name
+      const body = await this.loadTemplateFile(`bodies/capital-declaration/${templateName}.html`);
+
+      // 3. Load footer
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 4. Process variables - include header variables
+      const processedVariables: Record<string, unknown> = {
+        ...variables,
+        letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
+        // Header variables - use contact_name as company_name for personal letters
+        company_name: variables.company_name || variables.contact_name || '',
+        group_name: variables.group_name || '',
+        custom_header_lines: variables.custom_header_lines || '',
+      };
+
+      // 5. Build full HTML
+      let fullHtml = this.buildCapitalDeclarationHTML(header, body, footer);
+
+      // 6. Replace all variables
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. Get user name for created_by_name
+      let createdByName = user?.email || 'Unknown';
+      if (user?.id) {
+        const { data: uta } = await supabase
+          .from('user_tenant_access')
+          .select('display_name')
+          .eq('user_id', user.id)
+          .eq('tenant_id', tenantId)
+          .maybeSingle();
+        if (uta?.display_name) {
+          createdByName = uta.display_name;
+        }
+      }
+
+      // 8. Save to database
+      const letterData = {
+        tenant_id: tenantId,
+        template_type: `capital_declaration_${templateName}`,
+        client_id: options?.clientId || null,
+        group_calculation_id: options?.groupId || null,
+        variables_used: processedVariables,
+        generated_content_html: fullHtml,
+        generated_content_text: plainText,
+        subject: options?.letterName || `הצהרת הון - ${templateName}`,
+        status: 'saved',
+        created_by: user?.id,
+        created_by_name: createdByName,
+      };
+
+      const { data, error } = await supabase
+        .from('generated_letters')
+        .insert(letterData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { data: data as GeneratedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
    * Build full HTML for Capital Declaration document
    */
   private buildCapitalDeclarationHTML(header: string, body: string, footer: string): string {
@@ -3011,3 +3139,6 @@ export class TemplateService extends BaseService {
     `.trim();
   }
 }
+
+// Export singleton instance
+export const templateService = new TemplateService();

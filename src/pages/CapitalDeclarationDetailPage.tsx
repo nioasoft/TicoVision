@@ -1,13 +1,15 @@
 /**
  * Capital Declaration Detail Page (פרטי הצהרת הון)
- * View and manage a single capital declaration with documents
+ * View and manage a single capital declaration with documents, communications, and due dates
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -48,19 +50,36 @@ import {
   Eye,
   CheckCircle,
   User,
+  Upload,
+  Image,
+  Loader2,
+  MessageCircle,
 } from 'lucide-react';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
+import { supabase } from '@/lib/supabase';
+import {
+  PriorityBadge,
+  AssignAccountantSelect,
+  WhatsAppReminderButton,
+  CommunicationHistoryCard,
+  LogCommunicationDialog,
+  SendReminderDialog,
+} from '@/components/capital-declarations';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 import type {
   DeclarationWithCounts,
   CapitalDeclarationDocument,
   CapitalDeclarationStatus,
   CapitalDeclarationCategory,
+  DeclarationPriority,
 } from '@/types/capital-declaration.types';
 import {
   DECLARATION_STATUS_LABELS,
   DECLARATION_STATUS_COLORS,
   DECLARATION_CATEGORIES,
   formatDeclarationDate,
+  PRIORITY_LABELS,
 } from '@/types/capital-declaration.types';
 
 // Category icons mapping with React components
@@ -96,16 +115,29 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
 export function CapitalDeclarationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const isAdmin = role === 'admin';
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State
   const [loading, setLoading] = useState(true);
   const [declaration, setDeclaration] = useState<DeclarationWithCounts | null>(null);
   const [documents, setDocuments] = useState<CapitalDeclarationDocument[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [updatingDueDate, setUpdatingDueDate] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [dueDateDocumentUrl, setDueDateDocumentUrl] = useState<string | null>(null);
 
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<CapitalDeclarationDocument | null>(null);
+
+  // Communication dialogs
+  const [logCommunicationOpen, setLogCommunicationOpen] = useState(false);
+  const [sendReminderOpen, setSendReminderOpen] = useState(false);
+
+  // Tenant info for WhatsApp (loaded from tenant_settings.company_name)
+  const [tenantName, setTenantName] = useState<string>('');
 
   /**
    * Load declaration data
@@ -124,6 +156,14 @@ export function CapitalDeclarationDetailPage() {
       const { data: docsData, error: docsError } = await capitalDeclarationService.getDocuments(id);
       if (docsError) throw docsError;
       setDocuments(docsData || []);
+
+      // Load tax authority due date document URL if exists
+      if (declData?.tax_authority_due_date_document_path) {
+        const { data: url } = await capitalDeclarationService.getDueDateDocumentUrl(
+          declData.tax_authority_due_date_document_path
+        );
+        setDueDateDocumentUrl(url || null);
+      }
     } catch (error) {
       console.error('Error loading declaration:', error);
       toast.error('שגיאה בטעינת ההצהרה');
@@ -136,6 +176,32 @@ export function CapitalDeclarationDetailPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Load tenant name for WhatsApp message from tenant_settings
+  useEffect(() => {
+    const loadTenantInfo = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const tenantId = user.user_metadata?.tenant_id;
+          if (tenantId) {
+            // Load company_name from tenant_settings (editable in /settings)
+            const { data: settings } = await supabase
+              .from('tenant_settings')
+              .select('company_name')
+              .eq('tenant_id', tenantId)
+              .single();
+            if (settings?.company_name) {
+              setTenantName(settings.company_name);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading tenant info:', error);
+      }
+    };
+    loadTenantInfo();
+  }, []);
 
   /**
    * Update declaration status
@@ -155,6 +221,118 @@ export function CapitalDeclarationDetailPage() {
       toast.error('שגיאה בעדכון הסטטוס');
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  /**
+   * Update priority
+   */
+  const handlePriorityChange = async (priority: DeclarationPriority) => {
+    if (!declaration) return;
+
+    const { error } = await capitalDeclarationService.updatePriority(declaration.id, priority);
+    if (error) {
+      toast.error('שגיאה בעדכון דחיפות');
+      return;
+    }
+    setDeclaration({ ...declaration, priority });
+    toast.success('הדחיפות עודכנה');
+  };
+
+  /**
+   * Update assignment
+   */
+  const handleAssignmentChange = async (userId: string | null) => {
+    if (!declaration) return;
+
+    const { error } = await capitalDeclarationService.updateAssignment(declaration.id, userId);
+    if (error) {
+      toast.error('שגיאה בעדכון שיוך');
+      return;
+    }
+    setDeclaration({ ...declaration, assigned_to: userId });
+    toast.success('השיוך עודכן');
+  };
+
+  /**
+   * Update tax authority due date (official deadline)
+   */
+  const handleTaxAuthorityDueDateChange = async (date: string) => {
+    if (!declaration) return;
+
+    setUpdatingDueDate(true);
+    try {
+      const { error } = await capitalDeclarationService.updateTaxAuthorityDueDate(
+        declaration.id,
+        date || null
+      );
+      if (error) throw error;
+
+      setDeclaration({ ...declaration, tax_authority_due_date: date || null });
+      toast.success('תאריך יעד רשות המיסים עודכן');
+    } catch (error) {
+      console.error('Error updating tax authority due date:', error);
+      toast.error('שגיאה בעדכון תאריך יעד');
+    } finally {
+      setUpdatingDueDate(false);
+    }
+  };
+
+  /**
+   * Update internal due date (manager set)
+   */
+  const handleInternalDueDateChange = async (date: string) => {
+    if (!declaration) return;
+
+    setUpdatingDueDate(true);
+    try {
+      const { error } = await capitalDeclarationService.updateInternalDueDate(
+        declaration.id,
+        date || null
+      );
+      if (error) throw error;
+
+      setDeclaration({ ...declaration, internal_due_date: date || null });
+      toast.success('תאריך יעד פנימי עודכן');
+    } catch (error) {
+      console.error('Error updating internal due date:', error);
+      toast.error('שגיאה בעדכון תאריך יעד');
+    } finally {
+      setUpdatingDueDate(false);
+    }
+  };
+
+  /**
+   * Upload tax authority due date document
+   */
+  const handleTaxAuthorityDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !declaration) return;
+
+    setUploadingDocument(true);
+    try {
+      const { data: path, error } = await capitalDeclarationService.uploadTaxAuthorityDueDateDocument(
+        declaration.id,
+        file
+      );
+      if (error) throw error;
+
+      // Get URL for display
+      if (path) {
+        const { data: url } = await capitalDeclarationService.getDueDateDocumentUrl(path);
+        setDueDateDocumentUrl(url || null);
+        setDeclaration({ ...declaration, tax_authority_due_date_document_path: path });
+      }
+
+      toast.success('המסמך הועלה בהצלחה');
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast.error('שגיאה בהעלאת המסמך');
+    } finally {
+      setUploadingDocument(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -223,7 +401,7 @@ export function CapitalDeclarationDetailPage() {
    * Get documents for a category
    */
   const getDocumentsByCategory = (category: CapitalDeclarationCategory) => {
-    return documents.filter(doc => doc.category === category);
+    return documents.filter((doc) => doc.category === category);
   };
 
   /**
@@ -258,22 +436,48 @@ export function CapitalDeclarationDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/capital-declarations')}>
             <ArrowRight className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight rtl:text-right">
-              הצהרת הון - {declaration.tax_year}
-            </h1>
-            <p className="text-muted-foreground rtl:text-right">
-              {declaration.contact_name}
-            </p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight rtl:text-right">
+                הצהרת הון - {declaration.tax_year}
+              </h1>
+              <PriorityBadge
+                priority={declaration.priority}
+                editable={isAdmin}
+                onPriorityChange={handlePriorityChange}
+              />
+            </div>
+            <p className="text-muted-foreground rtl:text-right">{declaration.contact_name}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <WhatsAppReminderButton
+            declaration={declaration}
+            variant="outline"
+            showLabel={true}
+            tenantName={tenantName}
+            onCommunicationLogged={loadData}
+          />
+          <Button
+            variant="outline"
+            onClick={() => setLogCommunicationOpen(true)}
+          >
+            <Phone className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+            תעד תקשורת
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setSendReminderOpen(true)}
+          >
+            <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+            שלח תזכורת
+          </Button>
           <Button variant="outline" onClick={handleCopyLink}>
             <Copy className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
             העתק לינק
@@ -288,8 +492,8 @@ export function CapitalDeclarationDetailPage() {
         </div>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* Info Cards Row 1 */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Contact Info */}
         <Card>
           <CardHeader className="pb-2">
@@ -342,7 +546,9 @@ export function CapitalDeclarationDetailPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">תאריך הצהרה:</span>
-              <span className="font-medium">{formatDeclarationDate(declaration.declaration_date)}</span>
+              <span className="font-medium">
+                {formatDeclarationDate(declaration.declaration_date)}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">נושא:</span>
@@ -350,17 +556,19 @@ export function CapitalDeclarationDetailPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">נוצר:</span>
-              <span className="text-sm">{new Date(declaration.created_at).toLocaleDateString('he-IL')}</span>
+              <span className="text-sm">
+                {new Date(declaration.created_at).toLocaleDateString('he-IL')}
+              </span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Status & Portal */}
+        {/* Status & Assignment */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              סטטוס ופורטל
+              סטטוס ושיוך
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 rtl:text-right">
@@ -390,8 +598,19 @@ export function CapitalDeclarationDetailPage() {
               </Select>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-2">
+            {isAdmin && (
+              <div>
+                <label className="text-sm text-muted-foreground block mb-2">רו"ח מטפל</label>
+                <AssignAccountantSelect
+                  value={declaration.assigned_to}
+                  onChange={handleAssignmentChange}
+                  placeholder="בחר רו&quot;ח"
+                />
+              </div>
+            )}
+
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">גישה לפורטל:</span>
                 {declaration.portal_accessed_at ? (
                   <div className="flex items-center gap-2 text-green-600">
@@ -402,29 +621,150 @@ export function CapitalDeclarationDetailPage() {
                   <span className="text-sm text-muted-foreground">טרם נצפה</span>
                 )}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">קטגוריות הושלמו:</span>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={`h-4 w-4 ${declaration.categories_complete === 6 ? 'text-green-600' : 'text-muted-foreground'}`} />
-                  <span className="font-medium">{declaration.categories_complete}/6</span>
-                </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Due Dates Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              תאריכי יעד
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 rtl:text-right">
+            {/* Tax Authority Due Date */}
+            <div className="space-y-2">
+              <Label htmlFor="taxAuthorityDueDate" className="text-sm font-medium">
+                תאריך יעד רשות המיסים
+              </Label>
+              <Input
+                id="taxAuthorityDueDate"
+                type="date"
+                value={declaration.tax_authority_due_date || ''}
+                onChange={(e) => handleTaxAuthorityDueDateChange(e.target.value)}
+                disabled={updatingDueDate}
+                dir="ltr"
+              />
+
+              {/* Document upload */}
+              <div className="pt-1">
+                <span className="text-xs text-muted-foreground">מסמך בקשה</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleTaxAuthorityDocumentUpload}
+                  className="hidden"
+                />
+                {dueDateDocumentUrl ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <a
+                      href={dueDateDocumentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                    >
+                      <Image className="h-3 w-3" />
+                      צפה
+                    </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingDocument}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {uploadingDocument ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        'החלף'
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingDocument}
+                    className="h-6 px-2 text-xs mt-1"
+                  >
+                    {uploadingDocument ? (
+                      <Loader2 className="h-3 w-3 animate-spin rtl:ml-1 ltr:mr-1" />
+                    ) : (
+                      <Upload className="h-3 w-3 rtl:ml-1 ltr:mr-1" />
+                    )}
+                    העלה מסמך
+                  </Button>
+                )}
               </div>
+            </div>
+
+            <div className="border-t pt-3">
+              {/* Internal Due Date */}
+              <Label htmlFor="internalDueDate" className="text-sm font-medium">
+                תאריך יעד פנימי
+              </Label>
+              <Input
+                id="internalDueDate"
+                type="date"
+                value={declaration.internal_due_date || ''}
+                onChange={(e) => handleInternalDueDateChange(e.target.value)}
+                disabled={updatingDueDate}
+                className="mt-1"
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground mt-1">תאריך שקבע המנהל לסיום העבודה</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Notes */}
-      {declaration.notes && (
+      {/* Communication History & Notes Row */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Communication History */}
+        <CommunicationHistoryCard
+          declarationId={declaration.id}
+          onAddCommunication={() => setLogCommunicationOpen(true)}
+        />
+
+        {/* Notes & Progress */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium rtl:text-right">הערות</CardTitle>
+            <CardTitle className="text-sm font-medium rtl:text-right">התקדמות ומסמכים</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap rtl:text-right">{declaration.notes}</p>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">קטגוריות הושלמו:</span>
+              <div className="flex items-center gap-2">
+                <CheckCircle
+                  className={`h-4 w-4 ${
+                    declaration.categories_complete === 6
+                      ? 'text-green-600'
+                      : 'text-muted-foreground'
+                  }`}
+                />
+                <span className="font-medium">{declaration.categories_complete}/6</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">סה"כ מסמכים:</span>
+              <span className="font-medium">{declaration.total_documents}</span>
+            </div>
+
+            {declaration.notes && (
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-2">הערות:</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {declaration.notes}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
 
       {/* Documents by Category */}
       <div>
@@ -508,24 +848,14 @@ export function CapitalDeclarationDetailPage() {
         </div>
       </div>
 
-      {/* Total Documents Summary */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium rtl:text-right">סה"כ מסמכים שהועלו:</span>
-            <span className="text-2xl font-bold">{documents.length}</span>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Delete Document Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="rtl:text-right">
           <AlertDialogHeader>
             <AlertDialogTitle className="rtl:text-right">מחיקת מסמך</AlertDialogTitle>
             <AlertDialogDescription className="rtl:text-right">
-              האם אתה בטוח שברצונך למחוק את המסמך "{documentToDelete?.file_name}"?
-              פעולה זו לא ניתנת לביטול.
+              האם אתה בטוח שברצונך למחוק את המסמך "{documentToDelete?.file_name}"? פעולה זו לא
+              ניתנת לביטול.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="rtl:flex-row-reverse rtl:gap-2">
@@ -536,6 +866,22 @@ export function CapitalDeclarationDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Log Communication Dialog */}
+      <LogCommunicationDialog
+        open={logCommunicationOpen}
+        onOpenChange={setLogCommunicationOpen}
+        declarationId={declaration.id}
+        onSuccess={loadData}
+      />
+
+      {/* Send Reminder Dialog */}
+      <SendReminderDialog
+        open={sendReminderOpen}
+        onOpenChange={setSendReminderOpen}
+        declaration={declaration}
+        onSuccess={loadData}
+      />
     </div>
   );
 }

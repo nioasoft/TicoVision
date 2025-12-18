@@ -12,6 +12,10 @@ import type {
   CreateDeclarationForm,
   DeclarationWithCounts,
   CategoryDocumentCount,
+  DeclarationPriority,
+  DeclarationCommunication,
+  CommunicationWithUser,
+  CreateCommunicationDto,
 } from '@/types/capital-declaration.types';
 
 const STORAGE_BUCKET = 'capital-declarations';
@@ -423,6 +427,528 @@ class CapitalDeclarationServiceClass extends BaseService {
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
+  }
+
+  // ============================================================================
+  // DASHBOARD METHODS
+  // ============================================================================
+
+  /**
+   * Update declaration priority
+   */
+  async updatePriority(
+    id: string,
+    priority: DeclarationPriority
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({ priority })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_declaration_priority', id, { priority });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Assign declaration to accountant
+   */
+  async updateAssignment(
+    id: string,
+    userId: string | null
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({
+          assigned_to: userId,
+          assigned_at: userId ? new Date().toISOString() : null,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_declaration_assignment', id, { assigned_to: userId });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Update tax authority due date (official deadline)
+   */
+  async updateTaxAuthorityDueDate(
+    id: string,
+    dueDate: string | null
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({ tax_authority_due_date: dueDate })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_tax_authority_due_date', id, { tax_authority_due_date: dueDate });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Update internal due date (manager set deadline)
+   */
+  async updateInternalDueDate(
+    id: string,
+    dueDate: string | null
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({ internal_due_date: dueDate })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_internal_due_date', id, { internal_due_date: dueDate });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Upload tax authority due date document (request screenshot)
+   */
+  async uploadTaxAuthorityDueDateDocument(
+    declarationId: string,
+    file: File
+  ): Promise<ServiceResponse<string>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Generate unique path
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${tenantId}/${declarationId}/tax-authority-request.${ext}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Update declaration with path
+      const { error: updateError } = await supabase
+        .from(this.tableName)
+        .update({ tax_authority_due_date_document_path: path })
+        .eq('id', declarationId)
+        .eq('tenant_id', tenantId);
+
+      if (updateError) throw updateError;
+
+      await this.logAction('upload_tax_authority_document', declarationId, { path });
+
+      return { data: path, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get signed URL for due date document
+   */
+  async getDueDateDocumentUrl(storagePath: string): Promise<ServiceResponse<string>> {
+    try {
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(storagePath, 3600); // 1 hour
+
+      if (error || !data) throw error || new Error('Failed to generate URL');
+
+      return { data: data.signedUrl, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  // ============================================================================
+  // COMMUNICATION METHODS
+  // ============================================================================
+
+  /**
+   * Get communications for a declaration
+   */
+  async getCommunications(
+    declarationId: string
+  ): Promise<ServiceResponse<CommunicationWithUser[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('capital_declaration_communications')
+        .select('*')
+        .eq('declaration_id', declarationId)
+        .eq('tenant_id', tenantId)
+        .order('communicated_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get user names for created_by
+      const communications: CommunicationWithUser[] = await Promise.all(
+        (data || []).map(async (comm) => {
+          let created_by_name: string | undefined;
+          if (comm.created_by) {
+            // Use RPC to get user info instead of admin API
+            const { data: userInfo } = await supabase.rpc('get_user_info', {
+              p_user_id: comm.created_by,
+            });
+
+            if (userInfo?.[0]) {
+              created_by_name = userInfo[0].full_name || userInfo[0].email?.split('@')[0] || undefined;
+            }
+          }
+
+          return {
+            ...comm,
+            created_by_name,
+          } as CommunicationWithUser;
+        })
+      );
+
+      return { data: communications, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Log a new communication
+   */
+  async logCommunication(
+    dto: CreateCommunicationDto
+  ): Promise<ServiceResponse<DeclarationCommunication>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const communicationData = {
+        tenant_id: tenantId,
+        declaration_id: dto.declaration_id,
+        communication_type: dto.communication_type,
+        direction: dto.direction || 'outbound',
+        subject: dto.subject || null,
+        content: dto.content || null,
+        outcome: dto.outcome || null,
+        letter_id: dto.letter_id || null,
+        communicated_at: dto.communicated_at || new Date().toISOString(),
+        created_by: user?.id,
+      };
+
+      const { data, error } = await supabase
+        .from('capital_declaration_communications')
+        .insert(communicationData)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('log_declaration_communication', data.id, {
+        declaration_id: dto.declaration_id,
+        communication_type: dto.communication_type,
+      });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get communication count for a declaration
+   */
+  async getCommunicationCount(declarationId: string): Promise<ServiceResponse<number>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { count, error } = await supabase
+        .from('capital_declaration_communications')
+        .select('*', { count: 'exact', head: true })
+        .eq('declaration_id', declarationId)
+        .eq('tenant_id', tenantId);
+
+      if (error) throw error;
+
+      return { data: count || 0, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get last communication date for a declaration
+   */
+  async getLastCommunicationDate(declarationId: string): Promise<ServiceResponse<string | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('capital_declaration_communications')
+        .select('communicated_at')
+        .eq('declaration_id', declarationId)
+        .eq('tenant_id', tenantId)
+        .order('communicated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return { data: data?.communicated_at || null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  // ============================================================================
+  // DASHBOARD QUERY METHODS
+  // ============================================================================
+
+  /**
+   * Get all declarations with dashboard sorting and filtering
+   * Sort order: critical first → urgent → by due_date (closest first) → by created_at
+   */
+  async getDashboard(params: {
+    page?: number;
+    pageSize?: number;
+    status?: CapitalDeclarationStatus;
+    year?: number;
+    searchQuery?: string;
+    priority?: DeclarationPriority;
+    assignedTo?: string; // Filter by assigned accountant
+  } = {}): Promise<ServiceResponse<{ declarations: DeclarationWithCounts[]; total: number }>> {
+    try {
+      const { page = 1, pageSize = 20, status, year, searchQuery, priority, assignedTo } = params;
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          clients(company_name),
+          client_groups(group_name_hebrew)
+        `, { count: 'exact' })
+        .eq('tenant_id', tenantId);
+
+      // Apply filters
+      if (status) query = query.eq('status', status);
+      if (year) query = query.eq('tax_year', year);
+      if (priority) query = query.eq('priority', priority);
+      if (assignedTo) query = query.eq('assigned_to', assignedTo);
+      if (searchQuery) {
+        query = query.or(`contact_name.ilike.%${searchQuery}%,contact_email.ilike.%${searchQuery}%`);
+      }
+
+      // Get all for client-side sorting (we'll paginate after sorting)
+      const { data: allData, count, error } = await query;
+
+      if (error) throw error;
+
+      // Sort by priority then tax_authority_due_date
+      const sortedData = (allData || []).sort((a, b) => {
+        // 1. Critical first
+        if (a.priority === 'critical' && b.priority !== 'critical') return -1;
+        if (b.priority === 'critical' && a.priority !== 'critical') return 1;
+
+        // 2. Urgent second
+        if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+        if (b.priority === 'urgent' && a.priority !== 'urgent') return 1;
+
+        // 3. By tax_authority_due_date (closest first, nulls last)
+        if (a.tax_authority_due_date && b.tax_authority_due_date) {
+          return new Date(a.tax_authority_due_date).getTime() - new Date(b.tax_authority_due_date).getTime();
+        }
+        if (a.tax_authority_due_date && !b.tax_authority_due_date) return -1;
+        if (!a.tax_authority_due_date && b.tax_authority_due_date) return 1;
+
+        // 4. By created_at (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      // Paginate
+      const from = (page - 1) * pageSize;
+      const paginatedData = sortedData.slice(from, from + pageSize);
+
+      // Enrich with document counts and communication info
+      const declarations: DeclarationWithCounts[] = await Promise.all(
+        paginatedData.map(async (decl) => {
+          // Get document counts
+          const { data: counts } = await supabase.rpc('get_declaration_document_counts', {
+            p_declaration_id: decl.id,
+          });
+
+          const document_counts: CategoryDocumentCount[] = (counts || []).map((c: { category: string; count: number }) => ({
+            category: c.category as CategoryDocumentCount['category'],
+            count: Number(c.count),
+          }));
+
+          const total_documents = document_counts.reduce((sum, c) => sum + c.count, 0);
+          const categories_complete = document_counts.filter(c => c.count > 0).length;
+
+          // Get last communication
+          const { data: lastComm } = await supabase
+            .from('capital_declaration_communications')
+            .select('communicated_at')
+            .eq('declaration_id', decl.id)
+            .order('communicated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          // Get communication count
+          const { count: commCount } = await supabase
+            .from('capital_declaration_communications')
+            .select('*', { count: 'exact', head: true })
+            .eq('declaration_id', decl.id);
+
+          // Get assigned user name
+          let assigned_to_name: string | undefined;
+          if (decl.assigned_to) {
+            const { data: userData } = await supabase.rpc('get_user_email', {
+              p_user_id: decl.assigned_to,
+            });
+            if (userData) {
+              assigned_to_name = userData;
+            }
+          }
+
+          return {
+            ...decl,
+            document_counts,
+            total_documents,
+            categories_complete,
+            client_name: decl.clients?.company_name,
+            group_name: decl.client_groups?.group_name_hebrew,
+            assigned_to_name,
+            last_communication_at: lastComm?.communicated_at || null,
+            communication_count: commCount || 0,
+          } as DeclarationWithCounts;
+        })
+      );
+
+      return { data: { declarations, total: count || 0 }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get accountants in tenant for assignment dropdown
+   */
+  async getTenantAccountants(): Promise<ServiceResponse<{ id: string; name: string; email: string }[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('user_tenant_access')
+        .select('user_id, role')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .in('role', ['admin', 'accountant']);
+
+      if (error) throw error;
+
+      // Get user details for each
+      const accountants = await Promise.all(
+        (data || []).map(async (uta) => {
+          const { data: userInfo } = await supabase.rpc('get_user_info', {
+            p_user_id: uta.user_id,
+          });
+
+          const info = userInfo?.[0] || { email: '', full_name: 'Unknown' };
+
+          return {
+            id: uta.user_id,
+            name: info.full_name || info.email?.split('@')[0] || 'Unknown',
+            email: info.email || '',
+          };
+        })
+      );
+
+      return { data: accountants, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Generate WhatsApp link for reminder
+   */
+  generateWhatsAppLink(
+    phone: string,
+    contactName: string,
+    taxYear: number,
+    portalLink: string,
+    tenantName: string,
+    assignedAccountantName?: string
+  ): string {
+    // Format phone for WhatsApp (remove leading 0, add 972)
+    let formattedPhone = phone.replace(/[\s-]/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '972' + formattedPhone.slice(1);
+    }
+
+    // Build signature:
+    // [שם רואה החשבון המטפל]
+    // משרד רואי חשבון
+    // [שם המשרד]
+    const signatureLines = [];
+    if (assignedAccountantName) {
+      signatureLines.push(assignedAccountantName);
+    }
+    signatureLines.push('משרד רואי חשבון');
+    signatureLines.push(tenantName);
+    const signature = signatureLines.join('\n');
+
+    const message = `שלום ${contactName},
+
+זוהי תזכורת בנוגע להצהרת ההון לשנת ${taxYear}.
+נא להעלות את המסמכים הנדרשים בקישור:
+${portalLink}
+
+בברכה,
+${signature}`;
+
+    return `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
   }
 }
 
