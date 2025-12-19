@@ -953,6 +953,30 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             >
               <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: '#E5E5E5' }} />
             </Button>
+            {/* Highlight Color Picker */}
+            <div className="relative">
+              <input
+                type="color"
+                className="absolute opacity-0 w-6 h-6 cursor-pointer"
+                value={editor.getAttributes('highlight').color || '#FEF08A'}
+                onChange={(e) => editor.chain().focus().toggleHighlight({ color: e.target.value }).run()}
+                title="בחר צבע הדגשה מותאם"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-6 h-6 p-0 pointer-events-none"
+                title="בחר צבע הדגשה מותאם"
+              >
+                <div
+                  className="w-4 h-4 rounded-full border-2 border-dashed border-gray-400"
+                  style={{
+                    background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)'
+                  }}
+                />
+              </Button>
+            </div>
             <Button
               type="button"
               variant="ghost"
