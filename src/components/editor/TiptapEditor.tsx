@@ -198,7 +198,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       link: false, // Disable - we use custom Link extension below
     }),
     TextAlign.configure({
-      types: ['paragraph', 'image'], // Apply to paragraphs and images
+      types: ['paragraph', 'image', 'bulletList', 'orderedList'], // Include list types for proper toggle support
       alignments: ['left', 'center', 'right'],
       defaultAlignment: 'right', // RTL default
     }),
@@ -502,7 +502,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             type="button"
             variant={editor.isActive('bulletList') ? 'secondary' : 'ghost'}
             size="sm"
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            onClick={() => editor.chain().focus().toggleList('bulletList', 'listItem').run()}
             title="רשימה עם תבליטים"
           >
             <List className="h-4 w-4" />
@@ -512,7 +512,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             type="button"
             variant={editor.isActive('orderedList') ? 'secondary' : 'ghost'}
             size="sm"
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            onClick={() => editor.chain().focus().toggleList('orderedList', 'listItem').run()}
             title="רשימה ממוספרת"
           >
             <ListOrdered className="h-4 w-4" />
