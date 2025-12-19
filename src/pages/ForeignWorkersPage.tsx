@@ -11,7 +11,7 @@ import { AccountantTurnoverTab, type AccountantTurnoverTabRef } from '@/componen
 import { IsraeliWorkersTab, type IsraeliWorkersTabRef } from '@/components/foreign-workers/tabs/IsraeliWorkersTab';
 import { TurnoverApprovalTab } from '@/components/foreign-workers/tabs/TurnoverApprovalTab';
 import { SalaryReportTab, type SalaryReportTabRef } from '@/components/foreign-workers/tabs/SalaryReportTab';
-import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
+import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { MonthDeletionDialog, MonthLimitBadge, MonthRangeInitializer } from '@/components/foreign-workers/shared';
 import { MonthRangeProvider, useMonthRange } from '@/contexts/MonthRangeContext';
 import { MonthlyDataService } from '@/services/monthly-data.service';
@@ -91,7 +91,7 @@ function ForeignWorkersPageContent({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
   // PDF sharing state
-  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
   const [generatedLetterId, setGeneratedLetterId] = useState<string | null>(null);
@@ -349,7 +349,7 @@ function ForeignWorkersPageContent({
       // Open share dialog instead of auto-download
       setGeneratedPdfUrl(pdfData.pdfUrl);
       setGeneratedPdfName(pdfFileName);
-      setShowShareDialog(true);
+      setShowSharePanel(true);
     } catch (error) {
       console.error('Error generating document:', error);
       toast.error('שגיאה ביצירת המסמך');
@@ -690,6 +690,19 @@ function ForeignWorkersPageContent({
         </Button>
       </div>
 
+      {/* Share PDF Panel - Inline after generating PDF */}
+      <SharePdfPanel
+        show={showSharePanel}
+        onHide={() => setShowSharePanel(false)}
+        pdfUrl={generatedPdfUrl || ''}
+        pdfName={generatedPdfName}
+        clientName={formState.sharedData.company_name || ''}
+        clientId={selectedClientId || undefined}
+        htmlContent={generatedHtmlContent}
+        letterId={generatedLetterId || undefined}
+        defaultSubject={generatedSubject || FOREIGN_WORKER_TABS[formState.activeTab]?.label || 'מסמך עובדים זרים'}
+      />
+
       {/* Instructions */}
       {!isSharedDataComplete && (
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
@@ -719,18 +732,6 @@ function ForeignWorkersPageContent({
         </DialogContent>
       </Dialog>
 
-      {/* Share PDF Dialog */}
-      <SharePdfDialog
-        open={showShareDialog}
-        onClose={() => setShowShareDialog(false)}
-        pdfUrl={generatedPdfUrl || ''}
-        pdfName={generatedPdfName}
-        clientName={formState.sharedData.company_name || ''}
-        clientId={selectedClientId || undefined}
-        htmlContent={generatedHtmlContent}
-        letterId={generatedLetterId || undefined}
-        defaultSubject={generatedSubject || FOREIGN_WORKER_TABS[formState.activeTab]?.label || 'מסמך עובדים זרים'}
-      />
 
       {/* Month Range Deletion Confirmation Dialog */}
       <MonthDeletionDialog />

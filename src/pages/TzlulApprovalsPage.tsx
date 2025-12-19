@@ -22,7 +22,7 @@ import { SummerBonusForm } from '@/components/tzlul-approvals/forms/SummerBonusF
 import { ExcellenceBonusForm } from '@/components/tzlul-approvals/forms/ExcellenceBonusForm';
 import { EmployeePaymentsForm } from '@/components/tzlul-approvals/forms/EmployeePaymentsForm';
 import { TransferredAmountsForm } from '@/components/tzlul-approvals/forms/TransferredAmountsForm';
-import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
+import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
 import { permissionsService } from '@/services/permissions.service';
@@ -61,7 +61,7 @@ export function TzlulApprovalsPage() {
   const [previewHtml, setPreviewHtml] = useState<string>('');
 
   // PDF sharing state
-  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
   const [generatedLetterId, setGeneratedLetterId] = useState<string | null>(null);
@@ -247,7 +247,7 @@ export function TzlulApprovalsPage() {
       // Open share dialog
       setGeneratedPdfUrl(pdfData.pdfUrl);
       setGeneratedPdfName(pdfFileName);
-      setShowShareDialog(true);
+      setShowSharePanel(true);
     } catch (error) {
       console.error('Error generating document:', error);
       toast.error('שגיאה ביצירת המסמך');
@@ -579,6 +579,19 @@ export function TzlulApprovalsPage() {
         </Button>
       </div>
 
+      {/* Share PDF Panel - Inline after generating PDF */}
+      <SharePdfPanel
+        show={showSharePanel}
+        onHide={() => setShowSharePanel(false)}
+        pdfUrl={generatedPdfUrl || ''}
+        pdfName={generatedPdfName}
+        clientName={TZLUL_CLIENT_NAME}
+        clientId={tzlulClientId || undefined}
+        htmlContent={generatedHtmlContent}
+        letterId={generatedLetterId || undefined}
+        defaultSubject={generatedSubject || TZLUL_LETTER_TYPES[formState.selectedLetterType].label}
+      />
+
       {/* Instructions */}
       {!formState.sharedData.document_date && (
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
@@ -611,18 +624,6 @@ export function TzlulApprovalsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Share PDF Dialog */}
-      <SharePdfDialog
-        open={showShareDialog}
-        onClose={() => setShowShareDialog(false)}
-        pdfUrl={generatedPdfUrl || ''}
-        pdfName={generatedPdfName}
-        clientName={TZLUL_CLIENT_NAME}
-        clientId={tzlulClientId || undefined}
-        htmlContent={generatedHtmlContent}
-        letterId={generatedLetterId || undefined}
-        defaultSubject={generatedSubject || TZLUL_LETTER_TYPES[formState.selectedLetterType].label}
-      />
 
       {/* Existing Letter Dialog */}
       <AlertDialog open={existingLetterDialog.open} onOpenChange={(open) => !open && setExistingLetterDialog({ open: false, existingLetterId: null, existingLetterDate: null })}>

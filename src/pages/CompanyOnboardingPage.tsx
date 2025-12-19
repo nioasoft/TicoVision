@@ -30,7 +30,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Building2, Eye, Download, Loader2, Users, User } from 'lucide-react';
 import { CompanyOnboardingTypeSelector } from '@/components/company-onboarding/CompanyOnboardingTypeSelector';
 import { VatRegistrationForm } from '@/components/company-onboarding/forms/VatRegistrationForm';
-import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
+import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { Combobox } from '@/components/ui/combobox';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
@@ -67,7 +67,7 @@ export function CompanyOnboardingPage() {
   const [previewHtml, setPreviewHtml] = useState<string>('');
 
   // PDF sharing state
-  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
   const [generatedLetterId, setGeneratedLetterId] = useState<string | null>(null);
@@ -250,7 +250,7 @@ export function CompanyOnboardingPage() {
       const pdfFileName = `${subject} - ${recipientName}.pdf`;
       setGeneratedPdfUrl(pdfData.pdfUrl);
       setGeneratedPdfName(pdfFileName);
-      setShowShareDialog(true);
+      setShowSharePanel(true);
 
       // Auto-save PDF reference to File Manager
       if (formState.selectedClientId) {
@@ -644,6 +644,19 @@ export function CompanyOnboardingPage() {
         </Button>
       </div>
 
+      {/* Share PDF Panel - Inline after generating PDF */}
+      <SharePdfPanel
+        show={showSharePanel}
+        onHide={() => setShowSharePanel(false)}
+        pdfUrl={generatedPdfUrl || ''}
+        pdfName={generatedPdfName}
+        clientName={formState.sharedData.company_name || ''}
+        clientId={formState.selectedClientId || undefined}
+        htmlContent={generatedHtmlContent}
+        letterId={generatedLetterId || undefined}
+        defaultSubject={generatedSubject || formState.documentData.vatRegistration.subject || COMPANY_ONBOARDING_LETTER_TYPES[formState.selectedLetterType].label}
+      />
+
       {/* Instructions */}
       {!hasRecipient && (
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
@@ -678,18 +691,6 @@ export function CompanyOnboardingPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Share PDF Dialog */}
-      <SharePdfDialog
-        open={showShareDialog}
-        onClose={() => setShowShareDialog(false)}
-        pdfUrl={generatedPdfUrl || ''}
-        pdfName={generatedPdfName}
-        clientName={formState.sharedData.company_name || ''}
-        clientId={formState.selectedClientId || undefined}
-        htmlContent={generatedHtmlContent}
-        letterId={generatedLetterId || undefined}
-        defaultSubject={generatedSubject || formState.documentData.vatRegistration.subject || COMPANY_ONBOARDING_LETTER_TYPES[formState.selectedLetterType].label}
-      />
 
       {/* Existing Letter Dialog */}
       <AlertDialog open={existingLetterDialog.open} onOpenChange={(open) => !open && setExistingLetterDialog({ open: false, existingLetterId: null, existingLetterDate: null })}>

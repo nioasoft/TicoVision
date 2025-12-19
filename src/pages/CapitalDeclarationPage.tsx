@@ -32,7 +32,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
-import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
+import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { Combobox } from '@/components/ui/combobox';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
@@ -74,7 +74,7 @@ export function CapitalDeclarationPage() {
   const [portalLinkCopied, setPortalLinkCopied] = useState(false);
 
   // PDF sharing state
-  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
   const [generatedLetterId, setGeneratedLetterId] = useState<string | null>(null);
@@ -291,7 +291,7 @@ export function CapitalDeclarationPage() {
           const pdfFileName = `הצהרת הון - ${formState.contact_name}.pdf`;
           setGeneratedPdfUrl(pdfData.pdfUrl);
           setGeneratedPdfName(pdfFileName);
-          setShowShareDialog(true);
+          setShowSharePanel(true);
         }
       }
 
@@ -543,6 +543,25 @@ export function CapitalDeclarationPage() {
               )}
             </Button>
           </div>
+
+          {/* Share PDF Panel - Inline after generating PDF */}
+          {generatedPdfUrl && generatedLetterId && (
+            <SharePdfPanel
+              show={showSharePanel}
+              onHide={() => setShowSharePanel(false)}
+              pdfUrl={generatedPdfUrl}
+              pdfName={generatedPdfName}
+              clientName={formState.contact_name}
+              clientId={formState.client_id || undefined}
+              htmlContent={generatedHtmlContent}
+              letterId={generatedLetterId}
+              defaultSubject={generatedSubject}
+              defaultEmail={formState.contact_email || undefined}
+              defaultEmailType="html"
+              savePdfToFolder={!!formState.client_id}
+              fileCategory="letters"
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -563,24 +582,6 @@ export function CapitalDeclarationPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Share PDF Dialog */}
-      {generatedPdfUrl && generatedLetterId && (
-        <SharePdfDialog
-          open={showShareDialog}
-          onOpenChange={setShowShareDialog}
-          pdfUrl={generatedPdfUrl}
-          pdfName={generatedPdfName}
-          clientName={formState.contact_name}
-          clientId={formState.client_id || undefined}
-          htmlContent={generatedHtmlContent}
-          letterId={generatedLetterId}
-          defaultSubject={generatedSubject}
-          defaultEmail={formState.contact_email || undefined}
-          defaultEmailType="html"
-          savePdfToFolder={!!formState.client_id}
-          fileCategory="letters"
-        />
-      )}
     </div>
   );
 }

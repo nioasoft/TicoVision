@@ -13,14 +13,14 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Mail, Eye } from 'lucide-react';
+import { Loader2, Mail, Eye, ArrowRight } from 'lucide-react';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
 import { templateService } from '@/modules/letters/services/template.service';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import type { DeclarationWithCounts } from '@/types/capital-declaration.types';
 import { format } from 'date-fns';
-import { SharePdfDialog } from '@/components/foreign-workers/SharePdfDialog';
+import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 
 interface SendReminderDialogProps {
   open: boolean;
@@ -39,8 +39,8 @@ export function SendReminderDialog({
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // SharePdfDialog state
-  const [showShareDialog, setShowShareDialog] = useState(false);
+  // SharePdfPanel state
+  const [showSharePanel, setShowSharePanel] = useState(false);
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
   const [generatedHtmlContent, setGeneratedHtmlContent] = useState<string | null>(null);
@@ -131,16 +131,15 @@ export function SendReminderDialog({
         return;
       }
 
-      // Set up for SharePdfDialog
+      // Set up for SharePdfPanel
       const pdfFileName = `תזכורת הצהרת הון ${declaration.tax_year} - ${declaration.contact_name}.pdf`;
       setGeneratedPdfUrl(pdfData.pdfUrl);
       setGeneratedPdfName(pdfFileName);
       setGeneratedHtmlContent(letter.html_content);
       setGeneratedLetterId(letter.id);
 
-      // Close this dialog's preview and open SharePdfDialog
-      setShowPreview(false);
-      setShowShareDialog(true);
+      // Show the share panel inline
+      setShowSharePanel(true);
 
       toast.success('המכתב נוצר בהצלחה');
     } finally {
@@ -148,71 +147,102 @@ export function SendReminderDialog({
     }
   };
 
-  if (showPreview && previewHtml) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="rtl:text-right">תצוגה מקדימה - מכתב תזכורת</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto border rounded-lg bg-white">
-            <iframe
-              srcDoc={previewHtml}
-              className="w-full h-[60vh]"
-              title="תצוגה מקדימה"
-            />
-          </div>
-          <DialogFooter className="rtl:flex-row-reverse">
-            <Button variant="outline" onClick={() => setShowPreview(false)}>
-              חזרה
-            </Button>
-            <Button onClick={handleSend} disabled={loading}>
-              {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              צור מכתב
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Handle SharePdfDialog close
-  const handleShareDialogClose = () => {
-    setShowShareDialog(false);
+  const handleClose = () => {
+    setShowPreview(false);
+    setShowSharePanel(false);
     setGeneratedPdfUrl(null);
     setGeneratedPdfName('');
     setGeneratedHtmlContent(null);
     setGeneratedLetterId(null);
     onOpenChange(false);
-    onSuccess?.();
+    if (showSharePanel) {
+      onSuccess?.();
+    }
   };
 
-  // Show SharePdfDialog after PDF generation
-  if (showShareDialog && generatedPdfUrl) {
+  const handleSharePanelHide = () => {
+    setShowSharePanel(false);
+  };
+
+  // Preview view with optional SharePdfPanel
+  if (showPreview && previewHtml) {
     return (
-      <SharePdfDialog
-        open={showShareDialog}
-        onOpenChange={handleShareDialogClose}
-        pdfUrl={generatedPdfUrl}
-        pdfName={generatedPdfName}
-        clientName={declaration.contact_name}
-        clientId={declaration.client_id || undefined}
-        htmlContent={generatedHtmlContent || undefined}
-        letterId={generatedLetterId || undefined}
-        defaultSubject={`תזכורת הצהרת הון ${declaration.tax_year} - ${declaration.contact_name}`}
-        defaultEmail={declaration.contact_email || undefined}
-        defaultEmailType="html"
-        onEmailSent={() => {
-          // Log email communication
-          capitalDeclarationService.logCommunication({
-            declaration_id: declaration.id,
-            communication_type: 'letter',
-            direction: 'outbound',
-            subject: `מייל תזכורת - הצהרת הון ${declaration.tax_year}`,
-            letter_id: generatedLetterId || undefined,
-          });
-        }}
-      />
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="rtl:text-right">תצוגה מקדימה - מכתב תזכורת</DialogTitle>
+          </DialogHeader>
+
+          {!showSharePanel ? (
+            <>
+              <div className="flex-1 overflow-auto border rounded-lg bg-white">
+                <iframe
+                  srcDoc={previewHtml}
+                  className="w-full h-[50vh]"
+                  title="תצוגה מקדימה"
+                />
+              </div>
+              <DialogFooter className="rtl:flex-row-reverse">
+                <Button variant="outline" onClick={() => setShowPreview(false)}>
+                  חזרה
+                </Button>
+                <Button onClick={handleSend} disabled={loading}>
+                  {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                  צור מכתב
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="flex-1 overflow-auto">
+                {/* Collapsed preview */}
+                <details className="mb-4">
+                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+                    הצג תצוגה מקדימה של המכתב
+                  </summary>
+                  <div className="border rounded-lg bg-white mt-2">
+                    <iframe
+                      srcDoc={previewHtml}
+                      className="w-full h-[30vh]"
+                      title="תצוגה מקדימה"
+                    />
+                  </div>
+                </details>
+
+                {/* Share Panel Inline */}
+                <SharePdfPanel
+                  show={showSharePanel}
+                  onHide={handleSharePanelHide}
+                  pdfUrl={generatedPdfUrl || ''}
+                  pdfName={generatedPdfName}
+                  clientName={declaration.contact_name}
+                  clientId={declaration.client_id || undefined}
+                  htmlContent={generatedHtmlContent || undefined}
+                  letterId={generatedLetterId || undefined}
+                  defaultSubject={`תזכורת הצהרת הון ${declaration.tax_year} - ${declaration.contact_name}`}
+                  defaultEmail={declaration.contact_email || undefined}
+                  defaultEmailType="html"
+                  onEmailSent={() => {
+                    // Log email communication
+                    capitalDeclarationService.logCommunication({
+                      declaration_id: declaration.id,
+                      communication_type: 'letter',
+                      direction: 'outbound',
+                      subject: `מייל תזכורת - הצהרת הון ${declaration.tax_year}`,
+                      letter_id: generatedLetterId || undefined,
+                    });
+                  }}
+                />
+              </div>
+              <DialogFooter className="rtl:flex-row-reverse">
+                <Button variant="outline" onClick={handleClose}>
+                  סגור
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     );
   }
 
