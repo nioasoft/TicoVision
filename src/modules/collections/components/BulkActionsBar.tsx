@@ -300,7 +300,6 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
             <Textarea
               value={noteContent}
               onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="הזן את תוכן ההערה..."
               className="min-h-[120px] rtl:text-right"
               dir="rtl"
             />

@@ -2023,7 +2023,6 @@ export function FeesPage() {
                           id="retainer_adjustment_reason"
                           value={formData.retainer_real_adjustment_reason}
                           onChange={(e) => setFormData({ ...formData, retainer_real_adjustment_reason: e.target.value })}
-                          placeholder="תיאור הסיבה לתוספת..."
                           rows={3}
                         />
                       </div>
@@ -2132,7 +2131,6 @@ export function FeesPage() {
                       id="adjustment_reason"
                       value={formData.real_adjustment_reason}
                       onChange={(e) => setFormData({ ...formData, real_adjustment_reason: e.target.value })}
-                      placeholder="תיאור הסיבה לתוספת..."
                       rows={3}
                     />
                   </div>
@@ -2165,7 +2163,6 @@ export function FeesPage() {
                         value={formData.client_requested_adjustment_note || ''}
                         onChange={(e) => setFormData({ ...formData, client_requested_adjustment_note: e.target.value })}
                         className="text-right"
-                        placeholder="למשל: לפי הסכמה טלפונית"
                       />
                       <p className="text-xs text-gray-500 mt-1 text-right">
                         {formData.client_requested_adjustment_note?.length || 0}/50 תווים
@@ -2179,7 +2176,6 @@ export function FeesPage() {
                       id="notes"
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="הערות נוספות..."
                       rows={2}
                     />
                   </div>
@@ -2253,7 +2249,6 @@ export function FeesPage() {
                           id="bookkeeping_adjustment_reason"
                           value={formData.bookkeeping_real_adjustment_reason}
                           onChange={(e) => setFormData({ ...formData, bookkeeping_real_adjustment_reason: e.target.value })}
-                          placeholder="תיאור הסיבה לתוספת..."
                           rows={3}
                         />
                       </div>

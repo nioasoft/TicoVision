@@ -125,7 +125,6 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="הערות על התשלום, מספר אסמכתא, וכו'"
               rows={3}
               className="rtl:text-right ltr:text-left"
             />

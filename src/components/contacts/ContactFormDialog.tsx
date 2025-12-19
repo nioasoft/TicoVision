@@ -280,7 +280,6 @@ export function ContactFormDialog({
                     id="full_name"
                     value={formData.full_name}
                     onChange={(e) => handleFieldChange('full_name', e.target.value)}
-                    placeholder="שם מלא"
                     dir="rtl"
                   />
                 </div>
@@ -293,7 +292,6 @@ export function ContactFormDialog({
                     id="job_title"
                     value={formData.job_title}
                     onChange={(e) => handleFieldChange('job_title', e.target.value)}
-                    placeholder="תפקיד"
                     dir="rtl"
                   />
                 </div>
@@ -309,7 +307,6 @@ export function ContactFormDialog({
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleFieldChange('email', e.target.value)}
-                    placeholder="example@email.com"
                     dir="ltr"
                     className="text-left"
                   />
@@ -377,7 +374,6 @@ export function ContactFormDialog({
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => handleFieldChange('notes', e.target.value)}
-                  placeholder="הערות נוספות..."
                   dir="rtl"
                   rows={3}
                 />

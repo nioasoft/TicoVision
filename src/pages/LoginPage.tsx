@@ -176,7 +176,6 @@ export function LoginPage() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="your@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
@@ -189,7 +188,6 @@ export function LoginPage() {
                     <Input
                       id="password"
                       type="password"
-                      placeholder="הכנס סיסמה"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -226,7 +224,6 @@ export function LoginPage() {
                     <Input
                       id="reg-name"
                       type="text"
-                      placeholder="ישראל ישראלי"
                       value={regFullName}
                       onChange={(e) => setRegFullName(e.target.value)}
                       required
@@ -239,7 +236,6 @@ export function LoginPage() {
                     <Input
                       id="reg-email"
                       type="email"
-                      placeholder="your@email.com"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       required
@@ -253,7 +249,6 @@ export function LoginPage() {
                     <Input
                       id="reg-password"
                       type="password"
-                      placeholder="לפחות 8 תווים"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}
                       required
@@ -267,7 +262,6 @@ export function LoginPage() {
                     <Input
                       id="reg-confirm-password"
                       type="password"
-                      placeholder="הזן שוב את הסיסמה"
                       value={regConfirmPassword}
                       onChange={(e) => setRegConfirmPassword(e.target.value)}
                       required
@@ -314,7 +308,6 @@ export function LoginPage() {
                         <Input
                           id="reg-company"
                           type="text"
-                          placeholder="חברת הדוגמה בע״מ"
                           value={regCompanyName}
                           onChange={(e) => setRegCompanyName(e.target.value)}
                           disabled={isLoading}
@@ -340,7 +333,6 @@ export function LoginPage() {
                     <Label htmlFor="reg-message">הודעה למנהל (אופציונלי)</Label>
                     <Textarea
                       id="reg-message"
-                      placeholder="מידע נוסף שתרצה לשתף..."
                       value={regMessage}
                       onChange={(e) => setRegMessage(e.target.value)}
                       disabled={isLoading}

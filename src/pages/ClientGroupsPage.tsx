@@ -802,7 +802,6 @@ export default function ClientGroupsPage() {
                     })
                   }
                   dir="rtl"
-                  placeholder="שם הרחוב ומספר"
                 />
               </div>
               <div>
@@ -838,7 +837,6 @@ export default function ClientGroupsPage() {
                   }}
                   maxLength={7}
                   dir="ltr"
-                  placeholder="1234567"
                 />
               </div>
             </div>
@@ -858,7 +856,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.company_structure_link}
                   onChange={(e) => setFormData({ ...formData, company_structure_link: e.target.value })}
-                  placeholder="https://..."
                   dir="ltr"
                 />
               </div>
@@ -869,7 +866,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.canva_link}
                   onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
-                  placeholder="https://..."
                   dir="ltr"
                 />
               </div>
@@ -880,7 +876,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.google_drive_link}
                   onChange={(e) => setFormData({ ...formData, google_drive_link: e.target.value })}
-                  placeholder="https://drive.google.com/..."
                   dir="ltr"
                 />
               </div>
@@ -945,7 +940,6 @@ export default function ClientGroupsPage() {
                     })
                   }
                   dir="rtl"
-                  placeholder="שם הרחוב ומספר"
                 />
               </div>
               <div>
@@ -981,7 +975,6 @@ export default function ClientGroupsPage() {
                   }}
                   maxLength={7}
                   dir="ltr"
-                  placeholder="1234567"
                 />
               </div>
             </div>
@@ -994,7 +987,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.company_structure_link}
                   onChange={(e) => setFormData({ ...formData, company_structure_link: e.target.value })}
-                  placeholder="https://..."
                   dir="ltr"
                 />
               </div>
@@ -1005,7 +997,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.canva_link}
                   onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
-                  placeholder="https://..."
                   dir="ltr"
                 />
               </div>
@@ -1016,7 +1007,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.google_drive_link}
                   onChange={(e) => setFormData({ ...formData, google_drive_link: e.target.value })}
-                  placeholder="https://drive.google.com/..."
                   dir="ltr"
                 />
               </div>

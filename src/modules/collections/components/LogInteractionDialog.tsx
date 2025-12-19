@@ -119,7 +119,6 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
               id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder="למשל: התקשרתי לגבי שכר טרחה 2025"
               required
               className="rtl:text-right ltr:text-left"
             />
@@ -131,7 +130,6 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="פרטים נוספים על השיחה/פגישה..."
               rows={4}
               className="rtl:text-right ltr:text-left"
             />
@@ -143,7 +141,6 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
               id="outcome"
               value={outcome}
               onChange={(e) => setOutcome(e.target.value)}
-              placeholder="למשל: הבטיח לשלם עד סוף החודש"
               className="rtl:text-right ltr:text-left"
             />
           </div>

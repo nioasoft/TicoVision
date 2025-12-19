@@ -636,7 +636,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   pattern="\d{7}"
                   required
                   dir="ltr"
-                  placeholder="1234567"
                 />
                 {formData.address?.postal_code &&
                  !validateIsraeliPostalCode(formData.address.postal_code) && (
@@ -1004,7 +1003,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   type="url"
                   value={formData.google_drive_link || ''}
                   onChange={(e) => handleFormChange('google_drive_link', e.target.value)}
-                  placeholder="https://drive.google.com/..."
                   dir="ltr"
                 />
               </div>

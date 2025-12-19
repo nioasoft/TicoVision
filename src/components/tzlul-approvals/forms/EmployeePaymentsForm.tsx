@@ -72,7 +72,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                 type="text"
                 value={value.tender_number || ''}
                 onChange={(e) => onChange({ ...value, tender_number: e.target.value })}
-                placeholder="לדוגמה: שנ/20/2023"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"
@@ -89,7 +88,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                 type="text"
                 value={value.municipality_name || ''}
                 onChange={(e) => onChange({ ...value, municipality_name: e.target.value })}
-                placeholder="לדוגמה: עיריית אשקלון"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"
@@ -106,7 +104,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                 type="text"
                 value={value.period_start || ''}
                 onChange={(e) => onChange({ ...value, period_start: e.target.value })}
-                placeholder="לדוגמה: 09/25"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"
@@ -123,7 +120,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                 type="text"
                 value={value.period_end || ''}
                 onChange={(e) => onChange({ ...value, period_end: e.target.value })}
-                placeholder="לדוגמה: 09/25"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"
@@ -173,7 +169,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                       <Input
                         value={emp.name}
                         onChange={(e) => handleEmployeeChange(index, 'name', e.target.value)}
-                        placeholder="שם העובד"
                         disabled={disabled}
                         className="text-right rtl:text-right"
                         dir="rtl"
@@ -181,7 +176,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                       <Input
                         value={emp.id_number}
                         onChange={(e) => handleEmployeeChange(index, 'id_number', e.target.value)}
-                        placeholder="ת.ז."
                         disabled={disabled}
                         className="text-right rtl:text-right"
                         dir="rtl"
@@ -189,7 +183,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                       <Input
                         value={emp.month}
                         onChange={(e) => handleEmployeeChange(index, 'month', e.target.value)}
-                        placeholder="חודש (ספט-25)"
                         disabled={disabled}
                         className="text-right rtl:text-right"
                         dir="rtl"
@@ -198,7 +191,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                         type="number"
                         value={emp.amount || ''}
                         onChange={(e) => handleEmployeeChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                        placeholder="סכום"
                         disabled={disabled}
                         className="text-right rtl:text-right"
                         dir="rtl"
@@ -206,7 +198,6 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
                       <Input
                         value={emp.payment_date}
                         onChange={(e) => handleEmployeeChange(index, 'payment_date', e.target.value)}
-                        placeholder="תאריך תשלום (09/10/25)"
                         disabled={disabled}
                         className="text-right rtl:text-right col-span-2"
                         dir="rtl"

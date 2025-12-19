@@ -182,7 +182,6 @@ export function SetPasswordPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="הכנס סיסמה..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -209,7 +208,6 @@ export function SetPasswordPage() {
                   <Input
                     id="confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="הכנס סיסמה שוב..."
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required

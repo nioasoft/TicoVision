@@ -306,7 +306,6 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
         )}
 
         <Input
-          placeholder="תיאור הקובץ (אופציונלי, עד 50 תווים)"
           value={uploadDescription}
           onChange={(e) => setUploadDescription(e.target.value)}
           maxLength={50}
@@ -398,7 +397,6 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
                             value={editingDescription}
                             onChange={(e) => setEditingDescription(e.target.value)}
                             maxLength={50}
-                            placeholder="תיאור הקובץ"
                             className="rtl:text-right"
                           />
                           <p className="text-xs text-gray-500 rtl:text-right">

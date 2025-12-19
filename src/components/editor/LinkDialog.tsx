@@ -86,7 +86,6 @@ export function LinkDialog({
               id="text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={isButton ? 'לחץ כאן' : 'טקסט הקישור'}
               dir="rtl"
             />
           </div>
@@ -97,7 +96,6 @@ export function LinkDialog({
               id="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
               dir="ltr"
               className="text-left"
             />

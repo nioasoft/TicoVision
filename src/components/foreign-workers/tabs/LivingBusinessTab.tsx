@@ -39,7 +39,6 @@ export function LivingBusinessTab({ value, onChange, disabled }: LivingBusinessT
               min="1"
               value={value.foreign_experts_count || ''}
               onChange={(e) => handleForeignExpertsChange(e.target.value)}
-              placeholder="לדוגמה: 5"
               disabled={disabled}
               className="text-right rtl:text-right ltr:text-left"
               dir="rtl"

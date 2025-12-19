@@ -196,7 +196,6 @@ export const DisputesPage: React.FC = () => {
                 id="resolution-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="הערות על הפתרון..."
                 rows={4}
                 className="rtl:text-right ltr:text-left"
               />

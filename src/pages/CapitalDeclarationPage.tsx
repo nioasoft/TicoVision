@@ -393,7 +393,6 @@ export function CapitalDeclarationPage() {
             <Input
               value={formState.subject}
               onChange={(e) => setFormState(prev => ({ ...prev, subject: e.target.value }))}
-              placeholder="הצהרת הון"
               className="text-right"
               dir="rtl"
             />
@@ -478,7 +477,6 @@ export function CapitalDeclarationPage() {
             <Textarea
               value={formState.notes}
               onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="הערות פנימיות..."
               className="text-right"
               dir="rtl"
               rows={3}

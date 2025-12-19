@@ -533,7 +533,6 @@ export function CompanyOnboardingPage() {
               disabled={generating}
               className="text-right"
               dir="rtl"
-              placeholder='לידי יהודה פיינגנבאום סמנכ"ל כספים'
             />
             <p className="text-sm text-gray-500 text-right">
               שם איש קשר ותפקיד (יופיע מתחת לשם החברה)
@@ -581,7 +580,6 @@ export function CompanyOnboardingPage() {
                 disabled
                 className="text-right bg-gray-50"
                 dir="rtl"
-                placeholder="יופיע לאחר בחירת לקוח/קבוצה"
               />
             </div>
           </div>

@@ -231,7 +231,6 @@ export function BranchManagementDialog({
                       id="branch-name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="לדוגמה: סניף תל אביב"
                       className="text-right"
                       dir="rtl"
                     />

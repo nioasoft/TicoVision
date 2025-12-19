@@ -562,7 +562,6 @@ export function SharePdfDialog({
                     <div key={index} className="flex gap-2">
                       <Input
                         type="email"
-                        placeholder="example@email.com"
                         value={email}
                         onChange={(e) => updateAdditionalEmail(index, e.target.value)}
                         dir="ltr"
@@ -679,7 +678,6 @@ export function SharePdfDialog({
                 type="email"
                 value={legacyEmail}
                 onChange={(e) => setLegacyEmail(e.target.value)}
-                placeholder="example@email.com"
                 dir="ltr"
                 className="text-left"
                 disabled={sending}

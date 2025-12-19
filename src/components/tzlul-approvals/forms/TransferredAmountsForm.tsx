@@ -31,7 +31,6 @@ export function TransferredAmountsForm({ value, onChange, disabled }: Transferre
                 type="text"
                 value={value.period_start || ''}
                 onChange={(e) => onChange({ ...value, period_start: e.target.value })}
-                placeholder="לדוגמה: 01/01/24"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"
@@ -48,7 +47,6 @@ export function TransferredAmountsForm({ value, onChange, disabled }: Transferre
                 type="text"
                 value={value.period_end || ''}
                 onChange={(e) => onChange({ ...value, period_end: e.target.value })}
-                placeholder="לדוגמה: 31/08/25"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"
@@ -65,7 +63,6 @@ export function TransferredAmountsForm({ value, onChange, disabled }: Transferre
                 type="text"
                 value={value.as_of_date || ''}
                 onChange={(e) => onChange({ ...value, as_of_date: e.target.value })}
-                placeholder="לדוגמה: 22/09/25"
                 disabled={disabled}
                 className="text-right rtl:text-right"
                 dir="rtl"

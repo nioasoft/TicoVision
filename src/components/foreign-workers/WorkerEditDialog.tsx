@@ -126,7 +126,6 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="text-right"
-                  placeholder="שם מלא"
                 />
               </div>
               
@@ -136,7 +135,6 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
                   value={passportNumber}
                   onChange={(e) => setPassportNumber(e.target.value)}
                   className="text-right"
-                  placeholder="מספר דרכון"
                 />
                 <p className="text-xs text-muted-foreground text-right">
                   שינוי מספר דרכון יגרור בדיקת ייחודיות במערכת
@@ -149,7 +147,6 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
                   value={nationality}
                   onChange={(e) => setNationality(e.target.value)}
                   className="text-right"
-                  placeholder="מדינה"
                 />
               </div>
             </div>

@@ -292,7 +292,6 @@ export function LetterBuilder() {
                   id="company_name"
                   value={variables.company_name || ''}
                   onChange={(e) => setVariables({ ...variables, company_name: e.target.value })}
-                  placeholder="מסעדת האחים"
                   dir="rtl"
                 />
               </div>
@@ -305,7 +304,6 @@ export function LetterBuilder() {
                   id="group_name"
                   value={variables.group_name || ''}
                   onChange={(e) => setVariables({ ...variables, group_name: e.target.value })}
-                  placeholder="קבוצת מסעדות ישראליות"
                   dir="rtl"
                 />
               </div>
@@ -319,7 +317,6 @@ export function LetterBuilder() {
                   type="number"
                   value={variables.inflation_rate || 4}
                   onChange={(e) => setVariables({ ...variables, inflation_rate: Number(e.target.value) })}
-                  placeholder="4"
                 />
               </div>
 
@@ -332,7 +329,6 @@ export function LetterBuilder() {
                   type="number"
                   value={variables.amount_original || 52000}
                   onChange={(e) => setVariables({ ...variables, amount_original: Number(e.target.value) })}
-                  placeholder="52000"
                 />
               </div>
             </div>

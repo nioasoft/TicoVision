@@ -305,7 +305,6 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
                 className="rtl:text-right ltr:text-left"
-                placeholder="מספר אסמכתא"
               />
             </div>
 
@@ -369,7 +368,6 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="rtl:text-right ltr:text-left"
-              placeholder="הערות נוספות..."
               rows={3}
             />
           </div>

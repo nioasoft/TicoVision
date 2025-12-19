@@ -54,7 +54,6 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
               type="text"
               value={value.month_year || ''}
               onChange={(e) => onChange({ ...value, month_year: e.target.value })}
-              placeholder="לדוגמה: 6/2025"
               disabled={disabled}
               className="text-right rtl:text-right"
               dir="rtl"
@@ -71,7 +70,6 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
               type="text"
               value={value.location || ''}
               onChange={(e) => onChange({ ...value, location: e.target.value })}
-              placeholder="לדוגמה: רשות שדות התעופה – גשר אלנבי"
               disabled={disabled}
               className="text-right rtl:text-right"
               dir="rtl"
@@ -88,7 +86,6 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
               type="text"
               value={value.contract_number || ''}
               onChange={(e) => onChange({ ...value, contract_number: e.target.value })}
-              placeholder="לדוגמה: 2022/070/0002/00"
               disabled={disabled}
               className="text-right rtl:text-right"
               dir="rtl"
@@ -105,7 +102,6 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
               type="number"
               value={value.total_amount || ''}
               onChange={(e) => onChange({ ...value, total_amount: parseFloat(e.target.value) || 0 })}
-              placeholder="לדוגמה: 29059"
               disabled={disabled}
               className="text-right rtl:text-right"
               dir="rtl"
@@ -134,7 +130,6 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
                   <Input
                     value={invoice}
                     onChange={(e) => handleInvoiceChange(index, e.target.value)}
-                    placeholder={`חשבונית ${index + 1}`}
                     disabled={disabled}
                     className="text-right rtl:text-right flex-1"
                     dir="rtl"

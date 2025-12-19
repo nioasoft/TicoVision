@@ -1987,7 +1987,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         id="company_name"
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="שם החברה"
                         dir="rtl"
                         disabled={recipientMode !== 'client'}
                       />
@@ -2013,7 +2012,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             id="commercial_name"
                             value={commercialName}
                             onChange={(e) => setCommercialName(e.target.value)}
-                            placeholder="הזן שם מסחרי"
                             dir="rtl"
                             disabled={recipientMode !== 'client'}
                           />
@@ -2057,7 +2055,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             id="address_line"
                             value={addressLine}
                             onChange={(e) => setAddressLine(e.target.value)}
-                            placeholder="רחוב, עיר, מיקוד"
                             dir="rtl"
                             disabled={recipientMode !== 'client'}
                           />
@@ -2165,7 +2162,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               id="group_address_line"
                               value={addressLine}
                               onChange={(e) => setAddressLine(e.target.value)}
-                              placeholder="רחוב, עיר, מיקוד"
                               dir="rtl"
                             />
                           </div>
@@ -2225,7 +2221,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         id="manual_company_name"
                         value={manualCompanyName}
                         onChange={(e) => setManualCompanyName(e.target.value)}
-                        placeholder="הזן שם נמען"
                         dir="rtl"
                         disabled={recipientMode !== 'manual'}
                       />
@@ -2283,7 +2278,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                 handleAddManualEmail();
                               }
                             }}
-                            placeholder="example@email.com"
                             dir="ltr"
                             className="flex-1 text-left min-w-64"
                           />
@@ -2413,7 +2407,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             <Input
                               value={line.content || ''}
                               onChange={(e) => handleUpdateLineContent(line.id, e.target.value)}
-                              placeholder="הזן טקסט..."
                               dir="rtl"
                             />
                             <div className="flex gap-3 items-center">
@@ -2515,7 +2508,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                 <Input
                                   value={line.content}
                                   onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
-                                  placeholder="הזן נושא המכתב (דוגמה: עדכון שכר טרחה לשנת 2026)"
                                   dir="rtl"
                                   className="flex-1 text-right"
                                   maxLength={70}
@@ -2531,7 +2523,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               <Input
                                 value={line.content}
                                 onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
-                                placeholder="שורה נוספת (תתיישר מתחת לטקסט)"
                                 dir="rtl"
                                 className="text-right mr-14"
                                 maxLength={70}
@@ -2658,7 +2649,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   setHasUserEditedContent(true);
                 }
               }}
-              placeholder="הקלד את תוכן המכתב..."
               minHeight="400px"
             />
           </div>
@@ -2688,7 +2678,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         setLetterName(e.target.value);
                         markDirty();
                       }}
-                      placeholder="לדוגמא: מכתב דרישה לתשלום"
                       className="text-right"
                       dir="rtl"
                     />
@@ -2778,7 +2767,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         // Mark as manually edited to stop auto-sync from הנדון
                         setUserEditedEmailSubject(true);
                       }}
-                      placeholder="שכר טרחתנו לשנת המס 2026"
                       dir="rtl"
                     />
                     <p className="text-xs text-muted-foreground mt-1 text-right">
@@ -2890,7 +2878,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             handleAddManualEmail();
                           }
                         }}
-                        placeholder="email@example.com"
                         dir="ltr"
                         className="flex-1 text-left text-xs"
                       />
@@ -3081,7 +3068,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 id="template_name"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
-                placeholder="מכתב עדכון שנתי"
                 dir="rtl"
                 required
               />
@@ -3094,7 +3080,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                 id="template_description"
                 value={templateDescription}
                 onChange={(e) => setTemplateDescription(e.target.value)}
-                placeholder="מכתב סטנדרטי לעדכון לקוחות"
                 dir="rtl"
               />
             </div>

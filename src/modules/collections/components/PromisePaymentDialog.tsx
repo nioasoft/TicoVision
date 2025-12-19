@@ -135,7 +135,6 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
               id="promise-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="למשל: הלקוח אמר שיעביר בהעברה בנקאית..."
               className="min-h-[80px] rtl:text-right"
               dir="rtl"
             />

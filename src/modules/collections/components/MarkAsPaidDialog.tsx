@@ -99,7 +99,6 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
               id="payment-ref"
               value={paymentReference}
               onChange={(e) => setPaymentReference(e.target.value)}
-              placeholder="מספר אסמכתא, מספר המחאה, וכו'"
               className="rtl:text-right ltr:text-left"
             />
           </div>

@@ -161,7 +161,6 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                           }
                         })
                       }
-                      placeholder="MM/YYYY"
                       pattern="\d{2}/\d{4}"
                       title="פורמט: MM/YYYY (לדוגמה: 01/2024)"
                       disabled={disabled}
@@ -185,7 +184,6 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                           }
                         })
                       }
-                      placeholder="MM/YYYY"
                       pattern="\d{2}/\d{4}"
                       title="פורמט: MM/YYYY (לדוגמה: 12/2024)"
                       disabled={disabled}
@@ -250,7 +248,6 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                           }
                         });
                       }}
-                      placeholder="MM/YYYY"
                       pattern="\d{2}/\d{4}"
                       title="פורמט: MM/YYYY (לדוגמה: 01/2024)"
                       disabled={disabled}
@@ -265,10 +262,6 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                     <Input
                       id="period-end-4"
                       value={value.scenario_4_to_11?.period_end || ''}
-                      onChange={(e) => {
-                        // Keep for compatibility but won't be called
-                      }}
-                      placeholder="מחושב אוטומטית (MM/YYYY)"
                       disabled={true}
                       className="text-right rtl:text-right bg-gray-100"
                       dir="rtl"
@@ -297,7 +290,6 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                           }
                         });
                       }}
-                      placeholder=""
                       disabled={disabled}
                       className="text-right rtl:text-right"
                       dir="rtl"
@@ -371,7 +363,6 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                         }
                       })
                     }
-                    placeholder="לדוגמה: תוכנית עסקית מאושרת, טופס פחת, וכו'"
                     disabled={disabled}
                     className="text-right rtl:text-right"
                     dir="rtl"
