@@ -77,7 +77,7 @@ const ResizableImage = Image.extend({
   },
 });
 
-// Custom TableCell extension with background color support
+// Custom TableCell extension with background color and width support
 const CustomTableCell = TableCell.extend({
   addAttributes() {
     return {
@@ -91,11 +91,74 @@ const CustomTableCell = TableCell.extend({
           }
           return {
             'data-background-color': attributes.backgroundColor,
-            style: `background-color: ${attributes.backgroundColor}`,
+          };
+        },
+      },
+      colwidth: {
+        default: null,
+        parseHTML: element => {
+          const colwidth = element.getAttribute('colwidth');
+          return colwidth ? colwidth.split(',').map(Number) : null;
+        },
+        renderHTML: attributes => {
+          if (!attributes.colwidth) {
+            return {};
+          }
+          return {
+            colwidth: attributes.colwidth.join(','),
           };
         },
       },
     };
+  },
+  renderHTML({ HTMLAttributes }) {
+    const style: string[] = [];
+    if (HTMLAttributes.backgroundColor) {
+      style.push(`background-color: ${HTMLAttributes.backgroundColor}`);
+    }
+    if (HTMLAttributes.colwidth) {
+      const widths = Array.isArray(HTMLAttributes.colwidth) ? HTMLAttributes.colwidth : [HTMLAttributes.colwidth];
+      if (widths[0]) {
+        style.push(`width: ${widths[0]}px`);
+        style.push(`min-width: ${widths[0]}px`);
+      }
+    }
+    return ['td', { ...HTMLAttributes, style: style.join('; ') || undefined }, 0];
+  },
+});
+
+// Custom TableHeader extension with width support
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      colwidth: {
+        default: null,
+        parseHTML: element => {
+          const colwidth = element.getAttribute('colwidth');
+          return colwidth ? colwidth.split(',').map(Number) : null;
+        },
+        renderHTML: attributes => {
+          if (!attributes.colwidth) {
+            return {};
+          }
+          return {
+            colwidth: attributes.colwidth.join(','),
+          };
+        },
+      },
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    const style: string[] = [];
+    if (HTMLAttributes.colwidth) {
+      const widths = Array.isArray(HTMLAttributes.colwidth) ? HTMLAttributes.colwidth : [HTMLAttributes.colwidth];
+      if (widths[0]) {
+        style.push(`width: ${widths[0]}px`);
+        style.push(`min-width: ${widths[0]}px`);
+      }
+    }
+    return ['th', { ...HTMLAttributes, style: style.join('; ') || undefined }, 0];
   },
 });
 
@@ -104,7 +167,7 @@ import {
   Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter,
   AlignRight, Stamp, Table as TableIcon, Trash2, Plus, Split, Merge,
   ArrowDown, ArrowUp, ArrowLeft, ArrowRight, PanelTop, PanelLeft, BoxSelect,
-  Link as LinkIcon, Square, Unlink
+  Link as LinkIcon, Square, Unlink, MoveHorizontal, Columns, Equal
 } from 'lucide-react';
 import { LinkDialog } from './LinkDialog';
 import { Button } from '@/components/ui/button';
@@ -257,8 +320,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       },
     }),
     TableRow,
-    TableHeader,
-    CustomTableCell, // Use CustomTableCell instead of TableCell
+    CustomTableHeader, // Use CustomTableHeader for width support
+    CustomTableCell, // Use CustomTableCell for background color and width
   ], []); // Empty dependency array - extensions never change
 
   const editor = useEditor({
@@ -667,6 +730,43 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
+              {/* Column Width */}
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <MoveHorizontal className="h-4 w-4 ml-2" />
+                  רוחב עמודה
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('colwidth', [60]).run()}>
+                    <span className="w-4 text-center ml-2 text-xs">60</span>
+                    צר (60px)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('colwidth', [100]).run()}>
+                    <span className="w-4 text-center ml-2 text-xs">100</span>
+                    רגיל (100px)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('colwidth', [150]).run()}>
+                    <span className="w-4 text-center ml-2 text-xs">150</span>
+                    בינוני (150px)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('colwidth', [200]).run()}>
+                    <span className="w-4 text-center ml-2 text-xs">200</span>
+                    רחב (200px)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('colwidth', [300]).run()}>
+                    <span className="w-4 text-center ml-2 text-xs">300</span>
+                    רחב מאוד (300px)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => editor.chain().focus().setCellAttribute('colwidth', null).run()}>
+                    <Equal className="h-4 w-4 ml-2" />
+                    רוחב אוטומטי
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+
+              <DropdownMenuSeparator />
+
               {/* Header Toggles */}
               <DropdownMenuItem onClick={() => editor.chain().focus().toggleHeaderRow().run()} disabled={!editor.can().toggleHeaderRow()}>
                 <PanelTop className="h-4 w-4 ml-2" />
@@ -1057,6 +1157,7 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
             <Redo className="h-4 w-4" />
           </Button>
         </div>
+
       </div>
 
       {/* Editor content */}

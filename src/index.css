@@ -264,14 +264,57 @@ input[type="number"] {
   pointer-events: none;
 }
 
+/* Table resize cursor when hovering over column borders */
+.ProseMirror.resize-cursor {
+  cursor: col-resize !important;
+}
+
+.ProseMirror table {
+  cursor: default;
+  /* Fix RTL table resize - table structure is LTR for correct resize behavior */
+  direction: ltr !important;
+}
+
+/* Keep cell content RTL */
+.ProseMirror td,
+.ProseMirror th {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Make the resize handle more visible */
 .ProseMirror .column-resize-handle {
   position: absolute;
   right: -2px;
   top: 0;
   bottom: -2px;
   width: 4px;
-  background-color: #adf;
+  background-color: #3b82f6;
   pointer-events: none;
+  z-index: 20;
+}
+
+/* Add hover effect on table cell borders for resize hint */
+.ProseMirror td,
+.ProseMirror th {
+  position: relative;
+}
+
+.ProseMirror td::after,
+.ProseMirror th::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -3px;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+}
+
+.ProseMirror td:hover::after,
+.ProseMirror th:hover::after {
+  background-color: rgba(59, 130, 246, 0.2);
 }
 
 /* ============================================
@@ -368,4 +411,48 @@ input[type="number"] {
 
 .ProseMirror p {
   margin: 0;
+}
+
+/* ============================================
+   Paged.js Preview Styles
+   ============================================ */
+
+/* Pages container - vertical stack */
+.paged-preview-container .pagedjs_pages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Individual page - A4 appearance */
+.paged-preview-container .pagedjs_page {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  margin: 0 auto;
+}
+
+/* Page content box - RTL */
+.paged-preview-container .pagedjs_pagebox {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Ensure content stays RTL */
+.paged-preview-container .pagedjs_page_content {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Page number indicators (if shown by Paged.js) */
+.paged-preview-container .pagedjs_margin-top-center,
+.paged-preview-container .pagedjs_margin-bottom-center {
+  font-size: 10px;
+  color: #666;
+}
+
+/* Scale down for preview (A4 is 210mm wide, scale to fit container) */
+.paged-preview-container .pagedjs_page {
+  transform-origin: top center;
+  /* Scale is applied dynamically if needed */
 }

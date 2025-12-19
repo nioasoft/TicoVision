@@ -3,7 +3,7 @@
  * Build custom letters from plain text with Markdown-like syntax
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,82 @@ const EXAMPLE_TEXT = `בפתח הדברים:
 צוות המשרד
 
 הערה: שורות ההנדון (נושא המכתב) מנוהלות בסקשן הנפרד למעלה`;
+
+// Constants for page break calculation (matching PDF settings)
+const PAGE_HEIGHT_MM = 297;
+const TOP_MARGIN_MM = 44;
+const BOTTOM_MARGIN_MM = 17;
+const CONTENT_HEIGHT_MM = PAGE_HEIGHT_MM - TOP_MARGIN_MM - BOTTOM_MARGIN_MM; // 236mm
+const MM_TO_PX = 96 / 25.4; // ~3.78 px per mm at 96 DPI
+const CONTENT_HEIGHT_PX = CONTENT_HEIGHT_MM * MM_TO_PX; // ~893px
+
+// Preview component with page break indicators
+const PreviewWithPageBreaks: React.FC<{ html: string }> = ({ html }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [pageBreakPositions, setPageBreakPositions] = useState<number[]>([]);
+  const [pageCount, setPageCount] = useState(1);
+
+  useEffect(() => {
+    if (!contentRef.current || !html) return;
+
+    // Wait for DOM to render
+    const calculateBreaks = () => {
+      requestAnimationFrame(() => {
+        const contentHeight = contentRef.current?.scrollHeight || 0;
+        const numPages = Math.max(1, Math.ceil(contentHeight / CONTENT_HEIGHT_PX));
+
+        // Calculate positions for page break lines
+        const positions: number[] = [];
+        for (let i = 1; i < numPages; i++) {
+          positions.push(i * CONTENT_HEIGHT_PX);
+        }
+
+        setPageBreakPositions(positions);
+        setPageCount(numPages);
+
+        console.log('[PageBreaks] Content height:', contentHeight, 'px, Pages:', numPages);
+      });
+    };
+
+    // Small delay to ensure images/fonts are loaded
+    const timeout = setTimeout(calculateBreaks, 200);
+    return () => clearTimeout(timeout);
+  }, [html]);
+
+  return (
+    <div className="relative">
+      {/* Page count indicator */}
+      <div className="text-sm text-muted-foreground mb-2 text-right">
+        {pageCount} עמודים (תצוגה משוערת)
+      </div>
+
+      {/* Content container with page break lines */}
+      <div className="border rounded-lg p-4 bg-white relative" style={{ minHeight: '400px' }}>
+        {/* The actual content */}
+        <div
+          ref={contentRef}
+          dangerouslySetInnerHTML={{ __html: html }}
+          className="select-text"
+          style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+        />
+
+        {/* Page break indicators */}
+        {pageBreakPositions.map((position, index) => (
+          <div
+            key={index}
+            className="absolute left-0 right-0 flex items-center justify-center pointer-events-none"
+            style={{ top: `${position + 16}px` }} // +16px for the padding
+          >
+            <div className="absolute inset-x-4 border-t-2 border-dashed border-blue-500 opacity-70" />
+            <span className="relative bg-blue-500 text-white text-xs px-2 py-0.5 rounded shadow z-10">
+              עמוד {index + 2}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface SavedTemplate {
   id: string;
@@ -3004,13 +3080,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               המכתב המלא כולל: Header, Custom Body{includesPayment && ', Payment Section'}, Footer
             </DialogDescription>
           </DialogHeader>
-          <div className="border rounded-lg p-4 bg-white" style={{ minHeight: '400px' }}>
-            <div
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-              className="select-text"
-              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
-            />
-          </div>
+          <PreviewWithPageBreaks html={previewHtml} />
           <div className="flex justify-end gap-2 rtl:flex-row-reverse">
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
               סגור
