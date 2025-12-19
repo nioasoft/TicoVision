@@ -1489,6 +1489,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Set edit mode
       setEditMode(true);
       setEditingLetterId(letterId);
+      setSavedLetterId(letterId); // Enable "update existing" dialog when saving
       setParentLetterId(letter.parent_letter_id || letterId);
       setHasUserEditedContent(false); // Reset edit tracking when loading a letter
 
