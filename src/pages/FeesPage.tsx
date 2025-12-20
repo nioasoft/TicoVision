@@ -1461,7 +1461,7 @@ export function FeesPage() {
             className="bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse"
           >
             <a
-              href="https://docs.google.com/spreadsheets/d/1JISMIf62O9CfM6UV2qeboSeWe3MfERWt_flYaAPiT0s/edit?gid=1543496514#gid=1543496514"
+              href="https://docs.google.com/spreadsheets/d/1noPqzt4uChoe-ACnJ4X7pPFG5sxWIw4Jo6KiKu1V0Ys/edit?gid=586821568#gid=586821568"
               target="_blank"
               rel="noopener noreferrer"
             >
