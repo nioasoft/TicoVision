@@ -238,6 +238,7 @@ export function LetterPreviewDialog({
 
         // Checks
         num_checks: numChecks.toString(),
+        check_amount: formatNumber(Math.round(amountWithVat / numChecks)),
         check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.${numChecks}.${nextYear}`,
 
         // Client ID for tracking
@@ -405,6 +406,7 @@ export function LetterPreviewDialog({
 
         // Checks
         num_checks: numChecks.toString(),
+        check_amount: formatNumber(Math.round(amountWithVat / numChecks)),
         check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.${numChecks}.${nextYear}`,
 
         // Group ID for tracking

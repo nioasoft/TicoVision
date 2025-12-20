@@ -198,6 +198,7 @@ export function LetterBuilder() {
         previous_year: variables.previous_year || currentYear,
         tax_year: variables.tax_year || nextYear,
         num_checks: variables.num_checks || 8,
+        check_amount: Math.round((variables.amount_original || 52000) * 1.18 / (variables.num_checks || 8)).toLocaleString('he-IL'),
         check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.8.${nextYear}`
       };
 

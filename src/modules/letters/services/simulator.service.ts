@@ -150,6 +150,7 @@ export class SimulatorService extends BaseService {
         amount_original: amount,
         ...calculateDiscounts(amount),
         num_checks: 8,
+        check_amount: Math.round(Math.round(amount * 1.18) / 8),
         check_dates_description: generateCheckDatesDescription(8, nextYear),
         client_id: clientId,
         // Optional fields
