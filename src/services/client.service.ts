@@ -238,7 +238,7 @@ export class ClientService extends BaseService {
       // Validate required fields (accountant is optional - can be added later)
       const requiredFields: Array<{ key: keyof CreateClientDto | string; label: string }> = [
         { key: 'company_name', label: 'שם החברה' },
-        { key: 'commercial_name', label: 'שם מסחרי' },
+        // commercial_name is OPTIONAL - removed from required fields
         { key: 'contact_name', label: 'שם איש קשר' },
         { key: 'contact_email', label: 'אימייל איש קשר' },
         { key: 'contact_phone', label: 'טלפון איש קשר' },
