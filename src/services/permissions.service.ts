@@ -78,6 +78,10 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'documents:follow-ups', route: '/follow-ups', label: 'פניות/זירוז/דחיפה', parent: 'documents' },
   // Legacy route for backward compatibility
   { menu: 'foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים (ישן)' },
+  // Capital Declaration System (הצהרת הון)
+  { menu: 'capital-declaration', route: '/capital-declaration', label: 'הצהרת הון' },
+  { menu: 'capital-declaration:create', route: '/capital-declaration', label: 'יצירת הצהרה', parent: 'capital-declaration' },
+  { menu: 'capital-declaration:manage', route: '/capital-declarations', label: 'ניהול הצהרות', parent: 'capital-declaration' },
   { menu: 'files', route: '/files', label: 'מנהל הקבצים' },
   { menu: 'users', route: '/users', label: 'משתמשים' },
   { menu: 'settings', route: '/settings', label: 'הגדרות' },
@@ -99,6 +103,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:company-onboarding', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
     'documents:tax-advances', 'documents:auto-letters', 'documents:follow-ups',
     'foreign-workers', // Legacy
+    // Capital Declaration System
+    'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
     'files',
     'users',
     'settings',
@@ -107,6 +113,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // Documents System
     'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:company-onboarding', 'documents:tax-approvals', 'documents:bank-approvals',
     'foreign-workers', // Legacy
+    // Capital Declaration System
+    'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
   ],
   bookkeeper: [
     'clients', 'clients:list', 'clients:create', 'clients:edit',

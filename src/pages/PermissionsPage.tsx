@@ -68,6 +68,11 @@ const PERMISSION_GROUPS = [
     permissions: ['letters', 'letters:templates', 'letters:simulator', 'letters:history'],
   },
   {
+    key: 'capital-declaration',
+    label: 'הצהרת הון',
+    permissions: ['capital-declaration', 'capital-declaration:create', 'capital-declaration:manage'],
+  },
+  {
     key: 'other',
     label: 'נוסף',
     permissions: ['foreign-workers', 'files', 'users', 'settings'],
