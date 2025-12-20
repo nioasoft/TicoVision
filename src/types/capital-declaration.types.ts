@@ -24,7 +24,9 @@ export type CapitalDeclarationStatus =
   | 'in_progress'        // הלקוח התחיל
   | 'waiting_documents'  // ממתין למסמכים
   | 'reviewing'          // בבדיקה
-  | 'completed'          // הושלם
+  | 'in_preparation'     // בהכנה
+  | 'pending_approval'   // ממתין לאישור
+  | 'submitted'          // הוגש (הסטטוס הסופי)
   | 'waiting';           // ממתין (בהמתנה - לקוח ביקש לדחות או אין זמן לטפל)
 
 /** Declaration priority levels */
@@ -103,7 +105,9 @@ export const DECLARATION_STATUS_LABELS: Record<CapitalDeclarationStatus, string>
   in_progress: 'הלקוח התחיל',
   waiting_documents: 'ממתין למסמכים',
   reviewing: 'בבדיקה',
-  completed: 'הושלם',
+  in_preparation: 'בהכנה',
+  pending_approval: 'ממתין לאישור',
+  submitted: 'הוגש',
   waiting: 'ממתין'
 };
 
@@ -114,7 +118,9 @@ export const DECLARATION_STATUS_COLORS: Record<CapitalDeclarationStatus, string>
   in_progress: 'bg-yellow-100 text-yellow-800',
   waiting_documents: 'bg-orange-100 text-orange-800',
   reviewing: 'bg-purple-100 text-purple-800',
-  completed: 'bg-green-100 text-green-800',
+  in_preparation: 'bg-indigo-100 text-indigo-800',
+  pending_approval: 'bg-amber-100 text-amber-800',
+  submitted: 'bg-green-100 text-green-800',
   waiting: 'bg-slate-100 text-slate-800'
 };
 
@@ -414,4 +420,22 @@ export function formatDeclarationDate(date: string): string {
 export function getCategoryProgress(counts: CategoryDocumentCount[]): number {
   const categoriesWithDocs = counts.filter(c => c.count > 0).length;
   return Math.round((categoriesWithDocs / 6) * 100);
+}
+
+// ============================================================================
+// STATUS HISTORY
+// ============================================================================
+
+/** Status history entry for tracking status changes */
+export interface StatusHistoryEntry {
+  id: string;
+  tenant_id: string;
+  declaration_id: string;
+  from_status: CapitalDeclarationStatus | null;
+  to_status: CapitalDeclarationStatus;
+  notes: string | null;
+  changed_by: string;
+  changed_by_name?: string;  // for display (joined from auth.users)
+  changed_at: string;
+  created_at: string;
 }

@@ -9,3 +9,4 @@ export { WhatsAppReminderButton } from './WhatsAppReminderButton';
 export { CommunicationHistoryCard } from './CommunicationHistoryCard';
 export { LogCommunicationDialog } from './LogCommunicationDialog';
 export { SendReminderDialog } from './SendReminderDialog';
+export { StatusChangeDialog } from './StatusChangeDialog';

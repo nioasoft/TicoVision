@@ -54,6 +54,8 @@ import {
   Image,
   Loader2,
   MessageCircle,
+  History,
+  Edit,
 } from 'lucide-react';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
 import { supabase } from '@/lib/supabase';
@@ -64,6 +66,7 @@ import {
   CommunicationHistoryCard,
   LogCommunicationDialog,
   SendReminderDialog,
+  StatusChangeDialog,
 } from '@/components/capital-declarations';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -73,6 +76,7 @@ import type {
   CapitalDeclarationStatus,
   CapitalDeclarationCategory,
   DeclarationPriority,
+  StatusHistoryEntry,
 } from '@/types/capital-declaration.types';
 import {
   DECLARATION_STATUS_LABELS,
@@ -136,6 +140,10 @@ export function CapitalDeclarationDetailPage() {
   const [logCommunicationOpen, setLogCommunicationOpen] = useState(false);
   const [sendReminderOpen, setSendReminderOpen] = useState(false);
 
+  // Status change dialog and history
+  const [statusChangeDialogOpen, setStatusChangeDialogOpen] = useState(false);
+  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
+
   // Tenant info for WhatsApp (loaded from tenant_settings.company_name)
   const [tenantName, setTenantName] = useState<string>('');
 
@@ -156,6 +164,10 @@ export function CapitalDeclarationDetailPage() {
       const { data: docsData, error: docsError } = await capitalDeclarationService.getDocuments(id);
       if (docsError) throw docsError;
       setDocuments(docsData || []);
+
+      // Load status history
+      const { data: historyData } = await capitalDeclarationService.getStatusHistory(id);
+      setStatusHistory(historyData || []);
 
       // Load tax authority due date document URL if exists
       if (declData?.tax_authority_due_date_document_path) {
@@ -204,17 +216,26 @@ export function CapitalDeclarationDetailPage() {
   }, []);
 
   /**
-   * Update declaration status
+   * Update declaration status with history tracking
    */
-  const handleStatusChange = async (newStatus: CapitalDeclarationStatus) => {
+  const handleStatusChange = async (newStatus: CapitalDeclarationStatus, notes?: string) => {
     if (!declaration) return;
 
     setUpdatingStatus(true);
     try {
-      const { error } = await capitalDeclarationService.updateStatus(declaration.id, newStatus);
+      const { error } = await capitalDeclarationService.updateStatusWithHistory(
+        declaration.id,
+        newStatus,
+        notes
+      );
       if (error) throw error;
 
       setDeclaration({ ...declaration, status: newStatus });
+
+      // Reload status history
+      const { data: historyData } = await capitalDeclarationService.getStatusHistory(declaration.id);
+      setStatusHistory(historyData || []);
+
       toast.success('הסטטוס עודכן בהצלחה');
     } catch (error) {
       console.error('Error updating status:', error);
@@ -492,71 +513,61 @@ export function CapitalDeclarationDetailPage() {
         </div>
       </div>
 
-      {/* Info Cards Row 1 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Info Cards Row 1 - Compact 4 columns */}
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         {/* Contact Info */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
-              <User className="h-4 w-4" />
+        <Card className="py-0">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-xs font-medium rtl:text-right flex items-center gap-1.5 text-muted-foreground">
+              <User className="h-3.5 w-3.5" />
               פרטי איש קשר
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 rtl:text-right">
-            <div className="font-medium">{declaration.contact_name}</div>
+          <CardContent className="space-y-1 rtl:text-right px-4 pb-3">
+            <div className="font-medium text-sm">{declaration.contact_name}</div>
             {declaration.contact_email && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4" />
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Mail className="h-3 w-3" />
                 {declaration.contact_email}
               </div>
             )}
             {declaration.contact_phone && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="h-4 w-4" />
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Phone className="h-3 w-3" />
                 {declaration.contact_phone}
               </div>
             )}
             {declaration.client_name && (
-              <div className="flex items-center gap-2 text-sm mt-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-1.5 text-xs mt-1.5 pt-1.5 border-t">
+                <Building2 className="h-3 w-3 text-muted-foreground" />
                 <span className="font-medium">{declaration.client_name}</span>
-              </div>
-            )}
-            {declaration.group_name && (
-              <div className="flex items-center gap-2 text-sm">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>{declaration.group_name}</span>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Declaration Info */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+        <Card className="py-0">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-xs font-medium rtl:text-right flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
               פרטי ההצהרה
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 rtl:text-right">
+          <CardContent className="space-y-1 rtl:text-right px-4 pb-3 text-sm">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">שנת מס:</span>
+              <span className="text-xs text-muted-foreground">שנת מס:</span>
               <span className="font-medium">{declaration.tax_year}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">תאריך הצהרה:</span>
-              <span className="font-medium">
+              <span className="text-xs text-muted-foreground">תאריך:</span>
+              <span className="font-medium text-xs">
                 {formatDeclarationDate(declaration.declaration_date)}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">נושא:</span>
-              <span className="font-medium">{declaration.subject}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">נוצר:</span>
-              <span className="text-sm">
+              <span className="text-xs text-muted-foreground">נוצר:</span>
+              <span className="text-xs">
                 {new Date(declaration.created_at).toLocaleDateString('he-IL')}
               </span>
             </div>
@@ -564,148 +575,119 @@ export function CapitalDeclarationDetailPage() {
         </Card>
 
         {/* Status & Assignment */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
-              <Clock className="h-4 w-4" />
+        <Card className="py-0">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-xs font-medium rtl:text-right flex items-center gap-1.5 text-muted-foreground">
+              <Clock className="h-3.5 w-3.5" />
               סטטוס ושיוך
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 rtl:text-right">
+          <CardContent className="space-y-2 rtl:text-right px-4 pb-3">
             <div>
-              <label className="text-sm text-muted-foreground block mb-2">סטטוס נוכחי</label>
-              <Select
-                value={declaration.status}
-                onValueChange={(value) => handleStatusChange(value as CapitalDeclarationStatus)}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-between h-8"
+                onClick={() => setStatusChangeDialogOpen(true)}
                 disabled={updatingStatus}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    <Badge className={DECLARATION_STATUS_COLORS[declaration.status]}>
-                      {DECLARATION_STATUS_LABELS[declaration.status]}
-                    </Badge>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="rtl:text-right">
-                  {Object.entries(DECLARATION_STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      <Badge className={DECLARATION_STATUS_COLORS[value as CapitalDeclarationStatus]}>
-                        {label}
-                      </Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Badge className={cn('text-xs', DECLARATION_STATUS_COLORS[declaration.status])}>
+                  {DECLARATION_STATUS_LABELS[declaration.status]}
+                </Badge>
+                <Edit className="h-3 w-3 text-muted-foreground" />
+              </Button>
             </div>
 
             {isAdmin && (
               <div>
-                <label className="text-sm text-muted-foreground block mb-2">רו"ח מטפל</label>
+                <label className="text-xs text-muted-foreground block mb-1">רו"ח מטפל</label>
                 <AssignAccountantSelect
                   value={declaration.assigned_to}
                   onChange={handleAssignmentChange}
                   placeholder="בחר רו&quot;ח"
+                  className="h-8 text-xs"
                 />
               </div>
             )}
 
-            <div className="border-t pt-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">גישה לפורטל:</span>
-                {declaration.portal_accessed_at ? (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-sm">{declaration.portal_access_count} פעמים</span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-muted-foreground">טרם נצפה</span>
-                )}
-              </div>
+            <div className="flex items-center justify-between text-xs pt-1 border-t">
+              <span className="text-muted-foreground">פורטל:</span>
+              {declaration.portal_accessed_at ? (
+                <div className="flex items-center gap-1 text-green-600">
+                  <Eye className="h-3 w-3" />
+                  <span>{declaration.portal_access_count}x</span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground">טרם נצפה</span>
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Due Dates Card */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
+        <Card className="py-0">
+          <CardHeader className="pb-1 pt-3 px-4">
+            <CardTitle className="text-xs font-medium rtl:text-right flex items-center gap-1.5 text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
               תאריכי יעד
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 rtl:text-right">
+          <CardContent className="space-y-2 rtl:text-right px-4 pb-3">
             {/* Tax Authority Due Date */}
-            <div className="space-y-2">
-              <Label htmlFor="taxAuthorityDueDate" className="text-sm font-medium">
-                תאריך יעד רשות המיסים
+            <div className="space-y-1">
+              <Label htmlFor="taxAuthorityDueDate" className="text-xs">
+                רשות המיסים
               </Label>
-              <Input
-                id="taxAuthorityDueDate"
-                type="date"
-                value={declaration.tax_authority_due_date || ''}
-                onChange={(e) => handleTaxAuthorityDueDateChange(e.target.value)}
-                disabled={updatingDueDate}
-                dir="ltr"
-              />
-
-              {/* Document upload */}
-              <div className="pt-1">
-                <span className="text-xs text-muted-foreground">מסמך בקשה</span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={handleTaxAuthorityDocumentUpload}
-                  className="hidden"
+              <div className="flex items-center gap-1">
+                <Input
+                  id="taxAuthorityDueDate"
+                  type="date"
+                  value={declaration.tax_authority_due_date || ''}
+                  onChange={(e) => handleTaxAuthorityDueDateChange(e.target.value)}
+                  disabled={updatingDueDate}
+                  dir="ltr"
+                  className="h-7 text-xs flex-1"
                 />
                 {dueDateDocumentUrl ? (
-                  <div className="flex items-center gap-2 mt-1">
-                    <a
-                      href={dueDateDocumentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                    >
-                      <Image className="h-3 w-3" />
-                      צפה
-                    </a>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingDocument}
-                      className="h-6 px-2 text-xs"
-                    >
-                      {uploadingDocument ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        'החלף'
-                      )}
-                    </Button>
-                  </div>
+                  <a
+                    href={dueDateDocumentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700"
+                    title="צפה במסמך"
+                  >
+                    <Image className="h-4 w-4" />
+                  </a>
                 ) : (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingDocument}
-                    className="h-6 px-2 text-xs mt-1"
+                    className="h-7 w-7 p-0"
+                    title="העלה מסמך"
                   >
                     {uploadingDocument ? (
-                      <Loader2 className="h-3 w-3 animate-spin rtl:ml-1 ltr:mr-1" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
-                      <Upload className="h-3 w-3 rtl:ml-1 ltr:mr-1" />
+                      <Upload className="h-3 w-3" />
                     )}
-                    העלה מסמך
                   </Button>
                 )}
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleTaxAuthorityDocumentUpload}
+                className="hidden"
+              />
             </div>
 
-            <div className="border-t pt-3">
-              {/* Internal Due Date */}
-              <Label htmlFor="internalDueDate" className="text-sm font-medium">
-                תאריך יעד פנימי
+            {/* Internal Due Date */}
+            <div className="space-y-1 pt-1 border-t">
+              <Label htmlFor="internalDueDate" className="text-xs">
+                יעד פנימי
               </Label>
               <Input
                 id="internalDueDate"
@@ -713,62 +695,120 @@ export function CapitalDeclarationDetailPage() {
                 value={declaration.internal_due_date || ''}
                 onChange={(e) => handleInternalDueDateChange(e.target.value)}
                 disabled={updatingDueDate}
-                className="mt-1"
                 dir="ltr"
+                className="h-7 text-xs"
               />
-              <p className="text-xs text-muted-foreground mt-1">תאריך שקבע המנהל לסיום העבודה</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Communication History & Notes Row */}
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Row 2: Status History & Communication History */}
+      <div className={cn(
+        "grid gap-4",
+        statusHistory.length > 0 ? "md:grid-cols-2" : ""
+      )}>
+        {/* Status History - only show if there's history */}
+        {statusHistory.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium rtl:text-right flex items-center gap-2">
+                <History className="h-4 w-4" />
+                היסטוריית סטטוסים
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="rtl:text-right">
+              <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                {statusHistory.map((entry, index) => (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      "relative pr-5 pb-2",
+                      index !== statusHistory.length - 1 && "border-r-2 border-muted"
+                    )}
+                  >
+                    {/* Timeline dot */}
+                    <div className="absolute right-0 top-1 w-2 h-2 rounded-full bg-primary -translate-x-[3px]" />
+
+                    <div className="space-y-0.5">
+                      {/* Date and user */}
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <span>
+                          {new Date(entry.changed_at).toLocaleDateString('he-IL', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        <span>•</span>
+                        <span>{entry.changed_by_name || 'משתמש'}</span>
+                      </div>
+
+                      {/* Status change */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {entry.from_status && (
+                          <>
+                            <Badge className={cn('text-[10px] px-1.5 py-0', DECLARATION_STATUS_COLORS[entry.from_status as CapitalDeclarationStatus])}>
+                              {DECLARATION_STATUS_LABELS[entry.from_status as CapitalDeclarationStatus]}
+                            </Badge>
+                            <ArrowRight className="h-2.5 w-2.5 text-muted-foreground" />
+                          </>
+                        )}
+                        <Badge className={cn('text-[10px] px-1.5 py-0', DECLARATION_STATUS_COLORS[entry.to_status as CapitalDeclarationStatus])}>
+                          {DECLARATION_STATUS_LABELS[entry.to_status as CapitalDeclarationStatus]}
+                        </Badge>
+                      </div>
+
+                      {/* Notes */}
+                      {entry.notes && (
+                        <p className="text-[11px] text-muted-foreground bg-muted/50 px-2 py-1 rounded mt-1">
+                          "{entry.notes}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Communication History */}
         <CommunicationHistoryCard
           declarationId={declaration.id}
           onAddCommunication={() => setLogCommunicationOpen(true)}
         />
-
-        {/* Notes & Progress */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium rtl:text-right">התקדמות ומסמכים</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">קטגוריות הושלמו:</span>
-              <div className="flex items-center gap-2">
-                <CheckCircle
-                  className={`h-4 w-4 ${
-                    declaration.categories_complete === 6
-                      ? 'text-green-600'
-                      : 'text-muted-foreground'
-                  }`}
-                />
-                <span className="font-medium">{declaration.categories_complete}/6</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">סה"כ מסמכים:</span>
-              <span className="font-medium">{declaration.total_documents}</span>
-            </div>
-
-            {declaration.notes && (
-              <div className="border-t pt-4">
-                <p className="text-sm font-medium mb-2">הערות:</p>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {declaration.notes}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Documents by Category */}
       <div>
-        <h2 className="text-xl font-semibold mb-4 rtl:text-right">מסמכים לפי קטגוריה</h2>
+        {/* Header with progress */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold rtl:text-right">מסמכים לפי קטגוריה</h2>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <CheckCircle
+                className={cn(
+                  "h-4 w-4",
+                  declaration.categories_complete === 6 ? 'text-green-600' : 'text-muted-foreground'
+                )}
+              />
+              <span>{declaration.categories_complete}/6 קטגוריות</span>
+              <span className="mx-1">•</span>
+              <span>{declaration.total_documents} מסמכים</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes - show if exists */}
+        {declaration.notes && (
+          <div className="mb-4 p-3 bg-muted/50 rounded-lg border">
+            <p className="text-xs font-medium text-muted-foreground mb-1">הערות:</p>
+            <p className="text-sm whitespace-pre-wrap">{declaration.notes}</p>
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {DECLARATION_CATEGORIES.map((category) => {
             const categoryDocs = getDocumentsByCategory(category.key);
@@ -803,17 +843,21 @@ export function CapitalDeclarationDetailPage() {
                           key={doc.id}
                           className="flex items-center justify-between bg-white rounded-lg p-2 shadow-sm"
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <button
+                            className="flex items-center gap-2 min-w-0 flex-1 text-right hover:bg-muted/50 rounded p-1 -m-1 transition-colors"
+                            onClick={() => handleDownloadDocument(doc)}
+                            title="לחץ להורדה"
+                          >
                             <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate rtl:text-right">
+                              <p className="text-sm font-medium truncate rtl:text-right text-blue-600 hover:text-blue-700 hover:underline">
                                 {doc.file_name}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 {formatFileSize(doc.file_size)}
                               </p>
                             </div>
-                          </div>
+                          </button>
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
@@ -881,6 +925,14 @@ export function CapitalDeclarationDetailPage() {
         onOpenChange={setSendReminderOpen}
         declaration={declaration}
         onSuccess={loadData}
+      />
+
+      {/* Status Change Dialog */}
+      <StatusChangeDialog
+        open={statusChangeDialogOpen}
+        onOpenChange={setStatusChangeDialogOpen}
+        currentStatus={declaration.status}
+        onConfirm={handleStatusChange}
       />
     </div>
   );

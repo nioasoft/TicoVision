@@ -123,7 +123,7 @@ export function CapitalDeclarationsListPage() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<CapitalDeclarationStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<CapitalDeclarationStatus | 'all' | 'active_process'>('all');
   const [yearFilter, setYearFilter] = useState<number | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<DeclarationPriority | 'all'>('all');
   const [assignedFilter, setAssignedFilter] = useState<string | 'all'>('all');
@@ -139,7 +139,7 @@ export function CapitalDeclarationsListPage() {
     waiting: 0,
     sent: 0,
     in_progress: 0,
-    completed: 0,
+    submitted: 0,
     critical: 0,
     urgent: 0,
   });
@@ -182,10 +182,17 @@ export function CapitalDeclarationsListPage() {
           ? assignedFilter
           : undefined;
 
+      // Handle 'active_process' special filter (in_progress + waiting_documents + reviewing + in_preparation + pending_approval)
+      const statusParam = statusFilter === 'all'
+        ? undefined
+        : statusFilter === 'active_process'
+          ? ['in_progress', 'waiting_documents', 'reviewing', 'in_preparation', 'pending_approval'] as const
+          : statusFilter;
+
       const { data, error } = await capitalDeclarationService.getDashboard({
         page: currentPage,
         pageSize,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
+        status: statusParam,
         year: yearFilter !== 'all' ? yearFilter : undefined,
         priority: priorityFilter !== 'all' ? priorityFilter : undefined,
         assignedTo,
@@ -203,8 +210,10 @@ export function CapitalDeclarationsListPage() {
         total: data?.total || 0,
         waiting: allDeclarations.filter((d) => d.status === 'waiting').length,
         sent: allDeclarations.filter((d) => d.status === 'sent').length,
-        in_progress: allDeclarations.filter((d) => d.status === 'in_progress').length,
-        completed: allDeclarations.filter((d) => d.status === 'completed').length,
+        in_progress: allDeclarations.filter((d) =>
+        ['in_progress', 'waiting_documents', 'reviewing', 'in_preparation', 'pending_approval'].includes(d.status)
+      ).length,
+        submitted: allDeclarations.filter((d) => d.status === 'submitted').length,
         critical: allDeclarations.filter((d) => d.priority === 'critical').length,
         urgent: allDeclarations.filter((d) => d.priority === 'urgent').length,
       });
@@ -396,9 +405,9 @@ export function CapitalDeclarationsListPage() {
         <Card
           className={cn(
             "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'in_progress' && "ring-2 ring-yellow-500"
+            statusFilter === 'active_process' && "ring-2 ring-yellow-500"
           )}
-          onClick={() => { setStatusFilter('in_progress'); setPriorityFilter('all'); setCurrentPage(1); }}
+          onClick={() => { setStatusFilter('active_process'); setPriorityFilter('all'); setCurrentPage(1); }}
         >
           <div className="text-xs text-muted-foreground rtl:text-right">בתהליך</div>
           <div className="text-xl font-bold text-yellow-600 rtl:text-right">{stats.in_progress}</div>
@@ -407,12 +416,12 @@ export function CapitalDeclarationsListPage() {
         <Card
           className={cn(
             "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'completed' && "ring-2 ring-green-500"
+            statusFilter === 'submitted' && "ring-2 ring-green-500"
           )}
-          onClick={() => { setStatusFilter('completed'); setPriorityFilter('all'); setCurrentPage(1); }}
+          onClick={() => { setStatusFilter('submitted'); setPriorityFilter('all'); setCurrentPage(1); }}
         >
-          <div className="text-xs text-muted-foreground rtl:text-right">הושלמו</div>
-          <div className="text-xl font-bold text-green-600 rtl:text-right">{stats.completed}</div>
+          <div className="text-xs text-muted-foreground rtl:text-right">הוגשו</div>
+          <div className="text-xl font-bold text-green-600 rtl:text-right">{stats.submitted}</div>
         </Card>
       </div>
 

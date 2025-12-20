@@ -86,79 +86,78 @@ export function CommunicationHistoryCard({
   return (
     <Card className={cn('', className)}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg rtl:text-right">היסטוריית תקשורת</CardTitle>
+        <CardTitle className="text-sm font-medium rtl:text-right">היסטוריית תקשורת</CardTitle>
         {onAddCommunication && (
           <Button
             variant="outline"
             size="sm"
             onClick={onAddCommunication}
-            className="gap-2 rtl:flex-row-reverse"
+            className="gap-1.5 h-7 text-xs"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3 w-3" />
             הוסף
           </Button>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : communications.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground rtl:text-right">
-            <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>אין תקשורת מתועדת</p>
+          <div className="text-center py-6 text-muted-foreground rtl:text-right">
+            <Clock className="h-6 w-6 mx-auto mb-1.5 opacity-50" />
+            <p className="text-sm">אין תקשורת מתועדת</p>
           </div>
         ) : (
-          <ScrollArea className="h-[300px] pr-4">
-            <div className="space-y-3">
-              {communications.map((comm) => (
+          <ScrollArea className="h-[220px]" dir="rtl">
+            <div className="space-y-1">
+              {communications.map((comm, index) => (
                 <div
                   key={comm.id}
-                  className="border rounded-lg p-3 space-y-2 rtl:text-right"
+                  className={cn(
+                    "py-2 px-1 text-right",
+                    index !== communications.length - 1 && "border-b"
+                  )}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 rtl:flex-row-reverse">
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          'gap-1 rtl:flex-row-reverse',
-                          TYPE_COLORS[comm.communication_type]
-                        )}
-                      >
-                        {TYPE_ICONS[comm.communication_type]}
-                        {COMMUNICATION_TYPE_LABELS[comm.communication_type]}
-                      </Badge>
-                      {comm.direction === 'inbound' ? (
-                        <ArrowDownLeft className="h-4 w-4 text-blue-500" />
-                      ) : (
-                        <ArrowUpRight className="h-4 w-4 text-green-500" />
+                  {/* Row 1: Type + Date + Author */}
+                  <div className="flex items-center gap-2 mb-0.5 flex-row-reverse justify-end">
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        'gap-1 text-[10px] px-1.5 py-0 h-5 flex-row-reverse',
+                        TYPE_COLORS[comm.communication_type]
                       )}
-                    </div>
-                    <span className="text-xs text-muted-foreground">
+                    >
+                      {TYPE_ICONS[comm.communication_type]}
+                      {COMMUNICATION_TYPE_LABELS[comm.communication_type]}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">
                       {formatDate(comm.communicated_at)}
                     </span>
+                    {comm.created_by_name && (
+                      <>
+                        <span className="text-[10px] text-muted-foreground">•</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {comm.created_by_name}
+                        </span>
+                      </>
+                    )}
                   </div>
 
-                  {comm.subject && (
-                    <p className="font-medium text-sm">{comm.subject}</p>
-                  )}
-
-                  {comm.content && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                  {/* Row 2: Subject + Content combined */}
+                  {(comm.subject || comm.content) && (
+                    <p className="text-xs text-muted-foreground line-clamp-1 text-right">
+                      {comm.subject && <span className="font-medium text-foreground">{comm.subject}</span>}
+                      {comm.subject && comm.content && ' - '}
                       {comm.content}
                     </p>
                   )}
 
+                  {/* Outcome - compact */}
                   {comm.outcome && (
-                    <p className="text-sm text-green-700 bg-green-50 rounded px-2 py-1">
-                      תוצאה: {comm.outcome}
-                    </p>
-                  )}
-
-                  {comm.created_by_name && (
-                    <p className="text-xs text-muted-foreground">
-                      נרשם ע"י: {comm.created_by_name}
+                    <p className="text-[10px] text-green-700 mt-0.5 text-right">
+                      ✓ {comm.outcome}
                     </p>
                   )}
                 </div>

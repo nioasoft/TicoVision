@@ -16,6 +16,7 @@ import type {
   DeclarationCommunication,
   CommunicationWithUser,
   CreateCommunicationDto,
+  StatusHistoryEntry,
 } from '@/types/capital-declaration.types';
 
 const STORAGE_BUCKET = 'capital-declarations';
@@ -234,7 +235,8 @@ class CapitalDeclarationServiceClass extends BaseService {
   }
 
   /**
-   * Update declaration status
+   * Update declaration status (simple, without history)
+   * @deprecated Use updateStatusWithHistory for user-initiated changes
    */
   async updateStatus(
     id: string,
@@ -256,6 +258,120 @@ class CapitalDeclarationServiceClass extends BaseService {
       await this.logAction('update_declaration_status', id, { status });
 
       return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Update declaration status with history tracking
+   * Records who changed the status, when, and optional notes
+   */
+  async updateStatusWithHistory(
+    id: string,
+    newStatus: CapitalDeclarationStatus,
+    notes?: string
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get current status
+      const { data: current, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('status')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const fromStatus = current.status as CapitalDeclarationStatus;
+
+      // Update the status
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({ status: newStatus })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Record in history
+      const { error: historyError } = await supabase
+        .from('capital_declaration_status_history')
+        .insert({
+          tenant_id: tenantId,
+          declaration_id: id,
+          from_status: fromStatus,
+          to_status: newStatus,
+          notes: notes || null,
+          changed_by: user.id,
+          changed_at: new Date().toISOString()
+        });
+
+      if (historyError) {
+        console.error('Failed to record status history:', historyError);
+        // Don't fail the whole operation, status was updated successfully
+      }
+
+      await this.logAction('update_declaration_status', id, {
+        from_status: fromStatus,
+        to_status: newStatus,
+        notes
+      });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get status change history for a declaration
+   */
+  async getStatusHistory(declarationId: string): Promise<ServiceResponse<StatusHistoryEntry[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('capital_declaration_status_history')
+        .select('*')
+        .eq('declaration_id', declarationId)
+        .eq('tenant_id', tenantId)
+        .order('changed_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get user names for display
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(h => h.changed_by))];
+        const { data: users } = await supabase.auth.admin.listUsers();
+
+        // If admin API fails, try to get user metadata from user_tenant_access
+        const { data: utaData } = await supabase
+          .from('user_tenant_access')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+
+        const userMap = new Map<string, string>();
+        if (utaData) {
+          utaData.forEach(u => userMap.set(u.user_id, u.full_name || 'משתמש'));
+        }
+
+        // Add names to history entries
+        const historyWithNames = data.map(h => ({
+          ...h,
+          changed_by_name: userMap.get(h.changed_by) || 'משתמש'
+        }));
+
+        return { data: historyWithNames as StatusHistoryEntry[], error: null };
+      }
+
+      return { data: data as StatusHistoryEntry[], error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
@@ -751,7 +867,7 @@ class CapitalDeclarationServiceClass extends BaseService {
   async getDashboard(params: {
     page?: number;
     pageSize?: number;
-    status?: CapitalDeclarationStatus;
+    status?: CapitalDeclarationStatus | CapitalDeclarationStatus[];
     year?: number;
     searchQuery?: string;
     priority?: DeclarationPriority;
@@ -771,7 +887,13 @@ class CapitalDeclarationServiceClass extends BaseService {
         .eq('tenant_id', tenantId);
 
       // Apply filters
-      if (status) query = query.eq('status', status);
+      if (status) {
+        if (Array.isArray(status)) {
+          query = query.in('status', status);
+        } else {
+          query = query.eq('status', status);
+        }
+      }
       if (year) query = query.eq('tax_year', year);
       if (priority) query = query.eq('priority', priority);
       if (assignedTo) query = query.eq('assigned_to', assignedTo);

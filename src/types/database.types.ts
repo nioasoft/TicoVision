@@ -303,6 +303,57 @@ export type Database = {
           },
         ]
       }
+      capital_declaration_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          created_at: string
+          declaration_id: string
+          from_status: string | null
+          id: string
+          notes: string | null
+          tenant_id: string
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          created_at?: string
+          declaration_id: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          tenant_id: string
+          to_status: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          created_at?: string
+          declaration_id?: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_declaration_status_history_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "capital_declarations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declaration_status_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capital_declarations: {
         Row: {
           assigned_at: string | null
@@ -4208,10 +4259,13 @@ export type Database = {
           has_letter: boolean
           letter_id: string
           letter_sent_at: string
+          payer_client_id: string
+          payer_client_name: string
           payment_amount: number
           payment_date: string
           payment_method_selected: string
           payment_method_selected_at: string
+          payment_role: string
           payment_status: string
           tax_id: string
         }[]
