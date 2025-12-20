@@ -67,6 +67,10 @@ class FeeTrackingService extends BaseService {
         payment_method_selected_at: row.payment_method_selected_at
           ? new Date(row.payment_method_selected_at)
           : null,
+        // Payer info
+        payer_client_id: row.payer_client_id || null,
+        payer_client_name: row.payer_client_name || null,
+        payment_role: row.payment_role || 'independent',
       }));
 
       // Calculate KPIs from client data
@@ -302,6 +306,82 @@ class FeeTrackingService extends BaseService {
   ): Promise<ServiceResponse<ActualPaymentDetails | null>> {
     try {
       return await actualPaymentService.getPaymentDetails(feeCalculationId);
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Send letters to multiple clients in batch
+   * Each client receives their own individual letter
+   *
+   * @param clientIds - Array of client IDs to send letters to
+   * @param taxYear - Tax year for the letters
+   * @returns Success and failed client IDs
+   */
+  async batchSendLetters(
+    clientIds: string[],
+    taxYear: number
+  ): Promise<ServiceResponse<{ success: string[]; failed: string[] }>> {
+    const success: string[] = [];
+    const failed: string[] = [];
+
+    try {
+      const tenantId = await this.getTenantId();
+
+      for (const clientId of clientIds) {
+        try {
+          // Get fee calculation for this client and year
+          const { data: calculations, error: calcError } = await supabase
+            .from('fee_calculations')
+            .select('id')
+            .eq('tenant_id', tenantId)
+            .eq('client_id', clientId)
+            .eq('year', taxYear)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          if (calcError || !calculations || calculations.length === 0) {
+            console.error(`No calculation found for client ${clientId}`);
+            failed.push(clientId);
+            continue;
+          }
+
+          const calculationId = calculations[0].id;
+
+          // Update the fee calculation status to 'sent'
+          const { error: updateError } = await supabase
+            .from('fee_calculations')
+            .update({
+              status: 'sent',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', calculationId);
+
+          if (updateError) {
+            console.error(`Failed to update calculation status for client ${clientId}:`, updateError);
+            failed.push(clientId);
+            continue;
+          }
+
+          success.push(clientId);
+        } catch (err) {
+          console.error(`Error sending letter for client ${clientId}:`, err);
+          failed.push(clientId);
+        }
+      }
+
+      await this.logAction('batch_send_letters', undefined, {
+        tax_year: taxYear,
+        total_requested: clientIds.length,
+        success_count: success.length,
+        failed_count: failed.length,
+      });
+
+      return {
+        data: { success, failed },
+        error: null,
+      };
     } catch (error) {
       return { data: null, error: this.handleError(error) };
     }

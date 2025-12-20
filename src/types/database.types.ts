@@ -1059,6 +1059,7 @@ export type Database = {
           internal_external: string | null
           is_retainer: boolean | null
           notes: string | null
+          payer_client_id: string | null
           payment_role: string | null
           payment_terms: number | null
           pays_fees: boolean | null
@@ -1107,6 +1108,7 @@ export type Database = {
           internal_external?: string | null
           is_retainer?: boolean | null
           notes?: string | null
+          payer_client_id?: string | null
           payment_role?: string | null
           payment_terms?: number | null
           pays_fees?: boolean | null
@@ -1155,6 +1157,7 @@ export type Database = {
           internal_external?: string | null
           is_retainer?: boolean | null
           notes?: string | null
+          payer_client_id?: string | null
           payment_role?: string | null
           payment_terms?: number | null
           pays_fees?: boolean | null
@@ -1177,6 +1180,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_payer_client_id_fkey"
+            columns: ["payer_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -4239,6 +4249,7 @@ export type Database = {
         Args: { p_client_id: string }
         Returns: string
       }
+      get_payer_client_name: { Args: { p_client_id: string }; Returns: string }
       get_payment_method_breakdown: {
         Args: { p_tax_year: number; p_tenant_id: string }
         Returns: {

@@ -29,6 +29,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import {
   RefreshCw,
@@ -47,6 +54,8 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronLeft,
+  X,
+  UserCheck,
 } from 'lucide-react';
 import { feeTrackingService } from '@/services/fee-tracking.service';
 import type {
@@ -55,21 +64,12 @@ import type {
   FeeTrackingEnhancedRow,
   TrackingFilter,
   PaymentStatus,
-  FeeTrackingFilters,
 } from '@/types/fee-tracking.types';
 import { formatILS, formatNumber, formatPercentage } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog';
-import {
-  PaymentMethodBadge,
-  DiscountBadge,
-  PaymentAmountDisplay,
-} from '@/components/payments/PaymentMethodBadge';
-import { DeviationBadge } from '@/components/payments/DeviationBadge';
-import { FileAttachmentBadge } from '@/components/payments/FileAttachmentList';
+import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
 import { FeeTrackingExpandedRow } from '@/components/fee-tracking/FeeTrackingExpandedRow';
-import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
-import { PAYMENT_DISCOUNTS } from '@/types/payment.types';
 
 export function FeeTrackingPage() {
   const navigate = useNavigate();
@@ -86,11 +86,14 @@ export function FeeTrackingPage() {
   const [enhancedData, setEnhancedData] = useState<FeeTrackingEnhancedRow[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  // Multi-select for batch operations
+  const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
+  const [isSendingBatch, setIsSendingBatch] = useState(false);
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<TrackingFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCard, setSelectedCard] = useState<TrackingFilter>('all');
-  const [advancedFilters, setAdvancedFilters] = useState<FeeTrackingFilters>({});
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,8 +143,7 @@ export function FeeTrackingPage() {
 
       // Load enhanced data for expandable rows
       const enhancedResponse = await feeTrackingService.getEnhancedTrackingData(
-        selectedYear,
-        advancedFilters
+        selectedYear
       );
 
       if (enhancedResponse.data) {
@@ -254,6 +256,8 @@ export function FeeTrackingPage() {
             );
           case 'paid':
             return client.payment_status === 'paid';
+          case 'members':
+            return client.payment_role === 'member';
           default:
             return true;
         }
@@ -363,6 +367,68 @@ export function FeeTrackingPage() {
       title: 'סימון כשולם',
       description: 'פונקציה זו תיושם בשלב הבא',
     });
+  };
+
+  /**
+   * Multi-select handlers
+   */
+  const handleSelectClient = (clientId: string, checked: boolean | 'indeterminate') => {
+    const newSelected = new Set(selectedClients);
+    if (checked === true) {
+      newSelected.add(clientId);
+    } else {
+      newSelected.delete(clientId);
+    }
+    setSelectedClients(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+    if (checked === true) {
+      // Select only clients that have calculations (can send letters)
+      const eligibleClients = paginatedClients
+        .filter((c) => c.payment_status !== 'not_calculated')
+        .map((c) => c.client_id);
+      setSelectedClients(new Set(eligibleClients));
+    } else {
+      setSelectedClients(new Set());
+    }
+  };
+
+  const isAllSelected =
+    paginatedClients.filter((c) => c.payment_status !== 'not_calculated').length > 0 &&
+    paginatedClients
+      .filter((c) => c.payment_status !== 'not_calculated')
+      .every((c) => selectedClients.has(c.client_id));
+
+  const handleBatchSendLetters = async () => {
+    if (selectedClients.size === 0) return;
+
+    setIsSendingBatch(true);
+    try {
+      const clientIds = Array.from(selectedClients);
+      const result = await feeTrackingService.batchSendLetters(clientIds, selectedYear);
+
+      if (result.data) {
+        toast({
+          title: 'שליחה הושלמה',
+          description: `נשלחו ${result.data.success.length} מכתבים בהצלחה${
+            result.data.failed.length > 0 ? `, ${result.data.failed.length} נכשלו` : ''
+          }`,
+        });
+
+        setSelectedClients(new Set());
+        await loadTrackingData();
+      }
+    } catch (error) {
+      console.error('Error batch sending letters:', error);
+      toast({
+        title: 'שגיאה',
+        description: 'אירעה שגיאה בשליחת המכתבים',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSendingBatch(false);
+    }
   };
 
   /**
@@ -493,7 +559,7 @@ export function FeeTrackingPage() {
 
       {/* KPI Cards - Clickable Filters (Compact) */}
       {!loading && kpis && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
           {/* All Clients - הכל */}
           <Card
             className={cn(
@@ -616,6 +682,30 @@ export function FeeTrackingPage() {
             </CardContent>
           </Card>
 
+          {/* Members (paid by another) - לא משלם */}
+          <Card
+            className={cn(
+              'cursor-pointer transition-all hover:shadow-md border-purple-200',
+              selectedCard === 'members' && 'ring-2 ring-purple-500 bg-purple-50'
+            )}
+            onClick={() => handleFilterChange('members' as TrackingFilter)}
+          >
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs text-gray-600 rtl:text-right ltr:text-left flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <UserCheck className="h-3.5 w-3.5 text-purple-600" />
+                  לא משלם
+                </span>
+                <span className="text-lg font-bold text-purple-700">
+                  {formatNumber(clients.filter(c => c.payment_role === 'member').length)}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-1">
+              <p className="text-[10px] text-gray-500">משולם ע"י אחר</p>
+            </CardContent>
+          </Card>
+
           {/* Completion Status - לא לחיץ */}
           <Card className="border-gray-200 bg-gray-50">
             <CardHeader className="pb-1">
@@ -662,6 +752,9 @@ export function FeeTrackingPage() {
                     ⏳ ממתין לתשלום ({kpis?.sent_not_paid || 0})
                   </SelectItem>
                   <SelectItem value="paid">✅ שולם ({kpis?.paid || 0})</SelectItem>
+                  <SelectItem value="members">
+                    👥 לא משלם ({clients.filter(c => c.payment_role === 'member').length})
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -674,91 +767,6 @@ export function FeeTrackingPage() {
               />
             </div>
 
-            {/* Advanced Filters Row */}
-            <div className="flex flex-wrap gap-2">
-              {/* Deviation Filter */}
-              <Select
-                value={advancedFilters.deviationLevel || 'all'}
-                onValueChange={(v) =>
-                  setAdvancedFilters({
-                    ...advancedFilters,
-                    deviationLevel: v === 'all' ? undefined : (v as AlertLevel),
-                  })
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="סטייה" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">כל הסטיות</SelectItem>
-                  <SelectItem value="info">ℹ️ תקין</SelectItem>
-                  <SelectItem value="warning">⚠️ אזהרה</SelectItem>
-                  <SelectItem value="critical">🚨 קריטי</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Has Files Filter */}
-              <Select
-                value={
-                  advancedFilters.hasFiles === undefined
-                    ? 'all'
-                    : advancedFilters.hasFiles
-                    ? 'yes'
-                    : 'no'
-                }
-                onValueChange={(v) =>
-                  setAdvancedFilters({
-                    ...advancedFilters,
-                    hasFiles: v === 'all' ? undefined : v === 'yes',
-                  })
-                }
-              >
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="קבצים" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">הכל</SelectItem>
-                  <SelectItem value="yes">עם קבצים</SelectItem>
-                  <SelectItem value="no">ללא קבצים</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Payment Method Filter */}
-              <Select
-                value={advancedFilters.paymentMethod || 'all'}
-                onValueChange={(v) =>
-                  setAdvancedFilters({
-                    ...advancedFilters,
-                    paymentMethod: v === 'all' ? undefined : (v as PaymentMethod),
-                  })
-                }
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="אמצעי תשלום" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">כל האמצעים</SelectItem>
-                  <SelectItem value="bank_transfer">העברה בנקאית</SelectItem>
-                  <SelectItem value="cc_single">כ"א תשלום אחד</SelectItem>
-                  <SelectItem value="cc_installments">כ"א תשלומים</SelectItem>
-                  <SelectItem value="checks">המחאות</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Clear Filters Button */}
-              {(advancedFilters.deviationLevel ||
-                advancedFilters.hasFiles !== undefined ||
-                advancedFilters.paymentMethod) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAdvancedFilters({})}
-                  className="rtl:text-right"
-                >
-                  נקה סינונים
-                </Button>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -780,17 +788,19 @@ export function FeeTrackingPage() {
               <Table className="text-sm">
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10 py-2 px-3">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={handleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3 w-4"></TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שם לקוח</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">ח.פ</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סטטוס</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום לפני מע"מ</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום כולל מע"מ</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סטייה</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שיטת תשלום</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">הנחה</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">קבצים</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">תשלומים</TableHead>
                     <TableHead className="rtl:text-right ltr:text-left py-2 px-3">פעולות</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -811,6 +821,20 @@ export function FeeTrackingPage() {
                             client.calculation_id && toggleRow(client.calculation_id)
                           }
                         >
+                          {/* Checkbox */}
+                          <TableCell
+                            className="py-2 px-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={selectedClients.has(client.client_id)}
+                              onCheckedChange={(checked) =>
+                                handleSelectClient(client.client_id, checked)
+                              }
+                              disabled={client.payment_status === 'not_calculated'}
+                            />
+                          </TableCell>
+
                           {/* Expand Icon */}
                           <TableCell className="py-2 px-3">
                             {client.calculation_id ? (
@@ -822,9 +846,29 @@ export function FeeTrackingPage() {
                             ) : null}
                           </TableCell>
 
-                          {/* Client Name */}
+                          {/* Client Name with Payer Badge */}
                           <TableCell className="font-medium py-2 px-3 text-sm">
-                            {client.client_name_hebrew || client.client_name}
+                            <div className="flex items-center gap-2">
+                              <span>{client.client_name_hebrew || client.client_name}</span>
+                              {client.payment_role === 'member' && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs px-1.5 py-0.5 gap-1 bg-purple-50 text-purple-700 border-purple-200 cursor-help"
+                                      >
+                                        <UserCheck className="h-3 w-3" />
+                                        לא משלם
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{client.payer_client_name ? `משולם ע"י: ${client.payer_client_name}` : 'לא הוגדר משלם'}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           </TableCell>
 
                           {/* Tax ID */}
@@ -855,22 +899,6 @@ export function FeeTrackingPage() {
                               : '-'}
                           </TableCell>
 
-                          {/* Deviation */}
-                          <TableCell className="py-2 px-3 rtl:text-right">
-                            {enhancedRow?.deviation_amount &&
-                            enhancedRow.deviation_percent !== null &&
-                            enhancedRow.deviation_alert_level ? (
-                              <DeviationBadge
-                                deviationAmount={enhancedRow.deviation_amount}
-                                deviationPercent={enhancedRow.deviation_percent}
-                                alertLevel={enhancedRow.deviation_alert_level}
-                                showTooltip={false}
-                              />
-                            ) : (
-                              <span className="text-xs text-gray-400">-</span>
-                            )}
-                          </TableCell>
-
                           {/* Payment Method */}
                           <TableCell className="py-2 px-3">
                             <PaymentMethodBadge
@@ -880,42 +908,6 @@ export function FeeTrackingPage() {
                                 null
                               }
                             />
-                          </TableCell>
-
-                          {/* Discount */}
-                          <TableCell className="py-2 px-3 rtl:text-right">
-                            {(() => {
-                              const method = enhancedRow?.actual_payment_method || client.payment_method_selected;
-                              if (method && PAYMENT_DISCOUNTS[method as PaymentMethod] > 0) {
-                                return (
-                                  <DiscountBadge
-                                    discountPercent={PAYMENT_DISCOUNTS[method as PaymentMethod]}
-                                    className="text-xs"
-                                  />
-                                );
-                              }
-                              return <span className="text-xs text-gray-400">-</span>;
-                            })()}
-                          </TableCell>
-
-                          {/* Files */}
-                          <TableCell className="py-2 px-3 rtl:text-right">
-                            {enhancedRow && enhancedRow.attachment_count > 0 ? (
-                              <FileAttachmentBadge count={enhancedRow.attachment_count} />
-                            ) : (
-                              <span className="text-xs text-gray-400">-</span>
-                            )}
-                          </TableCell>
-
-                          {/* Installments */}
-                          <TableCell className="py-2 px-3 rtl:text-right">
-                            {enhancedRow && enhancedRow.installment_count > 0 ? (
-                              <span className="text-xs">
-                                {enhancedRow.installments_paid}/{enhancedRow.installment_count}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-400">-</span>
-                            )}
                           </TableCell>
 
                           {/* Actions */}
@@ -930,7 +922,7 @@ export function FeeTrackingPage() {
                         {/* Expandable Row Content */}
                         {isExpanded && client.calculation_id && (
                           <TableRow>
-                            <TableCell colSpan={11} className="p-0">
+                            <TableCell colSpan={9} className="p-0">
                               <FeeTrackingExpandedRow
                                 feeCalculationId={client.calculation_id}
                                 clientName={client.client_name_hebrew || client.client_name}
@@ -1056,6 +1048,31 @@ export function FeeTrackingPage() {
           });
         }}
       />
+
+      {/* Floating Action Bar for Batch Operations */}
+      {selectedClients.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border rounded-lg shadow-xl px-6 py-4 flex items-center gap-4 rtl:flex-row-reverse">
+          <span className="font-medium text-sm">{selectedClients.size} לקוחות נבחרו</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedClients(new Set())}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleBatchSendLetters}
+            disabled={isSendingBatch}
+          >
+            {isSendingBatch ? (
+              <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
+            ) : (
+              <Mail className="h-4 w-4 ml-2" />
+            )}
+            שלח מכתבים ({selectedClients.size})
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

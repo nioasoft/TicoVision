@@ -115,6 +115,7 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   is_retainer: false, // NEW: לקוח ריטיינר - default false
   group_id: null,
   payment_role: 'independent', // NEW: תפקיד תשלום - default independent
+  payer_client_id: null, // NEW: לקוח שמשלם על לקוח זה
 };
 
 export const ClientFormDialog = React.memo<ClientFormDialogProps>(
@@ -142,6 +143,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [groups, setGroups] = useState<ClientGroup[]>([]); // NEW: רשימת קבוצות
+    const [payerClients, setPayerClients] = useState<Client[]>([]); // לקוחות שיכולים לשלם
     const [importedPdfFile, setImportedPdfFile] = useState<File | null>(null); // PDF file to save after client creation
     const [taxIdExists, setTaxIdExists] = useState(false); // NEW: בדיקת כפילות מספר עוסק
     const [isCheckingTaxId, setIsCheckingTaxId] = useState(false);
@@ -193,6 +195,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           is_retainer: client.is_retainer || false, // NEW: טעינת סטטוס ריטיינר
           group_id: client.group_id || undefined, // NEW: טעינת קבוצה
           payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
+          payer_client_id: client.payer_client_id || null, // NEW: לקוח שמשלם
         });
         // Load signature path
         setSignaturePath(client.signature_path || null);
@@ -224,6 +227,28 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
       loadGroups();
     }, []);
+
+    // Load payer clients (clients that can pay for other clients)
+    useEffect(() => {
+      const loadPayerClients = async () => {
+        const response = await clientService.list();
+        if (response.data?.clients) {
+          // Filter to only clients that can be payers:
+          // - Not the current client (if editing)
+          // - Not already a 'member' (who can't pay for others)
+          // - Must be active
+          const eligible = response.data.clients.filter(
+            (c) =>
+              c.id !== client?.id &&
+              c.payment_role !== 'member' &&
+              c.status === 'active'
+          );
+          setPayerClients(eligible);
+        }
+      };
+
+      loadPayerClients();
+    }, [client?.id]);
 
     // Check for duplicate tax_id in add mode (debounced)
     useEffect(() => {
@@ -764,6 +789,58 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <div></div>
               )}
 
+              {/* Payer Client Selection - for clients paid by another client */}
+              <div className="col-span-3 mt-4 mb-2">
+                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                  אחריות תשלום שכ"ט
+                </h3>
+              </div>
+
+              <div className="col-span-3 space-y-4">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="is_paid_by_another"
+                    checked={formData.payment_role === 'member' && !formData.group_id}
+                    onCheckedChange={(checked) => {
+                      if (!checked) {
+                        handleFormChange('payer_client_id', null);
+                        handleFormChange('payment_role', 'independent');
+                      } else {
+                        handleFormChange('payment_role', 'member');
+                      }
+                    }}
+                  />
+                  <Label htmlFor="is_paid_by_another" className="cursor-pointer">
+                    משולם על ידי לקוח אחר
+                  </Label>
+                </div>
+
+                {formData.payment_role === 'member' && !formData.group_id && (
+                  <div className="pr-6">
+                    <Label className="text-right block mb-2">בחר לקוח משלם *</Label>
+                    <Select
+                      value={formData.payer_client_id || ''}
+                      onValueChange={(value) => handleFormChange('payer_client_id', value || null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="בחר לקוח..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {payerClients.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.company_name_hebrew || c.company_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1 rtl:text-right">
+                      הלקוח הנבחר ישלם את שכר הטרחה עבור לקוח זה
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Accounting Management, Client Type row */}
               <div>
                 <Label htmlFor="internal_external" className="text-right block mb-2">
                   הנהלת חשבונות

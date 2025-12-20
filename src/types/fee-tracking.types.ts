@@ -48,6 +48,11 @@ export interface FeeTrackingRow {
   payment_method_selected?: PaymentMethod | null;
   amount_after_selected_discount?: number | null;
   payment_method_selected_at?: Date | null;
+
+  // Payer info (for clients paid by another client)
+  payer_client_id?: string | null;
+  payer_client_name?: string | null;
+  payment_role?: 'independent' | 'member' | 'primary_payer';
 }
 
 /**
