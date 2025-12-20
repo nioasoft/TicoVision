@@ -32,6 +32,7 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
 import {
@@ -39,6 +40,17 @@ import {
   AssignAccountantSelect,
 } from '@/components/capital-declarations';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import type {
   DeclarationWithCounts,
@@ -97,10 +109,14 @@ function getDaysRemaining(dateString: string): { days: number; colorClass: strin
 export function CapitalDeclarationsListPage() {
   const navigate = useNavigate();
   const { user, role } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const isAdmin = role === 'admin';
 
   // State
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [declarationToDelete, setDeclarationToDelete] = useState<DeclarationWithCounts | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [declarations, setDeclarations] = useState<DeclarationWithCounts[]>([]);
   const [totalDeclarations, setTotalDeclarations] = useState(0);
   const [accountants, setAccountants] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -250,6 +266,35 @@ export function CapitalDeclarationsListPage() {
     setPriorityFilter('all');
     setAssignedFilter('all');
     setCurrentPage(1);
+  };
+
+  /**
+   * Handle delete declaration (Super Admin only)
+   */
+  const handleDeleteClick = (declaration: DeclarationWithCounts, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeclarationToDelete(declaration);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!declarationToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await capitalDeclarationService.delete(declarationToDelete.id);
+      if (error) throw error;
+
+      toast.success(`הצהרת ההון של ${declarationToDelete.contact_name} נמחקה`);
+      setDeleteDialogOpen(false);
+      setDeclarationToDelete(null);
+      loadData();
+    } catch (error) {
+      console.error('Error deleting declaration:', error);
+      toast.error('שגיאה במחיקת ההצהרה');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const totalPages = Math.ceil(totalDeclarations / pageSize);
@@ -529,6 +574,7 @@ export function CapitalDeclarationsListPage() {
                     <TableHead className="rtl:text-right w-[90px] py-2">יעד משרד</TableHead>
                     <TableHead className="rtl:text-right w-[50px] py-2 text-center">מסמך</TableHead>
                     <TableHead className="rtl:text-right w-[100px] py-2">תקשורת</TableHead>
+                    {isSuperAdmin && <TableHead className="rtl:text-right w-[50px] py-2"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -644,6 +690,20 @@ export function CapitalDeclarationsListPage() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
+
+                      {/* Delete Button - Super Admin Only */}
+                      {isSuperAdmin && (
+                        <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={(e) => handleDeleteClick(declaration, e)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -686,6 +746,32 @@ export function CapitalDeclarationsListPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog - Super Admin Only */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="rtl:text-right">מחיקת הצהרת הון</AlertDialogTitle>
+            <AlertDialogDescription className="rtl:text-right">
+              האם אתה בטוח שברצונך למחוק את הצהרת ההון של{' '}
+              <strong>{declarationToDelete?.contact_name}</strong> לשנת{' '}
+              <strong>{declarationToDelete?.tax_year}</strong>?
+              <br />
+              <span className="text-red-600 font-medium">פעולה זו אינה ניתנת לביטול!</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? 'מוחק...' : 'מחק'}
+            </AlertDialogAction>
+            <AlertDialogCancel disabled={deleting}>ביטול</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
