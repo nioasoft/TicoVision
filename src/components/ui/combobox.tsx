@@ -31,6 +31,7 @@ export interface ComboboxProps {
   emptyText?: string
   className?: string
   disabled?: boolean
+  allowCustomValue?: boolean
 }
 
 export function Combobox({
@@ -42,15 +43,20 @@ export function Combobox({
   emptyText = "לא נמצאו תוצאות",
   className,
   disabled = false,
+  allowCustomValue = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   // Safety check: ensure options is always an array
   const safeOptions = options || []
   const selectedOption = safeOptions.find((option) => option.value === value)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen)
+      if (!isOpen) setSearchValue("")
+    }}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -64,7 +70,7 @@ export function Combobox({
           disabled={disabled}
         >
           <span className="truncate">
-            {selectedOption ? selectedOption.label : placeholder}
+            {selectedOption ? selectedOption.label : (value || placeholder)}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 rtl:ml-0 rtl:mr-2" />
         </Button>
@@ -74,10 +80,25 @@ export function Combobox({
           <CommandInput
             placeholder={searchPlaceholder}
             className="rtl:text-right ltr:text-left"
+            value={searchValue}
+            onValueChange={setSearchValue}
           />
           <CommandList>
-            <CommandEmpty className="rtl:text-right ltr:text-left">
-              {emptyText}
+            <CommandEmpty className="rtl:text-right ltr:text-left p-0">
+              {allowCustomValue && searchValue.trim() ? (
+                <div
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground rtl:text-right ltr:text-left"
+                  onClick={() => {
+                    onValueChange?.(searchValue.trim())
+                    setSearchValue("")
+                    setOpen(false)
+                  }}
+                >
+                  הוסף: "{searchValue.trim()}"
+                </div>
+              ) : (
+                <p className="py-6 text-center text-sm">{emptyText}</p>
+              )}
             </CommandEmpty>
             <CommandGroup>
               {safeOptions.map((option) => (

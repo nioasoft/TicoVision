@@ -310,9 +310,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       if (!formData.contact_name?.trim()) errors.push('שם איש קשר');
       if (!formData.contact_email?.trim()) errors.push('אימייל איש קשר');
       if (!formData.contact_phone?.trim()) errors.push('טלפון איש קשר');
-      if (!formData.address?.street?.trim()) errors.push('כתובת');
-      if (!formData.address?.city?.trim()) errors.push('עיר');
-
 
       // Accountant validation - OPTIONAL in add mode
       // Can be added later via contacts management
@@ -606,7 +603,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Row 2: Address, City, Postal Code (3 cols) */}
               <div>
                 <Label htmlFor="address_street" className="text-right block mb-2">
-                  כתובת <span className="text-red-500">*</span>
+                  כתובת
                 </Label>
                 <Input
                   id="address_street"
@@ -618,14 +615,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     })
                   }
                   onKeyDown={handleKeyDown}
-                  required
                   dir="rtl"
                 />
               </div>
 
               <div>
                 <Label htmlFor="address_city" className="text-right block mb-2">
-                  עיר <span className="text-red-500">*</span>
+                  עיר
                 </Label>
                 <Combobox
                   options={cityOptions}
@@ -636,9 +632,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       city: city?.trim()
                     })
                   }
-                  placeholder="בחר עיר..."
-                  searchPlaceholder="חפש עיר..."
-                  emptyText="לא נמצאה עיר"
+                  allowCustomValue
                 />
               </div>
 
