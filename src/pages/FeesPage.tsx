@@ -39,7 +39,8 @@ import {
   Edit2,
   Eye,
   Loader2,
-  Percent
+  Percent,
+  ExternalLink
 } from 'lucide-react';
 import { clientService, type Client } from '@/services/client.service';
 import { feeService, type FeeCalculation, type CreateFeeCalculationDto } from '@/services/fee.service';
@@ -1455,6 +1456,19 @@ export function FeesPage() {
           <p className="text-gray-500 mt-1 rtl:text-right ltr:text-left">חישוב שכר טרחה שנתי עם התאמות מדד ותוספות</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            asChild
+            className="bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse"
+          >
+            <a
+              href="https://docs.google.com/spreadsheets/d/1JISMIf62O9CfM6UV2qeboSeWe3MfERWt_flYaAPiT0s/edit?gid=1543496514#gid=1543496514"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4 ml-2" />
+              תקציב 25 בDRIVE
+            </a>
+          </Button>
           <Button variant="outline" onClick={resetForm}>
             <Plus className="h-4 w-4 ml-2" />
             חישוב חדש
