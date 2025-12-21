@@ -435,7 +435,11 @@ export class ClientService extends BaseService {
       // Sync primary contact (owner) using shared contacts system
       if (data.contact_name && data.contact_email) {
         try {
-          console.log('📧 Syncing primary contact for client:', client.company_name);
+          console.log('📧 Syncing primary contact for client:', client.company_name, {
+            contact_name: data.contact_name,
+            contact_email: data.contact_email,
+            contact_phone: data.contact_phone,
+          });
 
           // Create or find owner in tenant_contacts
           const owner = await TenantContactService.createOrGet({
@@ -446,14 +450,24 @@ export class ClientService extends BaseService {
             job_title: 'איש קשר מהותי',
           });
 
+          console.log('🔍 createOrGet returned owner:', owner ? { id: owner.id, full_name: owner.full_name, email: owner.email } : null);
+
           if (owner) {
             // Check if assignment already exists
             const existingContacts = await TenantContactService.getClientContacts(client.id);
             const existingPrimary = existingContacts.find(c => c.is_primary);
 
+            console.log('🔍 existingPrimary:', existingPrimary ? { id: existingPrimary.id, full_name: existingPrimary.full_name, assignment_id: existingPrimary.assignment_id } : null);
+            console.log('🔍 Comparison:', {
+              existingPrimaryId: existingPrimary?.id,
+              ownerId: owner.id,
+              idsMatch: existingPrimary?.id === owner.id,
+            });
+
             if (existingPrimary) {
               // Update existing primary contact assignment if contact changed
               if (existingPrimary.id !== owner.id) {
+                console.log('🔄 IDs differ - replacing primary contact...');
                 // Remove old primary assignment
                 await TenantContactService.unassignFromClient(existingPrimary.assignment_id);
                 // Create new primary assignment
@@ -466,10 +480,11 @@ export class ClientService extends BaseService {
                 });
                 console.log('✅ Primary contact replaced successfully');
               } else {
-                console.log('✅ Primary contact already assigned, no changes needed');
+                console.log('✅ Primary contact already assigned, no changes needed (same ID)');
               }
             } else {
               // No existing primary - create new assignment
+              console.log('🆕 No existing primary - creating new assignment...');
               await TenantContactService.assignToClient({
                 client_id: client.id,
                 contact_id: owner.id,

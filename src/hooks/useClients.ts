@@ -170,11 +170,8 @@ export function useClients(): UseClientsReturn {
   // Update client
   const updateClient = useCallback(
     async (id: string, data: UpdateClientDto, originalClient: Client): Promise<boolean> => {
-      // Remove old contact fields - they're managed through client_contacts table now
-      const { contact_name, contact_email, contact_phone, ...clientData } = data;
-
       // Don't send tax_id if it hasn't changed (to avoid validation on old invalid tax IDs)
-      const updateData: UpdateClientDto = { ...clientData };
+      const updateData: UpdateClientDto = { ...data };
       if (updateData.tax_id === originalClient.tax_id) {
         delete updateData.tax_id;
       }
@@ -297,7 +294,7 @@ export function useClients(): UseClientsReturn {
 
   // Update contact
   const updateContact = useCallback(
-    async (contactId: string, contactData: Partial<CreateClientContactDto>): Promise<boolean> => {
+    async (clientId: string, contactId: string, contactData: Partial<CreateClientContactDto>): Promise<boolean> => {
       const response = await clientService.updateContact(contactId, contactData);
       if (response.error) {
         toast({
@@ -308,18 +305,19 @@ export function useClients(): UseClientsReturn {
         return false;
       }
 
+      await loadClientContacts(clientId);
       toast({
         title: 'איש קשר עודכן',
         description: 'פרטי איש הקשר עודכנו בהצלחה',
       });
       return true;
     },
-    [toast]
+    [toast, loadClientContacts]
   );
 
   // Delete contact
   const deleteContact = useCallback(
-    async (contactId: string): Promise<boolean> => {
+    async (clientId: string, contactId: string): Promise<boolean> => {
       const response = await clientService.deleteContact(contactId);
       if (response.error) {
         toast({
@@ -330,18 +328,19 @@ export function useClients(): UseClientsReturn {
         return false;
       }
 
+      await loadClientContacts(clientId);
       toast({
         title: 'איש קשר נמחק',
         description: 'איש הקשר נמחק בהצלחה',
       });
       return true;
     },
-    [toast]
+    [toast, loadClientContacts]
   );
 
   // Set primary contact
   const setPrimaryContact = useCallback(
-    async (contactId: string): Promise<boolean> => {
+    async (clientId: string, contactId: string): Promise<boolean> => {
       const response = await clientService.setPrimaryContact(contactId);
       if (response.error) {
         toast({
@@ -352,13 +351,14 @@ export function useClients(): UseClientsReturn {
         return false;
       }
 
+      await loadClientContacts(clientId);
       toast({
         title: 'איש קשר ראשי הוגדר',
         description: 'איש הקשר הוגדר כראשי',
       });
       return true;
     },
-    [toast]
+    [toast, loadClientContacts]
   );
 
   // Selection management

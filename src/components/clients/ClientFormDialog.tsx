@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, FolderOpen } from 'lucide-react';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
 import { SignatureUpload } from '@/components/SignatureUpload';
 import { ContactsManager } from '@/components/ContactsManager';
 import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
@@ -75,9 +76,9 @@ interface ClientFormDialogProps {
   onSubmit: (data: CreateClientDto) => Promise<boolean | { success: boolean; clientId?: string }>;
   onLoadContacts?: (clientId: string) => Promise<void>;
   onAddContact?: (clientId: string, contactData: CreateClientContactDto) => Promise<boolean>;
-  onUpdateContact?: (contactId: string, contactData: Partial<CreateClientContactDto>) => Promise<boolean>;
-  onDeleteContact?: (contactId: string) => Promise<boolean>;
-  onSetPrimaryContact?: (contactId: string) => Promise<boolean>;
+  onUpdateContact?: (clientId: string, contactId: string, contactData: Partial<CreateClientContactDto>) => Promise<boolean>;
+  onDeleteContact?: (clientId: string, contactId: string) => Promise<boolean>;
+  onSetPrimaryContact?: (clientId: string, contactId: string) => Promise<boolean>;
   onLoadPhones?: (clientId: string) => Promise<void>;
   onAddPhone?: (clientId: string, phoneData: CreateClientPhoneDto) => Promise<boolean>;
   onUpdatePhone?: (phoneId: string, phoneData: Partial<CreateClientPhoneDto>) => Promise<boolean>;
@@ -487,6 +488,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       <>
         <Dialog open={open} onOpenChange={handleClose}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <UnsavedChangesIndicator show={hasUnsavedChanges} />
             <DialogHeader>
               <DialogTitle>
                 {mode === 'add' ? 'הוספת לקוח חדש' : 'עריכת פרטי לקוח'}
@@ -1113,9 +1115,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     <ContactsManager
                     contacts={contacts}
                     onAdd={(contactData) => onAddContact(client.id, contactData)}
-                    onUpdate={onUpdateContact}
-                    onDelete={onDeleteContact}
-                    onSetPrimary={onSetPrimaryContact}
+                    onUpdate={(contactId, data) => onUpdateContact?.(client.id, contactId, data) ?? Promise.resolve(false)}
+                    onDelete={(contactId) => onDeleteContact?.(client.id, contactId) ?? Promise.resolve(false)}
+                    onSetPrimary={(contactId) => onSetPrimaryContact?.(client.id, contactId) ?? Promise.resolve(false)}
                   />
                   </div>
                 </>
