@@ -130,15 +130,15 @@ export function useClients(): UseClientsReturn {
       if (response.error) {
         toast({
           title: 'שגיאה בטעינת לקוחות',
-          description: response.error.message,
+          description: response.error.message || 'לא הצלחנו לטעון את רשימת הלקוחות',
           variant: 'destructive',
         });
       }
     } catch (error) {
       logger.error('Error loading clients:', error);
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בטעינת הלקוחות',
+        title: 'שגיאה בטעינת לקוחות',
+        description: 'לא הצלחנו לטעון את רשימת הלקוחות. נסה לרענן את הדף.',
         variant: 'destructive',
       });
     } finally {
@@ -151,8 +151,8 @@ export function useClients(): UseClientsReturn {
     const response = await clientService.create(data);
     if (response.error) {
       toast({
-        title: 'שגיאה',
-        description: response.error.message,
+        title: 'שגיאה ביצירת לקוח',
+        description: response.error.message || 'לא הצלחנו ליצור את הלקוח. נסה שוב.',
         variant: 'destructive',
       });
       return { success: false };
@@ -180,8 +180,8 @@ export function useClients(): UseClientsReturn {
 
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה בעדכון לקוח',
+          description: response.error.message || 'לא הצלחנו לעדכן את פרטי הלקוח. נסה שוב.',
           variant: 'destructive',
         });
         return false;
@@ -205,8 +205,8 @@ export function useClients(): UseClientsReturn {
 
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה במחיקת לקוח',
+          description: response.error.message || 'לא הצלחנו למחוק את הלקוח. נסה שוב.',
           variant: 'destructive',
         });
         return false;
@@ -228,8 +228,8 @@ export function useClients(): UseClientsReturn {
     async (status: 'active' | 'inactive' | 'pending'): Promise<boolean> => {
       if (selectedClients.length === 0) {
         toast({
-          title: 'שגיאה',
-          description: 'אנא בחר לקוחות לעדכון',
+          title: 'לא נבחרו לקוחות',
+          description: 'יש לבחור לפחות לקוח אחד לעדכון',
           variant: 'destructive',
         });
         return false;
@@ -239,8 +239,8 @@ export function useClients(): UseClientsReturn {
 
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה בעדכון סטטוס',
+          description: response.error.message || 'לא הצלחנו לעדכן את הסטטוס. נסה שוב.',
           variant: 'destructive',
         });
         return false;
@@ -275,8 +275,8 @@ export function useClients(): UseClientsReturn {
       const response = await clientService.addContact(clientId, contactData);
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה בהוספת איש קשר',
+          description: response.error.message || 'לא הצלחנו להוסיף את איש הקשר. נסה שוב.',
           variant: 'destructive',
         });
         return false;
@@ -298,8 +298,8 @@ export function useClients(): UseClientsReturn {
       const response = await clientService.updateContact(contactId, contactData);
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה בעדכון איש קשר',
+          description: response.error.message || 'לא הצלחנו לעדכן את איש הקשר. נסה שוב.',
           variant: 'destructive',
         });
         return false;
@@ -321,8 +321,8 @@ export function useClients(): UseClientsReturn {
       const response = await clientService.deleteContact(contactId);
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה במחיקת איש קשר',
+          description: response.error.message || 'לא הצלחנו למחוק את איש הקשר. נסה שוב.',
           variant: 'destructive',
         });
         return false;
@@ -344,8 +344,8 @@ export function useClients(): UseClientsReturn {
       const response = await clientService.setPrimaryContact(contactId);
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה בהגדרת איש קשר ראשי',
+          description: response.error.message || 'לא הצלחנו להגדיר את איש הקשר כראשי. נסה שוב.',
           variant: 'destructive',
         });
         return false;

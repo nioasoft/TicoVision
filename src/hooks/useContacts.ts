@@ -119,8 +119,8 @@ export function useContacts(): UseContactsReturn {
     } catch (error) {
       console.error('Error loading contacts:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו לטעון את אנשי הקשר',
+        title: 'שגיאה בטעינת אנשי קשר',
+        description: 'לא הצלחנו לטעון את אנשי הקשר. נסה לרענן את הדף.',
         variant: 'destructive',
       });
     } finally {
@@ -178,8 +178,8 @@ export function useContacts(): UseContactsReturn {
     } catch (error) {
       console.error('Error creating contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו ליצור את איש הקשר',
+        title: 'שגיאה ביצירת איש קשר',
+        description: 'לא הצלחנו ליצור את איש הקשר. נסה שוב.',
         variant: 'destructive',
       });
       return { success: false };
@@ -195,8 +195,8 @@ export function useContacts(): UseContactsReturn {
         setSelectedContact(result);
       } else {
         toast({
-          title: 'שגיאה',
-          description: 'לא הצלחנו לטעון את פרטי איש הקשר',
+          title: 'שגיאה בטעינת פרטים',
+          description: 'לא הצלחנו לטעון את פרטי איש הקשר. נסה שוב.',
           variant: 'destructive',
         });
       }
@@ -232,8 +232,8 @@ export function useContacts(): UseContactsReturn {
     } catch (error) {
       console.error('Error updating contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו לעדכן את איש הקשר',
+        title: 'שגיאה בעדכון איש קשר',
+        description: 'לא הצלחנו לעדכן את איש הקשר. נסה שוב.',
         variant: 'destructive',
       });
       return false;
@@ -262,8 +262,8 @@ export function useContacts(): UseContactsReturn {
     } catch (error) {
       console.error('Error deleting contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו למחוק את איש הקשר',
+        title: 'שגיאה במחיקת איש קשר',
+        description: 'לא הצלחנו למחוק את איש הקשר. נסה שוב.',
         variant: 'destructive',
       });
       return false;
@@ -294,8 +294,8 @@ export function useContacts(): UseContactsReturn {
     } catch (error) {
       console.error('Error updating assignment:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו לעדכן את ההקצאה',
+        title: 'שגיאה בעדכון הקצאה',
+        description: 'לא הצלחנו לעדכן את ההקצאה ללקוח. נסה שוב.',
         variant: 'destructive',
       });
       return false;
@@ -322,8 +322,8 @@ export function useContacts(): UseContactsReturn {
     } catch (error) {
       console.error('Error unassigning from client:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו לנתק את איש הקשר',
+        title: 'שגיאה בניתוק איש קשר',
+        description: 'לא הצלחנו לנתק את איש הקשר מהלקוח. נסה שוב.',
         variant: 'destructive',
       });
       return false;

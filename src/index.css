@@ -456,3 +456,57 @@ input[type="number"] {
   transform-origin: top center;
   /* Scale is applied dynamically if needed */
 }
+
+/* ============================================
+   Enhanced Toast Styling
+   Bigger, bolder, more prominent toasts
+   ============================================ */
+
+[data-sonner-toaster] {
+  --width: 420px;
+  font-family: var(--font-hebrew), sans-serif;
+}
+
+[data-sonner-toast] {
+  padding: 20px 24px !important;
+  font-size: 15px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 14px !important;
+  opacity: 0.9;
+}
+
+/* Error toast - more prominent with colored border */
+[data-sonner-toast][data-type="error"] {
+  border-right: 4px solid hsl(0 84.2% 60.2%) !important;
+}
+
+/* Success toast */
+[data-sonner-toast][data-type="success"] {
+  border-right: 4px solid hsl(142 76% 36%) !important;
+}
+
+/* Warning toast */
+[data-sonner-toast][data-type="warning"] {
+  border-right: 4px solid hsl(38 92% 50%) !important;
+}
+
+/* Info toast */
+[data-sonner-toast][data-type="info"] {
+  border-right: 4px solid hsl(217 91% 60%) !important;
+}
+
+/* Larger icons */
+[data-sonner-toast] [data-icon] svg {
+  width: 22px !important;
+  height: 22px !important;
+}

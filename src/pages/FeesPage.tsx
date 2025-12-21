@@ -368,8 +368,8 @@ export function FeesPage() {
     } catch (error) {
       logger.error('Error loading data:', error);
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בטעינת הנתונים',
+        title: 'שגיאה בטעינת נתונים',
+        description: 'לא הצלחנו לטעון את הנתונים. נסה לרענן את הדף.',
         variant: 'destructive',
       });
     } finally {
@@ -752,8 +752,8 @@ export function FeesPage() {
   const handleSavePreviousYearData = async () => {
     if (!formData.client_id) {
       toast({
-        title: 'שגיאה',
-        description: 'נא לבחור לקוח',
+        title: 'לא נבחר לקוח',
+        description: 'יש לבחור לקוח לפני שמירת נתוני שנה קודמת',
         variant: 'destructive',
       });
       return;
@@ -779,8 +779,8 @@ export function FeesPage() {
       
       if (response.error) {
         toast({
-          title: 'שגיאה',
-          description: response.error.message,
+          title: 'שגיאה בשמירת נתונים',
+          description: response.error.message || 'לא הצלחנו לשמור את נתוני השנה הקודמת',
           variant: 'destructive',
         });
         return;
@@ -798,8 +798,8 @@ export function FeesPage() {
     } catch (error) {
       logger.error('Error saving previous year data:', error);
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בשמירת הנתונים',
+        title: 'שגיאה בשמירת נתונים',
+        description: 'לא הצלחנו לשמור את הנתונים. אנא נסה שוב.',
         variant: 'destructive',
       });
     } finally {
@@ -813,8 +813,8 @@ export function FeesPage() {
   const viewPreviousCalculation = async () => {
     if (!formData.client_id) {
       toast({
-        title: 'שגיאה',
-        description: 'נא לבחור לקוח תחילה',
+        title: 'לא נבחר לקוח',
+        description: 'יש לבחור לקוח לפני צפייה בחישוב קודם',
         variant: 'destructive'
       });
       return;
@@ -891,8 +891,8 @@ export function FeesPage() {
     } catch (error) {
       console.error('Error loading previous calculation:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא הצלחנו לטעון את החישוב הקודם',
+        title: 'שגיאה בטעינת חישוב',
+        description: 'לא הצלחנו לטעון את החישוב הקודם. נסה שוב.',
         variant: 'destructive'
       });
     } finally {
@@ -1029,8 +1029,8 @@ export function FeesPage() {
     // Validate selection based on mode (client or group)
     if (selectionMode === 'client' && !formData.client_id) {
       toast({
-        title: 'שגיאה',
-        description: 'נא לבחור לקוח',
+        title: 'לא נבחר לקוח',
+        description: 'יש לבחור לקוח לפני שמירת החישוב',
         variant: 'destructive',
       });
       return;
@@ -1038,8 +1038,8 @@ export function FeesPage() {
 
     if (selectionMode === 'group' && !selectedGroupId) {
       toast({
-        title: 'שגיאה',
-        description: 'נא לבחור קבוצה',
+        title: 'לא נבחרה קבוצה',
+        description: 'יש לבחור קבוצה לפני שמירת החישוב',
         variant: 'destructive',
       });
       return;
@@ -1051,8 +1051,8 @@ export function FeesPage() {
       if (isRetainerClient) {
         if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
           toast({
-            title: 'שגיאה',
-            description: 'נא למלא סכום רטיינר חודשי',
+            title: 'שדה חובה חסר',
+            description: 'יש למלא סכום רטיינר חודשי',
             variant: 'destructive',
           });
           return;
@@ -1060,8 +1060,8 @@ export function FeesPage() {
       } else {
         if (!formData.base_amount || formData.base_amount <= 0) {
           toast({
-            title: 'שגיאה',
-            description: 'נא למלא סכום בסיס',
+            title: 'שדה חובה חסר',
+            description: 'יש למלא סכום בסיס לחישוב',
             variant: 'destructive',
           });
           return;
@@ -1071,8 +1071,8 @@ export function FeesPage() {
       // Group mode validation - require base amount
       if (!formData.base_amount || formData.base_amount <= 0) {
         toast({
-          title: 'שגיאה',
-          description: 'נא למלא סכום בסיס לקבוצה',
+          title: 'שדה חובה חסר',
+          description: 'יש למלא סכום בסיס לקבוצה',
           variant: 'destructive',
         });
         return;
@@ -1108,8 +1108,8 @@ export function FeesPage() {
 
         if (response.error) {
           toast({
-            title: 'שגיאה',
-            description: response.error.message,
+            title: 'שגיאה בשמירה',
+            description: response.error.message || 'לא הצלחנו לשמור את החישוב. נסה שוב.',
             variant: 'destructive',
           });
           return;
@@ -1173,8 +1173,8 @@ export function FeesPage() {
 
         if (response.error) {
           toast({
-            title: 'שגיאה',
-            description: response.error.message,
+            title: 'שגיאה בשמירה',
+            description: response.error.message || 'לא הצלחנו לשמור את החישוב. נסה שוב.',
             variant: 'destructive',
           });
           return;
@@ -1190,8 +1190,8 @@ export function FeesPage() {
 
         if (response.error) {
           toast({
-            title: 'שגיאה',
-            description: response.error.message,
+            title: 'שגיאה בשמירה',
+            description: response.error.message || 'לא הצלחנו לשמור את החישוב. נסה שוב.',
             variant: 'destructive',
           });
           return;
@@ -1213,8 +1213,8 @@ export function FeesPage() {
     } catch (error) {
       logger.error('Error saving calculation:', error);
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בשמירת החישוב',
+        title: 'שגיאה בשמירת חישוב',
+        description: 'לא הצלחנו לשמור את החישוב. אנא נסה שוב.',
         variant: 'destructive',
       });
     }
@@ -1227,8 +1227,8 @@ export function FeesPage() {
     // Validate selection based on mode (client or group)
     if (selectionMode === 'client' && !formData.client_id) {
       toast({
-        title: 'שגיאה',
-        description: 'נא לבחור לקוח',
+        title: 'לא נבחר לקוח',
+        description: 'יש לבחור לקוח לפני שמירת החישוב',
         variant: 'destructive',
       });
       return;
@@ -1236,8 +1236,8 @@ export function FeesPage() {
 
     if (selectionMode === 'group' && !selectedGroupId) {
       toast({
-        title: 'שגיאה',
-        description: 'נא לבחור קבוצה',
+        title: 'לא נבחרה קבוצה',
+        description: 'יש לבחור קבוצה לפני שמירת החישוב',
         variant: 'destructive',
       });
       return;
@@ -1249,8 +1249,8 @@ export function FeesPage() {
       if (isRetainerClient) {
         if (!formData.retainer_monthly_amount || formData.retainer_monthly_amount <= 0) {
           toast({
-            title: 'שגיאה',
-            description: 'נא למלא סכום רטיינר חודשי',
+            title: 'שדה חובה חסר',
+            description: 'יש למלא סכום רטיינר חודשי',
             variant: 'destructive',
           });
           return;
@@ -1258,8 +1258,8 @@ export function FeesPage() {
       } else {
         if (!formData.base_amount || formData.base_amount <= 0) {
           toast({
-            title: 'שגיאה',
-            description: 'נא למלא סכום בסיס',
+            title: 'שדה חובה חסר',
+            description: 'יש למלא סכום בסיס לחישוב',
             variant: 'destructive',
           });
           return;
@@ -1269,8 +1269,8 @@ export function FeesPage() {
       // Group mode validation - require base amount
       if (!formData.base_amount || formData.base_amount <= 0) {
         toast({
-          title: 'שגיאה',
-          description: 'נא למלא סכום בסיס לקבוצה',
+          title: 'שדה חובה חסר',
+          description: 'יש למלא סכום בסיס לקבוצה',
           variant: 'destructive',
         });
         return;
@@ -1309,8 +1309,8 @@ export function FeesPage() {
 
         if (response.error) {
           toast({
-            title: 'שגיאה',
-            description: response.error.message,
+            title: 'שגיאה בשמירה',
+            description: response.error.message || 'לא הצלחנו לשמור את החישוב. נסה שוב.',
             variant: 'destructive',
           });
           return;
@@ -1379,8 +1379,8 @@ export function FeesPage() {
 
         if (response.error) {
           toast({
-            title: 'שגיאה',
-            description: response.error.message,
+            title: 'שגיאה בשמירה',
+            description: response.error.message || 'לא הצלחנו לשמור את החישוב. נסה שוב.',
             variant: 'destructive',
           });
           return;
@@ -1400,8 +1400,8 @@ export function FeesPage() {
 
         if (response.error) {
           toast({
-            title: 'שגיאה',
-            description: response.error.message,
+            title: 'שגיאה בשמירה',
+            description: response.error.message || 'לא הצלחנו לשמור את החישוב. נסה שוב.',
             variant: 'destructive',
           });
           return;
@@ -1420,8 +1420,8 @@ export function FeesPage() {
     } catch (error) {
       logger.error('Error saving calculation:', error);
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בשמירת החישוב',
+        title: 'שגיאה בשמירת חישוב',
+        description: 'לא הצלחנו לשמור את החישוב. אנא נסה שוב.',
         variant: 'destructive',
       });
     } finally {

@@ -161,15 +161,15 @@ export default function ClientGroupsPage() {
       if (response.error) {
         toast({
           title: 'שגיאה בטעינת קבוצות',
-          description: response.error.message,
+          description: response.error.message || 'לא הצלחנו לטעון את הקבוצות',
           variant: 'destructive',
         });
       }
     } catch (error) {
       logger.error('Error loading groups:', error);
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בטעינת הקבוצות',
+        title: 'שגיאה בטעינת קבוצות',
+        description: 'לא הצלחנו לטעון את הקבוצות. נסה לרענן את הדף.',
         variant: 'destructive',
       });
     } finally {
@@ -204,8 +204,8 @@ export default function ClientGroupsPage() {
     // Check for duplicate group name before submitting
     if (groupNameExists) {
       toast({
-        title: 'שגיאה',
-        description: 'קבוצה עם שם זה כבר קיימת במערכת',
+        title: 'שם קבוצה תפוס',
+        description: 'קבוצה עם שם זה כבר קיימת במערכת. יש לבחור שם אחר.',
         variant: 'destructive',
       });
       return;
@@ -215,8 +215,8 @@ export default function ClientGroupsPage() {
     const response = await clientService.createGroup(formData);
     if (response.error || !response.data) {
       toast({
-        title: 'שגיאה',
-        description: response.error?.message || 'לא ניתן ליצור קבוצה',
+        title: 'שגיאה ביצירת קבוצה',
+        description: response.error?.message || 'לא הצלחנו ליצור את הקבוצה. נסה שוב.',
         variant: 'destructive',
       });
       return;
@@ -249,8 +249,8 @@ export default function ClientGroupsPage() {
 
     if (response.error) {
       toast({
-        title: 'שגיאה',
-        description: response.error.message,
+        title: 'שגיאה בעדכון קבוצה',
+        description: response.error.message || 'לא הצלחנו לעדכן את הקבוצה. נסה שוב.',
         variant: 'destructive',
       });
       return;
@@ -271,11 +271,11 @@ export default function ClientGroupsPage() {
     if (!selectedGroup) return;
 
     const response = await clientService.deleteGroup(selectedGroup.id);
-    
+
     if (response.error) {
       toast({
-        title: 'שגיאה',
-        description: response.error.message,
+        title: 'שגיאה במחיקת קבוצה',
+        description: response.error.message || 'לא הצלחנו למחוק את הקבוצה. נסה שוב.',
         variant: 'destructive',
       });
       return;
@@ -376,8 +376,8 @@ export default function ClientGroupsPage() {
       const contact = await TenantContactService.createOrGet(contactData);
       if (!contact) {
         toast({
-          title: 'שגיאה',
-          description: 'לא ניתן ליצור איש קשר',
+          title: 'שגיאה ביצירת איש קשר',
+          description: 'לא הצלחנו ליצור את איש הקשר. נסה שוב.',
           variant: 'destructive',
         });
         return;
@@ -402,8 +402,8 @@ export default function ClientGroupsPage() {
     } catch (error) {
       logger.error('Error adding group contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא ניתן להוסיף איש קשר',
+        title: 'שגיאה בהוספת איש קשר',
+        description: 'לא הצלחנו להוסיף את איש הקשר לקבוצה. נסה שוב.',
         variant: 'destructive',
       });
     }
@@ -449,8 +449,8 @@ export default function ClientGroupsPage() {
     } catch (error) {
       logger.error('Error updating group contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא ניתן לעדכן איש קשר',
+        title: 'שגיאה בעדכון איש קשר',
+        description: 'לא הצלחנו לעדכן את פרטי איש הקשר. נסה שוב.',
         variant: 'destructive',
       });
     }
@@ -473,8 +473,8 @@ export default function ClientGroupsPage() {
     } catch (error) {
       logger.error('Error deleting group contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא ניתן להסיר איש קשר',
+        title: 'שגיאה בהסרת איש קשר',
+        description: 'לא הצלחנו להסיר את איש הקשר מהקבוצה. נסה שוב.',
         variant: 'destructive',
       });
     }
@@ -507,8 +507,8 @@ export default function ClientGroupsPage() {
     } catch (error) {
       logger.error('Error setting primary group contact:', error);
       toast({
-        title: 'שגיאה',
-        description: 'לא ניתן להגדיר כבעל שליטה ראשי',
+        title: 'שגיאה בעדכון בעל שליטה',
+        description: 'לא הצלחנו להגדיר את איש הקשר כבעל שליטה ראשי. נסה שוב.',
         variant: 'destructive',
       });
     }
@@ -1111,8 +1111,8 @@ export default function ClientGroupsPage() {
             );
             if (response.error) {
               toast({
-                title: 'שגיאה',
-                description: response.error.message,
+                title: 'שגיאה בעדכון לקוח',
+                description: response.error.message || 'לא הצלחנו לעדכן את פרטי הלקוח. נסה שוב.',
                 variant: 'destructive',
               });
               return false;

@@ -146,8 +146,8 @@ export function BranchManagementDialog({
     if (!formData.name.trim()) {
       toast({
         variant: 'destructive',
-        title: 'שגיאה',
-        description: 'יש להזין שם סניף',
+        title: 'שדה חובה חסר',
+        description: 'יש להזין שם סניף לפני שמירה',
       });
       return;
     }
