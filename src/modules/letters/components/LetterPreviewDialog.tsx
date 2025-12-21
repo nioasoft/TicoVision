@@ -5,7 +5,7 @@
  * Now supports: Tabs for multiple letters, PDF download, Print functionality
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Mail, Loader2, Printer, Download, CheckCircle2 } from 'lucide-react';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { TemplateService } from '../services/template.service';
 import type { LetterVariables, LetterTemplateType } from '../types/letter.types';
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
@@ -95,6 +98,17 @@ export function LetterPreviewDialog({
 
   // Send to Sigal and Shani for review
   const [sendToReviewers, setSendToReviewers] = useState(true); // Default: true (always send to them)
+
+  // Unsaved changes protection
+  const {
+    hasUnsavedChanges,
+    showExitConfirm,
+    markDirty,
+    reset: resetUnsavedChanges,
+    handleCloseAttempt,
+    confirmExit,
+    cancelExit,
+  } = useUnsavedChanges();
 
   /**
    * Load fee and client data, then generate variables
@@ -523,6 +537,7 @@ export function LetterPreviewDialog({
       current.delete(email);
     }
     setCurrentEnabledEmails(current);
+    markDirty();
   };
 
   // Add manual email
@@ -546,6 +561,7 @@ export function LetterPreviewDialog({
 
     setCurrentManualEmails([...current, email]);
     setNewManualEmail('');
+    markDirty();
     toast.success('מייל נוסף בהצלחה');
   };
 
@@ -553,6 +569,7 @@ export function LetterPreviewDialog({
   const handleRemoveManualEmail = (index: number) => {
     const current = getCurrentManualEmails();
     setCurrentManualEmails(current.filter((_, i) => i !== index));
+    markDirty();
   };
 
   /**
@@ -976,6 +993,9 @@ export function LetterPreviewDialog({
       const letterName = currentLetterStage === 'primary' ? 'ראשון' : 'שני';
       toast.success(`מכתב ${letterName} נשלח בהצלחה ל-${finalRecipients.length} נמענים`);
 
+      // Reset unsaved changes after successful send
+      resetUnsavedChanges();
+
       // Mark letter as sent (don't auto-navigate or close)
       if (currentLetterStage === 'primary') {
         setPrimarySent(true);
@@ -1028,8 +1048,10 @@ export function LetterPreviewDialog({
       setSecondaryManualEmails([]);
       setNewManualEmail('');
       setSendToReviewers(true); // Default: always send to reviewers
+      // Mark as dirty immediately - letter preview should always require confirmation to close
+      markDirty();
     }
-  }, [open]);
+  }, [open, markDirty]);
 
   /**
    * Sync currentLetterStage with activeTab changes
@@ -1175,7 +1197,10 @@ export function LetterPreviewDialog({
       <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded rtl:flex-row-reverse">
         <Checkbox
           checked={sendToReviewers}
-          onCheckedChange={(checked) => setSendToReviewers(checked as boolean)}
+          onCheckedChange={(checked) => {
+            setSendToReviewers(checked as boolean);
+            markDirty();
+          }}
           id="send-to-reviewers"
         />
         <Label htmlFor="send-to-reviewers" className="cursor-pointer rtl:text-right flex-1">
@@ -1284,9 +1309,16 @@ export function LetterPreviewDialog({
     </div>
   );
 
+  // Handler for close button and dialog close
+  const handleClose = useCallback(() => {
+    handleCloseAttempt(() => onOpenChange(false));
+  }, [handleCloseAttempt, onOpenChange]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto rtl:text-right ltr:text-left" dir="rtl">
+        <UnsavedChangesIndicator show={hasUnsavedChanges} />
         <DialogHeader>
           <DialogTitle className="rtl:text-right ltr:text-left">
             תצוגה מקדימה - מכתבי שכר טרחה
@@ -1329,11 +1361,18 @@ export function LetterPreviewDialog({
 
         {/* Close button at bottom */}
         <div className="flex justify-start gap-2 mt-4 pt-4 border-t rtl:flex-row-reverse">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose}>
             סגור
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+
+    <ExitConfirmationDialog
+      open={showExitConfirm}
+      onClose={cancelExit}
+      onConfirm={() => confirmExit(() => onOpenChange(false))}
+    />
+    </>
   );
 }

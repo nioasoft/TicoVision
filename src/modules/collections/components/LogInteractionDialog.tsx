@@ -2,7 +2,7 @@
  * Log Interaction Dialog
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +44,22 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
   const [outcome, setOutcome] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Unsaved changes protection
+  const {
+    hasUnsavedChanges,
+    showExitConfirm,
+    markDirty,
+    reset: resetUnsavedChanges,
+    handleCloseAttempt,
+    confirmExit,
+    cancelExit,
+  } = useUnsavedChanges();
+
+  // Handle close
+  const handleClose = useCallback(() => {
+    handleCloseAttempt(() => onOpenChange(false));
+  }, [handleCloseAttempt, onOpenChange]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!row) return;
@@ -64,6 +83,7 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
     }
 
     toast.success('האינטראקציה נרשמה בהצלחה');
+    resetUnsavedChanges();
     onSuccess();
     onOpenChange(false);
     setSubject('');
@@ -74,8 +94,10 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
   if (!row) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className="rtl:text-right ltr:text-left max-w-2xl">
+        <UnsavedChangesIndicator show={hasUnsavedChanges} />
         <DialogHeader>
           <DialogTitle className="rtl:text-right ltr:text-left">רישום אינטראקציה עם לקוח</DialogTitle>
           <DialogDescription className="rtl:text-right ltr:text-left">
@@ -86,7 +108,10 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="type" className="rtl:text-right ltr:text-left">סוג אינטראקציה</Label>
-            <Select value={interactionType} onValueChange={(value: any) => setInteractionType(value)}>
+            <Select value={interactionType} onValueChange={(value: any) => {
+              setInteractionType(value);
+              markDirty();
+            }}>
               <SelectTrigger id="type" className="rtl:text-right ltr:text-left">
                 <SelectValue />
               </SelectTrigger>
@@ -101,7 +126,10 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
 
           <div className="space-y-2">
             <Label className="rtl:text-right ltr:text-left">כיוון</Label>
-            <RadioGroup value={direction} onValueChange={(value: any) => setDirection(value)} className="flex gap-4 rtl:flex-row-reverse">
+            <RadioGroup value={direction} onValueChange={(value: any) => {
+              setDirection(value);
+              markDirty();
+            }} className="flex gap-4 rtl:flex-row-reverse">
               <div className="flex items-center gap-2 rtl:flex-row-reverse">
                 <RadioGroupItem value="outbound" id="outbound" />
                 <Label htmlFor="outbound" className="rtl:text-right ltr:text-left cursor-pointer">יוצא (התקשרתי ללקוח)</Label>
@@ -118,7 +146,10 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
             <Input
               id="subject"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                markDirty();
+              }}
               required
               className="rtl:text-right ltr:text-left"
             />
@@ -129,7 +160,10 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
             <Textarea
               id="content"
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                setContent(e.target.value);
+                markDirty();
+              }}
               rows={4}
               className="rtl:text-right ltr:text-left"
             />
@@ -140,7 +174,10 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
             <Input
               id="outcome"
               value={outcome}
-              onChange={(e) => setOutcome(e.target.value)}
+              onChange={(e) => {
+                setOutcome(e.target.value);
+                markDirty();
+              }}
               className="rtl:text-right ltr:text-left"
             />
           </div>
@@ -149,12 +186,19 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
             <Button type="submit" disabled={loading}>
               {loading ? 'שומר...' : 'רישום אינטראקציה'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               ביטול
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <ExitConfirmationDialog
+      open={showExitConfirm}
+      onClose={cancelExit}
+      onConfirm={() => confirmExit(() => onOpenChange(false))}
+    />
+    </>
   );
 };

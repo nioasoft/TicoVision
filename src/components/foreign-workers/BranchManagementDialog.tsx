@@ -4,7 +4,7 @@
  * Allows adding, editing, and deleting branches.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,6 +72,28 @@ export function BranchManagementDialog({
   const [formData, setFormData] = useState({ name: '', is_default: false });
   const [deleteConfirm, setDeleteConfirm] = useState<BranchWithDisplayName | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Check if there are unsaved changes (form is in edit mode)
+  const hasUnsavedChanges = editMode !== 'none';
+
+  // Handle close with unsaved changes check
+  const handleClose = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowExitConfirm(true);
+    } else {
+      onClose();
+    }
+  }, [hasUnsavedChanges, onClose]);
+
+  // Confirm exit and discard changes
+  const handleConfirmExit = useCallback(() => {
+    setEditMode('none');
+    setEditingBranch(null);
+    setFormData({ name: '', is_default: false });
+    setShowExitConfirm(false);
+    onClose();
+  }, [onClose]);
 
   // Load branches when dialog opens
   useEffect(() => {
@@ -206,8 +230,9 @@ export function BranchManagementDialog({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="max-w-2xl" dir="rtl">
+          <UnsavedChangesIndicator show={hasUnsavedChanges} />
           <DialogHeader>
             <DialogTitle className="text-right">ניהול סניפים</DialogTitle>
             <DialogDescription className="text-right">
@@ -325,7 +350,7 @@ export function BranchManagementDialog({
           </div>
 
           <DialogFooter className="flex-row-reverse justify-between">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={handleClose}>
               סגור
             </Button>
             <Button onClick={handleAddClick} disabled={editMode !== 'none'}>
@@ -367,6 +392,13 @@ export function BranchManagementDialog({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Exit confirmation dialog */}
+      <ExitConfirmationDialog
+        open={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        onConfirm={handleConfirmExit}
+      />
     </>
   );
 }

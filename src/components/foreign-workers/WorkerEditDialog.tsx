@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, History, UserCog, Save, AlertTriangle } from 'lucide-react';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { ForeignWorkerService } from '@/services/foreign-worker.service';
 import type { ForeignWorker } from '@/types/foreign-worker.types';
 import type { AuditLog } from '@/services/audit.service';
@@ -31,6 +34,22 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
   const [history, setHistory] = useState<AuditLog[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  // Unsaved changes protection
+  const {
+    hasUnsavedChanges,
+    showExitConfirm,
+    markDirty,
+    reset: resetUnsavedChanges,
+    handleCloseAttempt,
+    confirmExit,
+    cancelExit,
+  } = useUnsavedChanges();
+
+  // Handle close
+  const handleClose = useCallback(() => {
+    handleCloseAttempt(() => onOpenChange(false));
+  }, [handleCloseAttempt, onOpenChange]);
+
   // Initialize form when worker changes
   useEffect(() => {
     if (worker) {
@@ -38,8 +57,9 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
       setPassportNumber(worker.passport_number);
       setNationality(worker.nationality || '');
       setHistory([]); // Reset history
+      resetUnsavedChanges(); // Reset unsaved changes state
     }
-  }, [worker]);
+  }, [worker, resetUnsavedChanges]);
 
   // Load history when tab changes to history
   useEffect(() => {
@@ -86,6 +106,7 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
         toast.error(`שגיאה בשמירה: ${error}`);
       } else {
         toast.success('פרטי עובד עודכנו בהצלחה');
+        resetUnsavedChanges();
         onWorkerUpdated();
         onOpenChange(false);
       }
@@ -100,8 +121,10 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
   if (!worker) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className="max-w-2xl" dir="rtl">
+        <UnsavedChangesIndicator show={hasUnsavedChanges} />
         <DialogHeader>
           <DialogTitle className="text-right flex items-center gap-2">
             <UserCog className="h-5 w-5 text-blue-600" />
@@ -124,7 +147,10 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
                 <Label className="text-right block">שם מלא <span className="text-red-500">*</span></Label>
                 <Input
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    markDirty();
+                  }}
                   className="text-right"
                 />
               </div>
@@ -133,7 +159,10 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
                 <Label className="text-right block">מספר דרכון <span className="text-red-500">*</span></Label>
                 <Input
                   value={passportNumber}
-                  onChange={(e) => setPassportNumber(e.target.value)}
+                  onChange={(e) => {
+                    setPassportNumber(e.target.value);
+                    markDirty();
+                  }}
                   className="text-right"
                 />
                 <p className="text-xs text-muted-foreground text-right">
@@ -145,7 +174,10 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
                 <Label className="text-right block">נתינות</Label>
                 <Input
                   value={nationality}
-                  onChange={(e) => setNationality(e.target.value)}
+                  onChange={(e) => {
+                    setNationality(e.target.value);
+                    markDirty();
+                  }}
                   className="text-right"
                 />
               </div>
@@ -225,5 +257,12 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
         </Tabs>
       </DialogContent>
     </Dialog>
+
+    <ExitConfirmationDialog
+      open={showExitConfirm}
+      onClose={cancelExit}
+      onConfirm={() => confirmExit(() => onOpenChange(false))}
+    />
+    </>
   );
 }

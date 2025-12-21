@@ -3,7 +3,7 @@
  * Allows recording of payment promises from clients
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { collectionService } from '@/services/collection.service';
@@ -39,6 +42,22 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Unsaved changes protection
+  const {
+    hasUnsavedChanges,
+    showExitConfirm,
+    markDirty,
+    reset: resetUnsavedChanges,
+    handleCloseAttempt,
+    confirmExit,
+    cancelExit,
+  } = useUnsavedChanges();
+
+  // Handle close
+  const handleClose = useCallback(() => {
+    handleCloseAttempt(() => onOpenChange(false));
+  }, [handleCloseAttempt, onOpenChange]);
+
   // Reset form when dialog opens
   React.useEffect(() => {
     if (open) {
@@ -47,8 +66,9 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
       nextWeek.setDate(nextWeek.getDate() + 7);
       setPromiseDate(nextWeek.toISOString().split('T')[0]);
       setNote('');
+      resetUnsavedChanges();
     }
-  }, [open]);
+  }, [open, resetUnsavedChanges]);
 
   if (!row) return null;
 
@@ -73,6 +93,7 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
       }
 
       toast.success('הבטחת התשלום נשמרה בהצלחה');
+      resetUnsavedChanges();
       onOpenChange(false);
       onSuccess();
     } catch (error) {
@@ -83,8 +104,10 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className="sm:max-w-[450px]" dir="rtl">
+        <UnsavedChangesIndicator show={hasUnsavedChanges} />
         <DialogHeader>
           <DialogTitle className="rtl:text-right flex items-center gap-2 rtl:flex-row-reverse">
             <Calendar className="h-5 w-5" />
@@ -121,7 +144,10 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
               id="promise-date"
               type="date"
               value={promiseDate}
-              onChange={(e) => setPromiseDate(e.target.value)}
+              onChange={(e) => {
+                setPromiseDate(e.target.value);
+                markDirty();
+              }}
               className="rtl:text-right"
               min={new Date().toISOString().split('T')[0]}
             />
@@ -134,7 +160,10 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
             <Textarea
               id="promise-note"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={(e) => {
+                setNote(e.target.value);
+                markDirty();
+              }}
               className="min-h-[80px] rtl:text-right"
               dir="rtl"
             />
@@ -142,7 +171,7 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
         </div>
 
         <DialogFooter className="rtl:flex-row-reverse gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             ביטול
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting || !promiseDate}>
@@ -158,6 +187,13 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <ExitConfirmationDialog
+      open={showExitConfirm}
+      onClose={cancelExit}
+      onConfirm={() => confirmExit(() => onOpenChange(false))}
+    />
+    </>
   );
 };
 

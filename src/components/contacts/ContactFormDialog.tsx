@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Unlink, Check, X } from 'lucide-react';
 import { SignatureUpload } from '@/components/SignatureUpload';
 import { fileUploadService } from '@/services/file-upload.service';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -255,6 +256,7 @@ export function ContactFormDialog({
     <>
       <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <UnsavedChangesIndicator show={hasUnsavedChanges} />
           <DialogHeader>
             <DialogTitle className="text-right">
               {mode === 'add' ? 'הוספת איש קשר חדש' : 'עריכת איש קשר'}

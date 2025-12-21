@@ -3,7 +3,7 @@
  * Dialog for sending manual payment reminders to clients
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -49,6 +52,22 @@ export const SendReminderDialog: React.FC<SendReminderDialogProps> = ({
   const [includeMistakeButton, setIncludeMistakeButton] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Unsaved changes protection
+  const {
+    hasUnsavedChanges,
+    showExitConfirm,
+    markDirty,
+    reset: resetUnsavedChanges,
+    handleCloseAttempt,
+    confirmExit,
+    cancelExit,
+  } = useUnsavedChanges();
+
+  // Handle close
+  const handleClose = useCallback(() => {
+    handleCloseAttempt(() => onOpenChange(false));
+  }, [handleCloseAttempt, onOpenChange]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!row) return;
@@ -70,6 +89,7 @@ export const SendReminderDialog: React.FC<SendReminderDialogProps> = ({
     toast.success('התזכורת נשלחה בהצלחה', {
       description: `התזכורת נשלחה ללקוח ${row.company_name_hebrew || row.client_name}`,
     });
+    resetUnsavedChanges();
     onSuccess();
     onOpenChange(false);
     setTemplateId('gentle_reminder');
@@ -79,8 +99,10 @@ export const SendReminderDialog: React.FC<SendReminderDialogProps> = ({
   if (!row) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={() => handleClose()}>
       <DialogContent className="rtl:text-right ltr:text-left max-w-md">
+        <UnsavedChangesIndicator show={hasUnsavedChanges} />
         <DialogHeader>
           <DialogTitle className="rtl:text-right ltr:text-left flex items-center gap-2">
             <Mail className="h-5 w-5 text-blue-600" />
@@ -105,7 +127,10 @@ export const SendReminderDialog: React.FC<SendReminderDialogProps> = ({
             <Label htmlFor="template" className="rtl:text-right ltr:text-left">
               סוג תזכורת
             </Label>
-            <Select value={templateId} onValueChange={setTemplateId}>
+            <Select value={templateId} onValueChange={(value) => {
+              setTemplateId(value);
+              markDirty();
+            }}>
               <SelectTrigger id="template" className="rtl:text-right ltr:text-left">
                 <SelectValue />
               </SelectTrigger>
@@ -144,7 +169,10 @@ export const SendReminderDialog: React.FC<SendReminderDialogProps> = ({
             <Checkbox
               id="mistake"
               checked={includeMistakeButton}
-              onCheckedChange={(checked) => setIncludeMistakeButton(checked as boolean)}
+              onCheckedChange={(checked) => {
+                setIncludeMistakeButton(checked as boolean);
+                markDirty();
+              }}
             />
             <Label
               htmlFor="mistake"
@@ -159,13 +187,20 @@ export const SendReminderDialog: React.FC<SendReminderDialogProps> = ({
               <Mail className="h-4 w-4 ml-2" />
               {loading ? 'שולח תזכורת...' : 'שלח תזכורת'}
             </Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
               ביטול
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+
+    <ExitConfirmationDialog
+      open={showExitConfirm}
+      onClose={cancelExit}
+      onConfirm={() => confirmExit(() => onOpenChange(false))}
+    />
+    </>
   );
 };
 

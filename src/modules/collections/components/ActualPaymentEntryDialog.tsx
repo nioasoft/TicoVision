@@ -4,12 +4,15 @@
  * Features: payment details, VAT calculation, deviation alerts, file upload, installments
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges';
+import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
+import { ExitConfirmationDialog } from '@/components/ui/exit-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
@@ -74,6 +77,17 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Unsaved changes protection
+  const {
+    hasUnsavedChanges,
+    showExitConfirm,
+    markDirty,
+    reset: resetUnsavedChanges,
+    handleCloseAttempt,
+    confirmExit,
+    cancelExit,
+  } = useUnsavedChanges();
+
   // Handler for payment method change - updates discount if not client-selected
   const handlePaymentMethodChange = (method: PaymentMethod) => {
     setPaymentMethod(method);
@@ -84,6 +98,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
       const newExpected = props.originalAmount * (1 - newDiscount / 100);
       setAmountPaid(newExpected);
     }
+    markDirty();
   };
 
   // Handler for manual discount change
@@ -93,7 +108,13 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
     // Update amount paid to match new expected
     const newExpected = props.originalAmount * (1 - discount / 100);
     setAmountPaid(newExpected);
+    markDirty();
   };
+
+  // Handler for close
+  const handleClose = useCallback(() => {
+    handleCloseAttempt(() => props.onOpenChange(false));
+  }, [handleCloseAttempt, props]);
 
   // Calculated values
   const vatBreakdown = useMemo(
@@ -146,6 +167,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
       }
 
       toast.success('התשלום נרשם בהצלחה');
+      resetUnsavedChanges();
       props.onSuccess();
       props.onOpenChange(false);
     } catch (error) {
@@ -160,11 +182,14 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
     toast.info('מעלה קבצים...');
     const newIds = files.map((_, index) => `temp-${Date.now()}-${index}`);
     setAttachmentIds([...attachmentIds, ...newIds]);
+    markDirty();
   };
 
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+    <>
+    <Dialog open={props.open} onOpenChange={() => handleClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+        <UnsavedChangesIndicator show={hasUnsavedChanges} />
         <DialogHeader>
           <DialogTitle className="rtl:text-right ltr:text-left">
             הזנת תשלום בפועל - {props.clientName}
@@ -259,7 +284,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                   id="paymentDate"
                   type="date"
                   value={format(paymentDate, 'yyyy-MM-dd')}
-                  onChange={(e) => setPaymentDate(new Date(e.target.value))}
+                  onChange={(e) => {
+                    setPaymentDate(new Date(e.target.value));
+                    markDirty();
+                  }}
                   className="rtl:text-right ltr:text-left"
                 />
               </div>
@@ -270,7 +298,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                 </Label>
                 <MoneyInput
                   value={amountPaid}
-                  onChange={(value) => setAmountPaid(value)}
+                  onChange={(value) => {
+                    setAmountPaid(value);
+                    markDirty();
+                  }}
                   className="rtl:text-right ltr:text-left"
                 />
                 <div className="text-xs text-muted-foreground rtl:text-right ltr:text-left">
@@ -303,7 +334,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
               <Input
                 id="reference"
                 value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
+                onChange={(e) => {
+                  setPaymentReference(e.target.value);
+                  markDirty();
+                }}
                 className="rtl:text-right ltr:text-left"
               />
             </div>
@@ -314,7 +348,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                 <Checkbox
                   id="hasInstallments"
                   checked={hasInstallments}
-                  onCheckedChange={(checked) => setHasInstallments(checked as boolean)}
+                  onCheckedChange={(checked) => {
+                    setHasInstallments(checked as boolean);
+                    markDirty();
+                  }}
                 />
                 <Label htmlFor="hasInstallments" className="cursor-pointer rtl:text-right ltr:text-left">
                   תשלום בתשלומים
@@ -332,7 +369,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                     min={2}
                     max={24}
                     value={numInstallments}
-                    onChange={(e) => setNumInstallments(Number(e.target.value))}
+                    onChange={(e) => {
+                      setNumInstallments(Number(e.target.value));
+                      markDirty();
+                    }}
                     className="rtl:text-right ltr:text-left"
                   />
                   <p className="text-xs text-muted-foreground rtl:text-right ltr:text-left">
@@ -366,7 +406,10 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                markDirty();
+              }}
               className="rtl:text-right ltr:text-left"
               rows={3}
             />
@@ -392,7 +435,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
         </div>
 
         <DialogFooter className="gap-2 rtl:space-x-reverse">
-          <Button variant="outline" onClick={() => props.onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose}>
             ביטול
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
@@ -401,5 +444,12 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <ExitConfirmationDialog
+      open={showExitConfirm}
+      onClose={cancelExit}
+      onConfirm={() => confirmExit(() => props.onOpenChange(false))}
+    />
+    </>
   );
 }
