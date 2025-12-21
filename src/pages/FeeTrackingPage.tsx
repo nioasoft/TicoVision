@@ -8,7 +8,7 @@
  * - Track payment status
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,10 +64,13 @@ import type {
   FeeTrackingEnhancedRow,
   TrackingFilter,
   PaymentStatus,
+  BatchSendState,
+  BatchQueueItem,
 } from '@/types/fee-tracking.types';
 import { formatILS, formatNumber, formatPercentage } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog';
+import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewDialog';
 import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
 import { FeeTrackingExpandedRow } from '@/components/fee-tracking/FeeTrackingExpandedRow';
 
@@ -88,7 +91,6 @@ export function FeeTrackingPage() {
 
   // Multi-select for batch operations
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
-  const [isSendingBatch, setIsSendingBatch] = useState(false);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<TrackingFilter>('all');
@@ -102,6 +104,24 @@ export function FeeTrackingPage() {
   // Letter view dialog
   const [viewLetterDialogOpen, setViewLetterDialogOpen] = useState(false);
   const [selectedLetterId, setSelectedLetterId] = useState<string | null>(null);
+
+  // Letter preview dialog (for sending)
+  const [letterDialogOpen, setLetterDialogOpen] = useState(false);
+  const [selectedFeeId, setSelectedFeeId] = useState<string | null>(null);
+  const [selectedClientIdForLetter, setSelectedClientIdForLetter] = useState<string | null>(null);
+
+  // Batch send state
+  const [batchState, setBatchState] = useState<BatchSendState>({
+    isActive: false,
+    queue: [],
+    currentIndex: 0,
+    results: { sent: [], skipped: [] },
+  });
+
+  // Current client in batch queue
+  const currentBatchClient = batchState.isActive && batchState.currentIndex < batchState.queue.length
+    ? batchState.queue[batchState.currentIndex]
+    : null;
 
   // Available years
   const currentYear = new Date().getFullYear();
@@ -329,19 +349,22 @@ export function FeeTrackingPage() {
   };
 
   const handlePreviewLetter = (calculationId: string) => {
-    // TODO: Open LetterPreviewDialog
-    toast({
-      title: 'תצוגה מקדימה',
-      description: 'פונקציה זו תיושם בשלב הבא',
-    });
+    const client = clients.find(c => c.calculation_id === calculationId);
+    if (client) {
+      setSelectedFeeId(calculationId);
+      setSelectedClientIdForLetter(client.client_id);
+      setLetterDialogOpen(true);
+    }
   };
 
   const handleSendLetter = async (calculationId: string) => {
-    // TODO: Send letter directly
-    toast({
-      title: 'שליחת מכתב',
-      description: 'פונקציה זו תיושם בשלב הבא',
-    });
+    // Opens the same preview dialog - user sends from there
+    const client = clients.find(c => c.calculation_id === calculationId);
+    if (client) {
+      setSelectedFeeId(calculationId);
+      setSelectedClientIdForLetter(client.client_id);
+      setLetterDialogOpen(true);
+    }
   };
 
   const handleEditCalculation = (calculationId: string, clientId: string) => {
@@ -400,36 +423,140 @@ export function FeeTrackingPage() {
       .filter((c) => c.payment_status !== 'not_calculated')
       .every((c) => selectedClients.has(c.client_id));
 
-  const handleBatchSendLetters = async () => {
-    if (selectedClients.size === 0) return;
-
-    setIsSendingBatch(true);
-    try {
-      const clientIds = Array.from(selectedClients);
-      const result = await feeTrackingService.batchSendLetters(clientIds, selectedYear);
-
-      if (result.data) {
-        toast({
-          title: 'שליחה הושלמה',
-          description: `נשלחו ${result.data.success.length} מכתבים בהצלחה${
-            result.data.failed.length > 0 ? `, ${result.data.failed.length} נכשלו` : ''
-          }`,
-        });
-
-        setSelectedClients(new Set());
-        await loadTrackingData();
-      }
-    } catch (error) {
-      console.error('Error batch sending letters:', error);
+  /**
+   * Start batch send process - builds queue and opens first dialog
+   */
+  const startBatchSend = useCallback(() => {
+    if (selectedClients.size === 0) {
       toast({
-        title: 'שגיאה',
-        description: 'אירעה שגיאה בשליחת המכתבים',
+        title: 'לא נבחרו לקוחות',
+        description: 'יש לבחור לפחות לקוח אחד לשליחה',
         variant: 'destructive',
       });
-    } finally {
-      setIsSendingBatch(false);
+      return;
     }
-  };
+
+    // Build queue from selected clients with calculations
+    const queue: BatchQueueItem[] = [];
+    for (const clientId of selectedClients) {
+      const client = clients.find(c => c.client_id === clientId);
+      if (client?.calculation_id && client.payment_status !== 'not_calculated') {
+        queue.push({
+          client_id: client.client_id,
+          calculation_id: client.calculation_id,
+          client_name: client.client_name_hebrew || client.client_name,
+        });
+      }
+    }
+
+    if (queue.length === 0) {
+      toast({
+        title: 'אין לקוחות מתאימים',
+        description: 'כל הלקוחות שנבחרו חסרים חישוב שכר טרחה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setBatchState({
+      isActive: true,
+      queue,
+      currentIndex: 0,
+      results: { sent: [], skipped: [] },
+    });
+    setLetterDialogOpen(true);
+  }, [selectedClients, clients, toast]);
+
+  /**
+   * Handle successful email sent (callback from dialog)
+   */
+  const handleBatchEmailSent = useCallback(() => {
+    if (!batchState.isActive || !currentBatchClient) return;
+
+    setBatchState(prev => ({
+      ...prev,
+      results: {
+        ...prev.results,
+        sent: [...prev.results.sent, currentBatchClient.client_id],
+      },
+    }));
+  }, [batchState.isActive, currentBatchClient]);
+
+  /**
+   * Finish batch send and show summary
+   */
+  const finishBatchSend = useCallback(() => {
+    const { sent, skipped } = batchState.results;
+
+    if (sent.length > 0 && skipped.length === 0) {
+      toast({ title: 'השליחה הושלמה בהצלחה', description: `נשלחו ${sent.length} מכתבים` });
+    } else if (sent.length > 0) {
+      toast({ title: 'השליחה הושלמה', description: `נשלחו ${sent.length} מכתבים, ${skipped.length} דולגו` });
+    } else if (skipped.length > 0) {
+      toast({ title: 'השליחה בוטלה', description: `כל ${skipped.length} הלקוחות דולגו`, variant: 'destructive' });
+    }
+
+    setBatchState({
+      isActive: false,
+      queue: [],
+      currentIndex: 0,
+      results: { sent: [], skipped: [] },
+    });
+    setSelectedClients(new Set());
+    loadTrackingData();
+  }, [batchState.results, toast]);
+
+  /**
+   * Handle dialog close - move to next client or finish
+   */
+  const handleBatchDialogClose = useCallback((open: boolean) => {
+    if (open) {
+      setLetterDialogOpen(true);
+      return;
+    }
+
+    setLetterDialogOpen(false);
+
+    if (!batchState.isActive) {
+      // Normal mode - not batch
+      setSelectedFeeId(null);
+      setSelectedClientIdForLetter(null);
+      loadTrackingData();
+      return;
+    }
+
+    // Check if current client was sent
+    const wasJustSent = batchState.results.sent.includes(currentBatchClient?.client_id || '');
+
+    // If not sent - mark as skipped
+    if (!wasJustSent && currentBatchClient) {
+      setBatchState(prev => ({
+        ...prev,
+        results: {
+          ...prev.results,
+          skipped: [...prev.results.skipped, currentBatchClient.client_id],
+        },
+      }));
+    }
+
+    // Move to next client or finish
+    const nextIndex = batchState.currentIndex + 1;
+
+    if (nextIndex < batchState.queue.length) {
+      setBatchState(prev => ({ ...prev, currentIndex: nextIndex }));
+      setTimeout(() => setLetterDialogOpen(true), 150);
+    } else {
+      finishBatchSend();
+    }
+  }, [batchState, currentBatchClient, finishBatchSend]);
+
+  /**
+   * Cancel batch send
+   */
+  const cancelBatchSend = useCallback(() => {
+    setLetterDialogOpen(false);
+    finishBatchSend();
+  }, [finishBatchSend]);
 
   /**
    * Render action buttons based on client status (Compact)
@@ -1049,8 +1176,56 @@ export function FeeTrackingPage() {
         }}
       />
 
+      {/* Letter Preview Dialog (for sending) */}
+      <LetterPreviewDialog
+        open={letterDialogOpen}
+        onOpenChange={batchState.isActive ? handleBatchDialogClose : (open) => {
+          setLetterDialogOpen(open);
+          if (!open) {
+            setSelectedFeeId(null);
+            setSelectedClientIdForLetter(null);
+            loadTrackingData();
+          }
+        }}
+        feeId={batchState.isActive ? currentBatchClient?.calculation_id || null : selectedFeeId}
+        clientId={batchState.isActive ? currentBatchClient?.client_id || null : selectedClientIdForLetter}
+        onEmailSent={batchState.isActive ? handleBatchEmailSent : () => {
+          toast({ title: 'הצלחה', description: 'המכתב נשלח בהצלחה' });
+          loadTrackingData();
+        }}
+      />
+
+      {/* Batch Send Progress Indicator */}
+      {batchState.isActive && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white rounded-lg shadow-xl px-6 py-3 flex items-center gap-4 rtl:flex-row-reverse">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 animate-pulse" />
+            <span className="font-medium">
+              שולח {batchState.currentIndex + 1}/{batchState.queue.length}
+            </span>
+          </div>
+          <div className="text-sm opacity-90">
+            {currentBatchClient?.client_name}
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-green-200">{batchState.results.sent.length} נשלחו</span>
+            {batchState.results.skipped.length > 0 && (
+              <span className="text-yellow-200">{batchState.results.skipped.length} דולגו</span>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-blue-700"
+            onClick={cancelBatchSend}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       {/* Floating Action Bar for Batch Operations */}
-      {selectedClients.size > 0 && (
+      {selectedClients.size > 0 && !batchState.isActive && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white border rounded-lg shadow-xl px-6 py-4 flex items-center gap-4 rtl:flex-row-reverse">
           <span className="font-medium text-sm">{selectedClients.size} לקוחות נבחרו</span>
           <Button
@@ -1060,15 +1235,8 @@ export function FeeTrackingPage() {
           >
             <X className="h-4 w-4" />
           </Button>
-          <Button
-            onClick={handleBatchSendLetters}
-            disabled={isSendingBatch}
-          >
-            {isSendingBatch ? (
-              <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
-            ) : (
-              <Mail className="h-4 w-4 ml-2" />
-            )}
+          <Button onClick={startBatchSend}>
+            <Mail className="h-4 w-4 ml-2" />
             שלח מכתבים ({selectedClients.size})
           </Button>
         </div>

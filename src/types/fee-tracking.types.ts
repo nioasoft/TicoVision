@@ -179,3 +179,30 @@ export interface TrackingActionProps {
   onViewLetter: (letterId: string) => void;
   onMarkAsPaid: (calculationId: string) => void;
 }
+
+/**
+ * Batch send queue item - represents a client in the send queue
+ */
+export interface BatchQueueItem {
+  client_id: string;
+  calculation_id: string;
+  client_name: string;
+}
+
+/**
+ * Batch send results tracking
+ */
+export interface BatchSendResults {
+  sent: string[];
+  skipped: string[];
+}
+
+/**
+ * Complete batch send state for sequential letter sending
+ */
+export interface BatchSendState {
+  isActive: boolean;
+  queue: BatchQueueItem[];
+  currentIndex: number;
+  results: BatchSendResults;
+}

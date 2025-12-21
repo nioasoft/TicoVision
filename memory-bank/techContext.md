@@ -1,12 +1,18 @@
 # Tech Context
 
 ## Technologies Used
-- [Technology 1]
-- [Technology 2]
-- [Technology 3]
+- React 19 + Vite + TypeScript
+- Supabase (PostgreSQL + RLS + Auth + Edge Functions)
+- shadcn/ui + Tailwind CSS
+- Zustand for state management
 
 ## Development Setup
-[Describe your development setup]
+- Dev server: `npm run dev` (port 5173, fallback 5174)
+- TypeScript check: `npm run typecheck`
+
+## Dev Login Credentials
+**Email**: benatia.asaf@gmail.com
+**Password**: Aa589525!
 
 ## Dependencies
-[List key dependencies]
+- See package.json for full list
