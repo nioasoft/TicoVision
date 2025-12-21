@@ -69,7 +69,6 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'documents', route: '/documents', label: 'מכתבים ואישורים' },
   { menu: 'documents:foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים', parent: 'documents' },
   { menu: 'documents:tzlul-approvals', route: '/tzlul-approvals', label: 'אישורים חברת צלול', parent: 'documents' },
-  { menu: 'documents:company-onboarding', route: '/company-onboarding', label: 'קליטת חברה', parent: 'documents' },
   { menu: 'documents:tax-approvals', route: '/documents/tax-approvals', label: 'אישורי מס', parent: 'documents' },
   { menu: 'documents:bank-approvals', route: '/documents/bank-approvals', label: 'אישורים לבנקים/מוסדות', parent: 'documents' },
   { menu: 'documents:commitment-letters', route: '/documents/commitment-letters', label: 'מכתבי התחייבות', parent: 'documents' },
@@ -100,7 +99,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'fees', 'fees:tracking', 'fees:calculate', 'fees:collections',
     'letters', 'letters:templates', 'letters:simulator', 'letters:history',
     // Documents System
-    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:company-onboarding', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
+    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
     'documents:tax-advances', 'documents:auto-letters', 'documents:follow-ups',
     'foreign-workers', // Legacy
     // Capital Declaration System
@@ -111,7 +110,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   ],
   accountant: [
     // Documents System
-    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:company-onboarding', 'documents:tax-approvals', 'documents:bank-approvals',
+    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals',
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
