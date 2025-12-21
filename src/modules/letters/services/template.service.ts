@@ -40,6 +40,14 @@ import type {
   CompanyOnboardingVariables,
   VatRegistrationVariables
 } from '@/types/company-onboarding.types';
+import type {
+  AutoLetterTemplateType,
+  CutoffDateVariables,
+  MeetingReminderVariables,
+  GeneralDeadlineVariables,
+  FinancialStatementsMeetingVariables,
+  MissingDocumentsVariables
+} from '@/types/auto-letters.types';
 import { TemplateParser } from '../utils/template-parser';
 import { parseTextToHTML as parseMarkdownToHTML, replaceVariables as replaceVarsInText } from '../utils/text-to-html-parser';
 
@@ -3115,6 +3123,382 @@ export class TemplateService extends BaseService {
 </body>
 </html>
     `.trim();
+  }
+
+  // ============================================================================
+  // AUTO LETTERS - SETTING DATES & MISSING DOCUMENTS
+  // ============================================================================
+
+  /**
+   * Generate Auto Letter document (Setting Dates, Missing Documents)
+   * Uses same header/footer as other letters with specific body templates
+   * @param templateType - The template type (setting_dates_* or missing_documents_*)
+   * @param clientId - Optional client ID
+   * @param groupId - Optional group ID
+   * @param variables - Template variables
+   * @param options.previewOnly - If true, only generate HTML without saving to DB
+   * @param options.existingLetterId - If provided, update existing letter instead of creating new
+   */
+  async generateAutoLetterDocument(
+    templateType: AutoLetterTemplateType,
+    clientId: string | null,
+    groupId: string | null,
+    variables: Record<string, unknown>,
+    options?: { previewOnly?: boolean; existingLetterId?: string }
+  ): Promise<ServiceResponse<GeneratedLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { previewOnly = false, existingLetterId } = options || {};
+
+      // 1. Load header
+      const header = await this.loadTemplateFile('components/header.html');
+
+      // 2. Load body based on template type
+      const bodyFile = this.getAutoLetterBodyFileName(templateType);
+      if (!bodyFile) {
+        throw new Error(`Unknown template type: ${templateType}`);
+      }
+      const body = await this.loadTemplateFile(bodyFile);
+
+      // 3. Load footer
+      const footer = await this.loadTemplateFile('components/footer.html');
+
+      // 4. Process variables
+      const processedVariables = this.processAutoLetterVariables(templateType, variables);
+
+      // 5. Build full HTML
+      let fullHtml = this.buildAutoLetterHTML(header, body, footer, templateType);
+
+      // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section'];
+      fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
+      const plainText = TemplateParser.htmlToText(fullHtml);
+
+      // 7. If preview only, return without saving
+      if (previewOnly) {
+        return {
+          data: {
+            id: 'preview',
+            tenant_id: tenantId,
+            client_id: clientId,
+            group_calculation_id: groupId,
+            template_id: null,
+            template_type: templateType,
+            fee_calculation_id: null,
+            variables_used: processedVariables,
+            generated_content_html: fullHtml,
+            generated_content_text: plainText,
+            payment_link: null,
+            subject: (variables.subject as string) || this.getAutoLetterDefaultSubject(templateType),
+            status: 'draft',
+            created_at: new Date().toISOString(),
+            created_by: null,
+            created_by_name: null
+          } as GeneratedLetter,
+          error: null
+        };
+      }
+
+      const user = await supabase.auth.getUser();
+      const letterData = {
+        tenant_id: tenantId,
+        client_id: clientId,
+        group_calculation_id: groupId,
+        template_id: null,
+        template_type: templateType,
+        fee_calculation_id: null,
+        variables_used: processedVariables,
+        generated_content_html: fullHtml,
+        generated_content_text: plainText,
+        payment_link: null,
+        subject: (variables.subject as string) || this.getAutoLetterDefaultSubject(templateType),
+        status: 'saved' as const,
+        created_by: user.data.user?.id,
+        created_by_name: user.data.user?.user_metadata?.full_name || user.data.user?.email
+      };
+
+      let generatedLetter: GeneratedLetter;
+
+      // 8. Update existing or insert new
+      if (existingLetterId) {
+        const { data, error: updateError } = await supabase
+          .from('generated_letters')
+          .update(letterData)
+          .eq('id', existingLetterId)
+          .eq('tenant_id', tenantId)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        generatedLetter = data;
+
+        await this.logAction('update_auto_letter_document', generatedLetter.id, {
+          template_type: templateType,
+          client_id: clientId,
+          group_id: groupId
+        });
+      } else {
+        const { data, error: saveError } = await supabase
+          .from('generated_letters')
+          .insert({
+            ...letterData,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (saveError) throw saveError;
+        generatedLetter = data;
+
+        await this.logAction('generate_auto_letter_document', generatedLetter.id, {
+          template_type: templateType,
+          client_id: clientId,
+          group_id: groupId
+        });
+      }
+
+      return { data: generatedLetter, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Check for existing auto letter for a client/group
+   */
+  async checkExistingAutoLetter(
+    templateType: AutoLetterTemplateType,
+    clientId: string | null,
+    groupId: string | null
+  ): Promise<ServiceResponse<GeneratedLetter | null>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('generated_letters')
+        .select('id, created_at')
+        .eq('tenant_id', tenantId)
+        .eq('template_type', templateType)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (clientId) {
+        query = query.eq('client_id', clientId);
+      } else if (groupId) {
+        query = query.eq('group_calculation_id', groupId);
+      } else {
+        return { data: null, error: null };
+      }
+
+      const { data, error } = await query.maybeSingle();
+
+      if (error) throw error;
+
+      return { data: data as GeneratedLetter | null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Get body file path from auto letter template type
+   */
+  private getAutoLetterBodyFileName(templateType: AutoLetterTemplateType): string | null {
+    const bodyMap: Record<AutoLetterTemplateType, string> = {
+      'company_onboarding_vat_registration': 'bodies/company-onboarding/vat-registration.html',
+      'setting_dates_cutoff': 'bodies/setting-dates/cutoff-date.html',
+      'setting_dates_meeting_reminder': 'bodies/setting-dates/meeting-reminder.html',
+      'setting_dates_general_deadline': 'bodies/setting-dates/general-deadline.html',
+      'setting_dates_financial_statements': 'bodies/setting-dates/financial-statements.html',
+      'missing_documents_general': 'bodies/missing-documents/general-missing.html'
+    };
+
+    return bodyMap[templateType] || null;
+  }
+
+  /**
+   * Get default subject for auto letter type
+   */
+  private getAutoLetterDefaultSubject(templateType: AutoLetterTemplateType): string {
+    const subjectMap: Record<AutoLetterTemplateType, string> = {
+      'company_onboarding_vat_registration': 'הנחיות לפתיחת תיק במע"מ',
+      'setting_dates_cutoff': 'קביעת מועד חיתוך לדו"חות',
+      'setting_dates_meeting_reminder': 'תזכורת לפגישה',
+      'setting_dates_general_deadline': 'הודעה על דדליין',
+      'setting_dates_financial_statements': 'הזמנה לישיבה על מאזנים',
+      'missing_documents_general': 'בקשה להמצאת מסמכים חסרים'
+    };
+
+    return subjectMap[templateType] || 'מכתב';
+  }
+
+  /**
+   * Build full HTML for auto letter document
+   */
+  private buildAutoLetterHTML(
+    header: string,
+    body: string,
+    footer: string,
+    templateType: AutoLetterTemplateType
+  ): string {
+    const titleMap: Record<AutoLetterTemplateType, string> = {
+      'company_onboarding_vat_registration': 'מכתב קליטת חברה',
+      'setting_dates_cutoff': 'קביעת מועד חיתוך',
+      'setting_dates_meeting_reminder': 'תזכורת לפגישה',
+      'setting_dates_general_deadline': 'הודעה על דדליין',
+      'setting_dates_financial_statements': 'ישיבה על מאזנים',
+      'missing_documents_general': 'בקשה למסמכים חסרים'
+    };
+
+    const title = titleMap[templateType] || 'מכתב';
+
+    return `
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Heebo:wght@400;500;600;700&family=Assistant:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; direction: rtl;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="750" cellpadding="0" cellspacing="0" border="0" style="max-width: 750px; width: 100%; background-color: #ffffff;">
+                    ${header}
+                    ${body}
+                    ${footer}
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+  }
+
+  /**
+   * Process auto letter variables - build dynamic content
+   */
+  private processAutoLetterVariables(
+    templateType: AutoLetterTemplateType,
+    variables: Record<string, unknown>
+  ): Record<string, unknown> {
+    const processed: Record<string, unknown> = { ...variables };
+
+    // Format document date to Israeli format
+    if (!processed.document_date) {
+      processed.letter_date = this.formatIsraeliDate(new Date());
+    } else if (typeof processed.document_date === 'string') {
+      processed.letter_date = this.formatIsraeliDate(new Date(processed.document_date as string));
+    }
+
+    // Build custom header lines for recipient line
+    if (variables.recipient_line && (variables.recipient_line as string).trim()) {
+      processed.custom_header_lines = `
+        <tr>
+          <td colspan="2" style="padding-top: 5px;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.1; font-weight: 700; color: #000000; text-align: right;">
+              ${variables.recipient_line}
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      processed.custom_header_lines = '';
+    }
+
+    // Clear group_name if not applicable
+    if (!processed.group_name) {
+      processed.group_name = '';
+    }
+
+    // Process specific template variables
+    switch (templateType) {
+      case 'setting_dates_cutoff':
+        // Format cutoff_date to Israeli format
+        if (processed.cutoff_date && typeof processed.cutoff_date === 'string') {
+          processed.cutoff_date_formatted = this.formatIsraeliDate(new Date(processed.cutoff_date as string));
+        }
+        break;
+
+      case 'setting_dates_meeting_reminder':
+        // Format meeting_date to Israeli format
+        if (processed.meeting_date && typeof processed.meeting_date === 'string') {
+          processed.meeting_date_formatted = this.formatIsraeliDate(new Date(processed.meeting_date as string));
+        }
+        // Format time (HH:MM)
+        if (processed.meeting_time && typeof processed.meeting_time === 'string') {
+          processed.meeting_time_formatted = processed.meeting_time;
+        }
+        break;
+
+      case 'setting_dates_general_deadline':
+        // Format deadline_date to Israeli format
+        if (processed.deadline_date && typeof processed.deadline_date === 'string') {
+          processed.deadline_date_formatted = this.formatIsraeliDate(new Date(processed.deadline_date as string));
+        }
+        break;
+
+      case 'setting_dates_financial_statements':
+        // Format meeting_date to Israeli format
+        if (processed.meeting_date && typeof processed.meeting_date === 'string') {
+          processed.meeting_date_formatted = this.formatIsraeliDate(new Date(processed.meeting_date as string));
+        }
+        // Format time
+        if (processed.meeting_time && typeof processed.meeting_time === 'string') {
+          processed.meeting_time_formatted = processed.meeting_time;
+        }
+        break;
+
+      case 'missing_documents_general':
+        // Format deadline_date if provided
+        if (processed.deadline_date && typeof processed.deadline_date === 'string') {
+          processed.deadline_date_formatted = this.formatIsraeliDate(new Date(processed.deadline_date as string));
+          processed.has_deadline = true;
+          // Generate deadline section HTML
+          processed.deadline_section = `
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            <strong>מועד אחרון להמצאת המסמכים: ${processed.deadline_date_formatted}</strong>
+        </div>
+    </td>
+</tr>`;
+        } else {
+          processed.has_deadline = false;
+          processed.deadline_date_formatted = '';
+          processed.deadline_section = '';
+        }
+        // Convert missing_documents_list text to HTML (preserve line breaks)
+        if (processed.missing_documents_list && typeof processed.missing_documents_list === 'string') {
+          const lines = (processed.missing_documents_list as string).split('\n').filter(l => l.trim());
+          processed.missing_documents_html = lines.map(line =>
+            `<li style="margin-bottom: 5px;">${line.trim()}</li>`
+          ).join('\n');
+        } else {
+          processed.missing_documents_html = '';
+        }
+        break;
+    }
+
+    // Generate additional_notes_section for all auto letters
+    if (processed.additional_notes && typeof processed.additional_notes === 'string' && processed.additional_notes.trim()) {
+      processed.additional_notes_section = `
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            <strong>הערות נוספות:</strong><br>
+            ${processed.additional_notes}
+        </div>
+    </td>
+</tr>`;
+    } else {
+      processed.additional_notes_section = '';
+    }
+
+    return processed;
   }
 }
 

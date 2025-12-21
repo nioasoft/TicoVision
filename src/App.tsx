@@ -23,6 +23,7 @@ const ComponentSimulatorPage = lazy(() => import('@/pages/ComponentSimulatorPage
 const ForeignWorkersPage = lazy(() => import('@/pages/ForeignWorkersPage').then(m => ({ default: m.ForeignWorkersPage })));
 const TzlulApprovalsPage = lazy(() => import('@/pages/TzlulApprovalsPage').then(m => ({ default: m.TzlulApprovalsPage })));
 const CompanyOnboardingPage = lazy(() => import('@/pages/CompanyOnboardingPage'));
+const AutoLettersPage = lazy(() => import('@/pages/AutoLettersPage'));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SuperAdminDashboard = lazy(() => import('@/pages/SuperAdminDashboard'));
@@ -317,7 +318,7 @@ function App() {
                       } />
                       <Route path="/auto-letters" element={
                         <ErrorBoundary>
-                          <UnderConstructionPage />
+                          <AutoLettersPage />
                         </ErrorBoundary>
                       } />
                       <Route path="/follow-ups" element={
