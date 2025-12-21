@@ -25,6 +25,9 @@ export interface DocFile {
   size?: string;
   author?: string;
   rawLetter: any; // The original letter object from DB
+  // Email tracking
+  recipientEmails?: string[]; // Email addresses the document was sent to
+  sentAt?: string; // When the document was sent
 }
 
 export interface DocumentsState {

@@ -21,8 +21,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Download, Trash2, Edit2, Save, X, FileText, Info, CheckSquare, Square } from 'lucide-react';
+import { Loader2, Download, Trash2, Edit2, Save, X, FileText, Info, CheckSquare, Square, MoreHorizontal, FolderInput } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { fileUploadService } from '@/services/file-upload.service';
+import { MoveToCategoryDialog } from './MoveToCategoryDialog';
 import type { ClientAttachment, FileCategory } from '@/types/file-attachment.types';
 import { getCategoryLabel } from '@/types/file-attachment.types';
 import { formatFileSize } from '@/types/file-attachment.types';
@@ -54,6 +62,10 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+
+  // Move to category state
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [moveTargetFiles, setMoveTargetFiles] = useState<{ ids: string[]; names: string[] }>({ ids: [], names: [] });
 
   const isGroupMode = !!groupId;
 
@@ -280,6 +292,26 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
     }
   };
 
+  // Move handlers
+  const handleMoveFile = (file: ClientAttachment) => {
+    setMoveTargetFiles({ ids: [file.id], names: [file.file_name] });
+    setShowMoveDialog(true);
+  };
+
+  const handleBulkMove = () => {
+    const selectedFileObjects = files.filter(f => selectedFiles.has(f.id));
+    setMoveTargetFiles({
+      ids: Array.from(selectedFiles),
+      names: selectedFileObjects.map(f => f.file_name)
+    });
+    setShowMoveDialog(true);
+  };
+
+  const handleMoveSuccess = () => {
+    setSelectedFiles(new Set());
+    loadFiles();
+  };
+
   const allSelected = files.length > 0 && selectedFiles.size === files.length;
   const someSelected = selectedFiles.size > 0 && selectedFiles.size < files.length;
 
@@ -435,53 +467,56 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
                     </div>
 
                     {editingFileId !== file.id && (
-                      <div className="flex gap-2 rtl:space-x-reverse flex-shrink-0">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => handleDownload(file)}
-                          title="הורדה"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => startEditDescription(file)}
-                          title="עריכת תיאור"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              title="מחיקה"
-                              className="hover:bg-red-50 hover:text-red-600 hover:border-red-200"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="rtl:text-right">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="rtl:text-right">מחיקת קובץ</AlertDialogTitle>
-                              <AlertDialogDescription className="rtl:text-right">
-                                האם אתה בטוח שברצונך למחוק את הקובץ "{file.file_name}"? פעולה זו לא ניתנת לביטול.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="rtl:space-x-reverse">
-                              <AlertDialogCancel className="rtl:ml-2">ביטול</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(file.id)}
-                                className="bg-red-600 hover:bg-red-700"
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="outline" title="פעולות">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rtl:text-right">
+                          <DropdownMenuItem onClick={() => handleDownload(file)} className="rtl:flex-row-reverse">
+                            <Download className="ml-2 rtl:ml-0 rtl:mr-2 h-4 w-4" />
+                            הורדה
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => startEditDescription(file)} className="rtl:flex-row-reverse">
+                            <Edit2 className="ml-2 rtl:ml-0 rtl:mr-2 h-4 w-4" />
+                            עריכת תיאור
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleMoveFile(file)} className="rtl:flex-row-reverse">
+                            <FolderInput className="ml-2 rtl:ml-0 rtl:mr-2 h-4 w-4" />
+                            העבר לקטגוריה...
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                                className="text-red-600 rtl:flex-row-reverse focus:text-red-600 focus:bg-red-50"
                               >
-                                מחק
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                                <Trash2 className="ml-2 rtl:ml-0 rtl:mr-2 h-4 w-4" />
+                                מחיקה
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rtl:text-right">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="rtl:text-right">מחיקת קובץ</AlertDialogTitle>
+                                <AlertDialogDescription className="rtl:text-right">
+                                  האם אתה בטוח שברצונך למחוק את הקובץ "{file.file_name}"? פעולה זו לא ניתנת לביטול.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="rtl:space-x-reverse">
+                                <AlertDialogCancel className="rtl:ml-2">ביטול</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(file.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  מחק
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 </div>
@@ -505,6 +540,15 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
               className="text-white hover:text-gray-300 hover:bg-gray-800"
             >
               בטל בחירה
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBulkMove}
+              className="text-blue-400 hover:text-blue-300 hover:bg-gray-800 flex items-center gap-2 rtl:flex-row-reverse"
+            >
+              <FolderInput className="h-4 w-4" />
+              העבר נבחרים
             </Button>
             <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
               <AlertDialogTrigger asChild>
@@ -546,6 +590,16 @@ export function FileCategorySection({ clientId, groupId, category }: FileCategor
           </div>
         </div>
       )}
+
+      {/* Move to Category Dialog */}
+      <MoveToCategoryDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        fileIds={moveTargetFiles.ids}
+        currentCategory={category}
+        fileNames={moveTargetFiles.names}
+        onSuccess={handleMoveSuccess}
+      />
     </div>
   );
 }

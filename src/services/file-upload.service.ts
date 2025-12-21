@@ -1236,6 +1236,167 @@ export class FileUploadService extends BaseService {
       return { data: null, error: this.handleError(error) };
     }
   }
+
+  // ===================================
+  // Move Files Between Categories
+  // ===================================
+
+  /**
+   * Move a single file to a different category (database-only update)
+   * Physical file stays in original storage location
+   */
+  async moveFileToCategory(
+    fileId: string,
+    targetCategory: FileCategory
+  ): Promise<ServiceResponse<ClientAttachment>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Validate target category exists
+      if (!FILE_CATEGORIES[targetCategory]) {
+        throw new Error('קטגוריה לא חוקית');
+      }
+
+      // Fetch current file to validate ownership and get current category
+      const { data: existing, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('id', fileId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError || !existing) {
+        throw new Error('קובץ לא נמצא');
+      }
+
+      // Check if already in target category (no-op)
+      if (existing.file_category === targetCategory) {
+        return { data: existing, error: null };
+      }
+
+      const fromCategory = existing.file_category;
+
+      // Update file_category in database
+      const { data, error: updateError } = await supabase
+        .from(this.tableName)
+        .update({ file_category: targetCategory })
+        .eq('id', fileId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Log action for audit trail
+      await this.logAction(
+        'move_file_category',
+        fileId,
+        {
+          file_name: existing.file_name,
+          from_category: fromCategory,
+          to_category: targetCategory,
+          client_id: existing.client_id,
+          group_id: existing.group_id
+        }
+      );
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
+
+  /**
+   * Move multiple files to a different category (bulk operation)
+   */
+  async bulkMoveFilesToCategory(
+    fileIds: string[],
+    targetCategory: FileCategory
+  ): Promise<ServiceResponse<{ moved: number; failed: number; errors: string[] }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      if (!fileIds.length) {
+        return { data: { moved: 0, failed: 0, errors: [] }, error: null };
+      }
+
+      // Validate target category
+      if (!FILE_CATEGORIES[targetCategory]) {
+        throw new Error('קטגוריה לא חוקית');
+      }
+
+      // Fetch all files to validate ownership
+      const { data: files, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .in('id', fileIds);
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (!files || files.length === 0) {
+        throw new Error('קבצים לא נמצאו');
+      }
+
+      // Filter out files already in target category
+      const filesToMove = files.filter(f => f.file_category !== targetCategory);
+      const alreadyInCategory = files.length - filesToMove.length;
+
+      if (filesToMove.length === 0) {
+        return {
+          data: {
+            moved: 0,
+            failed: 0,
+            errors: alreadyInCategory > 0
+              ? [`${alreadyInCategory} קבצים כבר נמצאים בקטגוריה זו`]
+              : []
+          },
+          error: null
+        };
+      }
+
+      // Bulk update
+      const idsToMove = filesToMove.map(f => f.id);
+      const { error: updateError } = await supabase
+        .from(this.tableName)
+        .update({ file_category: targetCategory })
+        .eq('tenant_id', tenantId)
+        .in('id', idsToMove);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Log action
+      await this.logAction(
+        'bulk_move_files_category',
+        idsToMove[0],
+        {
+          count: filesToMove.length,
+          file_names: filesToMove.map(f => f.file_name),
+          to_category: targetCategory,
+          skipped_already_in_category: alreadyInCategory
+        }
+      );
+
+      return {
+        data: {
+          moved: filesToMove.length,
+          failed: 0,
+          errors: alreadyInCategory > 0
+            ? [`${alreadyInCategory} קבצים כבר היו בקטגוריה זו`]
+            : []
+        },
+        error: null
+      };
+    } catch (error) {
+      return { data: null, error: this.handleError(error) };
+    }
+  }
 }
 
 // Export singleton instance

@@ -12,7 +12,9 @@ import {
   Trash2,
   ExternalLink,
   Eye,
-  Building2
+  Building2,
+  Mail,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -144,6 +146,37 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
                   <span>{file.author && !file.author.match(/^[0-9a-f-]{36}$/i) ? file.author : 'מערכת'}</span>
                 </div>
               </div>
+
+              {/* Email Recipients - Show only for sent documents */}
+              {file.status === 'sent_email' && (
+                <>
+                  {file.sentAt && (
+                    <div className="col-span-2">
+                      <label className="text-xs text-muted-foreground block mb-1">נשלח בתאריך</label>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{format(new Date(file.sentAt), 'dd/MM/yyyy HH:mm')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted-foreground block mb-1">נשלח אל</label>
+                    {file.recipientEmails && file.recipientEmails.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {file.recipientEmails.map((email, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                            <Mail className="h-3 w-3 ml-1" />
+                            {email}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs italic">אין נמענים רשומים</span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

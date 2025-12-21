@@ -73,7 +73,10 @@ export function useDocuments(currentFolder: FolderItem) {
           type,
           url: letter.pdf_url, // Assuming service returns this or we construct it
           author: letter.created_by_name || letter.created_by,
-          rawLetter: letter
+          rawLetter: letter,
+          // Email tracking
+          recipientEmails: letter.recipient_emails || [],
+          sentAt: letter.sent_at
         };
       });
 
