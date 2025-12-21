@@ -217,8 +217,8 @@ serve(async (req) => {
             size: A4;
             /* Top: Header (34mm) + padding (10mm) = 44mm */
             margin-top: 44mm;
-            /* Bottom: Small margin for simple footer - full footer uses spacer div */
-            margin-bottom: 17mm;
+            /* Bottom: Small margin for page numbers - spacer reserves rest for full footer */
+            margin-bottom: 15mm;
             /* Side margins */
             margin-left: 9mm;
             margin-right: 9mm;
@@ -313,8 +313,8 @@ serve(async (req) => {
       </head>
       <body>
         ${html}
-        <!-- Footer spacer - reserves space for full footer on last page -->
-        <div style="height: 53mm; width: 100%;"></div>
+        <!-- Footer spacer - reserves space for full footer on last page (28mm + 15mm margin = 43mm) -->
+        <div style="height: 28mm; width: 100%;"></div>
       </body>
       </html>
     `;
@@ -354,7 +354,7 @@ serve(async (req) => {
             margin: {
               top: '44mm',    // Header (34mm) + padding (10mm)
               right: '0mm',   // No side margins (handled in @page)
-              bottom: '17mm', // Small margin for simple footer - full footer uses spacer div
+              bottom: '15mm', // Small margin for page numbers - spacer reserves rest for full footer
               left: '0mm'     // No side margins (handled in @page)
             }
           },
