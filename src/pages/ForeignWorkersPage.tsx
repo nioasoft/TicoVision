@@ -344,6 +344,13 @@ function ForeignWorkersPageContent({
       if (saveResult.error) {
         console.warn('Failed to save PDF reference to File Manager:', saveResult.error);
         // Don't block the flow - PDF was generated successfully
+      } else {
+        // Delete from generated_letters - we don't need drafts for foreign worker docs
+        // The PDF is already saved to client's file manager
+        await supabase
+          .from('generated_letters')
+          .delete()
+          .eq('id', result.data.id);
       }
 
       // Open share dialog instead of auto-download
@@ -437,6 +444,12 @@ function ForeignWorkersPageContent({
 
       setPreviewHtml(htmlForPreview);
       setPreviewOpen(true);
+
+      // Delete the generated_letters record - preview doesn't need to persist
+      await supabase
+        .from('generated_letters')
+        .delete()
+        .eq('id', result.data.id);
     } catch (error) {
       console.error('Error generating preview:', error);
       toast.error('שגיאה ביצירת תצוגה מקדימה');
