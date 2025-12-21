@@ -1,5 +1,9 @@
 /**
  * Mark as Paid Dialog
+ *
+ * UPDATED 2025-12-21: Now uses ActualPaymentService to create proper payment records
+ * with VAT breakdown and deviation tracking. This ensures data consistency between
+ * fee_calculations status and actual_payments table.
  */
 
 import React, { useState } from 'react';
@@ -14,11 +18,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { collectionService } from '@/services/collection.service';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { actualPaymentService } from '@/services/actual-payment.service';
 import { toast } from 'sonner';
 import type { CollectionRow } from '@/types/collection.types';
-import { formatILS, formatIsraeliDate } from '@/lib/formatters';
+import type { PaymentMethod } from '@/types/payment.types';
+import { formatILS } from '@/lib/formatters';
 
 interface MarkAsPaidDialogProps {
   open: boolean;
@@ -26,6 +37,13 @@ interface MarkAsPaidDialogProps {
   row: CollectionRow | null;
   onSuccess: () => void;
 }
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: 'bank_transfer', label: 'העברה בנקאית' },
+  { value: 'checks', label: "צ'קים" },
+  { value: 'credit_card', label: 'כרטיס אשראי' },
+  { value: 'cash', label: 'מזומן' },
+];
 
 export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
   open,
@@ -35,6 +53,7 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
 }) => {
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentReference, setPaymentReference] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('bank_transfer');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,10 +61,18 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
     if (!row) return;
 
     setLoading(true);
-    const result = await collectionService.markAsPaid(row.fee_calculation_id, {
-      fee_id: row.fee_calculation_id,
-      payment_date: paymentDate,
-      payment_reference: paymentReference || undefined,
+
+    // Use ActualPaymentService to create proper payment record
+    // This ensures: actual_payments record, deviation calculation, VAT breakdown
+    const amountPaid = row.amount_after_discount || row.amount_original;
+
+    const result = await actualPaymentService.recordPayment({
+      clientId: row.client_id,
+      feeCalculationId: row.fee_calculation_id,
+      amountPaid: amountPaid,
+      paymentDate: new Date(paymentDate),
+      paymentMethod: paymentMethod,
+      paymentReference: paymentReference || undefined,
     });
 
     setLoading(false);
@@ -55,10 +82,13 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
       return;
     }
 
-    toast.success('התשלום סומן כשולם בהצלחה');
+    toast.success('התשלום נרשם בהצלחה', {
+      description: 'נוצרה רשומת תשלום מלאה עם חישוב מע"מ וסטיות',
+    });
     onSuccess();
     onOpenChange(false);
     setPaymentReference('');
+    setPaymentMethod('bank_transfer');
   };
 
   if (!row) return null;
@@ -77,8 +107,27 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
           <div className="space-y-2">
             <Label className="rtl:text-right ltr:text-left">סכום לתשלום</Label>
             <div className="text-2xl font-bold rtl:text-right ltr:text-left">
-              {formatILS(row.amount_after_discount)}
+              {formatILS(row.amount_after_discount || row.amount_original)}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="payment-method" className="rtl:text-right ltr:text-left">אמצעי תשלום</Label>
+            <Select
+              value={paymentMethod}
+              onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+            >
+              <SelectTrigger className="rtl:text-right">
+                <SelectValue placeholder="בחר אמצעי תשלום" />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((method) => (
+                  <SelectItem key={method.value} value={method.value}>
+                    {method.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

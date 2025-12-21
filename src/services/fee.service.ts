@@ -679,17 +679,63 @@ class FeeService extends BaseService {
     }
   }
 
+  /**
+   * Update fee calculation status
+   *
+   * UPDATED 2025-12-21: For 'paid' status, now uses ActualPaymentService
+   * to ensure proper payment tracking with VAT breakdown and deviation calculation.
+   */
   async updateStatus(
     id: string,
     status: FeeStatus,
-    paymentDetails?: { paid_date?: string; payment_reference?: string }
+    paymentDetails?: { paid_date?: string; payment_reference?: string; payment_method?: string }
   ): Promise<ServiceResponse<FeeCalculation>> {
-    const updateData: UpdateFeeCalculationDto = { status };
-    
-    if (status === 'paid' && paymentDetails) {
-      updateData.paid_date = paymentDetails.paid_date || new Date().toISOString();
-      updateData.payment_reference = paymentDetails.payment_reference;
+    // For 'paid' status, use ActualPaymentService to ensure proper tracking
+    if (status === 'paid') {
+      console.warn('[fee.service] updateStatus called with status=paid. Using ActualPaymentService for proper tracking.');
+
+      try {
+        const tenantId = await this.getTenantId();
+
+        // Get fee calculation details
+        const { data: feeCalc, error: feeCalcError } = await supabase
+          .from('fee_calculations')
+          .select('client_id, total_amount, amount_after_selected_discount')
+          .eq('id', id)
+          .eq('tenant_id', tenantId)
+          .single();
+
+        if (feeCalcError) {
+          return { data: null, error: this.handleError(feeCalcError) };
+        }
+
+        // Use ActualPaymentService
+        const { actualPaymentService } = await import('./actual-payment.service');
+
+        const amountPaid = feeCalc.amount_after_selected_discount || feeCalc.total_amount;
+
+        const result = await actualPaymentService.recordPayment({
+          clientId: feeCalc.client_id,
+          feeCalculationId: id,
+          amountPaid: amountPaid,
+          paymentDate: paymentDetails?.paid_date ? new Date(paymentDetails.paid_date) : new Date(),
+          paymentMethod: (paymentDetails?.payment_method as 'bank_transfer' | 'checks' | 'credit_card' | 'cash') || 'bank_transfer',
+          paymentReference: paymentDetails?.payment_reference,
+        });
+
+        if (result.error) {
+          return { data: null, error: result.error };
+        }
+
+        // Return updated fee calculation
+        return this.getById(id);
+      } catch (error) {
+        return { data: null, error: this.handleError(error as Error) };
+      }
     }
+
+    // For non-paid statuses, update directly
+    const updateData: UpdateFeeCalculationDto = { status };
 
     return this.updateFeeCalculation(id, updateData);
   }

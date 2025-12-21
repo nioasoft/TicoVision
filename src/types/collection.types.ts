@@ -378,11 +378,13 @@ export interface CollectionPagination {
 
 /**
  * DTO for marking a fee as paid
+ * UPDATED 2025-12-21: Added payment_method for proper actual_payments tracking
  */
 export interface MarkAsPaidDto {
   fee_id: string;
   payment_date?: string;
   payment_reference?: string;
+  payment_method?: 'bank_transfer' | 'checks' | 'credit_card' | 'cash';
 }
 
 /**

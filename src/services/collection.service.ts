@@ -174,8 +174,11 @@ class CollectionService extends BaseService {
   /**
    * Mark a fee as fully paid
    *
+   * UPDATED 2025-12-21: Now uses ActualPaymentService to create proper payment records
+   * with VAT breakdown and deviation tracking.
+   *
    * @param feeId - Fee calculation ID
-   * @param paymentDetails - Payment details
+   * @param paymentDetails - Payment details (includes optional payment_method)
    * @returns Updated fee calculation
    */
   async markAsPaid(
@@ -185,25 +188,41 @@ class CollectionService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      const { error } = await supabase
+      // Get fee calculation details for ActualPaymentService
+      const { data: feeCalc, error: feeCalcError } = await supabase
         .from('fee_calculations')
-        .update({
-          status: 'paid',
-          payment_date: paymentDetails.payment_date || new Date().toISOString(),
-          payment_reference: paymentDetails.payment_reference,
-          updated_at: new Date().toISOString(),
-        })
+        .select('client_id, total_amount, amount_after_selected_discount')
         .eq('id', feeId)
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', tenantId)
+        .single();
 
-      if (error) {
-        return { data: false, error: this.handleError(error) };
+      if (feeCalcError) {
+        return { data: false, error: this.handleError(feeCalcError) };
+      }
+
+      // Use ActualPaymentService for proper payment tracking
+      const { actualPaymentService } = await import('./actual-payment.service');
+
+      const amountPaid = feeCalc.amount_after_selected_discount || feeCalc.total_amount;
+
+      const result = await actualPaymentService.recordPayment({
+        clientId: feeCalc.client_id,
+        feeCalculationId: feeId,
+        amountPaid: amountPaid,
+        paymentDate: paymentDetails.payment_date ? new Date(paymentDetails.payment_date) : new Date(),
+        paymentMethod: paymentDetails.payment_method || 'bank_transfer',
+        paymentReference: paymentDetails.payment_reference,
+      });
+
+      if (result.error) {
+        return { data: false, error: result.error };
       }
 
       // Log action
       await this.logAction('mark_fee_paid', feeId, {
         payment_date: paymentDetails.payment_date,
         payment_reference: paymentDetails.payment_reference,
+        used_actual_payment_service: true,
       });
 
       return { data: true, error: null };
@@ -215,23 +234,30 @@ class CollectionService extends BaseService {
   /**
    * Mark a partial payment on a fee
    *
+   * UPDATED 2025-12-21: Now also creates actual_payments record for proper tracking
+   * and deviation calculation when payment is complete.
+   *
    * @param feeId - Fee calculation ID
    * @param amount - Amount paid
    * @param notes - Optional notes
+   * @param paymentMethod - Optional payment method (default: bank_transfer)
+   * @param paymentReference - Optional payment reference
    * @returns Updated fee calculation
    */
   async markPartialPayment(
     feeId: string,
     amount: number,
-    notes?: string
+    notes?: string,
+    paymentMethod: string = 'bank_transfer',
+    paymentReference?: string
   ): Promise<ServiceResponse<boolean>> {
     try {
       const tenantId = await this.getTenantId();
 
-      // Get current fee details
+      // Get current fee details including client_id
       const { data: fee, error: feeError } = await supabase
         .from('fee_calculations')
-        .select('total_amount, partial_payment_amount')
+        .select('total_amount, partial_payment_amount, client_id, amount_after_selected_discount')
         .eq('id', feeId)
         .eq('tenant_id', tenantId)
         .single();
@@ -255,12 +281,41 @@ class CollectionService extends BaseService {
       // Determine new status
       const newStatus = newPartial >= totalAmount ? 'paid' : 'partial_paid';
 
+      // If this completes the payment, create actual_payments record via ActualPaymentService
+      if (newStatus === 'paid') {
+        const { actualPaymentService } = await import('./actual-payment.service');
+
+        const result = await actualPaymentService.recordPayment({
+          clientId: fee.client_id,
+          feeCalculationId: feeId,
+          amountPaid: newPartial, // Total of all partial payments
+          paymentDate: new Date(),
+          paymentMethod: paymentMethod as 'bank_transfer' | 'checks' | 'credit_card' | 'cash',
+          paymentReference: paymentReference,
+          notes: notes ? `תשלום חלקי (סה"כ ${newPartial}): ${notes}` : `תשלום חלקי שהושלם (סה"כ ${newPartial})`,
+        });
+
+        if (result.error) {
+          return { data: false, error: result.error };
+        }
+
+        // Log action
+        await this.logAction('mark_partial_payment_complete', feeId, {
+          amount,
+          new_partial_total: newPartial,
+          notes,
+          payment_method: paymentMethod,
+        });
+
+        return { data: true, error: null };
+      }
+
+      // For non-completing partial payments, just update fee_calculations
       const { error } = await supabase
         .from('fee_calculations')
         .update({
           status: newStatus,
           partial_payment_amount: newPartial,
-          payment_date: newStatus === 'paid' ? new Date().toISOString() : undefined,
           updated_at: new Date().toISOString(),
         })
         .eq('id', feeId)
@@ -421,17 +476,46 @@ class CollectionService extends BaseService {
         return { data: false, error: this.handleError(updateError) };
       }
 
-      // If resolved as paid, update fee calculation
+      // If resolved as paid, create actual_payments record via ActualPaymentService
       if (resolution === 'resolved_paid') {
-        await supabase
+        // Get fee calculation details
+        const { data: feeCalc, error: feeCalcError } = await supabase
           .from('fee_calculations')
-          .update({
-            status: 'paid',
-            payment_date: dispute.claimed_payment_date || new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
+          .select('client_id, total_amount, amount_after_selected_discount')
           .eq('id', dispute.fee_calculation_id)
-          .eq('tenant_id', tenantId);
+          .eq('tenant_id', tenantId)
+          .single();
+
+        if (feeCalcError) {
+          console.error('Error fetching fee calculation for dispute resolution:', feeCalcError);
+        } else {
+          const { actualPaymentService } = await import('./actual-payment.service');
+
+          const amountPaid = feeCalc.amount_after_selected_discount || feeCalc.total_amount;
+
+          const result = await actualPaymentService.recordPayment({
+            clientId: feeCalc.client_id,
+            feeCalculationId: dispute.fee_calculation_id,
+            amountPaid: amountPaid,
+            paymentDate: dispute.claimed_payment_date ? new Date(dispute.claimed_payment_date) : new Date(),
+            paymentMethod: 'bank_transfer', // Default, can be updated later
+            notes: notes ? `נפתר מסכסוך: ${notes}` : 'נפתר מסכסוך תשלום',
+          });
+
+          if (result.error) {
+            console.error('Error creating actual payment from dispute resolution:', result.error);
+            // Fall back to direct status update if actual_payments fails
+            await supabase
+              .from('fee_calculations')
+              .update({
+                status: 'paid',
+                payment_date: dispute.claimed_payment_date || new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', dispute.fee_calculation_id)
+              .eq('tenant_id', tenantId);
+          }
+        }
       }
 
       // Log action

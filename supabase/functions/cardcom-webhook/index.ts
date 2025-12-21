@@ -154,24 +154,111 @@ serve(async (req) => {
         console.log(`✅ Transaction updated: ${existingTransaction.id}`);
       }
 
-      // If payment successful, update fee_calculations and payment_method_selections
+      // If payment successful, create actual_payments record and update related tables
       if (paymentSuccessful && existingTransaction.fee_calculation_id) {
-        console.log('Updating fee_calculations to paid...');
+        console.log('Processing successful payment...');
 
-        // Update fee_calculations
-        const { error: feeUpdateError } = await supabase
+        // Get fee_calculation to get client_id and tenant_id
+        const { data: feeCalc, error: feeCalcError } = await supabase
           .from('fee_calculations')
-          .update({
-            status: 'paid',
-            payment_date: new Date().toISOString(),
-            payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
-          })
-          .eq('id', existingTransaction.fee_calculation_id);
+          .select('client_id, tenant_id, amount_after_selected_discount, total_amount')
+          .eq('id', existingTransaction.fee_calculation_id)
+          .single();
 
-        if (feeUpdateError) {
-          console.error('Error updating fee calculation:', feeUpdateError);
+        if (feeCalcError) {
+          console.error('Error fetching fee calculation:', feeCalcError);
         } else {
-          console.log(`✅ Fee calculation marked as paid: ${existingTransaction.fee_calculation_id}`);
+          // Calculate VAT breakdown (18% VAT in Israel)
+          const VAT_RATE = 0.18;
+          const beforeVat = Math.round((amount / (1 + VAT_RATE)) * 100) / 100;
+          const vat = Math.round((beforeVat * VAT_RATE) * 100) / 100;
+          const withVat = beforeVat + vat;
+
+          // Determine payment method based on number of installments
+          const numInstallments = webhookData.TranzactionInfo?.NumberOfPayments || 1;
+          const paymentMethod = numInstallments > 1 ? 'credit_card_installments' : 'credit_card';
+
+          // Create actual_payments record for proper tracking
+          const { data: actualPayment, error: actualPaymentError } = await supabase
+            .from('actual_payments')
+            .insert({
+              tenant_id: feeCalc.tenant_id,
+              client_id: feeCalc.client_id,
+              fee_calculation_id: existingTransaction.fee_calculation_id,
+              amount_paid: amount,
+              amount_before_vat: beforeVat,
+              amount_vat: vat,
+              amount_with_vat: withVat,
+              payment_date: new Date().toISOString(),
+              payment_method: paymentMethod,
+              payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
+              num_installments: numInstallments,
+              notes: `Cardcom payment - ${webhookData.TranzactionInfo?.CardOwnerName || 'Unknown'}`,
+            })
+            .select('id')
+            .single();
+
+          if (actualPaymentError) {
+            console.error('Error creating actual payment:', actualPaymentError);
+          } else {
+            console.log(`✅ Actual payment created: ${actualPayment.id}`);
+
+            // Calculate and create deviation record
+            const expectedAmount = feeCalc.amount_after_selected_discount || feeCalc.total_amount;
+            const deviationAmount = expectedAmount - amount;
+            const deviationPercent = expectedAmount > 0 ? (deviationAmount / expectedAmount) * 100 : 0;
+
+            // Determine alert level
+            let alertLevel = 'info';
+            let alertMessage = 'התשלום תואם לסכום הצפוי';
+            if (Math.abs(deviationPercent) > 5) {
+              alertLevel = 'critical';
+              alertMessage = `סטייה משמעותית: ${deviationPercent.toFixed(1)}%`;
+            } else if (Math.abs(deviationPercent) > 2) {
+              alertLevel = 'warning';
+              alertMessage = `סטייה קטנה: ${deviationPercent.toFixed(1)}%`;
+            }
+
+            const { error: deviationError } = await supabase
+              .from('payment_deviations')
+              .insert({
+                tenant_id: feeCalc.tenant_id,
+                client_id: feeCalc.client_id,
+                fee_calculation_id: existingTransaction.fee_calculation_id,
+                actual_payment_id: actualPayment.id,
+                expected_amount: expectedAmount,
+                actual_amount: amount,
+                deviation_amount: deviationAmount,
+                deviation_percent: deviationPercent,
+                alert_level: alertLevel,
+                alert_message: alertMessage,
+              });
+
+            if (deviationError) {
+              console.error('Error creating deviation:', deviationError);
+            } else {
+              console.log('✅ Payment deviation recorded');
+            }
+
+            // Update fee_calculations with payment info and deviation
+            const { error: feeUpdateError } = await supabase
+              .from('fee_calculations')
+              .update({
+                status: 'paid',
+                payment_date: new Date().toISOString(),
+                payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
+                actual_payment_id: actualPayment.id,
+                has_deviation: alertLevel !== 'info',
+                deviation_alert_level: alertLevel,
+              })
+              .eq('id', existingTransaction.fee_calculation_id);
+
+            if (feeUpdateError) {
+              console.error('Error updating fee calculation:', feeUpdateError);
+            } else {
+              console.log(`✅ Fee calculation marked as paid: ${existingTransaction.fee_calculation_id}`);
+            }
+          }
         }
 
         // Update payment_method_selections
