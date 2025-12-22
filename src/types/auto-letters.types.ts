@@ -23,6 +23,7 @@ export type AutoLetterCategory =
   | 'company_onboarding'   // קליטת חברה
   | 'setting_dates'        // קביעת מועדים
   | 'missing_documents'    // מסמכים חסרים
+  | 'reminder_letters'     // מכתבי זירוז
   | 'annual_approvals';    // אישורים שנתיים
 
 /** Configuration for a letter category */
@@ -30,7 +31,7 @@ export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell';
   enabled: boolean;
 }
 
@@ -58,6 +59,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     enabled: true,
   },
   {
+    id: 'reminder_letters',
+    label: 'מכתבי זירוז',
+    description: 'מכתבי תזכורת וזירוז למנהלות חשבונות וללקוחות',
+    icon: 'Bell',
+    enabled: true,
+  },
+  {
     id: 'annual_approvals',
     label: 'אישורים שנתיים',
     description: 'אישורים שנתיים וחידוש אישורים',
@@ -80,7 +88,10 @@ export type AutoLetterTemplateType =
   | 'setting_dates_general_deadline'
   | 'setting_dates_financial_statements'
   // Missing Documents
-  | 'missing_documents_general';
+  | 'missing_documents_general'
+  // Reminder Letters (מכתבי זירוז)
+  | 'reminder_letters_personal_report'
+  | 'reminder_letters_bookkeeper_balance';
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -143,6 +154,22 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'בקשה להמצאת מסמכים חסרים',
       templateType: 'missing_documents_general',
       icon: 'FileQuestion',
+    },
+  ],
+  reminder_letters: [
+    {
+      id: 'personal_report_reminder',
+      label: 'תזכורת למסמכים לדוחות אישיים',
+      description: 'תזכורת ללקוח להשלמת מסמכים לדוח האישי',
+      templateType: 'reminder_letters_personal_report',
+      icon: 'FileText',
+    },
+    {
+      id: 'bookkeeper_balance_reminder',
+      label: 'זירוז מנהלת חשבונות למאזן',
+      description: 'הנחיות למנהלת החשבונות לקראת ישיבת מאזנים',
+      templateType: 'reminder_letters_bookkeeper_balance',
+      icon: 'Calculator',
     },
   ],
   annual_approvals: [],
@@ -212,6 +239,23 @@ export interface MissingDocumentsVariables extends AutoLetterSharedData {
   additional_notes?: string;       // הערות נוספות
 }
 
+/** Variables for Reminder Letters - Personal Report Reminder */
+export interface PersonalReportReminderVariables extends AutoLetterSharedData {
+  subject: string;
+  tax_year: string;               // שנת המס
+  free_text_documents: string;    // רשימת המסמכים הנדרשים (טקסט חופשי)
+  bookkeeper_name: string;        // שם מנה"ח לשליחה
+  google_drive_link?: string;     // לינק לגוגל דרייב (אופציונלי)
+}
+
+/** Variables for Reminder Letters - Bookkeeper Balance Reminder */
+export interface BookkeeperBalanceReminderVariables extends AutoLetterSharedData {
+  subject: string;
+  meeting_date: string;           // תאריך הישיבה
+  bookkeeper_name: string;        // שם מנהל/ת החשבונות
+  fiscal_year: string;            // שנת המס
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -222,6 +266,8 @@ export const DEFAULT_SUBJECTS = {
   general_deadline: 'הודעה על דדליין',
   financial_statements: 'הזמנה לישיבה על מאזנים',
   missing_documents: 'בקשה להמצאת מסמכים חסרים',
+  personal_report_reminder: 'השלמות לדוח האישי',
+  bookkeeper_balance_reminder: 'סיכום פרטיכל מישיבה',
 } as const;
 
 // ============================================================================
@@ -251,6 +297,12 @@ export interface AnnualApprovalsDocumentData {
   // Will be populated when letter types are added
 }
 
+/** Document data for Reminder Letters */
+export interface ReminderLettersDocumentData {
+  personalReportReminder: Partial<PersonalReportReminderVariables>;
+  bookkeeperBalanceReminder: Partial<BookkeeperBalanceReminderVariables>;
+}
+
 /** Complete form state for Auto Letters */
 export interface AutoLetterFormState {
   /** Currently selected category */
@@ -276,6 +328,7 @@ export interface AutoLetterFormState {
     company_onboarding: CompanyOnboardingDocumentData;
     setting_dates: SettingDatesDocumentData;
     missing_documents: MissingDocumentsDocumentData;
+    reminder_letters: ReminderLettersDocumentData;
     annual_approvals: AnnualApprovalsDocumentData;
   };
 }
@@ -336,6 +389,20 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
         generalMissing: {
           subject: DEFAULT_SUBJECTS.missing_documents,
           missing_documents_list: '',
+        },
+      },
+      reminder_letters: {
+        personalReportReminder: {
+          subject: DEFAULT_SUBJECTS.personal_report_reminder,
+          tax_year: String(new Date().getFullYear() - 1),
+          free_text_documents: '',
+          bookkeeper_name: '',
+        },
+        bookkeeperBalanceReminder: {
+          subject: DEFAULT_SUBJECTS.bookkeeper_balance_reminder,
+          meeting_date: '',
+          bookkeeper_name: '',
+          fiscal_year: String(new Date().getFullYear() - 1),
         },
       },
       annual_approvals: {},
@@ -436,5 +503,29 @@ export function validateMissingDocuments(data: Partial<MissingDocumentsVariables
     data.company_name &&
     data.subject &&
     data.missing_documents_list?.trim()
+  );
+}
+
+/** Validate Personal Report Reminder letter */
+export function validatePersonalReportReminder(data: Partial<PersonalReportReminderVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name &&
+    data.subject &&
+    data.tax_year &&
+    data.free_text_documents?.trim() &&
+    data.bookkeeper_name?.trim()
+  );
+}
+
+/** Validate Bookkeeper Balance Reminder letter */
+export function validateBookkeeperBalanceReminder(data: Partial<BookkeeperBalanceReminderVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name &&
+    data.subject &&
+    data.meeting_date &&
+    data.bookkeeper_name?.trim() &&
+    data.fiscal_year
   );
 }

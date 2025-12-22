@@ -1,0 +1,141 @@
+<!-- Letter Body: Bookkeeper Balance Reminder (זירוז מנהלת חשבונות לטובת מאזן) -->
+<!-- Template Type: reminder_letters_bookkeeper_balance -->
+<!-- Variables: {{subject}}, {{meeting_date}}, {{company_name}}, {{bookkeeper_name}}, {{fiscal_year}} -->
+
+<!-- BODY: Subject -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">
+            הנדון: {{subject}}<br>
+            <span style="font-size: 20px;">עם בעלי השליטה בחברת {{company_name}}</span>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Greeting -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right;">
+            {{bookkeeper_name}} היקר/ה,
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Introduction -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            אנו מוצאים לנכון להעביר לך את עיקרי ההחלטות מישיבה שנערכה עם בעלי השליטה של החברה ושדורשים את ידיעתך ומכאן פעולות שעלייך לנקוט, כמפורט:
+        </div>
+    </td>
+</tr>
+
+<!-- Instructions List -->
+<tr>
+    <td style="padding-top: 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <!-- Item 1 -->
+            <tr>
+                <td style="padding: 10px 0;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+                        <strong>1.</strong> נקבע ישיבה ליום <span style="font-weight: 700; color: #395BF7;">{{meeting_date}}</span> סקירת הדוחות המבוקרים של החברה לשנת המס {{fiscal_year}}.
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Item 2 -->
+            <tr>
+                <td style="padding: 10px 0;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+                        <strong>2.</strong> עלייך אם כך, להתארגן על סיום ההתאמות האחרונות הדרושות אצלך לטובת סגירת שנת מס {{fiscal_year}} והעברת הגיבוי הייזום אלינו במהירות, <strong>לפחות 14 ימי עסקים</strong> לפני המועד שנקבע בסעיף 1 לעייל.
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Item 3 -->
+            <tr>
+                <td style="padding: 10px 0;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+                        <strong>3.</strong> לנוחיותך, לינק לתיקיה בגוגל דרייב (שדאגנו שתוזמני אליו) לטובת העברת הגיבוי.
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Item 4 -->
+            <tr>
+                <td style="padding: 10px 0;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+                        <strong>4.</strong> הנך נדרשת להודיע לתיקו בהודעת וואטס אפ לנייד שלו 0543034418 כי ביצעת העברה זו וכי הנהלת החשבונות מוכנה לביקורת.
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Item 5 -->
+            <tr>
+                <td style="padding: 10px 0;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+                        <strong>5.</strong> ננצל ישיבה זו לעבור גם על שנת מס {{next_fiscal_year}} - ולכן העבירי אלינו גיבוי ייזום של הנהלת החשבונות של {{next_fiscal_year}} תוך ציון התקופה כלומר עד לאיזה חודש ב {{next_fiscal_year}} הוקלד מלוא החומר.
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Item 6 - Warning -->
+            <tr>
+                <td style="padding: 10px 0;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fff3e0; border-radius: 6px; border-right: 3px solid #ff9800;">
+                        <tr>
+                            <td style="padding: 12px 15px;">
+                                <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #e65100; text-align: right;">
+                                    <strong>6.</strong> תשומת לבך המירבית נדרשת לכרטיסי בעלי השליטה. במידה וקיימות שם משיכות מהותיות לא מוסברות, עלייך להודיע לנו על כך, <strong>מייד כשאת מזהה בתוך השנה</strong>, ולא להמתין להעברת חומר לביקורת.
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- BODY: Closing -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            נודה על תשומת לבך לאגרת זו.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.6; color: #09090b; text-align: right;">
+            בכבוד רב ובברכה,
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.4; color: #09090b; text-align: right;">
+            <strong>תיקו פרנקו</strong><br>
+            רואה חשבון<br>
+            תיקו פרנקו ושות' | רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 10px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

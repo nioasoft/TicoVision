@@ -3170,7 +3170,7 @@ export class TemplateService extends BaseService {
       let fullHtml = this.buildAutoLetterHTML(header, body, footer, templateType);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3310,7 +3310,9 @@ export class TemplateService extends BaseService {
       'setting_dates_meeting_reminder': 'bodies/setting-dates/meeting-reminder.html',
       'setting_dates_general_deadline': 'bodies/setting-dates/general-deadline.html',
       'setting_dates_financial_statements': 'bodies/setting-dates/financial-statements.html',
-      'missing_documents_general': 'bodies/missing-documents/general-missing.html'
+      'missing_documents_general': 'bodies/missing-documents/general-missing.html',
+      'reminder_letters_personal_report': 'bodies/reminder-letters/personal-report-reminder.html',
+      'reminder_letters_bookkeeper_balance': 'bodies/reminder-letters/bookkeeper-balance-reminder.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3326,7 +3328,9 @@ export class TemplateService extends BaseService {
       'setting_dates_meeting_reminder': 'תזכורת לפגישה',
       'setting_dates_general_deadline': 'הודעה על דדליין',
       'setting_dates_financial_statements': 'הזמנה לישיבה על מאזנים',
-      'missing_documents_general': 'בקשה להמצאת מסמכים חסרים'
+      'missing_documents_general': 'בקשה להמצאת מסמכים חסרים',
+      'reminder_letters_personal_report': 'השלמות לדוח האישי',
+      'reminder_letters_bookkeeper_balance': 'סיכום פרטיכל מישיבה'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3347,7 +3351,9 @@ export class TemplateService extends BaseService {
       'setting_dates_meeting_reminder': 'תזכורת לפגישה',
       'setting_dates_general_deadline': 'הודעה על דדליין',
       'setting_dates_financial_statements': 'ישיבה על מאזנים',
-      'missing_documents_general': 'בקשה למסמכים חסרים'
+      'missing_documents_general': 'בקשה למסמכים חסרים',
+      'reminder_letters_personal_report': 'תזכורת למסמכים',
+      'reminder_letters_bookkeeper_balance': 'זירוז מנה"ח'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -3479,6 +3485,33 @@ export class TemplateService extends BaseService {
           ).join('\n');
         } else {
           processed.missing_documents_html = '';
+        }
+        break;
+
+      case 'reminder_letters_personal_report':
+        // Generate google_drive_section if link provided
+        if (processed.google_drive_link && typeof processed.google_drive_link === 'string' && processed.google_drive_link.trim()) {
+          processed.google_drive_section = `
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            לשרותך לינק להעברת מסמכים למחיצה בגוגל דרייב שהקמנו עבורך.
+        </div>
+    </td>
+</tr>`;
+        } else {
+          processed.google_drive_section = '';
+        }
+        break;
+
+      case 'reminder_letters_bookkeeper_balance':
+        // Format meeting_date to Israeli format
+        if (processed.meeting_date && typeof processed.meeting_date === 'string') {
+          processed.meeting_date_formatted = this.formatIsraeliDate(new Date(processed.meeting_date as string));
+        }
+        // Calculate next fiscal year
+        if (processed.fiscal_year && typeof processed.fiscal_year === 'string') {
+          processed.next_fiscal_year = String(Number(processed.fiscal_year) + 1);
         }
         break;
     }

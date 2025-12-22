@@ -11,6 +11,8 @@ import type {
   GeneralDeadlineVariables,
   FinancialStatementsMeetingVariables,
   MissingDocumentsVariables,
+  PersonalReportReminderVariables,
+  BookkeeperBalanceReminderVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -26,6 +28,12 @@ import {
 
 // Missing Documents forms
 import { MissingDocumentsForm } from './forms/missing-documents';
+
+// Reminder Letters forms
+import {
+  PersonalReportReminderForm,
+  BookkeeperBalanceReminderForm,
+} from './forms/reminder-letters';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -63,6 +71,9 @@ export function FormRenderer({
 
     case 'missing_documents':
       return renderMissingDocumentsForm(letterTypeId, value, onChange, disabled);
+
+    case 'reminder_letters':
+      return renderReminderLettersForm(letterTypeId, value, onChange, disabled);
 
     case 'annual_approvals':
       return (
@@ -170,6 +181,42 @@ function renderMissingDocumentsForm(
       return (
         <MissingDocumentsForm
           value={value as Partial<MissingDocumentsVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderReminderLettersForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean
+) {
+  switch (letterTypeId) {
+    case 'personal_report_reminder':
+      return (
+        <PersonalReportReminderForm
+          value={value as Partial<PersonalReportReminderVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    case 'bookkeeper_balance_reminder':
+      return (
+        <BookkeeperBalanceReminderForm
+          value={value as Partial<BookkeeperBalanceReminderVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
         />
