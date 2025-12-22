@@ -203,6 +203,29 @@ input[type="number"] {
   color: hsl(var(--color-foreground));
 }
 
+/* Preview & Email - List Styles */
+.select-text ul {
+  list-style-type: disc;
+  padding-right: 1.5em;
+  padding-left: 0;
+  margin: 0.5em 0;
+}
+
+.select-text ol {
+  list-style-type: decimal;
+  padding-right: 1.5em;
+  padding-left: 0;
+  margin: 0.5em 0;
+}
+
+.select-text li {
+  margin: 0.25em 0;
+}
+
+.select-text li p {
+  margin: 0;
+}
+
 /* Tiptap Editor - Horizontal Rule */
 .ProseMirror hr {
   border: none;
@@ -280,6 +303,11 @@ input[type="number"] {
 .ProseMirror th {
   direction: rtl;
   text-align: right;
+}
+
+/* Exception: Colored bullet tables should be RTL (bullet on right side) */
+.ProseMirror table:has(img[alt="•"]) {
+  direction: rtl !important;
 }
 
 /* Make the resize handle more visible */
@@ -381,7 +409,7 @@ input[type="number"] {
 .letter-body-content table td:first-child:has(img[alt="•"]) {
   width: 20px !important;
   padding-top: 4px !important;
-  padding-right: 0 !important;
+  padding-right: 8px !important;
 }
 
 /* ============================================ */
