@@ -537,7 +537,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {/* Row 1: Tax ID, Company Name, Commercial Name (3 cols) */}
               <div>
                 <Label htmlFor="tax_id" className="text-right block mb-2">
-                  מספר מזהה (XX-XXXXXX-X) *
+                  מספר מזהה (XX-XXXXXX-X)
                 </Label>
                 <Input
                   id="tax_id"
@@ -570,7 +570,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               <div>
                 <Label htmlFor="company_name" className="text-right block mb-2">
-                  שם פורמלי *
+                  שם פורמלי
                 </Label>
                 <Input
                   id="company_name"
