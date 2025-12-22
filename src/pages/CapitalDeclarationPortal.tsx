@@ -45,6 +45,7 @@ const CATEGORY_ICON_COMPONENTS: Record<string, React.ElementType> = {
   vehicles: Car,
   abroad: Globe,
   other: FolderOpen,
+  general: FileText,
 };
 
 // Category colors for cards
@@ -55,6 +56,7 @@ const CATEGORY_CARD_COLORS: Record<string, string> = {
   vehicles: 'border-purple-300 hover:border-purple-400 bg-gradient-to-br from-purple-50 to-purple-100',
   abroad: 'border-cyan-300 hover:border-cyan-400 bg-gradient-to-br from-cyan-50 to-cyan-100',
   other: 'border-pink-300 hover:border-pink-400 bg-gradient-to-br from-pink-50 to-pink-100',
+  general: 'border-gray-300 hover:border-gray-400 bg-gradient-to-br from-gray-50 to-gray-100',
 };
 
 // Category icon colors
@@ -65,6 +67,7 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
   vehicles: 'text-purple-600',
   abroad: 'text-cyan-600',
   other: 'text-pink-600',
+  general: 'text-gray-600',
 };
 
 // Category bg colors for icons
@@ -75,6 +78,7 @@ const CATEGORY_ICON_BG: Record<string, string> = {
   vehicles: 'bg-purple-100',
   abroad: 'bg-cyan-100',
   other: 'bg-pink-100',
+  general: 'bg-gray-100',
 };
 
 export function CapitalDeclarationPortal() {
@@ -95,6 +99,7 @@ export function CapitalDeclarationPortal() {
     vehicles: null,
     abroad: null,
     other: null,
+    general: null,
   });
 
   /**
@@ -311,8 +316,8 @@ export function CapitalDeclarationPortal() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-lg">התקדמות העלאת מסמכים</h3>
               <div className="flex items-center gap-2">
-                <CheckCircle className={`h-5 w-5 ${categoriesComplete === 6 ? 'text-green-600' : 'text-gray-400'}`} />
-                <span className="font-medium">{categoriesComplete}/6 קטגוריות</span>
+                <CheckCircle className={`h-5 w-5 ${categoriesComplete === DECLARATION_CATEGORIES.length ? 'text-green-600' : 'text-gray-400'}`} />
+                <span className="font-medium">{categoriesComplete}/{DECLARATION_CATEGORIES.length} קטגוריות</span>
               </div>
             </div>
             <Progress value={progress} className="h-3" />

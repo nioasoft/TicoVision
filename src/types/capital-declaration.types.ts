@@ -15,7 +15,8 @@ export type CapitalDeclarationCategory =
   | 'insurance'      // קופות גמל וביטוח
   | 'vehicles'       // רכבים
   | 'abroad'         // נכסים בחו"ל
-  | 'other';         // נכסים/חובות נוספים
+  | 'other'          // נכסים/חובות נוספים
+  | 'general';       // מסמכים כלליים
 
 /** Declaration workflow status */
 export type CapitalDeclarationStatus =
@@ -90,6 +91,13 @@ export const DECLARATION_CATEGORIES: CategoryConfig[] = [
     description: 'הלוואות, מניות, קרנות נאמנות, נכסים דיגיטליים ואחרים',
     icon: 'FolderOpen',
     color: 'pink'
+  },
+  {
+    key: 'general',
+    label: 'מסמכים כלליים',
+    description: 'מסמכים כלליים שאינם מסווגים בקטגוריות אחרות',
+    icon: 'FileText',
+    color: 'gray'
   }
 ];
 
@@ -419,7 +427,7 @@ export function formatDeclarationDate(date: string): string {
 /** Get category progress percentage */
 export function getCategoryProgress(counts: CategoryDocumentCount[]): number {
   const categoriesWithDocs = counts.filter(c => c.count > 0).length;
-  return Math.round((categoriesWithDocs / 6) * 100);
+  return Math.round((categoriesWithDocs / DECLARATION_CATEGORIES.length) * 100);
 }
 
 // ============================================================================
