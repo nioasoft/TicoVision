@@ -94,6 +94,7 @@ const CATEGORY_ICON_COMPONENTS: Record<string, React.ElementType> = {
   vehicles: Car,
   abroad: Globe,
   other: FolderOpen,
+  general: FileText,
 };
 
 // Category colors for cards
@@ -104,6 +105,7 @@ const CATEGORY_CARD_COLORS: Record<string, string> = {
   vehicles: 'border-purple-200 bg-purple-50',
   abroad: 'border-cyan-200 bg-cyan-50',
   other: 'border-pink-200 bg-pink-50',
+  general: 'border-gray-200 bg-gray-50',
 };
 
 // Category icon colors
@@ -114,6 +116,7 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
   vehicles: 'text-purple-600',
   abroad: 'text-cyan-600',
   other: 'text-pink-600',
+  general: 'text-gray-600',
 };
 
 export function CapitalDeclarationDetailPage() {
