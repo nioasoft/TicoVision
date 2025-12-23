@@ -26,7 +26,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { clientService } from '@/services';
 import type { Client } from '@/services/client.service';
 import { TenantContactService } from '@/services/tenant-contact.service';
-import type { AssignedContact } from '@/types/tenant-contact.types';
+import type { AssignedContact, TenantContact } from '@/types/tenant-contact.types';
 import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generation.service';
 import { groupFeeService, type ClientGroup, type GroupMemberClient } from '@/services/group-fee.service';
 import { GroupMembersList } from '@/components/fees/GroupMembersList';
@@ -411,6 +411,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [manualCommercialName, setManualCommercialName] = useState('');
   const [manualCustomHeaderLines, setManualCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
   const [taggedClientId, setTaggedClientId] = useState<string | null>(null); // ⭐ NEW: Client tagging for manual letters
+  const [allTenantContacts, setAllTenantContacts] = useState<TenantContact[]>([]); // For contact selection in manual mode
+  const [selectedManualContact, setSelectedManualContact] = useState<TenantContact | null>(null); // Selected contact from combobox
 
   // State - Letter name and unsaved changes tracking
   const [letterName, setLetterName] = useState('');
@@ -439,6 +441,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
    */
   useEffect(() => {
     loadSavedTemplates();
+  }, []);
+
+  /**
+   * Load all tenant contacts for manual mode combobox
+   */
+  useEffect(() => {
+    TenantContactService.getAllContacts().then(setAllTenantContacts);
   }, []);
 
   /**
@@ -1257,6 +1266,32 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
+   * Handle contact selection in manual mode
+   * - If a contact is selected from the list, auto-fill name + email
+   * - If free text is entered, just set the name
+   */
+  const handleManualContactSelect = (value: string) => {
+    const contact = allTenantContacts.find(c => c.id === value);
+    if (contact) {
+      // Selected a contact from the list
+      setManualCompanyName(contact.full_name);
+      setSelectedManualContact(contact);
+      if (contact.email) {
+        setSelectedRecipients([contact.email]);
+      } else {
+        setSelectedRecipients([]);
+      }
+      markDirty();
+    } else {
+      // Free text input
+      setManualCompanyName(value);
+      setSelectedManualContact(null);
+      setSelectedRecipients([]);
+      markDirty();
+    }
+  };
+
+  /**
    * Handle switching between client, group, and manual modes
    * Shows warning dialog if current mode has data
    */
@@ -1327,6 +1362,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setManualCompanyName('');
       setManualCommercialName('');
       setTaggedClientId(null);
+      setSelectedManualContact(null); // Clear selected contact from combobox
       setManualShowCommercialName(false);
       setManualCustomHeaderLines([]);
       setManualEmails('');
@@ -2289,18 +2325,29 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
                 <div className={recipientMode !== 'manual' ? 'pointer-events-none' : ''}>
                   <div className="space-y-4">
-                    {/* Manual Company Name */}
+                    {/* Manual Company Name - with Contact Search */}
                     <div>
                       <Label htmlFor="manual_company_name" className="text-right block text-base">
                         שם הנמען
                       </Label>
-                      <Input
-                        id="manual_company_name"
-                        value={manualCompanyName}
-                        onChange={(e) => setManualCompanyName(e.target.value)}
-                        dir="rtl"
+                      <Combobox
+                        options={allTenantContacts.map(c => ({
+                          value: c.id,
+                          label: `${c.full_name}${c.job_title ? ` (${c.job_title})` : ''}${c.email ? ` - ${c.email}` : ''}`
+                        }))}
+                        value={selectedManualContact?.id}
+                        onValueChange={handleManualContactSelect}
+                        placeholder="הקלד שם או בחר מאנשי קשר..."
+                        searchPlaceholder="חיפוש איש קשר..."
+                        allowCustomValue={true}
+                        emptyText="לא נמצא איש קשר"
                         disabled={recipientMode !== 'manual'}
                       />
+                      {selectedManualContact && (
+                        <p className="text-xs text-blue-600 mt-1 text-right">
+                          ✓ נבחר איש קשר מהמערכת{selectedManualContact.email ? ` (${selectedManualContact.email})` : ' - ללא מייל'}
+                        </p>
+                      )}
                     </div>
 
                     {/* ⭐ NEW: Client Tagging for Manual Letters */}

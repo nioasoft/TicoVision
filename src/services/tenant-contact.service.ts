@@ -92,6 +92,36 @@ export class TenantContactService {
   }
 
   /**
+   * Get all contacts for the tenant (simple list, no pagination)
+   * Used for combobox/dropdown selections
+   */
+  static async getAllContacts(): Promise<TenantContact[]> {
+    try {
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) {
+        console.warn('⚠️ No tenant_id available');
+        return [];
+      }
+
+      const { data, error } = await supabase
+        .from('tenant_contacts')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('full_name');
+
+      if (error) {
+        console.error('❌ Error fetching all contacts:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('💥 Error in getAllContacts:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get a single contact with all client assignments
    */
   static async getContactWithAssignments(contactId: string): Promise<{
