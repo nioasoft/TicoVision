@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit2, Trash2, Star, Mail, MailX, AlertCircle, Check } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,6 +67,8 @@ export function ContactsManager({
 }: ContactsManagerProps) {
   // Debug: log contacts received
   console.log('ContactsManager received contacts:', contacts);
+
+  const { toast } = useToast();
 
   // Dynamic labels based on resource type
   const primaryContactLabel = resourceType === 'group' ? 'בעל שליטה ראשי' : 'איש קשר ראשי';
@@ -162,32 +165,76 @@ export function ContactsManager({
   };
 
   const handleAdd = async () => {
-    // Validation: Both email and phone are required
-    if (!formData.email || !formData.phone) {
-      alert('חובה למלא גם אימייל וגם טלפון');
+    // Validation
+    const errors: string[] = [];
+    if (!formData.full_name?.trim()) errors.push('שם מלא');
+    if (!formData.contact_type) errors.push('סוג איש קשר');
+    if (!formData.email?.trim()) errors.push('אימייל');
+    if (!formData.phone?.trim()) errors.push('טלפון');
+
+    if (errors.length > 0) {
+      toast({
+        title: 'שדות חובה חסרים',
+        description: errors.join(', '),
+        variant: 'destructive',
+      });
       return;
     }
 
-    await onAdd(formData);
-    setIsAddDialogOpen(false);
-    resetForm();
+    try {
+      await onAdd(formData);
+      setIsAddDialogOpen(false);
+      resetForm();
+      toast({
+        title: 'איש קשר נוסף בהצלחה',
+      });
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      toast({
+        title: 'שגיאה בהוספת איש קשר',
+        description: error instanceof Error ? error.message : 'נסה שוב',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEdit = async () => {
     if (!selectedContact) return;
 
-    // Validation: Both email and phone are required
-    if (!formData.email || !formData.phone) {
-      alert('חובה למלא גם אימייל וגם טלפון');
+    // Validation
+    const errors: string[] = [];
+    if (!formData.full_name?.trim()) errors.push('שם מלא');
+    if (!formData.contact_type) errors.push('סוג איש קשר');
+    if (!formData.email?.trim()) errors.push('אימייל');
+    if (!formData.phone?.trim()) errors.push('טלפון');
+
+    if (errors.length > 0) {
+      toast({
+        title: 'שדות חובה חסרים',
+        description: errors.join(', '),
+        variant: 'destructive',
+      });
       return;
     }
 
-    // For groups, use assignment_id if available, otherwise use contact id
-    const updateId = selectedContact.assignment_id || selectedContact.id;
-    await onUpdate(updateId, formData);
-    setIsEditDialogOpen(false);
-    setSelectedContact(null);
-    resetForm();
+    try {
+      // For groups, use assignment_id if available, otherwise use contact id
+      const updateId = selectedContact.assignment_id || selectedContact.id;
+      await onUpdate(updateId, formData);
+      setIsEditDialogOpen(false);
+      setSelectedContact(null);
+      resetForm();
+      toast({
+        title: 'איש קשר עודכן בהצלחה',
+      });
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      toast({
+        title: 'שגיאה בעדכון איש קשר',
+        description: error instanceof Error ? error.message : 'נסה שוב',
+        variant: 'destructive',
+      });
+    }
   };
 
   const openEditDialog = (contact: ClientContact) => {
@@ -207,9 +254,21 @@ export function ContactsManager({
 
   const handleDelete = async (contact: ClientContact) => {
     if (window.confirm('האם אתה בטוח שברצונך למחוק את איש הקשר?')) {
-      // For groups, use assignment_id if available
-      const deleteId = contact.assignment_id || contact.id;
-      await onDelete(deleteId);
+      try {
+        // For groups, use assignment_id if available
+        const deleteId = contact.assignment_id || contact.id;
+        await onDelete(deleteId);
+        toast({
+          title: 'איש קשר נמחק בהצלחה',
+        });
+      } catch (error) {
+        console.error('Error deleting contact:', error);
+        toast({
+          title: 'שגיאה במחיקת איש קשר',
+          description: error instanceof Error ? error.message : 'נסה שוב',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
