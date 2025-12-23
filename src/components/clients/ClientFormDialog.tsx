@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Combobox } from '@/components/ui/combobox';
-import { ISRAELI_CITIES_SORTED } from '@/data/israeli-cities';
 import {
   Dialog,
   DialogContent,
@@ -152,20 +150,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
     // Signature/stamp state
     const [signaturePath, setSignaturePath] = useState<string | null>(null);
-
-    // Memoized city options for Combobox
-    // Include the current city value if it's not in the standard list (preserves existing data)
-    const cityOptions = useMemo(() => {
-      const standardOptions = ISRAELI_CITIES_SORTED.map(city => ({ value: city, label: city }));
-      const currentCity = formData.address?.city?.trim();
-
-      // If there's a current city that's not in the standard list, add it at the top
-      if (currentCity && !ISRAELI_CITIES_SORTED.includes(currentCity)) {
-        return [{ value: currentCity, label: currentCity }, ...standardOptions];
-      }
-
-      return standardOptions;
-    }, [formData.address?.city]);
 
     // Load client data when editing
     useEffect(() => {
@@ -625,16 +609,17 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <Label htmlFor="address_city" className="text-right block mb-2">
                   עיר
                 </Label>
-                <Combobox
-                  options={cityOptions}
-                  value={formData.address?.city?.trim() || undefined}
-                  onValueChange={(city) =>
+                <Input
+                  id="address_city"
+                  value={formData.address?.city || ''}
+                  onChange={(e) =>
                     handleFormChange('address', {
                       ...formData.address,
-                      city: city?.trim()
+                      city: e.target.value
                     })
                   }
-                  allowCustomValue
+                  onKeyDown={handleKeyDown}
+                  dir="rtl"
                 />
               </div>
 
