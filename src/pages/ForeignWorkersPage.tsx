@@ -117,6 +117,16 @@ function ForeignWorkersPageContent({
     clientSignaturePath?: string | null;  // Company stamp from clients table
   }>({ primaryContact: null, accountantManager: null, clientSignaturePath: null });
 
+  // Close share panel when switching client, branch, or tab
+  useEffect(() => {
+    setShowSharePanel(false);
+    setGeneratedPdfUrl(null);
+    setGeneratedPdfName('');
+    setGeneratedLetterId(null);
+    setGeneratedHtmlContent('');
+    setGeneratedSubject('');
+  }, [selectedClientId, selectedBranchId, formState.activeTab]);
+
   // Fetch client contacts when client changes
   useEffect(() => {
     const fetchClientContacts = async () => {
