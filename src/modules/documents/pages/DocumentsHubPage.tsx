@@ -54,7 +54,7 @@ export default function DocumentsHubPage() {
     try {
       if (file.status === 'draft' || file.status === 'saved') {
          // It's technically a "generated letter" in DB, but we treat it as draft deletion if not sent
-         const { error } = await letterHistoryService.deleteLetter(file.id);
+         const { error } = await letterHistoryService.deleteDraft(file.id);
          if (error) throw error;
          toast.success('המסמך נמחק בהצלחה');
          refresh();
