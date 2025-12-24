@@ -2635,10 +2635,10 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                   onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
                                   dir="rtl"
                                   className="flex-1 text-right"
-                                  maxLength={70}
+                                  maxLength={60}
                                 />
                               </div>
-                              <span className="text-xs text-gray-400 text-left">{line.content.length}/70</span>
+                              <span className="text-xs text-gray-400 text-left">{line.content.length}/60</span>
                             </div>
                           )}
 
@@ -2650,9 +2650,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                 onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
                                 dir="rtl"
                                 className="text-right mr-14"
-                                maxLength={70}
+                                maxLength={60}
                               />
-                              <span className="text-xs text-gray-400 text-left">{line.content.length}/70</span>
+                              <span className="text-xs text-gray-400 text-left">{line.content.length}/60</span>
                             </div>
                           )}
 
