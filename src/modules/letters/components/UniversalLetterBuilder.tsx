@@ -2335,7 +2335,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           value: c.id,
                           label: `${c.full_name}${c.job_title ? ` (${c.job_title})` : ''}${c.email ? ` - ${c.email}` : ''}`
                         }))}
-                        value={selectedManualContact?.id}
+                        value={selectedManualContact?.id || manualCompanyName || undefined}
                         onValueChange={handleManualContactSelect}
                         placeholder="הקלד שם או בחר מאנשי קשר..."
                         searchPlaceholder="חיפוש איש קשר..."
