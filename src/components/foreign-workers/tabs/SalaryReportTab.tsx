@@ -160,7 +160,7 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
       const { data, error } = await monthlyDataService.getBranchWorkerMonthlyData(
         branchId,
         undefined,
-        50
+        500  // Increased from 50 to support more workers × months
       );
 
       if (error) {
