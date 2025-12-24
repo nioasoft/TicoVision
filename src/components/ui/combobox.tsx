@@ -32,6 +32,8 @@ export interface ComboboxProps {
   className?: string
   disabled?: boolean
   allowCustomValue?: boolean
+  /** Custom label for the "add custom value" option. Use {value} as placeholder for the typed text. Default: 'הוסף: "{value}"' */
+  customValueLabel?: string
 }
 
 export function Combobox({
@@ -44,6 +46,7 @@ export function Combobox({
   className,
   disabled = false,
   allowCustomValue = false,
+  customValueLabel,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
@@ -94,7 +97,9 @@ export function Combobox({
                     setOpen(false)
                   }}
                 >
-                  הוסף: "{searchValue.trim()}"
+                  {customValueLabel
+                    ? customValueLabel.replace('{value}', searchValue.trim())
+                    : `הוסף: "${searchValue.trim()}"`}
                 </div>
               ) : (
                 <p className="py-6 text-center text-sm">{emptyText}</p>

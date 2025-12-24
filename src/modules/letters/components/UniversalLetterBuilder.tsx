@@ -2340,6 +2340,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         placeholder="הקלד שם או בחר מאנשי קשר..."
                         searchPlaceholder="חיפוש איש קשר..."
                         allowCustomValue={true}
+                        customValueLabel='השתמש ב: "{value}"'
                         emptyText="לא נמצא איש קשר"
                         disabled={recipientMode !== 'manual'}
                       />
