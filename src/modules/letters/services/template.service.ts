@@ -32,6 +32,7 @@ import type {
   ExcellenceBonusVariables,
   EmployeePaymentsVariables,
   TransferredAmountsVariables,
+  GoingConcernVariables,
   EmployeePaymentRow
 } from '@/types/tzlul-approvals.types';
 import { TZLUL_CLIENT_NAME, TZLUL_TAX_ID } from '@/types/tzlul-approvals.types';
@@ -65,7 +66,8 @@ const TZLUL_LABELS: Record<TzlulTemplateType, string> = {
   'tzlul_summer_bonus': 'חוות דעת מענק קיץ',
   'tzlul_excellence_bonus': 'חוות דעת מענק מצויינות',
   'tzlul_employee_payments': 'אישור תשלומים לעובדים',
-  'tzlul_transferred_amounts': 'אישור העברת סכומים'
+  'tzlul_transferred_amounts': 'אישור העברת סכומים',
+  'tzlul_going_concern': 'הוכחת עמידה בתנאי עסק חי'
 };
 
 export class TemplateService extends BaseService {
@@ -2445,7 +2447,8 @@ export class TemplateService extends BaseService {
       'tzlul_summer_bonus': 'summer-bonus.html',
       'tzlul_excellence_bonus': 'excellence-bonus.html',
       'tzlul_employee_payments': 'employee-payments.html',
-      'tzlul_transferred_amounts': 'transferred-amounts.html'
+      'tzlul_transferred_amounts': 'transferred-amounts.html',
+      'tzlul_going_concern': 'going-concern.html'
     };
 
     return bodyMap[templateType];
@@ -2553,6 +2556,28 @@ export class TemplateService extends BaseService {
         // Keep as is since user enters them in the expected format
         break;
       }
+
+      case 'tzlul_going_concern': {
+        const goingConcernVars = variables as GoingConcernVariables;
+
+        // Format dates if they are ISO format
+        if (goingConcernVars.last_audited_report_date && goingConcernVars.last_audited_report_date.includes('-')) {
+          processed.last_audited_report_date = this.formatIsraeliDate(new Date(goingConcernVars.last_audited_report_date));
+        }
+        if (goingConcernVars.audit_opinion_date && goingConcernVars.audit_opinion_date.includes('-')) {
+          processed.audit_opinion_date = this.formatIsraeliDate(new Date(goingConcernVars.audit_opinion_date));
+        }
+
+        // Build the reviewed statements paragraph based on selected option
+        if (goingConcernVars.reviewed_statements_option === 'option_a') {
+          processed.reviewed_statements_paragraph =
+            'כל הדוחות הכספיים הסקורים של המשתתף שנערכו לאחר הדוח הכספי המבוקר האחרון של המשתתף ונסקרו על ידינו, אינם כוללים הערה בדבר ספקות ממשיים לגבי המשך קיומו של המשתתף "כעסק חי" (*) או כל הערה דומה המעלה ספק בדבר יכולת המשתתף להמשיך ולהתקיים "כעסק חי".';
+        } else if (goingConcernVars.reviewed_statements_option === 'option_b') {
+          processed.reviewed_statements_paragraph =
+            'אין למשתתף דוחות כספיים סקורים שנערכו לאחר הדוח הכספי המבוקר האחרון של המשתתף.';
+        }
+        break;
+      }
     }
 
     return processed;
@@ -2593,6 +2618,9 @@ export class TemplateService extends BaseService {
 
       case 'tzlul_transferred_amounts':
         return `<b>לכבוד</b><br/><b>החברה למשק וכלכלה של השלטון המקומי בע"מ</b><br/><b>היחידה לאכיפת זכויות עובדים</b>`;
+
+      case 'tzlul_going_concern':
+        return `<b>לכבוד</b><br/><b>חברת צלול ניקיון ואחזקה בע"מ ח.פ. 514327642</b>`;
 
       default:
         return `<b>לכבוד</b><br/><br/><b>א.ג.נ,</b>`;

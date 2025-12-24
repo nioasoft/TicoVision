@@ -1,12 +1,13 @@
 /**
  * Tzlul Approvals Documents - TypeScript Types
  *
- * This file contains all type definitions for the 5 Tzlul company approval documents:
+ * This file contains all type definitions for the 6 Tzlul company approval documents:
  * 1. Violation Correction Letter (מכתב תיקון הפרות)
  * 2. Summer Bonus Opinion (חוות דעת מענק קיץ)
  * 3. Excellence Bonus Opinion (חוות דעת מענק מצויינות)
  * 4. Employee Payments Approval (אישור תשלומים לעובדים)
  * 5. Transferred Amounts Approval (אישור העברת סכומים)
+ * 6. Going Concern Approval (הוכחת עמידת המשתתף בתנאי סעיף 2.1.8/2.2.8)
  */
 
 // ============================================================================
@@ -127,6 +128,27 @@ export interface TransferredAmountsVariables extends TzlulSharedData {
 }
 
 // ============================================================================
+// DOCUMENT #6: Going Concern Approval (הוכחת עמידת המשתתף בתנאי סעיף 2.1.8/2.2.8)
+// ============================================================================
+
+/** Option type for reviewed statements selection */
+export type GoingConcernOption = 'option_a' | 'option_b';
+
+export interface GoingConcernVariables extends TzlulSharedData {
+  /** Last audited financial report date in YYYY-MM-DD format */
+  last_audited_report_date: string;
+
+  /** Date when audit opinion was signed in YYYY-MM-DD format */
+  audit_opinion_date: string;
+
+  /** Selected option for reviewed statements section:
+   * option_a = has reviewed statements after last audited report
+   * option_b = no reviewed statements after last audited report
+   */
+  reviewed_statements_option: GoingConcernOption;
+}
+
+// ============================================================================
 // TEMPLATE TYPE DEFINITIONS (for generated_letters table)
 // ============================================================================
 
@@ -135,7 +157,8 @@ export type TzlulTemplateType =
   | 'tzlul_summer_bonus'            // Document #2
   | 'tzlul_excellence_bonus'        // Document #3
   | 'tzlul_employee_payments'       // Document #4
-  | 'tzlul_transferred_amounts';    // Document #5
+  | 'tzlul_transferred_amounts'     // Document #5
+  | 'tzlul_going_concern';          // Document #6
 
 /** Union type of all possible Tzlul document variables */
 export type TzlulVariables =
@@ -143,14 +166,15 @@ export type TzlulVariables =
   | SummerBonusVariables
   | ExcellenceBonusVariables
   | EmployeePaymentsVariables
-  | TransferredAmountsVariables;
+  | TransferredAmountsVariables
+  | GoingConcernVariables;
 
 // ============================================================================
 // UI FORM STATE (for managing form data)
 // ============================================================================
 
 export interface TzlulFormState {
-  /** Currently selected letter type index (0-4) */
+  /** Currently selected letter type index (0-5) */
   selectedLetterType: number;
 
   /** Shared data (document date) */
@@ -163,6 +187,7 @@ export interface TzlulFormState {
     excellenceBonus: Partial<ExcellenceBonusVariables>;
     employeePayments: Partial<EmployeePaymentsVariables>;
     transferredAmounts: Partial<TransferredAmountsVariables>;
+    goingConcern: Partial<GoingConcernVariables>;
   };
 }
 
@@ -170,9 +195,9 @@ export interface TzlulFormState {
 // HELPER TYPES
 // ============================================================================
 
-/** Letter type configuration for the 5 documents */
+/** Letter type configuration for the 6 documents */
 export interface TzlulLetterType {
-  /** Letter type index (0-4) */
+  /** Letter type index (0-5) */
   index: number;
 
   /** Letter label in Hebrew */
@@ -185,7 +210,7 @@ export interface TzlulLetterType {
   templateType: TzlulTemplateType;
 }
 
-/** Configuration for all 5 letter types */
+/** Configuration for all 6 letter types */
 export const TZLUL_LETTER_TYPES: TzlulLetterType[] = [
   {
     index: 0,
@@ -216,6 +241,12 @@ export const TZLUL_LETTER_TYPES: TzlulLetterType[] = [
     label: 'אישור העברת סכומים',
     description: 'אישור רו"ח בדבר העברת סכומים שנוכו',
     templateType: 'tzlul_transferred_amounts',
+  },
+  {
+    index: 5,
+    label: 'הוכחת עמידה בתנאי עסק חי',
+    description: 'אישור רו"ח בדבר עמידה בתנאי סעיף 2.1.8/2.2.8',
+    templateType: 'tzlul_going_concern',
   },
 ];
 
@@ -285,6 +316,16 @@ export function validateTransferredAmounts(data: Partial<TransferredAmountsVaria
   );
 }
 
+/** Validate going concern document data */
+export function validateGoingConcern(data: Partial<GoingConcernVariables>): data is GoingConcernVariables {
+  return (
+    validateTzlulSharedData(data) &&
+    !!data.last_audited_report_date &&
+    !!data.audit_opinion_date &&
+    !!data.reviewed_statements_option
+  );
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -323,6 +364,11 @@ export function createInitialTzlulFormState(): TzlulFormState {
         period_start: '',
         period_end: '',
         as_of_date: '',
+      },
+      goingConcern: {
+        last_audited_report_date: '',
+        audit_opinion_date: '',
+        reviewed_statements_option: undefined,
       },
     },
   };

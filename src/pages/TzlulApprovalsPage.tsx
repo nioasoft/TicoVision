@@ -22,6 +22,7 @@ import { SummerBonusForm } from '@/components/tzlul-approvals/forms/SummerBonusF
 import { ExcellenceBonusForm } from '@/components/tzlul-approvals/forms/ExcellenceBonusForm';
 import { EmployeePaymentsForm } from '@/components/tzlul-approvals/forms/EmployeePaymentsForm';
 import { TransferredAmountsForm } from '@/components/tzlul-approvals/forms/TransferredAmountsForm';
+import { GoingConcernForm } from '@/components/tzlul-approvals/forms/GoingConcernForm';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
@@ -37,6 +38,7 @@ import {
   validateExcellenceBonus,
   validateEmployeePayments,
   validateTransferredAmounts,
+  validateGoingConcern,
   type TzlulFormState,
   type TzlulVariables,
 } from '@/types/tzlul-approvals.types';
@@ -151,6 +153,8 @@ export function TzlulApprovalsPage() {
         return validateEmployeePayments(mergedData);
       case 'tzlul_transferred_amounts':
         return validateTransferredAmounts(mergedData);
+      case 'tzlul_going_concern':
+        return validateGoingConcern(mergedData);
       default:
         return false;
     }
@@ -169,6 +173,8 @@ export function TzlulApprovalsPage() {
         return formState.documentData.employeePayments;
       case 4:
         return formState.documentData.transferredAmounts;
+      case 5:
+        return formState.documentData.goingConcern;
       default:
         return {};
     }
@@ -458,6 +464,22 @@ export function TzlulApprovalsPage() {
             disabled={generating}
           />
         );
+      case 5:
+        return (
+          <GoingConcernForm
+            value={formState.documentData.goingConcern}
+            onChange={(data) =>
+              setFormState({
+                ...formState,
+                documentData: {
+                  ...formState.documentData,
+                  goingConcern: data,
+                },
+              })
+            }
+            disabled={generating}
+          />
+        );
       default:
         return null;
     }
@@ -472,7 +494,7 @@ export function TzlulApprovalsPage() {
           <h1 className="text-3xl font-bold text-right">אישורים חברת צלול</h1>
         </div>
         <p className="text-gray-600 text-right">
-          מערכת ליצירת 5 סוגי אישורים עבור חברת צלול ניקיון ואחזקה בע"מ
+          מערכת ליצירת 6 סוגי אישורים עבור חברת צלול ניקיון ואחזקה בע"מ
         </p>
       </div>
 
