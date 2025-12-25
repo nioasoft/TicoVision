@@ -260,6 +260,31 @@ class CapitalDeclarationPublicServiceClass {
       return { success: false, error: 'שגיאה ביצירת קישור' };
     }
   }
+
+  /**
+   * Mark declaration as complete (client finished uploading documents)
+   */
+  async markComplete(token: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data, error } = await supabase.rpc('mark_declaration_complete', {
+        p_token: token,
+      });
+
+      if (error) {
+        console.error('Mark complete error:', error);
+        return { success: false, error: 'שגיאה בעדכון הסטטוס' };
+      }
+
+      if (!data) {
+        return { success: false, error: 'לא ניתן לעדכן את הסטטוס' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Mark complete error:', error);
+      return { success: false, error: 'שגיאה בעדכון הסטטוס' };
+    }
+  }
 }
 
 // Export singleton instance

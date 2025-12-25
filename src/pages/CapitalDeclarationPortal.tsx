@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
   Upload,
@@ -90,6 +91,8 @@ export function CapitalDeclarationPortal() {
   const [declaration, setDeclaration] = useState<PublicDeclarationData | null>(null);
   const [uploading, setUploading] = useState<CapitalDeclarationCategory | null>(null);
   const [deletingDoc, setDeletingDoc] = useState<string | null>(null);
+  const [confirmComplete, setConfirmComplete] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // File input refs for each category
   const fileInputRefs = useRef<Record<CapitalDeclarationCategory, HTMLInputElement | null>>({
@@ -227,6 +230,29 @@ export function CapitalDeclarationPortal() {
   };
 
   /**
+   * Mark declaration as complete (client finished uploading)
+   */
+  const handleMarkComplete = async () => {
+    if (!token || !confirmComplete) return;
+
+    setSubmitting(true);
+    try {
+      const result = await capitalDeclarationPublicService.markComplete(token);
+      if (result.success) {
+        toast.success('תודה! הסטטוס עודכן והתיק יטופל בהקדם');
+        await loadData();
+      } else {
+        toast.error(result.error || 'שגיאה בעדכון הסטטוס');
+      }
+    } catch (err) {
+      console.error('Mark complete error:', err);
+      toast.error('שגיאה בעדכון הסטטוס');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /**
    * Format file size
    */
   const formatFileSize = (bytes: number) => {
@@ -273,15 +299,15 @@ export function CapitalDeclarationPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900">
               {declaration.tenant_name}
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-sm text-gray-600">
               פורטל העלאת מסמכים - הצהרת הון
             </p>
           </div>
@@ -289,56 +315,55 @@ export function CapitalDeclarationPortal() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Welcome Card */}
-        <Card className="mb-8 border-blue-200 bg-blue-50">
-          <CardContent className="py-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <Card className="mb-5 border-blue-200 bg-blue-50">
+          <CardContent className="py-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                <h2 className="text-lg font-semibold text-gray-900">
                   שלום, {declaration.contact_name}
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-sm text-gray-600">
                   הצהרת הון לשנת {declaration.tax_year} • תאריך הצהרה: {formatDeclarationDate(declaration.declaration_date)}
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <RefreshCw className="h-4 w-4" />
-                <span>עודכן לאחרונה: {declaration.portal_accessed_at ? new Date(declaration.portal_accessed_at).toLocaleDateString('he-IL') : 'היום'}</span>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <RefreshCw className="h-3 w-3" />
+                <span>עודכן: {declaration.portal_accessed_at ? new Date(declaration.portal_accessed_at).toLocaleDateString('he-IL') : 'היום'}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Progress Card */}
-        <Card className="mb-8">
-          <CardContent className="py-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg">התקדמות העלאת מסמכים</h3>
-              <div className="flex items-center gap-2">
-                <CheckCircle className={`h-5 w-5 ${categoriesComplete === DECLARATION_CATEGORIES.length ? 'text-green-600' : 'text-gray-400'}`} />
-                <span className="font-medium">{categoriesComplete}/{DECLARATION_CATEGORIES.length} קטגוריות</span>
+        <Card className="mb-5">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-medium text-sm">התקדמות העלאת מסמכים</h3>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle className={`h-4 w-4 ${categoriesComplete === DECLARATION_CATEGORIES.length ? 'text-green-600' : 'text-gray-400'}`} />
+                <span className="text-sm">{categoriesComplete}/{DECLARATION_CATEGORIES.length} קטגוריות</span>
               </div>
             </div>
-            <Progress value={progress} className="h-3" />
-            <p className="text-sm text-gray-500 mt-2 text-center">
-              {progress === 100 ? 'כל הקטגוריות הושלמו! תודה רבה.' : `${progress}% הושלם - המשיכו להעלות מסמכים לקטגוריות החסרות`}
+            <Progress value={progress} className="h-2" />
+            <p className="text-xs text-gray-500 mt-1.5 text-center">
+              {progress === 100 ? 'כל הקטגוריות הושלמו!' : `${progress}% הושלם`}
             </p>
           </CardContent>
         </Card>
 
         {/* Instructions */}
-        <Card className="mb-8 border-amber-200 bg-amber-50">
-          <CardContent className="py-4">
-            <p className="text-amber-800 text-sm">
-              <strong>שימו לב:</strong> יש להעלות מסמכים לכל קטגוריה רלוונטית. ניתן להעלות מספר קבצים לכל קטגוריה.
-              פורמטים נתמכים: PDF, JPG, PNG (עד 15MB לקובץ)
+        <Card className="mb-5 border-amber-200 bg-amber-50">
+          <CardContent className="py-3">
+            <p className="text-amber-800 text-xs">
+              <strong>שימו לב:</strong> יש להעלות מסמכים לכל קטגוריה רלוונטית. פורמטים: PDF, JPG, PNG (עד 15MB)
             </p>
           </CardContent>
         </Card>
 
         {/* Category Cards */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {DECLARATION_CATEGORIES.map((category) => {
             const IconComponent = CATEGORY_ICON_COMPONENTS[category.key];
             const categoryDocs = getDocumentsByCategory(category.key);
@@ -350,31 +375,31 @@ export function CapitalDeclarationPortal() {
                 key={category.key}
                 className={`${CATEGORY_CARD_COLORS[category.key]} transition-all duration-200`}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-lg ${CATEGORY_ICON_BG[category.key]}`}>
-                      <IconComponent className={`h-6 w-6 ${CATEGORY_ICON_COLORS[category.key]}`} />
+                <CardHeader className="pb-2 pt-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-2 rounded-md ${CATEGORY_ICON_BG[category.key]}`}>
+                      <IconComponent className={`h-4 w-4 ${CATEGORY_ICON_COLORS[category.key]}`} />
                     </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
                         {category.label}
                         {hasDocuments && (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${CATEGORY_ICON_BG[category.key]} ${CATEGORY_ICON_COLORS[category.key]}`}>
-                            {categoryDocs.length} קבצים
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs ${CATEGORY_ICON_BG[category.key]} ${CATEGORY_ICON_COLORS[category.key]}`}>
+                            {categoryDocs.length}
                           </span>
                         )}
                       </CardTitle>
-                      <CardDescription className="text-sm">
+                      <CardDescription className="text-xs truncate">
                         {category.description}
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="px-4 pb-3 pt-0">
                   {/* Upload Area */}
                   <div
-                    className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer
+                    className={`border border-dashed rounded p-3 text-center transition-colors cursor-pointer
                       ${isUploading ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400 bg-white/50'}`}
                     onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onDrop={(e) => handleDrop(category.key, e)}
@@ -390,18 +415,15 @@ export function CapitalDeclarationPortal() {
                     />
 
                     {isUploading ? (
-                      <div className="py-2">
-                        <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-                        <p className="text-sm text-blue-600">מעלה קבצים...</p>
+                      <div className="py-1">
+                        <RefreshCw className="h-5 w-5 animate-spin text-blue-600 mx-auto mb-1" />
+                        <p className="text-xs text-blue-600">מעלה...</p>
                       </div>
                     ) : (
-                      <div className="py-2">
-                        <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">
-                          גרור קבצים לכאן או לחץ לבחירה
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          PDF, JPG, PNG • עד 15MB
+                      <div className="py-1">
+                        <Upload className="h-5 w-5 text-gray-400 mx-auto mb-1" />
+                        <p className="text-xs text-gray-600">
+                          גרור או לחץ להעלאה
                         </p>
                       </div>
                     )}
@@ -409,45 +431,45 @@ export function CapitalDeclarationPortal() {
 
                   {/* Uploaded Documents */}
                   {categoryDocs.length > 0 && (
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-2 space-y-1">
                       {categoryDocs.map((doc) => (
                         <div
                           key={doc.id}
-                          className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm border"
+                          className="flex items-center justify-between bg-white rounded p-2 shadow-sm border"
                         >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-xs font-medium truncate">
                                 {doc.file_name}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-[10px] text-gray-500">
                                 {formatFileSize(doc.file_size)} • {new Date(doc.uploaded_at).toLocaleDateString('he-IL')}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="flex items-center flex-shrink-0">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-6 w-6"
                               onClick={(e) => { e.stopPropagation(); handlePreviewDocument(doc); }}
                               title="הורדה"
                             >
-                              <Download className="h-4 w-4" />
+                              <Download className="h-3 w-3" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
                               onClick={(e) => { e.stopPropagation(); handleDeleteDocument(doc); }}
                               disabled={deletingDoc === doc.id}
                               title="מחיקה"
                             >
                               {deletingDoc === doc.id ? (
-                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                <RefreshCw className="h-3 w-3 animate-spin" />
                               ) : (
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3" />
                               )}
                             </Button>
                           </div>
@@ -461,12 +483,59 @@ export function CapitalDeclarationPortal() {
           })}
         </div>
 
+        {/* Completion Section */}
+        <Card className="mt-5 border-green-200 bg-green-50">
+          <CardContent className="py-4">
+            <h3 className="font-medium text-sm mb-3">סיימתי להעלות מסמכים</h3>
+
+            <div className="flex items-start gap-2 mb-3">
+              <Checkbox
+                id="confirm-complete"
+                checked={confirmComplete}
+                onCheckedChange={(checked) => setConfirmComplete(checked === true)}
+                disabled={declaration.status === 'documents_received'}
+                className="mt-0.5"
+              />
+              <label htmlFor="confirm-complete" className="text-xs text-gray-700 leading-relaxed cursor-pointer">
+                סיימתי להעלות את כל המסמכים. אנא התחילו לטפל בהגשה.
+              </label>
+            </div>
+
+            <Button
+              onClick={handleMarkComplete}
+              disabled={!confirmComplete || submitting || declaration.status === 'documents_received'}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              {submitting ? (
+                <>
+                  <RefreshCw className="h-3 w-3 ml-1.5 animate-spin" />
+                  שולח...
+                </>
+              ) : declaration.status === 'documents_received' ? (
+                <>
+                  <CheckCircle className="h-3 w-3 ml-1.5" />
+                  הסטטוס עודכן
+                </>
+              ) : (
+                'סיימתי'
+              )}
+            </Button>
+
+            {declaration.status === 'documents_received' && (
+              <p className="text-xs text-green-700 mt-2">
+                תודה! נטפל בהגשה בהקדם.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Footer */}
-        <div className="mt-12 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-xs text-gray-500">
           <p>
-            לשאלות ובירורים ניתן לפנות למשרד {declaration.tenant_name}
+            לשאלות ניתן לפנות למשרד {declaration.tenant_name}
           </p>
-          <p className="mt-2">
+          <p className="mt-1">
             &copy; {new Date().getFullYear()} כל הזכויות שמורות
           </p>
         </div>

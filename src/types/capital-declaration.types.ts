@@ -24,6 +24,7 @@ export type CapitalDeclarationStatus =
   | 'sent'               // נשלח
   | 'in_progress'        // הלקוח התחיל
   | 'waiting_documents'  // ממתין למסמכים
+  | 'documents_received' // מסמכים התקבלו
   | 'reviewing'          // בבדיקה
   | 'in_preparation'     // בהכנה
   | 'pending_approval'   // ממתין לאישור
@@ -112,6 +113,7 @@ export const DECLARATION_STATUS_LABELS: Record<CapitalDeclarationStatus, string>
   sent: 'נשלח',
   in_progress: 'הלקוח התחיל',
   waiting_documents: 'ממתין למסמכים',
+  documents_received: 'מסמכים התקבלו',
   reviewing: 'בבדיקה',
   in_preparation: 'בהכנה',
   pending_approval: 'ממתין לאישור',
@@ -125,6 +127,7 @@ export const DECLARATION_STATUS_COLORS: Record<CapitalDeclarationStatus, string>
   sent: 'bg-blue-100 text-blue-800',
   in_progress: 'bg-yellow-100 text-yellow-800',
   waiting_documents: 'bg-orange-100 text-orange-800',
+  documents_received: 'bg-teal-100 text-teal-800',
   reviewing: 'bg-purple-100 text-purple-800',
   in_preparation: 'bg-indigo-100 text-indigo-800',
   pending_approval: 'bg-amber-100 text-amber-800',
