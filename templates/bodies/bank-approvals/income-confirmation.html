@@ -1,0 +1,78 @@
+<!-- Letter Body: Income Confirmation (אישור הכנסות) -->
+<!-- Template Type: bank_approvals_income_confirmation -->
+<!-- Variables: {{document_date}}, {{recipient_name}}, {{confirmed_company_name}}, {{confirmed_company_id}}, {{period_text}}, {{income_table_rows}} -->
+<!-- Note: recipient_name = bank/institution (goes to header "לכבוד"), confirmed_company_name = the company whose income is confirmed -->
+
+<!-- BODY: Subject -->
+<tr>
+    <td style="padding-top: 10px;">
+        <!-- Top border above subject -->
+        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
+        <!-- Subject line - 60 char limit on first line, continuation indented -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.1; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 10px;"><span style="color: #395BF7; font-weight: 700;">הנדון: אישור הכנסות עבור {{confirmed_company_name}} ח.פ. {{confirmed_company_id}} לתקופה {{period_text}}</span></div>
+    </td>
+</tr>
+
+<!-- BODY: Main Content -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            לבקשתכם וכרואי החשבון של חברת {{confirmed_company_name}}, הרינו לאשר כי על פי נתוני הנהלת החשבונות והמסמכים אשר הומצאו לנו, מחזורי ההכנסות לתקופה המבוקשת מפורטים להלן (לפני מע"מ):
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Income Table -->
+<tr>
+    <td style="padding-top: 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+            <!-- Table Header -->
+            <tr style="background-color: #f0f0f0;">
+                <td width="50%" style="border: 1px solid #000000; padding: 10px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 700; text-align: center;">
+                    תקופה
+                </td>
+                <td width="50%" style="border: 1px solid #000000; padding: 10px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 700; text-align: center;">
+                    סכום הכנסות (לפני מע"מ)
+                </td>
+            </tr>
+            <!-- Table Body - Dynamic rows -->
+            {{income_table_rows}}
+        </table>
+    </td>
+</tr>
+
+<!-- BODY: Disclaimer -->
+<tr>
+    <td style="padding-top: 25px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            אישור זה נתן לבקשתכם ולצרכיכם בלבד.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.6; color: #09090b; text-align: right;">
+            בברכה,
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.6; color: #09090b; padding-top: 5px; text-align: right;">
+            פרנקו ושות' רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 20px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

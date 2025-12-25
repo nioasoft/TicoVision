@@ -2652,6 +2652,26 @@ export class TemplateService extends BaseService {
     `).join('');
   }
 
+  /**
+   * Build HTML table rows for income confirmation letter
+   */
+  private buildIncomeTableRows(entries: Array<{ month: string; year: number; amount: number }>): string {
+    if (!entries || entries.length === 0) {
+      return '';
+    }
+
+    return entries.map(entry => `
+      <tr>
+        <td style="border: 1px solid #000000; padding: 10px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${entry.month} ${entry.year}
+        </td>
+        <td style="border: 1px solid #000000; padding: 10px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;" dir="ltr">
+          ${typeof entry.amount === 'number' ? entry.amount.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : entry.amount} ₪
+        </td>
+      </tr>
+    `).join('');
+  }
+
   // ============================================================================
   // COMPANY ONBOARDING DOCUMENTS
   // ============================================================================
@@ -3198,7 +3218,7 @@ export class TemplateService extends BaseService {
       let fullHtml = this.buildAutoLetterHTML(header, body, footer, templateType);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3340,7 +3360,8 @@ export class TemplateService extends BaseService {
       'setting_dates_financial_statements': 'bodies/setting-dates/financial-statements.html',
       'missing_documents_general': 'bodies/missing-documents/general-missing.html',
       'reminder_letters_personal_report': 'bodies/reminder-letters/personal-report-reminder.html',
-      'reminder_letters_bookkeeper_balance': 'bodies/reminder-letters/bookkeeper-balance-reminder.html'
+      'reminder_letters_bookkeeper_balance': 'bodies/reminder-letters/bookkeeper-balance-reminder.html',
+      'bank_approvals_income_confirmation': 'bodies/bank-approvals/income-confirmation.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3358,7 +3379,8 @@ export class TemplateService extends BaseService {
       'setting_dates_financial_statements': 'הזמנה לישיבה על מאזנים',
       'missing_documents_general': 'בקשה להמצאת מסמכים חסרים',
       'reminder_letters_personal_report': 'השלמות לדוח האישי',
-      'reminder_letters_bookkeeper_balance': 'סיכום פרטיכל מישיבה'
+      'reminder_letters_bookkeeper_balance': 'סיכום פרטיכל מישיבה',
+      'bank_approvals_income_confirmation': 'אישור הכנסות'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3540,6 +3562,26 @@ export class TemplateService extends BaseService {
         // Calculate next fiscal year
         if (processed.fiscal_year && typeof processed.fiscal_year === 'string') {
           processed.next_fiscal_year = String(Number(processed.fiscal_year) + 1);
+        }
+        break;
+
+      case 'bank_approvals_income_confirmation':
+        // For Income Confirmation, the header's "לכבוד" should show the bank (recipient_name)
+        // Save the original company_name for use in the body template
+        processed.confirmed_company_name = processed.company_name;
+        processed.confirmed_company_id = processed.company_id;
+        // Swap: header will show recipient (bank), body uses confirmed_company_name
+        processed.company_name = processed.recipient_name;
+        // group_name should be empty for bank letters (no client group hierarchy)
+        processed.group_name = '';
+
+        // Build income table rows
+        if (Array.isArray(processed.income_entries)) {
+          processed.income_table_rows = this.buildIncomeTableRows(
+            processed.income_entries as Array<{ month: string; year: number; amount: number }>
+          );
+        } else {
+          processed.income_table_rows = '';
         }
         break;
     }

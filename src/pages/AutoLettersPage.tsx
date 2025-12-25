@@ -43,6 +43,9 @@ import {
   validateGeneralDeadline,
   validateFinancialStatementsMeeting,
   validateMissingDocuments,
+  validatePersonalReportReminder,
+  validateBookkeeperBalanceReminder,
+  validateIncomeConfirmation,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -102,7 +105,7 @@ export function AutoLettersPage() {
     }
   }, [formState.recipientMode]);
 
-  // Update company_name when client/group changes
+  // Update company_name and company_id when client/group changes
   useEffect(() => {
     if (formState.recipientMode === 'client' && selectedClient) {
       setFormState(prev => ({
@@ -110,6 +113,7 @@ export function AutoLettersPage() {
         sharedData: {
           ...prev.sharedData,
           company_name: selectedClient.company_name,
+          company_id: selectedClient.tax_id || '',
         },
         selectedClientId: selectedClient.id,
         selectedGroupId: null,
@@ -120,6 +124,7 @@ export function AutoLettersPage() {
         sharedData: {
           ...prev.sharedData,
           company_name: selectedGroup.group_name_hebrew || selectedGroup.group_name || '',
+          company_id: '',
         },
         selectedClientId: null,
         selectedGroupId: selectedGroup.id,
@@ -197,6 +202,21 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'reminder_letters') {
+      switch (selectedLetterTypeId) {
+        case 'personal_report_reminder':
+          return formState.documentData.reminder_letters.personalReportReminder;
+        case 'bookkeeper_balance_reminder':
+          return formState.documentData.reminder_letters.bookkeeperBalanceReminder;
+      }
+    }
+
+    if (selectedCategory === 'bank_approvals') {
+      if (selectedLetterTypeId === 'income_confirmation') {
+        return formState.documentData.bank_approvals.incomeConfirmation;
+      }
+    }
+
     return {};
   };
 
@@ -234,6 +254,21 @@ export function AutoLettersPage() {
     if (selectedCategory === 'missing_documents') {
       if (selectedLetterTypeId === 'general_missing') {
         return validateMissingDocuments(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'reminder_letters') {
+      switch (selectedLetterTypeId) {
+        case 'personal_report_reminder':
+          return validatePersonalReportReminder(mergedData);
+        case 'bookkeeper_balance_reminder':
+          return validateBookkeeperBalanceReminder(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'bank_approvals') {
+      if (selectedLetterTypeId === 'income_confirmation') {
+        return validateIncomeConfirmation(mergedData);
       }
     }
 
@@ -592,6 +627,48 @@ export function AutoLettersPage() {
         },
       }));
     }
+
+    if (selectedCategory === 'reminder_letters') {
+      switch (selectedLetterTypeId) {
+        case 'personal_report_reminder':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              reminder_letters: {
+                ...prev.documentData.reminder_letters,
+                personalReportReminder: data,
+              },
+            },
+          }));
+          break;
+        case 'bookkeeper_balance_reminder':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              reminder_letters: {
+                ...prev.documentData.reminder_letters,
+                bookkeeperBalanceReminder: data,
+              },
+            },
+          }));
+          break;
+      }
+    }
+
+    if (selectedCategory === 'bank_approvals' && selectedLetterTypeId === 'income_confirmation') {
+      setFormState(prev => ({
+        ...prev,
+        documentData: {
+          ...prev.documentData,
+          bank_approvals: {
+            ...prev.documentData.bank_approvals,
+            incomeConfirmation: data,
+          },
+        },
+      }));
+    }
   };
 
   // Combobox options for clients
@@ -799,6 +876,8 @@ export function AutoLettersPage() {
           value={getDocumentData()}
           onChange={handleDocumentDataChange}
           disabled={generating}
+          companyName={selectedClient?.company_name}
+          companyId={selectedClient?.tax_id}
         />
       </div>
 

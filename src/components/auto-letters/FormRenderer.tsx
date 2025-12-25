@@ -13,6 +13,7 @@ import type {
   MissingDocumentsVariables,
   PersonalReportReminderVariables,
   BookkeeperBalanceReminderVariables,
+  IncomeConfirmationVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -35,12 +36,17 @@ import {
   BookkeeperBalanceReminderForm,
 } from './forms/reminder-letters';
 
+// Bank Approvals forms
+import { IncomeConfirmationForm } from './forms/bank-approvals';
+
 interface FormRendererProps {
   category: AutoLetterCategory;
   letterTypeId: string | null;
   value: Record<string, unknown>;
   onChange: (data: Record<string, unknown>) => void;
   disabled?: boolean;
+  companyName?: string;  // For bank_approvals forms
+  companyId?: string;    // For bank_approvals forms
 }
 
 export function FormRenderer({
@@ -49,6 +55,8 @@ export function FormRenderer({
   value,
   onChange,
   disabled,
+  companyName,
+  companyId,
 }: FormRendererProps) {
   // Show placeholder if no letter type selected
   if (!letterTypeId) {
@@ -75,14 +83,8 @@ export function FormRenderer({
     case 'reminder_letters':
       return renderReminderLettersForm(letterTypeId, value, onChange, disabled);
 
-    case 'annual_approvals':
-      return (
-        <Card className="mb-6">
-          <CardContent className="py-8 text-center text-gray-500">
-            סוגי מכתבים לאישורים שנתיים יתווספו בקרוב
-          </CardContent>
-        </Card>
-      );
+    case 'bank_approvals':
+      return renderBankApprovalsForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     default:
       return null;
@@ -219,6 +221,37 @@ function renderReminderLettersForm(
           value={value as Partial<BookkeeperBalanceReminderVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderBankApprovalsForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string
+) {
+  switch (letterTypeId) {
+    case 'income_confirmation':
+      return (
+        <IncomeConfirmationForm
+          value={value as Partial<IncomeConfirmationVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
         />
       );
 

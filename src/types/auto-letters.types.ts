@@ -5,7 +5,8 @@
  * - קליטת חברה (Company Onboarding)
  * - קביעת מועדים (Setting Dates)
  * - מסמכים חסרים (Missing Documents)
- * - אישורים שנתיים (Annual Approvals) - Future
+ * - מכתבי זירוז (Reminder Letters)
+ * - אישורים לבנק/מוסדות (Bank Approvals)
  */
 
 import type {
@@ -24,14 +25,14 @@ export type AutoLetterCategory =
   | 'setting_dates'        // קביעת מועדים
   | 'missing_documents'    // מסמכים חסרים
   | 'reminder_letters'     // מכתבי זירוז
-  | 'annual_approvals';    // אישורים שנתיים
+  | 'bank_approvals';      // אישורים לבנק/מוסדות
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark';
   enabled: boolean;
 }
 
@@ -66,11 +67,11 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     enabled: true,
   },
   {
-    id: 'annual_approvals',
-    label: 'אישורים שנתיים',
-    description: 'אישורים שנתיים וחידוש אישורים',
-    icon: 'FileCheck',
-    enabled: false,
+    id: 'bank_approvals',
+    label: 'אישורים לבנק/מוסדות',
+    description: 'אישורי הכנסות ומסמכים לבנקים ומוסדות',
+    icon: 'Landmark',
+    enabled: true,
   },
 ];
 
@@ -91,7 +92,9 @@ export type AutoLetterTemplateType =
   | 'missing_documents_general'
   // Reminder Letters (מכתבי זירוז)
   | 'reminder_letters_personal_report'
-  | 'reminder_letters_bookkeeper_balance';
+  | 'reminder_letters_bookkeeper_balance'
+  // Bank Approvals (אישורים לבנק/מוסדות)
+  | 'bank_approvals_income_confirmation';
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -172,7 +175,15 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       icon: 'Calculator',
     },
   ],
-  annual_approvals: [],
+  bank_approvals: [
+    {
+      id: 'income_confirmation',
+      label: 'אישור הכנסות',
+      description: 'אישור הכנסות לבנקים ומוסדות',
+      templateType: 'bank_approvals_income_confirmation',
+      icon: 'Receipt',
+    },
+  ],
 };
 
 // ============================================================================
@@ -185,6 +196,9 @@ export interface AutoLetterSharedData {
 
   /** Recipient name (company/group) - from selected client/group */
   company_name: string;
+
+  /** Company ID (ח.פ.) - from selected client */
+  company_id?: string;
 
   /** Additional recipient line (contact person + title) */
   recipient_line?: string;
@@ -256,6 +270,22 @@ export interface BookkeeperBalanceReminderVariables extends AutoLetterSharedData
   fiscal_year: string;            // שנת המס
 }
 
+/** Single income entry for income confirmation letter */
+export interface IncomeEntry {
+  month: string;    // חודש בעברית (ינואר, פברואר...)
+  year: number;     // שנה
+  amount: number;   // סכום (לפני מע"מ)
+}
+
+/** Variables for Bank Approvals - Income Confirmation letter */
+export interface IncomeConfirmationVariables extends AutoLetterSharedData {
+  subject?: string;
+  recipient_name: string;           // לכבוד (נמען - בנק, מוסד וכו')
+  period_text?: string;             // תקופה (נגזר אוטומטית מהטבלה)
+  income_entries: IncomeEntry[];    // טבלת הכנסות
+  // Note: company_name and company_id come from AutoLetterSharedData
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -268,6 +298,7 @@ export const DEFAULT_SUBJECTS = {
   missing_documents: 'בקשה להמצאת מסמכים חסרים',
   personal_report_reminder: 'השלמות לדוח האישי',
   bookkeeper_balance_reminder: 'סיכום פרטיכל מישיבה',
+  income_confirmation: 'אישור הכנסות',
 } as const;
 
 // ============================================================================
@@ -292,9 +323,9 @@ export interface MissingDocumentsDocumentData {
   generalMissing: Partial<MissingDocumentsVariables>;
 }
 
-/** Document data for Annual Approvals letters (placeholder) */
-export interface AnnualApprovalsDocumentData {
-  // Will be populated when letter types are added
+/** Document data for Bank Approvals letters */
+export interface BankApprovalsDocumentData {
+  incomeConfirmation: Partial<IncomeConfirmationVariables>;
 }
 
 /** Document data for Reminder Letters */
@@ -329,7 +360,7 @@ export interface AutoLetterFormState {
     setting_dates: SettingDatesDocumentData;
     missing_documents: MissingDocumentsDocumentData;
     reminder_letters: ReminderLettersDocumentData;
-    annual_approvals: AnnualApprovalsDocumentData;
+    bank_approvals: BankApprovalsDocumentData;
   };
 }
 
@@ -405,7 +436,15 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           fiscal_year: String(new Date().getFullYear() - 1),
         },
       },
-      annual_approvals: {},
+      bank_approvals: {
+        incomeConfirmation: {
+          subject: DEFAULT_SUBJECTS.income_confirmation,
+          recipient_name: '',
+          period_text: '',
+          income_entries: [],
+          // Note: company_name and company_id come from sharedData, not here
+        },
+      },
     },
   };
 }
@@ -527,5 +566,22 @@ export function validateBookkeeperBalanceReminder(data: Partial<BookkeeperBalanc
     data.meeting_date &&
     data.bookkeeper_name?.trim() &&
     data.fiscal_year
+  );
+}
+
+/** Validate Income Confirmation letter */
+export function validateIncomeConfirmation(data: Partial<IncomeConfirmationVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.recipient_name?.trim() &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.income_entries &&
+    data.income_entries.length > 0 &&
+    data.income_entries.every(entry =>
+      entry.month?.trim() &&
+      entry.year > 0 &&
+      entry.amount > 0
+    )
   );
 }
