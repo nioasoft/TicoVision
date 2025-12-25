@@ -217,6 +217,14 @@ export interface CapitalDeclaration {
   // Letter
   letter_id: string | null;
 
+  // Alternate Recipient
+  recipient_mode: 'main' | 'alternate';
+  recipient_name: string | null;
+  recipient_email: string | null;
+  recipient_phone: string | null;
+  recipient_phone_secondary: string | null;
+  recipient_contact_id: string | null;
+
   // Audit
   created_at: string;
   updated_at: string;
@@ -288,6 +296,12 @@ export interface CreateDeclarationForm {
   notes: string;
   client_id: string | null;
   group_id: string | null;
+  // Alternate Recipient
+  recipient_mode: 'main' | 'alternate';
+  recipient_name: string;
+  recipient_email: string;
+  recipient_phone: string;
+  recipient_phone_secondary: string;
 }
 
 /** Create initial form state */
@@ -304,7 +318,13 @@ export function createInitialDeclarationForm(): CreateDeclarationForm {
     google_drive_link: '',
     notes: '',
     client_id: null,
-    group_id: null
+    group_id: null,
+    // Alternate Recipient defaults
+    recipient_mode: 'main',
+    recipient_name: '',
+    recipient_email: '',
+    recipient_phone: '',
+    recipient_phone_secondary: ''
   };
 }
 
@@ -373,10 +393,7 @@ export function validateDeclarationForm(form: CreateDeclarationForm): {
     errors.push('שם איש קשר הוא שדה חובה');
   }
 
-  if (!form.contact_email && !form.contact_phone) {
-    errors.push('יש להזין מייל או טלפון לפחות');
-  }
-
+  // Email/phone are optional for main contact - only validate format if provided
   if (form.contact_email && !isValidEmail(form.contact_email)) {
     errors.push('כתובת מייל לא תקינה');
   }
@@ -387,6 +404,19 @@ export function validateDeclarationForm(form: CreateDeclarationForm): {
 
   if (!form.declaration_date) {
     errors.push('תאריך הצהרה הוא שדה חובה');
+  }
+
+  // Validate alternate recipient if mode is 'alternate'
+  if (form.recipient_mode === 'alternate') {
+    if (!form.recipient_name.trim()) {
+      errors.push('שם נמען חלופי הוא שדה חובה');
+    }
+    if (!form.recipient_email && !form.recipient_phone) {
+      errors.push('יש להזין מייל או טלפון לנמען החלופי');
+    }
+    if (form.recipient_email && !isValidEmail(form.recipient_email)) {
+      errors.push('כתובת מייל של נמען חלופי לא תקינה');
+    }
   }
 
   return {

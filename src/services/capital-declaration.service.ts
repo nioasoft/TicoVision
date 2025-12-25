@@ -43,7 +43,8 @@ class CapitalDeclarationServiceClass extends BaseService {
    */
   async create(
     form: CreateDeclarationForm,
-    contactId?: string
+    contactId?: string,
+    recipientContactId?: string
   ): Promise<ServiceResponse<CapitalDeclaration>> {
     try {
       const tenantId = await this.getTenantId();
@@ -66,6 +67,13 @@ class CapitalDeclarationServiceClass extends BaseService {
         status: 'draft' as CapitalDeclarationStatus,
         public_token: this.generateToken(),
         created_by: user?.id,
+        // Alternate recipient fields
+        recipient_mode: form.recipient_mode,
+        recipient_name: form.recipient_mode === 'alternate' ? form.recipient_name : null,
+        recipient_email: form.recipient_mode === 'alternate' ? (form.recipient_email || null) : null,
+        recipient_phone: form.recipient_mode === 'alternate' ? (form.recipient_phone || null) : null,
+        recipient_phone_secondary: form.recipient_mode === 'alternate' ? (form.recipient_phone_secondary || null) : null,
+        recipient_contact_id: recipientContactId || null,
       };
 
       const { data, error } = await supabase
@@ -79,6 +87,7 @@ class CapitalDeclarationServiceClass extends BaseService {
       await this.logAction('create_declaration', data.id, {
         tax_year: form.tax_year,
         contact_name: form.contact_name,
+        recipient_mode: form.recipient_mode,
       });
 
       return { data, error: null };
@@ -349,17 +358,17 @@ class CapitalDeclarationServiceClass extends BaseService {
       // Get user names for display
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(h => h.changed_by))];
-        const { data: users } = await supabase.auth.admin.listUsers();
 
-        // If admin API fails, try to get user metadata from user_tenant_access
-        const { data: utaData } = await supabase
-          .from('user_tenant_access')
-          .select('user_id, full_name')
-          .in('user_id', userIds);
+        // Use existing RPC with proper tenant isolation
+        const { data: allTenantUsers } = await supabase.rpc('get_users_for_tenant');
 
         const userMap = new Map<string, string>();
-        if (utaData) {
-          utaData.forEach(u => userMap.set(u.user_id, u.full_name || 'משתמש'));
+        if (allTenantUsers) {
+          allTenantUsers
+            .filter((u: { user_id: string }) => userIds.includes(u.user_id))
+            .forEach((u: { user_id: string; full_name: string | null }) =>
+              userMap.set(u.user_id, u.full_name || 'משתמש')
+            );
         }
 
         // Add names to history entries
@@ -746,13 +755,17 @@ class CapitalDeclarationServiceClass extends BaseService {
         (data || []).map(async (comm) => {
           let created_by_name: string | undefined;
           if (comm.created_by) {
-            // Use RPC to get user info instead of admin API
-            const { data: userInfo } = await supabase.rpc('get_user_info', {
-              p_user_id: comm.created_by,
-            });
+            try {
+              // Use RPC to get user info with tenant validation
+              const { data: userInfo } = await supabase.rpc('get_user_with_auth', {
+                p_user_id: comm.created_by,
+              });
 
-            if (userInfo?.[0]) {
-              created_by_name = userInfo[0].full_name || userInfo[0].email?.split('@')[0] || undefined;
+              if (userInfo?.[0]) {
+                created_by_name = userInfo[0].full_name || userInfo[0].email?.split('@')[0] || undefined;
+              }
+            } catch {
+              // User might not exist in tenant - gracefully ignore
             }
           }
 
@@ -965,11 +978,15 @@ class CapitalDeclarationServiceClass extends BaseService {
           // Get assigned user name
           let assigned_to_name: string | undefined;
           if (decl.assigned_to) {
-            const { data: userData } = await supabase.rpc('get_user_email', {
-              p_user_id: decl.assigned_to,
-            });
-            if (userData) {
-              assigned_to_name = userData;
+            try {
+              const { data: userData } = await supabase.rpc('get_user_with_auth', {
+                p_user_id: decl.assigned_to,
+              });
+              if (userData?.[0]) {
+                assigned_to_name = userData[0].full_name || userData[0].email?.split('@')[0];
+              }
+            } catch {
+              // User might not exist in tenant - gracefully ignore
             }
           }
 
@@ -998,33 +1015,20 @@ class CapitalDeclarationServiceClass extends BaseService {
    */
   async getTenantAccountants(): Promise<ServiceResponse<{ id: string; name: string; email: string }[]>> {
     try {
-      const tenantId = await this.getTenantId();
-
-      const { data, error } = await supabase
-        .from('user_tenant_access')
-        .select('user_id, role')
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-        .in('role', ['admin', 'accountant']);
+      // Single RPC call instead of N+1 queries - more efficient
+      const { data: allUsers, error } = await supabase.rpc('get_users_for_tenant');
 
       if (error) throw error;
 
-      // Get user details for each
-      const accountants = await Promise.all(
-        (data || []).map(async (uta) => {
-          const { data: userInfo } = await supabase.rpc('get_user_info', {
-            p_user_id: uta.user_id,
-          });
-
-          const info = userInfo?.[0] || { email: '', full_name: 'Unknown' };
-
-          return {
-            id: uta.user_id,
-            name: info.full_name || info.email?.split('@')[0] || 'Unknown',
-            email: info.email || '',
-          };
-        })
-      );
+      const accountants = (allUsers || [])
+        .filter((u: { role: string; is_active: boolean }) =>
+          ['admin', 'accountant'].includes(u.role) && u.is_active
+        )
+        .map((u: { user_id: string; full_name: string | null; email: string | null }) => ({
+          id: u.user_id,
+          name: u.full_name || u.email?.split('@')[0] || 'Unknown',
+          email: u.email || '',
+        }));
 
       return { data: accountants, error: null };
     } catch (error) {

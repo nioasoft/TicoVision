@@ -234,10 +234,25 @@ export function CapitalDeclarationPage() {
         contactId = contact?.id;
       }
 
+      // 1.5 Handle alternate recipient contact creation
+      let recipientContactId: string | undefined;
+      if (formState.recipient_mode === 'alternate' &&
+          (formState.recipient_email || formState.recipient_phone)) {
+        const recipientContact = await TenantContactService.createOrGet({
+          full_name: formState.recipient_name,
+          email: formState.recipient_email || null,
+          phone: formState.recipient_phone || null,
+          phone_secondary: formState.recipient_phone_secondary || null,
+          contact_type: 'other',
+        });
+        recipientContactId = recipientContact?.id;
+      }
+
       // 2. Create declaration record
       const { data: declaration, error: createError } = await capitalDeclarationService.create(
         formState,
-        contactId
+        contactId,
+        recipientContactId
       );
 
       if (createError || !declaration) {
@@ -316,6 +331,21 @@ export function CapitalDeclarationPage() {
     setTimeout(() => setPortalLinkCopied(false), 2000);
   };
 
+  // Handle recipient mode change (main vs alternate)
+  const handleRecipientModeChange = (mode: 'main' | 'alternate') => {
+    setFormState(prev => ({
+      ...prev,
+      recipient_mode: mode,
+      // Clear alternate fields when switching to main
+      ...(mode === 'main' && {
+        recipient_name: '',
+        recipient_email: '',
+        recipient_phone: '',
+        recipient_phone_secondary: '',
+      })
+    }));
+  };
+
   return (
     <div className="container mx-auto py-6 px-4" dir="rtl">
       <Card>
@@ -349,6 +379,52 @@ export function CapitalDeclarationPage() {
               phonePlaceholder="050-1234567"
               phoneSecondaryPlaceholder="טלפון נוסף"
             />
+          </div>
+
+          {/* Recipient Selection Section */}
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <Label className="text-lg font-semibold text-right block">מי יקבל את המכתב?</Label>
+            <RadioGroup
+              value={formState.recipient_mode}
+              onValueChange={(value) => handleRecipientModeChange(value as 'main' | 'alternate')}
+              className="space-y-3"
+              dir="rtl"
+            >
+              <div className="flex items-center gap-2 justify-end flex-row-reverse">
+                <RadioGroupItem value="main" id="recipient-main" />
+                <Label htmlFor="recipient-main" className="cursor-pointer">
+                  שלח לנמען הראשי {formState.contact_name && `(${formState.contact_name})`}
+                </Label>
+              </div>
+              <div className="flex items-center gap-2 justify-end flex-row-reverse">
+                <RadioGroupItem value="alternate" id="recipient-alternate" />
+                <Label htmlFor="recipient-alternate" className="cursor-pointer">
+                  שלח לאיש קשר אחר
+                </Label>
+              </div>
+            </RadioGroup>
+
+            {/* Alternate recipient input */}
+            {formState.recipient_mode === 'alternate' && (
+              <div className="pr-6 pt-2 border-r-2 border-primary/20">
+                <ContactAutocompleteInput
+                  label="פרטי נמען חלופי"
+                  nameValue={formState.recipient_name}
+                  emailValue={formState.recipient_email}
+                  phoneValue={formState.recipient_phone}
+                  phoneSecondaryValue={formState.recipient_phone_secondary}
+                  onNameChange={(value) => setFormState(prev => ({ ...prev, recipient_name: value }))}
+                  onEmailChange={(value) => setFormState(prev => ({ ...prev, recipient_email: value }))}
+                  onPhoneChange={(value) => setFormState(prev => ({ ...prev, recipient_phone: value }))}
+                  onPhoneSecondaryChange={(value) => setFormState(prev => ({ ...prev, recipient_phone_secondary: value }))}
+                  required
+                  namePlaceholder="שם מלא"
+                  emailPlaceholder="email@example.com"
+                  phonePlaceholder="050-1234567"
+                  phoneSecondaryPlaceholder="טלפון נוסף"
+                />
+              </div>
+            )}
           </div>
 
           {/* Tax Year and Date Section */}
@@ -556,7 +632,11 @@ export function CapitalDeclarationPage() {
               htmlContent={generatedHtmlContent}
               letterId={generatedLetterId}
               defaultSubject={generatedSubject}
-              defaultEmail={formState.contact_email || undefined}
+              defaultEmail={
+                formState.recipient_mode === 'alternate'
+                  ? formState.recipient_email || undefined
+                  : formState.contact_email || undefined
+              }
               defaultEmailType="html"
               savePdfToFolder={!!formState.client_id}
               fileCategory="letters"
