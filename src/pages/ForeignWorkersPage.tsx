@@ -502,8 +502,8 @@ function ForeignWorkersPageContent({
       {range && range.monthCount > 0 && (
         <div className="flex gap-3 mb-6 items-center justify-end">
           <span className="text-sm font-medium">תצוגת חודשים החל מ:</span>
-          <Select 
-            value={String(displayStartIndex)} 
+          <Select
+            value={String(displayStartIndex)}
             onValueChange={async (v) => {
               const val = Number(v);
               if (val < 0) {
@@ -511,7 +511,15 @@ function ForeignWorkersPageContent({
                 const monthsToAdd = Math.abs(val);
                 await extendRange('past', monthsToAdd, 0);
               } else {
-                setDisplayStartIndex(val);
+                // Check if selecting this month would show less than 12 months
+                const remainingMonths = range.monthCount - val;
+                if (remainingMonths < 12) {
+                  // Automatically extend forward to maintain 12 months
+                  const monthsToAdd = 12 - remainingMonths;
+                  await extendRange('future', monthsToAdd, val);
+                } else {
+                  setDisplayStartIndex(val);
+                }
               }
             }}
           >
