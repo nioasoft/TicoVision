@@ -1335,7 +1335,7 @@ export function LetterPreviewDialog({
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'primary' | 'secondary')} className="mt-4">
             <TabsList className="grid w-full grid-cols-2 rtl:text-right">
               <TabsTrigger value="primary" className="rtl:text-right flex items-center gap-2">
-                מכתב ביקורת פנימית
+                מכתב ראיית חשבון
                 {primarySent && <CheckCircle2 className="h-4 w-4 text-green-600" />}
               </TabsTrigger>
               <TabsTrigger value="secondary" className="rtl:text-right flex items-center gap-2">
