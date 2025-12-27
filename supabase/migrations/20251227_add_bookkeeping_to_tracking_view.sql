@@ -21,9 +21,9 @@ SELECT
   fc.calculated_before_vat as original_before_vat,
   fc.calculated_with_vat as original_with_vat,
 
-  -- Bookkeeping amounts (extracted from JSON for internal clients)
-  (fc.bookkeeping_calculation->>'final_amount')::numeric as bookkeeping_before_vat,
-  (fc.bookkeeping_calculation->>'total_with_vat')::numeric as bookkeeping_with_vat,
+  -- Bookkeeping amounts (monthly - divide by 12)
+  ROUND((fc.bookkeeping_calculation->>'final_amount')::numeric / 12, 2) as bookkeeping_before_vat,
+  ROUND((fc.bookkeeping_calculation->>'total_with_vat')::numeric / 12, 2) as bookkeeping_with_vat,
 
   -- Selected payment method & expected amount
   fc.payment_method_selected,
@@ -85,4 +85,4 @@ LEFT JOIN actual_payments ap ON fc.actual_payment_id = ap.id
 LEFT JOIN payment_deviations pd ON fc.id = pd.fee_calculation_id
 WHERE fc.tenant_id = get_current_tenant_id();
 
-COMMENT ON VIEW fee_tracking_enhanced_view IS 'Enhanced view combining fee calculations, actual payments, deviations, and installment tracking - now includes bookkeeping amounts';
+COMMENT ON VIEW fee_tracking_enhanced_view IS 'Enhanced view - bookkeeping amounts are monthly (divided by 12)';
