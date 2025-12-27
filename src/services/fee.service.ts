@@ -326,11 +326,13 @@ class FeeService extends BaseService {
       if (data.bookkeeping_base_amount && data.bookkeeping_base_amount > 0) {
         // Bookkeeping is entered as MONTHLY amount, multiply by 12 for annual calculation
         const annualBookkeepingAmount = data.bookkeeping_base_amount * 12;
+        // Real adjustment is also entered as MONTHLY, multiply by 12 for annual calculation
+        const annualBookkeepingRealAdjustment = (data.bookkeeping_real_adjustment || 0) * 12;
 
         const bookkeepingCalculations = this.calculateFeeAmounts({
           base_amount: annualBookkeepingAmount,
           inflation_rate: data.bookkeeping_inflation_rate || 0,
-          real_adjustment: data.bookkeeping_real_adjustment || 0,
+          real_adjustment: annualBookkeepingRealAdjustment,
           discount_percentage: data.bookkeeping_discount_percentage || 0,
           apply_inflation_index: data.bookkeeping_apply_inflation_index ?? false,
         });
@@ -574,11 +576,14 @@ class FeeService extends BaseService {
         if (existing && bookkeepingFields.bookkeeping_base_amount && bookkeepingFields.bookkeeping_base_amount > 0) {
           // Bookkeeping is entered as MONTHLY amount, multiply by 12 for annual calculation
           const annualBookkeepingAmount = bookkeepingFields.bookkeeping_base_amount * 12;
+          // Real adjustment is also entered as MONTHLY, multiply by 12 for annual calculation
+          const monthlyRealAdjustment = bookkeepingFields.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0;
+          const annualBookkeepingRealAdjustment = monthlyRealAdjustment * 12;
 
           const bookkeepingCalc = this.calculateFeeAmounts({
             base_amount: annualBookkeepingAmount,
             inflation_rate: bookkeepingFields.bookkeeping_inflation_rate ?? existing.bookkeeping_calculation?.inflation_rate ?? 0,
-            real_adjustment: bookkeepingFields.bookkeeping_real_adjustment ?? existing.bookkeeping_calculation?.real_adjustment ?? 0,
+            real_adjustment: annualBookkeepingRealAdjustment,
             apply_inflation_index: bookkeepingFields.bookkeeping_apply_inflation_index ?? existing.bookkeeping_calculation?.apply_inflation_index ?? false,
           });
 
