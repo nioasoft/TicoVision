@@ -132,7 +132,7 @@ export function FeesPage() {
     previous_year_amount_with_vat: 0,
     previous_year_amount_with_vat_before_discount: 0,
     base_amount: 0,
-    inflation_rate: 3.0,
+    inflation_rate: 4.0,
     index_manual_adjustment: 0,
     real_adjustment: 0,
     real_adjustment_reason: '',
@@ -143,14 +143,14 @@ export function FeesPage() {
     notes: '',
     // Bookkeeping fields (for internal clients only)
     bookkeeping_base_amount: 0,
-    bookkeeping_inflation_rate: 3.0,
+    bookkeeping_inflation_rate: 4.0,
     bookkeeping_real_adjustment: 0,
     bookkeeping_real_adjustment_reason: '',
     bookkeeping_discount_percentage: 0,
     bookkeeping_apply_inflation_index: true,
     // Retainer fields (for retainer clients - both internal and external)
     retainer_monthly_amount: 0,
-    retainer_inflation_rate: 3.0,
+    retainer_inflation_rate: 4.0,
     retainer_index_manual_adjustment: 0,
     retainer_index_manual_is_negative: false,
     retainer_real_adjustment: 0,
@@ -273,7 +273,7 @@ export function FeesPage() {
           previous_year_amount_with_vat: 0,
           previous_year_amount_with_vat_before_discount: 0,
           base_amount: 0,
-          inflation_rate: 3.0,
+          inflation_rate: 4.0,
           index_manual_adjustment: 0,
           real_adjustment: 0,
           real_adjustment_reason: '',
@@ -283,13 +283,13 @@ export function FeesPage() {
           apply_inflation_index: true,
           notes: '',
           bookkeeping_base_amount: 0,
-          bookkeeping_inflation_rate: 3.0,
+          bookkeeping_inflation_rate: 4.0,
           bookkeeping_real_adjustment: 0,
           bookkeeping_real_adjustment_reason: '',
           bookkeeping_discount_percentage: 0,
           bookkeeping_apply_inflation_index: true,
           retainer_monthly_amount: 0,
-          retainer_inflation_rate: 3.0,
+          retainer_inflation_rate: 4.0,
           retainer_index_manual_adjustment: 0,
           retainer_index_manual_is_negative: false,
           retainer_real_adjustment: 0,
@@ -477,14 +477,14 @@ export function FeesPage() {
           previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
           // Load bookkeeping data if exists (for internal clients)
           bookkeeping_base_amount: draft.bookkeeping_calculation?.base_amount || 0,
-          bookkeeping_inflation_rate: draft.bookkeeping_calculation?.inflation_rate || 3.0,
+          bookkeeping_inflation_rate: draft.bookkeeping_calculation?.inflation_rate || 4.0,
           bookkeeping_real_adjustment: draft.bookkeeping_calculation?.real_adjustment || 0,
           bookkeeping_real_adjustment_reason: draft.bookkeeping_calculation?.real_adjustment_reason || '',
           bookkeeping_discount_percentage: draft.bookkeeping_calculation?.discount_percentage || 0,
           bookkeeping_apply_inflation_index: draft.bookkeeping_calculation?.apply_inflation_index ?? true,
           // Load retainer data if exists (for retainer clients)
           retainer_monthly_amount: draft.retainer_calculation?.monthly_amount || 0,
-          retainer_inflation_rate: draft.retainer_calculation?.inflation_rate || 3.0,
+          retainer_inflation_rate: draft.retainer_calculation?.inflation_rate || 4.0,
           retainer_index_manual_adjustment: draft.retainer_calculation?.index_manual_adjustment || 0,
           retainer_index_manual_is_negative: draft.retainer_calculation?.index_manual_is_negative ?? false,
           retainer_real_adjustment: draft.retainer_calculation?.real_adjustment || 0,
@@ -536,14 +536,14 @@ export function FeesPage() {
             previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
             // Load bookkeeping data if exists (for internal clients)
             bookkeeping_base_amount: latest.bookkeeping_calculation?.base_amount || 0,
-            bookkeeping_inflation_rate: latest.bookkeeping_calculation?.inflation_rate || 3.0,
+            bookkeeping_inflation_rate: latest.bookkeeping_calculation?.inflation_rate || 4.0,
             bookkeeping_real_adjustment: latest.bookkeeping_calculation?.real_adjustment || 0,
             bookkeeping_real_adjustment_reason: latest.bookkeeping_calculation?.real_adjustment_reason || '',
             bookkeeping_discount_percentage: latest.bookkeeping_calculation?.discount_percentage || 0,
             bookkeeping_apply_inflation_index: latest.bookkeeping_calculation?.apply_inflation_index ?? true,
             // Load retainer data if exists (for retainer clients)
             retainer_monthly_amount: latest.retainer_calculation?.monthly_amount || 0,
-            retainer_inflation_rate: latest.retainer_calculation?.inflation_rate || 3.0,
+            retainer_inflation_rate: latest.retainer_calculation?.inflation_rate || 4.0,
             retainer_index_manual_adjustment: latest.retainer_calculation?.index_manual_adjustment || 0,
             retainer_index_manual_is_negative: latest.retainer_calculation?.index_manual_is_negative ?? false,
             retainer_real_adjustment: latest.retainer_calculation?.real_adjustment || 0,
@@ -679,7 +679,7 @@ export function FeesPage() {
         
         const currentYearFields = {
           base_amount: response.data.audit_base_amount ?? 0,
-          inflation_rate: response.data.audit_inflation_rate || 3.0,
+          inflation_rate: response.data.audit_inflation_rate || 4.0,
           apply_inflation_index: response.data.audit_apply_inflation_index ?? true,
           index_manual_adjustment: response.data.audit_index_manual_adjustment || 0,
           real_adjustment: response.data.audit_real_adjustment || 0,
@@ -689,7 +689,7 @@ export function FeesPage() {
           client_requested_adjustment_note: response.data.client_requested_adjustment_note || '',
           // Bookkeeping fields
           bookkeeping_base_amount: response.data.bookkeeping_base_amount || 0,
-          bookkeeping_inflation_rate: response.data.bookkeeping_inflation_rate || 3.0,
+          bookkeeping_inflation_rate: response.data.bookkeeping_inflation_rate || 4.0,
           bookkeeping_apply_inflation_index: response.data.bookkeeping_apply_inflation_index ?? true,
           bookkeeping_real_adjustment: response.data.bookkeeping_real_adjustment || 0,
           bookkeeping_real_adjustment_reason: response.data.bookkeeping_real_adjustment_reason || '',
@@ -712,7 +712,7 @@ export function FeesPage() {
         
         const resetFields = {
           base_amount: 0,
-          inflation_rate: 3.0,
+          inflation_rate: 4.0,
           index_manual_adjustment: 0,
           real_adjustment: 0,
           real_adjustment_reason: '',
@@ -722,13 +722,13 @@ export function FeesPage() {
           apply_inflation_index: true,
           notes: '',
           bookkeeping_base_amount: 0,
-          bookkeeping_inflation_rate: 3.0,
+          bookkeeping_inflation_rate: 4.0,
           bookkeeping_real_adjustment: 0,
           bookkeeping_real_adjustment_reason: '',
           bookkeeping_discount_percentage: 0,
           bookkeeping_apply_inflation_index: true,
           retainer_monthly_amount: 0,
-          retainer_inflation_rate: 3.0,
+          retainer_inflation_rate: 4.0,
           retainer_index_manual_adjustment: 0,
           retainer_index_manual_is_negative: false,
           retainer_real_adjustment: 0,
@@ -845,7 +845,7 @@ export function FeesPage() {
         ...formData,
         base_amount: calc.base_amount || 0,
         apply_inflation_index: calc.apply_inflation_index || false,
-        inflation_rate: calc.inflation_rate || 3,
+        inflation_rate: calc.inflation_rate || 4,
         real_adjustment: calc.real_adjustment || 0,
         real_adjustment_reason: calc.real_adjustment_reason || '',
         client_requested_adjustment: calc.client_requested_adjustment || 0,
@@ -859,7 +859,7 @@ export function FeesPage() {
       const results = feeService.calculateFeeAmounts({
         base_amount: calc.base_amount || 0,
         apply_inflation_index: calc.apply_inflation_index || false,
-        inflation_rate: calc.inflation_rate || 3,
+        inflation_rate: calc.inflation_rate || 4,
         real_adjustment: calc.real_adjustment || 0,
         client_requested_adjustment: calc.client_requested_adjustment || 0,
         previous_year_amount_with_vat: calc.previous_year_data?.amount_with_vat || 0,
@@ -871,7 +871,7 @@ export function FeesPage() {
         const bookkeepingResults = feeService.calculateFeeAmounts({
           base_amount: calc.bookkeeping_calculation.monthly_amount || 0,
           apply_inflation_index: calc.bookkeeping_calculation.apply_inflation_index || false,
-          inflation_rate: calc.bookkeeping_calculation.inflation_rate || 3,
+          inflation_rate: calc.bookkeeping_calculation.inflation_rate || 4,
           real_adjustment: calc.bookkeeping_calculation.real_adjustment || 0,
           previous_year_amount_with_vat: 0,
         });
@@ -909,7 +909,7 @@ export function FeesPage() {
     };
 
     const baseAmount = safeParse(formData.base_amount);
-    const inflationRate = formData.apply_inflation_index ? (formData.inflation_rate || 3.0) : 0;
+    const inflationRate = formData.apply_inflation_index ? (formData.inflation_rate || 4.0) : 0;
     const realAdjustment = safeParse(formData.real_adjustment);
     const clientAdjustment = safeParse(formData.client_requested_adjustment);
     const discountPercentage = safeParse(formData.discount_percentage);
@@ -945,7 +945,7 @@ export function FeesPage() {
     const bkBaseAmount = safeParse(formData.bookkeeping_base_amount);
     
     if (selectedClientDetails?.internal_external === 'internal' && !selectedClientDetails?.is_retainer && bkBaseAmount > 0) {
-      const bkInflationRate = formData.bookkeeping_apply_inflation_index ? (formData.bookkeeping_inflation_rate || 3.0) : 0;
+      const bkInflationRate = formData.bookkeeping_apply_inflation_index ? (formData.bookkeeping_inflation_rate || 4.0) : 0;
       const bkRealAdjustment = safeParse(formData.bookkeeping_real_adjustment);
       const bkDiscountPercentage = safeParse(formData.bookkeeping_discount_percentage);
 
@@ -973,7 +973,7 @@ export function FeesPage() {
     if (selectedClientDetails?.is_retainer && rtMonthlyAmount > 0) {
       // Retainer: monthly amount × 12 = annual base
       const annualRetainerBase = rtMonthlyAmount * 12;
-      const rtInflationRate = formData.retainer_apply_inflation_index ? (formData.retainer_inflation_rate || 3.0) : 0;
+      const rtInflationRate = formData.retainer_apply_inflation_index ? (formData.retainer_inflation_rate || 4.0) : 0;
       const rtRealAdjustment = safeParse(formData.retainer_real_adjustment);
 
       // Calculate automatic inflation adjustment
