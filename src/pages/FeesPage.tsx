@@ -104,6 +104,10 @@ interface FeeCalculatorForm {
   retainer_real_adjustment: number;
   retainer_real_adjustment_reason: string;
   retainer_apply_inflation_index: boolean;
+  // Target final amounts (for two-way sync with real_adjustment)
+  final_target: number;                    // ביקורת
+  bookkeeping_final_target: number;        // הנהלת חשבונות
+  retainer_final_target: number;           // ריטיינר
 }
 
 export function FeesPage() {
@@ -155,7 +159,11 @@ export function FeesPage() {
     retainer_index_manual_is_negative: false,
     retainer_real_adjustment: 0,
     retainer_real_adjustment_reason: '',
-    retainer_apply_inflation_index: true
+    retainer_apply_inflation_index: true,
+    // Target final amounts (for two-way sync with real_adjustment)
+    final_target: 0,
+    bookkeeping_final_target: 0,
+    retainer_final_target: 0
   });
   const [calculationResults, setCalculationResults] = useState<{
     inflation_adjustment: number;
@@ -229,6 +237,39 @@ export function FeesPage() {
       previous_year_amount_after_discount: parseFloat(afterDiscount.toFixed(2)),
       previous_year_amount_with_vat: parseFloat(withVat.toFixed(2))
     };
+  };
+
+  /**
+   * Calculate real_adjustment from a target final amount
+   * Formula: real_adjustment = final_target - base_with_inflation
+   */
+  const calculateRealAdjustmentFromTarget = (
+    baseAmount: number,
+    inflationRate: number,
+    applyInflation: boolean,
+    finalTarget: number
+  ): number => {
+    if (finalTarget === 0) return 0;
+    const baseWithInflation = applyInflation
+      ? baseAmount * (1 + inflationRate / 100)
+      : baseAmount;
+    return Math.round(finalTarget - baseWithInflation);
+  };
+
+  /**
+   * Calculate final_target from real_adjustment
+   * Formula: final_target = base_with_inflation + real_adjustment
+   */
+  const calculateFinalTargetFromAdjustment = (
+    baseAmount: number,
+    inflationRate: number,
+    applyInflation: boolean,
+    realAdjustment: number
+  ): number => {
+    const baseWithInflation = applyInflation
+      ? baseAmount * (1 + inflationRate / 100)
+      : baseAmount;
+    return Math.round(baseWithInflation + realAdjustment);
   };
 
   /**
@@ -459,38 +500,53 @@ export function FeesPage() {
         });
 
         // Fill form with draft data (preserve previous_year_amount from loadPreviousYearData)
-        setFormData(prev => ({
-          ...prev,
-          base_amount: draft.base_amount || prev.base_amount,
-          inflation_rate: draft.inflation_rate || prev.inflation_rate,
-          index_manual_adjustment: draft.index_manual_adjustment || 0,
-          real_adjustment: draft.real_adjustment || 0,
-          real_adjustment_reason: draft.real_adjustment_reason || '',
-          client_requested_adjustment: draft.client_requested_adjustment || 0,
-          client_requested_adjustment_note: draft.client_requested_adjustment_note || '',
-          discount_percentage: draft.discount_percentage || 0,
-          apply_inflation_index: draft.apply_inflation_index ?? prev.apply_inflation_index,
-          notes: draft.notes || '',
-          // Keep previous year data from loadPreviousYearData
-          previous_year_amount: prev.previous_year_amount,
-          previous_year_discount: prev.previous_year_discount,
-          previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
-          // Load bookkeeping data if exists (for internal clients)
-          bookkeeping_base_amount: draft.bookkeeping_calculation?.base_amount || 0,
-          bookkeeping_inflation_rate: draft.bookkeeping_calculation?.inflation_rate || 4.0,
-          bookkeeping_real_adjustment: draft.bookkeeping_calculation?.real_adjustment || 0,
-          bookkeeping_real_adjustment_reason: draft.bookkeeping_calculation?.real_adjustment_reason || '',
-          bookkeeping_discount_percentage: draft.bookkeeping_calculation?.discount_percentage || 0,
-          bookkeeping_apply_inflation_index: draft.bookkeeping_calculation?.apply_inflation_index ?? true,
-          // Load retainer data if exists (for retainer clients)
-          retainer_monthly_amount: draft.retainer_calculation?.monthly_amount || 0,
-          retainer_inflation_rate: draft.retainer_calculation?.inflation_rate || 4.0,
-          retainer_index_manual_adjustment: draft.retainer_calculation?.index_manual_adjustment || 0,
-          retainer_index_manual_is_negative: draft.retainer_calculation?.index_manual_is_negative ?? false,
-          retainer_real_adjustment: draft.retainer_calculation?.real_adjustment || 0,
-          retainer_real_adjustment_reason: draft.retainer_calculation?.real_adjustment_reason || '',
-          retainer_apply_inflation_index: draft.retainer_calculation?.apply_inflation_index ?? true,
-        }));
+        setFormData(prev => {
+          const baseAmount = draft.base_amount || prev.base_amount;
+          const inflationRate = draft.inflation_rate || prev.inflation_rate;
+          const applyInflation = draft.apply_inflation_index ?? prev.apply_inflation_index;
+          const realAdjustment = draft.real_adjustment || 0;
+          const bookkeepingBaseAmount = draft.bookkeeping_calculation?.base_amount || 0;
+          const bookkeepingInflationRate = draft.bookkeeping_calculation?.inflation_rate || 4.0;
+          const bookkeepingApplyInflation = draft.bookkeeping_calculation?.apply_inflation_index ?? true;
+          const bookkeepingRealAdjustment = draft.bookkeeping_calculation?.real_adjustment || 0;
+
+          return {
+            ...prev,
+            base_amount: baseAmount,
+            inflation_rate: inflationRate,
+            index_manual_adjustment: draft.index_manual_adjustment || 0,
+            real_adjustment: realAdjustment,
+            real_adjustment_reason: draft.real_adjustment_reason || '',
+            client_requested_adjustment: draft.client_requested_adjustment || 0,
+            client_requested_adjustment_note: draft.client_requested_adjustment_note || '',
+            discount_percentage: draft.discount_percentage || 0,
+            apply_inflation_index: applyInflation,
+            notes: draft.notes || '',
+            // Keep previous year data from loadPreviousYearData
+            previous_year_amount: prev.previous_year_amount,
+            previous_year_discount: prev.previous_year_discount,
+            previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
+            // Load bookkeeping data if exists (for internal clients)
+            bookkeeping_base_amount: bookkeepingBaseAmount,
+            bookkeeping_inflation_rate: bookkeepingInflationRate,
+            bookkeeping_real_adjustment: bookkeepingRealAdjustment,
+            bookkeeping_real_adjustment_reason: draft.bookkeeping_calculation?.real_adjustment_reason || '',
+            bookkeeping_discount_percentage: draft.bookkeeping_calculation?.discount_percentage || 0,
+            bookkeeping_apply_inflation_index: bookkeepingApplyInflation,
+            // Load retainer data if exists (for retainer clients)
+            retainer_monthly_amount: draft.retainer_calculation?.monthly_amount || 0,
+            retainer_inflation_rate: draft.retainer_calculation?.inflation_rate || 4.0,
+            retainer_index_manual_adjustment: draft.retainer_calculation?.index_manual_adjustment || 0,
+            retainer_index_manual_is_negative: draft.retainer_calculation?.index_manual_is_negative ?? false,
+            retainer_real_adjustment: draft.retainer_calculation?.real_adjustment || 0,
+            retainer_real_adjustment_reason: draft.retainer_calculation?.real_adjustment_reason || '',
+            retainer_apply_inflation_index: draft.retainer_calculation?.apply_inflation_index ?? true,
+            // Calculate final_target from loaded data
+            final_target: calculateFinalTargetFromAdjustment(baseAmount, inflationRate, applyInflation, realAdjustment),
+            bookkeeping_final_target: calculateFinalTargetFromAdjustment(bookkeepingBaseAmount, bookkeepingInflationRate, bookkeepingApplyInflation, bookkeepingRealAdjustment),
+            retainer_final_target: 0, // Retainer has its own calculation logic
+          };
+        });
 
         // Load custom payment text if exists
         setCustomPaymentText(draft.custom_payment_text || '');
@@ -518,38 +574,53 @@ export function FeesPage() {
 
           // Fill form with sent data (same logic as draft, just from 'latest')
           // Don't set currentDraftId - user will create a new draft if they save
-          setFormData(prev => ({
-            ...prev,
-            base_amount: latest.base_amount || prev.base_amount,
-            inflation_rate: latest.inflation_rate || prev.inflation_rate,
-            index_manual_adjustment: latest.index_manual_adjustment || 0,
-            real_adjustment: latest.real_adjustment || 0,
-            real_adjustment_reason: latest.real_adjustment_reason || '',
-            client_requested_adjustment: latest.client_requested_adjustment || 0,
-            client_requested_adjustment_note: latest.client_requested_adjustment_note || '',
-            discount_percentage: latest.discount_percentage || 0,
-            apply_inflation_index: latest.apply_inflation_index ?? prev.apply_inflation_index,
-            notes: latest.notes || '',
-            // Keep previous year data from loadPreviousYearData
-            previous_year_amount: prev.previous_year_amount,
-            previous_year_discount: prev.previous_year_discount,
-            previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
-            // Load bookkeeping data if exists (for internal clients)
-            bookkeeping_base_amount: latest.bookkeeping_calculation?.base_amount || 0,
-            bookkeeping_inflation_rate: latest.bookkeeping_calculation?.inflation_rate || 4.0,
-            bookkeeping_real_adjustment: latest.bookkeeping_calculation?.real_adjustment || 0,
-            bookkeeping_real_adjustment_reason: latest.bookkeeping_calculation?.real_adjustment_reason || '',
-            bookkeeping_discount_percentage: latest.bookkeeping_calculation?.discount_percentage || 0,
-            bookkeeping_apply_inflation_index: latest.bookkeeping_calculation?.apply_inflation_index ?? true,
-            // Load retainer data if exists (for retainer clients)
-            retainer_monthly_amount: latest.retainer_calculation?.monthly_amount || 0,
-            retainer_inflation_rate: latest.retainer_calculation?.inflation_rate || 4.0,
-            retainer_index_manual_adjustment: latest.retainer_calculation?.index_manual_adjustment || 0,
-            retainer_index_manual_is_negative: latest.retainer_calculation?.index_manual_is_negative ?? false,
-            retainer_real_adjustment: latest.retainer_calculation?.real_adjustment || 0,
-            retainer_real_adjustment_reason: latest.retainer_calculation?.real_adjustment_reason || '',
-            retainer_apply_inflation_index: latest.retainer_calculation?.apply_inflation_index ?? true,
-          }));
+          setFormData(prev => {
+            const baseAmount = latest.base_amount || prev.base_amount;
+            const inflationRate = latest.inflation_rate || prev.inflation_rate;
+            const applyInflation = latest.apply_inflation_index ?? prev.apply_inflation_index;
+            const realAdjustment = latest.real_adjustment || 0;
+            const bookkeepingBaseAmount = latest.bookkeeping_calculation?.base_amount || 0;
+            const bookkeepingInflationRate = latest.bookkeeping_calculation?.inflation_rate || 4.0;
+            const bookkeepingApplyInflation = latest.bookkeeping_calculation?.apply_inflation_index ?? true;
+            const bookkeepingRealAdjustment = latest.bookkeeping_calculation?.real_adjustment || 0;
+
+            return {
+              ...prev,
+              base_amount: baseAmount,
+              inflation_rate: inflationRate,
+              index_manual_adjustment: latest.index_manual_adjustment || 0,
+              real_adjustment: realAdjustment,
+              real_adjustment_reason: latest.real_adjustment_reason || '',
+              client_requested_adjustment: latest.client_requested_adjustment || 0,
+              client_requested_adjustment_note: latest.client_requested_adjustment_note || '',
+              discount_percentage: latest.discount_percentage || 0,
+              apply_inflation_index: applyInflation,
+              notes: latest.notes || '',
+              // Keep previous year data from loadPreviousYearData
+              previous_year_amount: prev.previous_year_amount,
+              previous_year_discount: prev.previous_year_discount,
+              previous_year_amount_with_vat: prev.previous_year_amount_with_vat,
+              // Load bookkeeping data if exists (for internal clients)
+              bookkeeping_base_amount: bookkeepingBaseAmount,
+              bookkeeping_inflation_rate: bookkeepingInflationRate,
+              bookkeeping_real_adjustment: bookkeepingRealAdjustment,
+              bookkeeping_real_adjustment_reason: latest.bookkeeping_calculation?.real_adjustment_reason || '',
+              bookkeeping_discount_percentage: latest.bookkeeping_calculation?.discount_percentage || 0,
+              bookkeeping_apply_inflation_index: bookkeepingApplyInflation,
+              // Load retainer data if exists (for retainer clients)
+              retainer_monthly_amount: latest.retainer_calculation?.monthly_amount || 0,
+              retainer_inflation_rate: latest.retainer_calculation?.inflation_rate || 4.0,
+              retainer_index_manual_adjustment: latest.retainer_calculation?.index_manual_adjustment || 0,
+              retainer_index_manual_is_negative: latest.retainer_calculation?.index_manual_is_negative ?? false,
+              retainer_real_adjustment: latest.retainer_calculation?.real_adjustment || 0,
+              retainer_real_adjustment_reason: latest.retainer_calculation?.real_adjustment_reason || '',
+              retainer_apply_inflation_index: latest.retainer_calculation?.apply_inflation_index ?? true,
+              // Calculate final_target from loaded data
+              final_target: calculateFinalTargetFromAdjustment(baseAmount, inflationRate, applyInflation, realAdjustment),
+              bookkeeping_final_target: calculateFinalTargetFromAdjustment(bookkeepingBaseAmount, bookkeepingInflationRate, bookkeepingApplyInflation, bookkeepingRealAdjustment),
+              retainer_final_target: 0, // Retainer has its own calculation logic
+            };
+          });
 
           // Load custom payment text if exists
           setCustomPaymentText(latest.custom_payment_text || '');
@@ -2052,7 +2123,15 @@ export function FeesPage() {
                     <Label htmlFor="base_amount">סכום בסיס לפני הנחה ולפני מע״מ *</Label>
                     <MoneyInput
                       value={formData.base_amount === 0 ? '' : formData.base_amount}
-                      onChange={(value) => setFormData({ ...formData, base_amount: value })}
+                      onChange={(value) => {
+                        const newFinalTarget = calculateFinalTargetFromAdjustment(
+                          value,
+                          formData.inflation_rate,
+                          formData.apply_inflation_index,
+                          formData.real_adjustment
+                        );
+                        setFormData({ ...formData, base_amount: value, final_target: newFinalTarget });
+                      }}
                     />
                   </div>
 
@@ -2063,9 +2142,15 @@ export function FeesPage() {
                         <Checkbox
                           id="apply_inflation"
                           checked={formData.apply_inflation_index}
-                          onCheckedChange={(checked) => 
-                            setFormData({ ...formData, apply_inflation_index: checked as boolean })
-                          }
+                          onCheckedChange={(checked) => {
+                            const newFinalTarget = calculateFinalTargetFromAdjustment(
+                              formData.base_amount,
+                              formData.inflation_rate,
+                              checked as boolean,
+                              formData.real_adjustment
+                            );
+                            setFormData({ ...formData, apply_inflation_index: checked as boolean, final_target: newFinalTarget });
+                          }}
                         />
                         <Label htmlFor="apply_inflation" className="text-sm font-normal cursor-pointer">
                           החל מדד
@@ -2076,7 +2161,16 @@ export function FeesPage() {
                       id="inflation_rate"
                       type="number"
                       value={formData.inflation_rate === 0 ? '' : formData.inflation_rate}
-                      onChange={(e) => setFormData({ ...formData, inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                      onChange={(e) => {
+                        const newRate = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                        const newFinalTarget = calculateFinalTargetFromAdjustment(
+                          formData.base_amount,
+                          newRate,
+                          formData.apply_inflation_index,
+                          formData.real_adjustment
+                        );
+                        setFormData({ ...formData, inflation_rate: e.target.value === '' ? 0 : newRate, final_target: newFinalTarget });
+                      }}
                       step="0.1"
                       placeholder=""
                       disabled={!formData.apply_inflation_index}
@@ -2135,8 +2229,35 @@ export function FeesPage() {
                     <Label htmlFor="real_adjustment">תוספת ריאלית</Label>
                     <MoneyInput
                       value={formData.real_adjustment === 0 ? '' : formData.real_adjustment}
-                      onChange={(value) => setFormData({ ...formData, real_adjustment: value })}
+                      onChange={(value) => {
+                        const newFinalTarget = calculateFinalTargetFromAdjustment(
+                          formData.base_amount,
+                          formData.inflation_rate,
+                          formData.apply_inflation_index,
+                          value
+                        );
+                        setFormData({ ...formData, real_adjustment: value, final_target: newFinalTarget });
+                      }}
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="final_target">סכום סופי רצוי (לפני מע"מ)</Label>
+                    <MoneyInput
+                      value={formData.final_target === 0 ? '' : formData.final_target}
+                      onChange={(value) => {
+                        const realAdj = calculateRealAdjustmentFromTarget(
+                          formData.base_amount,
+                          formData.inflation_rate,
+                          formData.apply_inflation_index,
+                          value
+                        );
+                        setFormData({ ...formData, final_target: value, real_adjustment: realAdj });
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      הזן את הסכום הסופי הרצוי והתוספת הריאלית תחושב אוטומטית
+                    </p>
                   </div>
 
                   <div>
@@ -2215,7 +2336,15 @@ export function FeesPage() {
                         <Label htmlFor="bookkeeping_base_amount">סכום חודשי הנהלת חשבונות (יוכפל ב-12) *</Label>
                         <MoneyInput
                           value={formData.bookkeeping_base_amount === 0 ? '' : formData.bookkeeping_base_amount}
-                          onChange={(value) => setFormData({ ...formData, bookkeeping_base_amount: value })}
+                          onChange={(value) => {
+                            const newFinalTarget = calculateFinalTargetFromAdjustment(
+                              value,
+                              formData.bookkeeping_inflation_rate,
+                              formData.bookkeeping_apply_inflation_index,
+                              formData.bookkeeping_real_adjustment
+                            );
+                            setFormData({ ...formData, bookkeeping_base_amount: value, bookkeeping_final_target: newFinalTarget });
+                          }}
                         />
                       </div>
 
@@ -2226,9 +2355,15 @@ export function FeesPage() {
                             <Checkbox
                               id="bookkeeping_apply_inflation"
                               checked={formData.bookkeeping_apply_inflation_index}
-                              onCheckedChange={(checked) =>
-                                setFormData({ ...formData, bookkeeping_apply_inflation_index: checked as boolean })
-                              }
+                              onCheckedChange={(checked) => {
+                                const newFinalTarget = calculateFinalTargetFromAdjustment(
+                                  formData.bookkeeping_base_amount,
+                                  formData.bookkeeping_inflation_rate,
+                                  checked as boolean,
+                                  formData.bookkeeping_real_adjustment
+                                );
+                                setFormData({ ...formData, bookkeeping_apply_inflation_index: checked as boolean, bookkeeping_final_target: newFinalTarget });
+                              }}
                             />
                             <Label htmlFor="bookkeeping_apply_inflation" className="text-sm font-normal cursor-pointer">
                               החל מדד
@@ -2239,7 +2374,16 @@ export function FeesPage() {
                           id="bookkeeping_inflation_rate"
                           type="number"
                           value={formData.bookkeeping_inflation_rate === 0 ? '' : formData.bookkeeping_inflation_rate}
-                          onChange={(e) => setFormData({ ...formData, bookkeeping_inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                          onChange={(e) => {
+                            const newRate = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            const newFinalTarget = calculateFinalTargetFromAdjustment(
+                              formData.bookkeeping_base_amount,
+                              newRate,
+                              formData.bookkeeping_apply_inflation_index,
+                              formData.bookkeeping_real_adjustment
+                            );
+                            setFormData({ ...formData, bookkeeping_inflation_rate: e.target.value === '' ? 0 : newRate, bookkeeping_final_target: newFinalTarget });
+                          }}
                           step="0.1"
                           placeholder=""
                           disabled={!formData.bookkeeping_apply_inflation_index}
@@ -2250,11 +2394,38 @@ export function FeesPage() {
 
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="bookkeeping_real_adjustment">תוספת ריאלית הנהלת חשבונות</Label>
+                        <Label htmlFor="bookkeeping_real_adjustment">תוספת ריאלית הנהלת חשבונות (חודשי)</Label>
                         <MoneyInput
                           value={formData.bookkeeping_real_adjustment === 0 ? '' : formData.bookkeeping_real_adjustment}
-                          onChange={(value) => setFormData({ ...formData, bookkeeping_real_adjustment: value })}
+                          onChange={(value) => {
+                            const newFinalTarget = calculateFinalTargetFromAdjustment(
+                              formData.bookkeeping_base_amount,
+                              formData.bookkeeping_inflation_rate,
+                              formData.bookkeeping_apply_inflation_index,
+                              value
+                            );
+                            setFormData({ ...formData, bookkeeping_real_adjustment: value, bookkeeping_final_target: newFinalTarget });
+                          }}
                         />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="bookkeeping_final_target">סכום חודשי סופי רצוי (לפני מע"מ)</Label>
+                        <MoneyInput
+                          value={formData.bookkeeping_final_target === 0 ? '' : formData.bookkeeping_final_target}
+                          onChange={(value) => {
+                            const realAdj = calculateRealAdjustmentFromTarget(
+                              formData.bookkeeping_base_amount,
+                              formData.bookkeeping_inflation_rate,
+                              formData.bookkeeping_apply_inflation_index,
+                              value
+                            );
+                            setFormData({ ...formData, bookkeeping_final_target: value, bookkeeping_real_adjustment: realAdj });
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          הזן את הסכום החודשי הסופי הרצוי והתוספת הריאלית תחושב אוטומטית
+                        </p>
                       </div>
 
                       <div>
