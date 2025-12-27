@@ -914,21 +914,28 @@ export function FeeTrackingPage() {
             <>
               <Table className="text-sm">
                 <TableHeader>
+                  {/* Row 1 - Group headers */}
                   <TableRow>
-                    <TableHead className="w-10 py-2 px-3">
+                    <TableHead rowSpan={2} className="w-10 py-2 px-3 align-bottom">
                       <Checkbox
                         checked={isAllSelected}
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3 w-4"></TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שם לקוח</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">ח.פ</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סטטוס</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום לפני מע"מ</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">סכום כולל מע"מ</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">שיטת תשלום</TableHead>
-                    <TableHead className="rtl:text-right ltr:text-left py-2 px-3">פעולות</TableHead>
+                    <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2 px-3 w-4 align-bottom"></TableHead>
+                    <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2 px-3 align-bottom">שם לקוח</TableHead>
+                    <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2 px-3 align-bottom">סטטוס</TableHead>
+                    <TableHead colSpan={2} className="text-center py-2 px-3 border-b bg-blue-50">שכר טרחה ראיית חשבון</TableHead>
+                    <TableHead colSpan={2} className="text-center py-2 px-3 border-b bg-green-50">הנהלת חשבונות חודשי</TableHead>
+                    <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2 px-3 align-bottom">שיטת תשלום</TableHead>
+                    <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2 px-3 align-bottom">פעולות</TableHead>
+                  </TableRow>
+                  {/* Row 2 - Sub-column headers */}
+                  <TableRow>
+                    <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs bg-blue-50">לפני מע"מ</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs bg-blue-50">כולל מע"מ</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs bg-green-50">לפני מע"מ</TableHead>
+                    <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs bg-green-50">כולל מע"מ</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -998,11 +1005,6 @@ export function FeeTrackingPage() {
                             </div>
                           </TableCell>
 
-                          {/* Tax ID */}
-                          <TableCell className="text-gray-600 py-2 px-3 text-xs">
-                            {client.tax_id}
-                          </TableCell>
-
                           {/* Status */}
                           <TableCell className="py-2 px-3">
                             {getStatusBadge(client.payment_status)}
@@ -1023,6 +1025,20 @@ export function FeeTrackingPage() {
                               ? formatILS(enhancedRow.actual_with_vat)
                               : enhancedRow?.original_with_vat
                               ? formatILS(enhancedRow.original_with_vat)
+                              : '-'}
+                          </TableCell>
+
+                          {/* Bookkeeping Before VAT */}
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right">
+                            {enhancedRow?.bookkeeping_before_vat
+                              ? formatILS(enhancedRow.bookkeeping_before_vat)
+                              : '-'}
+                          </TableCell>
+
+                          {/* Bookkeeping With VAT */}
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right font-medium">
+                            {enhancedRow?.bookkeeping_with_vat
+                              ? formatILS(enhancedRow.bookkeeping_with_vat)
                               : '-'}
                           </TableCell>
 
@@ -1049,7 +1065,7 @@ export function FeeTrackingPage() {
                         {/* Expandable Row Content */}
                         {isExpanded && client.calculation_id && (
                           <TableRow>
-                            <TableCell colSpan={9} className="p-0">
+                            <TableCell colSpan={10} className="p-0">
                               <FeeTrackingExpandedRow
                                 feeCalculationId={client.calculation_id}
                                 clientName={client.client_name_hebrew || client.client_name}

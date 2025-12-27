@@ -113,6 +113,10 @@ export interface FeeTrackingEnhancedRow {
   original_before_vat: number;
   original_with_vat: number;
 
+  // Bookkeeping amounts (for internal clients)
+  bookkeeping_before_vat: number | null;
+  bookkeeping_with_vat: number | null;
+
   // Expected payment
   payment_method_selected: PaymentMethod | null;
   expected_amount: number | null;
