@@ -377,6 +377,12 @@ export type Database = {
           portal_accessed_at: string | null
           priority: string | null
           public_token: string
+          recipient_contact_id: string | null
+          recipient_email: string | null
+          recipient_mode: string
+          recipient_name: string | null
+          recipient_phone: string | null
+          recipient_phone_secondary: string | null
           status: string
           subject: string
           tax_authority_due_date: string | null
@@ -407,6 +413,12 @@ export type Database = {
           portal_accessed_at?: string | null
           priority?: string | null
           public_token: string
+          recipient_contact_id?: string | null
+          recipient_email?: string | null
+          recipient_mode?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          recipient_phone_secondary?: string | null
           status?: string
           subject?: string
           tax_authority_due_date?: string | null
@@ -437,6 +449,12 @@ export type Database = {
           portal_accessed_at?: string | null
           priority?: string | null
           public_token?: string
+          recipient_contact_id?: string | null
+          recipient_email?: string | null
+          recipient_mode?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          recipient_phone_secondary?: string | null
           status?: string
           subject?: string
           tax_authority_due_date?: string | null
@@ -472,6 +490,13 @@ export type Database = {
             columns: ["letter_id"]
             isOneToOne: false
             referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declarations_recipient_contact_id_fkey"
+            columns: ["recipient_contact_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_contacts"
             referencedColumns: ["id"]
           },
           {
@@ -1584,6 +1609,13 @@ export type Database = {
             foreignKeyName: "fee_calculations_actual_payment_id_fkey"
             columns: ["actual_payment_id"]
             isOneToOne: false
+            referencedRelation: "collection_dashboard_view"
+            referencedColumns: ["actual_payment_id"]
+          },
+          {
+            foreignKeyName: "fee_calculations_actual_payment_id_fkey"
+            columns: ["actual_payment_id"]
+            isOneToOne: false
             referencedRelation: "fee_tracking_enhanced_view"
             referencedColumns: ["actual_payment_id"]
           },
@@ -2504,6 +2536,13 @@ export type Database = {
             foreignKeyName: "payment_deviations_actual_payment_id_fkey"
             columns: ["actual_payment_id"]
             isOneToOne: false
+            referencedRelation: "collection_dashboard_view"
+            referencedColumns: ["actual_payment_id"]
+          },
+          {
+            foreignKeyName: "payment_deviations_actual_payment_id_fkey"
+            columns: ["actual_payment_id"]
+            isOneToOne: false
             referencedRelation: "fee_tracking_enhanced_view"
             referencedColumns: ["actual_payment_id"]
           },
@@ -2675,6 +2714,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "actual_payments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_installments_actual_payment_id_fkey"
+            columns: ["actual_payment_id"]
+            isOneToOne: false
+            referencedRelation: "collection_dashboard_view"
+            referencedColumns: ["actual_payment_id"]
           },
           {
             foreignKeyName: "payment_installments_actual_payment_id_fkey"
@@ -3146,6 +3192,444 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      support_ticket_attachments: {
+        Row: {
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          reply_id: string | null
+          storage_path: string
+          tenant_id: string
+          ticket_id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          reply_id?: string | null
+          storage_path: string
+          tenant_id: string
+          ticket_id: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          reply_id?: string | null
+          storage_path?: string
+          tenant_id?: string
+          ticket_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_attachments_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_attachments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          level: number
+          name: string
+          name_hebrew: string
+          parent_id: string | null
+          sort_order: number | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: number
+          name: string
+          name_hebrew: string
+          parent_id?: string | null
+          sort_order?: number | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          level?: number
+          name?: string
+          name_hebrew?: string
+          parent_id?: string | null
+          sort_order?: number | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_categories_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_history: {
+        Row: {
+          action: string
+          created_at: string | null
+          field_changed: string | null
+          id: string
+          new_value: string | null
+          notes: string | null
+          old_value: string | null
+          performed_by: string | null
+          performer_name: string | null
+          tenant_id: string
+          ticket_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          performed_by?: string | null
+          performer_name?: string | null
+          tenant_id: string
+          ticket_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          performed_by?: string | null
+          performer_name?: string | null
+          tenant_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_history_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_replies: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          email_opened_at: string | null
+          email_sent_at: string | null
+          id: string
+          is_from_client: boolean | null
+          is_html: boolean | null
+          is_internal: boolean | null
+          sender_email: string | null
+          sender_name: string | null
+          tenant_id: string
+          ticket_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          email_opened_at?: string | null
+          email_sent_at?: string | null
+          id?: string
+          is_from_client?: boolean | null
+          is_html?: boolean | null
+          is_internal?: boolean | null
+          sender_email?: string | null
+          sender_name?: string | null
+          tenant_id: string
+          ticket_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          email_opened_at?: string | null
+          email_sent_at?: string | null
+          id?: string
+          is_from_client?: boolean | null
+          is_html?: boolean | null
+          is_internal?: boolean | null
+          sender_email?: string | null
+          sender_name?: string | null
+          tenant_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_replies_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_ticket_statuses: {
+        Row: {
+          auto_close_after_days: number | null
+          color: string
+          column_order: number
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_closed_status: boolean | null
+          is_default_for_new: boolean | null
+          is_system: boolean | null
+          is_visible_on_board: boolean | null
+          key: string
+          name: string
+          name_hebrew: string
+          tenant_id: string
+        }
+        Insert: {
+          auto_close_after_days?: number | null
+          color?: string
+          column_order?: number
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_closed_status?: boolean | null
+          is_default_for_new?: boolean | null
+          is_system?: boolean | null
+          is_visible_on_board?: boolean | null
+          key: string
+          name: string
+          name_hebrew: string
+          tenant_id: string
+        }
+        Update: {
+          auto_close_after_days?: number | null
+          color?: string
+          column_order?: number
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_closed_status?: boolean | null
+          is_default_for_new?: boolean | null
+          is_system?: boolean | null
+          is_visible_on_board?: boolean | null
+          key?: string
+          name?: string
+          name_hebrew?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_statuses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
+          category_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          due_date: string | null
+          first_response_at: string | null
+          id: string
+          is_new_lead: boolean | null
+          matched_by: string | null
+          matched_client_id: string | null
+          notify_client_on_update: boolean | null
+          priority: string
+          public_accessed_at: string | null
+          public_token: string
+          resolved_at: string | null
+          source: string
+          status_id: string
+          subcategory_id: string | null
+          subject: string
+          submitter_company_name: string | null
+          submitter_email: string
+          submitter_name: string
+          submitter_phone: string | null
+          submitter_tax_id: string | null
+          tenant_id: string
+          ticket_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          category_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          due_date?: string | null
+          first_response_at?: string | null
+          id?: string
+          is_new_lead?: boolean | null
+          matched_by?: string | null
+          matched_client_id?: string | null
+          notify_client_on_update?: boolean | null
+          priority?: string
+          public_accessed_at?: string | null
+          public_token?: string
+          resolved_at?: string | null
+          source?: string
+          status_id: string
+          subcategory_id?: string | null
+          subject: string
+          submitter_company_name?: string | null
+          submitter_email: string
+          submitter_name: string
+          submitter_phone?: string | null
+          submitter_tax_id?: string | null
+          tenant_id: string
+          ticket_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          category_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          due_date?: string | null
+          first_response_at?: string | null
+          id?: string
+          is_new_lead?: boolean | null
+          matched_by?: string | null
+          matched_client_id?: string | null
+          notify_client_on_update?: boolean | null
+          priority?: string
+          public_accessed_at?: string | null
+          public_token?: string
+          resolved_at?: string | null
+          source?: string
+          status_id?: string
+          subcategory_id?: string | null
+          subject?: string
+          submitter_company_name?: string | null
+          submitter_email?: string
+          submitter_name?: string
+          submitter_phone?: string | null
+          submitter_tax_id?: string | null
+          tenant_id?: string
+          ticket_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "support_ticket_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenant_activity_logs: {
         Row: {
@@ -3772,6 +4256,10 @@ export type Database = {
     Views: {
       collection_dashboard_view: {
         Row: {
+          actual_payment_date: string | null
+          actual_payment_id: string | null
+          actual_payment_method: string | null
+          actual_payment_reference: string | null
           amount_after_selected_discount: number | null
           amount_original: number | null
           amount_paid: number | null
@@ -3782,7 +4270,9 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           days_since_sent: number | null
+          deviation_alert_level: string | null
           fee_calculation_id: string | null
+          has_deviation: boolean | null
           has_dispute: boolean | null
           interaction_count: number | null
           last_interaction: string | null
@@ -4002,6 +4492,10 @@ export type Database = {
       delete_old_worker_monthly_data: {
         Args: { p_before_date: string; p_client_id: string }
         Returns: number
+      }
+      derive_payment_status: {
+        Args: { p_fee_status: string; p_has_letter: boolean }
+        Returns: string
       }
       find_contact_by_email: {
         Args: { p_email: string; p_tenant_id: string }
@@ -4259,13 +4753,10 @@ export type Database = {
           has_letter: boolean
           letter_id: string
           letter_sent_at: string
-          payer_client_id: string
-          payer_client_name: string
           payment_amount: number
           payment_date: string
           payment_method_selected: string
           payment_method_selected_at: string
-          payment_role: string
           payment_status: string
           tax_id: string
         }[]
@@ -4299,6 +4790,7 @@ export type Database = {
           phone_secondary: string
         }[]
       }
+      get_next_ticket_number: { Args: { p_tenant_id: string }; Returns: number }
       get_or_create_default_branch: {
         Args: { p_client_id: string }
         Returns: string
@@ -4317,6 +4809,35 @@ export type Database = {
           checks_count: number
           not_selected_amount: number
           not_selected_count: number
+        }[]
+      }
+      get_public_ticket_replies: {
+        Args: { p_token: string }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          is_from_client: boolean
+          sender_name: string
+        }[]
+      }
+      get_ticket_by_public_token: {
+        Args: { p_token: string }
+        Returns: {
+          category_name: string
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          resolved_at: string
+          status_color: string
+          status_key: string
+          status_name: string
+          subcategory_name: string
+          subject: string
+          tenant_name: string
+          ticket_number: number
+          updated_at: string
         }[]
       }
       get_user_accessible_clients: {
@@ -4442,6 +4963,18 @@ export type Database = {
             }
             Returns: string
           }
+      match_client_by_contact: {
+        Args: {
+          p_email: string
+          p_phone: string
+          p_tax_id: string
+          p_tenant_id: string
+        }
+        Returns: {
+          client_id: string
+          matched_by: string
+        }[]
+      }
       migrate_existing_group_owners: { Args: never; Returns: undefined }
       migrate_to_shared_contacts: { Args: never; Returns: undefined }
       reset_user_password: {
@@ -4458,6 +4991,10 @@ export type Database = {
           job_title: string
           phone: string
         }[]
+      }
+      seed_tico_tickets_defaults: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
       }
       submit_registration: {
         Args: {
@@ -4534,6 +5071,7 @@ export type Database = {
         | "vehicles"
         | "abroad"
         | "other"
+        | "general"
       client_report_type: "accountant_turnover" | "israeli_workers"
       client_type:
         | "company"
@@ -4719,6 +5257,7 @@ export const Constants = {
         "vehicles",
         "abroad",
         "other",
+        "general",
       ],
       client_report_type: ["accountant_turnover", "israeli_workers"],
       client_type: [

@@ -59,6 +59,11 @@ const DisputesPage = lazy(() => import('@/modules/collections/pages/DisputesPage
 const DocumentsHubPage = lazy(() => import('@/modules/documents/pages/DocumentsHubPage'));
 const DocumentCategoryPage = lazy(() => import('@/modules/documents/pages/DocumentCategoryPage'));
 
+// Tico Tickets System pages
+const PublicTicketForm = lazy(() => import('@/modules/tico-tickets/pages/PublicTicketForm').then(m => ({ default: m.PublicTicketForm })));
+const PublicTicketStatus = lazy(() => import('@/modules/tico-tickets/pages/PublicTicketStatus').then(m => ({ default: m.PublicTicketStatus })));
+const TicketDashboard = lazy(() => import('@/modules/tico-tickets/pages/TicketDashboard').then(m => ({ default: m.TicketDashboard })));
+
 // Loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -105,6 +110,17 @@ function App() {
                 <Route path="/capital-declaration/:token" element={
                   <ErrorBoundary>
                     <CapitalDeclarationPortal />
+                  </ErrorBoundary>
+                } />
+                {/* Tico Tickets - Public */}
+                <Route path="/tico-tickets/new" element={
+                  <ErrorBoundary>
+                    <PublicTicketForm />
+                  </ErrorBoundary>
+                } />
+                <Route path="/tico-tickets/track/:token" element={
+                  <ErrorBoundary>
+                    <PublicTicketStatus />
                   </ErrorBoundary>
                 } />
                 <Route path="/login" element={
@@ -307,6 +323,13 @@ function App() {
                       <Route path="/collections/disputes" element={
                         <ErrorBoundary>
                           <DisputesPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Tico Tickets - Internal Dashboard */}
+                      <Route path="/tico-tickets" element={
+                        <ErrorBoundary>
+                          <TicketDashboard />
                         </ErrorBoundary>
                       } />
 

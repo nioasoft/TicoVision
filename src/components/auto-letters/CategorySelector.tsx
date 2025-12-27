@@ -4,7 +4,7 @@
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, Building2, Calendar, FileCheck, FileSearch } from 'lucide-react';
+import { Bell, Building2, Calendar, FileCheck, FileSearch, Landmark } from 'lucide-react';
 import type { AutoLetterCategory, CategoryConfig } from '@/types/auto-letters.types';
 import { getEnabledCategories } from '@/types/auto-letters.types';
 
@@ -20,6 +20,7 @@ const CATEGORY_ICONS = {
   Calendar,
   FileCheck,
   FileSearch,
+  Landmark,
 } as const;
 
 export function CategorySelector({ value, onChange, disabled }: CategorySelectorProps) {
