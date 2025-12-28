@@ -2591,20 +2591,22 @@ export class TemplateService extends BaseService {
     if (templateType === 'tzlul_violation_correction') {
       const vars = variables as ViolationCorrectionVariables;
       if (vars.recipient_lines && vars.recipient_lines.length > 0) {
-        return vars.recipient_lines
+        const lines = vars.recipient_lines
           .filter(line => line.trim())
           .map(line => `<b>${line}</b>`)
           .join('<br/>');
+        return `<b>לכבוד</b><br/>${lines}`;
       }
     }
 
     if (templateType === 'tzlul_employee_payments') {
       const vars = variables as EmployeePaymentsVariables;
       if (vars.recipient_lines && vars.recipient_lines.length > 0) {
-        return vars.recipient_lines
+        const lines = vars.recipient_lines
           .filter(line => line.trim())
           .map(line => `<b>${line}</b>`)
           .join('<br/>');
+        return `<b>לכבוד</b><br/>${lines}`;
       }
     }
 
