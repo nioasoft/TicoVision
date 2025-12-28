@@ -67,6 +67,9 @@ import {
   LogCommunicationDialog,
   SendReminderDialog,
   StatusChangeDialog,
+  PenaltyManagementCard,
+  LateSubmissionIndicator,
+  SubmissionScreenshotLink,
 } from '@/components/capital-declarations';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -77,6 +80,8 @@ import type {
   CapitalDeclarationCategory,
   DeclarationPriority,
   StatusHistoryEntry,
+  SubmitDeclarationData,
+  CapitalDeclaration,
 } from '@/types/capital-declaration.types';
 import {
   DECLARATION_STATUS_LABELS,
@@ -245,6 +250,62 @@ export function CapitalDeclarationDetailPage() {
       toast.error('שגיאה בעדכון הסטטוס');
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  /**
+   * Submit declaration with screenshot and late flag
+   */
+  const handleSubmitDeclaration = async (data: SubmitDeclarationData, notes?: string) => {
+    if (!declaration) return;
+
+    setUpdatingStatus(true);
+    try {
+      const { data: updated, error } = await capitalDeclarationService.submitDeclaration(
+        declaration.id,
+        data,
+        notes
+      );
+      if (error) throw error;
+
+      if (updated) {
+        setDeclaration({
+          ...declaration,
+          ...updated,
+          status: 'submitted',
+        });
+      }
+
+      // Reload status history
+      const { data: historyData } = await capitalDeclarationService.getStatusHistory(declaration.id);
+      setStatusHistory(historyData || []);
+
+      toast.success('ההצהרה הוגשה בהצלחה');
+    } catch (error) {
+      console.error('Error submitting declaration:', error);
+      toast.error('שגיאה בהגשת ההצהרה');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  /**
+   * Handle penalty update from PenaltyManagementCard
+   */
+  const handlePenaltyUpdate = (updated: CapitalDeclaration) => {
+    if (declaration) {
+      setDeclaration({
+        ...declaration,
+        penalty_status: updated.penalty_status,
+        penalty_amount: updated.penalty_amount,
+        penalty_received_date: updated.penalty_received_date,
+        penalty_notes: updated.penalty_notes,
+        appeal_date: updated.appeal_date,
+        appeal_notes: updated.appeal_notes,
+        penalty_paid_date: updated.penalty_paid_date,
+        penalty_paid_amount: updated.penalty_paid_amount,
+        penalty_paid_by: updated.penalty_paid_by,
+      });
     }
   };
 
@@ -624,6 +685,29 @@ export function CapitalDeclarationDetailPage() {
                 <span className="text-muted-foreground">טרם נצפה</span>
               )}
             </div>
+
+            {/* Submission info */}
+            {declaration.status === 'submitted' && (
+              <div className="flex items-center justify-between text-xs pt-1 border-t">
+                <div className="flex items-center gap-2">
+                  <LateSubmissionIndicator
+                    wasSubmittedLate={declaration.was_submitted_late || false}
+                    penaltyStatus={declaration.penalty_status}
+                    size="sm"
+                  />
+                  <SubmissionScreenshotLink
+                    storagePath={declaration.submission_screenshot_path || null}
+                    variant="icon"
+                    size="sm"
+                  />
+                </div>
+                {declaration.submitted_at && (
+                  <span className="text-muted-foreground">
+                    {new Date(declaration.submitted_at).toLocaleDateString('he-IL')}
+                  </span>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -785,6 +869,16 @@ export function CapitalDeclarationDetailPage() {
         />
       </div>
 
+      {/* Penalty Management - show for submitted declarations */}
+      {declaration.status === 'submitted' && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <PenaltyManagementCard
+            declaration={declaration as CapitalDeclaration}
+            onUpdate={handlePenaltyUpdate}
+          />
+        </div>
+      )}
+
       {/* Documents by Category */}
       <div>
         {/* Header with progress */}
@@ -936,6 +1030,7 @@ export function CapitalDeclarationDetailPage() {
         onOpenChange={setStatusChangeDialogOpen}
         currentStatus={declaration.status}
         onConfirm={handleStatusChange}
+        onSubmit={handleSubmitDeclaration}
       />
     </div>
   );

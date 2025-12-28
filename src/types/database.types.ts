@@ -356,6 +356,8 @@ export type Database = {
       }
       capital_declarations: {
         Row: {
+          appeal_date: string | null
+          appeal_notes: string | null
           assigned_at: string | null
           assigned_to: string | null
           client_id: string | null
@@ -373,6 +375,13 @@ export type Database = {
           internal_due_date: string | null
           letter_id: string | null
           notes: string | null
+          penalty_amount: number | null
+          penalty_notes: string | null
+          penalty_paid_amount: number | null
+          penalty_paid_by: string | null
+          penalty_paid_date: string | null
+          penalty_received_date: string | null
+          penalty_status: Database["public"]["Enums"]["penalty_status"] | null
           portal_access_count: number | null
           portal_accessed_at: string | null
           priority: string | null
@@ -385,13 +394,18 @@ export type Database = {
           recipient_phone_secondary: string | null
           status: string
           subject: string
+          submission_screenshot_path: string | null
+          submitted_at: string | null
           tax_authority_due_date: string | null
           tax_authority_due_date_document_path: string | null
           tax_year: number
           tenant_id: string
           updated_at: string
+          was_submitted_late: boolean | null
         }
         Insert: {
+          appeal_date?: string | null
+          appeal_notes?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           client_id?: string | null
@@ -409,6 +423,13 @@ export type Database = {
           internal_due_date?: string | null
           letter_id?: string | null
           notes?: string | null
+          penalty_amount?: number | null
+          penalty_notes?: string | null
+          penalty_paid_amount?: number | null
+          penalty_paid_by?: string | null
+          penalty_paid_date?: string | null
+          penalty_received_date?: string | null
+          penalty_status?: Database["public"]["Enums"]["penalty_status"] | null
           portal_access_count?: number | null
           portal_accessed_at?: string | null
           priority?: string | null
@@ -421,13 +442,18 @@ export type Database = {
           recipient_phone_secondary?: string | null
           status?: string
           subject?: string
+          submission_screenshot_path?: string | null
+          submitted_at?: string | null
           tax_authority_due_date?: string | null
           tax_authority_due_date_document_path?: string | null
           tax_year: number
           tenant_id: string
           updated_at?: string
+          was_submitted_late?: boolean | null
         }
         Update: {
+          appeal_date?: string | null
+          appeal_notes?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           client_id?: string | null
@@ -445,6 +471,13 @@ export type Database = {
           internal_due_date?: string | null
           letter_id?: string | null
           notes?: string | null
+          penalty_amount?: number | null
+          penalty_notes?: string | null
+          penalty_paid_amount?: number | null
+          penalty_paid_by?: string | null
+          penalty_paid_date?: string | null
+          penalty_received_date?: string | null
+          penalty_status?: Database["public"]["Enums"]["penalty_status"] | null
           portal_access_count?: number | null
           portal_accessed_at?: string | null
           priority?: string | null
@@ -457,11 +490,14 @@ export type Database = {
           recipient_phone_secondary?: string | null
           status?: string
           subject?: string
+          submission_screenshot_path?: string | null
+          submitted_at?: string | null
           tax_authority_due_date?: string | null
           tax_authority_due_date_document_path?: string | null
           tax_year?: number
           tenant_id?: string
           updated_at?: string
+          was_submitted_late?: boolean | null
         }
         Relationships: [
           {
@@ -4312,6 +4348,8 @@ export type Database = {
           actual_with_vat: number | null
           attachment_count: number | null
           attachment_ids: string[] | null
+          bookkeeping_before_vat: number | null
+          bookkeeping_with_vat: number | null
           client_id: string | null
           company_name: string | null
           created_at: string | null
@@ -4963,6 +5001,7 @@ export type Database = {
             }
             Returns: string
           }
+      mark_declaration_complete: { Args: { p_token: string }; Returns: boolean }
       match_client_by_contact: {
         Args: {
           p_email: string
@@ -5120,6 +5159,12 @@ export type Database = {
         | "internal_bookkeeping_real"
         | "internal_bookkeeping_as_agreed"
       payment_status: "pending" | "completed" | "failed" | "refunded"
+      penalty_status:
+        | "received"
+        | "appeal_submitted"
+        | "cancelled"
+        | "paid_by_client"
+        | "paid_by_office"
       tenant_status: "active" | "inactive" | "trial" | "suspended"
       tenant_type: "internal" | "white_label"
       user_role: "admin" | "accountant" | "bookkeeper" | "client"
@@ -5312,6 +5357,13 @@ export const Constants = {
         "internal_bookkeeping_as_agreed",
       ],
       payment_status: ["pending", "completed", "failed", "refunded"],
+      penalty_status: [
+        "received",
+        "appeal_submitted",
+        "cancelled",
+        "paid_by_client",
+        "paid_by_office",
+      ],
       tenant_status: ["active", "inactive", "trial", "suspended"],
       tenant_type: ["internal", "white_label"],
       user_role: ["admin", "accountant", "bookkeeper", "client"],

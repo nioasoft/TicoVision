@@ -40,6 +40,17 @@ export type DeclarationCommunicationType = 'letter' | 'phone_call' | 'whatsapp' 
 /** Communication direction */
 export type CommunicationDirection = 'outbound' | 'inbound';
 
+/** Penalty status for late submissions */
+export type PenaltyStatus =
+  | 'received'          // התקבל - penalty notice received
+  | 'appeal_submitted'  // הוגש ערעור - appeal filed
+  | 'cancelled'         // נמחק - penalty was cancelled
+  | 'paid_by_client'    // שולם על ידי לקוח - client paid
+  | 'paid_by_office';   // שולם על ידי משרד - office paid
+
+/** Who paid the penalty */
+export type PenaltyPaidBy = 'client' | 'office';
+
 /** Category configuration for UI */
 export interface CategoryConfig {
   key: CapitalDeclarationCategory;
@@ -156,6 +167,30 @@ export const PRIORITY_ROW_COLORS: Record<DeclarationPriority, string> = {
   critical: 'bg-red-50'
 };
 
+/** Penalty status labels in Hebrew */
+export const PENALTY_STATUS_LABELS: Record<PenaltyStatus, string> = {
+  received: 'התקבל',
+  appeal_submitted: 'הוגש ערעור',
+  cancelled: 'נמחק',
+  paid_by_client: 'שולם על ידי לקוח',
+  paid_by_office: 'שולם על ידי משרד'
+};
+
+/** Penalty status colors for badges */
+export const PENALTY_STATUS_COLORS: Record<PenaltyStatus, string> = {
+  received: 'bg-red-100 text-red-800 border-red-300',
+  appeal_submitted: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  cancelled: 'bg-gray-100 text-gray-600 border-gray-300',
+  paid_by_client: 'bg-green-100 text-green-800 border-green-300',
+  paid_by_office: 'bg-blue-100 text-blue-800 border-blue-300'
+};
+
+/** Penalty paid by labels in Hebrew */
+export const PENALTY_PAID_BY_LABELS: Record<PenaltyPaidBy, string> = {
+  client: 'לקוח',
+  office: 'משרד'
+};
+
 /** Communication type labels in Hebrew */
 export const COMMUNICATION_TYPE_LABELS: Record<DeclarationCommunicationType, string> = {
   letter: 'מכתב',
@@ -219,6 +254,22 @@ export interface CapitalDeclaration {
 
   // Letter
   letter_id: string | null;
+
+  // Submission Tracking
+  submission_screenshot_path: string | null;
+  submitted_at: string | null;
+  was_submitted_late: boolean;
+
+  // Penalty Management
+  penalty_amount: number | null;
+  penalty_status: PenaltyStatus | null;
+  penalty_received_date: string | null;
+  penalty_notes: string | null;
+  appeal_date: string | null;
+  appeal_notes: string | null;
+  penalty_paid_date: string | null;
+  penalty_paid_amount: number | null;
+  penalty_paid_by: PenaltyPaidBy | null;
 
   // Alternate Recipient
   recipient_mode: 'main' | 'alternate';
@@ -479,4 +530,43 @@ export interface StatusHistoryEntry {
   changed_by_name?: string;  // for display (joined from auth.users)
   changed_at: string;
   created_at: string;
+}
+
+// ============================================================================
+// PENALTY MANAGEMENT TYPES
+// ============================================================================
+
+/** Form data for updating penalty information */
+export interface PenaltyFormData {
+  penalty_amount: number | null;
+  penalty_status: PenaltyStatus | null;
+  penalty_received_date: string | null;
+  penalty_notes: string | null;
+  appeal_date: string | null;
+  appeal_notes: string | null;
+  penalty_paid_date: string | null;
+  penalty_paid_amount: number | null;
+  penalty_paid_by: PenaltyPaidBy | null;
+}
+
+/** Create empty penalty form data */
+export function createEmptyPenaltyForm(): PenaltyFormData {
+  return {
+    penalty_amount: null,
+    penalty_status: null,
+    penalty_received_date: null,
+    penalty_notes: null,
+    appeal_date: null,
+    appeal_notes: null,
+    penalty_paid_date: null,
+    penalty_paid_amount: null,
+    penalty_paid_by: null
+  };
+}
+
+/** Data for submitting a declaration with screenshot */
+export interface SubmitDeclarationData {
+  was_submitted_late: boolean;
+  screenshot?: File;
+  notes?: string;
 }

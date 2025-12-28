@@ -17,6 +17,8 @@ import type {
   CommunicationWithUser,
   CreateCommunicationDto,
   StatusHistoryEntry,
+  PenaltyFormData,
+  SubmitDeclarationData,
 } from '@/types/capital-declaration.types';
 
 const STORAGE_BUCKET = 'capital-declarations';
@@ -723,6 +725,192 @@ class CapitalDeclarationServiceClass extends BaseService {
       if (error || !data) throw error || new Error('Failed to generate URL');
 
       return { data: data.signedUrl, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  // ============================================================================
+  // SUBMISSION & PENALTY METHODS
+  // ============================================================================
+
+  /**
+   * Submit declaration with screenshot and late submission flag
+   * Changes status to 'submitted' and uploads submission proof
+   */
+  async submitDeclaration(
+    id: string,
+    data: SubmitDeclarationData,
+    notes?: string
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get current status for history
+      const { data: current, error: fetchError } = await supabase
+        .from(this.tableName)
+        .select('status')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const fromStatus = current.status as CapitalDeclarationStatus;
+
+      // Upload screenshot if provided
+      let screenshotPath: string | null = null;
+      if (data.screenshot) {
+        const ext = data.screenshot.name.split('.').pop() || 'png';
+        screenshotPath = `${tenantId}/${id}/submission-screenshot.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(screenshotPath, data.screenshot, { upsert: true });
+
+        if (uploadError) throw uploadError;
+      }
+
+      // Update declaration
+      const updateData: Partial<CapitalDeclaration> = {
+        status: 'submitted' as CapitalDeclarationStatus,
+        submitted_at: new Date().toISOString(),
+        was_submitted_late: data.was_submitted_late,
+      };
+
+      if (screenshotPath) {
+        updateData.submission_screenshot_path = screenshotPath;
+      }
+
+      const { data: updated, error: updateError } = await supabase
+        .from(this.tableName)
+        .update(updateData)
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      // Record in history
+      const historyNotes = data.was_submitted_late
+        ? `${notes || ''} (הוגש באיחור)`.trim()
+        : notes || null;
+
+      const { error: historyError } = await supabase
+        .from('capital_declaration_status_history')
+        .insert({
+          tenant_id: tenantId,
+          declaration_id: id,
+          from_status: fromStatus,
+          to_status: 'submitted',
+          notes: historyNotes,
+          changed_by: user.id,
+          changed_at: new Date().toISOString()
+        });
+
+      if (historyError) {
+        console.error('Failed to record status history:', historyError);
+      }
+
+      await this.logAction('submit_declaration', id, {
+        was_submitted_late: data.was_submitted_late,
+        has_screenshot: !!screenshotPath,
+      });
+
+      return { data: updated, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get signed URL for submission screenshot
+   */
+  async getSubmissionScreenshotUrl(storagePath: string): Promise<ServiceResponse<string>> {
+    try {
+      const { data, error } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(storagePath, 3600); // 1 hour
+
+      if (error || !data) throw error || new Error('Failed to generate URL');
+
+      return { data: data.signedUrl, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Update penalty information
+   */
+  async updatePenalty(
+    id: string,
+    penaltyData: PenaltyFormData
+  ): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({
+          penalty_amount: penaltyData.penalty_amount,
+          penalty_status: penaltyData.penalty_status,
+          penalty_received_date: penaltyData.penalty_received_date,
+          penalty_notes: penaltyData.penalty_notes,
+          appeal_date: penaltyData.appeal_date,
+          appeal_notes: penaltyData.appeal_notes,
+          penalty_paid_date: penaltyData.penalty_paid_date,
+          penalty_paid_amount: penaltyData.penalty_paid_amount,
+          penalty_paid_by: penaltyData.penalty_paid_by,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_penalty', id, { penaltyData });
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Clear all penalty data
+   */
+  async clearPenalty(id: string): Promise<ServiceResponse<CapitalDeclaration>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({
+          penalty_amount: null,
+          penalty_status: null,
+          penalty_received_date: null,
+          penalty_notes: null,
+          appeal_date: null,
+          appeal_notes: null,
+          penalty_paid_date: null,
+          penalty_paid_amount: null,
+          penalty_paid_by: null,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('clear_penalty', id);
+
+      return { data, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }

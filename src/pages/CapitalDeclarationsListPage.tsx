@@ -38,6 +38,9 @@ import { capitalDeclarationService } from '@/services/capital-declaration.servic
 import {
   PriorityBadge,
   AssignAccountantSelect,
+  LateSubmissionIndicator,
+  SubmissionScreenshotLink,
+  PenaltyStatusBadge,
 } from '@/components/capital-declarations';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -574,16 +577,18 @@ export function CapitalDeclarationsListPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="text-xs">
-                    <TableHead className="rtl:text-right w-[70px] py-2">דחיפות</TableHead>
-                    <TableHead className="rtl:text-right py-2">איש קשר</TableHead>
-                    <TableHead className="rtl:text-right w-[60px] py-2">שנה</TableHead>
-                    <TableHead className="rtl:text-right w-[90px] py-2">סטטוס</TableHead>
-                    {isAdmin && <TableHead className="rtl:text-right w-[90px] py-2">מטפל</TableHead>}
-                    <TableHead className="rtl:text-right w-[90px] py-2">יעד מס</TableHead>
-                    <TableHead className="rtl:text-right w-[90px] py-2">יעד משרד</TableHead>
-                    <TableHead className="rtl:text-right w-[50px] py-2 text-center">מסמך</TableHead>
-                    <TableHead className="rtl:text-right w-[100px] py-2">תקשורת</TableHead>
-                    {isSuperAdmin && <TableHead className="rtl:text-right w-[50px] py-2"></TableHead>}
+                    <TableHead className="rtl:text-right w-[60px] py-2">דחיפות</TableHead>
+                    <TableHead className="rtl:text-right w-[130px] py-2">איש קשר</TableHead>
+                    <TableHead className="rtl:text-right w-[50px] py-2">שנה</TableHead>
+                    <TableHead className="rtl:text-right w-[85px] py-2">סטטוס</TableHead>
+                    {isAdmin && <TableHead className="rtl:text-right w-[85px] py-2">מטפל</TableHead>}
+                    <TableHead className="rtl:text-right w-[85px] py-2">יעד מס</TableHead>
+                    <TableHead className="rtl:text-right w-[85px] py-2">יעד משרד</TableHead>
+                    <TableHead className="rtl:text-right w-[45px] py-2 text-center">מסמך</TableHead>
+                    <TableHead className="rtl:text-right w-[70px] py-2 text-center">הגשה</TableHead>
+                    <TableHead className="rtl:text-right w-[100px] py-2">קנס</TableHead>
+                    <TableHead className="rtl:text-right w-[90px] py-2">תקשורת</TableHead>
+                    {isSuperAdmin && <TableHead className="rtl:text-right w-[40px] py-2"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -607,11 +612,11 @@ export function CapitalDeclarationsListPage() {
                       </TableCell>
 
                       {/* Contact */}
-                      <TableCell className="py-2">
+                      <TableCell className="py-2 max-w-[130px]">
                         <div className="rtl:text-right">
-                          <div className="font-medium text-sm">{declaration.contact_name}</div>
+                          <div className="font-medium text-sm truncate">{declaration.contact_name}</div>
                           {declaration.client_name && (
-                            <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                            <div className="text-xs text-muted-foreground truncate">
                               {declaration.client_name}
                             </div>
                           )}
@@ -687,6 +692,37 @@ export function CapitalDeclarationsListPage() {
                       {/* Documents */}
                       <TableCell className="py-2 text-center" onClick={(e) => e.stopPropagation()}>
                         <span className="font-medium">{declaration.categories_complete}/6</span>
+                      </TableCell>
+
+                      {/* Submission */}
+                      <TableCell className="py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                        {declaration.status === 'submitted' && (
+                          <div className="flex items-center justify-center gap-1">
+                            <SubmissionScreenshotLink
+                              storagePath={declaration.submission_screenshot_path || null}
+                              variant="icon"
+                              size="sm"
+                            />
+                            <LateSubmissionIndicator
+                              wasSubmittedLate={declaration.was_submitted_late || false}
+                              penaltyStatus={declaration.penalty_status}
+                              size="sm"
+                              showWarning={false}
+                            />
+                          </div>
+                        )}
+                      </TableCell>
+
+                      {/* Penalty */}
+                      <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+                        {declaration.penalty_status && (
+                          <PenaltyStatusBadge
+                            status={declaration.penalty_status}
+                            amount={declaration.penalty_amount}
+                            showAmount
+                            size="sm"
+                          />
+                        )}
                       </TableCell>
 
                       {/* Last Communication */}
