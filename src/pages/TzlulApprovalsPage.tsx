@@ -510,7 +510,7 @@ export function TzlulApprovalsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="document-date" className="text-right block">
-                תאריך המסמך <span className="text-red-500">*</span>
+                תאריך ההצהרה <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="document-date"
@@ -529,6 +529,9 @@ export function TzlulApprovalsPage() {
                 className="text-right"
                 dir="ltr"
               />
+              <p className="text-sm text-gray-500 text-right">
+                "בהצהרה מיום X" - התאריך הראשון בכותרת המכתב
+              </p>
             </div>
             <div className="space-y-2">
               <Label className="text-right block">לקוח</Label>
