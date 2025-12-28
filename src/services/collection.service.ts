@@ -68,10 +68,16 @@ class CollectionService extends BaseService {
       // Apply filters
       query = this.applyFilters(query, filters);
 
-      // Apply sorting (default: most recent letters first)
-      const sortColumn = sort?.column || 'letter_sent_date';
-      const sortOrder = sort?.order || 'desc';
-      query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
+      // Apply sorting (default: alphabetical by client name)
+      let sortColumn = sort?.column || 'client_name';
+      const sortOrder = sort?.order || 'asc';
+
+      // Map UI column names to view column names
+      if (sortColumn === 'client_name') {
+        sortColumn = 'company_name'; // Sort by company name
+      }
+
+      query = query.order(sortColumn, { ascending: sortOrder === 'asc', nullsFirst: false });
 
       // Apply pagination
       const { page, page_size } = pagination;
@@ -119,7 +125,7 @@ class CollectionService extends BaseService {
       // Query from the view which already has unique clients (one row per client)
       let query = supabase
         .from('collection_dashboard_view')
-        .select('payment_status, amount_original, amount_paid')
+        .select('payment_status, amount_original, amount_paid, payment_method_selected')
         .eq('tenant_id', tenantId);
 
       // Apply date range if provided (on letter_sent_date)
@@ -147,6 +153,7 @@ class CollectionService extends BaseService {
       const clients_sent = rows?.length || 0;
       const clients_paid = rows?.filter((row) => row.payment_status === 'paid').length || 0;
       const clients_pending = clients_sent - clients_paid;
+      const clients_not_selected = rows?.filter((row) => row.payment_method_selected === null).length || 0;
 
       // Calculate alerts (requires additional queries)
       const alertsResult = await this.calculateAlerts(tenantId);
@@ -159,6 +166,7 @@ class CollectionService extends BaseService {
         clients_sent,
         clients_paid,
         clients_pending,
+        clients_not_selected,
         alerts_unopened: alertsResult.unopened,
         alerts_no_selection: alertsResult.no_selection,
         alerts_abandoned: alertsResult.abandoned,
@@ -961,6 +969,10 @@ class CollectionService extends BaseService {
     // Status filter
     if (filters.status && filters.status !== 'all') {
       switch (filters.status) {
+        case 'pending':
+          // All non-paid statuses
+          q = q.neq('payment_status', 'paid');
+          break;
         case 'sent_not_opened':
           q = q.is('letter_opened_at', null);
           break;
@@ -988,6 +1000,41 @@ class CollectionService extends BaseService {
         q = q.is('payment_method_selected', null);
       } else {
         q = q.eq('payment_method_selected', filters.payment_method);
+      }
+    }
+
+    // Alert type filter
+    if (filters.alert_type && filters.alert_type !== 'all') {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+      switch (filters.alert_type) {
+        case 'not_opened_7d':
+          // Letters not opened after 7+ days
+          q = q
+            .is('letter_opened_at', null)
+            .lte('letter_sent_date', sevenDaysAgo.toISOString())
+            .neq('payment_status', 'paid');
+          break;
+        case 'no_selection_14d':
+          // No payment method selected after 14+ days
+          q = q
+            .is('payment_method_selected', null)
+            .lte('letter_sent_date', fourteenDaysAgo.toISOString())
+            .neq('payment_status', 'paid');
+          break;
+        case 'abandoned_cart':
+          // Selected CC payment method but didn't complete
+          q = q
+            .not('payment_method_selected', 'is', null)
+            .neq('payment_status', 'paid')
+            .in('payment_method_selected', ['cc_single', 'cc_installments']);
+          break;
+        case 'has_dispute':
+          // Has an active dispute
+          q = q.eq('has_dispute', true);
+          break;
       }
     }
 
@@ -1078,6 +1125,9 @@ class CollectionService extends BaseService {
           letter_open_count: Number(row.letter_open_count || 0),
           days_since_sent: daysSinceSent,
           amount_original: amountOriginal,
+          amount_before_vat: row.amount_before_vat ? Number(row.amount_before_vat) : undefined,
+          bookkeeping_monthly_before_vat: row.bookkeeping_monthly_before_vat ? Number(row.bookkeeping_monthly_before_vat) : undefined,
+          bookkeeping_monthly_with_vat: row.bookkeeping_monthly_with_vat ? Number(row.bookkeeping_monthly_with_vat) : undefined,
           payment_method_selected: row.payment_method_selected as string | undefined,
           payment_method_selected_at: undefined, // Not in view, could be added if needed
           discount_percent: row.payment_method_selected

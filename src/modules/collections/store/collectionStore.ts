@@ -47,8 +47,8 @@ const DEFAULT_FILTERS: CollectionFilters = {
 };
 
 const DEFAULT_SORT: CollectionSort = {
-  column: 'letter_sent_date',
-  order: 'desc',
+  column: 'client_name',
+  order: 'asc',
 };
 
 const DEFAULT_PAGINATION: CollectionPagination = {

@@ -14,11 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  ArrowUpDown,
-  AlertTriangle,
-} from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import type { CollectionRow, CollectionSort } from '@/types/collection.types';
 import {
   formatILS,
@@ -27,16 +23,13 @@ import {
   getStatusVariant,
 } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { PaymentMethodBadge, DiscountBadge } from '@/components/payments/PaymentMethodBadge';
+import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
 
 interface CollectionTableProps {
   rows: CollectionRow[];
-  selectedRows: string[];
   loading?: boolean;
   sort: CollectionSort;
   onSort: (sort: CollectionSort) => void;
-  onSelectAll: () => void;
-  onToggleSelect: (feeId: string) => void;
   onClientClick: (row: CollectionRow) => void;
 }
 
@@ -56,10 +49,10 @@ const SortableHeader: React.FC<{
     <Button
       variant="ghost"
       size="sm"
-      className="h-8 rtl:flex-row-reverse gap-1 -mx-2"
+      className="h-8 rtl:flex-row-reverse gap-1 -mx-2 hover:bg-slate-200/50"
       onClick={() => onSort({ column, order: nextOrder })}
     >
-      <span className="rtl:text-right ltr:text-left">{children}</span>
+      <span className="rtl:text-right ltr:text-left font-semibold">{children}</span>
       <ArrowUpDown className={cn('h-3 w-3', isActive && 'text-primary')} />
     </Button>
   );
@@ -70,82 +63,66 @@ const SortableHeader: React.FC<{
  */
 const CollectionTableRow: React.FC<{
   row: CollectionRow;
-  isSelected: boolean;
-  onToggleSelect: (feeId: string) => void;
+  isEven: boolean;
   onClientClick: (row: CollectionRow) => void;
 }> = ({
   row,
-  isSelected,
-  onToggleSelect,
+  isEven,
   onClientClick,
 }) => {
   return (
     <TableRow
-      className={cn('hover:bg-gray-50 cursor-pointer', isSelected && 'bg-blue-50')}
+      className={cn(
+        'cursor-pointer transition-colors border-b border-slate-100',
+        isEven ? 'bg-slate-50/50' : 'bg-white',
+        'hover:bg-slate-100/70'
+      )}
       onClick={() => onClientClick(row)}
     >
-      {/* Checkbox */}
-      <TableCell className="w-12 py-2 px-3" onClick={(e) => e.stopPropagation()}>
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => onToggleSelect(row.fee_calculation_id)}
-        />
-      </TableCell>
 
       {/* Client Name */}
-      <TableCell className="min-w-[200px] py-2 px-3">
+      <TableCell className="py-2.5 px-2 border-l border-slate-100">
         <div className="rtl:text-right ltr:text-left">
-          <div className="font-medium text-sm">{row.company_name_hebrew || row.client_name}</div>
-          <div className="text-xs text-gray-500">{row.contact_email}</div>
+          <div className="font-medium text-sm truncate max-w-[140px] text-slate-800">{row.company_name_hebrew || row.client_name}</div>
         </div>
       </TableCell>
 
       {/* Send Date */}
-      <TableCell className="w-28 rtl:text-right ltr:text-left py-2 px-3">
-        <div className="text-sm">{formatIsraeliDate(row.letter_sent_date)}</div>
-        <div className="text-xs text-gray-500">{row.days_since_sent} ימים</div>
+      <TableCell className="rtl:text-right ltr:text-left py-2.5 px-1 border-l border-slate-100">
+        <div className="text-xs text-slate-700">{formatIsraeliDate(row.letter_sent_date)}</div>
+        <div className="text-[10px] text-slate-400">{row.days_since_sent} ימים</div>
       </TableCell>
 
-      {/* Original Amount */}
-      <TableCell className="w-32 rtl:text-right ltr:text-left font-medium py-2 px-3 text-sm">
+      {/* Accounting Fee - Before VAT */}
+      <TableCell className="rtl:text-right ltr:text-left py-2.5 px-1 text-sm text-slate-600 bg-blue-50/30">
+        {row.amount_before_vat ? formatILS(row.amount_before_vat) : '-'}
+      </TableCell>
+
+      {/* Accounting Fee - With VAT */}
+      <TableCell className="rtl:text-right ltr:text-left font-medium py-2.5 px-1 text-sm text-slate-800 bg-blue-50/30 border-l border-slate-100">
         {formatILS(row.amount_original)}
       </TableCell>
 
-      {/* Payment Method */}
-      <TableCell className="w-40 rtl:text-right ltr:text-left py-2 px-3">
-        <PaymentMethodBadge method={row.payment_method_selected || null} className="text-[10px]" />
+      {/* Bookkeeping - Before VAT */}
+      <TableCell className="rtl:text-right ltr:text-left py-2.5 px-1 text-sm text-slate-600 bg-emerald-50/30">
+        {row.bookkeeping_monthly_before_vat ? formatILS(row.bookkeeping_monthly_before_vat) : '-'}
       </TableCell>
 
-      {/* Amount After Discount */}
-      <TableCell className="w-32 rtl:text-right ltr:text-left py-2 px-3">
-        {row.payment_method_selected ? (
-          <div>
-            <div className="font-medium text-sm text-blue-600">{formatILS(row.amount_after_discount)}</div>
-            {row.discount_percent > 0 && (
-              <DiscountBadge discountPercent={row.discount_percent} className="text-[10px] mt-1" />
-            )}
-          </div>
-        ) : (
-          <span className="text-gray-400 text-xs">-</span>
-        )}
+      {/* Bookkeeping - With VAT */}
+      <TableCell className="rtl:text-right ltr:text-left font-medium py-2.5 px-1 text-sm text-slate-800 bg-emerald-50/30 border-l border-slate-100">
+        {row.bookkeeping_monthly_with_vat ? formatILS(row.bookkeeping_monthly_with_vat) : '-'}
+      </TableCell>
+
+      {/* Payment Method */}
+      <TableCell className="rtl:text-right ltr:text-left py-2.5 px-2 border-l border-slate-100">
+        <PaymentMethodBadge method={row.payment_method_selected || null} className="text-sm" />
       </TableCell>
 
       {/* Status */}
-      <TableCell className="w-32 rtl:text-right ltr:text-left py-2 px-3">
-        <Badge variant={getStatusVariant(row.payment_status as Parameters<typeof getStatusVariant>[0])} className="rtl:text-right ltr:text-left text-[10px] py-0 px-1.5">
+      <TableCell className="rtl:text-right ltr:text-left py-2.5 px-2">
+        <Badge variant={getStatusVariant(row.payment_status as Parameters<typeof getStatusVariant>[0])} className="rtl:text-right ltr:text-left text-sm py-0.5 px-2">
           {getStatusLabel(row.payment_status as Parameters<typeof getStatusLabel>[0])}
         </Badge>
-      </TableCell>
-
-      {/* Alerts */}
-      <TableCell className="w-24 py-2 px-3">
-        {row.has_alert && (
-          <div className="flex gap-1 rtl:flex-row-reverse">
-            {row.alert_types.map((alert) => (
-              <AlertTriangle key={alert} className="h-3.5 w-3.5 text-orange-500" />
-            ))}
-          </div>
-        )}
       </TableCell>
     </TableRow>
   );
@@ -156,72 +133,73 @@ const CollectionTableRow: React.FC<{
  */
 export const CollectionTable: React.FC<CollectionTableProps> = ({
   rows,
-  selectedRows,
   loading = false,
   sort,
   onSort,
-  onSelectAll,
-  onToggleSelect,
   onClientClick,
 }) => {
-  const allSelected = selectedRows.length === rows.length && rows.length > 0;
 
   if (loading) {
     return (
-      <div className="border rounded-lg p-8 text-center">
-        <div className="text-gray-500 rtl:text-right ltr:text-left">טוען נתונים...</div>
+      <div className="border border-slate-200 rounded-lg p-8 text-center bg-slate-50">
+        <div className="text-slate-500 rtl:text-right ltr:text-left">טוען נתונים...</div>
       </div>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <div className="border rounded-lg p-8 text-center">
-        <div className="text-gray-500 rtl:text-right ltr:text-left">לא נמצאו רשומות</div>
+      <div className="border border-slate-200 rounded-lg p-8 text-center bg-slate-50">
+        <div className="text-slate-500 rtl:text-right ltr:text-left">לא נמצאו רשומות</div>
       </div>
     );
   }
 
   return (
-    <div className="border rounded-lg overflow-x-auto">
+    <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
       <Table className="text-sm">
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-12 py-2 px-3">
-              <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
-            </TableHead>
-            <TableHead className="min-w-[200px] rtl:text-right ltr:text-left py-2 px-3">
+          {/* Row 1 - Group headers */}
+          <TableRow className="bg-slate-100 border-b-2 border-slate-200">
+            <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2.5 px-2 align-bottom w-[150px] bg-slate-100 border-l border-slate-200">
               <SortableHeader column="client_name" currentSort={sort} onSort={onSort}>
                 שם לקוח
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-28 rtl:text-right ltr:text-left py-2 px-3">
+            <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2.5 px-1 align-bottom w-20 bg-slate-100 border-l border-slate-200">
               <SortableHeader column="days_since_sent" currentSort={sort} onSort={onSort}>
-                תאריך משלוח
+                תאריך
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left py-2 px-3">
-              <SortableHeader column="amount_original" currentSort={sort} onSort={onSort}>
-                סכום מקורי
-              </SortableHeader>
+            <TableHead colSpan={2} className="text-center py-2 px-1 bg-blue-100/70 text-blue-800 text-xs font-semibold border-l border-slate-200">
+              שכר טרחה
             </TableHead>
-            <TableHead className="w-40 rtl:text-right ltr:text-left py-2 px-3">שיטת תשלום</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left py-2 px-3">סכום אחרי הנחה</TableHead>
-            <TableHead className="w-32 rtl:text-right ltr:text-left py-2 px-3">
+            <TableHead colSpan={2} className="text-center py-2 px-1 bg-emerald-100/70 text-emerald-800 text-xs font-semibold border-l border-slate-200">
+              הנה"ח חודשי
+            </TableHead>
+            <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2.5 px-2 align-bottom w-36 bg-slate-100 border-l border-slate-200 font-semibold text-slate-700">
+              שיטת תשלום
+            </TableHead>
+            <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2.5 px-2 align-bottom w-28 bg-slate-100">
               <SortableHeader column="payment_status" currentSort={sort} onSort={onSort}>
                 סטטוס
               </SortableHeader>
             </TableHead>
-            <TableHead className="w-24 rtl:text-right ltr:text-left py-2 px-3">התראות</TableHead>
+          </TableRow>
+          {/* Row 2 - Sub-column headers */}
+          <TableRow className="bg-slate-50 border-b border-slate-200">
+            <TableHead className="rtl:text-right ltr:text-left py-1.5 px-1 text-[10px] bg-blue-50/80 text-blue-700 w-16 font-medium">לפני מע"מ</TableHead>
+            <TableHead className="rtl:text-right ltr:text-left py-1.5 px-1 text-[10px] bg-blue-50/80 text-blue-700 w-16 font-medium border-l border-slate-200">כולל מע"מ</TableHead>
+            <TableHead className="rtl:text-right ltr:text-left py-1.5 px-1 text-[10px] bg-emerald-50/80 text-emerald-700 w-16 font-medium">לפני מע"מ</TableHead>
+            <TableHead className="rtl:text-right ltr:text-left py-1.5 px-1 text-[10px] bg-emerald-50/80 text-emerald-700 w-16 font-medium border-l border-slate-200">כולל מע"מ</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <CollectionTableRow
               key={row.fee_calculation_id}
               row={row}
-              isSelected={selectedRows.includes(row.fee_calculation_id)}
-              onToggleSelect={onToggleSelect}
+              isEven={index % 2 === 0}
               onClientClick={onClientClick}
             />
           ))}

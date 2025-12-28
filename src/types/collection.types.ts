@@ -237,6 +237,7 @@ export interface CollectionKPIs {
   clients_sent: number;
   clients_paid: number;
   clients_pending: number;
+  clients_not_selected: number;  // Clients who haven't selected a payment method
 
   // Alerts
   alerts_unopened: number;
@@ -277,8 +278,15 @@ export interface CollectionRow {
   letter_open_count: number;
   days_since_sent: number;
 
-  // Payment
+  // Accounting fee (שכר טרחה)
   amount_original: number;
+  amount_before_vat?: number;
+
+  // Bookkeeping fee (הנהלת חשבונות - monthly)
+  bookkeeping_monthly_before_vat?: number;
+  bookkeeping_monthly_with_vat?: number;
+
+  // Payment
   payment_method_selected?: PaymentMethod;
   payment_method_selected_at?: string;
   discount_percent: number;
@@ -329,6 +337,7 @@ export interface CollectionFilters {
   // Payment status filter
   status?:
     | 'all'
+    | 'pending'  // All non-paid statuses
     | 'sent_not_opened'
     | 'opened_not_selected'
     | 'selected_not_paid'

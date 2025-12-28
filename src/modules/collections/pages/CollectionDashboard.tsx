@@ -4,10 +4,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { KPICards, type KPICardFilter } from '../components/KPICards';
 import { CollectionFilters } from '../components/CollectionFilters';
 import { CollectionTable } from '../components/CollectionTable';
-import { BulkActionsBar } from '../components/BulkActionsBar';
 import { ClientActionsDialog } from '../components/ClientActionsDialog';
 import { ActualPaymentEntryDialog } from '../components/ActualPaymentEntryDialog';
 import { InstallmentDetailsDialog } from '../components/InstallmentDetailsDialog';
@@ -22,6 +22,7 @@ import { RefreshCw } from 'lucide-react';
 import type { CollectionRow } from '@/types/collection.types';
 
 export const CollectionDashboard: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     dashboardData,
     loading,
@@ -29,15 +30,11 @@ export const CollectionDashboard: React.FC = () => {
     filters,
     sort,
     pagination,
-    selectedRows,
     fetchDashboardData,
     setFilters,
     resetFilters,
     setSort,
     setPagination,
-    toggleRowSelection,
-    clearSelection,
-    selectAll,
     refreshData,
   } = useCollectionStore();
 
@@ -84,6 +81,20 @@ export const CollectionDashboard: React.FC = () => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
+  // Handle markPaid query parameter from Fee Tracking page
+  useEffect(() => {
+    const markPaidId = searchParams.get('markPaid');
+    if (markPaidId && dashboardData?.rows) {
+      const row = dashboardData.rows.find(r => r.fee_calculation_id === markPaidId);
+      if (row) {
+        // Open payment entry dialog for this row
+        setPaymentEntryDialog({ open: true, row });
+        // Clear the query parameter
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, dashboardData?.rows, setSearchParams]);
+
   // Handlers
   const handleClientClick = (row: CollectionRow) => {
     setClientActionsDialog({ open: true, row });
@@ -120,19 +131,34 @@ export const CollectionDashboard: React.FC = () => {
   const handleCardClick = (card: KPICardFilter) => {
     setSelectedCard(card);
 
+    // Reset filters first, then apply specific filter
+    resetFilters();
+
     // Map card click to filter change
     switch (card) {
       case 'all':
-        setFilters({ status: 'all' });
+        // No additional filters needed
         break;
       case 'pending':
-        setFilters({ status: 'selected_not_paid' });
+        setFilters({ status: 'pending' });
         break;
       case 'paid':
         setFilters({ status: 'paid' });
         break;
-      case 'alerts':
-        setFilters({ alert_type: 'not_opened_7d' }); // Or combine all alerts
+      case 'not_selected':
+        setFilters({ payment_method: 'not_selected' });
+        break;
+      case 'alert_unopened':
+        setFilters({ alert_type: 'not_opened_7d' });
+        break;
+      case 'alert_no_selection':
+        setFilters({ alert_type: 'no_selection_14d' });
+        break;
+      case 'alert_abandoned':
+        setFilters({ alert_type: 'abandoned_cart' });
+        break;
+      case 'alert_disputes':
+        setFilters({ alert_type: 'has_dispute' });
         break;
     }
   };
@@ -174,14 +200,7 @@ export const CollectionDashboard: React.FC = () => {
       {/* Table */}
       {dashboardData && (
         <>
-          <div className="flex justify-between items-center rtl:flex-row-reverse">
-            <div className="text-sm text-gray-500 rtl:text-right ltr:text-left">
-              {selectedRows.length > 0 && (
-                <span>
-                  נבחרו {selectedRows.length} מתוך {dashboardData.rows.length}
-                </span>
-              )}
-            </div>
+          <div className="flex justify-end items-center">
             <div className="text-sm text-gray-500 rtl:text-right ltr:text-left">
               עמוד {pagination.page} מתוך {dashboardData.pagination.total_pages} ({dashboardData.pagination.total} רשומות)
             </div>
@@ -189,12 +208,9 @@ export const CollectionDashboard: React.FC = () => {
 
           <CollectionTable
             rows={dashboardData.rows}
-            selectedRows={selectedRows}
             loading={loading}
             sort={sort}
             onSort={setSort}
-            onSelectAll={selectAll}
-            onToggleSelect={toggleRowSelection}
             onClientClick={handleClientClick}
           />
 
@@ -295,14 +311,6 @@ export const CollectionDashboard: React.FC = () => {
         onOpenChange={(open) => setWhatsAppDialog({ open, row: null })}
         row={whatsAppDialog.row}
         onSuccess={handleDialogSuccess}
-      />
-
-      {/* Bulk Actions Bar */}
-      <BulkActionsBar
-        selectedCount={selectedRows.length}
-        selectedIds={selectedRows}
-        onClearSelection={clearSelection}
-        onActionComplete={refreshData}
       />
     </div>
   );

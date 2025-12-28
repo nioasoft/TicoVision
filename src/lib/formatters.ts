@@ -76,10 +76,16 @@ export function formatPhoneNumber(phone: string | null | undefined): string {
 /**
  * Format date in Israeli format (DD/MM/YYYY)
  * @param date - Date to format
- * @returns Formatted string like "15/01/2025"
+ * @returns Formatted string like "15/01/2025" or "-" if null/invalid
  */
-export function formatIsraeliDate(date: string | Date): string {
+export function formatIsraeliDate(date: string | Date | null | undefined): string {
+  if (!date) return '-';
+
   const d = new Date(date);
+
+  // Check for invalid date
+  if (isNaN(d.getTime())) return '-';
+
   return new Intl.DateTimeFormat('he-IL', {
     day: '2-digit',
     month: '2-digit',
@@ -90,10 +96,16 @@ export function formatIsraeliDate(date: string | Date): string {
 /**
  * Format datetime in Israeli format
  * @param date - Date to format
- * @returns Formatted string like "15/01/2025 14:30"
+ * @returns Formatted string like "15/01/2025 14:30" or "-" if null/invalid
  */
-export function formatIsraeliDateTime(date: string | Date): string {
+export function formatIsraeliDateTime(date: string | Date | null | undefined): string {
+  if (!date) return '-';
+
   const d = new Date(date);
+
+  // Check for invalid date
+  if (isNaN(d.getTime())) return '-';
+
   return new Intl.DateTimeFormat('he-IL', {
     day: '2-digit',
     month: '2-digit',

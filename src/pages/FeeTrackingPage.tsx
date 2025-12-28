@@ -385,11 +385,8 @@ export function FeeTrackingPage() {
   };
 
   const handleMarkAsPaid = (calculationId: string) => {
-    // TODO: Mark as paid
-    toast({
-      title: 'סימון כשולם',
-      description: 'פונקציה זו תיושם בשלב הבא',
-    });
+    // Navigate to collection page with the fee_calculation_id to open payment dialog
+    navigate(`/collections?markPaid=${calculationId}`);
   };
 
   /**
