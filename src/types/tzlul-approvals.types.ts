@@ -39,6 +39,9 @@ export interface ViolationCorrectionVariables extends TzlulSharedData {
 
   /** Date when violations occurred (DD/MM/YYYY format for display) */
   violations_date: string;
+
+  /** Local council/municipality name e.g., "המועצה המקומית גן יבנה" */
+  local_council: string;
 }
 
 // ============================================================================
@@ -265,7 +268,8 @@ export function validateViolationCorrection(data: Partial<ViolationCorrectionVar
     validateTzlulSharedData(data) &&
     Array.isArray(data.recipient_lines) &&
     data.recipient_lines.length > 0 &&
-    !!data.violations_date
+    !!data.violations_date &&
+    !!data.local_council
   );
 }
 
@@ -341,6 +345,7 @@ export function createInitialTzlulFormState(): TzlulFormState {
       violationCorrection: {
         recipient_lines: [''],
         violations_date: '',
+        local_council: 'המועצה המקומית גן יבנה',
       },
       summerBonus: {
         month_year: '',

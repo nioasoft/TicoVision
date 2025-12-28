@@ -48,6 +48,26 @@ export function ViolationCorrectionForm({ value, onChange, disabled }: Violation
             </p>
           </div>
 
+          {/* Local Council */}
+          <div className="space-y-2">
+            <Label htmlFor="local-council" className="text-right block">
+              שם המועצה/רשות <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="local-council"
+              type="text"
+              value={value.local_council || ''}
+              onChange={(e) => onChange({ ...value, local_council: e.target.value })}
+              disabled={disabled}
+              className="text-right"
+              dir="rtl"
+              placeholder="המועצה המקומית גן יבנה"
+            />
+            <p className="text-sm text-gray-500 text-right">
+              הרשות המקומית שאיתה יש התקשרות
+            </p>
+          </div>
+
           {/* Document Preview Info */}
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <h4 className="font-medium text-blue-900 mb-2 text-right">תוכן המסמך:</h4>
@@ -60,7 +80,7 @@ export function ViolationCorrectionForm({ value, onChange, disabled }: Violation
           </div>
 
           {/* Validation */}
-          {(!value.recipient_lines?.some(line => line.trim()) || !value.violations_date) && (
+          {(!value.recipient_lines?.some(line => line.trim()) || !value.violations_date || !value.local_council?.trim()) && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="text-sm text-yellow-800 text-right">
                 יש למלא את כל השדות המסומנים בכוכבית
