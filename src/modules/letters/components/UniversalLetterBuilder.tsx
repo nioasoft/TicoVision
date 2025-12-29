@@ -32,6 +32,7 @@ import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generati
 import { groupFeeService, type ClientGroup, type GroupMemberClient } from '@/services/group-fee.service';
 import { GroupMembersList } from '@/components/fees/GroupMembersList';
 import { PdfFilingDialog } from './PdfFilingDialog';
+import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 
 const templateService = new TemplateService();
 const pdfService = new PDFGenerationService();
@@ -390,6 +391,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     pdfUrl: string;
     letterSubject: string;
   } | null>(null);
+
+  // State - Share PDF Panel (like ForeignWorkersPage)
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
+  const [generatedPdfName, setGeneratedPdfName] = useState<string>('');
+  const [generatedHtmlForEmail, setGeneratedHtmlForEmail] = useState<string>('');
 
   // State - Manual email input
   const [manualEmailInput, setManualEmailInput] = useState('');
@@ -1650,21 +1657,26 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // Without this, browser shows cached version even after file deletion + regeneration
       // Same URL = browser cache hit, different query param = cache miss
       const urlWithTimestamp = `${pdfUrl}?t=${Date.now()}`;
-      console.log('📄 Opening PDF with cache-busting URL:', urlWithTimestamp);
+      console.log('📄 PDF ready with cache-busting URL:', urlWithTimestamp);
 
-      toast.success('PDF מוכן להורדה');
-      window.open(urlWithTimestamp, '_blank');
+      // Fetch the full HTML from the letter for email sending
+      const { data: letterData } = await supabase
+        .from('generated_letters')
+        .select('generated_content_html')
+        .eq('id', letterId)
+        .single();
 
-      // Show PDF filing dialog if there's a client or group to save to
-      const hasDestination = selectedClient?.id || taggedClientId || (recipientMode === 'group' && selectedGroup?.id);
-      if (hasDestination && letterId) {
-        setPdfFilingData({
-          letterId,
-          pdfUrl,
-          letterSubject: emailSubject || 'מכתב',
-        });
-        setShowPdfFilingDialog(true);
-      }
+      // Generate PDF filename
+      const recipientName = getRecipientName();
+      const pdfFileName = `${recipientName || 'מכתב'}_${new Date().toLocaleDateString('he-IL').replace(/\//g, '-')}.pdf`;
+
+      // Show SharePdfPanel instead of opening PDF directly
+      setGeneratedPdfUrl(urlWithTimestamp);
+      setGeneratedPdfName(pdfFileName);
+      setGeneratedHtmlForEmail(letterData?.generated_content_html || '');
+      setShowSharePanel(true);
+
+      toast.success('PDF מוכן!');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('שגיאה ביצירת PDF');
@@ -3295,6 +3307,21 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           )}
         </CardContent>
       </Card>
+
+      {/* Share PDF Panel - Shows after PDF generation */}
+      <SharePdfPanel
+        show={showSharePanel}
+        onHide={() => setShowSharePanel(false)}
+        pdfUrl={generatedPdfUrl || ''}
+        pdfName={generatedPdfName}
+        clientName={selectedClient?.company_name || companyName || manualCompanyName || ''}
+        clientId={selectedClient?.id || taggedClientId || undefined}
+        htmlContent={generatedHtmlForEmail}
+        letterId={savedLetterId || editingLetterId || lastSentLetterId || undefined}
+        defaultSubject={emailSubject || letterName || 'מכתב'}
+        savePdfToFolder={!!(selectedClient?.id || taggedClientId || (recipientMode === 'group' && selectedGroup?.id))}
+        fileCategory="financial_report"
+      />
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
