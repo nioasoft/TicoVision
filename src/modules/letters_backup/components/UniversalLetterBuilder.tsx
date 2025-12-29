@@ -21,6 +21,7 @@ import { Eye, Mail, Save, AlertCircle, Loader2, FileText, Trash2, Plus, Minus, A
 import { TemplateService } from '../services/template.service';
 import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
+import { GroupSelector } from '@/components/GroupSelector';
 import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { Combobox } from '@/components/ui/combobox';
 import { clientService } from '@/services';
@@ -175,7 +176,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [manualShowCommercialName, setManualShowCommercialName] = useState(false);
   const [manualCommercialName, setManualCommercialName] = useState('');
   const [manualCustomHeaderLines, setManualCustomHeaderLines] = useState<import('../types/letter.types').CustomHeaderLine[]>([]);
-  const [taggedClientId, setTaggedClientId] = useState<string | null>(null); // ⭐ NEW: Client tagging for manual letters
+  const [taggedClientId, setTaggedClientId] = useState<string | null>(null); // ⭐ Client tagging for manual letters
+  const [taggedGroupId, setTaggedGroupId] = useState<string | null>(null); // ⭐ Group tagging for manual letters
+  const [taggedGroup, setTaggedGroup] = useState<ClientGroup | null>(null); // Full group object for display
+  const [tagMode, setTagMode] = useState<'none' | 'client' | 'group'>('none'); // Mutually exclusive tag mode
+  const [isFetchingEmails, setIsFetchingEmails] = useState(false); // Loading state for email fetch
 
   /**
    * Load saved templates on mount
@@ -508,7 +513,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const variables: Record<string, string | number> = {
         company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-        commercial_name: showCommercialName ? commercialName : ''
+        commercial_name: showCommercialName ? commercialName : '',
+        recipientMode: recipientMode, // ⭐ Save recipient mode for restore
+        tagMode: tagMode, // ⭐ Save tag mode for restore
       };
 
       console.log('🔍 [Preview Debug] variables.commercial_name:', variables.commercial_name);
@@ -574,7 +581,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const variables: Record<string, string | number> = {
         company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-        commercial_name: showCommercialName ? commercialName : ''
+        commercial_name: showCommercialName ? commercialName : '',
+        recipientMode: recipientMode, // ⭐ Save recipient mode for restore
+        tagMode: tagMode, // ⭐ Save tag mode for restore
       };
 
       // Add payment variables if needed
@@ -606,7 +615,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const updateResult = await templateService.updateLetterContent({
           letterId: savedLetterId,
           plainText: letterContent,
-          groupId: recipientMode === 'group' ? selectedGroup?.id : null,
+          groupId: recipientMode === 'group' ? selectedGroup?.id : (tagMode === 'group' ? taggedGroupId : null),
           subjectLines,
           customHeaderLines: headerLinesToSave,
           variables,
@@ -627,7 +636,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
-          groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
+          groupId: recipientMode === 'group' ? selectedGroup?.id : (tagMode === 'group' ? taggedGroupId : null), // ⭐ Save group ID for group letters
           recipientEmails: selectedRecipients.length > 0 ? selectedRecipients : null, // ⭐ Save recipients for edit restoration
           variables,
           includesPayment,
@@ -683,7 +692,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const variables: Record<string, string | number> = {
         company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-        commercial_name: showCommercialName ? commercialName : ''
+        commercial_name: showCommercialName ? commercialName : '',
+        recipientMode: recipientMode, // ⭐ Save recipient mode for restore
+        tagMode: tagMode, // ⭐ Save tag mode for restore
       };
 
       // Add email subject if provided
@@ -829,7 +840,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const variables: Record<string, string | number> = {
         company_name: recipientName,
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-        commercial_name: recipientCommercialName
+        commercial_name: recipientCommercialName,
+        recipientMode: recipientMode, // ⭐ Save recipient mode for restore
+        tagMode: tagMode, // ⭐ Save tag mode for restore
       };
 
       // Add payment variables if needed
@@ -842,7 +855,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const result = await templateService.generateFromCustomText({
         plainText: letterData.plainText,
         clientId: letterData.clientId!,
-        groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
+        groupId: recipientMode === 'group' ? selectedGroup?.id : (tagMode === 'group' ? taggedGroupId : null), // ⭐ Save group ID for group letters
         variables,
         includesPayment: letterData.includesPayment,
         customHeaderLines: letterData.customHeaderLines,
@@ -940,6 +953,83 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   };
 
   /**
+   * Handle tag mode change - mutually exclusive between client and group
+   */
+  const handleTagModeChange = (mode: 'none' | 'client' | 'group') => {
+    setTagMode(mode);
+
+    // Clear the other tag when switching
+    if (mode === 'client') {
+      setTaggedGroupId(null);
+      setTaggedGroup(null);
+    } else if (mode === 'group') {
+      setTaggedClientId(null);
+    } else {
+      setTaggedClientId(null);
+      setTaggedGroupId(null);
+      setTaggedGroup(null);
+    }
+  };
+
+  /**
+   * Handle tagging a group for manual letters
+   */
+  const handleTagGroup = (group: ClientGroup | null) => {
+    setTaggedGroup(group);
+    setTaggedGroupId(group?.id || null);
+  };
+
+  /**
+   * Fetch and add emails from tagged entity (client or group)
+   */
+  const handleFetchEmailsFromTaggedEntity = async () => {
+    if (tagMode === 'none') {
+      toast.error('נא לבחור לקוח או קבוצה לשליפת מיילים');
+      return;
+    }
+
+    setIsFetchingEmails(true);
+
+    try {
+      let fetchedEmails: string[] = [];
+
+      if (tagMode === 'client' && taggedClientId) {
+        // Fetch emails from client contacts
+        fetchedEmails = await TenantContactService.getClientEmails(taggedClientId, 'all');
+      } else if (tagMode === 'group' && taggedGroupId) {
+        // Fetch emails from group contacts
+        const groupContacts = await TenantContactService.getGroupContacts(taggedGroupId);
+        fetchedEmails = groupContacts
+          .filter(c => c.email)
+          .map(c => c.email!);
+      }
+
+      if (fetchedEmails.length === 0) {
+        toast.warning('לא נמצאו כתובות מייל');
+        return;
+      }
+
+      // Add fetched emails to selectedRecipients (avoid duplicates)
+      const existingEmails = new Set(selectedRecipients);
+      const newEmails = fetchedEmails.filter(email => !existingEmails.has(email));
+
+      if (newEmails.length === 0) {
+        toast.info('כל המיילים כבר קיימים ברשימה');
+        return;
+      }
+
+      setSelectedRecipients([...selectedRecipients, ...newEmails]);
+      toast.success(`נוספו ${newEmails.length} כתובות מייל`);
+
+    } catch (error) {
+      console.error('Error fetching emails:', error);
+      toast.error('שגיאה בשליפת כתובות מייל');
+    } finally {
+      setIsFetchingEmails(false);
+    }
+  };
+
+  /**
    * Handle switching between client, group, and manual modes
    * Shows warning dialog if current mode has data
    */
@@ -1010,6 +1100,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       setManualCompanyName('');
       setManualCommercialName('');
       setTaggedClientId(null);
+      setTaggedGroupId(null); // ⭐ Clear group tagging
+      setTaggedGroup(null);   // ⭐ Clear group object
+      setTagMode('none');     // ⭐ Reset tag mode
       setManualShowCommercialName(false);
       setManualCustomHeaderLines([]);
       setManualEmails('');
@@ -1119,7 +1212,9 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       const variables: Record<string, string | number> = {
         company_name: getRecipientName(),
         group_name: selectedClient?.group?.group_name_hebrew || selectedClient?.group?.group_name || '',
-        commercial_name: showCommercialName ? commercialName : ''
+        commercial_name: showCommercialName ? commercialName : '',
+        recipientMode: recipientMode, // ⭐ Save recipient mode for restore
+        tagMode: tagMode, // ⭐ Save tag mode for restore
       };
 
       // Add payment variables if needed
@@ -1147,7 +1242,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
-          groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
+          groupId: recipientMode === 'group' ? selectedGroup?.id : (tagMode === 'group' ? taggedGroupId : null), // ⭐ Save group ID for group letters
           variables,
           includesPayment,
           customHeaderLines: headerLinesForPdf,
@@ -1172,7 +1267,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         const updateResult = await templateService.updateLetterContent({
           letterId,
           plainText: letterContent,
-          groupId: recipientMode === 'group' ? selectedGroup?.id : null, // ⭐ Save group ID for group letters
+          groupId: recipientMode === 'group' ? selectedGroup?.id : (tagMode === 'group' ? taggedGroupId : null), // ⭐ Save group ID for group letters
           subjectLines, // ✅ CRITICAL: Pass updated subject lines
           customHeaderLines: headerLinesForPdf,
           variables,
@@ -1289,7 +1384,43 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       }
 
       // Restore recipient mode and data based on what was saved
-      if (letter.group_id) {
+      // ⭐ First check if we have saved recipientMode in variables_used
+      const savedRecipientMode = letter.variables_used && typeof letter.variables_used === 'object'
+        ? (letter.variables_used as Record<string, unknown>).recipientMode as string
+        : null;
+      const savedTagMode = letter.variables_used && typeof letter.variables_used === 'object'
+        ? (letter.variables_used as Record<string, unknown>).tagMode as string
+        : null;
+
+      if (savedRecipientMode === 'manual' || (!letter.group_id && !letter.client_id)) {
+        // MANUAL MODE: Either explicitly saved as manual OR no client/group
+        setRecipientMode('manual');
+
+        // Restore company name from variables_used
+        if (letter.variables_used && typeof letter.variables_used === 'object' && 'company_name' in letter.variables_used) {
+          setManualCompanyName(String((letter.variables_used as Record<string, unknown>).company_name) || '');
+        }
+
+        // Restore recipients if any were saved
+        if (letter.recipient_emails && Array.isArray(letter.recipient_emails) && letter.recipient_emails.length > 0) {
+          setManualEmails(letter.recipient_emails.join(', '));
+          setSelectedRecipients(letter.recipient_emails);
+        }
+
+        // ⭐ Restore tag mode and tagged entities
+        if (savedTagMode === 'client' && letter.client_id) {
+          setTagMode('client');
+          setTaggedClientId(letter.client_id);
+        } else if (savedTagMode === 'group' && letter.group_id) {
+          setTagMode('group');
+          setTaggedGroupId(letter.group_id);
+          // Load group object for display
+          const { data: group } = await groupFeeService.getGroupWithMembers(letter.group_id);
+          if (group) {
+            setTaggedGroup(group);
+          }
+        }
+      } else if (letter.group_id) {
         // GROUP MODE: Load group with members
         setRecipientMode('group');
         const { data: group, error: groupError } = await groupFeeService.getGroupWithMembers(letter.group_id);
@@ -1317,21 +1448,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           if (letter.recipient_emails && Array.isArray(letter.recipient_emails)) {
             setSelectedRecipients(letter.recipient_emails);
           }
-        }
-      } else {
-        // MANUAL MODE: No client or group - must be manual recipient mode
-        // This handles cases where:
-        // 1. User entered manual recipient name without adding emails
-        // 2. User entered both name and emails
-        setRecipientMode('manual');
-        // Restore company name from variables_used
-        if (letter.variables_used && typeof letter.variables_used === 'object' && 'company_name' in letter.variables_used) {
-          setManualCompanyName(String((letter.variables_used as Record<string, unknown>).company_name) || '');
-        }
-        // Restore recipients if any were saved
-        if (letter.recipient_emails && Array.isArray(letter.recipient_emails) && letter.recipient_emails.length > 0) {
-          setManualEmails(letter.recipient_emails.join(', '));
-          setSelectedRecipients(letter.recipient_emails);
         }
       }
 
@@ -1976,22 +2092,85 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       />
                     </div>
 
-                    {/* ⭐ NEW: Client Tagging for Manual Letters */}
+                    {/* ⭐ ENHANCED: Client OR Group Tagging for Manual Letters */}
                     <div className={recipientMode !== 'manual' ? 'opacity-50 pointer-events-none' : ''}>
                       <Label className="text-right block mb-2">
-                        קשור ללקוח (אופציונלי)
-                        <span className="text-xs text-gray-500 mr-1">- לשיוך המכתב להיסטוריה של לקוח</span>
+                        שיוך לישות (אופציונלי)
+                        <span className="text-xs text-gray-500 mr-1">- לשיוך המכתב להיסטוריה ו/או שליפת מיילים</span>
                       </Label>
-                      <ClientSelector
-                        value={taggedClientId}
-                        onChange={(client) => setTaggedClientId(client?.id || null)}
-                        label=""
-                        placeholder="בחר לקוח לשיוך המכתב (אופציונלי)..."
-                      />
-                      {taggedClientId && (
-                        <p className="text-xs text-blue-600 mt-1 text-right">
-                          ✓ המכתב ישוייך ללקוח ויופיע בהיסטוריה שלו
-                        </p>
+
+                      {/* Mutually Exclusive Toggle Buttons */}
+                      <div className="flex gap-2 mb-3 rtl:flex-row-reverse">
+                        <Button
+                          type="button"
+                          variant={tagMode === 'client' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleTagModeChange(tagMode === 'client' ? 'none' : 'client')}
+                          disabled={recipientMode !== 'manual'}
+                          className="flex items-center gap-1"
+                        >
+                          <Building2 className="h-4 w-4" />
+                          לקוח
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={tagMode === 'group' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleTagModeChange(tagMode === 'group' ? 'none' : 'group')}
+                          disabled={recipientMode !== 'manual'}
+                          className="flex items-center gap-1"
+                        >
+                          <Users className="h-4 w-4" />
+                          קבוצה
+                        </Button>
+                      </div>
+
+                      {/* Client Selector - shown when tagMode === 'client' */}
+                      {tagMode === 'client' && (
+                        <div className="space-y-2">
+                          <ClientSelector
+                            value={taggedClientId}
+                            onChange={(client) => setTaggedClientId(client?.id || null)}
+                            label=""
+                            placeholder="בחר לקוח לשיוך..."
+                          />
+                        </div>
+                      )}
+
+                      {/* Group Selector - shown when tagMode === 'group' */}
+                      {tagMode === 'group' && (
+                        <div className="space-y-2">
+                          <GroupSelector
+                            value={taggedGroupId}
+                            onChange={handleTagGroup}
+                            label=""
+                            placeholder="בחר קבוצה לשיוך..."
+                          />
+                        </div>
+                      )}
+
+                      {/* Confirmation message + Fetch Emails button */}
+                      {(taggedClientId || taggedGroupId) && (
+                        <div className="mt-2 space-y-2">
+                          <p className="text-xs text-blue-600 text-right">
+                            ✓ המכתב ישוייך ל{tagMode === 'client' ? 'לקוח' : 'קבוצה'} ויופיע בהיסטוריה
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleFetchEmailsFromTaggedEntity}
+                            disabled={isFetchingEmails}
+                            className="w-full flex items-center justify-center gap-2"
+                          >
+                            {isFetchingEmails ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Mail className="h-4 w-4" />
+                            )}
+                            שלוף מיילים מה{tagMode === 'client' ? 'לקוח' : 'קבוצה'}
+                          </Button>
+                        </div>
                       )}
                     </div>
 
