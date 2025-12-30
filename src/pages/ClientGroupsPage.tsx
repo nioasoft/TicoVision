@@ -1105,7 +1105,7 @@ export default function ClientGroupsPage() {
             setSelectedClientForEdit(null);
           }}
           onSubmit={async (data) => {
-            const response = await clientService.updateClient(
+            const response = await clientService.update(
               selectedClientForEdit.id,
               data
             );
