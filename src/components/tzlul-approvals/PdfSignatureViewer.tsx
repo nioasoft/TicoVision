@@ -23,8 +23,13 @@ interface PdfSignatureViewerProps {
 // Default sizes as percentage of page
 const DEFAULT_SIGNATURE_WIDTH = 15;
 const DEFAULT_SIGNATURE_HEIGHT = 7;
+const DEFAULT_SIGNATURE_WITH_ADDRESS_WIDTH = 18;
+const DEFAULT_SIGNATURE_WITH_ADDRESS_HEIGHT = 10; // Taller to fit address below
 const DEFAULT_DATE_WIDTH = 12;
 const DEFAULT_DATE_HEIGHT = 3;
+
+// Address text for display
+const SIGNATURE_ADDRESS = "רח' שד\"ל 3, תל אביב";
 
 // Generate unique ID
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -76,6 +81,20 @@ export function PdfSignatureViewer({
       page: currentPage - 1,
       width: DEFAULT_SIGNATURE_WIDTH,
       height: DEFAULT_SIGNATURE_HEIGHT,
+    };
+    onElementsChange([...elements, newElement]);
+  }, [currentPage, elements, onElementsChange]);
+
+  // Add signature with address to current page
+  const handleAddSignatureWithAddress = useCallback(() => {
+    const newElement: PdfElement = {
+      id: generateId(),
+      type: 'signature_with_address',
+      x: 50 - DEFAULT_SIGNATURE_WITH_ADDRESS_WIDTH / 2,
+      y: 75,
+      page: currentPage - 1,
+      width: DEFAULT_SIGNATURE_WITH_ADDRESS_WIDTH,
+      height: DEFAULT_SIGNATURE_WITH_ADDRESS_HEIGHT,
     };
     onElementsChange([...elements, newElement]);
   }, [currentPage, elements, onElementsChange]);
@@ -175,10 +194,12 @@ export function PdfSignatureViewer({
   // Elements on current page
   const elementsOnCurrentPage = elements.filter(el => el.page === currentPage - 1);
   const signaturesOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'signature').length;
+  const signaturesWithAddressOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'signature_with_address').length;
   const datesOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'date').length;
 
   // Summary of all elements
   const totalSignatures = elements.filter(el => el.type === 'signature').length;
+  const totalSignaturesWithAddress = elements.filter(el => el.type === 'signature_with_address').length;
   const totalDates = elements.filter(el => el.type === 'date').length;
 
   return (
@@ -209,7 +230,7 @@ export function PdfSignatureViewer({
         </div>
 
         {/* Add Elements Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="default"
             size="sm"
@@ -221,6 +242,20 @@ export function PdfSignatureViewer({
             {signaturesOnCurrentPage > 0 && (
               <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
                 {signaturesOnCurrentPage}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleAddSignatureWithAddress}
+            className="gap-2 bg-green-600 hover:bg-green-700"
+          >
+            <Plus className="h-4 w-4" />
+            חתימה עם כתובת
+            {signaturesWithAddressOnCurrentPage > 0 && (
+              <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
+                {signaturesWithAddressOnCurrentPage}
               </span>
             )}
           </Button>
@@ -305,9 +340,13 @@ export function PdfSignatureViewer({
                     ? draggingId === element.id
                       ? 'border-primary shadow-lg'
                       : 'border-primary/50 hover:border-primary'
-                    : draggingId === element.id
-                      ? 'border-orange-500 shadow-lg'
-                      : 'border-orange-400/50 hover:border-orange-500'
+                    : element.type === 'signature_with_address'
+                      ? draggingId === element.id
+                        ? 'border-green-600 shadow-lg'
+                        : 'border-green-500/50 hover:border-green-600'
+                      : draggingId === element.id
+                        ? 'border-orange-500 shadow-lg'
+                        : 'border-orange-400/50 hover:border-orange-500'
                 )}
                 style={{
                   left: `${element.x}%`,
@@ -324,6 +363,18 @@ export function PdfSignatureViewer({
                     className="w-full h-full object-contain pointer-events-none"
                     draggable={false}
                   />
+                ) : element.type === 'signature_with_address' ? (
+                  <div className="w-full h-full flex flex-col pointer-events-none">
+                    <img
+                      src={signatureUrl}
+                      alt="Signature"
+                      className="w-full h-[65%] object-contain"
+                      draggable={false}
+                    />
+                    <div className="h-[35%] flex items-center justify-center text-xs font-medium text-gray-700" dir="rtl">
+                      {SIGNATURE_ADDRESS}
+                    </div>
+                  </div>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-sm font-medium pointer-events-none">
                     {element.value}
@@ -332,11 +383,11 @@ export function PdfSignatureViewer({
 
                 {/* Label */}
                 <div className={cn(
-                  'absolute -top-6 left-1/2 -translate-x-1/2 text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1',
-                  element.type === 'signature' ? 'bg-primary' : 'bg-orange-500'
+                  'absolute -top-6 left-1/2 -translate-x-1/2 text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1 whitespace-nowrap',
+                  element.type === 'signature' ? 'bg-primary' : element.type === 'signature_with_address' ? 'bg-green-600' : 'bg-orange-500'
                 )}>
                   <Move className="h-3 w-3" />
-                  <span>{element.type === 'signature' ? 'חתימה' : 'תאריך'}</span>
+                  <span>{element.type === 'signature' ? 'חתימה' : element.type === 'signature_with_address' ? 'חתימה+כתובת' : 'תאריך'}</span>
                 </div>
 
                 {/* Delete button */}
@@ -359,12 +410,12 @@ export function PdfSignatureViewer({
       <div className="text-sm text-muted-foreground text-center space-y-1">
         <p>
           {elements.length === 0
-            ? 'נווט לעמוד הרצוי ולחץ על "הוסף חתימה" או "הוסף תאריך"'
+            ? 'נווט לעמוד הרצוי ולחץ על "הוסף חתימה" או "חתימה עם כתובת" או "הוסף תאריך"'
             : 'גרור את האלמנטים למקם אותם על המסמך. מחק בלחיצה על X.'}
         </p>
         {elements.length > 0 && (
           <p className="text-xs">
-            סה"כ: {totalSignatures} חתימות, {totalDates} תאריכים על {new Set(elements.map(e => e.page)).size} עמודים
+            סה"כ: {totalSignatures} חתימות{totalSignaturesWithAddress > 0 ? `, ${totalSignaturesWithAddress} חתימות+כתובת` : ''}, {totalDates} תאריכים על {new Set(elements.map(e => e.page)).size} עמודים
           </p>
         )}
       </div>

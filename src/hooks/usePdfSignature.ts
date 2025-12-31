@@ -7,7 +7,10 @@ import { useState, useCallback } from 'react';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { supabase } from '@/lib/supabase';
 
-export type PdfElementType = 'signature' | 'date';
+export type PdfElementType = 'signature' | 'signature_with_address' | 'date';
+
+// Address text for signature with address
+const SIGNATURE_ADDRESS = "רח' שד\"ל 3, תל אביב";
 
 export interface PdfElement {
   id: string; // unique identifier
@@ -177,6 +180,30 @@ export function usePdfSignature(): UsePdfSignatureReturn {
               y,
               width: elemWidth,
               height: elemHeight,
+            });
+          } else if (element.type === 'signature_with_address') {
+            // Draw signature image (upper portion)
+            const signatureHeight = elemHeight * 0.65; // 65% for signature
+            const addressHeight = elemHeight * 0.35; // 35% for address
+
+            page.drawImage(signatureImage, {
+              x,
+              y: y + addressHeight, // Signature goes above the address
+              width: elemWidth,
+              height: signatureHeight,
+            });
+
+            // Draw address text below signature
+            const fontSize = Math.min(addressHeight * 0.6, 10);
+            const textWidth = font.widthOfTextAtSize(SIGNATURE_ADDRESS, fontSize);
+            const textX = x + (elemWidth - textWidth) / 2; // Center the text
+
+            page.drawText(SIGNATURE_ADDRESS, {
+              x: textX,
+              y: y + addressHeight * 0.3, // Position in the address area
+              size: fontSize,
+              font,
+              color: rgb(0, 0, 0),
             });
           } else if (element.type === 'date') {
             // Draw date text
