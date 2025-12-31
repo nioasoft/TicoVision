@@ -601,6 +601,25 @@ export function LetterPreviewDialog({
         return null;
       }
 
+      // Check if a letter already exists for this fee calculation
+      // This prevents duplicate letters when dialog is reopened
+      const calculationId = feeId || groupFeeCalculationId;
+      if (calculationId) {
+        const { data: existingLetter } = await supabase
+          .from('generated_letters')
+          .select('id')
+          .eq(feeId ? 'fee_calculation_id' : 'group_calculation_id', calculationId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existingLetter) {
+          console.log('✅ Found existing letter for calculation, using:', existingLetter.id);
+          setSavedLetterId(existingLetter.id);
+          return existingLetter.id;
+        }
+      }
+
       // Determine template type
       const effectivePrimaryTemplate = manualPrimaryOverride || letterSelection.primaryTemplate;
       const effectiveSecondaryTemplate = manualSecondaryOverride || letterSelection.secondaryTemplate;
@@ -1286,7 +1305,7 @@ export function LetterPreviewDialog({
         {/* Existing: Send Email button */}
         <Button
           onClick={handleSendEmail}
-          disabled={isSendingEmail || getFinalRecipients().length === 0 || isLoadingPreview || isSent}
+          disabled={isSendingEmail || isSaving || getFinalRecipients().length === 0 || isLoadingPreview || isSent}
         >
           {isSendingEmail && currentLetterStage === stage ? (
             <>
