@@ -1,18 +1,32 @@
 /**
  * Hook for PDF signature operations
- * Handles adding signatures to PDFs, downloading, and saving to storage
+ * Handles adding signatures and dates to PDFs, downloading, and saving to storage
  */
 
 import { useState, useCallback } from 'react';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { supabase } from '@/lib/supabase';
 
-export interface SignaturePosition {
+export type PdfElementType = 'signature' | 'date';
+
+export interface PdfElement {
+  id: string; // unique identifier
+  type: PdfElementType;
   x: number; // percentage from left (0-100)
   y: number; // percentage from top (0-100)
   page: number; // 0-indexed page number
   width: number; // percentage of page width
   height: number; // percentage of page height
+  value?: string; // for date elements, the date string
+}
+
+// Legacy type for backwards compatibility
+export interface SignaturePosition {
+  x: number;
+  y: number;
+  page: number;
+  width: number;
+  height: number;
 }
 
 interface UsePdfSignatureReturn {
@@ -22,6 +36,11 @@ interface UsePdfSignatureReturn {
     pdfBytes: ArrayBuffer,
     signatureBytes: ArrayBuffer,
     position: SignaturePosition
+  ) => Promise<Uint8Array>;
+  addElementsToPdf: (
+    pdfBytes: ArrayBuffer,
+    signatureBytes: ArrayBuffer,
+    elements: PdfElement[]
   ) => Promise<Uint8Array>;
   downloadPdf: (pdfBytes: Uint8Array, filename: string) => void;
   savePdfToStorage: (
@@ -111,6 +130,84 @@ export function usePdfSignature(): UsePdfSignatureReturn {
   );
 
   /**
+   * Add multiple elements (signatures and dates) to a PDF
+   */
+  const addElementsToPdf = useCallback(
+    async (
+      pdfBytes: ArrayBuffer,
+      signatureBytes: ArrayBuffer,
+      elements: PdfElement[]
+    ): Promise<Uint8Array> => {
+      setIsProcessing(true);
+      setError(null);
+
+      try {
+        // Load the PDF
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const pages = pdfDoc.getPages();
+
+        // Embed the signature image once (for all signature elements)
+        const signatureImage = await pdfDoc.embedPng(signatureBytes);
+
+        // Embed a standard font for date text
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+        // Process each element
+        for (const element of elements) {
+          // Validate page index
+          if (element.page < 0 || element.page >= pages.length) {
+            console.warn(`Invalid page index: ${element.page}, skipping element`);
+            continue;
+          }
+
+          const page = pages[element.page];
+          const { width: pageWidth, height: pageHeight } = page.getSize();
+
+          // Calculate position in PDF coordinates
+          // PDF coordinates start from bottom-left, but we get position from top-left
+          const elemWidth = (element.width / 100) * pageWidth;
+          const elemHeight = (element.height / 100) * pageHeight;
+          const x = (element.x / 100) * pageWidth;
+          const y = pageHeight - (element.y / 100) * pageHeight - elemHeight;
+
+          if (element.type === 'signature') {
+            // Draw signature image
+            page.drawImage(signatureImage, {
+              x,
+              y,
+              width: elemWidth,
+              height: elemHeight,
+            });
+          } else if (element.type === 'date') {
+            // Draw date text
+            const dateText = element.value || new Date().toLocaleDateString('he-IL');
+            const fontSize = Math.min(elemHeight * 0.7, 14); // Scale font size
+
+            page.drawText(dateText, {
+              x,
+              y: y + elemHeight * 0.3, // Center vertically
+              size: fontSize,
+              font,
+              color: rgb(0, 0, 0),
+            });
+          }
+        }
+
+        // Save and return the modified PDF
+        const modifiedPdfBytes = await pdfDoc.save();
+        return modifiedPdfBytes;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to add elements to PDF';
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    []
+  );
+
+  /**
    * Download a PDF file to the user's device
    */
   const downloadPdf = useCallback((pdfBytes: Uint8Array, filename: string) => {
@@ -185,6 +282,7 @@ export function usePdfSignature(): UsePdfSignatureReturn {
     isProcessing,
     error,
     addSignatureToPdf,
+    addElementsToPdf,
     downloadPdf,
     savePdfToStorage,
   };

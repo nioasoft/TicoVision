@@ -1,6 +1,6 @@
 /**
  * Signature Identification Tab for Tzlul
- * Allows uploading a PDF and adding the company signature
+ * Allows uploading a PDF and adding signatures and dates
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { PdfSignatureViewer } from './PdfSignatureViewer';
-import { usePdfSignature, type SignaturePosition } from '@/hooks/usePdfSignature';
+import { usePdfSignature, type PdfElement } from '@/hooks/usePdfSignature';
 import { cn } from '@/lib/utils';
 
 // Signature URL - using the public brand folder
@@ -17,11 +17,11 @@ const SIGNATURE_URL = '/brand/tico_signature.png';
 
 export function SignatureIdentificationTab() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [signaturePosition, setSignaturePosition] = useState<SignaturePosition | null>(null);
+  const [elements, setElements] = useState<PdfElement[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { isProcessing, addSignatureToPdf, downloadPdf, savePdfToStorage } = usePdfSignature();
+  const { isProcessing, addElementsToPdf, downloadPdf, savePdfToStorage } = usePdfSignature();
 
   const handleFileSelect = useCallback((file: File) => {
     if (file.type !== 'application/pdf') {
@@ -35,7 +35,7 @@ export function SignatureIdentificationTab() {
     }
 
     setPdfFile(file);
-    setSignaturePosition(null);
+    setElements([]);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -70,15 +70,15 @@ export function SignatureIdentificationTab() {
 
   const handleClear = useCallback(() => {
     setPdfFile(null);
-    setSignaturePosition(null);
+    setElements([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   }, []);
 
   const handleSaveAndDownload = useCallback(async () => {
-    if (!pdfFile || !signaturePosition) {
-      toast.error('יש להעלות PDF ולמקם את החתימה');
+    if (!pdfFile || elements.length === 0) {
+      toast.error('יש להעלות PDF ולהוסיף לפחות חתימה או תאריך אחד');
       return;
     }
 
@@ -93,8 +93,8 @@ export function SignatureIdentificationTab() {
       }
       const signatureBytes = await signatureResponse.arrayBuffer();
 
-      // Add signature to PDF
-      const signedPdfBytes = await addSignatureToPdf(pdfBytes, signatureBytes, signaturePosition);
+      // Add all elements to PDF
+      const signedPdfBytes = await addElementsToPdf(pdfBytes, signatureBytes, elements);
 
       // Generate filename
       const originalName = pdfFile.name.replace(/\.pdf$/i, '');
@@ -106,12 +106,14 @@ export function SignatureIdentificationTab() {
       // Download
       downloadPdf(signedPdfBytes, signedFilename);
 
-      toast.success('PDF חתום נשמר והורד בהצלחה');
+      const sigCount = elements.filter(e => e.type === 'signature').length;
+      const dateCount = elements.filter(e => e.type === 'date').length;
+      toast.success(`PDF נשמר והורד בהצלחה! (${sigCount} חתימות, ${dateCount} תאריכים)`);
     } catch (err) {
       console.error('Error processing PDF:', err);
       toast.error(err instanceof Error ? err.message : 'שגיאה בעיבוד הקובץ');
     }
-  }, [pdfFile, signaturePosition, addSignatureToPdf, savePdfToStorage, downloadPdf]);
+  }, [pdfFile, elements, addElementsToPdf, savePdfToStorage, downloadPdf]);
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -119,7 +121,7 @@ export function SignatureIdentificationTab() {
         <CardHeader>
           <CardTitle className="text-right">חתימה לשם זיהוי</CardTitle>
           <CardDescription className="text-right">
-            העלה מסמך PDF והוסף את חתימת המשרד לשם זיהוי
+            העלה מסמך PDF והוסף חתימות ותאריכים על כל עמוד שצריך
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -184,15 +186,15 @@ export function SignatureIdentificationTab() {
               <PdfSignatureViewer
                 pdfFile={pdfFile}
                 signatureUrl={SIGNATURE_URL}
-                signaturePosition={signaturePosition}
-                onPositionChange={setSignaturePosition}
+                elements={elements}
+                onElementsChange={setElements}
               />
 
               {/* Actions */}
               <div className="flex justify-center gap-4">
                 <Button
                   onClick={handleSaveAndDownload}
-                  disabled={!signaturePosition || isProcessing}
+                  disabled={elements.length === 0 || isProcessing}
                   className="min-w-[200px]"
                 >
                   {isProcessing ? (
@@ -219,9 +221,10 @@ export function SignatureIdentificationTab() {
           <h3 className="font-medium text-blue-900 mb-3">הוראות שימוש:</h3>
           <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
             <li>העלה קובץ PDF שדורש חתימה לזיהוי</li>
-            <li>נווט לעמוד שבו רוצים להוסיף את החתימה</li>
-            <li>לחץ על "הוסף חתימה לעמוד זה"</li>
-            <li>גרור את החתימה למיקום הרצוי על העמוד</li>
+            <li>נווט לעמוד שבו רוצים להוסיף חתימה או תאריך</li>
+            <li>לחץ על "הוסף חתימה" או "הוסף תאריך" להוספת אלמנט לעמוד</li>
+            <li>גרור את האלמנטים למיקום הרצוי</li>
+            <li>חזור על שלבים 2-4 לכל העמודים הנדרשים</li>
             <li>לחץ על "שמור והורד" לקבלת המסמך החתום</li>
           </ol>
         </CardContent>

@@ -23,7 +23,7 @@ const supabase = createClient(
 );
 
 const BUCKET = 'letter-assets-v2';
-const SOURCE_FILE = path.join(process.cwd(), 'public', 'brand', 'ticonewbigsign.png');
+const SOURCE_FILE = path.join(process.cwd(), 'public', 'brand', 'tico_signature.png');
 const TARGET_FILE = 'tico_signature.png'; // Keep same name for backward compatibility
 
 async function uploadSignature() {

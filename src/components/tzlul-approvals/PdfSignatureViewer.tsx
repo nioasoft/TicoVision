@@ -1,14 +1,14 @@
 /**
- * PDF Viewer with draggable signature overlay
- * Displays a PDF and allows the user to position a signature by dragging
+ * PDF Viewer with draggable signature and date overlays
+ * Displays a PDF and allows the user to position multiple signatures and dates by dragging
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Move, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Move, Plus, Calendar, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { SignaturePosition } from '@/hooks/usePdfSignature';
+import type { PdfElement } from '@/hooks/usePdfSignature';
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -16,24 +16,29 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface PdfSignatureViewerProps {
   pdfFile: File | null;
   signatureUrl: string;
-  onPositionChange: (position: SignaturePosition | null) => void;
-  signaturePosition: SignaturePosition | null;
+  elements: PdfElement[];
+  onElementsChange: (elements: PdfElement[]) => void;
 }
 
-// Default signature size as percentage of page
+// Default sizes as percentage of page
 const DEFAULT_SIGNATURE_WIDTH = 15;
 const DEFAULT_SIGNATURE_HEIGHT = 7;
+const DEFAULT_DATE_WIDTH = 12;
+const DEFAULT_DATE_HEIGHT = 3;
+
+// Generate unique ID
+const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 export function PdfSignatureViewer({
   pdfFile,
   signatureUrl,
-  onPositionChange,
-  signaturePosition,
+  elements,
+  onElementsChange,
 }: PdfSignatureViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [scale, setScale] = useState<number>(1);
-  const [isDragging, setIsDragging] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
@@ -54,30 +59,50 @@ export function PdfSignatureViewer({
   useEffect(() => {
     setCurrentPage(1);
     setScale(1);
-    onPositionChange(null);
-  }, [pdfFile, onPositionChange]);
+    onElementsChange([]);
+  }, [pdfFile, onElementsChange]);
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    // Don't auto-place signature - wait for user to click "Add Signature" button
   }, []);
 
   // Add signature to current page
-  const handleAddSignatureToCurrentPage = useCallback(() => {
-    onPositionChange({
+  const handleAddSignature = useCallback(() => {
+    const newElement: PdfElement = {
+      id: generateId(),
+      type: 'signature',
       x: 50 - DEFAULT_SIGNATURE_WIDTH / 2,
       y: 80,
-      page: currentPage - 1, // 0-indexed
+      page: currentPage - 1,
       width: DEFAULT_SIGNATURE_WIDTH,
       height: DEFAULT_SIGNATURE_HEIGHT,
-    });
-  }, [currentPage, onPositionChange]);
+    };
+    onElementsChange([...elements, newElement]);
+  }, [currentPage, elements, onElementsChange]);
+
+  // Add date to current page
+  const handleAddDate = useCallback(() => {
+    const today = new Date().toLocaleDateString('he-IL');
+    const newElement: PdfElement = {
+      id: generateId(),
+      type: 'date',
+      x: 50 - DEFAULT_DATE_WIDTH / 2,
+      y: 85,
+      page: currentPage - 1,
+      width: DEFAULT_DATE_WIDTH,
+      height: DEFAULT_DATE_HEIGHT,
+      value: today,
+    };
+    onElementsChange([...elements, newElement]);
+  }, [currentPage, elements, onElementsChange]);
+
+  // Remove element
+  const handleRemoveElement = useCallback((id: string) => {
+    onElementsChange(elements.filter(el => el.id !== id));
+  }, [elements, onElementsChange]);
 
   const goToPrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
-    if (signaturePosition && signaturePosition.page === currentPage - 1) {
-      // Keep signature on current page when navigating
-    }
   };
 
   const goToNextPage = () => {
@@ -92,19 +117,22 @@ export function PdfSignatureViewer({
     setScale((prev) => Math.max(prev - 0.25, 0.5));
   };
 
-  // Handle signature dragging
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  // Handle element dragging
+  const handleMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
     setDragOffset({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     });
-    setIsDragging(true);
+    setDraggingId(elementId);
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !pageRef.current || !signaturePosition) return;
+    if (!draggingId || !pageRef.current) return;
+
+    const element = elements.find(el => el.id === draggingId);
+    if (!element) return;
 
     const pageRect = pageRef.current.getBoundingClientRect();
 
@@ -112,25 +140,26 @@ export function PdfSignatureViewer({
     const newX = ((e.clientX - pageRect.left - dragOffset.x) / pageRect.width) * 100;
     const newY = ((e.clientY - pageRect.top - dragOffset.y) / pageRect.height) * 100;
 
-    // Clamp values to keep signature within page bounds
-    const clampedX = Math.max(0, Math.min(100 - signaturePosition.width, newX));
-    const clampedY = Math.max(0, Math.min(100 - signaturePosition.height, newY));
+    // Clamp values to keep element within page bounds
+    const clampedX = Math.max(0, Math.min(100 - element.width, newX));
+    const clampedY = Math.max(0, Math.min(100 - element.height, newY));
 
-    onPositionChange({
-      ...signaturePosition,
-      x: clampedX,
-      y: clampedY,
-      page: currentPage - 1,
-    });
-  }, [isDragging, dragOffset, signaturePosition, currentPage, onPositionChange]);
+    // Update the element position
+    const updatedElements = elements.map(el =>
+      el.id === draggingId
+        ? { ...el, x: clampedX, y: clampedY }
+        : el
+    );
+    onElementsChange(updatedElements);
+  }, [draggingId, dragOffset, elements, onElementsChange]);
 
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
+    setDraggingId(null);
   }, []);
 
   // Add global mouse up listener to handle drag end outside the component
   useEffect(() => {
-    const handleGlobalMouseUp = () => setIsDragging(false);
+    const handleGlobalMouseUp = () => setDraggingId(null);
     window.addEventListener('mouseup', handleGlobalMouseUp);
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
@@ -143,7 +172,14 @@ export function PdfSignatureViewer({
     );
   }
 
-  const isSignatureOnCurrentPage = signaturePosition?.page === currentPage - 1;
+  // Elements on current page
+  const elementsOnCurrentPage = elements.filter(el => el.page === currentPage - 1);
+  const signaturesOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'signature').length;
+  const datesOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'date').length;
+
+  // Summary of all elements
+  const totalSignatures = elements.filter(el => el.type === 'signature').length;
+  const totalDates = elements.filter(el => el.type === 'date').length;
 
   return (
     <div className="space-y-4">
@@ -172,16 +208,37 @@ export function PdfSignatureViewer({
           </Button>
         </div>
 
-        {/* Add Signature Button */}
-        <Button
-          variant={isSignatureOnCurrentPage ? 'secondary' : 'default'}
-          size="sm"
-          onClick={handleAddSignatureToCurrentPage}
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          {isSignatureOnCurrentPage ? 'החתימה בעמוד זה' : 'הוסף חתימה לעמוד זה'}
-        </Button>
+        {/* Add Elements Buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleAddSignature}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            הוסף חתימה
+            {signaturesOnCurrentPage > 0 && (
+              <span className="bg-white/20 px-1.5 py-0.5 rounded text-xs">
+                {signaturesOnCurrentPage}
+              </span>
+            )}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleAddDate}
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            הוסף תאריך
+            {datesOnCurrentPage > 0 && (
+              <span className="bg-black/10 px-1.5 py-0.5 rounded text-xs">
+                {datesOnCurrentPage}
+              </span>
+            )}
+          </Button>
+        </div>
 
         {/* Zoom controls */}
         <div className="flex items-center gap-2">
@@ -207,7 +264,7 @@ export function PdfSignatureViewer({
         </div>
       </div>
 
-      {/* PDF Viewer with signature overlay */}
+      {/* PDF Viewer with elements overlay */}
       <div
         ref={containerRef}
         className="relative overflow-auto bg-muted/30 rounded-lg border max-h-[85vh]"
@@ -238,47 +295,79 @@ export function PdfSignatureViewer({
               />
             </Document>
 
-            {/* Signature overlay */}
-            {signaturePosition && isSignatureOnCurrentPage && (
+            {/* Elements overlay */}
+            {elementsOnCurrentPage.map((element) => (
               <div
+                key={element.id}
                 className={cn(
-                  'absolute cursor-move select-none border-2 rounded',
-                  isDragging
-                    ? 'border-primary shadow-lg'
-                    : 'border-primary/50 hover:border-primary'
+                  'absolute cursor-move select-none border-2 rounded group',
+                  element.type === 'signature'
+                    ? draggingId === element.id
+                      ? 'border-primary shadow-lg'
+                      : 'border-primary/50 hover:border-primary'
+                    : draggingId === element.id
+                      ? 'border-orange-500 shadow-lg'
+                      : 'border-orange-400/50 hover:border-orange-500'
                 )}
                 style={{
-                  left: `${signaturePosition.x}%`,
-                  top: `${signaturePosition.y}%`,
-                  width: `${signaturePosition.width}%`,
-                  height: `${signaturePosition.height}%`,
+                  left: `${element.x}%`,
+                  top: `${element.y}%`,
+                  width: `${element.width}%`,
+                  height: `${element.height}%`,
                 }}
-                onMouseDown={handleMouseDown}
+                onMouseDown={(e) => handleMouseDown(e, element.id)}
               >
-                <img
-                  src={signatureUrl}
-                  alt="Signature"
-                  className="w-full h-full object-contain pointer-events-none"
-                  draggable={false}
-                />
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1">
+                {element.type === 'signature' ? (
+                  <img
+                    src={signatureUrl}
+                    alt="Signature"
+                    className="w-full h-full object-contain pointer-events-none"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm font-medium pointer-events-none">
+                    {element.value}
+                  </div>
+                )}
+
+                {/* Label */}
+                <div className={cn(
+                  'absolute -top-6 left-1/2 -translate-x-1/2 text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1',
+                  element.type === 'signature' ? 'bg-primary' : 'bg-orange-500'
+                )}>
                   <Move className="h-3 w-3" />
-                  <span>גרור להזזה</span>
+                  <span>{element.type === 'signature' ? 'חתימה' : 'תאריך'}</span>
                 </div>
+
+                {/* Delete button */}
+                <button
+                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveElement(element.id);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
 
       {/* Info text */}
-      <p className="text-sm text-muted-foreground text-center">
-        {!signaturePosition
-          ? 'נווט לעמוד הרצוי ולחץ על "הוסף חתימה לעמוד זה"'
-          : isSignatureOnCurrentPage
-            ? 'גרור את החתימה למקם אותה על המסמך'
-            : `החתימה נמצאת בעמוד ${(signaturePosition?.page ?? 0) + 1}. נווט לשם לצפייה או להזזה.`}
-      </p>
+      <div className="text-sm text-muted-foreground text-center space-y-1">
+        <p>
+          {elements.length === 0
+            ? 'נווט לעמוד הרצוי ולחץ על "הוסף חתימה" או "הוסף תאריך"'
+            : 'גרור את האלמנטים למקם אותם על המסמך. מחק בלחיצה על X.'}
+        </p>
+        {elements.length > 0 && (
+          <p className="text-xs">
+            סה"כ: {totalSignatures} חתימות, {totalDates} תאריכים על {new Set(elements.map(e => e.page)).size} עמודים
+          </p>
+        )}
+      </div>
     </div>
   );
 }
