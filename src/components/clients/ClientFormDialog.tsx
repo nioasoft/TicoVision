@@ -37,6 +37,7 @@ import { ContactsManager } from '@/components/ContactsManager';
 import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
+import { ClientSelector } from '@/components/ClientSelector';
 import type {
   Client,
   CreateClientDto,
@@ -142,7 +143,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [groups, setGroups] = useState<ClientGroup[]>([]); // NEW: רשימת קבוצות
-    const [payerClients, setPayerClients] = useState<Client[]>([]); // לקוחות שיכולים לשלם
     const [importedPdfFile, setImportedPdfFile] = useState<File | null>(null); // PDF file to save after client creation
     const [taxIdExists, setTaxIdExists] = useState(false); // NEW: בדיקת כפילות מספר עוסק
     const [isCheckingTaxId, setIsCheckingTaxId] = useState(false);
@@ -212,28 +212,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
       loadGroups();
     }, []);
-
-    // Load payer clients (clients that can pay for other clients)
-    useEffect(() => {
-      const loadPayerClients = async () => {
-        const response = await clientService.list();
-        if (response.data?.clients) {
-          // Filter to only clients that can be payers:
-          // - Not the current client (if editing)
-          // - Not already a 'member' (who can't pay for others)
-          // - Must be active
-          const eligible = response.data.clients.filter(
-            (c) =>
-              c.id !== client?.id &&
-              c.payment_role !== 'member' &&
-              c.status === 'active'
-          );
-          setPayerClients(eligible);
-        }
-      };
-
-      loadPayerClients();
-    }, [client?.id]);
 
     // Check for duplicate tax_id in add mode (debounced)
     useEffect(() => {
@@ -794,22 +772,12 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
                 {formData.payment_role === 'member' && !formData.group_id && (
                   <div className="pr-6">
-                    <Label className="text-right block mb-2">בחר לקוח משלם *</Label>
-                    <Select
-                      value={formData.payer_client_id || ''}
-                      onValueChange={(value) => handleFormChange('payer_client_id', value || null)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="בחר לקוח..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {payerClients.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.company_name_hebrew || c.company_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ClientSelector
+                      value={formData.payer_client_id}
+                      onChange={(selectedClient) => handleFormChange('payer_client_id', selectedClient?.id || null)}
+                      label="בחר לקוח משלם *"
+                      placeholder="חיפוש לפי שם או ח.פ..."
+                    />
                     <p className="text-xs text-gray-500 mt-1 rtl:text-right">
                       הלקוח הנבחר ישלם את שכר הטרחה עבור לקוח זה
                     </p>
