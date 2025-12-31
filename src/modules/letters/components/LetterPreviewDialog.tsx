@@ -677,8 +677,7 @@ export function LetterPreviewDialog({
       setVariables(updatedVariables);
 
       // Regenerate preview with letter_id included
-      // Use the correct ID for preview regeneration
-      const calculationId = feeId || groupFeeCalculationId;
+      // calculationId already declared at line ~606
       if (calculationId) {
         const { data: previewData, error: previewError } = await templateService.previewLetterFromFiles(
           templateType,
