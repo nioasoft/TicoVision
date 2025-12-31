@@ -206,12 +206,6 @@ function App() {
                           <ForeignWorkersPage />
                         </ErrorBoundary>
                       } />
-                      {/* Tzlul company approvals - for Tzlul cleaning company only */}
-                      <Route path="/tzlul-approvals" element={
-                        <ErrorBoundary>
-                          <TzlulApprovalsPage />
-                        </ErrorBoundary>
-                      } />
                       {/* Company Onboarding Letters */}
                       <Route path="/company-onboarding" element={
                         <ErrorBoundary>
@@ -235,6 +229,13 @@ function App() {
                         </ErrorBoundary>
                       } />
                     </Route>
+
+                    {/* Tzlul approvals - handles own access control, supports restricted users */}
+                    <Route path="/tzlul-approvals" element={
+                      <ErrorBoundary>
+                        <TzlulApprovalsPage />
+                      </ErrorBoundary>
+                    } />
 
                     {/* Letters routes - accessible based on permissions */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>

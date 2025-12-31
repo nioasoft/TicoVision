@@ -1,8 +1,9 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function ProtectedRoute() {
-  const { user, loading } = useAuth();
+  const { user, loading, isRestrictedUser, restrictedRoute } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -12,5 +13,16 @@ export function ProtectedRoute() {
     );
   }
 
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  // Not authenticated - redirect to login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Restricted user - redirect to allowed route if on wrong path
+  if (isRestrictedUser && restrictedRoute && location.pathname !== restrictedRoute) {
+    return <Navigate to={restrictedRoute} replace />;
+  }
+
+  // Render outlet - MainLayout handles restricted user UI
+  return <Outlet />;
 }

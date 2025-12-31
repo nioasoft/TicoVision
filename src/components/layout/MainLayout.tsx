@@ -131,12 +131,13 @@ const getRoleDisplayName = (role: UserRole | null): string => {
     'accountant': 'רואה חשבון',
     'bookkeeper': 'מנהלת חשבונות',
     'client': 'לקוח',
+    'restricted': 'משתמש מוגבל',
   };
   return role ? roleNames[role] : 'משתמש';
 };
 
 export function MainLayout() {
-  const { user, signOut, role } = useAuth();
+  const { user, signOut, role, isRestrictedUser } = useAuth();
   const { isMenuVisible, isSuperAdmin, loading: permissionsLoading } = usePermissions();
   const navigate = useNavigate();
   const location = useLocation();
@@ -236,6 +237,45 @@ export function MainLayout() {
       return isMenuVisible(item.menuKey);
     });
   }, [isMenuVisible, isSuperAdmin, permissionsLoading]);
+
+  // Restricted user layout - minimal header, no sidebar
+  if (isRestrictedUser) {
+    return (
+      <div className="min-h-screen bg-gray-50" dir="rtl">
+        {/* Simple Header */}
+        <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+          <div className="flex items-center justify-between px-6 py-4">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-primary">TicoVision</span>
+              <span className="text-sm text-muted-foreground">AI</span>
+            </div>
+
+            {/* User Info + Logout */}
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                {user?.user_metadata?.full_name || user?.email}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSignOut}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>התנתק</span>
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="p-6">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">

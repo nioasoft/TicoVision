@@ -1,1 +1,1 @@
-export type UserRole = 'admin' | 'accountant' | 'bookkeeper' | 'client';
+export type UserRole = 'admin' | 'accountant' | 'bookkeeper' | 'client' | 'restricted';

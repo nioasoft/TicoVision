@@ -125,6 +125,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   client: [
     'clients', 'clients:list',
   ],
+  restricted: [], // Restricted users have NO default permissions - controlled by user_tenant_access.permissions JSON
 };
 
 // ============================================

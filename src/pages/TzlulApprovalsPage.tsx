@@ -31,6 +31,7 @@ import { userClientAssignmentService } from '@/services/user-client-assignment.s
 import { useAuth } from '@/contexts/AuthContext';
 import {
   TZLUL_CLIENT_NAME,
+  TZLUL_CLIENT_ID,
   TZLUL_LETTER_TYPES,
   createInitialTzlulFormState,
   validateViolationCorrection,
@@ -49,7 +50,7 @@ const templateService = new TemplateService();
 
 export function TzlulApprovalsPage() {
   // Auth and access control
-  const { user, role } = useAuth();
+  const { user, role, isRestrictedUser } = useAuth();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [tzlulClientId, setTzlulClientId] = useState<string | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
@@ -83,6 +84,22 @@ export function TzlulApprovalsPage() {
       setIsCheckingAccess(true);
 
       try {
+        // Restricted users have access enforced by ProtectedRoute - no need for client lookup
+        if (isRestrictedUser) {
+          // Try to find client ID, but use fallback if RLS blocks access
+          const { data: clients } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('company_name', TZLUL_CLIENT_NAME)
+            .maybeSingle();
+
+          // Use queried ID or fallback to constant
+          setTzlulClientId(clients?.id || TZLUL_CLIENT_ID);
+          setHasAccess(true);
+          setIsCheckingAccess(false);
+          return;
+        }
+
         // 1. Find Tzlul client by name
         const { data: clients, error: clientError } = await supabase
           .from('clients')
@@ -130,7 +147,7 @@ export function TzlulApprovalsPage() {
     };
 
     checkAccess();
-  }, [user, role]);
+  }, [user, role, isRestrictedUser]);
 
   // Validate current document data
   const isCurrentDocumentValid = (): boolean => {

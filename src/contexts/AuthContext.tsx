@@ -23,6 +23,8 @@ interface AuthContextType {
   role: UserRole | null;
   tenantId: string | null;
   loading: boolean;
+  isRestrictedUser: boolean;
+  restrictedRoute: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<void>;
   signOut: () => Promise<void>;
@@ -37,10 +39,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRestrictedUser, setIsRestrictedUser] = useState(false);
+  const [restrictedRoute, setRestrictedRoute] = useState<string | null>(null);
+
+  // Helper to check and set restricted user status
+  const checkRestrictedUser = async (userId: string) => {
+    try {
+      const { data: tenantAccess } = await supabase
+        .from('user_tenant_access')
+        .select('role, permissions')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .eq('is_primary', true)
+        .single();
+
+      if (tenantAccess?.role === 'restricted' && tenantAccess?.permissions) {
+        const permissions = tenantAccess.permissions as { restricted_route?: string };
+        setIsRestrictedUser(true);
+        setRestrictedRoute(permissions.restricted_route || null);
+      } else {
+        setIsRestrictedUser(false);
+        setRestrictedRoute(null);
+      }
+    } catch (error) {
+      logger.error('Error checking restricted user:', error);
+      setIsRestrictedUser(false);
+      setRestrictedRoute(null);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       // Handle any session/refresh token errors
       if (error) {
         logger.error('Session error:', error.message);
@@ -57,6 +87,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setRole(session?.user?.user_metadata?.role ?? null);
         setTenantId(session?.user?.user_metadata?.tenant_id ?? null);
+        // Check if user is restricted - await before setting loading to false
+        if (session?.user?.id) {
+          await checkRestrictedUser(session.user.id);
+        }
       }
       setLoading(false);
     }).catch((error) => {
@@ -79,12 +113,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Handle signed out event
       if (event === 'SIGNED_OUT') {
         clearSupabaseSession();
+        setIsRestrictedUser(false);
+        setRestrictedRoute(null);
       }
 
       setSession(session);
       setUser(session?.user ?? null);
       setRole(session?.user?.user_metadata?.role ?? null);
       setTenantId(session?.user?.user_metadata?.tenant_id ?? null);
+
+      // Check restricted user status on auth changes
+      if (session?.user?.id) {
+        checkRestrictedUser(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -127,6 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role,
     tenantId,
     loading,
+    isRestrictedUser,
+    restrictedRoute,
     signIn,
     signUp,
     signOut,

@@ -20,6 +20,9 @@ export const TZLUL_CLIENT_NAME = 'צלול ניקיון ואחזקה בע"מ';
 /** Tzlul company tax ID */
 export const TZLUL_TAX_ID = '514327642';
 
+/** Tzlul client ID - fallback for restricted users who can't query clients table */
+export const TZLUL_CLIENT_ID = '14e45b8b-0b77-4a79-a782-300a9ccd7b91';
+
 // ============================================================================
 // SHARED DATA (common to all 5 documents)
 // ============================================================================
