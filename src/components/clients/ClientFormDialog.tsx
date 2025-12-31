@@ -448,23 +448,12 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       }
     }, [client?.id]);
 
-    // Handle PDF data extraction
-    const handlePdfDataExtracted = useCallback((data: ExtractedCompanyData, file: File) => {
-      console.log('PDF extracted data:', data);
-      console.log('City from PDF:', data.address_city);
-
-      setFormData(prev => ({
-        ...prev,
-        company_name: data.company_name || prev.company_name,
-        // commercial_name stays empty - user will fill manually
-        tax_id: data.tax_id ? formatIsraeliTaxId(data.tax_id) : prev.tax_id,
-        address: {
-          street: data.address_street || prev.address?.street || '',
-          city: data.address_city || prev.address?.city || '',
-          postal_code: data.postal_code || prev.address?.postal_code || '',
-        },
-      }));
-      setImportedPdfFile(file); // Store file for later upload
+    // Handle PDF file upload (data extraction is disabled)
+    const handlePdfDataExtracted = useCallback((data: ExtractedCompanyData | null, file: File) => {
+      // Data extraction via Claude API is disabled
+      // Just save the file reference for later upload to file manager
+      console.log('PDF file selected for upload:', file.name);
+      setImportedPdfFile(file);
       setHasUnsavedChanges(true);
     }, []);
 
@@ -505,9 +494,16 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     onDataExtracted={handlePdfDataExtracted}
                     disabled={isSubmitting}
                   />
-                  <p className="text-xs text-gray-500 rtl:text-right flex-1">
-                    העלה PDF מרשם החברות למילוי אוטומטי של פרטי החברה
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 rtl:text-right">
+                      העלה PDF מרשם החברות - יישמר בתיקיית הלקוח לאחר יצירת הלקוח
+                    </p>
+                    {importedPdfFile && (
+                      <p className="text-xs text-green-600 font-medium rtl:text-right mt-1">
+                        ✓ קובץ נבחר: {importedPdfFile.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 

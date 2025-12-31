@@ -1,17 +1,17 @@
 /**
  * PDF Import Button Component
- * Allows importing company data from Israeli Companies Registry PDF documents
+ * Allows importing company registry PDF documents to be saved in file manager
+ * Note: Data extraction via Claude API is disabled - only file upload
  */
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileUp, Loader2 } from 'lucide-react';
+import { FileUp } from 'lucide-react';
 import { toast } from 'sonner';
-import { companyExtractionService } from '@/services/company-extraction.service';
 import type { ExtractedCompanyData } from '@/services/company-extraction.service';
 
 interface PdfImportButtonProps {
-  onDataExtracted: (data: ExtractedCompanyData, file: File) => void;
+  onDataExtracted: (data: ExtractedCompanyData | null, file: File) => void;
   disabled?: boolean;
 }
 
@@ -19,7 +19,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function PdfImportButton({ onDataExtracted, disabled = false }: PdfImportButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
 
   const handleClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -44,30 +43,9 @@ export function PdfImportButton({ onDataExtracted, disabled = false }: PdfImport
       return;
     }
 
-    setIsExtracting(true);
-
-    try {
-      const { data, error } = await companyExtractionService.extractFromPdf(file);
-
-      if (error) {
-        toast.error(error);
-        return;
-      }
-
-      if (!data || (!data.company_name && !data.tax_id)) {
-        toast.warning('לא נמצאו נתונים במסמך');
-        return;
-      }
-
-      onDataExtracted(data, file);
-      toast.success('נתוני החברה יובאו בהצלחה');
-
-    } catch (error) {
-      console.error('PDF extraction error:', error);
-      toast.error('שגיאה בחילוץ נתונים. נסה שוב');
-    } finally {
-      setIsExtracting(false);
-    }
+    // Pass file without extraction - file will be saved to file manager
+    onDataExtracted(null, file);
+    toast.success('קובץ PDF נטען - יישמר עם יצירת הלקוח');
   }, [onDataExtracted]);
 
   return (
@@ -83,20 +61,11 @@ export function PdfImportButton({ onDataExtracted, disabled = false }: PdfImport
         type="button"
         variant="outline"
         onClick={handleClick}
-        disabled={disabled || isExtracting}
+        disabled={disabled}
         className="gap-2"
       >
-        {isExtracting ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            מחלץ נתונים...
-          </>
-        ) : (
-          <>
-            <FileUp className="h-4 w-4" />
-            ייבוא מ-PDF
-          </>
-        )}
+        <FileUp className="h-4 w-4" />
+        העלאת PDF רשם חברות
       </Button>
     </>
   );
