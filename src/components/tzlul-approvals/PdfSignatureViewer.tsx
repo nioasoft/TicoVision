@@ -5,7 +5,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Move, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { SignaturePosition } from '@/hooks/usePdfSignature';
@@ -59,15 +59,19 @@ export function PdfSignatureViewer({
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    // Initialize signature position at center of first page
+    // Don't auto-place signature - wait for user to click "Add Signature" button
+  }, []);
+
+  // Add signature to current page
+  const handleAddSignatureToCurrentPage = useCallback(() => {
     onPositionChange({
       x: 50 - DEFAULT_SIGNATURE_WIDTH / 2,
       y: 80,
-      page: 0,
+      page: currentPage - 1, // 0-indexed
       width: DEFAULT_SIGNATURE_WIDTH,
       height: DEFAULT_SIGNATURE_HEIGHT,
     });
-  }, [onPositionChange]);
+  }, [currentPage, onPositionChange]);
 
   const goToPrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -144,7 +148,7 @@ export function PdfSignatureViewer({
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         {/* Page navigation */}
         <div className="flex items-center gap-2">
           <Button
@@ -167,6 +171,17 @@ export function PdfSignatureViewer({
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Add Signature Button */}
+        <Button
+          variant={isSignatureOnCurrentPage ? 'secondary' : 'default'}
+          size="sm"
+          onClick={handleAddSignatureToCurrentPage}
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          {isSignatureOnCurrentPage ? 'החתימה בעמוד זה' : 'הוסף חתימה לעמוד זה'}
+        </Button>
 
         {/* Zoom controls */}
         <div className="flex items-center gap-2">
@@ -195,7 +210,7 @@ export function PdfSignatureViewer({
       {/* PDF Viewer with signature overlay */}
       <div
         ref={containerRef}
-        className="relative overflow-auto bg-muted/30 rounded-lg border max-h-[600px]"
+        className="relative overflow-auto bg-muted/30 rounded-lg border max-h-[85vh]"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
       >
@@ -248,7 +263,7 @@ export function PdfSignatureViewer({
                 />
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1">
                   <Move className="h-3 w-3" />
-                  <span>Drag to move</span>
+                  <span>גרור להזזה</span>
                 </div>
               </div>
             )}
@@ -258,9 +273,11 @@ export function PdfSignatureViewer({
 
       {/* Info text */}
       <p className="text-sm text-muted-foreground text-center">
-        {isSignatureOnCurrentPage
-          ? 'Drag the signature to position it on the document'
-          : `Signature is on page ${(signaturePosition?.page ?? 0) + 1}. Navigate there to see/move it.`}
+        {!signaturePosition
+          ? 'נווט לעמוד הרצוי ולחץ על "הוסף חתימה לעמוד זה"'
+          : isSignatureOnCurrentPage
+            ? 'גרור את החתימה למקם אותה על המסמך'
+            : `החתימה נמצאת בעמוד ${(signaturePosition?.page ?? 0) + 1}. נווט לשם לצפייה או להזזה.`}
       </p>
     </div>
   );

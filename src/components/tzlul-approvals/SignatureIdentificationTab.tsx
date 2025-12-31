@@ -219,8 +219,9 @@ export function SignatureIdentificationTab() {
           <h3 className="font-medium text-blue-900 mb-3">הוראות שימוש:</h3>
           <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
             <li>העלה קובץ PDF שדורש חתימה לזיהוי</li>
-            <li>גרור את החתימה למיקום הרצוי על המסמך</li>
-            <li>השתמש בניווט לעבור בין עמודים במידת הצורך</li>
+            <li>נווט לעמוד שבו רוצים להוסיף את החתימה</li>
+            <li>לחץ על "הוסף חתימה לעמוד זה"</li>
+            <li>גרור את החתימה למיקום הרצוי על העמוד</li>
             <li>לחץ על "שמור והורד" לקבלת המסמך החתום</li>
           </ol>
         </CardContent>
