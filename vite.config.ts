@@ -9,6 +9,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+    // Dedupe React to prevent multiple instances (fixes react-pdf issue)
+    dedupe: ['react', 'react-dom'],
   },
   build: {
     // Split vendor chunks for better caching

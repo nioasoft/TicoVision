@@ -15,7 +15,8 @@ import {
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { FileText, Eye, Download, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Eye, Download, Loader2, AlertTriangle, ShieldAlert, PenTool } from 'lucide-react';
 import { TzlulLetterTypeSelector } from '@/components/tzlul-approvals/TzlulLetterTypeSelector';
 import { ViolationCorrectionForm } from '@/components/tzlul-approvals/forms/ViolationCorrectionForm';
 import { SummerBonusForm } from '@/components/tzlul-approvals/forms/SummerBonusForm';
@@ -23,6 +24,7 @@ import { ExcellenceBonusForm } from '@/components/tzlul-approvals/forms/Excellen
 import { EmployeePaymentsForm } from '@/components/tzlul-approvals/forms/EmployeePaymentsForm';
 import { TransferredAmountsForm } from '@/components/tzlul-approvals/forms/TransferredAmountsForm';
 import { GoingConcernForm } from '@/components/tzlul-approvals/forms/GoingConcernForm';
+import { SignatureIdentificationTab } from '@/components/tzlul-approvals/SignatureIdentificationTab';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
@@ -511,12 +513,27 @@ export function TzlulApprovalsPage() {
           <h1 className="text-3xl font-bold text-right">אישורים חברת צלול</h1>
         </div>
         <p className="text-gray-600 text-right">
-          מערכת ליצירת 6 סוגי אישורים עבור חברת צלול ניקיון ואחזקה בע"מ
+          מערכת ליצירת אישורים עבור חברת צלול ניקיון ואחזקה בע"מ
         </p>
       </div>
 
-      {/* Shared Data - Document Date */}
-      <Card className="mb-6">
+      {/* Tabs */}
+      <Tabs defaultValue="approvals" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="approvals" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            אישורים
+          </TabsTrigger>
+          <TabsTrigger value="signature" className="flex items-center gap-2">
+            <PenTool className="h-4 w-4" />
+            חתימה לשם זיהוי
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Approvals Tab */}
+        <TabsContent value="approvals">
+          {/* Shared Data - Document Date */}
+          <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-right">נתונים משותפים</CardTitle>
           <CardDescription className="text-right">
@@ -634,19 +651,26 @@ export function TzlulApprovalsPage() {
         defaultSubject={generatedSubject || TZLUL_LETTER_TYPES[formState.selectedLetterType].label}
       />
 
-      {/* Instructions */}
-      {!formState.sharedData.document_date && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h3 className="font-medium text-blue-900 mb-2 text-right">הוראות:</h3>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 text-right">
-            <li>בחר תאריך למסמך</li>
-            <li>בחר את סוג האישור מהרשימה</li>
-            <li>מלא את השדות הנדרשים בטופס</li>
-            <li>לחץ על "תצוגה מקדימה" לצפייה במסמך</li>
-            <li>לחץ על "הפק מסמך PDF" ליצירת המסמך הסופי</li>
-          </ol>
-        </div>
-      )}
+          {/* Instructions */}
+          {!formState.sharedData.document_date && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <h3 className="font-medium text-blue-900 mb-2 text-right">הוראות:</h3>
+              <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 text-right">
+                <li>בחר תאריך למסמך</li>
+                <li>בחר את סוג האישור מהרשימה</li>
+                <li>מלא את השדות הנדרשים בטופס</li>
+                <li>לחץ על "תצוגה מקדימה" לצפייה במסמך</li>
+                <li>לחץ על "הפק מסמך PDF" ליצירת המסמך הסופי</li>
+              </ol>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Signature Tab */}
+        <TabsContent value="signature">
+          <SignatureIdentificationTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
