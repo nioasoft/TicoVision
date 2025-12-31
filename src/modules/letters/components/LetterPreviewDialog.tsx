@@ -638,11 +638,10 @@ export function LetterPreviewDialog({
         .from('generated_letters')
         .insert({
           tenant_id: tenantId,
-          client_id: clientId || null, // Can be null for group letters if schema allows, or use first client? Ideally schema allows null client_id if group_id exists
-          // Note: If schema requires client_id, we might need to handle this. Assuming it's nullable or we use groupId.
-          // Based on schema, client_id is nullable. We should probably add group_calculation_id column if it exists.
+          client_id: clientId || null,
+          group_id: groupId || null, // Link to client_groups for tracking
           fee_calculation_id: feeId || null,
-          group_calculation_id: groupFeeCalculationId || null, // Save group fee ID
+          group_calculation_id: groupFeeCalculationId || null,
           template_id: null,
           template_type: templateType,
           subject: `מכתב שכר טרחה ${variables.tax_year}`,
@@ -971,6 +970,7 @@ export function LetterPreviewDialog({
           .insert({
             tenant_id: tenantId,
             client_id: clientId || null,
+            group_id: groupId || null,
             fee_calculation_id: feeId || null,
             group_calculation_id: groupFeeCalculationId || null,
             template_id: null,

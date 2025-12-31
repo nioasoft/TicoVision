@@ -14,7 +14,8 @@ export type PaymentStatus =
   | 'not_sent'        // Has calculation but no letter sent
   | 'pending'         // Letter sent, waiting for payment
   | 'partial_paid'    // Partially paid
-  | 'paid';           // Fully paid
+  | 'paid'            // Fully paid
+  | 'paid_by_other';  // Paid by another client (payer_client_id)
 
 /**
  * Single row in the fee tracking table
@@ -53,6 +54,10 @@ export interface FeeTrackingRow {
   payer_client_id?: string | null;
   payer_client_name?: string | null;
   payment_role?: 'independent' | 'member' | 'primary_payer';
+
+  // Group info (for clients belonging to a group)
+  group_id?: string | null;
+  group_name?: string | null;
 }
 
 /**

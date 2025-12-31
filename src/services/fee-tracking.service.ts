@@ -71,6 +71,9 @@ class FeeTrackingService extends BaseService {
         payer_client_id: row.payer_client_id || null,
         payer_client_name: row.payer_client_name || null,
         payment_role: row.payment_role || 'independent',
+        // Group info
+        group_id: row.group_id || null,
+        group_name: row.group_name || null,
       }));
 
       // Calculate KPIs from client data

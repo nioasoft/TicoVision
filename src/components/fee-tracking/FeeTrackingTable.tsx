@@ -35,6 +35,7 @@ import {
   ChevronDown,
   ChevronLeft,
   UserCheck,
+  Users,
 } from 'lucide-react';
 import type { FeeTrackingRow, FeeTrackingEnhancedRow, PaymentStatus } from '@/types/fee-tracking.types';
 import { formatILS } from '@/lib/formatters';
@@ -101,6 +102,13 @@ const StatusBadge: React.FC<{ status: PaymentStatus }> = ({ status }) => {
         <Badge variant="secondary" className="gap-0.5 bg-green-100 text-green-800 text-[10px] py-0 px-1.5">
           <CheckCircle2 className="h-2.5 w-2.5" />
           שולם
+        </Badge>
+      );
+    case 'paid_by_other':
+      return (
+        <Badge variant="secondary" className="gap-0.5 bg-purple-100 text-purple-800 text-[10px] py-0 px-1.5">
+          <UserCheck className="h-2.5 w-2.5" />
+          משולם ע"י אחר
         </Badge>
       );
     default:
@@ -243,6 +251,86 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
     return enhancedData.find((row) => row.fee_calculation_id === calculationId) || null;
   };
 
+  // State for expanded groups
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
+
+  // Toggle group expansion
+  const toggleGroupExpansion = (groupId: string) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
+  // Group clients by group_id
+  type GroupedData = {
+    type: 'group';
+    groupId: string;
+    groupName: string;
+    members: FeeTrackingRow[];
+    aggregateStatus: PaymentStatus;
+  } | {
+    type: 'client';
+    client: FeeTrackingRow;
+  };
+
+  const groupedClients: GroupedData[] = React.useMemo(() => {
+    const groups = new Map<string, FeeTrackingRow[]>();
+    const standalone: FeeTrackingRow[] = [];
+
+    // Separate grouped and standalone clients
+    clients.forEach((client) => {
+      if (client.group_id) {
+        const existing = groups.get(client.group_id) || [];
+        existing.push(client);
+        groups.set(client.group_id, existing);
+      } else {
+        standalone.push(client);
+      }
+    });
+
+    const result: GroupedData[] = [];
+
+    // Add groups
+    groups.forEach((members, groupId) => {
+      // Determine aggregate status for the group
+      const statuses = members.map((m) => m.payment_status);
+      let aggregateStatus: PaymentStatus = 'pending';
+      if (statuses.every((s) => s === 'paid' || s === 'paid_by_other')) aggregateStatus = 'paid';
+      else if (statuses.some((s) => s === 'partial_paid')) aggregateStatus = 'partial_paid';
+      else if (statuses.some((s) => s === 'pending')) aggregateStatus = 'pending';
+      else if (statuses.every((s) => s === 'not_sent')) aggregateStatus = 'not_sent';
+      else if (statuses.every((s) => s === 'not_calculated')) aggregateStatus = 'not_calculated';
+
+      result.push({
+        type: 'group',
+        groupId,
+        groupName: members[0]?.group_name || 'קבוצה',
+        members,
+        aggregateStatus,
+      });
+    });
+
+    // Add standalone clients
+    standalone.forEach((client) => {
+      result.push({ type: 'client', client });
+    });
+
+    // Sort by name
+    result.sort((a, b) => {
+      const nameA = a.type === 'group' ? a.groupName : (a.client.client_name_hebrew || a.client.client_name);
+      const nameB = b.type === 'group' ? b.groupName : (b.client.client_name_hebrew || b.client.client_name);
+      return nameA.localeCompare(nameB, 'he');
+    });
+
+    return result;
+  }, [clients]);
+
   // Check if all selectable clients are selected
   const selectableClients = clients.filter((c) => c.payment_status !== 'not_calculated');
   const isAllSelected =
@@ -314,10 +402,170 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clients.map((client, index) => {
+          {groupedClients.map((item, index) => {
+            const isEven = index % 2 === 0;
+
+            // Render GROUP row
+            if (item.type === 'group') {
+              const isGroupExpanded = expandedGroups.has(item.groupId);
+              return (
+                <React.Fragment key={`group-${item.groupId}`}>
+                  {/* Group Header Row */}
+                  <TableRow
+                    className={cn(
+                      'cursor-pointer transition-colors border-b border-slate-100',
+                      'bg-indigo-50/50 hover:bg-indigo-100/70',
+                      isGroupExpanded && 'bg-indigo-100/50'
+                    )}
+                    onClick={() => toggleGroupExpansion(item.groupId)}
+                  >
+                    {/* Checkbox - disabled for groups */}
+                    <TableCell className="py-2.5 px-3 border-l border-slate-100">
+                      <Checkbox disabled />
+                    </TableCell>
+
+                    {/* Expand Icon */}
+                    <TableCell className="py-2.5 px-3 border-l border-slate-100">
+                      {isGroupExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-indigo-600" />
+                      ) : (
+                        <ChevronLeft className="h-4 w-4 text-indigo-400" />
+                      )}
+                    </TableCell>
+
+                    {/* Group Name */}
+                    <TableCell className="font-semibold py-2.5 px-3 text-sm border-l border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-indigo-600" />
+                        <span className="rtl:text-right text-indigo-800">{item.groupName}</span>
+                        <Badge variant="outline" className="text-xs bg-indigo-100 text-indigo-700 border-indigo-200">
+                          {item.members.length} חברות
+                        </Badge>
+                      </div>
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell className="py-2.5 px-3 border-l border-slate-100">
+                      <StatusBadge status={item.aggregateStatus} />
+                    </TableCell>
+
+                    {/* Empty cells for amounts - groups don't show individual amounts */}
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">-</TableCell>
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">-</TableCell>
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">-</TableCell>
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">-</TableCell>
+
+                    {/* Payment Method */}
+                    <TableCell className="py-2.5 px-3 border-l border-slate-100">-</TableCell>
+
+                    {/* Actions - empty for groups */}
+                    <TableCell className="py-2.5 px-3">-</TableCell>
+                  </TableRow>
+
+                  {/* Group Members (when expanded) */}
+                  {isGroupExpanded && item.members.map((member, memberIndex) => {
+                    const enhancedRow = getEnhancedRow(member.calculation_id);
+                    const isClientExpanded = member.calculation_id && expandedRows.has(member.calculation_id);
+
+                    return (
+                      <React.Fragment key={member.client_id}>
+                        <TableRow
+                          className={cn(
+                            'cursor-pointer transition-colors border-b border-slate-100',
+                            'bg-slate-50/80 hover:bg-slate-100/70',
+                            isClientExpanded && 'bg-slate-100/50'
+                          )}
+                          onClick={() => member.calculation_id && onToggleRow(member.calculation_id)}
+                        >
+                          {/* Checkbox */}
+                          <TableCell className="py-2 px-3 border-l border-slate-100" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedClients.has(member.client_id)}
+                              onCheckedChange={(checked) => onSelectClient(member.client_id, checked)}
+                              disabled={member.payment_status === 'not_calculated'}
+                            />
+                          </TableCell>
+
+                          {/* Expand Icon */}
+                          <TableCell className="py-2 px-3 border-l border-slate-100">
+                            {member.calculation_id ? (
+                              isClientExpanded ? (
+                                <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+                              ) : (
+                                <ChevronLeft className="h-3.5 w-3.5 text-slate-400" />
+                              )
+                            ) : null}
+                          </TableCell>
+
+                          {/* Client Name - indented */}
+                          <TableCell className="font-medium py-2 px-3 text-sm border-l border-slate-100">
+                            <div className="flex items-center gap-2 pr-4">
+                              <span className="text-slate-400">└</span>
+                              <span className="rtl:text-right">{member.client_name_hebrew || member.client_name}</span>
+                            </div>
+                          </TableCell>
+
+                          {/* Status */}
+                          <TableCell className="py-2 px-3 border-l border-slate-100">
+                            <StatusBadge status={member.payment_status} />
+                          </TableCell>
+
+                          {/* Amounts */}
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">
+                            {enhancedRow?.actual_before_vat ? formatILS(enhancedRow.actual_before_vat) : enhancedRow?.original_before_vat ? formatILS(enhancedRow.original_before_vat) : '-'}
+                          </TableCell>
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">
+                            {enhancedRow?.actual_with_vat ? formatILS(enhancedRow.actual_with_vat) : enhancedRow?.original_with_vat ? formatILS(enhancedRow.original_with_vat) : '-'}
+                          </TableCell>
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
+                            {enhancedRow?.bookkeeping_before_vat ? formatILS(enhancedRow.bookkeeping_before_vat) : '-'}
+                          </TableCell>
+                          <TableCell className="py-2 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
+                            {enhancedRow?.bookkeeping_with_vat ? formatILS(enhancedRow.bookkeeping_with_vat) : '-'}
+                          </TableCell>
+
+                          {/* Payment Method */}
+                          <TableCell className="py-2 px-3 border-l border-slate-100">
+                            <PaymentMethodBadge method={enhancedRow?.actual_payment_method || member.payment_method_selected || null} />
+                          </TableCell>
+
+                          {/* Actions */}
+                          <TableCell className="py-2 px-3" onClick={(e) => e.stopPropagation()}>
+                            <ActionButtons
+                              client={member}
+                              onCalculate={onCalculate}
+                              onPreviewLetter={onPreviewLetter}
+                              onSendLetter={onSendLetter}
+                              onEditCalculation={onEditCalculation}
+                              onSendReminder={onSendReminder}
+                              onViewLetter={onViewLetter}
+                              onMarkAsPaid={onMarkAsPaid}
+                            />
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expanded Row for member */}
+                        {isClientExpanded && member.calculation_id && (
+                          <TableRow>
+                            <TableCell colSpan={10} className="p-0 bg-slate-50">
+                              <FeeTrackingExpandedRow
+                                feeCalculationId={member.calculation_id}
+                                clientName={member.client_name_hebrew || member.client_name}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </React.Fragment>
+              );
+            }
+
+            // Render standalone CLIENT row
+            const client = item.client;
             const enhancedRow = getEnhancedRow(client.calculation_id);
             const isExpanded = client.calculation_id && expandedRows.has(client.calculation_id);
-            const isEven = index % 2 === 0;
 
             return (
               <React.Fragment key={client.client_id}>
@@ -331,10 +579,7 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                   onClick={() => client.calculation_id && onToggleRow(client.calculation_id)}
                 >
                   {/* Checkbox */}
-                  <TableCell
-                    className="py-2.5 px-3 border-l border-slate-100"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <TableCell className="py-2.5 px-3 border-l border-slate-100" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedClients.has(client.client_id)}
                       onCheckedChange={(checked) => onSelectClient(client.client_id, checked)}
@@ -361,10 +606,7 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge
-                                variant="outline"
-                                className="text-xs px-1.5 py-0.5 gap-1 bg-purple-50 text-purple-700 border-purple-200 cursor-help"
-                              >
+                              <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1 bg-purple-50 text-purple-700 border-purple-200 cursor-help">
                                 <UserCheck className="h-3 w-3" />
                                 לא משלם
                               </Badge>
@@ -385,52 +627,31 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
 
                   {/* Audit Fee - Before VAT */}
                   <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">
-                    {enhancedRow?.actual_before_vat
-                      ? formatILS(enhancedRow.actual_before_vat)
-                      : enhancedRow?.original_before_vat
-                      ? formatILS(enhancedRow.original_before_vat)
-                      : '-'}
+                    {enhancedRow?.actual_before_vat ? formatILS(enhancedRow.actual_before_vat) : enhancedRow?.original_before_vat ? formatILS(enhancedRow.original_before_vat) : '-'}
                   </TableCell>
 
                   {/* Audit Fee - With VAT */}
                   <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">
-                    {enhancedRow?.actual_with_vat
-                      ? formatILS(enhancedRow.actual_with_vat)
-                      : enhancedRow?.original_with_vat
-                      ? formatILS(enhancedRow.original_with_vat)
-                      : '-'}
+                    {enhancedRow?.actual_with_vat ? formatILS(enhancedRow.actual_with_vat) : enhancedRow?.original_with_vat ? formatILS(enhancedRow.original_with_vat) : '-'}
                   </TableCell>
 
                   {/* Bookkeeping - Before VAT */}
                   <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
-                    {enhancedRow?.bookkeeping_before_vat
-                      ? formatILS(enhancedRow.bookkeeping_before_vat)
-                      : '-'}
+                    {enhancedRow?.bookkeeping_before_vat ? formatILS(enhancedRow.bookkeeping_before_vat) : '-'}
                   </TableCell>
 
                   {/* Bookkeeping - With VAT */}
                   <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
-                    {enhancedRow?.bookkeeping_with_vat
-                      ? formatILS(enhancedRow.bookkeeping_with_vat)
-                      : '-'}
+                    {enhancedRow?.bookkeeping_with_vat ? formatILS(enhancedRow.bookkeeping_with_vat) : '-'}
                   </TableCell>
 
                   {/* Payment Method */}
                   <TableCell className="py-2.5 px-3 border-l border-slate-100">
-                    <PaymentMethodBadge
-                      method={
-                        enhancedRow?.actual_payment_method ||
-                        client.payment_method_selected ||
-                        null
-                      }
-                    />
+                    <PaymentMethodBadge method={enhancedRow?.actual_payment_method || client.payment_method_selected || null} />
                   </TableCell>
 
                   {/* Actions */}
-                  <TableCell
-                    className="py-2.5 px-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <TableCell className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
                     <ActionButtons
                       client={client}
                       onCalculate={onCalculate}
