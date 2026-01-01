@@ -2007,12 +2007,13 @@ export class TemplateService extends BaseService {
   ): Promise<Record<string, unknown>> {
     const processed: Record<string, unknown> = { ...variables };
 
-    // Add auto-generated date if not provided
+    // letter_date = TODAY's date (for header)
+    processed.letter_date = this.formatIsraeliDate(new Date());
+
+    // document_date = User's date input (for body)
     if (!processed.document_date) {
-      // Auto-generate today's date if not provided
       processed.document_date = this.formatIsraeliDate(new Date());
     } else if (typeof processed.document_date === 'string') {
-      // Format user-provided date (from HTML date input: YYYY-MM-DD)
       processed.document_date = this.formatIsraeliDate(new Date(processed.document_date));
     }
 
