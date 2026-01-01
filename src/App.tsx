@@ -228,6 +228,12 @@ function App() {
                           <CapitalDeclarationDetailPage />
                         </ErrorBoundary>
                       } />
+                      {/* Auto Letters - accessible to admin and accountant */}
+                      <Route path="/auto-letters" element={
+                        <ErrorBoundary>
+                          <AutoLettersPage />
+                        </ErrorBoundary>
+                      } />
                     </Route>
 
                     {/* Tzlul approvals - handles own access control, supports restricted users */}
@@ -338,11 +344,6 @@ function App() {
                       <Route path="/tax-advances-2026" element={
                         <ErrorBoundary>
                           <UnderConstructionPage />
-                        </ErrorBoundary>
-                      } />
-                      <Route path="/auto-letters" element={
-                        <ErrorBoundary>
-                          <AutoLettersPage />
                         </ErrorBoundary>
                       } />
                       <Route path="/follow-ups" element={

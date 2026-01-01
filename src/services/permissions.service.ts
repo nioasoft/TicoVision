@@ -111,6 +111,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   accountant: [
     // Documents System
     'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals',
+    'documents:auto-letters',
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
