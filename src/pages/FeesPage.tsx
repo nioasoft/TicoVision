@@ -126,9 +126,19 @@ export function FeesPage() {
   const [previousYearDataSaved, setPreviousYearDataSaved] = useState(false);
   const [savingPreviousData, setSavingPreviousData] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
+  // Get saved tax year from localStorage, fallback to next year
+  const getDefaultTaxYear = () => {
+    const saved = localStorage.getItem('fee_calculator_tax_year');
+    if (saved) {
+      const year = parseInt(saved, 10);
+      if (!isNaN(year) && year >= 2020 && year <= 2100) return year;
+    }
+    return new Date().getFullYear() + 1;
+  };
+
   const [formData, setFormData] = useState<FeeCalculatorForm>({
     client_id: '',
-    year: new Date().getFullYear() + 1, // Default: next year (tax year being calculated)
+    year: getDefaultTaxYear(), // Remember last used tax year
     isNewClient: false,
     previous_year_amount: 0,
     previous_year_discount: 0,
@@ -1627,6 +1637,8 @@ export function FeesPage() {
                       onValueChange={async (value) => {
                         const newYear = parseInt(value);
                         setFormData({ ...formData, year: newYear });
+                        // Save to localStorage for next time
+                        localStorage.setItem('fee_calculator_tax_year', value);
 
                         // Reload previous year data if client is selected
                         if (formData.client_id) {
