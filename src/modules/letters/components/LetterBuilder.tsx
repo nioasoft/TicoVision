@@ -199,7 +199,7 @@ export function LetterBuilder() {
         tax_year: variables.tax_year || nextYear,
         num_checks: variables.num_checks || 8,
         check_amount: Math.round((variables.amount_original || 52000) * 1.18 / (variables.num_checks || 8)).toLocaleString('he-IL'),
-        check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.8.${nextYear}`
+        check_dates_description: `החל מיום 5.1.${variables.tax_year || nextYear} ועד ליום 5.8.${variables.tax_year || nextYear}`
       };
 
       console.log('📧 Sending letter via Edge Function...');
