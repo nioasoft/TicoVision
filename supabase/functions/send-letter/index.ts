@@ -636,10 +636,13 @@ async function buildLetterHtml(templateType: string, variables: Record<string, a
   let header = await fetchTemplate('components/header.html');
   const footer = await fetchTemplate('components/footer.html');
 
-  // Load payment section based on bank_transfer_only flag
+  // Load payment section based on template type and bank_transfer_only flag
   let paymentSection: string;
   if (variables.bank_transfer_only) {
     paymentSection = await fetchTemplate('components/payment-section-bank-only.html');
+  } else if (templateType.includes('bookkeeping') || templateType.includes('retainer')) {
+    // Bookkeeping & retainer templates use monthly fee display
+    paymentSection = await fetchTemplate('components/payment-section-bookkeeping.html');
   } else {
     paymentSection = await fetchTemplate('components/payment-section.html');
   }
