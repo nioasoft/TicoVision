@@ -36,6 +36,7 @@ import {
   ChevronLeft,
   UserCheck,
   Users,
+  Send,
 } from 'lucide-react';
 import type { FeeTrackingRow, FeeTrackingEnhancedRow, PaymentStatus } from '@/types/fee-tracking.types';
 import { formatILS } from '@/lib/formatters';
@@ -62,6 +63,9 @@ interface FeeTrackingTableProps {
   onSendReminder: (letterId: string) => void;
   onViewLetter: (letterId: string) => void;
   onMarkAsPaid: (calculationId: string) => void;
+  // Group actions
+  onPreviewGroupLetter?: (groupId: string, groupCalculationId: string) => void;
+  onSendGroupLetter?: (groupId: string, groupCalculationId: string) => void;
 }
 
 /**
@@ -244,6 +248,8 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
   onSendReminder,
   onViewLetter,
   onMarkAsPaid,
+  onPreviewGroupLetter,
+  onSendGroupLetter,
 }) => {
   // Get enhanced row data by calculation ID
   const getEnhancedRow = (calculationId: string | undefined): FeeTrackingEnhancedRow | null => {
@@ -274,6 +280,14 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
     groupName: string;
     members: FeeTrackingRow[];
     aggregateStatus: PaymentStatus;
+    // Group fee calculation data
+    groupCalculationId?: string | null;
+    groupAuditBeforeVat?: number | null;
+    groupAuditWithVat?: number | null;
+    groupBookkeepingBeforeVat?: number | null;
+    groupBookkeepingWithVat?: number | null;
+    groupCalculationStatus?: string | null;
+    groupLetterSentAt?: Date | null;
   } | {
     type: 'client';
     client: FeeTrackingRow;
@@ -298,21 +312,47 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
 
     // Add groups
     groups.forEach((members, groupId) => {
-      // Determine aggregate status for the group
-      const statuses = members.map((m) => m.payment_status);
-      let aggregateStatus: PaymentStatus = 'pending';
-      if (statuses.every((s) => s === 'paid' || s === 'paid_by_other')) aggregateStatus = 'paid';
-      else if (statuses.some((s) => s === 'partial_paid')) aggregateStatus = 'partial_paid';
-      else if (statuses.some((s) => s === 'pending')) aggregateStatus = 'pending';
-      else if (statuses.every((s) => s === 'not_sent')) aggregateStatus = 'not_sent';
-      else if (statuses.every((s) => s === 'not_calculated')) aggregateStatus = 'not_calculated';
+      // Extract group fee calculation data from first member (all members have same group data)
+      const firstMember = members[0];
+
+      // Determine status for the group
+      // Priority: Use group fee calculation status if exists, otherwise aggregate from members
+      let aggregateStatus: PaymentStatus = 'not_calculated';
+
+      if (firstMember?.group_calculation_id) {
+        // Group has its own fee calculation - use that status
+        const groupStatus = firstMember.group_calculation_status;
+        if (groupStatus === 'paid') {
+          aggregateStatus = 'paid';
+        } else if (groupStatus === 'sent') {
+          aggregateStatus = firstMember.group_letter_sent_at ? 'pending' : 'not_sent';
+        } else if (groupStatus === 'draft') {
+          aggregateStatus = 'not_sent'; // Has calculation but not sent
+        }
+      } else {
+        // No group calculation - aggregate from individual members
+        const statuses = members.map((m) => m.payment_status);
+        if (statuses.every((s) => s === 'paid' || s === 'paid_by_other')) aggregateStatus = 'paid';
+        else if (statuses.some((s) => s === 'partial_paid')) aggregateStatus = 'partial_paid';
+        else if (statuses.some((s) => s === 'pending')) aggregateStatus = 'pending';
+        else if (statuses.every((s) => s === 'not_sent')) aggregateStatus = 'not_sent';
+        else if (statuses.every((s) => s === 'not_calculated')) aggregateStatus = 'not_calculated';
+      }
 
       result.push({
         type: 'group',
         groupId,
-        groupName: members[0]?.group_name || 'קבוצה',
+        groupName: firstMember?.group_name || 'קבוצה',
         members,
         aggregateStatus,
+        // Group fee calculation data
+        groupCalculationId: firstMember?.group_calculation_id,
+        groupAuditBeforeVat: firstMember?.group_audit_before_vat,
+        groupAuditWithVat: firstMember?.group_audit_with_vat,
+        groupBookkeepingBeforeVat: firstMember?.group_bookkeeping_before_vat,
+        groupBookkeepingWithVat: firstMember?.group_bookkeeping_with_vat,
+        groupCalculationStatus: firstMember?.group_calculation_status,
+        groupLetterSentAt: firstMember?.group_letter_sent_at,
       });
     });
 
@@ -449,17 +489,62 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                       <StatusBadge status={item.aggregateStatus} />
                     </TableCell>
 
-                    {/* Empty cells for amounts - groups don't show individual amounts */}
-                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">-</TableCell>
-                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">-</TableCell>
-                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">-</TableCell>
-                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">-</TableCell>
+                    {/* Group fee amounts */}
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">
+                      {item.groupAuditBeforeVat ? formatILS(item.groupAuditBeforeVat) : '-'}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">
+                      {item.groupAuditWithVat ? formatILS(item.groupAuditWithVat) : '-'}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
+                      {item.groupBookkeepingBeforeVat ? formatILS(item.groupBookkeepingBeforeVat) : '-'}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
+                      {item.groupBookkeepingWithVat ? formatILS(item.groupBookkeepingWithVat) : '-'}
+                    </TableCell>
 
                     {/* Payment Method */}
                     <TableCell className="py-2.5 px-3 border-l border-slate-100">-</TableCell>
 
-                    {/* Actions - empty for groups */}
-                    <TableCell className="py-2.5 px-3">-</TableCell>
+                    {/* Group Actions */}
+                    <TableCell className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
+                      {item.groupCalculationId ? (
+                        <div className="flex items-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() => onPreviewGroupLetter?.(item.groupId, item.groupCalculationId!)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>תצוגה מקדימה</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-blue-600"
+                                  onClick={() => onSendGroupLetter?.(item.groupId, item.groupCalculationId!)}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>שלח מכתב קבוצה</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </TableCell>
                   </TableRow>
 
                   {/* Group Members (when expanded) */}

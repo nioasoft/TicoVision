@@ -44,7 +44,24 @@ class FeeTrackingService extends BaseService {
       }
 
       // Transform raw data to typed format
-      const clients: FeeTrackingRow[] = (rawData || []).map((row: any) => ({
+      const clients: FeeTrackingRow[] = (rawData || []).map((row: any) => {
+        // Determine effective payment_status
+        // If client belongs to a group with group_fee_calculation, use group status
+        let effectivePaymentStatus: PaymentStatus = row.payment_status as PaymentStatus;
+
+        if (row.group_calculation_id) {
+          // Client is in a group with group fee calculation - use group status
+          const groupStatus = row.group_calculation_status;
+          if (groupStatus === 'paid') {
+            effectivePaymentStatus = 'paid';
+          } else if (groupStatus === 'sent') {
+            effectivePaymentStatus = row.group_letter_sent_at ? 'pending' : 'not_sent';
+          } else if (groupStatus === 'draft') {
+            effectivePaymentStatus = 'not_sent';
+          }
+        }
+
+        return {
         client_id: row.client_id,
         client_name: row.client_name,
         client_name_hebrew: row.client_name_hebrew,
@@ -59,7 +76,7 @@ class FeeTrackingService extends BaseService {
         has_letter: row.has_letter,
         letter_id: row.letter_id,
         letter_sent_at: row.letter_sent_at ? new Date(row.letter_sent_at) : undefined,
-        payment_status: row.payment_status as PaymentStatus,
+        payment_status: effectivePaymentStatus,
         payment_amount: row.payment_amount,
         payment_date: row.payment_date ? new Date(row.payment_date) : undefined,
         payment_method_selected: row.payment_method_selected || null,
@@ -74,7 +91,17 @@ class FeeTrackingService extends BaseService {
         // Group info
         group_id: row.group_id || null,
         group_name: row.group_name || null,
-      }));
+        // Group fee calculation info
+        group_calculation_id: row.group_calculation_id || null,
+        group_audit_before_vat: row.group_audit_before_vat ? Number(row.group_audit_before_vat) : null,
+        group_audit_with_vat: row.group_audit_with_vat ? Number(row.group_audit_with_vat) : null,
+        group_bookkeeping_before_vat: row.group_bookkeeping_before_vat ? Number(row.group_bookkeeping_before_vat) : null,
+        group_bookkeeping_with_vat: row.group_bookkeeping_with_vat ? Number(row.group_bookkeeping_with_vat) : null,
+        group_calculation_status: row.group_calculation_status || null,
+        group_letter_id: row.group_letter_id || null,
+        group_letter_sent_at: row.group_letter_sent_at ? new Date(row.group_letter_sent_at) : null,
+      };
+      });
 
       // Calculate KPIs from client data
       const kpis = this.calculateKPIs(clients);

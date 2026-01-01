@@ -207,8 +207,8 @@ export function usePdfSignature(): UsePdfSignatureReturn {
             });
           } else if (element.type === 'signature_with_address') {
             // Draw signature image (upper portion)
-            const signatureHeight = elemHeight * 0.65; // 65% for signature
-            const addressHeight = elemHeight * 0.35; // 35% for address
+            const signatureHeight = elemHeight * 0.80; // 80% for signature
+            const addressHeight = elemHeight * 0.20; // 20% for address (closer to signature)
 
             page.drawImage(signatureImage, {
               x,
@@ -217,14 +217,14 @@ export function usePdfSignature(): UsePdfSignatureReturn {
               height: signatureHeight,
             });
 
-            // Draw address text below signature
-            const fontSize = Math.min(addressHeight * 0.6, 10);
+            // Draw address text directly below signature
+            const fontSize = Math.min(elemHeight * 0.12, 9);
             const textWidth = font.widthOfTextAtSize(SIGNATURE_ADDRESS, fontSize);
             const textX = x + (elemWidth - textWidth) / 2; // Center the text
 
             page.drawText(SIGNATURE_ADDRESS, {
               x: textX,
-              y: y + addressHeight * 0.3, // Position in the address area
+              y: y + addressHeight * 0.5, // Closer to signature
               size: fontSize,
               font,
               color: rgb(0, 0, 0),

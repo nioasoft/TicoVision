@@ -42,7 +42,17 @@ export function FeeTrackingPage() {
 
   // State
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() + 1); // Default: next year
+  // Default to current year (2026), with localStorage persistence
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const saved = localStorage.getItem('feeTrackingSelectedYear');
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= 2020 && parsed <= 2030) {
+        return parsed;
+      }
+    }
+    return new Date().getFullYear(); // Default: current year
+  });
   const [kpis, setKpis] = useState<FeeTrackingKPIs | null>(null);
   const [clients, setClients] = useState<FeeTrackingRow[]>([]);
   const [filteredClients, setFilteredClients] = useState<FeeTrackingRow[]>([]);
@@ -73,6 +83,12 @@ export function FeeTrackingPage() {
   const [selectedFeeId, setSelectedFeeId] = useState<string | null>(null);
   const [selectedClientIdForLetter, setSelectedClientIdForLetter] = useState<string | null>(null);
 
+  // Group letter dialog
+  const [selectedGroupForLetter, setSelectedGroupForLetter] = useState<{
+    groupId: string;
+    groupCalculationId: string;
+  } | null>(null);
+
   // Batch send state
   const [batchState, setBatchState] = useState<BatchSendState>({
     isActive: false,
@@ -96,6 +112,8 @@ export function FeeTrackingPage() {
   // Load data on mount and when year changes
   useEffect(() => {
     loadTrackingData();
+    // Save selected year to localStorage
+    localStorage.setItem('feeTrackingSelectedYear', selectedYear.toString());
   }, [selectedYear]);
 
   // Apply filters when data or filters change
@@ -296,6 +314,17 @@ export function FeeTrackingPage() {
       setSelectedClientIdForLetter(client.client_id);
       setLetterDialogOpen(true);
     }
+  };
+
+  // Group letter handlers
+  const handlePreviewGroupLetter = (groupId: string, groupCalculationId: string) => {
+    setSelectedGroupForLetter({ groupId, groupCalculationId });
+    setLetterDialogOpen(true);
+  };
+
+  const handleSendGroupLetter = (groupId: string, groupCalculationId: string) => {
+    setSelectedGroupForLetter({ groupId, groupCalculationId });
+    setLetterDialogOpen(true);
   };
 
   const handleEditCalculation = (calculationId: string, clientId: string) => {
@@ -546,6 +575,8 @@ export function FeeTrackingPage() {
         onSendReminder={handleSendReminder}
         onViewLetter={handleViewLetter}
         onMarkAsPaid={handleMarkAsPaid}
+        onPreviewGroupLetter={handlePreviewGroupLetter}
+        onSendGroupLetter={handleSendGroupLetter}
       />
 
       {/* Pagination */}
@@ -661,11 +692,16 @@ export function FeeTrackingPage() {
           if (!open) {
             setSelectedFeeId(null);
             setSelectedClientIdForLetter(null);
+            setSelectedGroupForLetter(null);
             loadTrackingData();
           }
         }}
+        // Individual fee calculation props
         feeId={batchState.isActive ? currentBatchClient?.calculation_id || null : selectedFeeId}
         clientId={batchState.isActive ? currentBatchClient?.client_id || null : selectedClientIdForLetter}
+        // Group fee calculation props
+        groupId={selectedGroupForLetter?.groupId || null}
+        groupFeeCalculationId={selectedGroupForLetter?.groupCalculationId || null}
         onEmailSent={batchState.isActive ? handleBatchEmailSent : () => {
           toast({ title: 'הצלחה', description: 'המכתב נשלח בהצלחה' });
           loadTrackingData();

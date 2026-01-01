@@ -58,6 +58,16 @@ export interface FeeTrackingRow {
   // Group info (for clients belonging to a group)
   group_id?: string | null;
   group_name?: string | null;
+
+  // Group fee calculation info (from group_fee_calculations)
+  group_calculation_id?: string | null;
+  group_audit_before_vat?: number | null;
+  group_audit_with_vat?: number | null;
+  group_bookkeeping_before_vat?: number | null;
+  group_bookkeeping_with_vat?: number | null;
+  group_calculation_status?: 'draft' | 'sent' | 'paid' | null;
+  group_letter_id?: string | null;
+  group_letter_sent_at?: Date | null;
 }
 
 /**
