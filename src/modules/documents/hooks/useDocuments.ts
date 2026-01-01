@@ -3,7 +3,7 @@ import { letterHistoryService } from '@/services/letter-history.service';
 import type { LetterHistoryFilters } from '@/services/letter-history.service';
 import type { DocFile, FolderItem } from '../types';
 
-export function useDocuments(currentFolder: FolderItem) {
+export function useDocuments(currentFolder: FolderItem, searchQuery: string = '') {
   const [documents, setDocuments] = useState<DocFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -14,29 +14,34 @@ export function useDocuments(currentFolder: FolderItem) {
     try {
       const filters: LetterHistoryFilters = {};
 
-      // Map folder type to API filters
-      switch (currentFolder.type) {
-        case 'recent':
-          // No filter, just sort by date desc
-          break;
-        case 'drafts':
-          filters.status = 'draft';
-          break;
-        case 'saved':
-          filters.status = 'saved';
-          break;
-        case 'sent':
-          filters.status = ['sent_email', 'sent_whatsapp', 'sent_print'];
-          break;
-        case 'client':
-          filters.clientId = currentFolder.id;
-          break;
-        case 'group':
-          filters.groupId = currentFolder.id;
-          break;
-        case 'general':
-          filters.isGeneral = true;
-          break;
+      // When searching, ignore folder filters and search across ALL history
+      if (searchQuery.trim()) {
+        filters.searchQuery = searchQuery.trim();
+      } else {
+        // Map folder type to API filters (only when not searching)
+        switch (currentFolder.type) {
+          case 'recent':
+            // No filter, just sort by date desc
+            break;
+          case 'drafts':
+            filters.status = 'draft';
+            break;
+          case 'saved':
+            filters.status = 'saved';
+            break;
+          case 'sent':
+            filters.status = ['sent_email', 'sent_whatsapp', 'sent_print'];
+            break;
+          case 'client':
+            filters.clientId = currentFolder.id;
+            break;
+          case 'group':
+            filters.groupId = currentFolder.id;
+            break;
+          case 'general':
+            filters.isGeneral = true;
+            break;
+        }
       }
 
       const { data } = await letterHistoryService.getAllLetters(
@@ -87,7 +92,7 @@ export function useDocuments(currentFolder: FolderItem) {
     } finally {
       setIsLoading(false);
     }
-  }, [currentFolder]);
+  }, [currentFolder, searchQuery]);
 
   useEffect(() => {
     fetchDocuments();

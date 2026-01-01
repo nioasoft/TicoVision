@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { DocumentsSidebar } from '../components/DocumentsSidebar';
 import { DocumentsView } from '../components/DocumentsView';
 import { DocumentPreview } from '../components/DocumentPreview';
@@ -22,9 +22,19 @@ export default function DocumentsHubPage() {
   });
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  // Data Hook
-  const { documents, isLoading, refresh } = useDocuments(currentFolder);
+  // Debounce search input (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Data Hook - pass debounced search query
+  const { documents, isLoading, refresh } = useDocuments(currentFolder, debouncedSearch);
 
   // Auto-select first document when documents load
   useEffect(() => {
@@ -92,18 +102,19 @@ export default function DocumentsHubPage() {
       
       {/* 1. Sidebar (Navigation) */}
       <div className="w-64 flex-shrink-0 h-full">
-        <DocumentsSidebar 
-          currentFolder={currentFolder} 
+        <DocumentsSidebar
+          currentFolder={currentFolder}
           onSelectFolder={(folder) => {
             setCurrentFolder(folder);
             setSelectedFileId(null); // Clear selection on folder change
+            setSearchInput(''); // Clear search on folder change
           }}
         />
       </div>
 
       {/* 2. Main Content (Grid/List) */}
       <div className="flex-1 min-w-0 h-full border-r border-l">
-        <DocumentsView 
+        <DocumentsView
           currentFolder={currentFolder}
           documents={documents}
           isLoading={isLoading}
@@ -111,6 +122,8 @@ export default function DocumentsHubPage() {
           onViewModeChange={setViewMode}
           selectedFileId={selectedFileId}
           onSelectFile={handleSelectFile}
+          searchQuery={searchInput}
+          onSearchChange={setSearchInput}
         />
       </div>
 

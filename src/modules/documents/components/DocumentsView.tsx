@@ -5,10 +5,13 @@ import {
   ChevronRight,
   ArrowUpDown,
   Filter,
-  FileText
+  FileText,
+  Search,
+  X
 } from 'lucide-react';
 import type { DocFile, ViewMode, FolderItem } from '../types';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Select,
@@ -30,16 +33,20 @@ interface DocumentsViewProps {
   onViewModeChange: (mode: ViewMode) => void;
   selectedFileId: string | null;
   onSelectFile: (file: DocFile) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
-export function DocumentsView({ 
-  currentFolder, 
-  documents, 
-  isLoading, 
-  viewMode, 
+export function DocumentsView({
+  currentFolder,
+  documents,
+  isLoading,
+  viewMode,
   onViewModeChange,
   selectedFileId,
-  onSelectFile
+  onSelectFile,
+  searchQuery,
+  onSearchChange
 }: DocumentsViewProps) {
   const [sortField, setSortField] = useState<'date' | 'name'>('date');
 
@@ -59,16 +66,55 @@ export function DocumentsView({
         <div className="flex items-center text-sm text-slate-500">
           <span className="hover:text-slate-900 cursor-pointer">מסמכים</span>
           <ChevronRight className="h-4 w-4 mx-1" />
-          <span className="font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
-            {currentFolder.name}
-          </span>
-          <span className="text-xs text-slate-400 mr-2">
-            ({documents.length} פריטים)
-          </span>
+          {searchQuery ? (
+            <>
+              <span className="font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                <Search className="h-3.5 w-3.5" />
+                תוצאות חיפוש
+              </span>
+              <span className="text-xs text-slate-400 mr-2">
+                ({documents.length} תוצאות)
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">
+                {currentFolder.name}
+              </span>
+              <span className="text-xs text-slate-400 mr-2">
+                ({documents.length} פריטים)
+              </span>
+            </>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              type="text"
+              placeholder="חיפוש בנמען או נדון..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-[220px] h-8 text-sm pr-8 pl-8 text-right"
+              dir="rtl"
+            />
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute left-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                onClick={() => onSearchChange('')}
+              >
+                <X className="h-3.5 w-3.5 text-slate-400" />
+              </Button>
+            )}
+          </div>
+
+          <div className="h-4 w-px bg-slate-200" />
+
           {/* Sort Dropdown */}
           <Select value={sortField} onValueChange={(v: any) => setSortField(v)}>
             <SelectTrigger className="w-[140px] h-8 text-xs">
