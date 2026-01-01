@@ -515,34 +515,26 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                       <StatusBadge status={item.aggregateStatus} />
                     </TableCell>
 
-                    {/* Group fee amounts - show group calculation if exists, otherwise sum of members */}
+                    {/* Group fee amounts - show TOTAL (group + members) when both exist */}
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">
-                      {item.groupAuditBeforeVat
-                        ? formatILS(item.groupAuditBeforeVat)
-                        : item.memberSumAuditBeforeVat
-                          ? formatILS(item.memberSumAuditBeforeVat)
-                          : '-'}
+                      {(item.groupAuditBeforeVat || item.memberSumAuditBeforeVat)
+                        ? formatILS((item.groupAuditBeforeVat || 0) + (item.memberSumAuditBeforeVat || 0))
+                        : '-'}
                     </TableCell>
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">
-                      {item.groupAuditWithVat
-                        ? formatILS(item.groupAuditWithVat)
-                        : item.memberSumAuditWithVat
-                          ? formatILS(item.memberSumAuditWithVat)
-                          : '-'}
+                      {(item.groupAuditWithVat || item.memberSumAuditWithVat)
+                        ? formatILS((item.groupAuditWithVat || 0) + (item.memberSumAuditWithVat || 0))
+                        : '-'}
                     </TableCell>
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
-                      {item.groupBookkeepingBeforeVat
-                        ? formatILS(item.groupBookkeepingBeforeVat)
-                        : item.memberSumBookkeepingBeforeVat
-                          ? formatILS(item.memberSumBookkeepingBeforeVat)
-                          : '-'}
+                      {(item.groupBookkeepingBeforeVat || item.memberSumBookkeepingBeforeVat)
+                        ? formatILS((item.groupBookkeepingBeforeVat || 0) + (item.memberSumBookkeepingBeforeVat || 0))
+                        : '-'}
                     </TableCell>
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
-                      {item.groupBookkeepingWithVat
-                        ? formatILS(item.groupBookkeepingWithVat)
-                        : item.memberSumBookkeepingWithVat
-                          ? formatILS(item.memberSumBookkeepingWithVat)
-                          : '-'}
+                      {(item.groupBookkeepingWithVat || item.memberSumBookkeepingWithVat)
+                        ? formatILS((item.groupBookkeepingWithVat || 0) + (item.memberSumBookkeepingWithVat || 0))
+                        : '-'}
                     </TableCell>
 
                     {/* Payment Method */}

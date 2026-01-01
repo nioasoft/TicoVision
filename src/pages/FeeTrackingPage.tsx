@@ -277,14 +277,15 @@ export function FeeTrackingPage() {
       });
     }
 
-    // Search query
+    // Search query - includes client name, Hebrew name, tax ID, and group name
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (client) =>
           client.client_name.toLowerCase().includes(query) ||
           client.client_name_hebrew?.toLowerCase().includes(query) ||
-          client.tax_id.includes(query)
+          client.tax_id.includes(query) ||
+          client.group_name?.toLowerCase().includes(query)
       );
     }
 
