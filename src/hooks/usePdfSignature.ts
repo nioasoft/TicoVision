@@ -4,13 +4,32 @@
  */
 
 import { useState, useCallback } from 'react';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import { supabase } from '@/lib/supabase';
 
 export type PdfElementType = 'signature' | 'signature_with_address' | 'date';
 
 // Address text for signature with address
 const SIGNATURE_ADDRESS = "רח' שד\"ל 3, תל אביב";
+
+// Hebrew font URL (Heebo Regular from Google Fonts)
+const HEBREW_FONT_URL = 'https://fonts.gstatic.com/s/heebo/v26/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSysd0mm_00.ttf';
+
+// Cache for the Hebrew font to avoid re-fetching
+let cachedHebrewFont: ArrayBuffer | null = null;
+
+async function getHebrewFont(): Promise<ArrayBuffer> {
+  if (cachedHebrewFont) {
+    return cachedHebrewFont;
+  }
+  const response = await fetch(HEBREW_FONT_URL);
+  if (!response.ok) {
+    throw new Error('Failed to fetch Hebrew font');
+  }
+  cachedHebrewFont = await response.arrayBuffer();
+  return cachedHebrewFont;
+}
 
 export interface PdfElement {
   id: string; // unique identifier
@@ -147,13 +166,18 @@ export function usePdfSignature(): UsePdfSignatureReturn {
       try {
         // Load the PDF
         const pdfDoc = await PDFDocument.load(pdfBytes);
+
+        // Register fontkit to enable custom font embedding
+        pdfDoc.registerFontkit(fontkit);
+
         const pages = pdfDoc.getPages();
 
         // Embed the signature image once (for all signature elements)
         const signatureImage = await pdfDoc.embedPng(signatureBytes);
 
-        // Embed a standard font for date text
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        // Embed Hebrew font for text (supports Hebrew characters)
+        const hebrewFontBytes = await getHebrewFont();
+        const font = await pdfDoc.embedFont(hebrewFontBytes);
 
         // Process each element
         for (const element of elements) {

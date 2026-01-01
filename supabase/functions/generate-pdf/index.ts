@@ -345,7 +345,10 @@ serve(async (req) => {
               </div>
             `,
             footerTemplate: `
-              <div style="width: 100%; font-size: 10px; text-align: center; padding-top: 5px; direction: rtl; background: white; font-family: Arial, sans-serif;">
+              <style>
+                @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap');
+              </style>
+              <div style="width: 100%; font-size: 10px; text-align: center; padding-top: 5px; direction: rtl; background: white; font-family: 'Heebo', Arial, sans-serif;">
                 <span>עמוד <span class="pageNumber"></span> מתוך <span class="totalPages"></span></span>
                 <span style="margin: 0 10px;">|</span>
                 <span style="font-weight: bold;">משרד רואי חשבון פרנקו ושות' בע"מ</span>
