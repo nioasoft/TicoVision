@@ -288,6 +288,11 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
     groupBookkeepingWithVat?: number | null;
     groupCalculationStatus?: string | null;
     groupLetterSentAt?: Date | null;
+    // Aggregated member sums (when no group calculation)
+    memberSumAuditBeforeVat?: number;
+    memberSumAuditWithVat?: number;
+    memberSumBookkeepingBeforeVat?: number;
+    memberSumBookkeepingWithVat?: number;
   } | {
     type: 'client';
     client: FeeTrackingRow;
@@ -339,6 +344,22 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
         else if (statuses.every((s) => s === 'not_calculated')) aggregateStatus = 'not_calculated';
       }
 
+      // Calculate aggregated sums from members (for when no group calculation exists)
+      let memberSumAuditBeforeVat = 0;
+      let memberSumAuditWithVat = 0;
+      let memberSumBookkeepingBeforeVat = 0;
+      let memberSumBookkeepingWithVat = 0;
+
+      members.forEach((member) => {
+        const enhanced = enhancedData.find((e) => e.fee_calculation_id === member.calculation_id);
+        if (enhanced) {
+          memberSumAuditBeforeVat += enhanced.actual_before_vat || enhanced.original_before_vat || 0;
+          memberSumAuditWithVat += enhanced.actual_with_vat || enhanced.original_with_vat || 0;
+          memberSumBookkeepingBeforeVat += enhanced.bookkeeping_before_vat || 0;
+          memberSumBookkeepingWithVat += enhanced.bookkeeping_with_vat || 0;
+        }
+      });
+
       result.push({
         type: 'group',
         groupId,
@@ -353,6 +374,11 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
         groupBookkeepingWithVat: firstMember?.group_bookkeeping_with_vat,
         groupCalculationStatus: firstMember?.group_calculation_status,
         groupLetterSentAt: firstMember?.group_letter_sent_at,
+        // Aggregated member sums
+        memberSumAuditBeforeVat: memberSumAuditBeforeVat > 0 ? memberSumAuditBeforeVat : undefined,
+        memberSumAuditWithVat: memberSumAuditWithVat > 0 ? memberSumAuditWithVat : undefined,
+        memberSumBookkeepingBeforeVat: memberSumBookkeepingBeforeVat > 0 ? memberSumBookkeepingBeforeVat : undefined,
+        memberSumBookkeepingWithVat: memberSumBookkeepingWithVat > 0 ? memberSumBookkeepingWithVat : undefined,
       });
     });
 
@@ -369,7 +395,7 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
     });
 
     return result;
-  }, [clients]);
+  }, [clients, enhancedData]);
 
   // Check if all selectable clients are selected
   const selectableClients = clients.filter((c) => c.payment_status !== 'not_calculated');
@@ -489,18 +515,34 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                       <StatusBadge status={item.aggregateStatus} />
                     </TableCell>
 
-                    {/* Group fee amounts */}
+                    {/* Group fee amounts - show group calculation if exists, otherwise sum of members */}
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-blue-50/30 border-l border-slate-100">
-                      {item.groupAuditBeforeVat ? formatILS(item.groupAuditBeforeVat) : '-'}
+                      {item.groupAuditBeforeVat
+                        ? formatILS(item.groupAuditBeforeVat)
+                        : item.memberSumAuditBeforeVat
+                          ? formatILS(item.memberSumAuditBeforeVat)
+                          : '-'}
                     </TableCell>
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">
-                      {item.groupAuditWithVat ? formatILS(item.groupAuditWithVat) : '-'}
+                      {item.groupAuditWithVat
+                        ? formatILS(item.groupAuditWithVat)
+                        : item.memberSumAuditWithVat
+                          ? formatILS(item.memberSumAuditWithVat)
+                          : '-'}
                     </TableCell>
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
-                      {item.groupBookkeepingBeforeVat ? formatILS(item.groupBookkeepingBeforeVat) : '-'}
+                      {item.groupBookkeepingBeforeVat
+                        ? formatILS(item.groupBookkeepingBeforeVat)
+                        : item.memberSumBookkeepingBeforeVat
+                          ? formatILS(item.memberSumBookkeepingBeforeVat)
+                          : '-'}
                     </TableCell>
                     <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
-                      {item.groupBookkeepingWithVat ? formatILS(item.groupBookkeepingWithVat) : '-'}
+                      {item.groupBookkeepingWithVat
+                        ? formatILS(item.groupBookkeepingWithVat)
+                        : item.memberSumBookkeepingWithVat
+                          ? formatILS(item.memberSumBookkeepingWithVat)
+                          : '-'}
                     </TableCell>
 
                     {/* Payment Method */}
