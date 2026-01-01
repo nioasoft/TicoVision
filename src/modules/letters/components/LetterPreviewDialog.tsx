@@ -217,16 +217,16 @@ export function LetterPreviewDialog({
         return 'שירותי ראיית החשבון';
       };
 
-      // Build variables
-      const currentYear = new Date().getFullYear();
-      const nextYear = currentYear + 1;
+      // Build variables - use fee.year from the calculation (not current date)
+      const taxYear = fee.year;
+      const previousYear = taxYear - 1;
 
       const letterVariables: Partial<LetterVariables> = {
         // Auto-generated
         letter_date: new Intl.DateTimeFormat('he-IL').format(new Date()),
-        year: nextYear.toString(),
-        previous_year: currentYear.toString(),
-        tax_year: nextYear.toString(),
+        year: taxYear.toString(),
+        previous_year: previousYear.toString(),
+        tax_year: taxYear.toString(),
 
         // Client info
         company_name: client.company_name_hebrew || client.company_name,
@@ -253,7 +253,7 @@ export function LetterPreviewDialog({
         // Checks
         num_checks: numChecks.toString(),
         check_amount: formatNumber(Math.round(amountWithVat / numChecks)),
-        check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.${numChecks}.${nextYear}`,
+        check_dates_description: `החל מיום 5.1.${taxYear} ועד ליום 5.${numChecks}.${taxYear}`,
 
         // Client ID for tracking
         client_id: clientId,
@@ -393,15 +393,16 @@ export function LetterPreviewDialog({
       const amountAfterSingle = Math.round(amountWithVat * 0.92);
       const amountAfterPayments = Math.round(amountWithVat * 0.96);
 
-      const currentYear = new Date().getFullYear();
-      const nextYear = currentYear + 1;
+      // Use groupCalc.year from the calculation (not current date)
+      const taxYear = groupCalc.year;
+      const previousYear = taxYear - 1;
 
       // Build variables - use GROUP NAME as company_name
       const letterVariables: Partial<LetterVariables> = {
         letter_date: new Intl.DateTimeFormat('he-IL').format(new Date()),
-        year: nextYear.toString(),
-        previous_year: currentYear.toString(),
-        tax_year: nextYear.toString(),
+        year: taxYear.toString(),
+        previous_year: previousYear.toString(),
+        tax_year: taxYear.toString(),
 
         // GROUP NAME instead of client name!
         company_name: group.group_name_hebrew,
@@ -421,7 +422,7 @@ export function LetterPreviewDialog({
         // Checks
         num_checks: numChecks.toString(),
         check_amount: formatNumber(Math.round(amountWithVat / numChecks)),
-        check_dates_description: `החל מיום 5.1.${nextYear} ועד ליום 5.${numChecks}.${nextYear}`,
+        check_dates_description: `החל מיום 5.1.${taxYear} ועד ליום 5.${numChecks}.${taxYear}`,
 
         // Group ID for tracking
         client_id: groupId,
