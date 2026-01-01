@@ -14,7 +14,7 @@ export type PdfElementType = 'signature' | 'signature_with_address' | 'date';
 const SIGNATURE_ADDRESS = "רח' שד\"ל 3, תל אביב";
 
 // Hebrew font URL (Heebo Regular from Google Fonts)
-const HEBREW_FONT_URL = 'https://fonts.gstatic.com/s/heebo/v26/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSysd0mm_00.ttf';
+const HEBREW_FONT_URL = 'https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSyccg.ttf';
 
 // Cache for the Hebrew font to avoid re-fetching
 let cachedHebrewFont: ArrayBuffer | null = null;
