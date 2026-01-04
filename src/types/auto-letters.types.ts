@@ -68,7 +68,7 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
   },
   {
     id: 'bank_approvals',
-    label: 'אישורים לבנק/מוסדות',
+    label: 'אישורי הכנסות',
     description: 'אישורי הכנסות ומסמכים לבנקים ומוסדות',
     icon: 'Landmark',
     enabled: true,
