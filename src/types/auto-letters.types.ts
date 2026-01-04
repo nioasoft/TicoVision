@@ -379,6 +379,12 @@ export interface ReminderLettersDocumentData {
   bookkeeperBalanceReminder: Partial<BookkeeperBalanceReminderVariables>;
 }
 
+/** Adhoc contact (not saved in system) */
+export interface AdhocContact {
+  name: string;
+  email: string;
+}
+
 /** Complete form state for Auto Letters */
 export interface AutoLetterFormState {
   /** Currently selected category */
@@ -387,14 +393,20 @@ export interface AutoLetterFormState {
   /** Currently selected letter type ID within the category */
   selectedLetterTypeId: string | null;
 
-  /** Recipient mode: single client or group */
-  recipientMode: 'client' | 'group';
+  /** Recipient mode: single client, group, system contact, or adhoc contact */
+  recipientMode: 'client' | 'group' | 'contact' | 'adhoc';
 
   /** Selected client ID (when recipientMode is 'client') */
   selectedClientId: string | null;
 
   /** Selected group ID (when recipientMode is 'group') */
   selectedGroupId: string | null;
+
+  /** Selected contact ID (when recipientMode is 'contact') */
+  selectedContactId: string | null;
+
+  /** Adhoc contact details (when recipientMode is 'adhoc') */
+  adhocContact: AdhocContact | null;
 
   /** Shared data across all letter types */
   sharedData: Partial<AutoLetterSharedData>;
@@ -421,6 +433,8 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
     recipientMode: 'client',
     selectedClientId: null,
     selectedGroupId: null,
+    selectedContactId: null,
+    adhocContact: null,
     sharedData: {
       document_date: new Date().toISOString().split('T')[0],
       company_name: '',

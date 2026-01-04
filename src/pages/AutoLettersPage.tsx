@@ -26,7 +26,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { FileStack, Eye, Download, Loader2, Users, User } from 'lucide-react';
+import { FileStack, Eye, Download, Loader2, Users, User, Contact, UserPlus } from 'lucide-react';
 import { CategorySelector, LetterTypeSelector, FormRenderer } from '@/components/auto-letters';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { Combobox } from '@/components/ui/combobox';
@@ -34,6 +34,7 @@ import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
 import { clientService } from '@/services';
 import { groupFeeService, type ClientGroup } from '@/services/group-fee.service';
+import { TenantContactService, type TenantContact } from '@/services/tenant-contact.service';
 import {
   createInitialAutoLetterFormState,
   getLetterTypeById,
@@ -66,13 +67,16 @@ export function AutoLettersPage() {
   // Form state
   const [formState, setFormState] = useState<AutoLetterFormState>(createInitialAutoLetterFormState());
 
-  // Client/Group data
+  // Client/Group/Contact data
   const [clients, setClients] = useState<Client[]>([]);
   const [groups, setGroups] = useState<ClientGroup[]>([]);
+  const [contacts, setContacts] = useState<TenantContact[]>([]);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
   const [isLoadingGroups, setIsLoadingGroups] = useState(false);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
+  const [selectedContact, setSelectedContact] = useState<TenantContact | null>(null);
 
   // UI state
   const [generating, setGenerating] = useState(false);
@@ -106,7 +110,14 @@ export function AutoLettersPage() {
     }
   }, [formState.recipientMode]);
 
-  // Update company_name and company_id when client/group changes
+  // Load contacts when mode changes to 'contact'
+  useEffect(() => {
+    if (formState.recipientMode === 'contact' && contacts.length === 0) {
+      loadContacts();
+    }
+  }, [formState.recipientMode]);
+
+  // Update company_name and company_id when client/group/contact changes
   useEffect(() => {
     if (formState.recipientMode === 'client' && selectedClient) {
       setFormState(prev => ({
@@ -118,6 +129,8 @@ export function AutoLettersPage() {
         },
         selectedClientId: selectedClient.id,
         selectedGroupId: null,
+        selectedContactId: null,
+        adhocContact: null,
       }));
     } else if (formState.recipientMode === 'group' && selectedGroup) {
       setFormState(prev => ({
@@ -129,9 +142,24 @@ export function AutoLettersPage() {
         },
         selectedClientId: null,
         selectedGroupId: selectedGroup.id,
+        selectedContactId: null,
+        adhocContact: null,
+      }));
+    } else if (formState.recipientMode === 'contact' && selectedContact) {
+      setFormState(prev => ({
+        ...prev,
+        sharedData: {
+          ...prev.sharedData,
+          company_name: selectedContact.full_name,
+          company_id: '',
+        },
+        selectedClientId: null,
+        selectedGroupId: null,
+        selectedContactId: selectedContact.id,
+        adhocContact: null,
       }));
     }
-  }, [selectedClient, selectedGroup, formState.recipientMode]);
+  }, [selectedClient, selectedGroup, selectedContact, formState.recipientMode]);
 
   const loadClients = async () => {
     setIsLoadingClients(true);
@@ -171,6 +199,25 @@ export function AutoLettersPage() {
       toast.error('שגיאה בטעינת קבוצות');
     } finally {
       setIsLoadingGroups(false);
+    }
+  };
+
+  const loadContacts = async () => {
+    setIsLoadingContacts(true);
+    try {
+      const data = await TenantContactService.getAllContacts();
+      if (data && data.length > 0) {
+        // Sort by Hebrew name
+        const sorted = data.sort((a, b) =>
+          (a.full_name || '').localeCompare(b.full_name || '', 'he')
+        );
+        setContacts(sorted);
+      }
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      toast.error('שגיאה בטעינת אנשי קשר');
+    } finally {
+      setIsLoadingContacts(false);
     }
   };
 
@@ -226,14 +273,24 @@ export function AutoLettersPage() {
 
   // Validate current document data
   const isCurrentDocumentValid = (): boolean => {
-    const { selectedCategory, selectedLetterTypeId } = formState;
+    const { selectedCategory, selectedLetterTypeId, recipientMode } = formState;
 
     if (!selectedLetterTypeId) return false;
 
-    // Merge shared data with document-specific data for validation
-    // Include company_name and company_id from selected client for bank_approvals validation
-    const companyName = selectedClient?.company_name || '';
-    const companyId = selectedClient?.tax_id || '';
+    // Get company_name and company_id based on recipient mode
+    let companyName = '';
+    let companyId = '';
+
+    if (recipientMode === 'client' && selectedClient) {
+      companyName = selectedClient.company_name || '';
+      companyId = selectedClient.tax_id || '';
+    } else if (recipientMode === 'group' && selectedGroup) {
+      companyName = selectedGroup.group_name_hebrew || selectedGroup.group_name || '';
+    } else if (recipientMode === 'contact' && selectedContact) {
+      companyName = selectedContact.full_name || '';
+    } else if (recipientMode === 'adhoc' && formState.adhocContact) {
+      companyName = formState.adhocContact.name || '';
+    }
 
     const mergedData = {
       ...formState.sharedData,
@@ -290,7 +347,9 @@ export function AutoLettersPage() {
 
   // Check if can generate
   const hasRecipient = (formState.recipientMode === 'client' && selectedClient) ||
-                       (formState.recipientMode === 'group' && selectedGroup);
+                       (formState.recipientMode === 'group' && selectedGroup) ||
+                       (formState.recipientMode === 'contact' && selectedContact) ||
+                       (formState.recipientMode === 'adhoc' && formState.adhocContact?.name?.trim());
   const canGenerate = hasRecipient &&
                       formState.sharedData.document_date &&
                       formState.selectedLetterTypeId &&
@@ -543,12 +602,14 @@ export function AutoLettersPage() {
   };
 
   // Handle recipient mode change
-  const handleRecipientModeChange = (mode: 'client' | 'group') => {
+  const handleRecipientModeChange = (mode: 'client' | 'group' | 'contact' | 'adhoc') => {
     setFormState(prev => ({
       ...prev,
       recipientMode: mode,
       selectedClientId: null,
       selectedGroupId: null,
+      selectedContactId: null,
+      adhocContact: mode === 'adhoc' ? { name: '', email: '' } : null,
       sharedData: {
         ...prev.sharedData,
         company_name: '',
@@ -556,6 +617,7 @@ export function AutoLettersPage() {
     }));
     setSelectedClient(null);
     setSelectedGroup(null);
+    setSelectedContact(null);
   };
 
   // Handle document data change
@@ -752,15 +814,15 @@ export function AutoLettersPage() {
         <CardHeader>
           <CardTitle className="text-right">בחירת נמען</CardTitle>
           <CardDescription className="text-right">
-            בחר לקוח או קבוצה לשליחת המכתב
+            בחר לקוח, קבוצה, איש קשר מהמערכת או הזן פרטי נמען באופן חופשי
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Recipient Mode Toggle */}
           <RadioGroup
             value={formState.recipientMode}
-            onValueChange={(value) => handleRecipientModeChange(value as 'client' | 'group')}
-            className="flex gap-6"
+            onValueChange={(value) => handleRecipientModeChange(value as 'client' | 'group' | 'contact' | 'adhoc')}
+            className="flex flex-wrap gap-4"
             dir="rtl"
           >
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -775,6 +837,20 @@ export function AutoLettersPage() {
               <Label htmlFor="mode-group" className="flex items-center gap-2 cursor-pointer">
                 <Users className="h-4 w-4" />
                 קבוצה
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <RadioGroupItem value="contact" id="mode-contact" />
+              <Label htmlFor="mode-contact" className="flex items-center gap-2 cursor-pointer">
+                <Contact className="h-4 w-4" />
+                איש קשר מהמערכת
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <RadioGroupItem value="adhoc" id="mode-adhoc" />
+              <Label htmlFor="mode-adhoc" className="flex items-center gap-2 cursor-pointer">
+                <UserPlus className="h-4 w-4" />
+                נמען חופשי
               </Label>
             </div>
           </RadioGroup>
@@ -818,6 +894,90 @@ export function AutoLettersPage() {
                 disabled={isLoadingGroups || generating}
                 className="text-right"
               />
+            </div>
+          )}
+
+          {/* Contact Selector */}
+          {formState.recipientMode === 'contact' && (
+            <div className="space-y-2">
+              <Label className="text-right block">
+                בחר איש קשר <span className="text-red-500">*</span>
+              </Label>
+              <Combobox
+                options={contacts.map((c) => ({
+                  value: c.id,
+                  label: `${c.full_name}${c.job_title ? ` - ${c.job_title}` : ''}${c.email ? ` (${c.email})` : ''}`,
+                }))}
+                value={selectedContact?.id || ''}
+                onValueChange={(value) => {
+                  const contact = contacts.find((c) => c.id === value);
+                  setSelectedContact(contact || null);
+                }}
+                placeholder={isLoadingContacts ? 'טוען אנשי קשר...' : 'חפש איש קשר...'}
+                emptyText="לא נמצאו אנשי קשר"
+                disabled={isLoadingContacts || generating}
+                className="text-right"
+              />
+            </div>
+          )}
+
+          {/* Adhoc Contact Form */}
+          {formState.recipientMode === 'adhoc' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="adhoc-name" className="text-right block">
+                  שם הנמען <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="adhoc-name"
+                  type="text"
+                  value={formState.adhocContact?.name || ''}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setFormState(prev => ({
+                      ...prev,
+                      adhocContact: {
+                        name: newName,
+                        email: prev.adhocContact?.email || '',
+                      },
+                      sharedData: {
+                        ...prev.sharedData,
+                        company_name: newName,
+                      },
+                    }));
+                  }}
+                  disabled={generating}
+                  className="text-right"
+                  dir="rtl"
+                  placeholder="הזן שם נמען..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adhoc-email" className="text-right block">
+                  אימייל (אופציונלי)
+                </Label>
+                <Input
+                  id="adhoc-email"
+                  type="email"
+                  value={formState.adhocContact?.email || ''}
+                  onChange={(e) =>
+                    setFormState(prev => ({
+                      ...prev,
+                      adhocContact: {
+                        name: prev.adhocContact?.name || '',
+                        email: e.target.value,
+                      },
+                    }))
+                  }
+                  disabled={generating}
+                  className="text-left"
+                  dir="ltr"
+                  placeholder="example@email.com"
+                />
+                <p className="text-sm text-gray-500 text-right">
+                  האימייל ישמש לשליחת המכתב
+                </p>
+              </div>
             </div>
           )}
 
