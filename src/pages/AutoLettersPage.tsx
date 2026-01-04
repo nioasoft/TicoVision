@@ -46,6 +46,7 @@ import {
   validatePersonalReportReminder,
   validateBookkeeperBalanceReminder,
   validateIncomeConfirmation,
+  validateMortgageIncome,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -215,6 +216,9 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'income_confirmation') {
         return formState.documentData.bank_approvals.incomeConfirmation;
       }
+      if (selectedLetterTypeId === 'mortgage_income') {
+        return formState.documentData.bank_approvals.mortgageIncome;
+      }
     }
 
     return {};
@@ -227,9 +231,15 @@ export function AutoLettersPage() {
     if (!selectedLetterTypeId) return false;
 
     // Merge shared data with document-specific data for validation
+    // Include company_name and company_id from selected client for bank_approvals validation
+    const companyName = selectedClient?.company_name || '';
+    const companyId = selectedClient?.tax_id || '';
+
     const mergedData = {
       ...formState.sharedData,
       ...getDocumentData(),
+      company_name: companyName,
+      company_id: companyId,
     };
 
     if (selectedCategory === 'company_onboarding') {
@@ -269,6 +279,9 @@ export function AutoLettersPage() {
     if (selectedCategory === 'bank_approvals') {
       if (selectedLetterTypeId === 'income_confirmation') {
         return validateIncomeConfirmation(mergedData);
+      }
+      if (selectedLetterTypeId === 'mortgage_income') {
+        return validateMortgageIncome(mergedData);
       }
     }
 
@@ -657,17 +670,31 @@ export function AutoLettersPage() {
       }
     }
 
-    if (selectedCategory === 'bank_approvals' && selectedLetterTypeId === 'income_confirmation') {
-      setFormState(prev => ({
-        ...prev,
-        documentData: {
-          ...prev.documentData,
-          bank_approvals: {
-            ...prev.documentData.bank_approvals,
-            incomeConfirmation: data,
+    if (selectedCategory === 'bank_approvals') {
+      if (selectedLetterTypeId === 'income_confirmation') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            bank_approvals: {
+              ...prev.documentData.bank_approvals,
+              incomeConfirmation: data,
+            },
           },
-        },
-      }));
+        }));
+      }
+      if (selectedLetterTypeId === 'mortgage_income') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            bank_approvals: {
+              ...prev.documentData.bank_approvals,
+              mortgageIncome: data,
+            },
+          },
+        }));
+      }
     }
   };
 

@@ -94,7 +94,8 @@ export type AutoLetterTemplateType =
   | 'reminder_letters_personal_report'
   | 'reminder_letters_bookkeeper_balance'
   // Bank Approvals (אישורים לבנק/מוסדות)
-  | 'bank_approvals_income_confirmation';
+  | 'bank_approvals_income_confirmation'
+  | 'bank_approvals_mortgage_income';
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -182,6 +183,13 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'אישור הכנסות לבנקים ומוסדות',
       templateType: 'bank_approvals_income_confirmation',
       icon: 'Receipt',
+    },
+    {
+      id: 'mortgage_income',
+      label: 'אישור הכנסות למשכנתא - בעל שליטה',
+      description: 'אישור רו"ח עבור בעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו',
+      templateType: 'bank_approvals_mortgage_income',
+      icon: 'Home',
     },
   ],
 };
@@ -286,6 +294,41 @@ export interface IncomeConfirmationVariables extends AutoLetterSharedData {
   // Note: company_name and company_id come from AutoLetterSharedData
 }
 
+/** Single shareholder entry for mortgage income confirmation letter */
+export interface ShareholderEntry {
+  name: string;                     // שם בעל מניות
+  id_number: string;                // מספר מזהה
+  holding_percentage: number;       // אחוז החזקה בחברה
+}
+
+/** Variables for Bank Approvals - Mortgage Income Confirmation letter */
+export interface MortgageIncomeVariables extends AutoLetterSharedData {
+  // שם הבנק (שדה פתוח)
+  bank_name: string;
+
+  // פרטי מבקש/ת המשכנתא
+  applicant_name: string;
+  applicant_role: string;           // תפקיד בחברה
+
+  // תקופה
+  period_months: number;
+  period_end_date: string;          // YYYY-MM-DD
+
+  // נתונים כספיים (3 שדות)
+  revenue_turnover: number;         // מחזור ההכנסות (ללא מע"מ)
+  salary_expenses: number;          // הוצאות השכר
+  estimated_profit: number;         // רווח חשבונאי משוער לפני מס
+
+  // בעלי מניות
+  registrar_report_date: string;    // תאריך דוח רשם החברות
+  shareholders: ShareholderEntry[]; // טבלה דינמית
+
+  // דיבידנד (אופציונלי)
+  has_dividend: boolean;            // האם חולק דיבידנד
+  dividend_date?: string;           // תאריך חלוקה
+  dividend_details?: string;        // פרטי הסכומים
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -299,6 +342,7 @@ export const DEFAULT_SUBJECTS = {
   personal_report_reminder: 'השלמות לדוח האישי',
   bookkeeper_balance_reminder: 'סיכום פרטיכל מישיבה',
   income_confirmation: 'אישור הכנסות',
+  mortgage_income: 'אישור הכנסות למשכנתא - בעל שליטה',
 } as const;
 
 // ============================================================================
@@ -326,6 +370,7 @@ export interface MissingDocumentsDocumentData {
 /** Document data for Bank Approvals letters */
 export interface BankApprovalsDocumentData {
   incomeConfirmation: Partial<IncomeConfirmationVariables>;
+  mortgageIncome: Partial<MortgageIncomeVariables>;
 }
 
 /** Document data for Reminder Letters */
@@ -443,6 +488,21 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           period_text: '',
           income_entries: [],
           // Note: company_name and company_id come from sharedData, not here
+        },
+        mortgageIncome: {
+          bank_name: '',
+          applicant_name: '',
+          applicant_role: '',
+          period_months: 12,
+          period_end_date: '',
+          revenue_turnover: 0,
+          salary_expenses: 0,
+          estimated_profit: 0,
+          registrar_report_date: '',
+          shareholders: [{ name: '', id_number: '', holding_percentage: 100 }],
+          has_dividend: false,
+          dividend_date: '',
+          dividend_details: '',
         },
       },
     },
@@ -582,6 +642,33 @@ export function validateIncomeConfirmation(data: Partial<IncomeConfirmationVaria
       entry.month?.trim() &&
       entry.year > 0 &&
       entry.amount > 0
+    )
+  );
+}
+
+/** Validate Mortgage Income Confirmation letter */
+export function validateMortgageIncome(data: Partial<MortgageIncomeVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.bank_name?.trim() &&
+    data.applicant_name?.trim() &&
+    data.applicant_role?.trim() &&
+    data.period_months &&
+    data.period_months > 0 &&
+    data.period_end_date &&
+    data.revenue_turnover !== undefined &&
+    data.salary_expenses !== undefined &&
+    data.estimated_profit !== undefined &&
+    data.registrar_report_date &&
+    data.shareholders &&
+    data.shareholders.length > 0 &&
+    data.shareholders.every(sh =>
+      sh.name?.trim() &&
+      sh.id_number?.trim() &&
+      sh.holding_percentage >= 0 &&
+      sh.holding_percentage <= 100
     )
   );
 }

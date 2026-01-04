@@ -14,6 +14,7 @@ import type {
   PersonalReportReminderVariables,
   BookkeeperBalanceReminderVariables,
   IncomeConfirmationVariables,
+  MortgageIncomeVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -37,7 +38,7 @@ import {
 } from './forms/reminder-letters';
 
 // Bank Approvals forms
-import { IncomeConfirmationForm } from './forms/bank-approvals';
+import { IncomeConfirmationForm, MortgageIncomeForm } from './forms/bank-approvals';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -248,6 +249,17 @@ function renderBankApprovalsForm(
       return (
         <IncomeConfirmationForm
           value={value as Partial<IncomeConfirmationVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+        />
+      );
+
+    case 'mortgage_income':
+      return (
+        <MortgageIncomeForm
+          value={value as Partial<MortgageIncomeVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
           companyName={companyName}

@@ -2678,6 +2678,29 @@ export class TemplateService extends BaseService {
     `).join('');
   }
 
+  /**
+   * Build HTML table rows for shareholders in mortgage income confirmation letter
+   */
+  private buildShareholdersTableRows(shareholders: Array<{ name: string; id_number: string; holding_percentage: number }>): string {
+    if (!shareholders || shareholders.length === 0) {
+      return '';
+    }
+
+    return shareholders.map(sh => `
+      <tr>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${sh.name}
+        </td>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${sh.id_number}
+        </td>
+        <td style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
+          ${sh.holding_percentage}%
+        </td>
+      </tr>
+    `).join('');
+  }
+
   // ============================================================================
   // COMPANY ONBOARDING DOCUMENTS
   // ============================================================================
@@ -3223,8 +3246,11 @@ export class TemplateService extends BaseService {
       // 5. Build full HTML
       let fullHtml = this.buildAutoLetterHTML(header, body, footer, templateType);
 
+      // 5.1. Process Mustache conditional sections (e.g., {{#has_dividend}}...{{/has_dividend}})
+      fullHtml = this.processMustacheSections(fullHtml, processedVariables);
+
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3367,7 +3393,8 @@ export class TemplateService extends BaseService {
       'missing_documents_general': 'bodies/missing-documents/general-missing.html',
       'reminder_letters_personal_report': 'bodies/reminder-letters/personal-report-reminder.html',
       'reminder_letters_bookkeeper_balance': 'bodies/reminder-letters/bookkeeper-balance-reminder.html',
-      'bank_approvals_income_confirmation': 'bodies/bank-approvals/income-confirmation.html'
+      'bank_approvals_income_confirmation': 'bodies/bank-approvals/income-confirmation.html',
+      'bank_approvals_mortgage_income': 'bodies/bank-approvals/mortgage-income.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3386,7 +3413,8 @@ export class TemplateService extends BaseService {
       'missing_documents_general': 'בקשה להמצאת מסמכים חסרים',
       'reminder_letters_personal_report': 'השלמות לדוח האישי',
       'reminder_letters_bookkeeper_balance': 'סיכום פרטיכל מישיבה',
-      'bank_approvals_income_confirmation': 'אישור הכנסות'
+      'bank_approvals_income_confirmation': 'אישור הכנסות',
+      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא - בעל שליטה'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3409,7 +3437,9 @@ export class TemplateService extends BaseService {
       'setting_dates_financial_statements': 'ישיבה על מאזנים',
       'missing_documents_general': 'בקשה למסמכים חסרים',
       'reminder_letters_personal_report': 'תזכורת למסמכים',
-      'reminder_letters_bookkeeper_balance': 'זירוז מנה"ח'
+      'reminder_letters_bookkeeper_balance': 'זירוז מנה"ח',
+      'bank_approvals_income_confirmation': 'אישור הכנסות',
+      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -3590,6 +3620,47 @@ export class TemplateService extends BaseService {
           processed.income_table_rows = '';
         }
         break;
+
+      case 'bank_approvals_mortgage_income':
+        // For Mortgage Income, the header should show the bank name
+        // Company info stays as-is (from the selected client)
+        processed.group_name = '';
+
+        // Format period_end_date to Israeli format
+        if (processed.period_end_date && typeof processed.period_end_date === 'string') {
+          processed.period_end_date = this.formatIsraeliDate(new Date(processed.period_end_date as string));
+        }
+
+        // Format registrar_report_date to Israeli format
+        if (processed.registrar_report_date && typeof processed.registrar_report_date === 'string') {
+          processed.registrar_report_date = this.formatIsraeliDate(new Date(processed.registrar_report_date as string));
+        }
+
+        // Format dividend_date to Israeli format (if exists)
+        if (processed.dividend_date && typeof processed.dividend_date === 'string') {
+          processed.dividend_date = this.formatIsraeliDate(new Date(processed.dividend_date as string));
+        }
+
+        // Format currency values
+        if (typeof processed.revenue_turnover === 'number') {
+          processed.revenue_turnover = processed.revenue_turnover.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.salary_expenses === 'number') {
+          processed.salary_expenses = processed.salary_expenses.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.estimated_profit === 'number') {
+          processed.estimated_profit = processed.estimated_profit.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+
+        // Build shareholders table rows
+        if (Array.isArray(processed.shareholders)) {
+          processed.shareholders_table = this.buildShareholdersTableRows(
+            processed.shareholders as Array<{ name: string; id_number: string; holding_percentage: number }>
+          );
+        } else {
+          processed.shareholders_table = '';
+        }
+        break;
     }
 
     // Generate additional_notes_section for all auto letters
@@ -3608,6 +3679,29 @@ export class TemplateService extends BaseService {
     }
 
     return processed;
+  }
+
+  /**
+   * Process Mustache-style conditional sections in templates
+   * Handles {{#variable}}...{{/variable}} patterns
+   * If variable is truthy, keeps content; if falsy, removes it
+   */
+  private processMustacheSections(template: string, variables: Record<string, unknown>): string {
+    let result = template;
+
+    // Match {{#variable}}...{{/variable}} patterns (with newlines)
+    const sectionPattern = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+
+    result = result.replace(sectionPattern, (match, variableName, content) => {
+      const value = variables[variableName];
+      // If variable is truthy, keep the content; otherwise remove it
+      if (value) {
+        return content;
+      }
+      return '';
+    });
+
+    return result;
   }
 }
 
