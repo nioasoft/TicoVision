@@ -1645,13 +1645,6 @@ export type Database = {
             foreignKeyName: "fee_calculations_actual_payment_id_fkey"
             columns: ["actual_payment_id"]
             isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["actual_payment_id"]
-          },
-          {
-            foreignKeyName: "fee_calculations_actual_payment_id_fkey"
-            columns: ["actual_payment_id"]
-            isOneToOne: false
             referencedRelation: "fee_tracking_enhanced_view"
             referencedColumns: ["actual_payment_id"]
           },
@@ -1907,6 +1900,8 @@ export type Database = {
       generated_letters: {
         Row: {
           body_content_html: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           clicked_at: string | null
           client_id: string | null
           created_at: string | null
@@ -1947,6 +1942,8 @@ export type Database = {
         }
         Insert: {
           body_content_html?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           clicked_at?: string | null
           client_id?: string | null
           created_at?: string | null
@@ -1987,6 +1984,8 @@ export type Database = {
         }
         Update: {
           body_content_html?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           clicked_at?: string | null
           client_id?: string | null
           created_at?: string | null
@@ -2572,13 +2571,6 @@ export type Database = {
             foreignKeyName: "payment_deviations_actual_payment_id_fkey"
             columns: ["actual_payment_id"]
             isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["actual_payment_id"]
-          },
-          {
-            foreignKeyName: "payment_deviations_actual_payment_id_fkey"
-            columns: ["actual_payment_id"]
-            isOneToOne: false
             referencedRelation: "fee_tracking_enhanced_view"
             referencedColumns: ["actual_payment_id"]
           },
@@ -2750,13 +2742,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "actual_payments"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_installments_actual_payment_id_fkey"
-            columns: ["actual_payment_id"]
-            isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["actual_payment_id"]
           },
           {
             foreignKeyName: "payment_installments_actual_payment_id_fkey"
@@ -4292,10 +4277,6 @@ export type Database = {
     Views: {
       collection_dashboard_view: {
         Row: {
-          actual_payment_date: string | null
-          actual_payment_id: string | null
-          actual_payment_method: string | null
-          actual_payment_reference: string | null
           amount_after_selected_discount: number | null
           amount_original: number | null
           amount_paid: number | null
@@ -4306,9 +4287,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           days_since_sent: number | null
-          deviation_alert_level: string | null
           fee_calculation_id: string | null
-          has_deviation: boolean | null
           has_dispute: boolean | null
           interaction_count: number | null
           last_interaction: string | null
@@ -4787,14 +4766,27 @@ export type Database = {
           client_id: string
           client_name: string
           client_name_hebrew: string
+          group_audit_before_vat: number
+          group_audit_with_vat: number
+          group_bookkeeping_before_vat: number
+          group_bookkeeping_with_vat: number
+          group_calculation_id: string
+          group_calculation_status: string
+          group_id: string
+          group_letter_id: string
+          group_letter_sent_at: string
+          group_name: string
           has_calculation: boolean
           has_letter: boolean
           letter_id: string
           letter_sent_at: string
+          payer_client_id: string
+          payer_client_name: string
           payment_amount: number
           payment_date: string
           payment_method_selected: string
           payment_method_selected_at: string
+          payment_role: string
           payment_status: string
           tax_id: string
         }[]

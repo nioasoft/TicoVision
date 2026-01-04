@@ -12,7 +12,8 @@ export type LetterStatus =
   | 'saved'          // נשמר ידנית - manually saved, not sent yet
   | 'sent_email'     // נשלח במייל - sent via email
   | 'sent_whatsapp'  // נשלח בוואטסאפ - sent via WhatsApp
-  | 'sent_print';    // הודפס - printed
+  | 'sent_print'     // הודפס - printed
+  | 'cancelled';     // בוטל - cancelled, excluded from collection
 
 export type LetterTemplateType = 
   | 'external_index_only'        // A - חיצוניים - שינוי מדד
@@ -179,6 +180,9 @@ export interface GeneratedLetter {
   // Version tracking fields
   parent_letter_id?: string | null;
   version_number: number;
+  // Cancellation tracking
+  cancelled_at?: Date;
+  cancelled_by?: string;
 }
 
 export interface LetterPreviewRequest {

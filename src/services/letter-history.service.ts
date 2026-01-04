@@ -9,7 +9,7 @@ import type { Database } from '@/types/supabase';
 type GeneratedLetter = Database['public']['Tables']['generated_letters']['Row'];
 
 export interface LetterHistoryFilters {
-  status?: 'draft' | 'saved' | 'sent_email' | 'sent_whatsapp' | 'sent_print' | string[] | string; // Updated: new status values + array support
+  status?: 'draft' | 'saved' | 'sent_email' | 'sent_whatsapp' | 'sent_print' | 'cancelled' | string[] | string; // Updated: new status values + array support
   templateType?: string;
   clientId?: string;
   groupId?: string; // NEW: Filter by group
@@ -303,6 +303,85 @@ class LetterHistoryService {
       return { success: true, error: null };
     } catch (error) {
       console.error('Error deleting draft:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+      };
+    }
+  }
+
+  /**
+   * Cancel a sent letter (excludes from collection tracking)
+   */
+  async cancelLetter(letterId: string): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      const { data: letter, error: fetchError } = await this.getLetterById(letterId);
+
+      if (fetchError || !letter) {
+        throw fetchError || new Error('Letter not found');
+      }
+
+      // Only sent letters can be cancelled
+      if (!['sent_email', 'sent_whatsapp', 'sent_print'].includes(letter.status!)) {
+        throw new Error('רק מכתבים שנשלחו יכולים להתבטל');
+      }
+
+      // Get current user ID
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('לא מחובר - אנא התחבר מחדש');
+      }
+
+      const { error } = await supabase
+        .from('generated_letters')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: user.id,
+        })
+        .eq('id', letterId);
+
+      if (error) throw error;
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error cancelling letter:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error : new Error('Unknown error'),
+      };
+    }
+  }
+
+  /**
+   * Restore a cancelled letter back to its original sent status
+   */
+  async restoreLetter(letterId: string, originalStatus: 'sent_email' | 'sent_whatsapp' | 'sent_print' = 'sent_email'): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      const { data: letter, error: fetchError } = await this.getLetterById(letterId);
+
+      if (fetchError || !letter) {
+        throw fetchError || new Error('Letter not found');
+      }
+
+      if (letter.status !== 'cancelled') {
+        throw new Error('רק מכתבים מבוטלים יכולים לשוחזר');
+      }
+
+      const { error } = await supabase
+        .from('generated_letters')
+        .update({
+          status: originalStatus,
+          cancelled_at: null,
+          cancelled_by: null,
+        })
+        .eq('id', letterId);
+
+      if (error) throw error;
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error restoring letter:', error);
       return {
         success: false,
         error: error instanceof Error ? error : new Error('Unknown error'),

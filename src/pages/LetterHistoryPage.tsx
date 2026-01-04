@@ -385,6 +385,50 @@ export function LetterHistoryPage() {
   };
 
   /**
+   * Handle cancel letter
+   */
+  const handleCancelLetter = async (letterId: string) => {
+    if (!confirm('האם אתה בטוח שברצונך לבטל מכתב זה? המכתב לא יופיע יותר בגבייה.')) {
+      return;
+    }
+
+    try {
+      const { success, error } = await letterHistoryService.cancelLetter(letterId);
+
+      if (error) throw error;
+
+      toast.success('המכתב בוטל בהצלחה');
+      loadData();
+      loadStatistics();
+    } catch (error) {
+      console.error('Error cancelling letter:', error);
+      toast.error('שגיאה בביטול המכתב');
+    }
+  };
+
+  /**
+   * Handle restore letter
+   */
+  const handleRestoreLetter = async (letterId: string) => {
+    if (!confirm('האם אתה בטוח שברצונך לשחזר מכתב זה?')) {
+      return;
+    }
+
+    try {
+      const { success, error } = await letterHistoryService.restoreLetter(letterId);
+
+      if (error) throw error;
+
+      toast.success('המכתב שוחזר בהצלחה');
+      loadData();
+      loadStatistics();
+    } catch (error) {
+      console.error('Error restoring letter:', error);
+      toast.error('שגיאה בשחזור המכתב');
+    }
+  };
+
+  /**
    * Handle refresh
    */
   const handleRefresh = () => {
@@ -677,15 +721,16 @@ export function LetterHistoryPage() {
                 <div className="space-y-4">
                   <h4 className="font-medium">פילטרים מתקדמים</h4>
 
-                  {/* Status Multi-Select (only for sent tab) */}
-                  {activeTab === 'sent' && (
+                  {/* Status Multi-Select (for sent tab or all tab) */}
+                  {(activeTab === 'sent' || activeTab === 'all') && (
                     <div>
-                      <Label className="mb-2 block rtl:text-right ltr:text-left">סטטוס שליחה</Label>
+                      <Label className="mb-2 block rtl:text-right ltr:text-left">סטטוס</Label>
                       <div className="space-y-2">
                         {[
                           { value: 'sent_email', label: 'נשלח במייל' },
                           { value: 'sent_whatsapp', label: 'נשלח בWhatsApp' },
                           { value: 'sent_print', label: 'הודפס' },
+                          { value: 'cancelled', label: 'בוטל' },
                         ].map(status => (
                           <div key={status.value} className="flex items-center gap-2 rtl:flex-row-reverse">
                             <Checkbox
@@ -925,6 +970,8 @@ export function LetterHistoryPage() {
                   onEditLetter={handleEditLetter}
                   onDeleteDraft={handleDeleteDraft}
                   onGeneratePDF={handleGeneratePDF}
+                  onCancelLetter={handleCancelLetter}
+                  onRestoreLetter={handleRestoreLetter}
                   isDraftsMode={isDraftsMode}
                   isSelectMode={isSelectMode}
                   selectedIds={selectedDraftIds}
@@ -947,6 +994,8 @@ export function LetterHistoryPage() {
                         onEditLetter={handleEditLetter}
                         onDeleteDraft={handleDeleteDraft}
                         onGeneratePDF={handleGeneratePDF}
+                        onCancelLetter={handleCancelLetter}
+                        onRestoreLetter={handleRestoreLetter}
                         isDraftsMode={isDraftsMode}
                         isSelectMode={isSelectMode}
                         selectedIds={selectedDraftIds}
@@ -972,6 +1021,8 @@ export function LetterHistoryPage() {
                         onEditLetter={handleEditLetter}
                         onDeleteDraft={handleDeleteDraft}
                         onGeneratePDF={handleGeneratePDF}
+                        onCancelLetter={handleCancelLetter}
+                        onRestoreLetter={handleRestoreLetter}
                         isDraftsMode={isDraftsMode}
                         isSelectMode={isSelectMode}
                         selectedIds={selectedDraftIds}

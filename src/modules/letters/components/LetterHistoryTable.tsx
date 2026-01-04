@@ -26,6 +26,8 @@ import {
   Send,
   Edit,
   FileDown,
+  XCircle,
+  RotateCcw,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -45,6 +47,8 @@ export interface LetterHistoryTableProps {
   onDeleteDraft?: (letterId: string) => void;
   onPrintLetter?: (letterId: string) => void;
   onGeneratePDF?: (letterId: string) => void;
+  onCancelLetter?: (letterId: string) => void;
+  onRestoreLetter?: (letterId: string) => void;
   isDraftsMode?: boolean;
   // Multi-select support (for bulk delete in drafts mode)
   isSelectMode?: boolean;
@@ -60,6 +64,8 @@ export function LetterHistoryTable({
   onDeleteDraft,
   onPrintLetter,
   onGeneratePDF,
+  onCancelLetter,
+  onRestoreLetter,
   isDraftsMode = false,
   isSelectMode = false,
   selectedIds = [],
@@ -103,6 +109,13 @@ export function LetterHistoryTable({
           <Badge variant="default" className="gap-1 bg-orange-100 text-orange-800">
             <Printer className="h-3 w-3" />
             הודפס
+          </Badge>
+        );
+      case 'cancelled':
+        return (
+          <Badge variant="destructive" className="gap-1 bg-red-100 text-red-800">
+            <XCircle className="h-3 w-3" />
+            בוטל
           </Badge>
         );
       // Legacy statuses (for backward compatibility)
@@ -259,6 +272,28 @@ export function LetterHistoryTable({
                         >
                           <Trash2 className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
                           מחק
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* Cancel button - for sent letters */}
+                      {['sent_email', 'sent_whatsapp', 'sent_print'].includes(letter.status) && onCancelLetter && (
+                        <DropdownMenuItem
+                          onClick={() => onCancelLetter(letter.id)}
+                          className="text-red-600"
+                        >
+                          <XCircle className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                          בטל מכתב
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* Restore button - for cancelled letters */}
+                      {letter.status === 'cancelled' && onRestoreLetter && (
+                        <DropdownMenuItem
+                          onClick={() => onRestoreLetter(letter.id)}
+                          className="text-green-600"
+                        >
+                          <RotateCcw className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                          שחזר מכתב
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
