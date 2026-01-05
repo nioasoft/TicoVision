@@ -24,6 +24,7 @@ import { ExcellenceBonusForm } from '@/components/tzlul-approvals/forms/Excellen
 import { EmployeePaymentsForm } from '@/components/tzlul-approvals/forms/EmployeePaymentsForm';
 import { TransferredAmountsForm } from '@/components/tzlul-approvals/forms/TransferredAmountsForm';
 import { GoingConcernForm } from '@/components/tzlul-approvals/forms/GoingConcernForm';
+import { HealthBenefitsForm } from '@/components/tzlul-approvals/forms/HealthBenefitsForm';
 import { SignatureIdentificationTab } from '@/components/tzlul-approvals/SignatureIdentificationTab';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
@@ -42,6 +43,7 @@ import {
   validateEmployeePayments,
   validateTransferredAmounts,
   validateGoingConcern,
+  validateHealthBenefits,
   type TzlulFormState,
   type TzlulVariables,
 } from '@/types/tzlul-approvals.types';
@@ -174,6 +176,8 @@ export function TzlulApprovalsPage() {
         return validateTransferredAmounts(mergedData);
       case 'tzlul_going_concern':
         return validateGoingConcern(mergedData);
+      case 'tzlul_health_benefits':
+        return validateHealthBenefits(mergedData);
       default:
         return false;
     }
@@ -194,6 +198,8 @@ export function TzlulApprovalsPage() {
         return formState.documentData.transferredAmounts;
       case 5:
         return formState.documentData.goingConcern;
+      case 6:
+        return formState.documentData.healthBenefits;
       default:
         return {};
     }
@@ -493,6 +499,22 @@ export function TzlulApprovalsPage() {
                 documentData: {
                   ...formState.documentData,
                   goingConcern: data,
+                },
+              })
+            }
+            disabled={generating}
+          />
+        );
+      case 6:
+        return (
+          <HealthBenefitsForm
+            value={formState.documentData.healthBenefits}
+            onChange={(data) =>
+              setFormState({
+                ...formState,
+                documentData: {
+                  ...formState.documentData,
+                  healthBenefits: data,
                 },
               })
             }

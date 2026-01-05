@@ -1,13 +1,14 @@
 /**
  * Tzlul Approvals Documents - TypeScript Types
  *
- * This file contains all type definitions for the 6 Tzlul company approval documents:
+ * This file contains all type definitions for the 7 Tzlul company approval documents:
  * 1. Violation Correction Letter (מכתב תיקון הפרות)
  * 2. Summer Bonus Opinion (חוות דעת מענק קיץ)
  * 3. Excellence Bonus Opinion (חוות דעת מענק מצויינות)
  * 4. Employee Payments Approval (אישור תשלומים לעובדים)
  * 5. Transferred Amounts Approval (אישור העברת סכומים)
  * 6. Going Concern Approval (הוכחת עמידת המשתתף בתנאי סעיף 2.1.8/2.2.8)
+ * 7. Health Benefits Opinion (חוות דעת הבראה/מחלה/ותק)
  */
 
 // ============================================================================
@@ -155,6 +156,33 @@ export interface GoingConcernVariables extends TzlulSharedData {
 }
 
 // ============================================================================
+// DOCUMENT #7: Health Benefits Opinion (חוות דעת הבראה/מחלה/ותק)
+// ============================================================================
+
+/** Invoice item with number and amount */
+export interface HealthBenefitsInvoice {
+  /** Invoice number e.g., "42602" */
+  invoice_number: string;
+
+  /** Invoice amount in ILS */
+  amount: number;
+}
+
+export interface HealthBenefitsVariables extends TzlulSharedData {
+  /** Month/Year format e.g., "10/2025" */
+  month_year: string;
+
+  /** Location name e.g., "רשות שדות התעופה – גשר אלנבי" */
+  location: string;
+
+  /** Contract number e.g., "2022/070/0002/00" */
+  contract_number: string;
+
+  /** Array of invoices with number and amount */
+  invoices: HealthBenefitsInvoice[];
+}
+
+// ============================================================================
 // TEMPLATE TYPE DEFINITIONS (for generated_letters table)
 // ============================================================================
 
@@ -164,7 +192,8 @@ export type TzlulTemplateType =
   | 'tzlul_excellence_bonus'        // Document #3
   | 'tzlul_employee_payments'       // Document #4
   | 'tzlul_transferred_amounts'     // Document #5
-  | 'tzlul_going_concern';          // Document #6
+  | 'tzlul_going_concern'           // Document #6
+  | 'tzlul_health_benefits';        // Document #7
 
 /** Union type of all possible Tzlul document variables */
 export type TzlulVariables =
@@ -173,14 +202,15 @@ export type TzlulVariables =
   | ExcellenceBonusVariables
   | EmployeePaymentsVariables
   | TransferredAmountsVariables
-  | GoingConcernVariables;
+  | GoingConcernVariables
+  | HealthBenefitsVariables;
 
 // ============================================================================
 // UI FORM STATE (for managing form data)
 // ============================================================================
 
 export interface TzlulFormState {
-  /** Currently selected letter type index (0-5) */
+  /** Currently selected letter type index (0-6) */
   selectedLetterType: number;
 
   /** Shared data (document date) */
@@ -194,6 +224,7 @@ export interface TzlulFormState {
     employeePayments: Partial<EmployeePaymentsVariables>;
     transferredAmounts: Partial<TransferredAmountsVariables>;
     goingConcern: Partial<GoingConcernVariables>;
+    healthBenefits: Partial<HealthBenefitsVariables>;
   };
 }
 
@@ -201,9 +232,9 @@ export interface TzlulFormState {
 // HELPER TYPES
 // ============================================================================
 
-/** Letter type configuration for the 6 documents */
+/** Letter type configuration for the 7 documents */
 export interface TzlulLetterType {
-  /** Letter type index (0-5) */
+  /** Letter type index (0-6) */
   index: number;
 
   /** Letter label in Hebrew */
@@ -216,7 +247,7 @@ export interface TzlulLetterType {
   templateType: TzlulTemplateType;
 }
 
-/** Configuration for all 6 letter types */
+/** Configuration for all 7 letter types */
 export const TZLUL_LETTER_TYPES: TzlulLetterType[] = [
   {
     index: 0,
@@ -253,6 +284,12 @@ export const TZLUL_LETTER_TYPES: TzlulLetterType[] = [
     label: 'הוכחת עמידה בתנאי עסק חי',
     description: 'אישור רו"ח בדבר עמידה בתנאי סעיף 2.1.8/2.2.8',
     templateType: 'tzlul_going_concern',
+  },
+  {
+    index: 6,
+    label: 'חוות דעת הבראה/מחלה/ותק',
+    description: 'חוות דעת רו"ח לעניין דמי הבראה, מחלה ותוספת ותק',
+    templateType: 'tzlul_health_benefits',
   },
 ];
 
@@ -333,6 +370,23 @@ export function validateGoingConcern(data: Partial<GoingConcernVariables>): data
   );
 }
 
+/** Validate health benefits document data */
+export function validateHealthBenefits(data: Partial<HealthBenefitsVariables>): data is HealthBenefitsVariables {
+  return (
+    validateTzlulSharedData(data) &&
+    !!data.month_year &&
+    !!data.location &&
+    !!data.contract_number &&
+    Array.isArray(data.invoices) &&
+    data.invoices.length > 0 &&
+    data.invoices.every(inv =>
+      inv.invoice_number.trim() !== '' &&
+      typeof inv.amount === 'number' &&
+      inv.amount > 0
+    )
+  );
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -377,6 +431,12 @@ export function createInitialTzlulFormState(): TzlulFormState {
         last_audited_report_date: '',
         audit_opinion_date: '',
         reviewed_statements_option: undefined,
+      },
+      healthBenefits: {
+        month_year: '',
+        location: 'רשות שדות התעופה – גשר אלנבי',
+        contract_number: '2022/070/0002/00',
+        invoices: [{ invoice_number: '', amount: 0 }],
       },
     },
   };

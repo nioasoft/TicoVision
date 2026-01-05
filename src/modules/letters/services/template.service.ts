@@ -33,6 +33,8 @@ import type {
   EmployeePaymentsVariables,
   TransferredAmountsVariables,
   GoingConcernVariables,
+  HealthBenefitsVariables,
+  HealthBenefitsInvoice,
   EmployeePaymentRow
 } from '@/types/tzlul-approvals.types';
 import { TZLUL_CLIENT_NAME, TZLUL_TAX_ID } from '@/types/tzlul-approvals.types';
@@ -67,7 +69,8 @@ const TZLUL_LABELS: Record<TzlulTemplateType, string> = {
   'tzlul_excellence_bonus': 'חוות דעת מענק מצויינות',
   'tzlul_employee_payments': 'אישור תשלומים לעובדים',
   'tzlul_transferred_amounts': 'אישור העברת סכומים',
-  'tzlul_going_concern': 'הוכחת עמידה בתנאי עסק חי'
+  'tzlul_going_concern': 'הוכחת עמידה בתנאי עסק חי',
+  'tzlul_health_benefits': 'חוות דעת הבראה/מחלה/ותק'
 };
 
 export class TemplateService extends BaseService {
@@ -2346,7 +2349,8 @@ export class TemplateService extends BaseService {
       const htmlVariables = [
         'recipient',                   // Recipient address (with <b>, <u> tags)
         'employee_payments_rows',      // Employee payments table rows
-        'invoice_numbers_text'         // Formatted invoice numbers text
+        'invoice_numbers_text',        // Formatted invoice numbers text (summer bonus)
+        'invoices_text'                // Formatted invoices with amounts (health benefits)
       ];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
@@ -2449,7 +2453,8 @@ export class TemplateService extends BaseService {
       'tzlul_excellence_bonus': 'excellence-bonus.html',
       'tzlul_employee_payments': 'employee-payments.html',
       'tzlul_transferred_amounts': 'transferred-amounts.html',
-      'tzlul_going_concern': 'going-concern.html'
+      'tzlul_going_concern': 'going-concern.html',
+      'tzlul_health_benefits': 'health-benefits.html'
     };
 
     return bodyMap[templateType];
@@ -2582,6 +2587,25 @@ export class TemplateService extends BaseService {
         }
         break;
       }
+
+      case 'tzlul_health_benefits': {
+        const healthVars = variables as HealthBenefitsVariables;
+        // Build invoices text with amounts - format: "X ש"ח הכלולים בחשבונית מספר Y ו-Z ש"ח הכלולים בחשבונית מספר W"
+        if (healthVars.invoices && healthVars.invoices.length > 0) {
+          const validInvoices = healthVars.invoices.filter(
+            (inv: HealthBenefitsInvoice) => inv.invoice_number.trim() !== '' && inv.amount > 0
+          );
+          if (validInvoices.length > 0) {
+            const invoiceTexts = validInvoices.map((inv: HealthBenefitsInvoice) =>
+              `<b>${inv.amount.toLocaleString('he-IL')}</b> ש"ח בחשבונית מספר ${inv.invoice_number}`
+            );
+            processed.invoices_text = invoiceTexts.join(' ו-');
+            // Calculate total for display if needed
+            processed.total_amount = validInvoices.reduce((sum: number, inv: HealthBenefitsInvoice) => sum + inv.amount, 0).toLocaleString('he-IL');
+          }
+        }
+        break;
+      }
     }
 
     return processed;
@@ -2627,6 +2651,9 @@ export class TemplateService extends BaseService {
 
       case 'tzlul_going_concern':
         return `<b>לכבוד</b><br/><b>חברת צלול ניקיון ואחזקה בע"מ ח.פ. 514327642</b>`;
+
+      case 'tzlul_health_benefits':
+        return `<b>לכבוד</b><br/><b>צלול ניקיון ואחזקה בע"מ</b><br/><b>אור יהודה</b><br/><br/><b>א.ג.נ,</b>`;
 
       default:
         return `<b>לכבוד</b><br/><br/><b>א.ג.נ,</b>`;
