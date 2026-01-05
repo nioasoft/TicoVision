@@ -65,7 +65,7 @@ async function createCardcomPaymentPage(
 
     const productName = `שכר טרחה רואה חשבון #${feeId.substring(0, 8)}`;
 
-    // Always send UIDefinition to control payment installments
+    // Use AdvancedDefinition to control payment installments (NOT UIDefinition!)
     // - For single payment: MinNumOfPayments=1, MaxNumOfPayments=1
     // - For installments: MinNumOfPayments=1, MaxNumOfPayments=10
     const body = {
@@ -79,7 +79,7 @@ async function createCardcomPaymentPage(
       SuccessRedirectUrl: `${APP_URL}/payment/success?fee_id=${feeId}`,
       FailedRedirectUrl: `${APP_URL}/payment/error?fee_id=${feeId}`,
       WebHookUrl: `${SUPABASE_URL}/functions/v1/cardcom-webhook`,
-      UIDefinition: {
+      AdvancedDefinition: {
         MinNumOfPayments: 1,           // Always allow minimum 1 payment
         MaxNumOfPayments: maxPayments, // 1 for single, 10 for installments
       },
