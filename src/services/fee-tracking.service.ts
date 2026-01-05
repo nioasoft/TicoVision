@@ -136,8 +136,14 @@ class FeeTrackingService extends BaseService {
       (c) => c.payment_status === 'not_sent'
     ).length;
 
+    // Pending only (not including partial_paid)
     const sent_not_paid = clients.filter(
-      (c) => c.payment_status === 'pending' || c.payment_status === 'partial_paid'
+      (c) => c.payment_status === 'pending'
+    ).length;
+
+    // Partial paid - separate count
+    const partial_paid = clients.filter(
+      (c) => c.payment_status === 'partial_paid'
     ).length;
 
     const paid = clients.filter((c) => c.payment_status === 'paid').length;
@@ -151,6 +157,7 @@ class FeeTrackingService extends BaseService {
       not_calculated,
       calculated_not_sent,
       sent_not_paid,
+      partial_paid,
       paid,
       completion_percentage,
     };

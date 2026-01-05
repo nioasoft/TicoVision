@@ -247,33 +247,50 @@ serve(async (req) => {
       if (paymentSuccessful && existingTransaction.fee_calculation_id) {
         console.log('Processing successful payment...');
 
-        // Get fee_calculation to get client_id and tenant_id (including retainer_calculation for retainer clients)
-        const { data: feeCalc, error: feeCalcError } = await supabase
-          .from('fee_calculations')
-          .select('client_id, tenant_id, amount_after_selected_discount, total_amount, retainer_calculation')
-          .eq('id', existingTransaction.fee_calculation_id)
+        // IDEMPOTENCY CHECK: Check if this payment was already processed
+        // Cardcom sends webhooks twice, so we need to prevent duplicate records
+        const paymentReference = webhookData.TranzactionInfo?.CouponNumber || transactionId;
+        const { data: existingPayment } = await supabase
+          .from('actual_payments')
+          .select('id')
+          .eq('fee_calculation_id', existingTransaction.fee_calculation_id)
+          .eq('payment_reference', paymentReference)
           .single();
 
-        if (feeCalcError) {
-          console.error('Error fetching fee calculation:', feeCalcError);
+        if (existingPayment) {
+          console.log('⚠️ Payment already processed (idempotency check). Skipping duplicate processing.');
+          console.log('   Existing payment ID:', existingPayment.id);
+          // Skip all duplicate processing - don't create records or send emails again
         } else {
-          // Calculate VAT breakdown (18% VAT in Israel)
-          const VAT_RATE = 0.18;
-          const beforeVat = Math.round((amount / (1 + VAT_RATE)) * 100) / 100;
-          const vat = Math.round((beforeVat * VAT_RATE) * 100) / 100;
-          const withVat = beforeVat + vat;
+          // First time processing this payment - proceed normally
+          console.log('🆕 First time processing this payment');
 
-          // Determine payment method based on number of installments
-          // Valid values: 'bank_transfer', 'cc_single', 'cc_installments', 'checks'
-          const numInstallments = webhookData.TranzactionInfo?.NumberOfPayments || 1;
-          const paymentMethod = numInstallments > 1 ? 'cc_installments' : 'cc_single';
+          // Get fee_calculation to get client_id and tenant_id (including retainer_calculation for retainer clients)
+          const { data: feeCalc, error: feeCalcError } = await supabase
+            .from('fee_calculations')
+            .select('client_id, tenant_id, amount_after_selected_discount, total_amount, retainer_calculation')
+            .eq('id', existingTransaction.fee_calculation_id)
+            .single();
 
-          // Create actual_payments record for proper tracking
-          // Note: payment_date column is type 'date', not timestamp - use YYYY-MM-DD format
-          const paymentDateStr = new Date().toISOString().split('T')[0];
-          const { data: actualPayment, error: actualPaymentError } = await supabase
-            .from('actual_payments')
-            .insert({
+          if (feeCalcError) {
+            console.error('Error fetching fee calculation:', feeCalcError);
+          } else {
+            // Calculate VAT breakdown (18% VAT in Israel)
+            const VAT_RATE = 0.18;
+            const beforeVat = Math.round((amount / (1 + VAT_RATE)) * 100) / 100;
+            const vat = Math.round((beforeVat * VAT_RATE) * 100) / 100;
+            const withVat = beforeVat + vat;
+
+            // Determine payment method based on number of installments
+            // Valid values: 'bank_transfer', 'cc_single', 'cc_installments', 'checks'
+            const numInstallments = webhookData.TranzactionInfo?.NumberOfPayments || 1;
+            const paymentMethod = numInstallments > 1 ? 'cc_installments' : 'cc_single';
+
+            // Create actual_payments record for proper tracking
+            // Note: payment_date column is type 'date', not timestamp - use YYYY-MM-DD format
+            const paymentDateStr = new Date().toISOString().split('T')[0];
+
+            const actualPaymentData = {
               tenant_id: feeCalc.tenant_id,
               client_id: feeCalc.client_id,
               fee_calculation_id: existingTransaction.fee_calculation_id,
@@ -286,139 +303,150 @@ serve(async (req) => {
               payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
               num_installments: numInstallments,
               notes: `Cardcom payment - ${webhookData.TranzactionInfo?.CardOwnerName || 'Unknown'}`,
+            };
+
+            console.log('📝 Creating actual_payments with data:', JSON.stringify(actualPaymentData, null, 2));
+
+            const { data: actualPayment, error: actualPaymentError } = await supabase
+              .from('actual_payments')
+              .insert(actualPaymentData)
+              .select('id')
+              .single();
+
+            if (actualPaymentError) {
+              console.error('❌ Error creating actual payment:', JSON.stringify(actualPaymentError, null, 2));
+              console.error('   - Code:', actualPaymentError.code);
+              console.error('   - Message:', actualPaymentError.message);
+              console.error('   - Details:', actualPaymentError.details);
+              console.error('   - Hint:', actualPaymentError.hint);
+            } else {
+              console.log(`✅ Actual payment created: ${actualPayment.id}`);
+
+              // Calculate and create deviation record
+              // Use the amount from the payment_transaction (already has discount applied)
+              // Fall back to retainer_calculation or fee amounts if needed
+              const transactionExpectedAmount = parseFloat(existingTransaction.amount) || 0;
+              const retainerAmount = feeCalc.retainer_calculation?.total_with_vat || 0;
+              const feeAmount = feeCalc.amount_after_selected_discount || feeCalc.total_amount || 0;
+              const expectedAmount = transactionExpectedAmount > 0
+                ? transactionExpectedAmount
+                : (retainerAmount > 0 ? retainerAmount * 0.92 : feeAmount);
+              const deviationAmount = expectedAmount - amount;
+              const deviationPercent = expectedAmount > 0 ? (deviationAmount / expectedAmount) * 100 : 0;
+
+              // Determine alert level
+              let alertLevel = 'info';
+              let alertMessage = 'התשלום תואם לסכום הצפוי';
+              if (Math.abs(deviationPercent) > 5) {
+                alertLevel = 'critical';
+                alertMessage = `סטייה משמעותית: ${deviationPercent.toFixed(1)}%`;
+              } else if (Math.abs(deviationPercent) > 2) {
+                alertLevel = 'warning';
+                alertMessage = `סטייה קטנה: ${deviationPercent.toFixed(1)}%`;
+              }
+
+              const { error: deviationError } = await supabase
+                .from('payment_deviations')
+                .insert({
+                  tenant_id: feeCalc.tenant_id,
+                  client_id: feeCalc.client_id,
+                  fee_calculation_id: existingTransaction.fee_calculation_id,
+                  actual_payment_id: actualPayment.id,
+                  expected_amount: expectedAmount,
+                  actual_amount: amount,
+                  deviation_amount: deviationAmount,
+                  deviation_percent: deviationPercent,
+                  alert_level: alertLevel,
+                  alert_message: alertMessage,
+                });
+
+              if (deviationError) {
+                console.error('Error creating deviation:', deviationError);
+              } else {
+                console.log('✅ Payment deviation recorded');
+              }
+
+              // Update fee_calculations with payment info and deviation
+              // Note: payment_date column is type 'date', not timestamp - use YYYY-MM-DD format
+              const { error: feeUpdateError } = await supabase
+                .from('fee_calculations')
+                .update({
+                  status: 'paid',
+                  payment_date: paymentDateStr,
+                  payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
+                  actual_payment_id: actualPayment.id,
+                  has_deviation: alertLevel !== 'info',
+                  deviation_alert_level: alertLevel,
+                })
+                .eq('id', existingTransaction.fee_calculation_id);
+
+              if (feeUpdateError) {
+                console.error('Error updating fee calculation:', feeUpdateError);
+              } else {
+                console.log(`✅ Fee calculation marked as paid: ${existingTransaction.fee_calculation_id}`);
+              }
+            }
+          }
+
+          // Update payment_method_selections
+          const { error: selectionUpdateError } = await supabase
+            .from('payment_method_selections')
+            .update({
+              completed_payment: true,
+              payment_transaction_id: existingTransaction.id,
             })
-            .select('id')
-            .single();
+            .eq('fee_calculation_id', existingTransaction.fee_calculation_id);
 
-          if (actualPaymentError) {
-            console.error('Error creating actual payment:', actualPaymentError);
+          if (selectionUpdateError) {
+            console.error('Error updating payment selection:', selectionUpdateError);
           } else {
-            console.log(`✅ Actual payment created: ${actualPayment.id}`);
+            console.log('✅ Payment selection marked as completed');
+          }
 
-            // Calculate and create deviation record
-            // Use the amount from the payment_transaction (already has discount applied)
-            // Fall back to retainer_calculation or fee amounts if needed
-            const transactionExpectedAmount = parseFloat(existingTransaction.amount) || 0;
-            const retainerAmount = feeCalc.retainer_calculation?.total_with_vat || 0;
-            const feeAmount = feeCalc.amount_after_selected_discount || feeCalc.total_amount || 0;
-            const expectedAmount = transactionExpectedAmount > 0
-              ? transactionExpectedAmount
-              : (retainerAmount > 0 ? retainerAmount * 0.92 : feeAmount);
-            const deviationAmount = expectedAmount - amount;
-            const deviationPercent = expectedAmount > 0 ? (deviationAmount / expectedAmount) * 100 : 0;
-
-            // Determine alert level
-            let alertLevel = 'info';
-            let alertMessage = 'התשלום תואם לסכום הצפוי';
-            if (Math.abs(deviationPercent) > 5) {
-              alertLevel = 'critical';
-              alertMessage = `סטייה משמעותית: ${deviationPercent.toFixed(1)}%`;
-            } else if (Math.abs(deviationPercent) > 2) {
-              alertLevel = 'warning';
-              alertMessage = `סטייה קטנה: ${deviationPercent.toFixed(1)}%`;
-            }
-
-            const { error: deviationError } = await supabase
-              .from('payment_deviations')
-              .insert({
-                tenant_id: feeCalc.tenant_id,
-                client_id: feeCalc.client_id,
-                fee_calculation_id: existingTransaction.fee_calculation_id,
-                actual_payment_id: actualPayment.id,
-                expected_amount: expectedAmount,
-                actual_amount: amount,
-                deviation_amount: deviationAmount,
-                deviation_percent: deviationPercent,
-                alert_level: alertLevel,
-                alert_message: alertMessage,
-              });
-
-            if (deviationError) {
-              console.error('Error creating deviation:', deviationError);
-            } else {
-              console.log('✅ Payment deviation recorded');
-            }
-
-            // Update fee_calculations with payment info and deviation
-            // Note: payment_date column is type 'date', not timestamp - use YYYY-MM-DD format
-            const { error: feeUpdateError } = await supabase
+          // Send payment notification email
+          try {
+            // Get fee calculation to get tenant and client info
+            const { data: feeInfo } = await supabase
               .from('fee_calculations')
-              .update({
-                status: 'paid',
-                payment_date: paymentDateStr,
-                payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
-                actual_payment_id: actualPayment.id,
-                has_deviation: alertLevel !== 'info',
-                deviation_alert_level: alertLevel,
-              })
-              .eq('id', existingTransaction.fee_calculation_id);
-
-            if (feeUpdateError) {
-              console.error('Error updating fee calculation:', feeUpdateError);
-            } else {
-              console.log(`✅ Fee calculation marked as paid: ${existingTransaction.fee_calculation_id}`);
-            }
-          }
-        }
-
-        // Update payment_method_selections
-        const { error: selectionUpdateError } = await supabase
-          .from('payment_method_selections')
-          .update({
-            completed_payment: true,
-            payment_transaction_id: existingTransaction.id,
-          })
-          .eq('fee_calculation_id', existingTransaction.fee_calculation_id);
-
-        if (selectionUpdateError) {
-          console.error('Error updating payment selection:', selectionUpdateError);
-        } else {
-          console.log('✅ Payment selection marked as completed');
-        }
-
-        // Send payment notification email
-        try {
-          // Get fee calculation to get tenant and client info
-          const { data: feeInfo } = await supabase
-            .from('fee_calculations')
-            .select('tenant_id, client_id')
-            .eq('id', existingTransaction.fee_calculation_id)
-            .single();
-
-          if (feeInfo) {
-            // Get notification settings for tenant
-            const { data: notificationSettings } = await supabase
-              .from('notification_settings')
-              .select('notification_email, enable_email_notifications')
-              .eq('tenant_id', feeInfo.tenant_id)
+              .select('tenant_id, client_id')
+              .eq('id', existingTransaction.fee_calculation_id)
               .single();
 
-            // Get client name
-            const { data: clientData } = await supabase
-              .from('clients')
-              .select('company_name, commercial_name')
-              .eq('id', feeInfo.client_id)
-              .single();
+            if (feeInfo) {
+              // Get notification settings for tenant
+              const { data: notificationSettings } = await supabase
+                .from('notification_settings')
+                .select('notification_email, enable_email_notifications')
+                .eq('tenant_id', feeInfo.tenant_id)
+                .single();
 
-            const clientName = clientData?.company_name || clientData?.commercial_name || 'לקוח';
+              // Get client name
+              const { data: clientData } = await supabase
+                .from('clients')
+                .select('company_name, commercial_name')
+                .eq('id', feeInfo.client_id)
+                .single();
 
-            if (notificationSettings?.enable_email_notifications && notificationSettings?.notification_email) {
-              await sendPaymentNotification({
-                toEmail: notificationSettings.notification_email,
-                clientName,
-                amount,
-                cardOwnerName: webhookData.TranzactionInfo?.CardOwnerName || 'לא צוין',
-                approvalNumber: webhookData.TranzactionInfo?.ApprovalNumber || '',
-                numPayments: webhookData.TranzactionInfo?.NumberOfPayments || 1,
-              });
-            } else {
-              console.log('Payment notification skipped - email notifications disabled or no email configured');
+              const clientName = clientData?.company_name || clientData?.commercial_name || 'לקוח';
+
+              if (notificationSettings?.enable_email_notifications && notificationSettings?.notification_email) {
+                await sendPaymentNotification({
+                  toEmail: notificationSettings.notification_email,
+                  clientName,
+                  amount,
+                  cardOwnerName: webhookData.TranzactionInfo?.CardOwnerName || 'לא צוין',
+                  approvalNumber: webhookData.TranzactionInfo?.ApprovalNumber || '',
+                  numPayments: webhookData.TranzactionInfo?.NumberOfPayments || 1,
+                });
+              } else {
+                console.log('Payment notification skipped - email notifications disabled or no email configured');
+              }
             }
+          } catch (notificationError) {
+            console.error('Error sending payment notification:', notificationError);
+            // Don't fail the webhook for notification errors
           }
-        } catch (notificationError) {
-          console.error('Error sending payment notification:', notificationError);
-          // Don't fail the webhook for notification errors
-        }
+        } // End of idempotency else block
       }
     } else {
       // Transaction not found - cannot create without tenant_id and client_id (required fields)

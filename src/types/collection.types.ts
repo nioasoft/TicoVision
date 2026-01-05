@@ -282,9 +282,9 @@ export interface CollectionRow {
   amount_original: number;
   amount_before_vat?: number;
 
-  // Bookkeeping fee (הנהלת חשבונות - monthly)
-  bookkeeping_monthly_before_vat?: number;
-  bookkeeping_monthly_with_vat?: number;
+  // Bookkeeping fee (הנהלת חשבונות - annual totals)
+  bookkeeping_before_vat?: number;
+  bookkeeping_with_vat?: number;
 
   // Payment
   payment_method_selected?: PaymentMethod;

@@ -41,7 +41,8 @@ import { TZLUL_CLIENT_NAME, TZLUL_TAX_ID } from '@/types/tzlul-approvals.types';
 import type {
   CompanyOnboardingTemplateType,
   CompanyOnboardingVariables,
-  VatRegistrationVariables
+  VatRegistrationVariables,
+  PriceQuoteVariables
 } from '@/types/company-onboarding.types';
 import type {
   AutoLetterTemplateType,
@@ -2791,7 +2792,7 @@ export class TemplateService extends BaseService {
       const bodyFile = this.getCompanyOnboardingBodyFileName(templateType);
       let body = await this.loadTemplateFile(`bodies/company-onboarding/${bodyFile}`);
 
-      // 3. Handle conditional WOLT section
+      // 3. Handle conditional sections based on template type
       if (templateType === 'company_onboarding_vat_registration') {
         const vatVars = variables as VatRegistrationVariables;
         if (vatVars.show_wolt_section) {
@@ -2801,6 +2802,37 @@ export class TemplateService extends BaseService {
         } else {
           // Remove WOLT placeholder
           body = body.replace('{{wolt_section}}', '');
+        }
+      }
+
+      // Handle price quote template conditionals (both small company and restaurant)
+      if (templateType === 'company_onboarding_price_quote_small' || templateType === 'company_onboarding_price_quote_restaurant') {
+        const priceVars = variables as PriceQuoteVariables;
+
+        // Handle transfer section - use appropriate file based on template type
+        if (priceVars.show_transfer_section) {
+          const transferFile = templateType === 'company_onboarding_price_quote_restaurant'
+            ? 'bodies/company-onboarding/transfer-section-restaurant.html'
+            : 'bodies/company-onboarding/transfer-section.html';
+          const transferSection = await this.loadTemplateFile(transferFile);
+          body = body.replace('{{transfer_section}}', transferSection);
+        } else {
+          body = body.replace('{{transfer_section}}', '');
+        }
+
+        // Handle additional notes section
+        if (priceVars.additional_notes && priceVars.additional_notes.trim()) {
+          const additionalNotesHtml = `
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+            ${priceVars.additional_notes.replace(/\n/g, '<br>')}
+        </div>
+    </td>
+</tr>`;
+          body = body.replace('{{additional_notes_section}}', additionalNotesHtml);
+        } else {
+          body = body.replace('{{additional_notes_section}}', '');
         }
       }
 
@@ -2833,7 +2865,7 @@ export class TemplateService extends BaseService {
             generated_content_html: fullHtml,
             generated_content_text: plainText,
             payment_link: null,
-            subject: (variables as VatRegistrationVariables).subject || 'מכתב קליטת חברה',
+            subject: (variables as { subject?: string }).subject || 'מסמך קליטת חברה',
             status: 'draft',
             created_at: new Date().toISOString(),
             created_by: null,
@@ -2855,7 +2887,7 @@ export class TemplateService extends BaseService {
         generated_content_html: fullHtml,
         generated_content_text: plainText,
         payment_link: null,
-        subject: (variables as VatRegistrationVariables).subject || 'מכתב קליטת חברה',
+        subject: (variables as { subject?: string }).subject || 'מסמך קליטת חברה',
         status: 'saved' as const,
         created_by: user.data.user?.id,
         created_by_name: user.data.user?.user_metadata?.full_name || user.data.user?.email
@@ -2914,7 +2946,9 @@ export class TemplateService extends BaseService {
    */
   private getCompanyOnboardingBodyFileName(templateType: CompanyOnboardingTemplateType): string {
     const bodyMap: Record<CompanyOnboardingTemplateType, string> = {
-      'company_onboarding_vat_registration': 'vat-registration.html'
+      'company_onboarding_vat_registration': 'vat-registration.html',
+      'company_onboarding_price_quote_small': 'price-quote-small.html',
+      'company_onboarding_price_quote_restaurant': 'price-quote-restaurant.html'
     };
 
     return bodyMap[templateType];
@@ -2985,6 +3019,18 @@ export class TemplateService extends BaseService {
     // Clear group_name if not applicable (when using client)
     if (!processed.group_name) {
       processed.group_name = '';
+    }
+
+    // Handle price quote specific formatting (both small company and restaurant)
+    if (templateType === 'company_onboarding_price_quote_small' || templateType === 'company_onboarding_price_quote_restaurant') {
+      const priceVars = variables as PriceQuoteVariables;
+
+      // Format fee amount with thousands separator
+      if (priceVars.fee_amount && priceVars.fee_amount > 0) {
+        processed.fee_amount_formatted = priceVars.fee_amount.toLocaleString('he-IL');
+      } else {
+        processed.fee_amount_formatted = '0';
+      }
     }
 
     return processed;

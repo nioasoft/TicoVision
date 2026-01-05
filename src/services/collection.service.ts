@@ -1126,8 +1126,9 @@ class CollectionService extends BaseService {
           days_since_sent: daysSinceSent,
           amount_original: amountOriginal,
           amount_before_vat: row.amount_before_vat ? Number(row.amount_before_vat) : undefined,
-          bookkeeping_monthly_before_vat: row.bookkeeping_monthly_before_vat ? Number(row.bookkeeping_monthly_before_vat) : undefined,
-          bookkeeping_monthly_with_vat: row.bookkeeping_monthly_with_vat ? Number(row.bookkeeping_monthly_with_vat) : undefined,
+          // Bookkeeping: use total annual amounts from view
+          bookkeeping_before_vat: row.bookkeeping_before_vat ? Number(row.bookkeeping_before_vat) : undefined,
+          bookkeeping_with_vat: row.bookkeeping_with_vat ? Number(row.bookkeeping_with_vat) : undefined,
           payment_method_selected: row.payment_method_selected as string | undefined,
           payment_method_selected_at: undefined, // Not in view, could be added if needed
           discount_percent: row.payment_method_selected

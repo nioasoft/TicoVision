@@ -105,12 +105,12 @@ const CollectionTableRow: React.FC<{
 
       {/* Bookkeeping - Before VAT */}
       <TableCell className="rtl:text-right ltr:text-left py-2.5 px-1 text-sm text-slate-600 bg-emerald-50/30">
-        {row.bookkeeping_monthly_before_vat ? formatILS(row.bookkeeping_monthly_before_vat) : '-'}
+        {row.bookkeeping_before_vat ? formatILS(row.bookkeeping_before_vat) : '-'}
       </TableCell>
 
       {/* Bookkeeping - With VAT */}
       <TableCell className="rtl:text-right ltr:text-left font-medium py-2.5 px-1 text-sm text-slate-800 bg-emerald-50/30 border-l border-slate-100">
-        {row.bookkeeping_monthly_with_vat ? formatILS(row.bookkeeping_monthly_with_vat) : '-'}
+        {row.bookkeeping_with_vat ? formatILS(row.bookkeeping_with_vat) : '-'}
       </TableCell>
 
       {/* Payment Method */}
@@ -175,7 +175,7 @@ export const CollectionTable: React.FC<CollectionTableProps> = ({
               שכר טרחה
             </TableHead>
             <TableHead colSpan={2} className="text-center py-2 px-1 bg-emerald-100/70 text-emerald-800 text-xs font-semibold border-l border-slate-200">
-              הנה"ח חודשי
+              הנה"ח שנתי
             </TableHead>
             <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2.5 px-2 align-bottom w-36 bg-slate-100 border-l border-slate-200 font-semibold text-slate-700">
               שיטת תשלום

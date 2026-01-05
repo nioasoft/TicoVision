@@ -12,8 +12,9 @@
 import type {
   CompanyOnboardingTemplateType,
   VatRegistrationVariables,
+  PriceQuoteVariables,
 } from './company-onboarding.types';
-import { VAT_REGISTRATION_DEFAULT_SUBJECT } from './company-onboarding.types';
+import { VAT_REGISTRATION_DEFAULT_SUBJECT, PRICE_QUOTE_DEFAULT_SUBJECT } from './company-onboarding.types';
 
 // ============================================================================
 // CATEGORY DEFINITIONS
@@ -119,6 +120,20 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הנחיות להעברת מסמכים לפתיחת תיק במע"מ',
       templateType: 'company_onboarding_vat_registration',
       icon: 'FileText',
+    },
+    {
+      id: 'price_quote_small',
+      label: 'הצעת מחיר - חברה קטנה',
+      description: 'הצעת מחיר לשירותי ראיית חשבון לחברה קטנה',
+      templateType: 'company_onboarding_price_quote_small',
+      icon: 'Receipt',
+    },
+    {
+      id: 'price_quote_restaurant',
+      label: 'הצעת מחיר - מסעדה',
+      description: 'הצעת מחיר לשירותי ראיית חשבון למסעדות',
+      templateType: 'company_onboarding_price_quote_restaurant',
+      icon: 'UtensilsCrossed',
     },
   ],
   setting_dates: [
@@ -352,6 +367,7 @@ export const DEFAULT_SUBJECTS = {
 /** Document data for Company Onboarding letters */
 export interface CompanyOnboardingDocumentData {
   vatRegistration: Partial<VatRegistrationVariables>;
+  priceQuote: Partial<PriceQuoteVariables>;
 }
 
 /** Document data for Setting Dates letters */
@@ -446,6 +462,13 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           subject: VAT_REGISTRATION_DEFAULT_SUBJECT,
           show_wolt_section: true,
           google_drive_link: '',
+        },
+        priceQuote: {
+          subject: PRICE_QUOTE_DEFAULT_SUBJECT,
+          fee_amount: 0,
+          tax_year: 2026,
+          show_transfer_section: false,
+          additional_notes: '',
         },
       },
       setting_dates: {

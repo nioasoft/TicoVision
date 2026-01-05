@@ -80,7 +80,8 @@ export interface FeeTrackingKPIs {
   // Breakdown by status
   not_calculated: number;       // ❌ לא חושב
   calculated_not_sent: number;  // ⚠️ חושב ולא נשלח
-  sent_not_paid: number;        // ⏳ נשלח ולא שולם
+  sent_not_paid: number;        // ⏳ נשלח ולא שולם (pending only)
+  partial_paid: number;         // 💰 שולם חלקית
   paid: number;                 // ✅ שולם
 
   // Completion percentage (how many clients completed the full process)
@@ -95,7 +96,9 @@ export type TrackingFilter =
   | 'not_calculated'
   | 'calculated_not_sent'
   | 'sent_not_paid'
-  | 'paid';
+  | 'partial_paid'
+  | 'paid'
+  | 'members';
 
 /**
  * Advanced filters for enhanced tracking view

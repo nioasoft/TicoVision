@@ -254,9 +254,9 @@ export function FeeTrackingPage() {
           case 'calculated_not_sent':
             return client.payment_status === 'not_sent';
           case 'sent_not_paid':
-            return (
-              client.payment_status === 'pending' || client.payment_status === 'partial_paid'
-            );
+            return client.payment_status === 'pending';
+          case 'partial_paid':
+            return client.payment_status === 'partial_paid';
           case 'paid':
             return client.payment_status === 'paid';
           case 'members':

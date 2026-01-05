@@ -54,6 +54,7 @@ import {
 } from '@/types/auto-letters.types';
 import {
   validateVatRegistration,
+  validatePriceQuote,
   type CompanyOnboardingVariables,
   type CompanyOnboardingTemplateType,
 } from '@/types/company-onboarding.types';
@@ -229,6 +230,9 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'vat_registration') {
         return formState.documentData.company_onboarding.vatRegistration;
       }
+      if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
+        return formState.documentData.company_onboarding.priceQuote;
+      }
     }
 
     if (selectedCategory === 'setting_dates') {
@@ -302,6 +306,9 @@ export function AutoLettersPage() {
     if (selectedCategory === 'company_onboarding') {
       if (selectedLetterTypeId === 'vat_registration') {
         return validateVatRegistration(mergedData);
+      }
+      if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
+        return validatePriceQuote(mergedData);
       }
     }
 
@@ -624,17 +631,31 @@ export function AutoLettersPage() {
   const handleDocumentDataChange = (data: Record<string, unknown>) => {
     const { selectedCategory, selectedLetterTypeId } = formState;
 
-    if (selectedCategory === 'company_onboarding' && selectedLetterTypeId === 'vat_registration') {
-      setFormState(prev => ({
-        ...prev,
-        documentData: {
-          ...prev.documentData,
-          company_onboarding: {
-            ...prev.documentData.company_onboarding,
-            vatRegistration: data,
+    if (selectedCategory === 'company_onboarding') {
+      if (selectedLetterTypeId === 'vat_registration') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              vatRegistration: data,
+            },
           },
-        },
-      }));
+        }));
+      }
+      if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              priceQuote: data,
+            },
+          },
+        }));
+      }
     }
 
     if (selectedCategory === 'setting_dates') {
@@ -1112,6 +1133,7 @@ export function AutoLettersPage() {
         htmlContent={generatedHtmlContent}
         letterId={generatedLetterId || undefined}
         defaultSubject={generatedSubject || getDefaultSubject()}
+        defaultEmail={selectedContact?.email || formState.adhocContact?.email || undefined}
       />
 
       {/* Instructions */}

@@ -229,6 +229,15 @@ export const FeeTrackingKPICards: React.FC<FeeTrackingKPICardsProps> = ({
           onClick={() => onCardClick?.('sent_not_paid')}
         />
         <FilterCard
+          title="שולם חלקית"
+          count={kpis.partial_paid || 0}
+          subtitle="תשלום חלקי"
+          icon={Coins}
+          color="orange"
+          isSelected={selectedCard === 'partial_paid'}
+          onClick={() => onCardClick?.('partial_paid')}
+        />
+        <FilterCard
           title="שולם"
           count={kpis.paid}
           subtitle={`${formatPercentage(kpis.completion_percentage)} השלמה`}
@@ -245,16 +254,6 @@ export const FeeTrackingKPICards: React.FC<FeeTrackingKPICardsProps> = ({
           color="purple"
           isSelected={selectedCard === 'members'}
           onClick={() => onCardClick?.('members')}
-        />
-        <FilterCard
-          title="אחוז השלמה"
-          count={Math.round(kpis.completion_percentage)}
-          subtitle="מכל הלקוחות"
-          icon={TrendingUp}
-          color="gray"
-          isSelected={false}
-          onClick={() => {}}
-          isClickable={false}
         />
       </div>
     </div>

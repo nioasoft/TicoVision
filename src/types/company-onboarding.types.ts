@@ -13,6 +13,9 @@
 /** Default subject for VAT Registration letter */
 export const VAT_REGISTRATION_DEFAULT_SUBJECT = 'הנחיות להעברת מסמכים לצורך פתיחת תיקי מע"מ';
 
+/** Default subject for Price Quote letter */
+export const PRICE_QUOTE_DEFAULT_SUBJECT = 'הצעת מחיר לשירותי ראיית חשבון';
+
 // ============================================================================
 // SHARED DATA (common to all Company Onboarding documents)
 // ============================================================================
@@ -44,17 +47,39 @@ export interface VatRegistrationVariables extends CompanyOnboardingSharedData {
 }
 
 // ============================================================================
+// DOCUMENT #2: Price Quote Letter (הצעת מחיר)
+// ============================================================================
+
+export interface PriceQuoteVariables extends CompanyOnboardingSharedData {
+  /** Subject line (הנדון) */
+  subject: string;
+
+  /** Fee amount in ILS (before VAT) */
+  fee_amount: number;
+
+  /** Tax year (default: 2026) */
+  tax_year: number;
+
+  /** Show section 8 - transfer from previous accountant (default: false) */
+  show_transfer_section: boolean;
+
+  /** Additional notes to appear after fee amount and before bank details */
+  additional_notes?: string;
+}
+
+// ============================================================================
 // TEMPLATE TYPE DEFINITIONS (for generated_letters table)
 // ============================================================================
 
 export type CompanyOnboardingTemplateType =
-  | 'company_onboarding_vat_registration';    // Document #1
-  // Future: 'company_onboarding_income_tax'
+  | 'company_onboarding_vat_registration'           // Document #1
+  | 'company_onboarding_price_quote_small'          // Document #2a - Small Company
+  | 'company_onboarding_price_quote_restaurant';    // Document #2b - Restaurant
 
 /** Union type of all possible Company Onboarding document variables */
 export type CompanyOnboardingVariables =
-  | VatRegistrationVariables;
-  // Future: | IncomeTaxVariables
+  | VatRegistrationVariables
+  | PriceQuoteVariables;
 
 // ============================================================================
 // UI FORM STATE (for managing form data)
@@ -79,6 +104,7 @@ export interface CompanyOnboardingFormState {
   /** Document-specific data for each letter type */
   documentData: {
     vatRegistration: Partial<VatRegistrationVariables>;
+    priceQuote: Partial<PriceQuoteVariables>;
   };
 }
 
@@ -113,14 +139,20 @@ export const COMPANY_ONBOARDING_LETTER_TYPES: CompanyOnboardingLetterType[] = [
     templateType: 'company_onboarding_vat_registration',
     icon: 'FileText',
   },
-  // Future letter types will be added here:
-  // {
-  //   index: 1,
-  //   label: 'פתיחת תיק מס הכנסה',
-  //   description: 'הנחיות להעברת מסמכים לפתיחת תיק במס הכנסה',
-  //   templateType: 'company_onboarding_income_tax',
-  //   icon: 'Building2',
-  // },
+  {
+    index: 1,
+    label: 'הצעת מחיר - חברה קטנה',
+    description: 'הצעת מחיר לשירותי ראיית חשבון לחברה קטנה',
+    templateType: 'company_onboarding_price_quote_small',
+    icon: 'Receipt',
+  },
+  {
+    index: 2,
+    label: 'הצעת מחיר - מסעדה',
+    description: 'הצעת מחיר לשירותי ראיית חשבון למסעדות',
+    templateType: 'company_onboarding_price_quote_restaurant',
+    icon: 'UtensilsCrossed',
+  },
 ];
 
 // ============================================================================
@@ -149,6 +181,19 @@ export function validateVatRegistration(
   );
 }
 
+/** Validate Price Quote document data */
+export function validatePriceQuote(
+  data: Partial<PriceQuoteVariables>
+): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name &&
+    data.subject?.trim() &&
+    data.fee_amount && data.fee_amount > 0 &&
+    data.tax_year && data.tax_year >= 2024
+  );
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -171,6 +216,13 @@ export function createInitialCompanyOnboardingFormState(): CompanyOnboardingForm
         subject: VAT_REGISTRATION_DEFAULT_SUBJECT,
         show_wolt_section: true,
       },
+      priceQuote: {
+        subject: PRICE_QUOTE_DEFAULT_SUBJECT,
+        fee_amount: 0,
+        tax_year: 2026,
+        show_transfer_section: false,
+        additional_notes: '',
+      },
     },
   };
 }
@@ -180,5 +232,16 @@ export function getDefaultVatRegistrationVariables(): Partial<VatRegistrationVar
   return {
     subject: VAT_REGISTRATION_DEFAULT_SUBJECT,
     show_wolt_section: true,
+  };
+}
+
+/** Get default variables for Price Quote */
+export function getDefaultPriceQuoteVariables(): Partial<PriceQuoteVariables> {
+  return {
+    subject: PRICE_QUOTE_DEFAULT_SUBJECT,
+    fee_amount: 0,
+    tax_year: 2026,
+    show_transfer_section: false,
+    additional_notes: '',
   };
 }
