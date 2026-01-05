@@ -271,6 +271,8 @@ serve(async (req) => {
         if (singlePaymentResult) {
           // Save payment_transaction with LowProfileId
           await supabase.from('payment_transactions').insert({
+            tenant_id: feeData.tenant_id,
+            client_id: clientId,
             fee_calculation_id: feeId,
             cardcom_deal_id: singlePaymentResult.lowProfileId,
             amount: amountAfterDiscount,
@@ -295,6 +297,8 @@ serve(async (req) => {
         if (installmentsResult) {
           // Save payment_transaction with LowProfileId
           await supabase.from('payment_transactions').insert({
+            tenant_id: feeData.tenant_id,
+            client_id: clientId,
             fee_calculation_id: feeId,
             cardcom_deal_id: installmentsResult.lowProfileId,
             amount: amountAfterDiscount,

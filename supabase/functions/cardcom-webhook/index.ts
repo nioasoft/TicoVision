@@ -13,6 +13,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const CARDCOM_TERMINAL = Deno.env.get('CARDCOM_TERMINAL') || '';
+const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'noreply@ticovision.co.il';
 
 /**
  * Cardcom Webhook JSON structure (API v11)
@@ -60,6 +62,93 @@ function validateWebhook(data: CardcomWebhookPayload): boolean {
  */
 function isSuccessfulPayment(data: CardcomWebhookPayload): boolean {
   return data.ResponseCode === 0;
+}
+
+/**
+ * Send payment notification email
+ */
+async function sendPaymentNotification(params: {
+  toEmail: string;
+  clientName: string;
+  amount: number;
+  cardOwnerName: string;
+  approvalNumber: string;
+  numPayments: number;
+}): Promise<void> {
+  if (!SENDGRID_API_KEY) {
+    console.warn('SENDGRID_API_KEY not configured, skipping email notification');
+    return;
+  }
+
+  const formattedAmount = new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency: 'ILS',
+  }).format(params.amount);
+
+  const paymentType = params.numPayments > 1
+    ? `${params.numPayments} תשלומים`
+    : 'תשלום אחד';
+
+  const emailContent = {
+    personalizations: [{
+      to: [{ email: params.toEmail }],
+    }],
+    from: { email: FROM_EMAIL, name: 'TicoVision - התראת תשלום' },
+    subject: `✅ התקבל תשלום מ${params.clientName} - ${formattedAmount}`,
+    content: [{
+      type: 'text/html',
+      value: `
+        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #16a34a;">✅ התקבל תשלום חדש</h2>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #f9fafb;">
+              <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: bold;">לקוח</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb;">${params.clientName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: bold;">סכום</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb; color: #16a34a; font-weight: bold;">${formattedAmount}</td>
+            </tr>
+            <tr style="background: #f9fafb;">
+              <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: bold;">אופן תשלום</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb;">${paymentType}</td>
+            </tr>
+            <tr>
+              <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: bold;">שם בעל הכרטיס</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb;">${params.cardOwnerName}</td>
+            </tr>
+            <tr style="background: #f9fafb;">
+              <td style="padding: 12px; border: 1px solid #e5e7eb; font-weight: bold;">מספר אישור</td>
+              <td style="padding: 12px; border: 1px solid #e5e7eb;">${params.approvalNumber}</td>
+            </tr>
+          </table>
+          <p style="color: #6b7280; font-size: 14px;">
+            הודעה זו נשלחה אוטומטית ממערכת TicoVision.
+          </p>
+        </div>
+      `,
+    }],
+  };
+
+  try {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailContent),
+    });
+
+    if (response.ok) {
+      console.log(`✅ Payment notification sent to ${params.toEmail}`);
+    } else {
+      const errorText = await response.text();
+      console.error('Failed to send payment notification:', response.status, errorText);
+    }
+  } catch (error) {
+    console.error('Error sending payment notification:', error);
+  }
 }
 
 /**
@@ -275,37 +364,63 @@ serve(async (req) => {
         } else {
           console.log('✅ Payment selection marked as completed');
         }
+
+        // Send payment notification email
+        try {
+          // Get fee calculation to get tenant and client info
+          const { data: feeInfo } = await supabase
+            .from('fee_calculations')
+            .select('tenant_id, client_id')
+            .eq('id', existingTransaction.fee_calculation_id)
+            .single();
+
+          if (feeInfo) {
+            // Get notification settings for tenant
+            const { data: notificationSettings } = await supabase
+              .from('notification_settings')
+              .select('notification_email, enable_email_notifications')
+              .eq('tenant_id', feeInfo.tenant_id)
+              .single();
+
+            // Get client name
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('company_name, commercial_name')
+              .eq('id', feeInfo.client_id)
+              .single();
+
+            const clientName = clientData?.company_name || clientData?.commercial_name || 'לקוח';
+
+            if (notificationSettings?.enable_email_notifications && notificationSettings?.notification_email) {
+              await sendPaymentNotification({
+                toEmail: notificationSettings.notification_email,
+                clientName,
+                amount,
+                cardOwnerName: webhookData.TranzactionInfo?.CardOwnerName || 'לא צוין',
+                approvalNumber: webhookData.TranzactionInfo?.ApprovalNumber || '',
+                numPayments: webhookData.TranzactionInfo?.NumberOfPayments || 1,
+              });
+            } else {
+              console.log('Payment notification skipped - email notifications disabled or no email configured');
+            }
+          }
+        } catch (notificationError) {
+          console.error('Error sending payment notification:', notificationError);
+          // Don't fail the webhook for notification errors
+        }
       }
     } else {
-      // Create new transaction record (shouldn't normally happen, but handle gracefully)
+      // Transaction not found - cannot create without tenant_id and client_id (required fields)
       console.warn('⚠️ Transaction not found for LowProfileId:', lowProfileId);
-      console.warn('Creating new transaction record...');
-
-      const { error: insertError } = await supabase
-        .from('payment_transactions')
-        .insert({
-          cardcom_deal_id: lowProfileId,
-          cardcom_transaction_id: transactionId,
-          amount: amount,
-          currency: 'ILS',
-          status: paymentSuccessful ? 'completed' : 'failed',
-          payment_method: 'credit_card',
-          invoice_number: webhookData.TranzactionInfo?.CouponNumber || null,
-          payment_date: paymentSuccessful ? new Date().toISOString() : null,
-          failure_reason: paymentSuccessful ? null : webhookData.Description,
-          metadata: {
-            approval_number: webhookData.TranzactionInfo?.ApprovalNumber,
-            card_last4: webhookData.TranzactionInfo?.Last4CardDigitsString,
-            card_owner_name: webhookData.TranzactionInfo?.CardOwnerName,
-            number_of_payments: webhookData.TranzactionInfo?.NumberOfPayments,
-          },
-        });
-
-      if (insertError) {
-        console.error('Error inserting transaction:', insertError);
-      } else {
-        console.log('✅ New transaction created');
-      }
+      console.warn('   Cannot create new record - missing tenant_id and client_id');
+      console.warn('   This payment was received but has no matching pending transaction');
+      console.warn('   Payment details:', {
+        amount,
+        transactionId,
+        cardOwnerName: webhookData.TranzactionInfo?.CardOwnerName,
+        approvalNumber: webhookData.TranzactionInfo?.ApprovalNumber,
+      });
+      // Continue to log the webhook but skip creating incomplete record
     }
 
     // Log the webhook
