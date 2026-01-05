@@ -202,7 +202,7 @@ serve(async (req) => {
     // Find transaction by LowProfileId (from payment link creation)
     const { data: existingTransaction, error: findError } = await supabase
       .from('payment_transactions')
-      .select('id, fee_calculation_id, status')
+      .select('id, fee_calculation_id, status, amount')
       .eq('cardcom_deal_id', lowProfileId)
       .single();
 
@@ -247,10 +247,10 @@ serve(async (req) => {
       if (paymentSuccessful && existingTransaction.fee_calculation_id) {
         console.log('Processing successful payment...');
 
-        // Get fee_calculation to get client_id and tenant_id
+        // Get fee_calculation to get client_id and tenant_id (including retainer_calculation for retainer clients)
         const { data: feeCalc, error: feeCalcError } = await supabase
           .from('fee_calculations')
-          .select('client_id, tenant_id, amount_after_selected_discount, total_amount')
+          .select('client_id, tenant_id, amount_after_selected_discount, total_amount, retainer_calculation')
           .eq('id', existingTransaction.fee_calculation_id)
           .single();
 
@@ -264,10 +264,13 @@ serve(async (req) => {
           const withVat = beforeVat + vat;
 
           // Determine payment method based on number of installments
+          // Valid values: 'bank_transfer', 'cc_single', 'cc_installments', 'checks'
           const numInstallments = webhookData.TranzactionInfo?.NumberOfPayments || 1;
-          const paymentMethod = numInstallments > 1 ? 'credit_card_installments' : 'credit_card';
+          const paymentMethod = numInstallments > 1 ? 'cc_installments' : 'cc_single';
 
           // Create actual_payments record for proper tracking
+          // Note: payment_date column is type 'date', not timestamp - use YYYY-MM-DD format
+          const paymentDateStr = new Date().toISOString().split('T')[0];
           const { data: actualPayment, error: actualPaymentError } = await supabase
             .from('actual_payments')
             .insert({
@@ -278,7 +281,7 @@ serve(async (req) => {
               amount_before_vat: beforeVat,
               amount_vat: vat,
               amount_with_vat: withVat,
-              payment_date: new Date().toISOString(),
+              payment_date: paymentDateStr,
               payment_method: paymentMethod,
               payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
               num_installments: numInstallments,
@@ -293,7 +296,14 @@ serve(async (req) => {
             console.log(`✅ Actual payment created: ${actualPayment.id}`);
 
             // Calculate and create deviation record
-            const expectedAmount = feeCalc.amount_after_selected_discount || feeCalc.total_amount;
+            // Use the amount from the payment_transaction (already has discount applied)
+            // Fall back to retainer_calculation or fee amounts if needed
+            const transactionExpectedAmount = parseFloat(existingTransaction.amount) || 0;
+            const retainerAmount = feeCalc.retainer_calculation?.total_with_vat || 0;
+            const feeAmount = feeCalc.amount_after_selected_discount || feeCalc.total_amount || 0;
+            const expectedAmount = transactionExpectedAmount > 0
+              ? transactionExpectedAmount
+              : (retainerAmount > 0 ? retainerAmount * 0.92 : feeAmount);
             const deviationAmount = expectedAmount - amount;
             const deviationPercent = expectedAmount > 0 ? (deviationAmount / expectedAmount) * 100 : 0;
 
@@ -330,11 +340,12 @@ serve(async (req) => {
             }
 
             // Update fee_calculations with payment info and deviation
+            // Note: payment_date column is type 'date', not timestamp - use YYYY-MM-DD format
             const { error: feeUpdateError } = await supabase
               .from('fee_calculations')
               .update({
                 status: 'paid',
-                payment_date: new Date().toISOString(),
+                payment_date: paymentDateStr,
                 payment_reference: webhookData.TranzactionInfo?.CouponNumber || transactionId,
                 actual_payment_id: actualPayment.id,
                 has_deviation: alertLevel !== 'info',

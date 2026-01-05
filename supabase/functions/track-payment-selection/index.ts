@@ -81,7 +81,7 @@ async function createCardcomPaymentPage(
       WebHookUrl: `${SUPABASE_URL}/functions/v1/cardcom-webhook`,
       AdvancedDefinition: {
         MinNumOfPayments: 1,           // Always allow minimum 1 payment
-        MaxNumOfPayments: maxPayments, // 1 for single, 10 for installments
+        MaxNumOfPayments: maxPayments, // 1 for single, 8 for installments
       },
     };
 
@@ -178,10 +178,10 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     console.log('✅ Supabase client initialized successfully');
 
-    // Get fee calculation details
+    // Get fee calculation details (including retainer_calculation for retainer clients)
     const { data: feeData, error: feeError } = await supabase
       .from('fee_calculations')
-      .select('total_amount, tenant_id, client_id')
+      .select('total_amount, tenant_id, client_id, retainer_calculation')
       .eq('id', feeId)
       .single();
 
@@ -214,10 +214,19 @@ serve(async (req) => {
     const groupName = clientData?.client_groups?.group_name_hebrew || '';
 
     // Calculate discount
+    // For retainer clients, use retainer_calculation.total_with_vat instead of total_amount
     const discountPercent = DISCOUNT_RATES[method];
-    const originalAmount = feeData.total_amount;
+    const retainerAmount = feeData.retainer_calculation?.total_with_vat || 0;
+    const originalAmount = retainerAmount > 0 ? retainerAmount : feeData.total_amount;
     const discountAmount = originalAmount * (discountPercent / 100);
     const amountAfterDiscount = originalAmount - discountAmount;
+
+    console.log('💰 Amount calculation:', {
+      retainerAmount,
+      totalAmount: feeData.total_amount,
+      usedAmount: originalAmount,
+      isRetainer: retainerAmount > 0,
+    });
 
     console.log(`📊 Payment selection: ${method}, Original: ₪${originalAmount}, Discount: ${discountPercent}%, Final: ₪${amountAfterDiscount}`);
 
@@ -289,7 +298,7 @@ serve(async (req) => {
       case 'cc_installments':
         const installmentsResult = await createCardcomPaymentPage(
           amountAfterDiscount,
-          10,
+          8,
           feeId,
           displayName,
           clientData?.contact_email
