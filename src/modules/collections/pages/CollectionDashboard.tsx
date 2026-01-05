@@ -142,6 +142,9 @@ export const CollectionDashboard: React.FC = () => {
       case 'pending':
         setFilters({ status: 'pending' });
         break;
+      case 'partial_paid':
+        setFilters({ status: 'partial_paid' });
+        break;
       case 'paid':
         setFilters({ status: 'paid' });
         break;
@@ -153,9 +156,6 @@ export const CollectionDashboard: React.FC = () => {
         break;
       case 'alert_no_selection':
         setFilters({ alert_type: 'no_selection_14d' });
-        break;
-      case 'alert_abandoned':
-        setFilters({ alert_type: 'abandoned_cart' });
         break;
       case 'alert_disputes':
         setFilters({ alert_type: 'has_dispute' });

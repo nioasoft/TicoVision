@@ -152,7 +152,8 @@ class CollectionService extends BaseService {
       // Calculate client counts (now correctly counting unique clients)
       const clients_sent = rows?.length || 0;
       const clients_paid = rows?.filter((row) => row.payment_status === 'paid').length || 0;
-      const clients_pending = clients_sent - clients_paid;
+      const clients_partial_paid = rows?.filter((row) => row.payment_status === 'partial_paid').length || 0;
+      const clients_pending = clients_sent - clients_paid - clients_partial_paid;
       const clients_not_selected = rows?.filter((row) => row.payment_method_selected === null).length || 0;
 
       // Calculate alerts (requires additional queries)
@@ -165,6 +166,7 @@ class CollectionService extends BaseService {
         collection_rate: Math.round(collection_rate * 100) / 100,
         clients_sent,
         clients_paid,
+        clients_partial_paid,
         clients_pending,
         clients_not_selected,
         alerts_unopened: alertsResult.unopened,

@@ -236,6 +236,7 @@ export interface CollectionKPIs {
   // Client counts
   clients_sent: number;
   clients_paid: number;
+  clients_partial_paid: number;  // Clients who paid partially
   clients_pending: number;
   clients_not_selected: number;  // Clients who haven't selected a payment method
 

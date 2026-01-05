@@ -14,7 +14,6 @@ import {
   Clock,
   MailX,
   MousePointerClick,
-  ShoppingCart,
   MessageSquareWarning
 } from 'lucide-react';
 import type { CollectionKPIs } from '@/types/collection.types';
@@ -24,11 +23,11 @@ import { cn } from '@/lib/utils';
 export type KPICardFilter =
   | 'all'
   | 'pending'
+  | 'partial_paid'
   | 'paid'
   | 'not_selected'
   | 'alert_unopened'
   | 'alert_no_selection'
-  | 'alert_abandoned'
   | 'alert_disputes';
 
 interface KPICardsProps {
@@ -112,8 +111,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
             <div className="h-4 bg-gray-200 rounded w-full"></div>
           </CardContent>
         </Card>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-          {[...Array(8)].map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+          {[...Array(7)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="py-2 px-3">
                 <div className="h-6 bg-gray-200 rounded"></div>
@@ -169,7 +168,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
       </Card>
 
       {/* Row 2: Filter Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2" dir="rtl">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2" dir="rtl">
         <FilterCard
           title="הכל"
           count={kpis.clients_sent}
@@ -185,6 +184,14 @@ export const KPICards: React.FC<KPICardsProps> = ({
           color="green"
           isSelected={selectedCard === 'paid'}
           onClick={() => onCardClick?.('paid')}
+        />
+        <FilterCard
+          title="שולם חלקית"
+          count={kpis.clients_partial_paid}
+          icon={Coins}
+          color="orange"
+          isSelected={selectedCard === 'partial_paid'}
+          onClick={() => onCardClick?.('partial_paid')}
         />
         <FilterCard
           title="ממתין"
@@ -217,14 +224,6 @@ export const KPICards: React.FC<KPICardsProps> = ({
           color="orange"
           isSelected={selectedCard === 'alert_no_selection'}
           onClick={() => onCardClick?.('alert_no_selection')}
-        />
-        <FilterCard
-          title="עגלה נטושה"
-          count={kpis.alerts_abandoned}
-          icon={ShoppingCart}
-          color="purple"
-          isSelected={selectedCard === 'alert_abandoned'}
-          onClick={() => onCardClick?.('alert_abandoned')}
         />
         <FilterCard
           title="מחלוקות"
