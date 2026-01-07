@@ -108,6 +108,13 @@ class LetterHistoryService {
         query = query.is('client_id', null).is('group_id', null);
       }
 
+      // Exclude foreign worker documents from history
+      // These documents should only appear in the foreign workers page
+      // Must handle NULL values: include if NULL or if NOT matching foreign worker pattern
+      query = query
+        .or('template_type.is.null,template_type.not.ilike.foreign_worker_%')
+        .or('document_type_id.is.null,document_type_id.not.ilike.foreign-workers:%');
+
       // Full-text search using search_vector (faster and supports Hebrew)
       if (filters.searchQuery) {
         // Convert search query to tsquery format (replace spaces with & for AND logic)
