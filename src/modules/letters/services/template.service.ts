@@ -42,7 +42,8 @@ import type {
   CompanyOnboardingTemplateType,
   CompanyOnboardingVariables,
   VatRegistrationVariables,
-  PriceQuoteVariables
+  PriceQuoteVariables,
+  PreviousAccountantRequestVariables
 } from '@/types/company-onboarding.types';
 import type {
   AutoLetterTemplateType,
@@ -2845,8 +2846,8 @@ export class TemplateService extends BaseService {
       // 6. Build full HTML
       let fullHtml = this.buildCompanyOnboardingHTML(header, body, footer);
 
-      // 7. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines'];
+      // 7. Replace all variables - WHITELIST HTML VARIABLES for recipient line and subjects
+      const htmlVariables = ['custom_header_lines', 'subjects_section'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -2948,7 +2949,8 @@ export class TemplateService extends BaseService {
     const bodyMap: Record<CompanyOnboardingTemplateType, string> = {
       'company_onboarding_vat_registration': 'vat-registration.html',
       'company_onboarding_price_quote_small': 'price-quote-small.html',
-      'company_onboarding_price_quote_restaurant': 'price-quote-restaurant.html'
+      'company_onboarding_price_quote_restaurant': 'price-quote-restaurant.html',
+      'company_onboarding_previous_accountant': 'previous-accountant-request.html'
     };
 
     return bodyMap[templateType];
@@ -3030,6 +3032,28 @@ export class TemplateService extends BaseService {
         processed.fee_amount_formatted = priceVars.fee_amount.toLocaleString('he-IL');
       } else {
         processed.fee_amount_formatted = '0';
+      }
+    }
+
+    // Handle previous accountant request - build subjects_section from subjects array
+    // Format: הנדון: חברה א
+    //                חברה ב  (indented to align under first subject)
+    if (templateType === 'company_onboarding_previous_accountant') {
+      const subjects = (variables as { subjects?: string[] }).subjects;
+      if (Array.isArray(subjects) && subjects.length > 0) {
+        if (subjects.length === 1) {
+          processed.subjects_section = `הנדון: ${subjects[0]}`;
+        } else {
+          // First subject with "הנדון:" prefix
+          const firstLine = `הנדון: ${subjects[0]}`;
+          // Subsequent subjects indented to align (using padding-right in RTL)
+          const otherLines = subjects.slice(1).map(subject =>
+            `<div style="padding-right: 65px;">${subject}</div>`
+          ).join('');
+          processed.subjects_section = firstLine + otherLines;
+        }
+      } else {
+        processed.subjects_section = 'הנדון: ';
       }
     }
 
@@ -3459,6 +3483,7 @@ export class TemplateService extends BaseService {
   private getAutoLetterBodyFileName(templateType: AutoLetterTemplateType): string | null {
     const bodyMap: Record<AutoLetterTemplateType, string> = {
       'company_onboarding_vat_registration': 'bodies/company-onboarding/vat-registration.html',
+      'company_onboarding_previous_accountant': 'bodies/company-onboarding/previous-accountant-request.html',
       'setting_dates_cutoff': 'bodies/setting-dates/cutoff-date.html',
       'setting_dates_meeting_reminder': 'bodies/setting-dates/meeting-reminder.html',
       'setting_dates_general_deadline': 'bodies/setting-dates/general-deadline.html',
@@ -3479,6 +3504,7 @@ export class TemplateService extends BaseService {
   private getAutoLetterDefaultSubject(templateType: AutoLetterTemplateType): string {
     const subjectMap: Record<AutoLetterTemplateType, string> = {
       'company_onboarding_vat_registration': 'הנחיות לפתיחת תיק במע"מ',
+      'company_onboarding_previous_accountant': 'פנייה לרואה חשבון קודם למשיכת תיקים',
       'setting_dates_cutoff': 'קביעת מועד חיתוך לדו"חות',
       'setting_dates_meeting_reminder': 'תזכורת לפגישה',
       'setting_dates_general_deadline': 'הודעה על דדליין',
@@ -3504,6 +3530,7 @@ export class TemplateService extends BaseService {
   ): string {
     const titleMap: Record<AutoLetterTemplateType, string> = {
       'company_onboarding_vat_registration': 'מכתב קליטת חברה',
+      'company_onboarding_previous_accountant': 'פנייה לרואה חשבון קודם',
       'setting_dates_cutoff': 'קביעת מועד חיתוך',
       'setting_dates_meeting_reminder': 'תזכורת לפגישה',
       'setting_dates_general_deadline': 'הודעה על דדליין',
@@ -3732,6 +3759,24 @@ export class TemplateService extends BaseService {
           );
         } else {
           processed.shareholders_table = '';
+        }
+        break;
+
+      case 'company_onboarding_previous_accountant':
+        // Build subjects section from subjects array (multiple company names)
+        if (Array.isArray(processed.subjects)) {
+          const subjectsArray = processed.subjects as string[];
+          if (subjectsArray.length === 1) {
+            // Single subject line
+            processed.subjects_section = `הנדון: ${subjectsArray[0]}`;
+          } else {
+            // Multiple subjects - each on its own line
+            processed.subjects_section = subjectsArray
+              .map((subject, index) => `הנדון ${index + 1}: ${subject}`)
+              .join('<br>');
+          }
+        } else {
+          processed.subjects_section = 'הנדון: ';
         }
         break;
     }

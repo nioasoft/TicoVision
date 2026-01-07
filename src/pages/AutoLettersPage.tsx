@@ -55,6 +55,7 @@ import {
 import {
   validateVatRegistration,
   validatePriceQuote,
+  validatePreviousAccountantRequest,
   type CompanyOnboardingVariables,
   type CompanyOnboardingTemplateType,
 } from '@/types/company-onboarding.types';
@@ -233,6 +234,9 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
         return formState.documentData.company_onboarding.priceQuote;
       }
+      if (selectedLetterTypeId === 'previous_accountant_request') {
+        return formState.documentData.company_onboarding.previousAccountantRequest;
+      }
     }
 
     if (selectedCategory === 'setting_dates') {
@@ -309,6 +313,9 @@ export function AutoLettersPage() {
       }
       if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
         return validatePriceQuote(mergedData);
+      }
+      if (selectedLetterTypeId === 'previous_accountant_request') {
+        return validatePreviousAccountantRequest(mergedData);
       }
     }
 
@@ -652,6 +659,18 @@ export function AutoLettersPage() {
             company_onboarding: {
               ...prev.documentData.company_onboarding,
               priceQuote: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'previous_accountant_request') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              previousAccountantRequest: data,
             },
           },
         }));

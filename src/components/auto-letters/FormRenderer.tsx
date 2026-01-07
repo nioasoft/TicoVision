@@ -4,7 +4,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import type { AutoLetterCategory } from '@/types/auto-letters.types';
-import type { VatRegistrationVariables, PriceQuoteVariables } from '@/types/company-onboarding.types';
+import type { VatRegistrationVariables, PriceQuoteVariables, PreviousAccountantRequestVariables } from '@/types/company-onboarding.types';
 import type {
   CutoffDateVariables,
   MeetingReminderVariables,
@@ -20,6 +20,7 @@ import type {
 // Company Onboarding forms
 import { VatRegistrationForm } from '@/components/company-onboarding/forms/VatRegistrationForm';
 import { PriceQuoteForm } from '@/components/company-onboarding/forms/PriceQuoteForm';
+import { PreviousAccountantRequestForm } from '@/components/company-onboarding/forms/PreviousAccountantRequestForm';
 
 // Setting Dates forms
 import {
@@ -114,6 +115,15 @@ function renderCompanyOnboardingForm(
       return (
         <PriceQuoteForm
           value={value as Partial<PriceQuoteVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    case 'previous_accountant_request':
+      return (
+        <PreviousAccountantRequestForm
+          value={value as Partial<PreviousAccountantRequestVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
         />

@@ -16,6 +16,9 @@ export const VAT_REGISTRATION_DEFAULT_SUBJECT = 'הנחיות להעברת מס�
 /** Default subject for Price Quote letter */
 export const PRICE_QUOTE_DEFAULT_SUBJECT = 'הצעת מחיר לשירותי ראיית חשבון';
 
+/** Default subject for Previous Accountant Request letter */
+export const PREVIOUS_ACCOUNTANT_REQUEST_DEFAULT_SUBJECT = 'פנייה לרואה חשבון קודם למשיכת תיקים';
+
 // ============================================================================
 // SHARED DATA (common to all Company Onboarding documents)
 // ============================================================================
@@ -68,18 +71,35 @@ export interface PriceQuoteVariables extends CompanyOnboardingSharedData {
 }
 
 // ============================================================================
+// DOCUMENT #3: Previous Accountant Request Letter (פנייה לרואה חשבון קודם)
+// ============================================================================
+
+export interface PreviousAccountantRequestVariables {
+  /** Document generation date in YYYY-MM-DD format */
+  document_date: string;
+
+  /** Multiple subject lines (company names) - can have 1 or more */
+  subjects: string[];
+
+  /** Email address for receiving documents */
+  email_for_documents: string;
+}
+
+// ============================================================================
 // TEMPLATE TYPE DEFINITIONS (for generated_letters table)
 // ============================================================================
 
 export type CompanyOnboardingTemplateType =
   | 'company_onboarding_vat_registration'           // Document #1
   | 'company_onboarding_price_quote_small'          // Document #2a - Small Company
-  | 'company_onboarding_price_quote_restaurant';    // Document #2b - Restaurant
+  | 'company_onboarding_price_quote_restaurant'     // Document #2b - Restaurant
+  | 'company_onboarding_previous_accountant';       // Document #3 - Previous Accountant Request
 
 /** Union type of all possible Company Onboarding document variables */
 export type CompanyOnboardingVariables =
   | VatRegistrationVariables
-  | PriceQuoteVariables;
+  | PriceQuoteVariables
+  | PreviousAccountantRequestVariables;
 
 // ============================================================================
 // UI FORM STATE (for managing form data)
@@ -105,6 +125,7 @@ export interface CompanyOnboardingFormState {
   documentData: {
     vatRegistration: Partial<VatRegistrationVariables>;
     priceQuote: Partial<PriceQuoteVariables>;
+    previousAccountantRequest: Partial<PreviousAccountantRequestVariables>;
   };
 }
 
@@ -153,6 +174,13 @@ export const COMPANY_ONBOARDING_LETTER_TYPES: CompanyOnboardingLetterType[] = [
     templateType: 'company_onboarding_price_quote_restaurant',
     icon: 'UtensilsCrossed',
   },
+  {
+    index: 3,
+    label: 'פנייה לרואה חשבון קודם',
+    description: 'בקשת מסמכים ותיקים מרואה חשבון קודם',
+    templateType: 'company_onboarding_previous_accountant',
+    icon: 'UserMinus',
+  },
 ];
 
 // ============================================================================
@@ -194,6 +222,19 @@ export function validatePriceQuote(
   );
 }
 
+/** Validate Previous Accountant Request document data */
+export function validatePreviousAccountantRequest(
+  data: Partial<PreviousAccountantRequestVariables>
+): boolean {
+  return !!(
+    data.document_date &&
+    data.subjects &&
+    data.subjects.length > 0 &&
+    data.subjects.every(s => s.trim()) &&
+    data.email_for_documents?.trim()
+  );
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -223,6 +264,10 @@ export function createInitialCompanyOnboardingFormState(): CompanyOnboardingForm
         show_transfer_section: false,
         additional_notes: '',
       },
+      previousAccountantRequest: {
+        subjects: [''],
+        email_for_documents: 'helli@franco.co.il',
+      },
     },
   };
 }
@@ -243,5 +288,13 @@ export function getDefaultPriceQuoteVariables(): Partial<PriceQuoteVariables> {
     tax_year: 2026,
     show_transfer_section: false,
     additional_notes: '',
+  };
+}
+
+/** Get default variables for Previous Accountant Request */
+export function getDefaultPreviousAccountantRequestVariables(): Partial<PreviousAccountantRequestVariables> {
+  return {
+    subjects: [''],
+    email_for_documents: 'helli@franco.co.il',
   };
 }

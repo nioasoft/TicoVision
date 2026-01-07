@@ -13,8 +13,9 @@ import type {
   CompanyOnboardingTemplateType,
   VatRegistrationVariables,
   PriceQuoteVariables,
+  PreviousAccountantRequestVariables,
 } from './company-onboarding.types';
-import { VAT_REGISTRATION_DEFAULT_SUBJECT, PRICE_QUOTE_DEFAULT_SUBJECT } from './company-onboarding.types';
+import { VAT_REGISTRATION_DEFAULT_SUBJECT, PRICE_QUOTE_DEFAULT_SUBJECT, PREVIOUS_ACCOUNTANT_REQUEST_DEFAULT_SUBJECT } from './company-onboarding.types';
 
 // ============================================================================
 // CATEGORY DEFINITIONS
@@ -84,6 +85,7 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
 export type AutoLetterTemplateType =
   // Company Onboarding
   | 'company_onboarding_vat_registration'
+  | 'company_onboarding_previous_accountant'
   // Setting Dates
   | 'setting_dates_cutoff'
   | 'setting_dates_meeting_reminder'
@@ -134,6 +136,13 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הצעת מחיר לשירותי ראיית חשבון למסעדות',
       templateType: 'company_onboarding_price_quote_restaurant',
       icon: 'UtensilsCrossed',
+    },
+    {
+      id: 'previous_accountant_request',
+      label: 'פנייה לרואה חשבון קודם',
+      description: 'בקשת מסמכים ותיקים מרואה חשבון קודם',
+      templateType: 'company_onboarding_previous_accountant',
+      icon: 'UserMinus',
     },
   ],
   setting_dates: [
@@ -368,6 +377,7 @@ export const DEFAULT_SUBJECTS = {
 export interface CompanyOnboardingDocumentData {
   vatRegistration: Partial<VatRegistrationVariables>;
   priceQuote: Partial<PriceQuoteVariables>;
+  previousAccountantRequest: Partial<PreviousAccountantRequestVariables>;
 }
 
 /** Document data for Setting Dates letters */
@@ -469,6 +479,10 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           tax_year: 2026,
           show_transfer_section: false,
           additional_notes: '',
+        },
+        previousAccountantRequest: {
+          subjects: [''],
+          email_for_documents: 'helli@franco.co.il',
         },
       },
       setting_dates: {
