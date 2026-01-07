@@ -3347,7 +3347,7 @@ export class TemplateService extends BaseService {
       fullHtml = this.processMustacheSections(fullHtml, processedVariables);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3492,7 +3492,8 @@ export class TemplateService extends BaseService {
       'reminder_letters_personal_report': 'bodies/reminder-letters/personal-report-reminder.html',
       'reminder_letters_bookkeeper_balance': 'bodies/reminder-letters/bookkeeper-balance-reminder.html',
       'bank_approvals_income_confirmation': 'bodies/bank-approvals/income-confirmation.html',
-      'bank_approvals_mortgage_income': 'bodies/bank-approvals/mortgage-income.html'
+      'bank_approvals_mortgage_income': 'bodies/bank-approvals/mortgage-income.html',
+      'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3513,7 +3514,8 @@ export class TemplateService extends BaseService {
       'reminder_letters_personal_report': 'השלמות לדוח האישי',
       'reminder_letters_bookkeeper_balance': 'סיכום פרטיכל מישיבה',
       'bank_approvals_income_confirmation': 'אישור הכנסות',
-      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא - בעל שליטה'
+      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא - בעל שליטה',
+      'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3539,7 +3541,8 @@ export class TemplateService extends BaseService {
       'reminder_letters_personal_report': 'תזכורת למסמכים',
       'reminder_letters_bookkeeper_balance': 'זירוז מנה"ח',
       'bank_approvals_income_confirmation': 'אישור הכנסות',
-      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא'
+      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא',
+      'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -3778,6 +3781,18 @@ export class TemplateService extends BaseService {
         } else {
           processed.subjects_section = 'הנדון: ';
         }
+        break;
+
+      case 'tax_notices_payment_notice':
+        // Format submission_date to Israeli format
+        if (processed.submission_date && typeof processed.submission_date === 'string') {
+          processed.submission_date_formatted = this.formatIsraeliDate(new Date(processed.submission_date as string));
+        }
+        // Build dual subject section - two lines
+        // Line 1: יתרה לתשלום חבות המס שנותרה למס הכנסה
+        // Line 2: בגין הדוחות הכספיים המבוקרים לשנת המס {{tax_year}} ששודרו למס הכנסה
+        const taxYear = processed.tax_year || '';
+        processed.subjects_section = `הנדון: יתרה לתשלום חבות המס שנותרה למס הכנסה<div style="padding-right: 65px;">בגין הדוחות הכספיים המבוקרים לשנת המס ${taxYear} ששודרו למס הכנסה</div>`;
         break;
     }
 

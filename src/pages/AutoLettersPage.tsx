@@ -48,6 +48,7 @@ import {
   validateBookkeeperBalanceReminder,
   validateIncomeConfirmation,
   validateMortgageIncome,
+  validateTaxPaymentNotice,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -276,6 +277,12 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'tax_notices') {
+      if (selectedLetterTypeId === 'tax_payment_notice') {
+        return formState.documentData.tax_notices.taxPaymentNotice;
+      }
+    }
+
     return {};
   };
 
@@ -353,6 +360,12 @@ export function AutoLettersPage() {
       }
       if (selectedLetterTypeId === 'mortgage_income') {
         return validateMortgageIncome(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'tax_notices') {
+      if (selectedLetterTypeId === 'tax_payment_notice') {
+        return validateTaxPaymentNotice(mergedData);
       }
     }
 
@@ -793,6 +806,21 @@ export function AutoLettersPage() {
             bank_approvals: {
               ...prev.documentData.bank_approvals,
               mortgageIncome: data,
+            },
+          },
+        }));
+      }
+    }
+
+    if (selectedCategory === 'tax_notices') {
+      if (selectedLetterTypeId === 'tax_payment_notice') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            tax_notices: {
+              ...prev.documentData.tax_notices,
+              taxPaymentNotice: data,
             },
           },
         }));

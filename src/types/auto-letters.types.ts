@@ -27,14 +27,15 @@ export type AutoLetterCategory =
   | 'setting_dates'        // קביעת מועדים
   | 'missing_documents'    // מסמכים חסרים
   | 'reminder_letters'     // מכתבי זירוז
-  | 'bank_approvals';      // אישורים לבנק/מוסדות
+  | 'bank_approvals'       // אישורים לבנק/מוסדות
+  | 'tax_notices';         // הודעות מס
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Receipt';
   enabled: boolean;
 }
 
@@ -75,6 +76,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     icon: 'Landmark',
     enabled: true,
   },
+  {
+    id: 'tax_notices',
+    label: 'הודעות מס',
+    description: 'הודעות בנושא מיסים, חבויות ותשלומים לרשות המסים',
+    icon: 'Receipt',
+    enabled: true,
+  },
 ];
 
 // ============================================================================
@@ -98,7 +106,9 @@ export type AutoLetterTemplateType =
   | 'reminder_letters_bookkeeper_balance'
   // Bank Approvals (אישורים לבנק/מוסדות)
   | 'bank_approvals_income_confirmation'
-  | 'bank_approvals_mortgage_income';
+  | 'bank_approvals_mortgage_income'
+  // Tax Notices (הודעות מס)
+  | 'tax_notices_payment_notice';
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -214,6 +224,15 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'אישור רו"ח עבור בעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו',
       templateType: 'bank_approvals_mortgage_income',
       icon: 'Home',
+    },
+  ],
+  tax_notices: [
+    {
+      id: 'tax_payment_notice',
+      label: 'הודעה על יתרת מס לתשלום',
+      description: 'הודעה ללקוח על יתרת חבות מס לאחר שידור דוחות כספיים',
+      templateType: 'tax_notices_payment_notice',
+      icon: 'FileText',
     },
   ],
 };
@@ -367,6 +386,7 @@ export const DEFAULT_SUBJECTS = {
   bookkeeper_balance_reminder: 'סיכום פרטיכל מישיבה',
   income_confirmation: 'אישור הכנסות',
   mortgage_income: 'אישור הכנסות למשכנתא - בעל שליטה',
+  tax_payment_notice: 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
 } as const;
 
 // ============================================================================
@@ -397,6 +417,11 @@ export interface MissingDocumentsDocumentData {
 export interface BankApprovalsDocumentData {
   incomeConfirmation: Partial<IncomeConfirmationVariables>;
   mortgageIncome: Partial<MortgageIncomeVariables>;
+}
+
+/** Document data for Tax Notices letters */
+export interface TaxNoticesDocumentData {
+  taxPaymentNotice: Partial<TaxPaymentNoticeVariables>;
 }
 
 /** Document data for Reminder Letters */
@@ -444,6 +469,7 @@ export interface AutoLetterFormState {
     missing_documents: MissingDocumentsDocumentData;
     reminder_letters: ReminderLettersDocumentData;
     bank_approvals: BankApprovalsDocumentData;
+    tax_notices: TaxNoticesDocumentData;
   };
 }
 
@@ -554,6 +580,13 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           has_dividend: false,
           dividend_date: '',
           dividend_details: '',
+        },
+      },
+      tax_notices: {
+        taxPaymentNotice: {
+          tax_year: String(new Date().getFullYear() - 1),
+          submission_date: '',
+          greeting_name: '',
         },
       },
     },
@@ -721,5 +754,35 @@ export function validateMortgageIncome(data: Partial<MortgageIncomeVariables>): 
       sh.holding_percentage >= 0 &&
       sh.holding_percentage <= 100
     )
+  );
+}
+
+// ============================================================================
+// TAX NOTICES VARIABLES & VALIDATION
+// ============================================================================
+
+/** Variables for Tax Payment Notice letter */
+export interface TaxPaymentNoticeVariables extends AutoLetterSharedData {
+  /** שנת המס */
+  tax_year: string;
+  /** תאריך שידור הדוחות */
+  submission_date: string;
+  /** שם לפנייה אישית (למשל "פלוני") */
+  greeting_name: string;
+  /** קישור לתשלום באזור האישי של רשות המסים */
+  tax_payment_link: string;
+}
+
+/** Default subject for Tax Payment Notice */
+export const TAX_PAYMENT_NOTICE_DEFAULT_SUBJECT = 'יתרה לתשלום חבות המס שנותרה למס הכנסה';
+
+/** Validate Tax Payment Notice letter */
+export function validateTaxPaymentNotice(data: Partial<TaxPaymentNoticeVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.tax_year?.trim() &&
+    data.submission_date &&
+    data.greeting_name?.trim()
   );
 }

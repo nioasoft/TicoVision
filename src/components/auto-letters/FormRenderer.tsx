@@ -15,6 +15,7 @@ import type {
   BookkeeperBalanceReminderVariables,
   IncomeConfirmationVariables,
   MortgageIncomeVariables,
+  TaxPaymentNoticeVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -41,6 +42,9 @@ import {
 
 // Bank Approvals forms
 import { IncomeConfirmationForm, MortgageIncomeForm } from './forms/bank-approvals';
+
+// Tax Notices forms
+import { TaxPaymentNoticeForm } from './forms/tax-notices';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -88,6 +92,9 @@ export function FormRenderer({
 
     case 'bank_approvals':
       return renderBankApprovalsForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+
+    case 'tax_notices':
+      return renderTaxNoticesForm(letterTypeId, value, onChange, disabled);
 
     default:
       return null;
@@ -285,6 +292,33 @@ function renderBankApprovalsForm(
           disabled={disabled}
           companyName={companyName}
           companyId={companyId}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderTaxNoticesForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean
+) {
+  switch (letterTypeId) {
+    case 'tax_payment_notice':
+      return (
+        <TaxPaymentNoticeForm
+          value={value as Partial<TaxPaymentNoticeVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
         />
       );
 
