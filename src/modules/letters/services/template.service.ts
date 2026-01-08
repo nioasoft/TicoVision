@@ -35,7 +35,8 @@ import type {
   GoingConcernVariables,
   HealthBenefitsVariables,
   HealthBenefitsInvoice,
-  EmployeePaymentRow
+  EmployeePaymentRow,
+  SalaryPaymentConfirmationVariables
 } from '@/types/tzlul-approvals.types';
 import { TZLUL_CLIENT_NAME, TZLUL_TAX_ID } from '@/types/tzlul-approvals.types';
 import type {
@@ -72,7 +73,8 @@ const TZLUL_LABELS: Record<TzlulTemplateType, string> = {
   'tzlul_employee_payments': 'אישור תשלומים לעובדים',
   'tzlul_transferred_amounts': 'אישור העברת סכומים',
   'tzlul_going_concern': 'הוכחת עמידה בתנאי עסק חי',
-  'tzlul_health_benefits': 'חוות דעת הבראה/מחלה/ותק'
+  'tzlul_health_benefits': 'חוות דעת הבראה/מחלה/ותק',
+  'tzlul_salary_payment_confirmation': 'אישור רו"ח בדבר תשלום השכר'
 };
 
 export class TemplateService extends BaseService {
@@ -2456,7 +2458,8 @@ export class TemplateService extends BaseService {
       'tzlul_employee_payments': 'employee-payments.html',
       'tzlul_transferred_amounts': 'transferred-amounts.html',
       'tzlul_going_concern': 'going-concern.html',
-      'tzlul_health_benefits': 'health-benefits.html'
+      'tzlul_health_benefits': 'health-benefits.html',
+      'tzlul_salary_payment_confirmation': 'salary-payment-confirmation.html'
     };
 
     return bodyMap[templateType];
@@ -2608,6 +2611,12 @@ export class TemplateService extends BaseService {
         }
         break;
       }
+
+      case 'tzlul_salary_payment_confirmation': {
+        // No special processing needed - variables are used directly
+        // local_authority, tender_number, period_start, period_end are all simple strings
+        break;
+      }
     }
 
     return processed;
@@ -2656,6 +2665,9 @@ export class TemplateService extends BaseService {
 
       case 'tzlul_health_benefits':
         return `<b>לכבוד</b><br/><b>צלול ניקיון ואחזקה בע"מ</b><br/><b>אור יהודה</b><br/><br/><b>א.ג.נ,</b>`;
+
+      case 'tzlul_salary_payment_confirmation':
+        return `<b>לכבוד</b><br/><b>החברה למשק וכלכלה של השלטון המקומי בע"מ</b><br/><b>היחידה לאכיפת זכויות עובדים</b><br/>בפקס מס': 03-5010922<br/>טל' לאישור 03-5046070<br/><br/><b>א.ג.נ,</b>`;
 
       default:
         return `<b>לכבוד</b><br/><br/><b>א.ג.נ,</b>`;

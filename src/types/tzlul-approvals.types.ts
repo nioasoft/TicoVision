@@ -183,6 +183,24 @@ export interface HealthBenefitsVariables extends TzlulSharedData {
 }
 
 // ============================================================================
+// DOCUMENT #8: Salary Payment Confirmation (אישור רו"ח בדבר תשלום השכר)
+// ============================================================================
+
+export interface SalaryPaymentConfirmationVariables extends TzlulSharedData {
+  /** Local authority name e.g., "עיריית כפר יונה" */
+  local_authority: string;
+
+  /** Tender number e.g., "שנ6/2022/" */
+  tender_number: string;
+
+  /** Period start in MM/YY format e.g., "09/25" */
+  period_start: string;
+
+  /** Period end in MM/YY format e.g., "09/25" */
+  period_end: string;
+}
+
+// ============================================================================
 // TEMPLATE TYPE DEFINITIONS (for generated_letters table)
 // ============================================================================
 
@@ -193,7 +211,8 @@ export type TzlulTemplateType =
   | 'tzlul_employee_payments'       // Document #4
   | 'tzlul_transferred_amounts'     // Document #5
   | 'tzlul_going_concern'           // Document #6
-  | 'tzlul_health_benefits';        // Document #7
+  | 'tzlul_health_benefits'         // Document #7
+  | 'tzlul_salary_payment_confirmation';  // Document #8
 
 /** Union type of all possible Tzlul document variables */
 export type TzlulVariables =
@@ -203,7 +222,8 @@ export type TzlulVariables =
   | EmployeePaymentsVariables
   | TransferredAmountsVariables
   | GoingConcernVariables
-  | HealthBenefitsVariables;
+  | HealthBenefitsVariables
+  | SalaryPaymentConfirmationVariables;
 
 // ============================================================================
 // UI FORM STATE (for managing form data)
@@ -225,6 +245,7 @@ export interface TzlulFormState {
     transferredAmounts: Partial<TransferredAmountsVariables>;
     goingConcern: Partial<GoingConcernVariables>;
     healthBenefits: Partial<HealthBenefitsVariables>;
+    salaryPaymentConfirmation: Partial<SalaryPaymentConfirmationVariables>;
   };
 }
 
@@ -290,6 +311,12 @@ export const TZLUL_LETTER_TYPES: TzlulLetterType[] = [
     label: 'חוות דעת הבראה/מחלה/ותק',
     description: 'חוות דעת רו"ח לעניין דמי הבראה, מחלה ותוספת ותק',
     templateType: 'tzlul_health_benefits',
+  },
+  {
+    index: 7,
+    label: 'אישור רו"ח בדבר תשלום השכר',
+    description: 'אישור רו"ח בדבר תשלום השכר לעובדי החברה',
+    templateType: 'tzlul_salary_payment_confirmation',
   },
 ];
 
@@ -387,6 +414,17 @@ export function validateHealthBenefits(data: Partial<HealthBenefitsVariables>): 
   );
 }
 
+/** Validate salary payment confirmation document data */
+export function validateSalaryPaymentConfirmation(data: Partial<SalaryPaymentConfirmationVariables>): data is SalaryPaymentConfirmationVariables {
+  return (
+    validateTzlulSharedData(data) &&
+    !!data.local_authority &&
+    !!data.tender_number &&
+    !!data.period_start &&
+    !!data.period_end
+  );
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -437,6 +475,12 @@ export function createInitialTzlulFormState(): TzlulFormState {
         location: 'רשות שדות התעופה – גשר אלנבי',
         contract_number: '2022/070/0002/00',
         invoices: [{ invoice_number: '', amount: 0 }],
+      },
+      salaryPaymentConfirmation: {
+        local_authority: '',
+        tender_number: '',
+        period_start: '',
+        period_end: '',
       },
     },
   };

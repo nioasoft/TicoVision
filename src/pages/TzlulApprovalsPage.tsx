@@ -25,6 +25,7 @@ import { EmployeePaymentsForm } from '@/components/tzlul-approvals/forms/Employe
 import { TransferredAmountsForm } from '@/components/tzlul-approvals/forms/TransferredAmountsForm';
 import { GoingConcernForm } from '@/components/tzlul-approvals/forms/GoingConcernForm';
 import { HealthBenefitsForm } from '@/components/tzlul-approvals/forms/HealthBenefitsForm';
+import { SalaryPaymentConfirmationForm } from '@/components/tzlul-approvals/forms/SalaryPaymentConfirmationForm';
 import { SignatureIdentificationTab } from '@/components/tzlul-approvals/SignatureIdentificationTab';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
@@ -44,6 +45,7 @@ import {
   validateTransferredAmounts,
   validateGoingConcern,
   validateHealthBenefits,
+  validateSalaryPaymentConfirmation,
   type TzlulFormState,
   type TzlulVariables,
 } from '@/types/tzlul-approvals.types';
@@ -178,6 +180,8 @@ export function TzlulApprovalsPage() {
         return validateGoingConcern(mergedData);
       case 'tzlul_health_benefits':
         return validateHealthBenefits(mergedData);
+      case 'tzlul_salary_payment_confirmation':
+        return validateSalaryPaymentConfirmation(mergedData);
       default:
         return false;
     }
@@ -200,6 +204,8 @@ export function TzlulApprovalsPage() {
         return formState.documentData.goingConcern;
       case 6:
         return formState.documentData.healthBenefits;
+      case 7:
+        return formState.documentData.salaryPaymentConfirmation;
       default:
         return {};
     }
@@ -515,6 +521,22 @@ export function TzlulApprovalsPage() {
                 documentData: {
                   ...formState.documentData,
                   healthBenefits: data,
+                },
+              })
+            }
+            disabled={generating}
+          />
+        );
+      case 7:
+        return (
+          <SalaryPaymentConfirmationForm
+            value={formState.documentData.salaryPaymentConfirmation}
+            onChange={(data) =>
+              setFormState({
+                ...formState,
+                documentData: {
+                  ...formState.documentData,
+                  salaryPaymentConfirmation: data,
                 },
               })
             }
