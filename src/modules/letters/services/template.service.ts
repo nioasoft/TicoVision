@@ -3784,15 +3784,21 @@ export class TemplateService extends BaseService {
         break;
 
       case 'tax_notices_payment_notice':
-        // Format submission_date to Israeli format
-        if (processed.submission_date && typeof processed.submission_date === 'string') {
-          processed.submission_date_formatted = this.formatIsraeliDate(new Date(processed.submission_date as string));
+        // Format tax_amount to currency format
+        if (processed.tax_amount !== undefined && typeof processed.tax_amount === 'number') {
+          processed.tax_amount_formatted = new Intl.NumberFormat('he-IL', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(processed.tax_amount as number) + ' ₪';
+        } else {
+          processed.tax_amount_formatted = '';
         }
         // Build dual subject section - two lines
-        // Line 1: יתרה לתשלום חבות המס שנותרה למס הכנסה
-        // Line 2: בגין הדוחות הכספיים המבוקרים לשנת המס {{tax_year}} ששודרו למס הכנסה
+        // Line 1: הודעה על יתרת חבות מס שנותרה לתשלום בגין שנת המס {{tax_year}}
+        // Line 2: company name (indented, no "הנדון:" prefix)
         const taxYear = processed.tax_year || '';
-        processed.subjects_section = `הנדון: יתרה לתשלום חבות המס שנותרה למס הכנסה<div style="padding-right: 65px;">בגין הדוחות הכספיים המבוקרים לשנת המס ${taxYear} ששודרו למס הכנסה</div>`;
+        const companyName = processed.company_name || '';
+        processed.subjects_section = `הנדון: הודעה על יתרת חבות מס שנותרה לתשלום בגין שנת המס ${taxYear}<div style="padding-right: 55px;">${companyName}</div>`;
         break;
     }
 

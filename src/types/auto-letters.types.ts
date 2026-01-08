@@ -585,8 +585,9 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
       tax_notices: {
         taxPaymentNotice: {
           tax_year: String(new Date().getFullYear() - 1),
-          submission_date: '',
           greeting_name: '',
+          tax_amount: undefined,
+          tax_payment_link: '',
         },
       },
     },
@@ -765,12 +766,12 @@ export function validateMortgageIncome(data: Partial<MortgageIncomeVariables>): 
 export interface TaxPaymentNoticeVariables extends AutoLetterSharedData {
   /** שנת המס */
   tax_year: string;
-  /** תאריך שידור הדוחות */
-  submission_date: string;
   /** שם לפנייה אישית (למשל "פלוני") */
   greeting_name: string;
+  /** סכום חבות המס לתשלום */
+  tax_amount?: number;
   /** קישור לתשלום באזור האישי של רשות המסים */
-  tax_payment_link: string;
+  tax_payment_link?: string;
 }
 
 /** Default subject for Tax Payment Notice */
@@ -782,7 +783,8 @@ export function validateTaxPaymentNotice(data: Partial<TaxPaymentNoticeVariables
     data.document_date &&
     data.company_name?.trim() &&
     data.tax_year?.trim() &&
-    data.submission_date &&
-    data.greeting_name?.trim()
+    data.greeting_name?.trim() &&
+    data.tax_amount !== undefined &&
+    data.tax_amount > 0
   );
 }

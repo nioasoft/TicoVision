@@ -1,6 +1,6 @@
 /**
  * TaxPaymentNoticeForm - Form for Tax Payment Notice letter
- * הודעה על יתרת מס לתשלום לאחר שידור דוחות כספיים
+ * הודעה על יתרת חבות מס לתשלום לאחר שידור דוחות כספיים
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,23 +14,38 @@ interface TaxPaymentNoticeFormProps {
   disabled?: boolean;
 }
 
+// Format number as currency for display
+const formatCurrency = (num: number): string => {
+  return new Intl.NumberFormat('he-IL', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(num);
+};
+
 export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNoticeFormProps) {
   const isValid = !!(
     value.tax_year?.trim() &&
-    value.submission_date &&
-    value.greeting_name?.trim()
+    value.greeting_name?.trim() &&
+    value.tax_amount !== undefined &&
+    value.tax_amount > 0
   );
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/[^\d]/g, '');
+    const numericValue = rawValue ? parseInt(rawValue, 10) : undefined;
+    onChange({ ...value, tax_amount: numericValue });
+  };
 
   return (
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">הודעה על יתרת מס לתשלום</CardTitle>
+          <CardTitle className="text-right">הודעה על יתרת חבות מס לתשלום</CardTitle>
           <CardDescription className="text-right">
-            הודעה ללקוח על יתרת חבות מס לאחר שידור הדוחות הכספיים לרשות המסים
+            הודעה ללקוח על יתרת חבות מס לאחר סיום הביקורת ושידור הדוחות הכספיים
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Tax Year */}
           <div className="space-y-2">
             <Label htmlFor="tax-year" className="text-right block">
@@ -44,42 +59,7 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
               disabled={disabled}
               className="text-right w-32"
               dir="ltr"
-              placeholder="2024"
             />
-            <p className="text-sm text-gray-500 text-right">
-              שנת המס שעבורה שודרו הדוחות הכספיים
-            </p>
-          </div>
-
-          {/* Submission Date */}
-          <div className="space-y-2">
-            <Label htmlFor="submission-date" className="text-right block">
-              תאריך שידור הדוחות <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="submission-date"
-              type="date"
-              value={value.submission_date || ''}
-              onChange={(e) => onChange({ ...value, submission_date: e.target.value })}
-              onInput={(e) => {
-                const target = e.target as HTMLInputElement;
-                if (target.value) {
-                  onChange({ ...value, submission_date: target.value });
-                }
-              }}
-              onBlur={(e) => {
-                // Ensure value is captured on blur for browser automation compatibility
-                if (e.target.value && e.target.value !== value.submission_date) {
-                  onChange({ ...value, submission_date: e.target.value });
-                }
-              }}
-              disabled={disabled}
-              className="text-left w-48"
-              dir="ltr"
-            />
-            <p className="text-sm text-gray-500 text-right">
-              התאריך בו שודרו הדוחות הכספיים לרשות המסים
-            </p>
           </div>
 
           {/* Greeting Name */}
@@ -95,11 +75,34 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="פלוני"
             />
-            <p className="text-sm text-gray-500 text-right">
-              שם הפנייה שיופיע במכתב (למשל: "פלוני היקר")
-            </p>
+          </div>
+
+          {/* Tax Amount */}
+          <div className="space-y-2">
+            <Label htmlFor="tax-amount" className="text-right block">
+              סכום חבות המס <span className="text-red-500">*</span>
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="tax-amount"
+                type="text"
+                inputMode="numeric"
+                value={value.tax_amount !== undefined ? formatCurrency(value.tax_amount) : ''}
+                onChange={handleAmountChange}
+                disabled={disabled}
+                className="text-left w-40"
+                dir="ltr"
+              />
+              <span className="text-gray-600">&#8362;</span>
+            </div>
+            {value.tax_amount !== undefined && value.tax_amount > 0 && (
+              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md inline-block">
+                <span className="text-lg font-bold text-amber-800">
+                  {formatCurrency(value.tax_amount)} &#8362;
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Tax Payment Link */}
@@ -115,21 +118,7 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
               disabled={disabled}
               className="text-left"
               dir="ltr"
-              placeholder="https://www.misim.gov.il/..."
             />
-            <p className="text-sm text-gray-500 text-right">
-              קישור לאזור האישי באתר רשות המסים לביצוע תשלום
-            </p>
-          </div>
-
-          {/* Letter Content Info */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <h4 className="font-medium text-blue-900 mb-2 text-right">תוכן המכתב:</h4>
-            <ul className="space-y-2 text-sm text-blue-800 text-right list-disc list-inside">
-              <li>הודעה על שידור הדוחות הכספיים לרשות המסים</li>
-              <li>עדכון על חבות מס לתשלום שנותרה</li>
-              <li>הנחיות להסדרת התשלום (שובר, אזור אישי, המחאות)</li>
-            </ul>
           </div>
 
           {/* Validation */}
