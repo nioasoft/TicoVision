@@ -178,12 +178,10 @@ export function CapitalDeclarationsListPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // For non-admin users, filter by their own assignments
-      const assignedTo = !isAdmin
-        ? user?.id
-        : assignedFilter !== 'all'
-          ? assignedFilter
-          : undefined;
+      // Apply handler filter if selected (optional for all users)
+      const assignedTo = assignedFilter !== 'all'
+        ? assignedFilter
+        : undefined;
 
       // Handle 'active_process' special filter (in_progress + waiting_documents + reviewing + in_preparation + pending_approval)
       const statusParam = statusFilter === 'all'
@@ -226,7 +224,7 @@ export function CapitalDeclarationsListPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage, pageSize, isAdmin, user?.id]);
+  }, [searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage, pageSize]);
 
   /**
    * Load available years for filter
@@ -339,7 +337,7 @@ export function CapitalDeclarationsListPage() {
             לוח עבודה - הצהרות הון
           </h1>
           <p className="text-muted-foreground rtl:text-right ltr:text-left">
-            {isAdmin ? 'מעקב אחר כל ההצהרות' : 'ההצהרות המשויכות אליך'}
+            מעקב אחר כל ההצהרות
           </p>
         </div>
         <Button onClick={() => navigate('/capital-declaration')}>
@@ -501,28 +499,26 @@ export function CapitalDeclarationsListPage() {
               </SelectContent>
             </Select>
 
-            {isAdmin && (
-              <Select
-                value={assignedFilter}
-                onValueChange={(value) => {
-                  setAssignedFilter(value);
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[160px] rtl:text-right">
-                  <SelectValue placeholder="רו&quot;ח מטפל" />
-                </SelectTrigger>
-                <SelectContent className="rtl:text-right">
-                  <SelectItem value="all">כל המטפלים</SelectItem>
-                  <SelectItem value="unassigned">ללא שיוך</SelectItem>
-                  {accountants.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Select
+              value={assignedFilter}
+              onValueChange={(value) => {
+                setAssignedFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[160px] rtl:text-right">
+                <SelectValue placeholder="רו&quot;ח מטפל" />
+              </SelectTrigger>
+              <SelectContent className="rtl:text-right">
+                <SelectItem value="all">כל המטפלים</SelectItem>
+                <SelectItem value="unassigned">ללא שיוך</SelectItem>
+                {accountants.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Select
               value={yearFilter === 'all' ? 'all' : String(yearFilter)}
