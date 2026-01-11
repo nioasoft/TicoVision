@@ -1,0 +1,90 @@
+<!-- Letter Body: Mortgage Approval - Osek with Submitted Report -->
+<!-- Template Type: mortgage_approvals_osek_submitted -->
+<!-- Variables: {{bank_name}}, {{company_name}}, {{company_id}}, {{applicant_name}}, -->
+<!--            {{report_year}}, {{submission_date}}, {{tax_office}}, -->
+<!--            {{revenue_turnover}}, {{taxable_income}}, {{income_tax}} -->
+<!-- Based on: נוסח אחיד - גרסה עבור עוסק מורשה/עוסק פטור שהדוח למס הכנסה הוגש לרשויות המס -->
+
+<!-- BODY: Title -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; padding-bottom: 5px;">
+            אישור רואה/ת חשבון עבור עוסק מורשה/עוסק פטור
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; border-bottom: 1px solid #000000; padding-bottom: 10px;">
+            שהדוח למס הכנסה לשנה שקדמה לשנת הוצאת אישור זה הוגש לרשויות המס
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Greeting -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            לכבוד,<br>
+            מר/גברת {{applicant_name}}<br>
+            א.ג.נ;
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Subject Line (הנדון) -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>הנדון: {{company_name}} (ע.מ./ע.פ {{company_id}}) (להלן: "העוסק")</strong> - דוח מיוחד, בלתי מבוקר של רואה החשבון לצורך קבלת משכנתה על ידי מר/גב' <strong>{{applicant_name}}</strong> מ<strong>{{bank_name}}</strong>.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: First Paragraph -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            לבקשתכם וכרואי החשבון המייצגים של העוסק בבעלותך, ולצורך הגשת מכתבנו זה על ידך ל{{bank_name}} לצורך קבלת משכנתה על ידי מר/גב' {{applicant_name}} ולצרכים אלה בלבד, בהתאם לדוח בלתי מבוקר שהוגש על ידך לשנת המס שהסתיימה ביום 31 בדצמבר {{report_year}}, ביום {{submission_date}}, למשרד השומה {{tax_office}}, הרינו לאשר כי בדוח כלולים, בין השאר, הנתונים כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Financial Data Points -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>1.</strong> מחזור ההכנסות (ללא מס ערך מוסף) של העוסק לשנה שהסתיימה ביום 31 בדצמבר {{report_year}} הסתכם לסך <strong>{{revenue_turnover}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>2.</strong> הכנסתך מיגיעה אישית מעסק או משלח יד החייבת במס לשנה שהסתיימה ביום 31 בדצמבר {{report_year}} הסתכמה לסך <strong>{{taxable_income}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>3.</strong> סכום מס ההכנסה הנובע מההכנסה החייבת כאמור בסעיף 2 לעיל לשנה שהסתיימה ביום 31 בדצמבר {{report_year}} הסתכם לסך <strong>{{income_tax}}</strong> ₪.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.6; color: #09090b; text-align: right;">
+            בכבוד רב,
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.6; color: #09090b; padding-top: 5px; text-align: right;">
+            פרנקו ושות' רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 20px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

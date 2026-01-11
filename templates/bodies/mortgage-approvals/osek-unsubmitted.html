@@ -1,0 +1,114 @@
+<!-- Letter Body: Mortgage Approval - Osek with Unsubmitted Report -->
+<!-- Template Type: mortgage_approvals_osek_unsubmitted -->
+<!-- Variables: {{bank_name}}, {{company_name}}, {{company_id}}, {{applicant_name}}, -->
+<!--            {{period_months}}, {{period_end_date}}, {{revenue_turnover}}, {{estimated_profit}}, -->
+<!--            {{last_submitted_year}}, {{last_submission_date}}, {{tax_office}}, {{credit_points}} -->
+<!-- Based on: נוסח אחיד - גרסה עבור עוסק מורשה/עוסק פטור שהדוח למס הכנסה טרם הוגש לרשויות המס -->
+
+<!-- BODY: Title -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; padding-bottom: 5px;">
+            אישור רואה/ת חשבון עבור עוסק מורשה/עוסק פטור
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; border-bottom: 1px solid #000000; padding-bottom: 10px;">
+            שהדוח למס הכנסה לשנה שקדמה לשנת הוצאת אישור זה טרם הוגש לרשויות המס
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Greeting -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            לכבוד,<br>
+            מר/גברת {{applicant_name}}<br>
+            א.ג.נ;
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Subject Line (הנדון) -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>הנדון: {{company_name}} (ע.מ./ע.פ {{company_id}}) (להלן: "העוסק")</strong> - דוח הכנסות והוצאות בלתי מבוקר, לתקופה של <strong>{{period_months}}</strong> חודשים שהסתיימה ביום <strong>{{period_end_date}}</strong> (להלן: "התקופה") לצורך קבלת משכנתה על ידי מר/גב' <strong>{{applicant_name}}</strong> מ<strong>{{bank_name}}</strong>.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: First Paragraph -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            לבקשתך וכרואי חשבון המייצגים של העוסק בבעלותך, ולצורך הגשת מכתבנו זה על ידך ל{{bank_name}} לצורך קבלת משכנתה על ידי מר/גב' {{applicant_name}} ולצרכים אלה בלבד, מצ"ב חישוב בלתי מבוקר של רווח משוער לפני מס (ללא תיאומים למס הכנסה ותשלומי ביטוח לאומי) בהתאם לנתוני הנהלת חשבונות הבלתי מבוקרים של העוסק לתקופה, המסומן בחותמתנו לשם זיהוי בלבד (להלן: "הדוח הבלתי מבוקר").
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Disclaimer Paragraph -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            הדוח הבלתי מבוקר נערך על ידך, בהתאם לנתוני הנהלת חשבונות בלתי מבוקרים לתקופה ולא בוקר על ידינו. לפיכך אין אנחנו מחווים עליו חוות דעת של ביקורת.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Data Section Header -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right; font-weight: 700;">
+            מדוח זה עולים הנתונים הבאים:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Financial Data Points -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>1.</strong> מחזור ההכנסות של העוסק (ללא מס ערך מוסף) בתקופה הסתכם לסך <strong>{{revenue_turnover}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>2.</strong> הרווח המשוער לפני מס (ללא תיאומים למס הכנסה ותשלומי ביטוח לאומי) של העוסק בתקופה הסתכם לסך <strong>{{estimated_profit}}</strong> ₪.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Last Submitted Report -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            בהתאם לדוח השנתי האחרון שהוגש על ידך לשנת המס שהסתיימה ביום 31 בדצמבר {{last_submitted_year}}, ביום {{last_submission_date}}, למשרד השומה {{tax_office}}, הרינו לאשר כי, הנך זכאי ל-<strong>{{credit_points}}</strong> נקודות זיכוי.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.6; color: #09090b; text-align: right;">
+            בכבוד רב,
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.6; color: #09090b; padding-top: 5px; text-align: right;">
+            פרנקו ושות' רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 20px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

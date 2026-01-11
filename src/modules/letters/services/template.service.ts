@@ -3504,7 +3504,11 @@ export class TemplateService extends BaseService {
       'reminder_letters_personal_report': 'bodies/reminder-letters/personal-report-reminder.html',
       'reminder_letters_bookkeeper_balance': 'bodies/reminder-letters/bookkeeper-balance-reminder.html',
       'bank_approvals_income_confirmation': 'bodies/bank-approvals/income-confirmation.html',
-      'bank_approvals_mortgage_income': 'bodies/bank-approvals/mortgage-income.html',
+      // Mortgage Approvals
+      'mortgage_approvals_audited_company': 'bodies/mortgage-approvals/audited-company.html',
+      'mortgage_approvals_unaudited_company': 'bodies/mortgage-approvals/unaudited-company.html',
+      'mortgage_approvals_osek_submitted': 'bodies/mortgage-approvals/osek-submitted.html',
+      'mortgage_approvals_osek_unsubmitted': 'bodies/mortgage-approvals/osek-unsubmitted.html',
       'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html'
     };
 
@@ -3526,7 +3530,11 @@ export class TemplateService extends BaseService {
       'reminder_letters_personal_report': 'השלמות לדוח האישי',
       'reminder_letters_bookkeeper_balance': 'סיכום פרטיכל מישיבה',
       'bank_approvals_income_confirmation': 'אישור הכנסות',
-      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא - בעל שליטה',
+      // Mortgage Approvals
+      'mortgage_approvals_audited_company': 'אישור רו"ח למשכנתא - בעל שליטה (דוחות מבוקרים)',
+      'mortgage_approvals_unaudited_company': 'אישור רו"ח למשכנתא - בעל שליטה (דוחות בלתי מבוקרים)',
+      'mortgage_approvals_osek_submitted': 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
+      'mortgage_approvals_osek_unsubmitted': 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
       'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה'
     };
 
@@ -3553,7 +3561,11 @@ export class TemplateService extends BaseService {
       'reminder_letters_personal_report': 'תזכורת למסמכים',
       'reminder_letters_bookkeeper_balance': 'זירוז מנה"ח',
       'bank_approvals_income_confirmation': 'אישור הכנסות',
-      'bank_approvals_mortgage_income': 'אישור הכנסות למשכנתא',
+      // Mortgage Approvals
+      'mortgage_approvals_audited_company': 'אישור משכנתא - בעל שליטה מבוקר',
+      'mortgage_approvals_unaudited_company': 'אישור משכנתא - בעל שליטה',
+      'mortgage_approvals_osek_submitted': 'אישור משכנתא - עוסק',
+      'mortgage_approvals_osek_unsubmitted': 'אישור משכנתא - עוסק',
       'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום'
     };
 
@@ -3736,9 +3748,56 @@ export class TemplateService extends BaseService {
         }
         break;
 
-      case 'bank_approvals_mortgage_income':
-        // For Mortgage Income, the header should show the bank name
-        // Company info stays as-is (from the selected client)
+      case 'mortgage_approvals_audited_company':
+        // Clear group_name - header shows bank name
+        processed.group_name = '';
+
+        // Compute previous_year from audited_year
+        if (processed.audited_year && typeof processed.audited_year === 'number') {
+          processed.previous_year = (processed.audited_year as number) - 1;
+        }
+
+        // Format audit_date to Israeli format
+        if (processed.audit_date && typeof processed.audit_date === 'string') {
+          processed.audit_date = this.formatIsraeliDate(new Date(processed.audit_date as string));
+        }
+
+        // Format registrar_report_date to Israeli format
+        if (processed.registrar_report_date && typeof processed.registrar_report_date === 'string') {
+          processed.registrar_report_date = this.formatIsraeliDate(new Date(processed.registrar_report_date as string));
+        }
+
+        // Format dividend_date to Israeli format (if exists)
+        if (processed.dividend_date && typeof processed.dividend_date === 'string') {
+          processed.dividend_date = this.formatIsraeliDate(new Date(processed.dividend_date as string));
+        }
+
+        // Format currency values
+        if (typeof processed.revenue_turnover === 'number') {
+          processed.revenue_turnover = processed.revenue_turnover.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.net_profit_current === 'number') {
+          processed.net_profit_current = processed.net_profit_current.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.net_profit_previous === 'number') {
+          processed.net_profit_previous = processed.net_profit_previous.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.retained_earnings === 'number') {
+          processed.retained_earnings = processed.retained_earnings.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+
+        // Build shareholders table rows
+        if (Array.isArray(processed.shareholders)) {
+          processed.shareholders_table = this.buildShareholdersTableRows(
+            processed.shareholders as Array<{ name: string; id_number: string; holding_percentage: number }>
+          );
+        } else {
+          processed.shareholders_table = '';
+        }
+        break;
+
+      case 'mortgage_approvals_unaudited_company':
+        // Clear group_name - header shows bank name
         processed.group_name = '';
 
         // Format period_end_date to Israeli format
@@ -3774,6 +3833,50 @@ export class TemplateService extends BaseService {
           );
         } else {
           processed.shareholders_table = '';
+        }
+        break;
+
+      case 'mortgage_approvals_osek_submitted':
+        // Clear group_name - header shows bank name
+        processed.group_name = '';
+
+        // Format submission_date to Israeli format
+        if (processed.submission_date && typeof processed.submission_date === 'string') {
+          processed.submission_date = this.formatIsraeliDate(new Date(processed.submission_date as string));
+        }
+
+        // Format currency values
+        if (typeof processed.revenue_turnover === 'number') {
+          processed.revenue_turnover = processed.revenue_turnover.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.taxable_income === 'number') {
+          processed.taxable_income = processed.taxable_income.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.income_tax === 'number') {
+          processed.income_tax = processed.income_tax.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        break;
+
+      case 'mortgage_approvals_osek_unsubmitted':
+        // Clear group_name - header shows bank name
+        processed.group_name = '';
+
+        // Format period_end_date to Israeli format
+        if (processed.period_end_date && typeof processed.period_end_date === 'string') {
+          processed.period_end_date = this.formatIsraeliDate(new Date(processed.period_end_date as string));
+        }
+
+        // Format last_submission_date to Israeli format
+        if (processed.last_submission_date && typeof processed.last_submission_date === 'string') {
+          processed.last_submission_date = this.formatIsraeliDate(new Date(processed.last_submission_date as string));
+        }
+
+        // Format currency values
+        if (typeof processed.revenue_turnover === 'number') {
+          processed.revenue_turnover = processed.revenue_turnover.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
+        if (typeof processed.estimated_profit === 'number') {
+          processed.estimated_profit = processed.estimated_profit.toLocaleString('he-IL', { minimumFractionDigits: 0 });
         }
         break;
 

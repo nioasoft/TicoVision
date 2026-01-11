@@ -14,8 +14,11 @@ import type {
   PersonalReportReminderVariables,
   BookkeeperBalanceReminderVariables,
   IncomeConfirmationVariables,
-  MortgageIncomeVariables,
   TaxPaymentNoticeVariables,
+  MortgageAuditedCompanyVariables,
+  MortgageUnauditedCompanyVariables,
+  MortgageOsekSubmittedVariables,
+  MortgageOsekUnsubmittedVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -41,7 +44,15 @@ import {
 } from './forms/reminder-letters';
 
 // Bank Approvals forms
-import { IncomeConfirmationForm, MortgageIncomeForm } from './forms/bank-approvals';
+import { IncomeConfirmationForm } from './forms/bank-approvals';
+
+// Mortgage Approvals forms
+import {
+  AuditedCompanyForm,
+  UnauditedCompanyForm,
+  OsekSubmittedForm,
+  OsekUnsubmittedForm,
+} from './forms/mortgage-approvals';
 
 // Tax Notices forms
 import { TaxPaymentNoticeForm } from './forms/tax-notices';
@@ -92,6 +103,9 @@ export function FormRenderer({
 
     case 'bank_approvals':
       return renderBankApprovalsForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+
+    case 'mortgage_approvals':
+      return renderMortgageApprovalsForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     case 'tax_notices':
       return renderTaxNoticesForm(letterTypeId, value, onChange, disabled);
@@ -284,10 +298,63 @@ function renderBankApprovalsForm(
         />
       );
 
-    case 'mortgage_income':
+    default:
       return (
-        <MortgageIncomeForm
-          value={value as Partial<MortgageIncomeVariables>}
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderMortgageApprovalsForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string
+) {
+  switch (letterTypeId) {
+    case 'audited_company':
+      return (
+        <AuditedCompanyForm
+          value={value as Partial<MortgageAuditedCompanyVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+        />
+      );
+
+    case 'unaudited_company':
+      return (
+        <UnauditedCompanyForm
+          value={value as Partial<MortgageUnauditedCompanyVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+        />
+      );
+
+    case 'osek_submitted':
+      return (
+        <OsekSubmittedForm
+          value={value as Partial<MortgageOsekSubmittedVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+        />
+      );
+
+    case 'osek_unsubmitted':
+      return (
+        <OsekUnsubmittedForm
+          value={value as Partial<MortgageOsekUnsubmittedVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
           companyName={companyName}

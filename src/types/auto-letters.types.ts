@@ -28,6 +28,7 @@ export type AutoLetterCategory =
   | 'missing_documents'    // מסמכים חסרים
   | 'reminder_letters'     // מכתבי זירוז
   | 'bank_approvals'       // אישורים לבנק/מוסדות
+  | 'mortgage_approvals'   // אישורי משכנתא
   | 'tax_notices';         // הודעות מס
 
 /** Configuration for a letter category */
@@ -35,7 +36,7 @@ export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Receipt';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt';
   enabled: boolean;
 }
 
@@ -77,6 +78,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     enabled: true,
   },
   {
+    id: 'mortgage_approvals',
+    label: 'אישורי משכנתא',
+    description: 'אישורי רו"ח לצורך קבלת משכנתא - לחברות בע"מ ועוסקים',
+    icon: 'Home',
+    enabled: true,
+  },
+  {
     id: 'tax_notices',
     label: 'הודעות מס',
     description: 'הודעות בנושא מיסים, חבויות ותשלומים לרשות המסים',
@@ -106,7 +114,11 @@ export type AutoLetterTemplateType =
   | 'reminder_letters_bookkeeper_balance'
   // Bank Approvals (אישורים לבנק/מוסדות)
   | 'bank_approvals_income_confirmation'
-  | 'bank_approvals_mortgage_income'
+  // Mortgage Approvals (אישורי משכנתא)
+  | 'mortgage_approvals_audited_company'       // בעל שליטה - דוחות מבוקרים
+  | 'mortgage_approvals_unaudited_company'     // בעל שליטה - טרם בוקרו
+  | 'mortgage_approvals_osek_submitted'        // עוסק - דוח הוגש
+  | 'mortgage_approvals_osek_unsubmitted'      // עוסק - טרם הוגש
   // Tax Notices (הודעות מס)
   | 'tax_notices_payment_notice';
 
@@ -218,12 +230,35 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       templateType: 'bank_approvals_income_confirmation',
       icon: 'Receipt',
     },
+  ],
+  mortgage_approvals: [
     {
-      id: 'mortgage_income',
-      label: 'אישור הכנסות למשכנתא - בעל שליטה',
-      description: 'אישור רו"ח עבור בעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו',
-      templateType: 'bank_approvals_mortgage_income',
-      icon: 'Home',
+      id: 'audited_company',
+      label: 'בעל שליטה - דוחות מבוקרים',
+      description: 'אישור רו"ח לבעל שליטה בחברה בע"מ עם דוחות כספיים מבוקרים',
+      templateType: 'mortgage_approvals_audited_company',
+      icon: 'FileCheck',
+    },
+    {
+      id: 'unaudited_company',
+      label: 'בעל שליטה - טרם בוקרו',
+      description: 'אישור רו"ח לבעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו',
+      templateType: 'mortgage_approvals_unaudited_company',
+      icon: 'FileSearch',
+    },
+    {
+      id: 'osek_submitted',
+      label: 'עוסק מורשה/פטור - דוח הוגש',
+      description: 'אישור רו"ח לעוסק שדוח המס שלו הוגש לרשויות',
+      templateType: 'mortgage_approvals_osek_submitted',
+      icon: 'CheckCircle',
+    },
+    {
+      id: 'osek_unsubmitted',
+      label: 'עוסק מורשה/פטור - טרם הוגש',
+      description: 'אישור רו"ח לעוסק שדוח המס שלו טרם הוגש',
+      templateType: 'mortgage_approvals_osek_unsubmitted',
+      icon: 'Clock',
     },
   ],
   tax_notices: [
@@ -344,7 +379,7 @@ export interface ShareholderEntry {
   holding_percentage: number;       // אחוז החזקה בחברה
 }
 
-/** Variables for Bank Approvals - Mortgage Income Confirmation letter */
+/** Variables for Bank Approvals - Mortgage Income Confirmation letter (DEPRECATED - use mortgage_approvals) */
 export interface MortgageIncomeVariables extends AutoLetterSharedData {
   // שם הבנק (שדה פתוח)
   bank_name: string;
@@ -373,6 +408,111 @@ export interface MortgageIncomeVariables extends AutoLetterSharedData {
 }
 
 // ============================================================================
+// MORTGAGE APPROVALS VARIABLES (אישורי משכנתא)
+// ============================================================================
+
+/** Variables for Mortgage Approvals - Audited Company (בעל שליטה - דוחות מבוקרים) */
+export interface MortgageAuditedCompanyVariables extends AutoLetterSharedData {
+  // שם הבנק
+  bank_name: string;
+
+  // פרטי מבקש/ת המשכנתא
+  applicant_name: string;
+  applicant_role: string;           // תפקיד בחברה
+
+  // נתוני הדוח המבוקר
+  audited_year: number;             // שנת הדוח המבוקר (2024)
+  audit_date: string;               // תאריך חוות הדעת (YYYY-MM-DD)
+
+  // נתונים כספיים מהדוח המבוקר
+  revenue_turnover: number;         // מחזור ההכנסות (ללא מע"מ)
+  net_profit_current: number;       // רווח נקי לפני מס - שנה נוכחית
+  net_profit_previous: number;      // רווח נקי - שנה קודמת
+  retained_earnings: number;        // יתרת עודפים
+
+  // בעלי מניות (מרשם החברות)
+  registrar_report_date: string;    // תאריך דוח רשם החברות
+  shareholders: ShareholderEntry[]; // טבלה דינמית
+
+  // דיבידנד (אופציונלי)
+  has_dividend: boolean;
+  dividend_date?: string;
+  dividend_details?: string;
+}
+
+/** Variables for Mortgage Approvals - Unaudited Company (בעל שליטה - טרם בוקרו) */
+export interface MortgageUnauditedCompanyVariables extends AutoLetterSharedData {
+  // שם הבנק
+  bank_name: string;
+
+  // פרטי מבקש/ת המשכנתא
+  applicant_name: string;
+  applicant_role: string;
+
+  // תקופה
+  period_months: number;
+  period_end_date: string;          // YYYY-MM-DD
+
+  // נתונים כספיים (בלתי מבוקרים)
+  revenue_turnover: number;         // מחזור ההכנסות (ללא מע"מ)
+  salary_expenses: number;          // הוצאות השכר
+  estimated_profit: number;         // רווח חשבונאי משוער לפני מס
+
+  // בעלי מניות
+  registrar_report_date: string;
+  shareholders: ShareholderEntry[];
+
+  // דיבידנד (אופציונלי)
+  has_dividend: boolean;
+  dividend_date?: string;
+  dividend_details?: string;
+}
+
+/** Variables for Mortgage Approvals - Osek Submitted (עוסק - דוח הוגש) */
+export interface MortgageOsekSubmittedVariables extends AutoLetterSharedData {
+  // שם הבנק
+  bank_name: string;
+
+  // פרטי מבקש/ת המשכנתא
+  applicant_name: string;
+
+  // נתוני הדוח שהוגש
+  report_year: number;              // שנת הדוח
+  submission_date: string;          // תאריך הגשה (YYYY-MM-DD)
+  tax_office: string;               // שם משרד השומה
+
+  // נתונים כספיים
+  revenue_turnover: number;         // מחזור הכנסות (ללא מע"מ)
+  taxable_income: number;           // הכנסה חייבת מיגיעה אישית
+  income_tax: number;               // סכום מס ההכנסה
+}
+
+/** Variables for Mortgage Approvals - Osek Unsubmitted (עוסק - טרם הוגש) */
+export interface MortgageOsekUnsubmittedVariables extends AutoLetterSharedData {
+  // שם הבנק
+  bank_name: string;
+
+  // פרטי מבקש/ת המשכנתא
+  applicant_name: string;
+
+  // תקופה (דוח בלתי מבוקר)
+  period_months: number;
+  period_end_date: string;          // YYYY-MM-DD
+
+  // נתונים כספיים (בלתי מבוקרים)
+  revenue_turnover: number;         // מחזור הכנסות (ללא מע"מ)
+  estimated_profit: number;         // רווח משוער לפני מס
+
+  // דוח אחרון שהוגש
+  last_submitted_year: number;      // שנת הדוח האחרון שהוגש
+  last_submission_date: string;     // תאריך הגשתו
+  tax_office: string;               // משרד השומה
+
+  // נקודות זיכוי
+  credit_points: number;            // מספר נקודות הזיכוי
+}
+
+// ============================================================================
 // DEFAULT VALUES
 // ============================================================================
 
@@ -385,7 +525,11 @@ export const DEFAULT_SUBJECTS = {
   personal_report_reminder: 'השלמות לדוח האישי',
   bookkeeper_balance_reminder: 'סיכום פרטיכל מישיבה',
   income_confirmation: 'אישור הכנסות',
-  mortgage_income: 'אישור הכנסות למשכנתא - בעל שליטה',
+  // Mortgage Approvals (אישורי משכנתא)
+  mortgage_audited_company: 'אישור רו"ח למשכנתא - בעל שליטה (דוחות מבוקרים)',
+  mortgage_unaudited_company: 'אישור רו"ח למשכנתא - בעל שליטה (דוחות בלתי מבוקרים)',
+  mortgage_osek_submitted: 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
+  mortgage_osek_unsubmitted: 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
   tax_payment_notice: 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
 } as const;
 
@@ -416,7 +560,14 @@ export interface MissingDocumentsDocumentData {
 /** Document data for Bank Approvals letters */
 export interface BankApprovalsDocumentData {
   incomeConfirmation: Partial<IncomeConfirmationVariables>;
-  mortgageIncome: Partial<MortgageIncomeVariables>;
+}
+
+/** Document data for Mortgage Approvals letters */
+export interface MortgageApprovalsDocumentData {
+  auditedCompany: Partial<MortgageAuditedCompanyVariables>;
+  unauditedCompany: Partial<MortgageUnauditedCompanyVariables>;
+  osekSubmitted: Partial<MortgageOsekSubmittedVariables>;
+  osekUnsubmitted: Partial<MortgageOsekUnsubmittedVariables>;
 }
 
 /** Document data for Tax Notices letters */
@@ -469,6 +620,7 @@ export interface AutoLetterFormState {
     missing_documents: MissingDocumentsDocumentData;
     reminder_letters: ReminderLettersDocumentData;
     bank_approvals: BankApprovalsDocumentData;
+    mortgage_approvals: MortgageApprovalsDocumentData;
     tax_notices: TaxNoticesDocumentData;
   };
 }
@@ -564,9 +716,26 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           recipient_name: '',
           period_text: '',
           income_entries: [],
-          // Note: company_name and company_id come from sharedData, not here
         },
-        mortgageIncome: {
+      },
+      mortgage_approvals: {
+        auditedCompany: {
+          bank_name: '',
+          applicant_name: '',
+          applicant_role: '',
+          audited_year: new Date().getFullYear() - 1,
+          audit_date: '',
+          revenue_turnover: 0,
+          net_profit_current: 0,
+          net_profit_previous: 0,
+          retained_earnings: 0,
+          registrar_report_date: '',
+          shareholders: [{ name: '', id_number: '', holding_percentage: 100 }],
+          has_dividend: false,
+          dividend_date: '',
+          dividend_details: '',
+        },
+        unauditedCompany: {
           bank_name: '',
           applicant_name: '',
           applicant_role: '',
@@ -580,6 +749,28 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           has_dividend: false,
           dividend_date: '',
           dividend_details: '',
+        },
+        osekSubmitted: {
+          bank_name: '',
+          applicant_name: '',
+          report_year: new Date().getFullYear() - 1,
+          submission_date: '',
+          tax_office: '',
+          revenue_turnover: 0,
+          taxable_income: 0,
+          income_tax: 0,
+        },
+        osekUnsubmitted: {
+          bank_name: '',
+          applicant_name: '',
+          period_months: 12,
+          period_end_date: '',
+          revenue_turnover: 0,
+          estimated_profit: 0,
+          last_submitted_year: new Date().getFullYear() - 2,
+          last_submission_date: '',
+          tax_office: '',
+          credit_points: 2.25,
         },
       },
       tax_notices: {

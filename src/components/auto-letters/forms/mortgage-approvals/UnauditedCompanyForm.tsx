@@ -1,6 +1,6 @@
 /**
- * MortgageIncomeForm - Form for Mortgage Income Confirmation letter
- * אישור רו"ח למשכנתא עבור בעל שליטה בחברה בע"מ
+ * UnauditedCompanyForm - Form for Mortgage Approval: Unaudited Company
+ * אישור רו"ח למשכנתא עבור בעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,15 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2 } from 'lucide-react';
-import type { MortgageIncomeVariables, ShareholderEntry } from '@/types/auto-letters.types';
+import type { MortgageUnauditedCompanyVariables, ShareholderEntry } from '@/types/auto-letters.types';
 import { formatIsraeliDate } from '@/lib/formatters';
 
-interface MortgageIncomeFormProps {
-  value: Partial<MortgageIncomeVariables>;
-  onChange: (data: Partial<MortgageIncomeVariables>) => void;
+interface UnauditedCompanyFormProps {
+  value: Partial<MortgageUnauditedCompanyVariables>;
+  onChange: (data: Partial<MortgageUnauditedCompanyVariables>) => void;
   disabled?: boolean;
-  companyName?: string;  // מגיע מבחירת הלקוח הראשית
-  companyId?: string;    // מגיע מבחירת הלקוח הראשית
+  companyName?: string;
+  companyId?: string;
 }
 
 const emptyShareholderEntry: ShareholderEntry = {
@@ -27,7 +27,6 @@ const emptyShareholderEntry: ShareholderEntry = {
   holding_percentage: 0,
 };
 
-// Format number as Israeli currency
 const formatCurrency = (num: number): string => {
   return new Intl.NumberFormat('he-IL', {
     minimumFractionDigits: 0,
@@ -35,16 +34,15 @@ const formatCurrency = (num: number): string => {
   }).format(num);
 };
 
-export function MortgageIncomeForm({
+export function UnauditedCompanyForm({
   value,
   onChange,
   disabled,
   companyName,
   companyId,
-}: MortgageIncomeFormProps) {
+}: UnauditedCompanyFormProps) {
   const shareholders = value.shareholders || [{ ...emptyShareholderEntry }];
 
-  // Handlers for shareholders table
   const handleAddShareholder = () => {
     onChange({
       ...value,
@@ -53,7 +51,7 @@ export function MortgageIncomeForm({
   };
 
   const handleRemoveShareholder = (index: number) => {
-    if (shareholders.length <= 1) return; // Keep at least one row
+    if (shareholders.length <= 1) return;
     const newShareholders = shareholders.filter((_, i) => i !== index);
     onChange({
       ...value,
@@ -74,7 +72,6 @@ export function MortgageIncomeForm({
     });
   };
 
-  // Validation checks
   const hasCompany = !!companyName?.trim();
   const hasBankName = !!value.bank_name?.trim();
   const hasApplicant = !!value.applicant_name?.trim() && !!value.applicant_role?.trim();
@@ -90,13 +87,13 @@ export function MortgageIncomeForm({
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">אישור הכנסות למשכנתא - בעל שליטה</CardTitle>
+          <CardTitle className="text-right">בעל שליטה - דוחות טרם בוקרו</CardTitle>
           <CardDescription className="text-right">
-            אישור רו"ח עבור בעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו
+            אישור רו"ח עבור בעל שליטה בחברה בע"מ שדוחותיה הכספיים לשנה שקדמה טרם בוקרו
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Company Display (from main recipient selection) */}
+          {/* Company Display */}
           <div className="space-y-2">
             <Label className="text-right block">
               פרטי החברה <span className="text-red-500">*</span>
@@ -182,7 +179,7 @@ export function MortgageIncomeForm({
           {/* Period */}
           <div className="space-y-4">
             <Label className="text-right block font-medium">
-              תקופת הדוח
+              תקופת הדוח הבלתי מבוקר
             </Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -229,7 +226,7 @@ export function MortgageIncomeForm({
           {/* Financial Data */}
           <div className="space-y-4">
             <Label className="text-right block font-medium">
-              נתונים כספיים (בש"ח)
+              נתונים כספיים בלתי מבוקרים (בש"ח)
             </Label>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -327,7 +324,6 @@ export function MortgageIncomeForm({
               </Button>
             </div>
 
-            {/* Registrar Report Date */}
             <div className="space-y-2">
               <Label htmlFor="registrar-date" className="text-right block text-sm">
                 תאריך דוח רשם החברות <span className="text-red-500">*</span>
@@ -343,7 +339,6 @@ export function MortgageIncomeForm({
               />
             </div>
 
-            {/* Shareholders Rows */}
             <div className="space-y-3">
               {shareholders.map((shareholder, index) => (
                 <div key={index} className="p-4 border rounded-md space-y-3 bg-gray-50">
@@ -363,7 +358,6 @@ export function MortgageIncomeForm({
                     )}
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    {/* Name */}
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">שם</Label>
                       <Input
@@ -376,8 +370,6 @@ export function MortgageIncomeForm({
                         placeholder="שם מלא"
                       />
                     </div>
-
-                    {/* ID Number */}
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">מספר מזהה</Label>
                       <Input
@@ -390,8 +382,6 @@ export function MortgageIncomeForm({
                         placeholder="ת.ז. / ח.פ."
                       />
                     </div>
-
-                    {/* Holding Percentage */}
                     <div className="space-y-1">
                       <Label className="text-xs text-gray-500">אחוז החזקה</Label>
                       <div className="relative">
@@ -417,7 +407,7 @@ export function MortgageIncomeForm({
 
           <Separator />
 
-          {/* Dividend Section (Optional) */}
+          {/* Dividend Section */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
               <Checkbox
@@ -464,19 +454,6 @@ export function MortgageIncomeForm({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Preview Info */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <h4 className="font-medium text-blue-900 mb-2 text-right">תוכן המכתב:</h4>
-            <ul className="space-y-1 text-sm text-blue-800 text-right list-disc list-inside">
-              <li>אישור רו"ח לבעל שליטה בחברה בע"מ</li>
-              <li>דוח הכנסות והוצאות בלתי מבוקר</li>
-              <li>נתונים כספיים: מחזור, שכר, רווח משוער</li>
-              <li>טבלת בעלי מניות לפי רשם החברות</li>
-              {value.has_dividend && <li>פרטי דיבידנד שחולק</li>}
-              <li>חתימת פרנקו ושות' רואי חשבון</li>
-            </ul>
           </div>
 
           {/* Validation */}

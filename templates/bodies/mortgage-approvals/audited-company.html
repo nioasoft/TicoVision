@@ -1,0 +1,134 @@
+<!-- Letter Body: Mortgage Approval - Audited Company -->
+<!-- Template Type: mortgage_approvals_audited_company -->
+<!-- Variables: {{bank_name}}, {{company_name}}, {{company_id}}, {{applicant_name}}, {{applicant_role}}, -->
+<!--            {{audited_year}}, {{audit_date}}, {{revenue_turnover}}, {{net_profit_current}}, -->
+<!--            {{net_profit_previous}}, {{retained_earnings}}, {{registrar_report_date}}, -->
+<!--            {{shareholders_table}}, has_dividend (conditional), {{dividend_date}}, {{dividend_details}} -->
+<!-- Based on: נוסח אחיד - גרסה עבור בעל שליטה בישות המאוגדת כחברה בע"מ שקיימים לה דוחות כספיים מבוקרים -->
+
+<!-- BODY: Title -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; padding-bottom: 5px;">
+            אישור רואה/ת חשבון עבור בעל שליטה בישות המאוגדת כחברה בע"מ
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; border-bottom: 1px solid #000000; padding-bottom: 10px;">
+            שקיימים לה דוחות כספיים מבוקרים לשנה שקדמה לשנת הוצאת אישור זה
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Subject Line (הנדון) -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>הנדון: חברת {{company_name}} בע"מ (ח.פ. {{company_id}}) (להלן: "החברה")</strong> - דוח מיוחד של רואה החשבון המבקר לצורך קבלת משכנתה על ידי מר/גב' <strong>{{applicant_name}}</strong> שהינו/הינה <strong>{{applicant_role}}</strong> בחברה מ<strong>{{bank_name}}</strong>.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: First Paragraph -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
+            לבקשתכם וכרואי חשבון המבקרים של חברתכם, ולצרכי הגשת מכתבנו זה על ידי החברה ל{{bank_name}} לצורך קבלת משכנתה על ידי מר/גב' {{applicant_name}} ולצרכים אלה בלבד, ובהתאם לדוחות הכספיים המבוקרים של החברה ליום 31 בדצמבר {{audited_year}} ולשנה שהסתיימה באותו תאריך ושחוות דעתנו הבלתי מסויגת עליהם ניתנה ביום {{audit_date}}, הרינו לאשר כי הנתונים מתוך דוחות כספיים אלה הינם כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Financial Data Points -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>1.</strong> מחזור ההכנסות (ללא מס ערך מוסף) של החברה לשנה שהסתיימה ביום 31 בדצמבר {{audited_year}} הסתכם לסך <strong>{{revenue_turnover}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>2.</strong> הרווח הנקי (הפסד) לפני מס של החברה לשנת הכספים המבוקרת האחרונה על ידי משרדנו, השנה שהסתיימה ביום 31 בדצמבר {{audited_year}} הסתכם לסך <strong>{{net_profit_current}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>3.</strong> הרווח הנקי (הפסד) של החברה לשנה שקדמה, השנה שהסתיימה ביום 31 בדצמבר {{previous_year}} הסתכם לסך <strong>{{net_profit_previous}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 2; color: #09090b; text-align: right;">
+            <strong>4.</strong> יתרת העודפים בחברה נכון ליום 31 בדצמבר {{audited_year}} הסתכמה לסך של <strong>{{retained_earnings}}</strong> ₪.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Additional Confirmations Header -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right; font-weight: 700;">
+            כמו-כן, הרינו לאשר כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Shareholders Section -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>1.</strong> בהתאם לדוח מרשם החברות מיום <strong>{{registrar_report_date}}</strong> בעלי המניות בחברה הינם:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Shareholders Table -->
+<tr>
+    <td style="padding-top: 10px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;">
+            <!-- Table Header -->
+            <tr style="background-color: #f0f0f0;">
+                <td width="40%" style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 700; text-align: center;">
+                    שם בעל מניות
+                </td>
+                <td width="30%" style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 700; text-align: center;">
+                    מספר מזהה בעל מניות
+                </td>
+                <td width="30%" style="border: 1px solid #000000; padding: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; font-weight: 700; text-align: center;">
+                    אחוז החזקה בחברה
+                </td>
+            </tr>
+            <!-- Table Body - Dynamic rows -->
+            {{shareholders_table}}
+        </table>
+    </td>
+</tr>
+
+<!-- BODY: Dividend Section (Conditional) -->
+{{#has_dividend}}
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>2.</strong> בהתאם לדוחות הכספיים כאמור לעיל ובהתאם לדיווחי החברה למס הכנסה ניכויים, חילקה החברה בתאריך <strong>{{dividend_date}}</strong> דיבידנד (ברוטו) לבעלי המניות שלה על פי הפרטים הבאים: {{dividend_details}}.
+        </div>
+    </td>
+</tr>
+{{/has_dividend}}
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.6; color: #09090b; text-align: right;">
+            בכבוד רב,
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.6; color: #09090b; padding-top: 5px; text-align: right;">
+            פרנקו ושות' רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 20px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>
