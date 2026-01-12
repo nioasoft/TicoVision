@@ -294,7 +294,7 @@ export function PublicTicketForm() {
               id="phone"
               value={formData.submitter_phone}
               onChange={(e) => handleInputChange('submitter_phone', e.target.value)}
-              placeholder="050-1234567"
+              placeholder="מספר טלפון"
               className="pr-10"
               dir="ltr"
             />

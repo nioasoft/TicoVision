@@ -288,8 +288,8 @@ export function FreelancerFormDialog({
               onEmailChange={(value) => handleFormChange('email', value)}
               onPhoneChange={(value) => handleFormChange('phone', value)}
               namePlaceholder="שם פרטי ושם משפחה"
-              emailPlaceholder="email@example.com"
-              phonePlaceholder="050-1234567"
+              emailPlaceholder="כתובת אימייל"
+              phonePlaceholder="מספר טלפון"
               required
             />
 
@@ -305,7 +305,7 @@ export function FreelancerFormDialog({
                   const formatted = formatIsraeliTaxId(e.target.value);
                   handleFormChange('tax_id', formatted);
                 }}
-                placeholder="123-456-789"
+                placeholder="מספר ת.ז."
                 className="rtl:text-right font-mono max-w-xs"
                 dir="ltr"
               />

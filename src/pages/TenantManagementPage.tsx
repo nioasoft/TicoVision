@@ -318,7 +318,7 @@ export default function TenantManagementPage() {
                       id="custom_domain"
                       value={settings?.custom_domain || ''}
                       onChange={(e) => setSettings({...settings, custom_domain: e.target.value})}
-                      placeholder="example.com"
+                      placeholder="הדומיין שלך"
                     />
                   </div>
                 </div>

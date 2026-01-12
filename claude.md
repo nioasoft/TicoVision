@@ -46,6 +46,7 @@ kill -9 $(lsof -t -i:5173)     # Kill process on port
 5. **NEVER** mix business logic in components (use services)
 6. **NEVER** use `any` type in TypeScript
 7. **NEVER** hardcode values that could be global
+8. **NEVER** use example placeholders in forms (no `050-1234567`, `example@email.com`, etc.) - use descriptive Hebrew text instead (`מספר טלפון`, `כתובת אימייל`)
 
 ## ✅ ALWAYS Rules
 1. **ALWAYS** extend `BaseService` for new services

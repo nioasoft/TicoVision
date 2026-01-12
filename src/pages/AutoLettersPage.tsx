@@ -1151,7 +1151,7 @@ export function AutoLettersPage() {
                   disabled={generating}
                   className="text-left"
                   dir="ltr"
-                  placeholder="example@email.com"
+                  placeholder="כתובת אימייל"
                 />
                 <p className="text-sm text-gray-500 text-right">
                   האימייל ישמש לשליחת המכתב

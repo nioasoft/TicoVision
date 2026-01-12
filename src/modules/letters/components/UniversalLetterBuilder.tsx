@@ -2204,7 +2204,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               >
                 <h3 className="text-lg font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <Building2 className="h-5 w-5" />
-                  לקוח בודד
+                  חברה בודדת
                 </h3>
 
                 <div className={recipientMode !== 'client' ? 'pointer-events-none' : ''}>
@@ -2315,7 +2315,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               >
                 <h3 className="text-lg font-semibold mb-3 text-right rtl:text-right flex items-center justify-end gap-2 rtl:flex-row-reverse">
                   <Users className="h-5 w-5" />
-                  קבוצה
+                  קבוצת חברות
                 </h3>
 
                 <div className={recipientMode !== 'group' ? 'pointer-events-none' : ''}>

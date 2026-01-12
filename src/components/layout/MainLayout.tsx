@@ -84,7 +84,7 @@ const navigation: NavigationItem[] = [
     ]
   },
   {
-    name: 'מכתבים',
+    name: 'מכתבים מילוליים',
     icon: FileText,
     menuKey: 'letters',
     allowedRoles: ['admin'] as UserRole[],
@@ -95,7 +95,7 @@ const navigation: NavigationItem[] = [
     ]
   },
   {
-    name: 'מכתבים ואישורים',
+    name: 'מכתבים ואישורים אוטומטיים',
     icon: ScrollText,
     menuKey: 'documents',
     allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[],

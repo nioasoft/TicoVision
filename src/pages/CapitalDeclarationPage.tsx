@@ -375,8 +375,8 @@ export function CapitalDeclarationPage() {
               onPhoneSecondaryChange={(value) => setFormState(prev => ({ ...prev, contact_phone_secondary: value }))}
               required
               namePlaceholder="שם מלא"
-              emailPlaceholder="email@example.com"
-              phonePlaceholder="050-1234567"
+              emailPlaceholder="כתובת אימייל"
+              phonePlaceholder="מספר טלפון"
               phoneSecondaryPlaceholder="טלפון נוסף"
             />
           </div>
@@ -419,8 +419,8 @@ export function CapitalDeclarationPage() {
                   onPhoneSecondaryChange={(value) => setFormState(prev => ({ ...prev, recipient_phone_secondary: value }))}
                   required
                   namePlaceholder="שם מלא"
-                  emailPlaceholder="email@example.com"
-                  phonePlaceholder="050-1234567"
+                  emailPlaceholder="כתובת אימייל"
+                  phonePlaceholder="מספר טלפון"
                   phoneSecondaryPlaceholder="טלפון נוסף"
                 />
               </div>

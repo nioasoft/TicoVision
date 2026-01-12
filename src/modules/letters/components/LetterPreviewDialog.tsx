@@ -1144,7 +1144,7 @@ export function LetterPreviewDialog({
           <div className="flex gap-2 rtl:flex-row-reverse">
             <Input
               type="email"
-              placeholder="example@company.com"
+              placeholder="כתובת אימייל"
               value={newManualEmail}
               onChange={(e) => setNewManualEmail(e.target.value)}
               onKeyDown={(e) => {
