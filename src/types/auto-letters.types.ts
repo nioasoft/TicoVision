@@ -979,3 +979,92 @@ export function validateTaxPaymentNotice(data: Partial<TaxPaymentNoticeVariables
     data.tax_amount > 0
   );
 }
+
+// ============================================================================
+// MORTGAGE APPROVALS VALIDATION FUNCTIONS
+// ============================================================================
+
+/** Validate Mortgage Approvals - Audited Company (בעל שליטה - דוחות מבוקרים) */
+export function validateMortgageAuditedCompany(data: Partial<MortgageAuditedCompanyVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.bank_name?.trim() &&
+    data.applicant_name?.trim() &&
+    data.applicant_role?.trim() &&
+    data.audited_year && data.audited_year > 2000 &&
+    data.audit_date &&
+    data.revenue_turnover !== undefined &&
+    data.net_profit_current !== undefined &&
+    data.net_profit_previous !== undefined &&
+    data.retained_earnings !== undefined &&
+    data.registrar_report_date &&
+    data.shareholders &&
+    data.shareholders.length > 0 &&
+    data.shareholders.every(sh =>
+      sh.name?.trim() &&
+      sh.id_number?.trim() &&
+      sh.holding_percentage >= 0
+    )
+  );
+}
+
+/** Validate Mortgage Approvals - Unaudited Company (בעל שליטה - טרם בוקרו) */
+export function validateMortgageUnauditedCompany(data: Partial<MortgageUnauditedCompanyVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.bank_name?.trim() &&
+    data.applicant_name?.trim() &&
+    data.applicant_role?.trim() &&
+    data.period_months && data.period_months > 0 &&
+    data.period_end_date &&
+    data.revenue_turnover !== undefined &&
+    data.salary_expenses !== undefined &&
+    data.estimated_profit !== undefined &&
+    data.registrar_report_date &&
+    data.shareholders &&
+    data.shareholders.length > 0 &&
+    data.shareholders.every(sh =>
+      sh.name?.trim() &&
+      sh.id_number?.trim() &&
+      sh.holding_percentage >= 0
+    )
+  );
+}
+
+/** Validate Mortgage Approvals - Osek Submitted (עוסק מורשה/פטור - דוח הוגש) */
+export function validateMortgageOsekSubmitted(data: Partial<MortgageOsekSubmittedVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.bank_name?.trim() &&
+    data.applicant_name?.trim() &&
+    data.report_year && data.report_year > 2000 &&
+    data.submission_date &&
+    data.tax_office?.trim() &&
+    data.revenue_turnover !== undefined &&
+    data.taxable_income !== undefined &&
+    data.income_tax !== undefined
+  );
+}
+
+/** Validate Mortgage Approvals - Osek Unsubmitted (עוסק מורשה/פטור - טרם הוגש) */
+export function validateMortgageOsekUnsubmitted(data: Partial<MortgageOsekUnsubmittedVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.bank_name?.trim() &&
+    data.applicant_name?.trim() &&
+    data.period_months && data.period_months > 0 &&
+    data.period_end_date &&
+    data.revenue_turnover !== undefined &&
+    data.estimated_profit !== undefined &&
+    data.last_submitted_year && data.last_submitted_year > 2000 &&
+    data.last_submission_date &&
+    data.tax_office?.trim() &&
+    data.credit_points !== undefined
+  );
+}

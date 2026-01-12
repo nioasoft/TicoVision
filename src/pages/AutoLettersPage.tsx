@@ -49,6 +49,10 @@ import {
   validateIncomeConfirmation,
   validateMortgageIncome,
   validateTaxPaymentNotice,
+  validateMortgageAuditedCompany,
+  validateMortgageUnauditedCompany,
+  validateMortgageOsekSubmitted,
+  validateMortgageOsekUnsubmitted,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -283,6 +287,19 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'mortgage_approvals') {
+      switch (selectedLetterTypeId) {
+        case 'audited_company':
+          return formState.documentData.mortgage_approvals.auditedCompany;
+        case 'unaudited_company':
+          return formState.documentData.mortgage_approvals.unauditedCompany;
+        case 'osek_submitted':
+          return formState.documentData.mortgage_approvals.osekSubmitted;
+        case 'osek_unsubmitted':
+          return formState.documentData.mortgage_approvals.osekUnsubmitted;
+      }
+    }
+
     return {};
   };
 
@@ -366,6 +383,19 @@ export function AutoLettersPage() {
     if (selectedCategory === 'tax_notices') {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return validateTaxPaymentNotice(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'mortgage_approvals') {
+      switch (selectedLetterTypeId) {
+        case 'audited_company':
+          return validateMortgageAuditedCompany(mergedData);
+        case 'unaudited_company':
+          return validateMortgageUnauditedCompany(mergedData);
+        case 'osek_submitted':
+          return validateMortgageOsekSubmitted(mergedData);
+        case 'osek_unsubmitted':
+          return validateMortgageOsekUnsubmitted(mergedData);
       }
     }
 
@@ -824,6 +854,59 @@ export function AutoLettersPage() {
             },
           },
         }));
+      }
+    }
+
+    if (selectedCategory === 'mortgage_approvals') {
+      switch (selectedLetterTypeId) {
+        case 'audited_company':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              mortgage_approvals: {
+                ...prev.documentData.mortgage_approvals,
+                auditedCompany: data,
+              },
+            },
+          }));
+          break;
+        case 'unaudited_company':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              mortgage_approvals: {
+                ...prev.documentData.mortgage_approvals,
+                unauditedCompany: data,
+              },
+            },
+          }));
+          break;
+        case 'osek_submitted':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              mortgage_approvals: {
+                ...prev.documentData.mortgage_approvals,
+                osekSubmitted: data,
+              },
+            },
+          }));
+          break;
+        case 'osek_unsubmitted':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              mortgage_approvals: {
+                ...prev.documentData.mortgage_approvals,
+                osekUnsubmitted: data,
+              },
+            },
+          }));
+          break;
       }
     }
   };
