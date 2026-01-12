@@ -69,7 +69,15 @@ const DEFAULT_FILTERS: ClientFilters = {
 
 const PAGE_SIZE = 20;
 
-export function useClients(): UseClientsReturn {
+export interface UseClientsOptions {
+  /**
+   * Exclude freelancers from the list (used on the Companies page)
+   */
+  excludeFreelancers?: boolean;
+}
+
+export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
+  const { excludeFreelancers = false } = options;
   const { toast } = useToast();
 
   // State
@@ -117,6 +125,9 @@ export function useClients(): UseClientsReturn {
         if (filters.groupId === 'none') apiFilters.group_id = 'null';
         else if (filters.groupId !== 'all') apiFilters.group_id = filters.groupId;
 
+        // Exclude freelancers if requested (used on Companies page)
+        if (excludeFreelancers) apiFilters.client_type_neq = 'freelancer';
+
         response = await clientService.list(
           { page: currentPage, pageSize: PAGE_SIZE, sortBy: 'created_at', sortOrder: 'desc' },
           Object.keys(apiFilters).length > 0 ? apiFilters : undefined
@@ -144,7 +155,7 @@ export function useClients(): UseClientsReturn {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchQuery, filters, currentPage, toast]);
+  }, [debouncedSearchQuery, filters, currentPage, toast, excludeFreelancers]);
 
   // Create client
   const createClient = useCallback(async (data: CreateClientDto): Promise<{ success: boolean; clientId?: string }> => {

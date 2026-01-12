@@ -1169,7 +1169,9 @@ export type Database = {
           id: string
           incorporation_date: string | null
           internal_external: string | null
+          is_passive_income: boolean | null
           is_retainer: boolean | null
+          linked_company_id: string | null
           notes: string | null
           payer_client_id: string | null
           payment_role: string | null
@@ -1218,7 +1220,9 @@ export type Database = {
           id?: string
           incorporation_date?: string | null
           internal_external?: string | null
+          is_passive_income?: boolean | null
           is_retainer?: boolean | null
+          linked_company_id?: string | null
           notes?: string | null
           payer_client_id?: string | null
           payment_role?: string | null
@@ -1267,7 +1271,9 @@ export type Database = {
           id?: string
           incorporation_date?: string | null
           internal_external?: string | null
+          is_passive_income?: boolean | null
           is_retainer?: boolean | null
+          linked_company_id?: string | null
           notes?: string | null
           payer_client_id?: string | null
           payment_role?: string | null
@@ -1292,6 +1298,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_linked_company_id_fkey"
+            columns: ["linked_company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -4278,9 +4291,13 @@ export type Database = {
       collection_dashboard_view: {
         Row: {
           amount_after_selected_discount: number | null
+          amount_before_vat: number | null
           amount_original: number | null
           amount_paid: number | null
           amount_remaining: number | null
+          bookkeeping_base_amount: number | null
+          bookkeeping_before_vat: number | null
+          bookkeeping_with_vat: number | null
           client_id: string | null
           company_name: string | null
           company_name_hebrew: string | null

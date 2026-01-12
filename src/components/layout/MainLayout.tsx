@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   Users,
+  User,
   Calculator,
   FileText,
   UserCog,
@@ -65,8 +66,9 @@ const navigation: NavigationItem[] = [
     menuKey: 'clients',
     allowedRoles: ['admin', 'bookkeeper', 'client'] as UserRole[],
     submenu: [
-      { name: 'לקוח בודד', href: '/clients', menuKey: 'clients:list' },
-      { name: 'קבוצה', href: '/client-groups', menuKey: 'clients:groups', allowedRoles: ['admin'] as UserRole[] },
+      { name: 'חברה בודדת', href: '/clients', menuKey: 'clients:list' },
+      { name: 'קבוצת חברות', href: '/client-groups', menuKey: 'clients:groups', allowedRoles: ['admin'] as UserRole[] },
+      { name: 'עצמאים', href: '/freelancers', menuKey: 'clients:freelancers' },
       { name: 'אנשי קשר', href: '/contacts', menuKey: 'contacts', allowedRoles: ['admin'] as UserRole[] },
     ]
   },

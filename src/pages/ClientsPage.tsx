@@ -26,6 +26,7 @@ export default function ClientsPage() {
   const { isMenuVisible } = usePermissions();
   const canCreateClient = isMenuVisible('clients:create');
 
+  // Exclude freelancers - they have their own page at /freelancers
   const {
     // State
     clients,
@@ -64,7 +65,7 @@ export default function ClientsPage() {
     updateContact,
     deleteContact,
     setPrimaryContact,
-  } = useClients();
+  } = useClients({ excludeFreelancers: true });
 
   // Dialog state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

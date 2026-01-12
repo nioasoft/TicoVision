@@ -105,7 +105,12 @@ export abstract class BaseService {
   ): QueryBuilder<T> {
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
+        // Support for neq (not equal) filters with _neq suffix
+        // Example: { client_type_neq: 'freelancer' } becomes .neq('client_type', 'freelancer')
+        if (key.endsWith('_neq')) {
+          const actualKey = key.slice(0, -4); // Remove '_neq' suffix
+          query = query.neq(actualKey, value);
+        } else if (typeof value === 'string' && value.includes('%')) {
           query = query.ilike(key, value);
         } else {
           query = query.eq(key, value);

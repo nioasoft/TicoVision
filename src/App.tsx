@@ -14,6 +14,7 @@ const SetupPage = lazy(() => import('@/pages/SetupPage').then(m => ({ default: m
 const SetPasswordPage = lazy(() => import('@/pages/SetPasswordPage').then(m => ({ default: m.SetPasswordPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
+const FreelancersPage = lazy(() => import('@/pages/FreelancersPage'));
 const FeesPage = lazy(() => import('@/pages/FeesPage').then(m => ({ default: m.FeesPage })));
 const FeeTrackingPage = lazy(() => import('@/pages/FeeTrackingPage').then(m => ({ default: m.FeeTrackingPage })));
 const LettersPage = lazy(() => import('@/pages/LettersPage').then(m => ({ default: m.LettersPage })));
@@ -166,6 +167,15 @@ function App() {
                       <Route path="/clients" element={
                         <ErrorBoundary>
                           <ClientsPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+
+                    {/* Freelancers page - accessible if has permission */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper', 'client']} />}>
+                      <Route path="/freelancers" element={
+                        <ErrorBoundary>
+                          <FreelancersPage />
                         </ErrorBoundary>
                       } />
                     </Route>
