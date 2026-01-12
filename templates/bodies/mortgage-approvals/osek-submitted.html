@@ -5,25 +5,12 @@
 <!--            {{revenue_turnover}}, {{taxable_income}}, {{income_tax}} -->
 <!-- Based on: נוסח אחיד - גרסה עבור עוסק מורשה/עוסק פטור שהדוח למס הכנסה הוגש לרשויות המס -->
 
-<!-- BODY: Title -->
-<tr>
-    <td style="padding-top: 10px;">
-        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; padding-bottom: 5px;">
-            אישור רואה/ת חשבון עבור עוסק מורשה/עוסק פטור
-        </div>
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; border-bottom: 1px solid #000000; padding-bottom: 10px;">
-            שהדוח למס הכנסה לשנה שקדמה לשנת הוצאת אישור זה הוגש לרשויות המס
-        </div>
-    </td>
-</tr>
-
 <!-- BODY: Greeting -->
 <tr>
     <td style="padding-top: 20px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
             לכבוד,<br>
-            מר/גברת {{applicant_name}}<br>
+            מר {{applicant_name}}<br>
             א.ג.נ;
         </div>
     </td>
@@ -32,8 +19,8 @@
 <!-- BODY: Subject Line (הנדון) -->
 <tr>
     <td style="padding-top: 15px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>הנדון: {{company_name}} (ע.מ./ע.פ {{company_id}}) (להלן: "העוסק")</strong> - דוח מיוחד, בלתי מבוקר של רואה החשבון לצורך קבלת משכנתה על ידי מר/גב' <strong>{{applicant_name}}</strong> מ<strong>{{bank_name}}</strong>.
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">
+            הנדון: {{company_name}} (ע.מ./ע.פ {{company_id}}) (להלן: "העוסק") - דוח מיוחד, בלתי מבוקר של רואה החשבון לצורך קבלת משכנתה על ידי מר {{applicant_name}} מ{{bank_name}}.
         </div>
     </td>
 </tr>
@@ -42,7 +29,7 @@
 <tr>
     <td style="padding-top: 15px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
-            לבקשתכם וכרואי החשבון המייצגים של העוסק בבעלותך, ולצורך הגשת מכתבנו זה על ידך ל{{bank_name}} לצורך קבלת משכנתה על ידי מר/גב' {{applicant_name}} ולצרכים אלה בלבד, בהתאם לדוח בלתי מבוקר שהוגש על ידך לשנת המס שהסתיימה ביום 31 בדצמבר {{report_year}}, ביום {{submission_date}}, למשרד השומה {{tax_office}}, הרינו לאשר כי בדוח כלולים, בין השאר, הנתונים כדלקמן:
+            לבקשתכם וכרואי החשבון המייצגים של העוסק בבעלותך, ולצורך הגשת מכתבנו זה על ידך ל{{bank_name}} לצורך קבלת משכנתה על ידי מר {{applicant_name}} ולצרכים אלה בלבד, בהתאם לדוח בלתי מבוקר שהוגש על ידך לשנת המס שהסתיימה ביום 31 בדצמבר {{report_year}}, ביום {{submission_date}}, למשרד השומה {{tax_office}}, הרינו לאשר כי בדוח כלולים, בין השאר, הנתונים כדלקמן:
         </div>
     </td>
 </tr>

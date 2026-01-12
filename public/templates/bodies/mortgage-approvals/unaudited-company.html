@@ -6,24 +6,11 @@
 <!--            has_dividend (conditional), {{dividend_date}}, {{dividend_details}} -->
 <!-- Based on: נוסח אחיד - גרסה עבור בעל שליטה בישות המאוגדת כחברה בע"מ שדוחותיה הכספיים טרם בוקרו -->
 
-<!-- BODY: Title -->
-<tr>
-    <td style="padding-top: 10px;">
-        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; padding-bottom: 5px;">
-            אישור רואה/ת חשבון עבור בעל שליטה בישות המאוגדת כחברה בע"מ
-        </div>
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: center; border-bottom: 1px solid #000000; padding-bottom: 10px;">
-            שדוחותיה הכספיים לשנה שקדמה לשנת הוצאת אישור זה טרם בוקרו
-        </div>
-    </td>
-</tr>
-
 <!-- BODY: Subject Line (הנדון) -->
 <tr>
     <td style="padding-top: 20px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>הנדון: חברת {{company_name}} בע"מ (ח.פ. {{company_id}}) להלן: "החברה"</strong> - דוח הכנסות והוצאות בלתי מבוקר לתקופה של <strong>{{period_months}}</strong> חודשים שהסתיימה ביום <strong>{{period_end_date}}</strong> (להלן: "התקופה") לצורך קבלת משכנתה על ידי מר/גב' <strong>{{applicant_name}}</strong> שהינו/הינה <strong>{{applicant_role}}</strong> בחברה מ<strong>{{bank_name}}</strong>.
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">
+            הנדון: חברת {{company_name}} בע"מ (ח.פ. {{company_id}}) להלן: "החברה" - דוח הכנסות והוצאות בלתי מבוקר לתקופה של {{period_months}} חודשים שהסתיימה ביום {{period_end_date}} (להלן: "התקופה") לצורך קבלת משכנתה על ידי מר {{applicant_name}} שהינו {{applicant_role}} בחברה מ{{bank_name}}.
         </div>
     </td>
 </tr>
@@ -32,7 +19,7 @@
 <tr>
     <td style="padding-top: 15px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: justify;">
-            לבקשתכם וכרואי חשבון המבקרים של חברתכם, ולצורך הגשת מכתבנו זה על ידי חברתכם ל{{bank_name}} לצורך קבלת משכנתה על ידי מר/גב' {{applicant_name}} ולצרכים אלה בלבד, מצ"ב חישוב בלתי מבוקר של רווח משוער לפני מס (ללא תיאומים למס הכנסה) בהתאם לנתוני הנהלת חשבונות הבלתי מבוקרים של החברה לתקופה, המסומן בחותמתנו לשם זיהוי בלבד (להלן: "הדוח הבלתי מבוקר").
+            לבקשתכם וכרואי חשבון המבקרים של חברתכם, ולצורך הגשת מכתבנו זה על ידי חברתכם ל{{bank_name}} לצורך קבלת משכנתה על ידי מר {{applicant_name}} ולצרכים אלה בלבד, מצ"ב חישוב בלתי מבוקר של רווח משוער לפני מס (ללא תיאומים למס הכנסה) בהתאם לנתוני הנהלת חשבונות הבלתי מבוקרים של החברה לתקופה, המסומן בחותמתנו לשם זיהוי בלבד (להלן: "הדוח הבלתי מבוקר").
         </div>
     </td>
 </tr>
@@ -120,6 +107,20 @@
     </td>
 </tr>
 {{/has_dividend}}
+
+<!-- BODY: Audited Report Attachment (Conditional) -->
+{{#has_audited_report_attachment}}
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            כתמיכה לבקשה, אנו מצרפים לכם את הדוח המבוקר האחרון של חברת <strong>{{company_name}}</strong>.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right; padding-top: 10px;">
+            אנא תשומת לבכם לנתון ה-EBITDA שבדו"ח: <strong>{{ebitda_amount}}</strong> ₪.
+        </div>
+    </td>
+</tr>
+{{/has_audited_report_attachment}}
 
 <!-- BODY: Signature Section -->
 <tr>

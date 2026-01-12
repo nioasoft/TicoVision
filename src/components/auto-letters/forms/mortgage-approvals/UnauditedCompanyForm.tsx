@@ -456,6 +456,54 @@ export function UnauditedCompanyForm({
             )}
           </div>
 
+          <Separator />
+
+          {/* Audited Report Attachment Section */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <Checkbox
+                id="has-audited-report"
+                checked={value.has_audited_report_attachment || false}
+                onCheckedChange={(checked) => onChange({ ...value, has_audited_report_attachment: !!checked })}
+                disabled={disabled}
+              />
+              <Label htmlFor="has-audited-report" className="text-right cursor-pointer">
+                צירוף דוח מבוקר
+              </Label>
+            </div>
+
+            {value.has_audited_report_attachment && (
+              <div className="space-y-4 p-4 bg-gray-50 border rounded-md">
+                <div className="text-sm text-gray-600 text-right">
+                  הטקסט הבא יתווסף לסוף המכתב: "כתמיכה לבקשה, אנו מצרפים לכם את הדוח המבוקר האחרון של חברת..."
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ebitda-amount" className="text-right block text-sm">
+                    סכום EBITDA בדוח
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="ebitda-amount"
+                      type="number"
+                      value={value.ebitda_amount || ''}
+                      onChange={(e) => onChange({ ...value, ebitda_amount: parseFloat(e.target.value) || 0 })}
+                      disabled={disabled}
+                      className="text-left pl-8 max-w-[200px]"
+                      dir="ltr"
+                      placeholder="0"
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+                  </div>
+                  {value.ebitda_amount ? (
+                    <div className="text-xs text-gray-500 text-right">
+                      {formatCurrency(value.ebitda_amount)} ₪
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Validation */}
           {(!hasCompany || !hasBankName || !hasApplicant || !hasPeriod || !hasFinancials || !hasShareholders) && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">

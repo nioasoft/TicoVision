@@ -53,6 +53,7 @@ import {
   validateMortgageUnauditedCompany,
   validateMortgageOsekSubmitted,
   validateMortgageOsekUnsubmitted,
+  validateAuditCompletion,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -300,6 +301,12 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'audit_completion') {
+      if (selectedLetterTypeId === 'general') {
+        return formState.documentData.audit_completion.general;
+      }
+    }
+
     return {};
   };
 
@@ -396,6 +403,12 @@ export function AutoLettersPage() {
           return validateMortgageOsekSubmitted(mergedData);
         case 'osek_unsubmitted':
           return validateMortgageOsekUnsubmitted(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'audit_completion') {
+      if (selectedLetterTypeId === 'general') {
+        return validateAuditCompletion(mergedData);
       }
     }
 
@@ -907,6 +920,21 @@ export function AutoLettersPage() {
             },
           }));
           break;
+      }
+    }
+
+    if (selectedCategory === 'audit_completion') {
+      if (selectedLetterTypeId === 'general') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            audit_completion: {
+              ...prev.documentData.audit_completion,
+              general: data,
+            },
+          },
+        }));
       }
     }
   };

@@ -29,14 +29,15 @@ export type AutoLetterCategory =
   | 'reminder_letters'     // מכתבי זירוז
   | 'bank_approvals'       // אישורים לבנק/מוסדות
   | 'mortgage_approvals'   // אישורי משכנתא
-  | 'tax_notices';         // הודעות מס
+  | 'tax_notices'          // הודעות מס
+  | 'audit_completion';    // סיום ביקורת דוחות כספיים
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck';
   enabled: boolean;
 }
 
@@ -91,6 +92,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     icon: 'Receipt',
     enabled: true,
   },
+  {
+    id: 'audit_completion',
+    label: 'סיום ביקורת דוחות כספיים',
+    description: 'מכתבים בנושא סיום ביקורת ועריכת דוחות כספיים',
+    icon: 'ClipboardCheck',
+    enabled: true,
+  },
 ];
 
 // ============================================================================
@@ -120,7 +128,9 @@ export type AutoLetterTemplateType =
   | 'mortgage_approvals_osek_submitted'        // עוסק - דוח הוגש
   | 'mortgage_approvals_osek_unsubmitted'      // עוסק - טרם הוגש
   // Tax Notices (הודעות מס)
-  | 'tax_notices_payment_notice';
+  | 'tax_notices_payment_notice'
+  // Audit Completion (סיום ביקורת דוחות כספיים)
+  | 'audit_completion_general';
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -268,6 +278,15 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הודעה ללקוח על יתרת חבות מס לאחר שידור דוחות כספיים',
       templateType: 'tax_notices_payment_notice',
       icon: 'FileText',
+    },
+  ],
+  audit_completion: [
+    {
+      id: 'general',
+      label: 'מכתב סיום ביקורת דוחות כספיים',
+      description: 'מכתב המודיע על צפי סיום עבודת הביקורת ועריכת הדוחות הכספיים',
+      templateType: 'audit_completion_general',
+      icon: 'ClipboardCheck',
     },
   ],
 };
@@ -466,6 +485,10 @@ export interface MortgageUnauditedCompanyVariables extends AutoLetterSharedData 
   has_dividend: boolean;
   dividend_date?: string;
   dividend_details?: string;
+
+  // צירוף דוח מבוקר (אופציונלי)
+  has_audited_report_attachment?: boolean;
+  ebitda_amount?: number;
 }
 
 /** Variables for Mortgage Approvals - Osek Submitted (עוסק - דוח הוגש) */
@@ -510,6 +533,22 @@ export interface MortgageOsekUnsubmittedVariables extends AutoLetterSharedData {
 
   // נקודות זיכוי
   credit_points: number;            // מספר נקודות הזיכוי
+
+  // צירוף דוח מבוקר (אופציונלי)
+  has_audited_report_attachment?: boolean;
+  ebitda_amount?: number;
+}
+
+// ============================================================================
+// AUDIT COMPLETION VARIABLES (סיום ביקורת דוחות כספיים)
+// ============================================================================
+
+/** Variables for Audit Completion letter */
+export interface AuditCompletionVariables extends AutoLetterSharedData {
+  /** שנת המס של הביקורת */
+  audit_year: number;
+  /** צפי סיום הביקורת (תאריך) */
+  completion_date: string;
 }
 
 // ============================================================================
@@ -531,6 +570,8 @@ export const DEFAULT_SUBJECTS = {
   mortgage_osek_submitted: 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
   mortgage_osek_unsubmitted: 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
   tax_payment_notice: 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
+  // Audit Completion (סיום ביקורת דוחות כספיים)
+  audit_completion_general: 'סיום ביקורת ועריכת דוח כספי',
 } as const;
 
 // ============================================================================
@@ -573,6 +614,11 @@ export interface MortgageApprovalsDocumentData {
 /** Document data for Tax Notices letters */
 export interface TaxNoticesDocumentData {
   taxPaymentNotice: Partial<TaxPaymentNoticeVariables>;
+}
+
+/** Document data for Audit Completion letters */
+export interface AuditCompletionDocumentData {
+  general: Partial<AuditCompletionVariables>;
 }
 
 /** Document data for Reminder Letters */
@@ -622,6 +668,7 @@ export interface AutoLetterFormState {
     bank_approvals: BankApprovalsDocumentData;
     mortgage_approvals: MortgageApprovalsDocumentData;
     tax_notices: TaxNoticesDocumentData;
+    audit_completion: AuditCompletionDocumentData;
   };
 }
 
@@ -779,6 +826,12 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           greeting_name: '',
           tax_amount: undefined,
           tax_payment_link: '',
+        },
+      },
+      audit_completion: {
+        general: {
+          audit_year: new Date().getFullYear() - 1,
+          completion_date: '',
         },
       },
     },
@@ -1066,5 +1119,20 @@ export function validateMortgageOsekUnsubmitted(data: Partial<MortgageOsekUnsubm
     data.last_submission_date &&
     data.tax_office?.trim() &&
     data.credit_points !== undefined
+  );
+}
+
+// ============================================================================
+// AUDIT COMPLETION VALIDATION
+// ============================================================================
+
+/** Validate Audit Completion letter */
+export function validateAuditCompletion(data: Partial<AuditCompletionVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.audit_year && data.audit_year > 2000 &&
+    data.completion_date
   );
 }

@@ -3509,7 +3509,9 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_unaudited_company': 'bodies/mortgage-approvals/unaudited-company.html',
       'mortgage_approvals_osek_submitted': 'bodies/mortgage-approvals/osek-submitted.html',
       'mortgage_approvals_osek_unsubmitted': 'bodies/mortgage-approvals/osek-unsubmitted.html',
-      'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html'
+      'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html',
+      // Audit Completion
+      'audit_completion_general': 'bodies/audit-completion/general.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3535,7 +3537,9 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_unaudited_company': 'אישור רו"ח למשכנתא - בעל שליטה (דוחות בלתי מבוקרים)',
       'mortgage_approvals_osek_submitted': 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
       'mortgage_approvals_osek_unsubmitted': 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
-      'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה'
+      'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
+      // Audit Completion
+      'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3566,7 +3570,9 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_unaudited_company': 'אישור משכנתא - בעל שליטה',
       'mortgage_approvals_osek_submitted': 'אישור משכנתא - עוסק',
       'mortgage_approvals_osek_unsubmitted': 'אישור משכנתא - עוסק',
-      'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום'
+      'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום',
+      // Audit Completion
+      'audit_completion_general': 'סיום ביקורת דוחות כספיים'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -3914,6 +3920,13 @@ export class TemplateService extends BaseService {
         const taxYear = processed.tax_year || '';
         const companyName = processed.company_name || '';
         processed.subjects_section = `הנדון: הודעה על יתרת חבות מס שנותרה לתשלום בגין שנת המס ${taxYear}<div style="padding-right: 55px;">${companyName}</div>`;
+        break;
+
+      case 'audit_completion_general':
+        // Format completion_date to Israeli format (e.g., "10 במרץ, 2025")
+        if (processed.completion_date && typeof processed.completion_date === 'string') {
+          processed.completion_date = this.formatIsraeliDate(new Date(processed.completion_date as string));
+        }
         break;
     }
 

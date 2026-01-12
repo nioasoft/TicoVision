@@ -19,6 +19,7 @@ import type {
   MortgageUnauditedCompanyVariables,
   MortgageOsekSubmittedVariables,
   MortgageOsekUnsubmittedVariables,
+  AuditCompletionVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -56,6 +57,9 @@ import {
 
 // Tax Notices forms
 import { TaxPaymentNoticeForm } from './forms/tax-notices';
+
+// Audit Completion forms
+import { AuditCompletionForm } from './forms/audit-completion';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -109,6 +113,9 @@ export function FormRenderer({
 
     case 'tax_notices':
       return renderTaxNoticesForm(letterTypeId, value, onChange, disabled);
+
+    case 'audit_completion':
+      return renderAuditCompletionForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     default:
       return null;
@@ -386,6 +393,37 @@ function renderTaxNoticesForm(
           value={value as Partial<TaxPaymentNoticeVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderAuditCompletionForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string
+) {
+  switch (letterTypeId) {
+    case 'general':
+      return (
+        <AuditCompletionForm
+          value={value as Partial<AuditCompletionVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
         />
       );
 
