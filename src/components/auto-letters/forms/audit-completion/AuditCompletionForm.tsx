@@ -19,7 +19,7 @@ interface AuditCompletionFormProps {
 export function AuditCompletionForm({ value, onChange, disabled, companyName, companyId }: AuditCompletionFormProps) {
   const isValid = !!(
     companyName?.trim() &&
-    companyId?.trim() &&
+    value.addressee_line1?.trim() &&
     value.audit_year && value.audit_year > 2000 &&
     value.completion_date
   );
@@ -34,15 +34,50 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Company Info (read-only) */}
+          {/* Company Info (read-only) - לשימוש ב"הנדון" */}
           {companyName && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
               <div className="text-sm text-blue-800 text-right">
-                <strong>החברה:</strong> {companyName}
+                <strong>החברה (לשורת הנדון):</strong> {companyName}
                 {companyId && <span> (ח.פ. {companyId})</span>}
               </div>
             </div>
           )}
+
+          {/* Addressee Line 1 - שורה ראשונה של "לכבוד" */}
+          <div className="space-y-2">
+            <Label htmlFor="addressee-line1" className="text-right block">
+              לכבוד - שורה ראשונה <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="addressee-line1"
+              value={value.addressee_line1 || ''}
+              onChange={(e) => onChange({ ...value, addressee_line1: e.target.value })}
+              disabled={disabled}
+              className="text-right"
+              dir="rtl"
+              placeholder="לדוגמה: בנק מזרחי טפחות"
+            />
+            <p className="text-xs text-gray-500 text-right">
+              יופיע בכותרת המכתב תחת "לכבוד:"
+            </p>
+          </div>
+
+          {/* Addressee Line 2 - שורה שנייה של "לכבוד" (אופציונלי) */}
+          <div className="space-y-2">
+            <Label htmlFor="addressee-line2" className="text-right block">
+              לכבוד - שורה שנייה (אופציונלי)
+            </Label>
+            <Input
+              id="addressee-line2"
+              value={value.addressee_line2 || ''}
+              onChange={(e) => onChange({ ...value, addressee_line2: e.target.value })}
+              disabled={disabled}
+              className="text-right"
+              dir="rtl"
+              placeholder="לדוגמה: באמצעות הפקיד המטפל"
+            />
+          </div>
 
           {/* Audit Year */}
           <div className="space-y-2">
@@ -61,7 +96,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
               dir="ltr"
             />
             <p className="text-xs text-gray-500 text-right">
-              יופיע בנדון ובסעיף 1 של המכתב
+              יופיע בנדון ובגוף המכתב
             </p>
           </div>
 
@@ -80,7 +115,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
               dir="ltr"
             />
             <p className="text-xs text-gray-500 text-right">
-              יופיע בסעיף 2: "אנו מעריכים כי עבודת הביקורת... תסתיים לא יאוחר מ-..."
+              יופיע בגוף המכתב: "אנו מעריכים כי... תסתיים לא יאוחר מיום..."
             </p>
           </div>
 
@@ -88,7 +123,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
           {!isValid && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="text-sm text-yellow-800 text-right">
-                יש לבחור לקוח ולמלא את כל השדות המסומנים בכוכבית
+                יש לבחור לקוח, למלא את שורת "לכבוד" ואת כל השדות המסומנים בכוכבית
               </p>
             </div>
           )}

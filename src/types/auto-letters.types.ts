@@ -549,6 +549,10 @@ export interface AuditCompletionVariables extends AutoLetterSharedData {
   audit_year: number;
   /** צפי סיום הביקורת (תאריך) */
   completion_date: string;
+  /** שורה ראשונה של "לכבוד" (לדוגמה: "בנק מזרחי טפחות") */
+  addressee_line1: string;
+  /** שורה שנייה של "לכבוד" (לדוגמה: "באמצעות הפקיד המטפל") - אופציונלי */
+  addressee_line2?: string;
 }
 
 // ============================================================================
@@ -1130,8 +1134,8 @@ export function validateMortgageOsekUnsubmitted(data: Partial<MortgageOsekUnsubm
 export function validateAuditCompletion(data: Partial<AuditCompletionVariables>): boolean {
   return !!(
     data.document_date &&
-    data.company_name?.trim() &&
-    data.company_id?.trim() &&
+    data.company_name?.trim() &&  // Client name (for "הנדון")
+    data.addressee_line1?.trim() &&  // Addressee (for "לכבוד")
     data.audit_year && data.audit_year > 2000 &&
     data.completion_date
   );

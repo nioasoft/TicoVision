@@ -3923,10 +3923,17 @@ export class TemplateService extends BaseService {
         break;
 
       case 'audit_completion_general':
-        // Format completion_date to Israeli format (e.g., "10 במרץ, 2025")
+        // Format completion_date to Israeli format (e.g., "31.01.2026")
         if (processed.completion_date && typeof processed.completion_date === 'string') {
           processed.completion_date = this.formatIsraeliDate(new Date(processed.completion_date as string));
         }
+        // For Audit Completion, the header's "לכבוד" shows the addressee (bank/authority)
+        // Save the original company_name for use in the body template's "הנדון"
+        processed.client_name = processed.company_name;
+        processed.client_id = processed.company_id;
+        // Swap: header will show addressee lines, body uses client_name/client_id
+        processed.company_name = processed.addressee_line1 || '';
+        processed.group_name = processed.addressee_line2 || '';
         break;
     }
 

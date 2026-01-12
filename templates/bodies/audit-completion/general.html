@@ -1,49 +1,56 @@
 <!-- Letter Body: Audit Completion - General -->
 <!-- Template Type: audit_completion_general -->
-<!-- Variables: {{company_name}}, {{company_id}}, {{audit_year}}, {{completion_date}} -->
-<!-- Based on: סיום ביקורת ועריכת דוח כספי -->
+<!-- Variables: {{client_name}}, {{client_id}}, {{audit_year}}, {{completion_date}} -->
+<!-- Header uses: {{company_name}} (addressee_line1), {{group_name}} (addressee_line2) -->
 
-<!-- BODY: Subject Line (הנדון) -->
+<!-- BODY: Subject Line (הנדון) - מפוצל לשורות עם יישור -->
 <tr>
     <td style="padding-top: 15px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">
-            הנדון: סיום ביקורת ועריכת דוח כספי של חברת {{company_name}} ח.פ. {{company_id}} לשנת המס {{audit_year}}
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: סיום ביקורת ועריכת דוח כספי של חברת {{client_name}}</span><br/><span style="opacity: 0;">הנדון: </span><span>ח.פ. {{client_id}} לשנת המס {{audit_year}}</span></div>
+    </td>
+</tr>
+
+<!-- BODY: Opening (פתיחה) -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            מכובדי,
         </div>
     </td>
 </tr>
 
-<!-- BODY: Point 1 - Current Status -->
+<!-- BODY: Paragraph 1 -->
 <tr>
     <td style="padding-top: 15px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>1.</strong> משרדינו נמצא בעיצומה של הליך הביקורת על הדוחות הכספיים לחברה שבנדון לשנת המס {{audit_year}}.
+            משרדנו נמצא בעיצומה של עבודת הביקורת ועריכת הדוחות הכספיים לשנת המס {{audit_year}}.
         </div>
     </td>
 </tr>
 
-<!-- BODY: Point 2 - Expected Completion -->
+<!-- BODY: Paragraph 2 -->
 <tr>
-    <td style="padding-top: 10px;">
+    <td style="padding-top: 15px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>2.</strong> אנו מעריכים כי עבודת הביקורת ועריכת הדוחות הכספיים המבוקרים תסתיים לא יאוחר מ-<strong>{{completion_date}}</strong>.
+            אנו מעריכים כי עבודת הביקורת, ועריכת הדוחות הכספיים תסתיים לא יאוחר מיום {{completion_date}}.
         </div>
     </td>
 </tr>
 
-<!-- BODY: Point 3 - After Approval -->
+<!-- BODY: Paragraph 3 -->
 <tr>
-    <td style="padding-top: 10px;">
+    <td style="padding-top: 15px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>3.</strong> מיד לאחר אישור הדוחות וחתימתם על ידי מנהלי החברה יומצא לכם עותק מדוחות אלו.
+            מייד לאחר אישור הדוחות הללו על ידי הנהלת החברה, יומצא לכם עותק של דוחות אלו.
         </div>
     </td>
 </tr>
 
-<!-- BODY: Point 4 - At Your Service -->
+<!-- BODY: Closing -->
 <tr>
-    <td style="padding-top: 10px;">
+    <td style="padding-top: 15px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>4.</strong> לשירותכם.
+            לשרותכם.
         </div>
     </td>
 </tr>
