@@ -1335,7 +1335,10 @@ export class ClientService extends BaseService {
       if (data.contact_type !== undefined) contactUpdates.contact_type = data.contact_type;
 
       if (Object.keys(contactUpdates).length > 0) {
-        await TenantContactService.update(assignment.contact_id, contactUpdates);
+        const updateResult = await TenantContactService.update(assignment.contact_id, contactUpdates);
+        if (updateResult.error) {
+          return { data: null, error: new Error(updateResult.error) };
+        }
       }
 
       // 4. Update the assignment (assignment-specific details)

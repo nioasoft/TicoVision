@@ -275,6 +275,28 @@ export class TenantContactService {
   }
 
   /**
+   * Check if email is taken by another contact (for validation before update)
+   */
+  static async isEmailTaken(email: string, excludeContactId?: string): Promise<boolean> {
+    if (!email) return false;
+    const existing = await this.findByEmail(email);
+    if (!existing) return false;
+    // If excludeContactId is provided, check if it's a different contact
+    return excludeContactId ? existing.id !== excludeContactId : true;
+  }
+
+  /**
+   * Check if phone is taken by another contact (for validation before update)
+   */
+  static async isPhoneTaken(phone: string, excludeContactId?: string): Promise<boolean> {
+    if (!phone) return false;
+    const existing = await this.findByPhone(phone);
+    if (!existing) return false;
+    // If excludeContactId is provided, check if it's a different contact
+    return excludeContactId ? existing.id !== excludeContactId : true;
+  }
+
+  /**
    * Create new contact OR return existing if found by email/phone
    */
   static async createOrGet(
@@ -343,12 +365,35 @@ export class TenantContactService {
 
   /**
    * Update existing contact
+   * Returns { data, error } to provide clear error messages for duplicates
    */
   static async update(
     contactId: string,
     updates: UpdateTenantContactDto
-  ): Promise<TenantContact | null> {
+  ): Promise<{ data: TenantContact | null; error: string | null }> {
     try {
+      // Check for duplicate email before updating
+      if (updates.email) {
+        const emailTaken = await this.isEmailTaken(updates.email, contactId);
+        if (emailTaken) {
+          return {
+            data: null,
+            error: `כתובת האימייל ${updates.email} כבר קיימת לאיש קשר אחר`
+          };
+        }
+      }
+
+      // Check for duplicate phone before updating
+      if (updates.phone) {
+        const phoneTaken = await this.isPhoneTaken(updates.phone, contactId);
+        if (phoneTaken) {
+          return {
+            data: null,
+            error: `מספר הטלפון ${updates.phone} כבר קיים לאיש קשר אחר`
+          };
+        }
+      }
+
       const { data, error } = await supabase
         .from('tenant_contacts')
         .update(updates)
@@ -358,10 +403,10 @@ export class TenantContactService {
 
       if (error) throw error;
 
-      return data;
+      return { data, error: null };
     } catch (error) {
       console.error('Error updating contact:', error);
-      return null;
+      return { data: null, error: 'שגיאה בעדכון איש הקשר' };
     }
   }
 
