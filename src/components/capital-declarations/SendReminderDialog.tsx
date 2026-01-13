@@ -246,57 +246,97 @@ export function SendReminderDialog({
     );
   }
 
+  // Main dialog - with share panel support for direct "Create Letter" flow
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px]" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="rtl:text-right">שליחת מכתב תזכורת</DialogTitle>
-          <DialogDescription className="rtl:text-right">
-            יצירת מכתב תזכורת עבור הצהרת הון לשנת {declaration.tax_year}
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className={showSharePanel ? "max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" : "sm:max-w-[450px]"} dir="rtl">
+        {showSharePanel ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="rtl:text-right">שליחת מכתב תזכורת</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto">
+              <SharePdfPanel
+                show={showSharePanel}
+                onHide={handleSharePanelHide}
+                pdfUrl={generatedPdfUrl || ''}
+                pdfName={generatedPdfName}
+                clientName={declaration.contact_name}
+                clientId={declaration.client_id || undefined}
+                htmlContent={generatedHtmlContent || undefined}
+                letterId={generatedLetterId || undefined}
+                defaultSubject={`תזכורת הצהרת הון ${declaration.tax_year} - ${declaration.contact_name}`}
+                defaultEmail={declaration.contact_email || undefined}
+                defaultEmailType="html"
+                onEmailSent={() => {
+                  capitalDeclarationService.logCommunication({
+                    declaration_id: declaration.id,
+                    communication_type: 'letter',
+                    direction: 'outbound',
+                    subject: `מייל תזכורת - הצהרת הון ${declaration.tax_year}`,
+                    letter_id: generatedLetterId || undefined,
+                  });
+                }}
+              />
+            </div>
+            <DialogFooter className="rtl:flex-row-reverse">
+              <Button variant="outline" onClick={handleClose}>
+                סגור
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="rtl:text-right">שליחת מכתב תזכורת</DialogTitle>
+              <DialogDescription className="rtl:text-right">
+                יצירת מכתב תזכורת עבור הצהרת הון לשנת {declaration.tax_year}
+              </DialogDescription>
+            </DialogHeader>
 
-        <div className="space-y-4 py-4 rtl:text-right">
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">נמען:</span>
-              <span className="font-medium">{declaration.contact_name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">שנת מס:</span>
-              <span className="font-medium">{declaration.tax_year}</span>
-            </div>
-            {declaration.contact_email && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">מייל:</span>
-                <span className="font-medium">{declaration.contact_email}</span>
+            <div className="space-y-4 py-4 rtl:text-right">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">נמען:</span>
+                  <span className="font-medium">{declaration.contact_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">שנת מס:</span>
+                  <span className="font-medium">{declaration.tax_year}</span>
+                </div>
+                {declaration.contact_email && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">מייל:</span>
+                    <span className="font-medium">{declaration.contact_email}</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <p className="text-sm text-muted-foreground">
-            המכתב יכלול את הלינק לפורטל העלאת המסמכים.
-          </p>
-        </div>
+              <p className="text-sm text-muted-foreground">
+                המכתב יכלול את הלינק לפורטל העלאת המסמכים.
+              </p>
+            </div>
 
-        <DialogFooter className="rtl:flex-row-reverse gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            ביטול
-          </Button>
-          <Button variant="outline" onClick={handlePreview} disabled={loading}>
-            {loading ? (
-              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Eye className="ml-2 h-4 w-4" />
-            )}
-            תצוגה מקדימה
-          </Button>
-          <Button onClick={handleSend} disabled={loading}>
-            {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            <Mail className="ml-2 h-4 w-4" />
-            צור מכתב
-          </Button>
-        </DialogFooter>
+            <DialogFooter className="rtl:flex-row-reverse gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                ביטול
+              </Button>
+              <Button variant="outline" onClick={handlePreview} disabled={loading}>
+                {loading ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="ml-2 h-4 w-4" />
+                )}
+                תצוגה מקדימה
+              </Button>
+              <Button onClick={handleSend} disabled={loading}>
+                {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                <Mail className="ml-2 h-4 w-4" />
+                צור מכתב
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
