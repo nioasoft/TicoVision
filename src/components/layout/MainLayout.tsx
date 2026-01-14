@@ -95,19 +95,15 @@ const navigation: NavigationItem[] = [
     ]
   },
   {
-    name: 'מכתבים ואישורים אוטומטיים',
+    name: 'מכתבי הזנה לטובת אוטומציה',
     icon: ScrollText,
     menuKey: 'documents',
     allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[],
     submenu: [
       { name: 'אישורי עובדים זרים', href: '/foreign-workers', menuKey: 'documents:foreign-workers' },
       { name: 'אישורים חברת צלול', href: '/tzlul-approvals', menuKey: 'documents:tzlul-approvals' },
-      { name: 'אישורי מס', href: '/documents/tax-approvals', menuKey: 'documents:tax-approvals' },
-      { name: 'אישורים לבנקים/מוסדות', href: '/documents/bank-approvals', menuKey: 'documents:bank-approvals' },
       { name: 'מכתבי התחייבות', href: '/documents/commitment-letters', menuKey: 'documents:commitment-letters' },
-      { name: 'מקדמות מ"ה שוטפות 2026', href: '/tax-advances-2026', menuKey: 'documents:tax-advances' },
       { name: 'מכתבים אוטומטיים', href: '/auto-letters', menuKey: 'documents:auto-letters' },
-      { name: 'פניות/זירוז/דחיפה', href: '/follow-ups', menuKey: 'documents:follow-ups' },
     ]
   },
   {

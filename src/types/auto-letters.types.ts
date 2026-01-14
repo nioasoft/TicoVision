@@ -30,14 +30,15 @@ export type AutoLetterCategory =
   | 'bank_approvals'       // אישורים לבנק/מוסדות
   | 'mortgage_approvals'   // אישורי משכנתא
   | 'tax_notices'          // הודעות מס
-  | 'audit_completion';    // סיום ביקורת דוחות כספיים
+  | 'audit_completion'     // סיום ביקורת דוחות כספיים
+  | 'tax_advances';        // מקדמות מ"ה
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck' | 'Banknote';
   enabled: boolean;
 }
 
@@ -99,6 +100,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     icon: 'ClipboardCheck',
     enabled: true,
   },
+  {
+    id: 'tax_advances',
+    label: 'מקדמות מ"ה',
+    description: 'מקדמות מס הכנסה שוטפות - חודשיות ורבעוניות',
+    icon: 'Banknote',
+    enabled: true,
+  },
 ];
 
 // ============================================================================
@@ -130,7 +138,10 @@ export type AutoLetterTemplateType =
   // Tax Notices (הודעות מס)
   | 'tax_notices_payment_notice'
   // Audit Completion (סיום ביקורת דוחות כספיים)
-  | 'audit_completion_general';
+  | 'audit_completion_general'
+  // Tax Advances (מקדמות מ"ה)
+  | 'tax_advances_monthly'
+  | 'tax_advances_quarterly';
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -287,6 +298,22 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'מכתב המודיע על צפי סיום עבודת הביקורת ועריכת הדוחות הכספיים',
       templateType: 'audit_completion_general',
       icon: 'ClipboardCheck',
+    },
+  ],
+  tax_advances: [
+    {
+      id: 'monthly_advance',
+      label: 'מקדמה חודשית',
+      description: 'הודעה על מקדמה חודשית למס הכנסה',
+      templateType: 'tax_advances_monthly',
+      icon: 'Calendar',
+    },
+    {
+      id: 'quarterly_advance',
+      label: 'מקדמה רבעונית',
+      description: 'הודעה על מקדמה רבעונית למס הכנסה',
+      templateType: 'tax_advances_quarterly',
+      icon: 'CalendarDays',
     },
   ],
 };
@@ -556,6 +583,36 @@ export interface AuditCompletionVariables extends AutoLetterSharedData {
 }
 
 // ============================================================================
+// TAX ADVANCES VARIABLES (מקדמות מ"ה)
+// ============================================================================
+
+/** Variables for Tax Advances - Monthly */
+export interface TaxAdvancesMonthlyVariables extends AutoLetterSharedData {
+  subject: string;
+  /** שנת המס */
+  tax_year: number;
+  /** חודש המקדמה */
+  advance_month: string;
+  /** סכום המקדמה */
+  advance_amount: number;
+  /** תאריך יעד לתשלום */
+  due_date: string;
+}
+
+/** Variables for Tax Advances - Quarterly */
+export interface TaxAdvancesQuarterlyVariables extends AutoLetterSharedData {
+  subject: string;
+  /** שנת המס */
+  tax_year: number;
+  /** רבעון (1-4) */
+  quarter: number;
+  /** סכום המקדמה */
+  advance_amount: number;
+  /** תאריך יעד לתשלום */
+  due_date: string;
+}
+
+// ============================================================================
 // DEFAULT VALUES
 // ============================================================================
 
@@ -576,6 +633,9 @@ export const DEFAULT_SUBJECTS = {
   tax_payment_notice: 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
   // Audit Completion (סיום ביקורת דוחות כספיים)
   audit_completion_general: 'סיום ביקורת ועריכת דוח כספי',
+  // Tax Advances (מקדמות מ"ה)
+  tax_advances_monthly: 'מקדמת מס הכנסה חודשית',
+  tax_advances_quarterly: 'מקדמת מס הכנסה רבעונית',
 } as const;
 
 // ============================================================================
@@ -623,6 +683,12 @@ export interface TaxNoticesDocumentData {
 /** Document data for Audit Completion letters */
 export interface AuditCompletionDocumentData {
   general: Partial<AuditCompletionVariables>;
+}
+
+/** Document data for Tax Advances letters */
+export interface TaxAdvancesDocumentData {
+  monthlyAdvance: Partial<TaxAdvancesMonthlyVariables>;
+  quarterlyAdvance: Partial<TaxAdvancesQuarterlyVariables>;
 }
 
 /** Document data for Reminder Letters */
@@ -673,6 +739,7 @@ export interface AutoLetterFormState {
     mortgage_approvals: MortgageApprovalsDocumentData;
     tax_notices: TaxNoticesDocumentData;
     audit_completion: AuditCompletionDocumentData;
+    tax_advances: TaxAdvancesDocumentData;
   };
 }
 
@@ -836,6 +903,22 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
         general: {
           audit_year: new Date().getFullYear() - 1,
           completion_date: '',
+        },
+      },
+      tax_advances: {
+        monthlyAdvance: {
+          subject: DEFAULT_SUBJECTS.tax_advances_monthly,
+          tax_year: new Date().getFullYear(),
+          advance_month: '',
+          advance_amount: 0,
+          due_date: '',
+        },
+        quarterlyAdvance: {
+          subject: DEFAULT_SUBJECTS.tax_advances_quarterly,
+          tax_year: new Date().getFullYear(),
+          quarter: 1,
+          advance_amount: 0,
+          due_date: '',
         },
       },
     },
@@ -1138,5 +1221,37 @@ export function validateAuditCompletion(data: Partial<AuditCompletionVariables>)
     data.addressee_line1?.trim() &&  // Addressee (for "לכבוד")
     data.audit_year && data.audit_year > 2000 &&
     data.completion_date
+  );
+}
+
+// ============================================================================
+// TAX ADVANCES VALIDATION
+// ============================================================================
+
+/** Validate Tax Advances - Monthly letter */
+export function validateTaxAdvancesMonthly(data: Partial<TaxAdvancesMonthlyVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.subject?.trim() &&
+    data.tax_year && data.tax_year > 2000 &&
+    data.advance_month?.trim() &&
+    data.advance_amount !== undefined &&
+    data.advance_amount > 0 &&
+    data.due_date
+  );
+}
+
+/** Validate Tax Advances - Quarterly letter */
+export function validateTaxAdvancesQuarterly(data: Partial<TaxAdvancesQuarterlyVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.subject?.trim() &&
+    data.tax_year && data.tax_year > 2000 &&
+    data.quarter && data.quarter >= 1 && data.quarter <= 4 &&
+    data.advance_amount !== undefined &&
+    data.advance_amount > 0 &&
+    data.due_date
   );
 }

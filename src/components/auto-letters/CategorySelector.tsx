@@ -4,7 +4,7 @@
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, Building2, Calendar, ClipboardCheck, FileCheck, FileSearch, Home, Landmark, Receipt } from 'lucide-react';
+import { Banknote, Bell, Building2, Calendar, ClipboardCheck, FileCheck, FileSearch, Home, Landmark, Receipt } from 'lucide-react';
 import type { AutoLetterCategory, CategoryConfig } from '@/types/auto-letters.types';
 import { getEnabledCategories } from '@/types/auto-letters.types';
 
@@ -15,6 +15,7 @@ interface CategorySelectorProps {
 }
 
 const CATEGORY_ICONS = {
+  Banknote,
   Bell,
   Building2,
   Calendar,

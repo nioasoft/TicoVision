@@ -27,7 +27,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FileStack, Eye, Download, Loader2, Users, User, Contact, UserPlus } from 'lucide-react';
-import { CategorySelector, LetterTypeSelector, FormRenderer } from '@/components/auto-letters';
+import { CategoryLetterSelector, FormRenderer } from '@/components/auto-letters';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { Combobox } from '@/components/ui/combobox';
 import { TemplateService } from '@/modules/letters/services/template.service';
@@ -671,6 +671,15 @@ export function AutoLettersPage() {
     }));
   };
 
+  // Combined handler for accordion-based selection
+  const handleSelectionChange = (category: AutoLetterCategory, letterTypeId: string) => {
+    setFormState(prev => ({
+      ...prev,
+      selectedCategory: category,
+      selectedLetterTypeId: letterTypeId,
+    }));
+  };
+
   // Handle recipient mode change
   const handleRecipientModeChange = (mode: 'client' | 'group' | 'contact' | 'adhoc') => {
     setFormState(prev => ({
@@ -973,18 +982,11 @@ export function AutoLettersPage() {
         </p>
       </div>
 
-      {/* Category Selection */}
-      <CategorySelector
-        value={formState.selectedCategory}
-        onChange={handleCategoryChange}
-        disabled={generating}
-      />
-
-      {/* Letter Type Selection */}
-      <LetterTypeSelector
-        category={formState.selectedCategory}
-        value={formState.selectedLetterTypeId}
-        onChange={handleLetterTypeChange}
+      {/* Category & Letter Type Selection - Accordion */}
+      <CategoryLetterSelector
+        selectedCategory={formState.selectedCategory}
+        selectedLetterTypeId={formState.selectedLetterTypeId}
+        onSelectionChange={handleSelectionChange}
         disabled={generating}
       />
 
