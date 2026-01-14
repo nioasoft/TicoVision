@@ -33,14 +33,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Settings,
 } from 'lucide-react';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
+import { capitalDeclarationReminderService } from '@/services/capital-declaration-reminder.service';
 import {
   PriorityBadge,
   AssignAccountantSelect,
   LateSubmissionIndicator,
   SubmissionScreenshotLink,
   PenaltyStatusBadge,
+  WeeklyReportBanner,
+  ReminderSettingsCard,
 } from '@/components/capital-declarations';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -124,6 +128,10 @@ export function CapitalDeclarationsListPage() {
   const [totalDeclarations, setTotalDeclarations] = useState(0);
   const [accountants, setAccountants] = useState<{ id: string; name: string; email: string }[]>([]);
 
+  // Banner and settings state
+  const [showBanner, setShowBanner] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<CapitalDeclarationStatus | 'all' | 'active_process'>('all');
@@ -155,12 +163,35 @@ export function CapitalDeclarationsListPage() {
   }, [searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage]);
 
   /**
-   * Load available years and accountants on mount
+   * Load available years, accountants, and check banner on mount
    */
   useEffect(() => {
     loadAvailableYears();
     loadAccountants();
+    checkBannerStatus();
   }, []);
+
+  /**
+   * Check if the weekly banner should be shown
+   */
+  const checkBannerStatus = async () => {
+    const { data, error } = await capitalDeclarationReminderService.checkBannerStatus();
+    if (!error && data) {
+      setShowBanner(data.showBanner);
+    }
+  };
+
+  /**
+   * Dismiss the weekly banner
+   */
+  const handleDismissBanner = async () => {
+    const { error } = await capitalDeclarationReminderService.dismissBanner();
+    if (error) {
+      toast.error('שגיאה בסגירת ההתראה');
+    } else {
+      setShowBanner(false);
+    }
+  };
 
   /**
    * Load accountants for filter dropdown
@@ -330,6 +361,11 @@ export function CapitalDeclarationsListPage() {
 
   return (
     <div className="space-y-6">
+      {/* Weekly Report Banner */}
+      {showBanner && (
+        <WeeklyReportBanner onDismiss={handleDismissBanner} />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -340,11 +376,24 @@ export function CapitalDeclarationsListPage() {
             מעקב אחר כל ההצהרות
           </p>
         </div>
-        <Button onClick={() => navigate('/capital-declaration')}>
-          <Plus className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-          יצירת הצהרה חדשה
-        </Button>
+        <div className="flex gap-2 rtl:flex-row-reverse">
+          {isAdmin && (
+            <Button variant="outline" onClick={() => setShowSettings(!showSettings)}>
+              <Settings className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+              הגדרות
+            </Button>
+          )}
+          <Button onClick={() => navigate('/capital-declaration')}>
+            <Plus className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+            יצירת הצהרה חדשה
+          </Button>
+        </div>
       </div>
+
+      {/* Settings Panel */}
+      {showSettings && isAdmin && (
+        <ReminderSettingsCard />
+      )}
 
       {/* Statistics Cards - Compact & Clickable */}
       <div className="grid gap-2 grid-cols-4 md:grid-cols-7">

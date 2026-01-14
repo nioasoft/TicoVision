@@ -303,6 +303,116 @@ export type Database = {
           },
         ]
       }
+      capital_declaration_reminder_settings: {
+        Row: {
+          banner_triggered_at: string | null
+          client_reminder_frequency_days: number
+          created_at: string
+          enable_client_reminders: boolean
+          enable_weekly_report: boolean
+          id: string
+          last_banner_dismissed_at: string | null
+          last_banner_dismissed_by: string | null
+          show_weekly_banner: boolean
+          tenant_id: string
+          updated_at: string
+          weekly_report_email: string | null
+        }
+        Insert: {
+          banner_triggered_at?: string | null
+          client_reminder_frequency_days?: number
+          created_at?: string
+          enable_client_reminders?: boolean
+          enable_weekly_report?: boolean
+          id?: string
+          last_banner_dismissed_at?: string | null
+          last_banner_dismissed_by?: string | null
+          show_weekly_banner?: boolean
+          tenant_id: string
+          updated_at?: string
+          weekly_report_email?: string | null
+        }
+        Update: {
+          banner_triggered_at?: string | null
+          client_reminder_frequency_days?: number
+          created_at?: string
+          enable_client_reminders?: boolean
+          enable_weekly_report?: boolean
+          id?: string
+          last_banner_dismissed_at?: string | null
+          last_banner_dismissed_by?: string | null
+          show_weekly_banner?: boolean
+          tenant_id?: string
+          updated_at?: string
+          weekly_report_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_declaration_reminder_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capital_declaration_reminders: {
+        Row: {
+          created_at: string
+          declaration_id: string
+          email_opened: boolean
+          email_opened_at: string | null
+          id: string
+          reminder_sequence: number | null
+          reminder_type: string
+          sent_at: string
+          sent_to_email: string | null
+          sent_via: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          declaration_id: string
+          email_opened?: boolean
+          email_opened_at?: string | null
+          id?: string
+          reminder_sequence?: number | null
+          reminder_type: string
+          sent_at?: string
+          sent_to_email?: string | null
+          sent_via?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          declaration_id?: string
+          email_opened?: boolean
+          email_opened_at?: string | null
+          id?: string
+          reminder_sequence?: number | null
+          reminder_type?: string
+          sent_at?: string
+          sent_to_email?: string | null
+          sent_via?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capital_declaration_reminders_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "capital_declarations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capital_declaration_reminders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capital_declaration_status_history: {
         Row: {
           changed_at: string
@@ -373,7 +483,9 @@ export type Database = {
           group_id: string | null
           id: string
           internal_due_date: string | null
+          last_reminder_sent_at: string | null
           letter_id: string | null
+          next_reminder_due_at: string | null
           notes: string | null
           penalty_amount: number | null
           penalty_notes: string | null
@@ -392,6 +504,7 @@ export type Database = {
           recipient_name: string | null
           recipient_phone: string | null
           recipient_phone_secondary: string | null
+          reminder_count: number
           status: string
           subject: string
           submission_screenshot_path: string | null
@@ -421,7 +534,9 @@ export type Database = {
           group_id?: string | null
           id?: string
           internal_due_date?: string | null
+          last_reminder_sent_at?: string | null
           letter_id?: string | null
+          next_reminder_due_at?: string | null
           notes?: string | null
           penalty_amount?: number | null
           penalty_notes?: string | null
@@ -440,6 +555,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           recipient_phone_secondary?: string | null
+          reminder_count?: number
           status?: string
           subject?: string
           submission_screenshot_path?: string | null
@@ -469,7 +585,9 @@ export type Database = {
           group_id?: string | null
           id?: string
           internal_due_date?: string | null
+          last_reminder_sent_at?: string | null
           letter_id?: string | null
+          next_reminder_due_at?: string | null
           notes?: string | null
           penalty_amount?: number | null
           penalty_notes?: string | null
@@ -488,6 +606,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           recipient_phone_secondary?: string | null
+          reminder_count?: number
           status?: string
           subject?: string
           submission_screenshot_path?: string | null
@@ -4334,6 +4453,21 @@ export type Database = {
           },
         ]
       }
+      cron_job_monitoring: {
+        Row: {
+          active: boolean | null
+          command: string | null
+          current_status: string | null
+          jobid: number | null
+          jobname: string | null
+          last_run_end: string | null
+          last_run_message: string | null
+          last_run_start: string | null
+          last_run_status: string | null
+          schedule: string | null
+        }
+        Relationships: []
+      }
       fee_tracking_enhanced_view: {
         Row: {
           actual_amount_paid: number | null
@@ -4628,6 +4762,13 @@ export type Database = {
           freelancers_with_vat: number
         }[]
       }
+      get_cd_status_counts: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          count: number
+          status: string
+        }[]
+      }
       get_client_branches: {
         Args: { p_client_id: string }
         Returns: {
@@ -4758,6 +4899,19 @@ export type Database = {
         Args: { p_declaration_id: string }
         Returns: string
       }
+      get_declarations_needing_reminders: {
+        Args: { p_frequency_days?: number; p_tenant_id: string }
+        Returns: {
+          contact_email: string
+          contact_name: string
+          declaration_date: string
+          declaration_id: string
+          last_reminder_sent_at: string
+          portal_link: string
+          reminder_count: number
+          tax_year: number
+        }[]
+      }
       get_fee_summary: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -4838,6 +4992,29 @@ export type Database = {
         }[]
       }
       get_next_ticket_number: { Args: { p_tenant_id: string }; Returns: number }
+      get_or_create_cd_reminder_settings: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          banner_triggered_at: string | null
+          client_reminder_frequency_days: number
+          created_at: string
+          enable_client_reminders: boolean
+          enable_weekly_report: boolean
+          id: string
+          last_banner_dismissed_at: string | null
+          last_banner_dismissed_by: string | null
+          show_weekly_banner: boolean
+          tenant_id: string
+          updated_at: string
+          weekly_report_email: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "capital_declaration_reminder_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_or_create_default_branch: {
         Args: { p_client_id: string }
         Returns: string

@@ -16,3 +16,7 @@ export { PenaltyStatusBadge } from './PenaltyStatusBadge';
 export { LateSubmissionIndicator } from './LateSubmissionIndicator';
 export { SubmissionScreenshotLink } from './SubmissionScreenshotLink';
 export { PenaltyManagementCard } from './PenaltyManagementCard';
+
+// Reminder components
+export { WeeklyReportBanner } from './WeeklyReportBanner';
+export { ReminderSettingsCard } from './ReminderSettingsCard';
