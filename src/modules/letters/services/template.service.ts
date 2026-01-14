@@ -3755,12 +3755,12 @@ export class TemplateService extends BaseService {
         break;
 
       case 'mortgage_approvals_audited_company':
-        // Clear group_name - header shows bank name
+        // Save original company_name for body template's "הנדון"
+        processed.entity_name = processed.company_name;
+        processed.entity_id = processed.company_id;
+        // Header "לכבוד" shows bank_name
+        processed.company_name = processed.bank_name || '';
         processed.group_name = '';
-        // Map bank_name to company_name for header "לכבוד" display
-        if (processed.bank_name) {
-          processed.company_name = processed.bank_name;
-        }
 
         // Compute previous_year from audited_year
         if (processed.audited_year && typeof processed.audited_year === 'number') {
@@ -3807,12 +3807,12 @@ export class TemplateService extends BaseService {
         break;
 
       case 'mortgage_approvals_unaudited_company':
-        // Clear group_name - header shows bank name
+        // Save original company_name for body template's "הנדון"
+        processed.entity_name = processed.company_name;
+        processed.entity_id = processed.company_id;
+        // Header "לכבוד" shows bank_name
+        processed.company_name = processed.bank_name || '';
         processed.group_name = '';
-        // Map bank_name to company_name for header "לכבוד" display
-        if (processed.bank_name) {
-          processed.company_name = processed.bank_name;
-        }
 
         // Format period_end_date to Israeli format
         if (processed.period_end_date && typeof processed.period_end_date === 'string') {
@@ -3851,12 +3851,12 @@ export class TemplateService extends BaseService {
         break;
 
       case 'mortgage_approvals_osek_submitted':
-        // Clear group_name - header shows bank name
+        // Save original company_name for body template's "הנדון"
+        processed.entity_name = processed.company_name;
+        processed.entity_id = processed.company_id;
+        // Header "לכבוד" shows bank_name
+        processed.company_name = processed.bank_name || '';
         processed.group_name = '';
-        // Map bank_name to company_name for header "לכבוד" display
-        if (processed.bank_name) {
-          processed.company_name = processed.bank_name;
-        }
 
         // Format submission_date to Israeli format
         if (processed.submission_date && typeof processed.submission_date === 'string') {
@@ -3876,12 +3876,12 @@ export class TemplateService extends BaseService {
         break;
 
       case 'mortgage_approvals_osek_unsubmitted':
-        // Clear group_name - header shows bank name
+        // Save original company_name for body template's "הנדון"
+        processed.entity_name = processed.company_name;
+        processed.entity_id = processed.company_id;
+        // Header "לכבוד" shows bank_name
+        processed.company_name = processed.bank_name || '';
         processed.group_name = '';
-        // Map bank_name to company_name for header "לכבוד" display
-        if (processed.bank_name) {
-          processed.company_name = processed.bank_name;
-        }
 
         // Format period_end_date to Israeli format
         if (processed.period_end_date && typeof processed.period_end_date === 'string') {
