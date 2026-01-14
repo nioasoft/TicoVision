@@ -1,0 +1,169 @@
+<!-- Letter Body: VAT File Opened Notification (הודעה על פתיחת תיק מע"מ) -->
+<!-- Template Type: company_onboarding_vat_file_opened -->
+<!-- Variables: {{subject}}, {{company_name}}, {{company_id}}, {{vat_number}}, {{vat_report_frequency}}, {{vat_first_report_date}}, {{vat_first_report_period}}, {{certificate_link}} -->
+
+<!-- BODY: Subject -->
+<tr>
+    <td style="padding-top: 20px;">
+        <!-- Subject line with bottom border -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: center; letter-spacing: -0.3px; border: 1px solid #395BF7; background-color: #f5f2ea; padding: 15px; border-radius: 5px;">
+            הנדון: {{subject}} לחברת {{company_name}} (ח.פ. {{company_id}})
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Greeting -->
+<tr>
+    <td style="padding-top: 25px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right;">
+            שלום רב,
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Intro Paragraph -->
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            אנו שמחים לעדכן כי הושלם בהצלחה תהליך פתיחת תיק מס ערך מוסף (מע"מ) עבור החברה.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: VAT Details Box -->
+<tr>
+    <td style="padding-top: 25px;">
+        <div style="background-color: #f5f2ea; padding: 20px; border-radius: 5px; border: 1px solid #e8e4d9;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 17px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; padding-bottom: 15px;">
+                פרטי תיק מע"מ
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <!-- VAT Number -->
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 8px;">
+                        <span style="color: #cc0000; font-size: 18px; margin-left: 5px;">◆</span>
+                        <span>מספר עוסק מורשה: </span>
+                        <span style="font-weight: bold; color: #395BF7;">{{vat_number}}</span>
+                    </td>
+                </tr>
+                <!-- Report Frequency -->
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 8px;">
+                        <span style="color: #cc0000; font-size: 18px; margin-left: 5px;">◆</span>
+                        <span>תדירות דיווח: </span>
+                        <span style="font-weight: bold; color: #395BF7;">{{vat_report_frequency}}</span>
+                    </td>
+                </tr>
+                <!-- First Report Date -->
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 8px;">
+                        <span style="color: #cc0000; font-size: 18px; margin-left: 5px;">◆</span>
+                        <span>מועד דיווח ראשון: </span>
+                        <span style="font-weight: bold; color: #395BF7;">{{vat_first_report_date}}</span>
+                        <span> בגין חודש </span>
+                        <span style="font-weight: bold; color: #395BF7;">{{vat_first_report_period}}</span>
+                    </td>
+                </tr>
+                <!-- Certificate Link (if exists) -->
+                {{certificate_section}}
+            </table>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Warning Box - Zero Report -->
+<tr>
+    <td style="padding-top: 25px;">
+        <div style="background-color: #fff8e1; padding: 20px; border-radius: 5px; border-right: 3px solid #cc0000;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 17px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; padding-bottom: 10px;">
+                לתשומת ליבכם
+            </div>
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right;">
+                <strong>תשומת לב מנהל/ת החשבונות:</strong> נדרש לבצע דיווח אפס (כשאין פעילות) כדי להימנע מקביעות מס מיותרות במשרדי מע"מ.
+            </div>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Next Steps Box -->
+<tr>
+    <td style="padding-top: 25px;">
+        <div style="background-color: #f5f2ea; padding: 20px; border-radius: 5px; border: 1px solid #e8e4d9;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 17px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; padding-bottom: 15px;">
+                המשך טיפול בשאר התיקים
+            </div>
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 15px;">
+                לאחר פתיחת תיק מע"מ, משרדנו ימשיך בטיפול בפתיחת שאר התיקים הנדרשים:
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="padding-right: 20px;">
+                <!-- Item 1 -->
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 12px;">
+                        <strong>1. תיקי ניכויים (עובדים) במס הכנסה וביטוח לאומי</strong>
+                        <div style="padding-top: 5px; padding-right: 20px;">משרדנו פועל לפתיחת תיקים אלו המתאפשרת רק לאחר פתיחת תיק במע"מ.</div>
+                    </td>
+                </tr>
+                <!-- Item 2 -->
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 12px;">
+                        <strong>2. ניכוי מס במקור ברשויות</strong>
+                        <div style="padding-top: 5px; padding-right: 20px;">משרדנו ידאג לאישור על ניכוי מס במקור בשיעור מופחת (5 אחוז) ואישור ניהול ספרים מיד עם פתיחת מלוא התיקים.</div>
+                    </td>
+                </tr>
+                <!-- Item 3 -->
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 12px;">
+                        <strong>3. מקדמות מס הכנסה</strong>
+                        <div style="padding-top: 5px; padding-right: 20px;">משרדנו ידאג לבטל את המקדמות שבוודאי יוטלו עליכם בפתיחת התיקים. בתום הרבעון הראשון של פעילות העסק ידון משרדנו בנושא שיעור המקדמות הראוי. היה ונחליט במשותף על שיעור מקדמות, אזי יושג לכם פטור מלא מניכוי מס במקור.</div>
+                    </td>
+                </tr>
+            </table>
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-top: 15px;">
+                <strong>אנו כמובן נעדכן אתכם מיד עם פתיחת כל התיקים הנדרשים.</strong>
+            </div>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Closing paragraph -->
+<tr>
+    <td style="padding-top: 25px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: justify;">
+            אנו עומדים לרשותכם בכל שאלה או הבהרה בנושא.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.6; color: #09090b; text-align: right;">
+            בכבוד רב ובברכה,
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.4; color: #09090b; text-align: right;">
+            <strong>תיקו פרנקו</strong><br>
+            רואה חשבון<br>
+            תיקו פרנקו ושות' | רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 10px;">
+        <div dir="ltr" style="text-align: left;">
+            <img src="cid:tico_signature" width="88" height="39" alt="חתימה" style="display: block; margin: 0; border: 0;">
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>
