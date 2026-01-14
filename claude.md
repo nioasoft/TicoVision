@@ -219,8 +219,49 @@ http://localhost:5173/        # Dashboard (after auth)
 | Feature | Plan Location | Status |
 |---------|---------------|--------|
 | Google Drive Integration | `~/.claude/plans/jaunty-gliding-toucan.md` | Planned |
+| Distribution Lists in Letters | See below | Planned |
 
 **Google Drive**: Save PDFs directly to Google Drive with Picker UI (hybrid approach - auto folder per client + user selection)
+
+### Distribution Lists Integration (TODO)
+**Location**: `src/modules/broadcast/`
+**Route**: `/broadcast` (רשימות תפוצה)
+
+Distribution lists are ready and need to be integrated into the letter sending modules:
+
+**Where to add:**
+1. `src/modules/auto-letters/` - מכתבים אוטומטיים
+2. `src/modules/letters/` - מכתבים מילוליים (Universal Letters)
+
+**How to integrate:**
+```typescript
+// 1. Import the store
+import { useBroadcastStore } from '@/modules/broadcast/store/broadcastStore';
+
+// 2. Get lists and selection
+const { lists, fetchLists } = useBroadcastStore();
+
+// 3. Add UI: Radio/Select to choose between:
+//    - "לקוח בודד" (single client - current behavior)
+//    - "רשימת תפוצה" (distribution list - new)
+
+// 4. When sending to a list, loop through members:
+import { distributionListService } from '@/modules/broadcast/services/distribution-list.service';
+const { data: listWithMembers } = await distributionListService.getListWithMembers(listId);
+for (const member of listWithMembers.members) {
+  // member.client_id - use to fetch client data
+  // Generate letter with client's data (company_name, tax_id, etc.)
+  // Send to all contacts of that client
+}
+```
+
+**Important distinction:**
+- "כל הלקוחות במערכת" list = Only clients with `receives_letters=true`
+- Custom lists = Manual selection, ANY active client can be added regardless of `receives_letters` setting
+
+**Email deduplication rules:**
+- Personal letters (with `{{company_name}}`, `{{tax_id}}` etc.) → NO deduplication, each client gets personalized letter
+- General announcements (same content for everyone) → WITH deduplication by email (each email receives only once)
 
 ## Detailed Documentation
 | Topic | Location |

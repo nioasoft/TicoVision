@@ -49,6 +49,9 @@ const CapitalDeclarationPortal = lazy(() => import('@/pages/CapitalDeclarationPo
 // Help System
 const HelpPage = lazy(() => import('@/modules/help/pages/HelpPage'));
 
+// Broadcast System
+const BroadcastPage = lazy(() => import('@/modules/broadcast/pages/BroadcastPage'));
+
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
 const TodaysWorklistPage = lazy(() => import('@/modules/collections/pages/TodaysWorklistPage').then(m => ({ default: m.TodaysWorklistPage })));
@@ -340,6 +343,13 @@ function App() {
                       <Route path="/collections/disputes" element={
                         <ErrorBoundary>
                           <DisputesPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Broadcast System - Mass email sending */}
+                      <Route path="/broadcast" element={
+                        <ErrorBoundary>
+                          <BroadcastPage />
                         </ErrorBoundary>
                       } />
 
