@@ -970,9 +970,9 @@ export function AutoLettersPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl" dir="rtl">
+    <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
       {/* Page Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <FileStack className="h-8 w-8 text-blue-600" />
           <h1 className="text-3xl font-bold text-right">מכתבים אוטומטיים</h1>
@@ -982,16 +982,22 @@ export function AutoLettersPage() {
         </p>
       </div>
 
-      {/* Category & Letter Type Selection - Accordion */}
-      <CategoryLetterSelector
-        selectedCategory={formState.selectedCategory}
-        selectedLetterTypeId={formState.selectedLetterTypeId}
-        onSelectionChange={handleSelectionChange}
-        disabled={generating}
-      />
+      {/* 2-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+        {/* Right Sidebar - Category & Letter Type Selection */}
+        <div className="lg:order-2">
+          <CategoryLetterSelector
+            selectedCategory={formState.selectedCategory}
+            selectedLetterTypeId={formState.selectedLetterTypeId}
+            onSelectionChange={handleSelectionChange}
+            disabled={generating}
+          />
+        </div>
 
-      {/* Recipient Selection */}
-      <Card className="mb-6">
+        {/* Main Content */}
+        <div className="lg:order-1 space-y-6">
+          {/* Recipient Selection */}
+          <Card>
         <CardHeader>
           <CardTitle className="text-right">בחירת נמען</CardTitle>
           <CardDescription className="text-right">
@@ -1192,7 +1198,7 @@ export function AutoLettersPage() {
       </Card>
 
       {/* Shared Data - Document Date */}
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
           <CardTitle className="text-right">נתונים משותפים</CardTitle>
           <CardDescription className="text-right">
@@ -1237,20 +1243,18 @@ export function AutoLettersPage() {
       </Card>
 
       {/* Document-Specific Form */}
-      <div className="mb-8">
-        <FormRenderer
-          category={formState.selectedCategory}
-          letterTypeId={formState.selectedLetterTypeId}
-          value={getDocumentData()}
-          onChange={handleDocumentDataChange}
-          disabled={generating}
-          companyName={selectedClient?.company_name}
-          companyId={selectedClient?.tax_id}
-        />
-      </div>
+      <FormRenderer
+        category={formState.selectedCategory}
+        letterTypeId={formState.selectedLetterTypeId}
+        value={getDocumentData()}
+        onChange={handleDocumentDataChange}
+        disabled={generating}
+        companyName={selectedClient?.company_name}
+        companyId={selectedClient?.tax_id}
+      />
 
       {/* Action Buttons */}
-      <div className="flex gap-4 justify-end rtl:flex-row-reverse">
+      <div className="flex gap-4 justify-end rtl:flex-row-reverse pb-4">
         <Button
           onClick={handleGenerateDocument}
           disabled={!canGenerate || generating}
@@ -1282,6 +1286,24 @@ export function AutoLettersPage() {
         </Button>
       </div>
 
+      {/* Instructions */}
+      {!hasRecipient && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <h3 className="font-medium text-blue-900 mb-2 text-right">הוראות:</h3>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 text-right">
+            <li>בחר קטגוריה וסוג מכתב מהצד השמאלי</li>
+            <li>בחר לקוח, קבוצה, או איש קשר</li>
+            <li>הוסף שורת נמען נוספת (אופציונלי)</li>
+            <li>בחר תאריך למסמך</li>
+            <li>מלא את השדות הנדרשים בטופס</li>
+            <li>לחץ על "תצוגה מקדימה" לצפייה במסמך</li>
+            <li>לחץ על "הפק מסמך PDF" ליצירת המסמך הסופי</li>
+          </ol>
+        </div>
+      )}
+        </div>
+      </div>
+
       {/* Share PDF Panel - Inline after generating PDF */}
       <SharePdfPanel
         show={showSharePanel}
@@ -1295,23 +1317,6 @@ export function AutoLettersPage() {
         defaultSubject={generatedSubject || getDefaultSubject()}
         defaultEmail={selectedContact?.email || formState.adhocContact?.email || undefined}
       />
-
-      {/* Instructions */}
-      {!hasRecipient && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h3 className="font-medium text-blue-900 mb-2 text-right">הוראות:</h3>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 text-right">
-            <li>בחר קטגוריה (לדוגמה: קליטת חברה)</li>
-            <li>בחר סוג מכתב</li>
-            <li>בחר לקוח או קבוצה מהרשימה</li>
-            <li>הוסף שורת נמען נוספת (אופציונלי)</li>
-            <li>בחר תאריך למסמך</li>
-            <li>מלא את השדות הנדרשים בטופס</li>
-            <li>לחץ על "תצוגה מקדימה" לצפייה במסמך</li>
-            <li>לחץ על "הפק מסמך PDF" ליצירת המסמך הסופי</li>
-          </ol>
-        </div>
-      )}
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
