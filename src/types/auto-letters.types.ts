@@ -117,6 +117,7 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
 export type AutoLetterTemplateType =
   // Company Onboarding
   | 'company_onboarding_vat_registration'
+  | 'company_onboarding_vat_file_opened'
   | 'company_onboarding_previous_accountant'
   // Setting Dates
   | 'setting_dates_cutoff'
@@ -165,6 +166,13 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הנחיות להעברת מסמכים לפתיחת תיק במע"מ',
       templateType: 'company_onboarding_vat_registration',
       icon: 'FileText',
+    },
+    {
+      id: 'vat_file_opened',
+      label: 'פתיחת תיק מע״מ - הודעה',
+      description: 'הודעה ללקוח על פתיחת תיק מע״מ בהצלחה עם כל הפרטים',
+      templateType: 'company_onboarding_vat_file_opened',
+      icon: 'FileCheck',
     },
     {
       id: 'price_quote_small',
@@ -334,6 +342,27 @@ export interface AutoLetterSharedData {
 
   /** Additional recipient line (contact person + title) */
   recipient_line?: string;
+}
+
+// ============================================================================
+// COMPANY ONBOARDING VARIABLES
+// ============================================================================
+
+/** Variables for Company Onboarding - VAT File Opened notification */
+export interface VatFileOpenedVariables extends AutoLetterSharedData {
+  subject: string;
+  /** מספר ח.פ (9 ספרות) */
+  company_id: string;
+  /** מספר עוסק מורשה */
+  vat_number: string;
+  /** תדירות דיווח (חודשי / דו-חודשי) */
+  vat_report_frequency: 'חודשי' | 'דו-חודשי';
+  /** מועד דיווח ראשון (לדוגמה: 15/5/2025) */
+  vat_first_report_date: string;
+  /** בגין חודש (לדוגמה: אפריל 2025) */
+  vat_first_report_period: string;
+  /** קישור לתעודת עוסק מורשה (אופציונלי) */
+  certificate_link?: string;
 }
 
 // ============================================================================
@@ -617,6 +646,9 @@ export interface TaxAdvancesQuarterlyVariables extends AutoLetterSharedData {
 // ============================================================================
 
 export const DEFAULT_SUBJECTS = {
+  // Company Onboarding
+  vat_file_opened: 'פתיחת תיק מס ערך מוסף (מע"מ)',
+  // Setting Dates
   cutoff_date: 'קביעת מועד חיתוך לדו"חות',
   meeting_reminder: 'תזכורת לפגישה',
   general_deadline: 'הודעה על דדליין',
@@ -645,6 +677,7 @@ export const DEFAULT_SUBJECTS = {
 /** Document data for Company Onboarding letters */
 export interface CompanyOnboardingDocumentData {
   vatRegistration: Partial<VatRegistrationVariables>;
+  vatFileOpened: Partial<VatFileOpenedVariables>;
   priceQuote: Partial<PriceQuoteVariables>;
   previousAccountantRequest: Partial<PreviousAccountantRequestVariables>;
 }
@@ -768,6 +801,15 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           subject: VAT_REGISTRATION_DEFAULT_SUBJECT,
           show_wolt_section: true,
           google_drive_link: '',
+        },
+        vatFileOpened: {
+          subject: DEFAULT_SUBJECTS.vat_file_opened,
+          company_id: '',
+          vat_number: '',
+          vat_report_frequency: 'חודשי',
+          vat_first_report_date: '',
+          vat_first_report_period: '',
+          certificate_link: '',
         },
         priceQuote: {
           subject: PRICE_QUOTE_DEFAULT_SUBJECT,
@@ -961,6 +1003,20 @@ export function getTemplateType(
 // ============================================================================
 // VALIDATION HELPERS
 // ============================================================================
+
+/** Validate VAT File Opened notification */
+export function validateVatFileOpened(data: Partial<VatFileOpenedVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.subject?.trim() &&
+    data.company_id?.trim() &&
+    data.vat_number?.trim() &&
+    data.vat_report_frequency &&
+    data.vat_first_report_date?.trim() &&
+    data.vat_first_report_period?.trim()
+  );
+}
 
 /** Validate Cutoff Date letter */
 export function validateCutoffDate(data: Partial<CutoffDateVariables>): boolean {

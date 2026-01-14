@@ -20,10 +20,12 @@ import type {
   MortgageOsekSubmittedVariables,
   MortgageOsekUnsubmittedVariables,
   AuditCompletionVariables,
+  VatFileOpenedVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
 import { VatRegistrationForm } from '@/components/company-onboarding/forms/VatRegistrationForm';
+import { VatFileOpenedForm } from '@/components/company-onboarding/forms/VatFileOpenedForm';
 import { PriceQuoteForm } from '@/components/company-onboarding/forms/PriceQuoteForm';
 import { PreviousAccountantRequestForm } from '@/components/company-onboarding/forms/PreviousAccountantRequestForm';
 
@@ -133,6 +135,15 @@ function renderCompanyOnboardingForm(
       return (
         <VatRegistrationForm
           value={value as Partial<VatRegistrationVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    case 'vat_file_opened':
+      return (
+        <VatFileOpenedForm
+          value={value as Partial<VatFileOpenedVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
         />
