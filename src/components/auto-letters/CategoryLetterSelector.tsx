@@ -140,9 +140,9 @@ export function CategoryLetterSelector({
                               disabled={disabled}
                               className={cn(
                                 "w-full text-right px-3 py-2 rounded-md text-sm transition-colors",
-                                "hover:bg-muted",
-                                isSelected && "bg-primary text-primary-foreground font-medium",
-                                !isSelected && "text-muted-foreground",
+                                isSelected
+                                  ? "bg-primary text-primary-foreground font-medium hover:bg-primary/90"
+                                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
                                 disabled && "opacity-50 cursor-not-allowed"
                               )}
                             >

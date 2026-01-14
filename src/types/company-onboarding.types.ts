@@ -155,7 +155,7 @@ export interface CompanyOnboardingLetterType {
 export const COMPANY_ONBOARDING_LETTER_TYPES: CompanyOnboardingLetterType[] = [
   {
     index: 0,
-    label: 'פתיחת תיקי מע"מ',
+    label: 'בקשת מסמכים לטובת פתיחת תיק במע"מ',
     description: 'הנחיות להעברת מסמכים לפתיחת תיק במע"מ',
     templateType: 'company_onboarding_vat_registration',
     icon: 'FileText',

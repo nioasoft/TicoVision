@@ -27,7 +27,7 @@ export function VatFileOpenedForm({ value, onChange, disabled }: VatFileOpenedFo
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">פתיחת תיק מע״מ - הודעה</CardTitle>
+          <CardTitle className="text-right">הודעה על פתיחת תיק מע״מ</CardTitle>
           <CardDescription className="text-right">
             הודעה ללקוח על פתיחת תיק מע״מ בהצלחה עם כל הפרטים
           </CardDescription>

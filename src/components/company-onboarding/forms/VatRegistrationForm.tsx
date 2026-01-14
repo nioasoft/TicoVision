@@ -15,7 +15,7 @@ export function VatRegistrationForm({ value, onChange, disabled }: VatRegistrati
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">פתיחת תיקי מע״מ</CardTitle>
+          <CardTitle className="text-right">בקשת מסמכים לטובת פתיחת תיק במע״מ</CardTitle>
           <CardDescription className="text-right">
             הנחיות להעברת מסמכים לפתיחת תיק במע״מ
           </CardDescription>

@@ -162,14 +162,14 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
   company_onboarding: [
     {
       id: 'vat_registration',
-      label: 'פתיחת תיקי מע״מ',
+      label: 'בקשת מסמכים לטובת פתיחת תיק במע״מ',
       description: 'הנחיות להעברת מסמכים לפתיחת תיק במע"מ',
       templateType: 'company_onboarding_vat_registration',
       icon: 'FileText',
     },
     {
       id: 'vat_file_opened',
-      label: 'פתיחת תיק מע״מ - הודעה',
+      label: 'הודעה על פתיחת תיק מע״מ',
       description: 'הודעה ללקוח על פתיחת תיק מע״מ בהצלחה עם כל הפרטים',
       templateType: 'company_onboarding_vat_file_opened',
       icon: 'FileCheck',
