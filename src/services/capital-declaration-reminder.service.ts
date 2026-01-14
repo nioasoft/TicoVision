@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { BaseService, ServiceResponse } from './base.service';
+import { BaseService, type ServiceResponse } from './base.service';
 import type { Database } from '@/types/supabase';
 
 type ReminderSettings = Database['public']['Tables']['capital_declaration_reminder_settings']['Row'];
@@ -205,6 +205,33 @@ class CapitalDeclarationReminderService extends BaseService {
       }
 
       return { data: data || [], error: null };
+    } catch (error) {
+      return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
+    }
+  }
+
+  /**
+   * Trigger sending reminders to all eligible clients manually
+   * Calls the capital-declaration-reminder-engine edge function
+   */
+  async sendRemindersToAll(): Promise<ServiceResponse<{ sent: number; skipped: number }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Invoke the edge function
+      const { data, error } = await supabase.functions.invoke('capital-declaration-reminder-engine', {
+        body: {
+          tenant_id: tenantId,
+          manual_trigger: true,
+        },
+      });
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      await this.logAction('send_reminders_to_all', tenantId, data);
+      return { data: data || { sent: 0, skipped: 0 }, error: null };
     } catch (error) {
       return { data: null, error: error instanceof Error ? error : new Error('Unknown error') };
     }

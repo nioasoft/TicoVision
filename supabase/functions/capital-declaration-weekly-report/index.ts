@@ -70,14 +70,14 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
   const today = getTodayFormatted();
   const totalOpen = statusCounts.reduce((sum, s) => sum + Number(s.count), 0);
 
-  // Build status rows
+  // Build status rows - RTL order: count on left, label on right
   let statusRows = '';
   for (const sc of statusCounts) {
     const label = STATUS_LABELS[sc.status] || sc.status;
     statusRows += `
-      <tr>
+      <tr dir="rtl">
+        <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; font-size: 15px; font-weight: 600; color: #111827; text-align: center; width: 80px;">${sc.count}</td>
         <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; font-size: 15px; color: #374151; text-align: right;">${label}</td>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #e5e7eb; font-size: 15px; font-weight: 600; color: #111827; text-align: center;">${sc.count}</td>
       </tr>
     `;
   }
@@ -90,8 +90,8 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>דו"ח שבועי - הצהרות הון פתוחות</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Heebo', 'Assistant', Arial, sans-serif; background-color: #f9fafb;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+<body dir="rtl" style="margin: 0; padding: 0; font-family: 'Heebo', 'Assistant', Arial, sans-serif; background-color: #f9fafb; direction: rtl;">
+  <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; direction: rtl;">
     <!-- Header -->
     <tr>
       <td style="background-color: #1e3a8a; padding: 20px; text-align: center;">
@@ -103,7 +103,7 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
 
     <!-- Content -->
     <tr>
-      <td style="padding: 30px;">
+      <td dir="rtl" style="padding: 30px; direction: rtl; text-align: right;">
         <!-- Date -->
         <div style="font-size: 14px; color: #6b7280; text-align: right; margin-bottom: 20px;">
           ${today}
@@ -114,12 +114,18 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
           דו"ח שבועי - הצהרות הון פתוחות
         </div>
 
-        <!-- Alert Box -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; border-right: 4px solid #f59e0b; margin-bottom: 25px;">
+        <!-- IMPORTANT Alert Box - Highly Emphasized -->
+        <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef2f2; border: 2px solid #dc2626; border-radius: 8px; border-right: 6px solid #dc2626; margin-bottom: 25px; direction: rtl;">
           <tr>
-            <td style="padding: 18px;">
-              <div style="font-size: 16px; font-weight: 700; color: #92400e; text-align: right;">
+            <td style="padding: 20px;">
+              <div style="font-size: 20px; font-weight: 800; color: #dc2626; text-align: right; margin-bottom: 10px;">
+                ⚠️ תזכורת חשובה מאוד!
+              </div>
+              <div style="font-size: 18px; font-weight: 700; color: #991b1b; text-align: right; line-height: 1.6;">
                 נא למשוך ממס הכנסה הצהרות הון פתוחות ולעדכן במערכת
+              </div>
+              <div style="font-size: 14px; color: #7f1d1d; text-align: right; margin-top: 8px;">
+                יש לבדוק במערכת מס הכנסה אם יש הצהרות חדשות שטרם נקלטו
               </div>
             </td>
           </tr>
@@ -130,12 +136,12 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
           סה"כ הצהרות פתוחות: ${totalOpen}
         </div>
 
-        <!-- Status Table -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 25px;">
+        <!-- Status Table - RTL: כמות on left, סטטוס on right -->
+        <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 25px; direction: rtl;">
           <thead>
-            <tr style="background-color: #f3f4f6;">
+            <tr dir="rtl" style="background-color: #f3f4f6;">
+              <th style="padding: 12px 15px; font-size: 14px; font-weight: 600; color: #374151; text-align: center; border-bottom: 2px solid #e5e7eb; width: 80px;">כמות</th>
               <th style="padding: 12px 15px; font-size: 14px; font-weight: 600; color: #374151; text-align: right; border-bottom: 2px solid #e5e7eb;">סטטוס</th>
-              <th style="padding: 12px 15px; font-size: 14px; font-weight: 600; color: #374151; text-align: center; border-bottom: 2px solid #e5e7eb;">כמות</th>
             </tr>
           </thead>
           <tbody>
@@ -144,9 +150,9 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
         </table>
 
         <!-- CTA Button -->
-        <table width="100%" cellpadding="0" cellspacing="0">
+        <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="direction: rtl;">
           <tr>
-            <td style="text-align: center; padding: 20px 0;">
+            <td dir="rtl" style="text-align: center; padding: 20px 0;">
               <a href="${dashboardUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #395BF7 0%, #2563eb 100%); color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none; padding: 14px 40px; border-radius: 8px;">
                 לניהול הצהרות הון
               </a>
@@ -158,7 +164,7 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
 
     <!-- Footer -->
     <tr>
-      <td style="background-color: #f3f4f6; padding: 15px; text-align: center;">
+      <td dir="rtl" style="background-color: #f3f4f6; padding: 15px; text-align: center; direction: rtl;">
         <div style="font-size: 12px; color: #6b7280;">
           דו"ח זה נשלח אוטומטית כל יום ראשון ממערכת תיקו פרנקו
         </div>
@@ -171,15 +177,28 @@ function buildWeeklyReportHtml(statusCounts: StatusCount[], dashboardUrl: string
 
 /**
  * Send weekly report email via SendGrid
+ * Supports multiple recipients (comma-separated)
  */
 async function sendWeeklyReportEmail(
-  to: string,
+  toEmails: string,
   statusCounts: StatusCount[],
   dashboardUrl: string
 ): Promise<boolean> {
   try {
     if (!SENDGRID_API_KEY) {
       console.error('SendGrid API key not configured');
+      return false;
+    }
+
+    // Parse comma-separated emails into array
+    const recipients = toEmails
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email.length > 0)
+      .map(email => ({ email }));
+
+    if (recipients.length === 0) {
+      console.error('No valid email recipients');
       return false;
     }
 
@@ -195,7 +214,7 @@ async function sendWeeklyReportEmail(
       },
       body: JSON.stringify({
         personalizations: [{
-          to: [{ email: to }],
+          to: recipients,
           subject: `דו"ח שבועי - ${totalOpen} הצהרות הון פתוחות (${today})`,
         }],
         from: {
@@ -219,7 +238,7 @@ async function sendWeeklyReportEmail(
       return false;
     }
 
-    console.log(`Weekly report sent to ${to}`);
+    console.log(`Weekly report sent to ${recipients.map(r => r.email).join(', ')}`);
     return true;
   } catch (error) {
     console.error('Error sending email:', error);
@@ -337,7 +356,7 @@ serve(async (req: Request) => {
     const { data: tenants, error: tenantsError } = await supabase
       .from('tenants')
       .select('id')
-      .eq('is_active', true);
+      .eq('status', 'active');
 
     if (tenantsError) {
       throw new Error(`Failed to fetch tenants: ${tenantsError.message}`);

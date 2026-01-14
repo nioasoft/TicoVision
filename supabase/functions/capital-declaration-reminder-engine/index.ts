@@ -91,11 +91,11 @@ function buildReminderEmailHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>תזכורת - הצהרת הון ${taxYear}</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: 'Heebo', 'Assistant', Arial, sans-serif; background-color: #f9fafb;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+<body dir="rtl" style="margin: 0; padding: 0; font-family: 'Heebo', 'Assistant', Arial, sans-serif; background-color: #f9fafb; direction: rtl;">
+  <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; direction: rtl;">
     <!-- Header -->
     <tr>
-      <td style="background-color: #1e3a8a; padding: 20px; text-align: center;">
+      <td dir="rtl" style="background-color: #1e3a8a; padding: 20px; text-align: center;">
         <div style="font-size: 22px; font-weight: 700; color: #ffffff;">
           פרנקו ושות' - רואי חשבון
         </div>
@@ -104,7 +104,7 @@ function buildReminderEmailHtml(
 
     <!-- Content -->
     <tr>
-      <td style="padding: 30px;">
+      <td dir="rtl" style="padding: 30px; direction: rtl; text-align: right;">
         <!-- Date -->
         <div style="font-size: 14px; color: #6b7280; text-align: right; margin-bottom: 20px;">
           תל אביב | ${letterDate}
@@ -127,9 +127,9 @@ function buildReminderEmailHtml(
         </div>
 
         <!-- Urgency Box -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; border-right: 4px solid #dc2626; margin-bottom: 25px;">
+        <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; border-right: 4px solid #dc2626; margin-bottom: 25px; direction: rtl;">
           <tr>
-            <td style="padding: 18px;">
+            <td dir="rtl" style="padding: 18px; direction: rtl;">
               <div style="font-size: 15px; font-weight: 700; color: #dc2626; text-align: right; margin-bottom: 8px;">
                 חשוב מאוד!
               </div>
@@ -142,9 +142,9 @@ function buildReminderEmailHtml(
         </table>
 
         <!-- CTA Button -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 8px; margin-bottom: 25px;">
+        <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 8px; margin-bottom: 25px; direction: rtl;">
           <tr>
-            <td style="padding: 25px; text-align: center;">
+            <td dir="rtl" style="padding: 25px; text-align: center; direction: rtl;">
               <div style="font-size: 16px; color: #1e40af; text-align: center; margin-bottom: 15px;">
                 <strong>הפורטל המאובטח פתוח ומחכה לך</strong>
               </div>
@@ -173,7 +173,7 @@ function buildReminderEmailHtml(
 
     <!-- Footer -->
     <tr>
-      <td style="background-color: #f3f4f6; padding: 15px; text-align: center;">
+      <td dir="rtl" style="background-color: #f3f4f6; padding: 15px; text-align: center; direction: rtl;">
         <div style="font-size: 12px; color: #6b7280;">
           מייל זה נשלח אוטומטית ממערכת תיקו פרנקו
         </div>
@@ -393,7 +393,7 @@ serve(async (req: Request) => {
     const { data: tenants, error: tenantsError } = await supabase
       .from('tenants')
       .select('id')
-      .eq('is_active', true);
+      .eq('status', 'active');
 
     if (tenantsError) {
       throw new Error(`Failed to fetch tenants: ${tenantsError.message}`);

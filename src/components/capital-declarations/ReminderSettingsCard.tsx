@@ -13,7 +13,7 @@ import { Loader2, Save, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   capitalDeclarationReminderService,
-  UpdateReminderSettingsDto,
+  type UpdateReminderSettingsDto,
 } from '@/services/capital-declaration-reminder.service';
 import type { Database } from '@/types/supabase';
 

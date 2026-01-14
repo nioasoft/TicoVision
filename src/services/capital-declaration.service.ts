@@ -1068,14 +1068,15 @@ class CapitalDeclarationServiceClass extends BaseService {
   async getDashboard(params: {
     page?: number;
     pageSize?: number;
-    status?: CapitalDeclarationStatus | CapitalDeclarationStatus[];
+    status?: CapitalDeclarationStatus | readonly CapitalDeclarationStatus[];
+    excludeStatus?: CapitalDeclarationStatus[]; // Exclude these statuses
     year?: number;
     searchQuery?: string;
-    priority?: DeclarationPriority;
+    priority?: DeclarationPriority | DeclarationPriority[];
     assignedTo?: string; // Filter by assigned accountant
   } = {}): Promise<ServiceResponse<{ declarations: DeclarationWithCounts[]; total: number }>> {
     try {
-      const { page = 1, pageSize = 20, status, year, searchQuery, priority, assignedTo } = params;
+      const { page = 1, pageSize = 20, status, excludeStatus, year, searchQuery, priority, assignedTo } = params;
       const tenantId = await this.getTenantId();
 
       let query = supabase
@@ -1087,16 +1088,29 @@ class CapitalDeclarationServiceClass extends BaseService {
         `, { count: 'exact' })
         .eq('tenant_id', tenantId);
 
-      // Apply filters
+      // Apply status filters
       if (status) {
         if (Array.isArray(status)) {
-          query = query.in('status', status);
+          query = query.in('status', status as CapitalDeclarationStatus[]);
         } else {
           query = query.eq('status', status);
         }
       }
+      // Apply exclude status filter
+      if (excludeStatus && excludeStatus.length > 0) {
+        for (const s of excludeStatus) {
+          query = query.neq('status', s);
+        }
+      }
       if (year) query = query.eq('tax_year', year);
-      if (priority) query = query.eq('priority', priority);
+      // Apply priority filter (single or array)
+      if (priority) {
+        if (Array.isArray(priority)) {
+          query = query.in('priority', priority);
+        } else {
+          query = query.eq('priority', priority);
+        }
+      }
       if (assignedTo) query = query.eq('assigned_to', assignedTo);
       if (searchQuery) {
         query = query.or(`contact_name.ilike.%${searchQuery}%,contact_email.ilike.%${searchQuery}%`);

@@ -34,6 +34,8 @@ import {
   ChevronRight,
   Trash2,
   Settings,
+  Mail,
+  Loader2,
 } from 'lucide-react';
 import { capitalDeclarationService } from '@/services/capital-declaration.service';
 import { capitalDeclarationReminderService } from '@/services/capital-declaration-reminder.service';
@@ -131,10 +133,15 @@ export function CapitalDeclarationsListPage() {
   // Banner and settings state
   const [showBanner, setShowBanner] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [sendingReminders, setSendingReminders] = useState(false);
 
-  // Filters
+  // Tab filter (primary) - default shows all except submitted and documents_received
+  type TabFilter = 'in_process' | 'not_started' | 'client_complete' | 'urgent' | 'submitted';
+  const [activeTab, setActiveTab] = useState<TabFilter>('in_process');
+
+  // Advanced filters (work within the selected tab)
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<CapitalDeclarationStatus | 'all' | 'active_process'>('all');
+  const [statusFilter, setStatusFilter] = useState<CapitalDeclarationStatus | 'all'>('all');
   const [yearFilter, setYearFilter] = useState<number | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<DeclarationPriority | 'all'>('all');
   const [assignedFilter, setAssignedFilter] = useState<string | 'all'>('all');
@@ -144,15 +151,13 @@ export function CapitalDeclarationsListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
 
-  // Statistics
+  // Statistics for the 5 tabs
   const [stats, setStats] = useState({
-    total: 0,
-    waiting: 0,
-    sent: 0,
-    in_progress: 0,
-    submitted: 0,
-    critical: 0,
-    urgent: 0,
+    inProcess: 0,      // All except submitted & documents_received (active work)
+    notStarted: 0,     // Status = 'waiting' or 'sent'
+    clientComplete: 0, // Status = 'documents_received' (client clicked "סיימתי")
+    urgent: 0,         // Critical + Urgent (not submitted, not documents_received)
+    submitted: 0,      // Submitted only
   });
 
   /**
@@ -160,7 +165,7 @@ export function CapitalDeclarationsListPage() {
    */
   useEffect(() => {
     loadData();
-  }, [searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage]);
+  }, [activeTab, searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage]);
 
   /**
    * Load available years, accountants, and check banner on mount
@@ -194,6 +199,31 @@ export function CapitalDeclarationsListPage() {
   };
 
   /**
+   * Send reminders to all eligible clients manually
+   */
+  const handleSendRemindersToAll = async () => {
+    setSendingReminders(true);
+    try {
+      const { data, error } = await capitalDeclarationReminderService.sendRemindersToAll();
+      if (error) {
+        toast.error('שגיאה בשליחת תזכורות');
+        console.error('Error sending reminders:', error);
+      } else if (data) {
+        if (data.sent > 0) {
+          toast.success(`נשלחו ${data.sent} תזכורות בהצלחה`);
+        } else {
+          toast.info('אין לקוחות שזקוקים לתזכורת כרגע');
+        }
+      }
+    } catch (error) {
+      console.error('Error sending reminders:', error);
+      toast.error('שגיאה בשליחת תזכורות');
+    } finally {
+      setSendingReminders(false);
+    }
+  };
+
+  /**
    * Load accountants for filter dropdown
    */
   const loadAccountants = async () => {
@@ -205,28 +235,67 @@ export function CapitalDeclarationsListPage() {
 
   /**
    * Load declarations data using dashboard method
+   * Tab filter is the primary filter, advanced filters work within the tab
    */
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Apply handler filter if selected (optional for all users)
-      const assignedTo = assignedFilter !== 'all'
-        ? assignedFilter
-        : undefined;
+      // Apply handler filter if selected
+      const assignedTo = assignedFilter !== 'all' ? assignedFilter : undefined;
 
-      // Handle 'active_process' special filter (in_progress + waiting_documents + reviewing + in_preparation + pending_approval)
-      const statusParam = statusFilter === 'all'
-        ? undefined
-        : statusFilter === 'active_process'
-          ? ['in_progress', 'waiting_documents', 'reviewing', 'in_preparation', 'pending_approval'] as const
-          : statusFilter;
+      // Build status filter based on active tab + advanced status filter
+      let statusParam: CapitalDeclarationStatus | readonly CapitalDeclarationStatus[] | undefined;
+      let priorityParam: DeclarationPriority | DeclarationPriority[] | undefined;
+      let excludeStatuses: CapitalDeclarationStatus[] = [];
+
+      // Tab determines the base filter
+      switch (activeTab) {
+        case 'in_process':
+          // All except submitted and documents_received (active work)
+          excludeStatuses = ['submitted', 'documents_received'];
+          // If user selected a specific status in advanced filter, use it
+          if (statusFilter !== 'all' && !excludeStatuses.includes(statusFilter)) {
+            statusParam = statusFilter;
+          }
+          break;
+        case 'not_started':
+          // 'waiting' or 'sent' - not yet started by client
+          statusParam = ['waiting', 'sent'] as const;
+          break;
+        case 'client_complete':
+          // Client clicked "סיימתי" - documents_received
+          statusParam = 'documents_received';
+          break;
+        case 'urgent':
+          // Critical + Urgent priorities, exclude submitted and documents_received
+          excludeStatuses = ['submitted', 'documents_received'];
+          priorityParam = ['critical', 'urgent'];
+          // If advanced filter narrows it further
+          if (priorityFilter !== 'all') {
+            priorityParam = priorityFilter;
+          }
+          if (statusFilter !== 'all' && !excludeStatuses.includes(statusFilter)) {
+            statusParam = statusFilter;
+          }
+          break;
+        case 'submitted':
+          // Submitted only
+          statusParam = 'submitted';
+          break;
+      }
+
+      // Apply advanced priority filter (if not in urgent tab which already filters by priority)
+      if (activeTab !== 'urgent' && priorityFilter !== 'all') {
+        priorityParam = priorityFilter;
+      }
 
       const { data, error } = await capitalDeclarationService.getDashboard({
         page: currentPage,
         pageSize,
         status: statusParam,
+        excludeStatus: excludeStatuses.length > 0 ? excludeStatuses : undefined,
         year: yearFilter !== 'all' ? yearFilter : undefined,
-        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+        priority: priorityParam,
         assignedTo,
         searchQuery: searchQuery || undefined,
       });
@@ -236,26 +305,56 @@ export function CapitalDeclarationsListPage() {
       setDeclarations(data?.declarations || []);
       setTotalDeclarations(data?.total || 0);
 
-      // Calculate stats from current data
-      const allDeclarations = data?.declarations || [];
-      setStats({
-        total: data?.total || 0,
-        waiting: allDeclarations.filter((d) => d.status === 'waiting').length,
-        sent: allDeclarations.filter((d) => d.status === 'sent').length,
-        in_progress: allDeclarations.filter((d) =>
-        ['in_progress', 'waiting_documents', 'reviewing', 'in_preparation', 'pending_approval'].includes(d.status)
-      ).length,
-        submitted: allDeclarations.filter((d) => d.status === 'submitted').length,
-        critical: allDeclarations.filter((d) => d.priority === 'critical').length,
-        urgent: allDeclarations.filter((d) => d.priority === 'urgent').length,
-      });
+      // Calculate stats for all 4 tabs (independent of current filters)
+      // We need to make separate calls or use the total counts from API
+      await loadStats();
+
     } catch (error) {
       console.error('Error loading declarations:', error);
       toast.error('שגיאה בטעינת ההצהרות');
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage, pageSize]);
+  }, [activeTab, searchQuery, statusFilter, yearFilter, priorityFilter, assignedFilter, currentPage, pageSize]);
+
+  /**
+   * Load statistics counts for tabs (independent of current filters)
+   */
+  const loadStats = async () => {
+    try {
+      const { data } = await capitalDeclarationService.getDashboard({
+        page: 1,
+        pageSize: 1000, // Get all for accurate counts
+      });
+
+      const allDeclarations = data?.declarations || [];
+
+      setStats({
+        // Active work - exclude submitted and documents_received
+        inProcess: allDeclarations.filter((d) =>
+          d.status !== 'submitted' && d.status !== 'documents_received'
+        ).length,
+        // Not started - waiting or sent
+        notStarted: allDeclarations.filter((d) =>
+          d.status === 'waiting' || d.status === 'sent'
+        ).length,
+        // Client marked complete - documents_received
+        clientComplete: allDeclarations.filter((d) =>
+          d.status === 'documents_received'
+        ).length,
+        // Urgent - critical/urgent, exclude submitted and documents_received
+        urgent: allDeclarations.filter((d) =>
+          d.status !== 'submitted' &&
+          d.status !== 'documents_received' &&
+          (d.priority === 'critical' || d.priority === 'urgent')
+        ).length,
+        // Submitted
+        submitted: allDeclarations.filter((d) => d.status === 'submitted').length,
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
 
   /**
    * Load available years for filter
@@ -298,7 +397,7 @@ export function CapitalDeclarationsListPage() {
   };
 
   /**
-   * Reset filters
+   * Reset filters (but keep the tab)
    */
   const resetFilters = () => {
     setSearchQuery('');
@@ -306,6 +405,16 @@ export function CapitalDeclarationsListPage() {
     setYearFilter('all');
     setPriorityFilter('all');
     setAssignedFilter('all');
+    setCurrentPage(1);
+  };
+
+  /**
+   * Handle tab change - reset advanced filters when switching tabs
+   */
+  const handleTabChange = (tab: TabFilter) => {
+    setActiveTab(tab);
+    setStatusFilter('all');
+    setPriorityFilter('all');
     setCurrentPage(1);
   };
 
@@ -378,10 +487,24 @@ export function CapitalDeclarationsListPage() {
         </div>
         <div className="flex gap-2 rtl:flex-row-reverse">
           {isAdmin && (
-            <Button variant="outline" onClick={() => setShowSettings(!showSettings)}>
-              <Settings className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-              הגדרות
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={handleSendRemindersToAll}
+                disabled={sendingReminders}
+              >
+                {sendingReminders ? (
+                  <Loader2 className="h-4 w-4 animate-spin rtl:ml-2 ltr:mr-2" />
+                ) : (
+                  <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                )}
+                {sendingReminders ? 'שולח...' : 'שלח תזכורת לכולם'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowSettings(!showSettings)}>
+                <Settings className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                הגדרות
+              </Button>
+            </>
           )}
           <Button onClick={() => navigate('/capital-declaration')}>
             <Plus className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
@@ -395,83 +518,66 @@ export function CapitalDeclarationsListPage() {
         <ReminderSettingsCard />
       )}
 
-      {/* Statistics Cards - Compact & Clickable */}
-      <div className="grid gap-2 grid-cols-4 md:grid-cols-7">
+      {/* Tab Filter Cards - 5 tabs */}
+      <div className="grid gap-3 grid-cols-5">
+        {/* בתהליך (In Process) - Default, all except submitted & documents_received */}
         <Card
           className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'all' && priorityFilter === 'all' && "ring-2 ring-primary"
+            "p-4 cursor-pointer transition-all hover:shadow-md",
+            activeTab === 'in_process' && "ring-2 ring-blue-500 bg-blue-50"
           )}
-          onClick={() => { setStatusFilter('all'); setPriorityFilter('all'); setCurrentPage(1); }}
+          onClick={() => handleTabChange('in_process')}
         >
-          <div className="text-xs text-muted-foreground rtl:text-right">סה"כ</div>
-          <div className="text-xl font-bold rtl:text-right">{stats.total}</div>
+          <div className="text-sm text-muted-foreground rtl:text-right">בתהליך</div>
+          <div className="text-2xl font-bold rtl:text-right">{stats.inProcess}</div>
         </Card>
 
+        {/* טרם התחילו (Not Started) - waiting or sent */}
         <Card
           className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md border-red-200 bg-red-50",
-            priorityFilter === 'critical' && "ring-2 ring-red-500"
+            "p-4 cursor-pointer transition-all hover:shadow-md border-slate-200",
+            activeTab === 'not_started' ? "ring-2 ring-slate-500 bg-slate-50" : "bg-slate-50/50"
           )}
-          onClick={() => { setPriorityFilter('critical'); setStatusFilter('all'); setCurrentPage(1); }}
+          onClick={() => handleTabChange('not_started')}
         >
-          <div className="text-xs text-red-600 rtl:text-right">בהול</div>
-          <div className="text-xl font-bold text-red-700 rtl:text-right">{stats.critical}</div>
+          <div className="text-sm text-slate-600 rtl:text-right">טרם התחילו</div>
+          <div className="text-2xl font-bold text-slate-700 rtl:text-right">{stats.notStarted}</div>
         </Card>
 
+        {/* טוענים שסיימו (Client Complete) - documents_received */}
         <Card
           className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md border-orange-200 bg-orange-50",
-            priorityFilter === 'urgent' && "ring-2 ring-orange-500"
+            "p-4 cursor-pointer transition-all hover:shadow-md border-purple-200",
+            activeTab === 'client_complete' ? "ring-2 ring-purple-500 bg-purple-50" : "bg-purple-50/50"
           )}
-          onClick={() => { setPriorityFilter('urgent'); setStatusFilter('all'); setCurrentPage(1); }}
+          onClick={() => handleTabChange('client_complete')}
         >
-          <div className="text-xs text-orange-600 rtl:text-right">דחוף</div>
-          <div className="text-xl font-bold text-orange-700 rtl:text-right">{stats.urgent}</div>
+          <div className="text-sm text-purple-600 rtl:text-right">טוענים שסיימו</div>
+          <div className="text-2xl font-bold text-purple-700 rtl:text-right">{stats.clientComplete}</div>
         </Card>
 
+        {/* דחופים (Urgent + Critical) */}
         <Card
           className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'waiting' && "ring-2 ring-slate-500"
+            "p-4 cursor-pointer transition-all hover:shadow-md border-red-200",
+            activeTab === 'urgent' ? "ring-2 ring-red-500 bg-red-50" : "bg-red-50/50"
           )}
-          onClick={() => { setStatusFilter('waiting'); setPriorityFilter('all'); setCurrentPage(1); }}
+          onClick={() => handleTabChange('urgent')}
         >
-          <div className="text-xs text-muted-foreground rtl:text-right">ממתינים</div>
-          <div className="text-xl font-bold text-slate-600 rtl:text-right">{stats.waiting}</div>
+          <div className="text-sm text-red-600 rtl:text-right">דחופים</div>
+          <div className="text-2xl font-bold text-red-700 rtl:text-right">{stats.urgent}</div>
         </Card>
 
+        {/* הוגשו (Submitted) */}
         <Card
           className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'sent' && "ring-2 ring-blue-500"
+            "p-4 cursor-pointer transition-all hover:shadow-md border-green-200",
+            activeTab === 'submitted' ? "ring-2 ring-green-500 bg-green-50" : "bg-green-50/50"
           )}
-          onClick={() => { setStatusFilter('sent'); setPriorityFilter('all'); setCurrentPage(1); }}
+          onClick={() => handleTabChange('submitted')}
         >
-          <div className="text-xs text-muted-foreground rtl:text-right">נשלחו</div>
-          <div className="text-xl font-bold text-blue-600 rtl:text-right">{stats.sent}</div>
-        </Card>
-
-        <Card
-          className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'active_process' && "ring-2 ring-yellow-500"
-          )}
-          onClick={() => { setStatusFilter('active_process'); setPriorityFilter('all'); setCurrentPage(1); }}
-        >
-          <div className="text-xs text-muted-foreground rtl:text-right">בתהליך</div>
-          <div className="text-xl font-bold text-yellow-600 rtl:text-right">{stats.in_progress}</div>
-        </Card>
-
-        <Card
-          className={cn(
-            "p-3 cursor-pointer transition-all hover:shadow-md",
-            statusFilter === 'submitted' && "ring-2 ring-green-500"
-          )}
-          onClick={() => { setStatusFilter('submitted'); setPriorityFilter('all'); setCurrentPage(1); }}
-        >
-          <div className="text-xs text-muted-foreground rtl:text-right">הוגשו</div>
-          <div className="text-xl font-bold text-green-600 rtl:text-right">{stats.submitted}</div>
+          <div className="text-sm text-green-600 rtl:text-right">הוגשו</div>
+          <div className="text-2xl font-bold text-green-700 rtl:text-right">{stats.submitted}</div>
         </Card>
       </div>
 
