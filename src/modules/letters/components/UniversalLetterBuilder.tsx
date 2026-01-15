@@ -2414,20 +2414,22 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         <Label className="text-sm font-semibold text-green-900 mb-2 block text-right">
                           נמענים מהקבוצה ({selectedRecipients.length}):
                         </Label>
-                        <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
-                          {selectedRecipients.slice(0, 10).map((email) => (
-                            <span
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                          {selectedRecipients.map((email) => (
+                            <div
                               key={email}
-                              className="inline-flex items-center bg-white px-2 py-0.5 rounded-full border text-xs"
+                              className="inline-flex items-center gap-2 bg-white px-3 py-1 rounded-full border text-sm"
                             >
-                              {email}
-                            </span>
+                              <span className="text-gray-700">{email}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveRecipient(email)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
                           ))}
-                          {selectedRecipients.length > 10 && (
-                            <span className="text-xs text-gray-500">
-                              +{selectedRecipients.length - 10} נוספים
-                            </span>
-                          )}
                         </div>
                       </div>
                     )}
