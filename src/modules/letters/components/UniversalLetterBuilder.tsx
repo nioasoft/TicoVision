@@ -599,18 +599,17 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         if (fullGroup?.clients) {
           setGroupMembers(fullGroup.clients);
 
-          // Collect emails from ALL group members
-          const allEmails: string[] = [];
-          for (const client of fullGroup.clients) {
-            const emails = await TenantContactService.getClientEmails(client.id, 'important');
-            allEmails.push(...emails);
-          }
+          // Get emails from GROUP's contacts (not individual clients)
+          const groupContacts = await TenantContactService.getGroupContacts(group.id);
+          const groupEmails = groupContacts
+            .map(contact => contact.email)
+            .filter((email): email is string => email !== null && email !== '');
 
           // Remove duplicates
-          const uniqueEmails = [...new Set(allEmails)];
+          const uniqueEmails = [...new Set(groupEmails)];
           setSelectedRecipients(uniqueEmails);
 
-          toast.success(`נטענו ${uniqueEmails.length} נמענים מ-${fullGroup.clients.length} חברות`);
+          toast.success(`נטענו ${uniqueEmails.length} נמענים מאנשי קשר של הקבוצה`);
         }
       } catch (error) {
         console.error('Error loading group details:', error);
