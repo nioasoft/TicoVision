@@ -1,0 +1,139 @@
+<!-- Letter Body: Protocol - Accountant Appointment (פרוטוקול מינוי רואה חשבון) -->
+<!-- Template Type: protocols_accountant_appointment -->
+<!-- Variables: {{company_name}}, {{company_id}}, {{meeting_date_formatted}}, {{chairman_name}}, -->
+<!--            {{attendees_list}}, {{previous_firm}}, {{new_firm}} -->
+<!-- Note: This is a STANDALONE template - does NOT use header.html / footer.html -->
+
+<!-- PROTOCOL: Company Header -->
+<tr>
+    <td style="padding: 20px 0 15px 0; text-align: center;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 28px; line-height: 1.2; font-weight: 700; color: #395BF7;">
+            {{company_name}}
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.4; color: #666666; margin-top: 3px;">
+            ח.פ: {{company_id}}
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Title -->
+<tr>
+    <td style="padding: 12px 0;">
+        <div style="background-color: #395BF7; color: #ffffff; padding: 12px 20px; text-align: center; border-radius: 4px;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; font-weight: 700; line-height: 1.3;">
+                פרוטוקול מאסיפת בעלי המניות
+            </div>
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Meeting Details Section -->
+<tr>
+    <td style="padding-top: 18px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #395BF7; text-align: right; text-decoration: underline;">
+            פרטי האסיפה:
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; text-align: right; padding-top: 5px;">
+            שנועדה ונתכנסה כהלכה במשרדי החברה
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; text-align: right;">
+            ביום <strong>{{meeting_date_formatted}}</strong>
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Chairman -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #395BF7; text-align: right; text-decoration: underline;">
+            ליו"ר נבחר:
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; text-align: right; padding-top: 3px;">
+            {{chairman_name}}
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Attendees -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #395BF7; text-align: right; text-decoration: underline;">
+            נוכחים באסיפה:
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right; padding-top: 3px;">
+            {{attendees_list}}
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Agenda -->
+<tr>
+    <td style="padding-top: 18px;">
+        <div style="background-color: #f0f4ff; padding: 12px 18px; border-radius: 4px; border-right: 4px solid #395BF7;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #395BF7; text-align: right;">
+                על סדר היום:
+            </div>
+            <ul style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; text-align: right; margin: 6px 20px 0 0; padding: 0; list-style-type: disc;">
+                <li style="margin-bottom: 3px;">הפסקת מינוי רואה חשבון קודם</li>
+                <li>מינוי רואי חשבון</li>
+            </ul>
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Decision Header -->
+<tr>
+    <td style="padding-top: 18px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.5; font-weight: 700; color: #000000; text-align: center; padding: 8px; border-top: 2px solid #395BF7; border-bottom: 2px solid #395BF7;">
+            פה אחד הוחלט כי:
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Termination of Previous Accountant -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; text-decoration: underline;">
+            הפסקת מינוי רואה חשבון קודם:
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; text-align: right; padding-top: 5px;">
+            {{previous_firm}} יחדל מלשמש רואה חשבון החל ממועד אסיפה זו.
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Appointment of New Accountant -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; text-decoration: underline;">
+            מינוי רואי חשבון חדשים:
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; text-align: right; padding-top: 5px;">
+            {{new_firm}} ימונו החל ממועד אסיפה זו כרואי החשבון של החברה.
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Signature Line - Centered -->
+<tr>
+    <td style="padding-top: 40px;">
+        <div style="text-align: center;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.5; color: #09090b; border-bottom: 1px solid #000000; width: 200px; display: inline-block; margin-bottom: 0;">
+            </div>
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.4; color: #09090b; margin-top: 5px;">
+                {{chairman_name}} , יו"ר
+            </div>
+        </div>
+    </td>
+</tr>
+
+<!-- PROTOCOL: Footer -->
+<tr>
+    <td style="padding-top: 30px;">
+        <div style="border-top: 2px solid #395BF7; padding-top: 12px; text-align: center;">
+            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.4; color: #666666;">
+                {{company_name}} &#9670; ח.פ: {{company_id}}
+            </div>
+        </div>
+    </td>
+</tr>

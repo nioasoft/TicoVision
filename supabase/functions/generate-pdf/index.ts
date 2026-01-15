@@ -151,6 +151,10 @@ serve(async (req) => {
     const descriptiveFileName = `${entityName}-${docType}-${timestamp}.pdf`;
     console.log(`Building filename: ${descriptiveFileName}`);
 
+    // 3d. Check if this is a standalone template (no header/footer with logo)
+    const isStandaloneTemplate = letter.template_type?.startsWith('protocols_') || false;
+    console.log(`Is standalone template: ${isStandaloneTemplate}, template_type: ${letter.template_type}`);
+
     // 4. Get HTML with public URLs (not CID)
     let html = letter.generated_content_html;
 
@@ -193,6 +197,11 @@ serve(async (req) => {
     html = html.replace(/<!--\s*FOOTER START\s*-->[\s\S]*?<!--\s*FOOTER END\s*-->/g, '');
 
     // 5. Wrap HTML in full document with proper layout for header/footer
+    // Different @page margins for standalone templates
+    const pageMargins = isStandaloneTemplate
+      ? `margin-top: 15mm; margin-bottom: 15mm; margin-left: 15mm; margin-right: 15mm;`
+      : `margin-top: 44mm; margin-bottom: 15mm; margin-left: 9mm; margin-right: 9mm;`;
+
     const fullHtml = `
       <!DOCTYPE html>
       <html dir="rtl" lang="he">
@@ -215,13 +224,7 @@ serve(async (req) => {
           }
           @page {
             size: A4;
-            /* Top: Header (34mm) + padding (10mm) = 44mm */
-            margin-top: 44mm;
-            /* Bottom: Small margin for page numbers - spacer reserves rest for full footer */
-            margin-bottom: 15mm;
-            /* Side margins */
-            margin-left: 9mm;
-            margin-right: 9mm;
+            ${pageMargins}
           }
           /* Image styling to prevent layout issues */
           img {
@@ -326,6 +329,47 @@ serve(async (req) => {
     }
 
     console.log('Calling Browserless API...');
+
+    // Define PDF options based on template type
+    const pdfOptions = isStandaloneTemplate
+      ? {
+          // Standalone templates (protocols): No header/footer with logo, single page
+          format: 'A4',
+          printBackground: true,
+          displayHeaderFooter: false,
+          pageRanges: '1',  // Limit to first page only
+          margin: {
+            top: '15mm',
+            right: '15mm',
+            bottom: '15mm',
+            left: '15mm'
+          }
+        }
+      : {
+          // Regular templates: With header/footer logo
+          format: 'A4',
+          printBackground: true,
+          displayHeaderFooter: true,
+          headerTemplate: `
+            <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
+              <img src="${HEADER_PDF_BASE64}" style="width: 100%; display: block;" />
+            </div>
+          `,
+          footerTemplate: `
+            <div style="width: 100%; font-size: 10px; text-align: center; padding-top: 5px; direction: rtl; background: white; font-family: Arial, sans-serif;">
+              <span>עמוד <span class="pageNumber"></span> מתוך <span class="totalPages"></span></span>
+              <span style="margin: 0 10px;">|</span>
+              <span style="font-weight: bold;">משרד רואי חשבון פרנקו ושות' בע"מ</span>
+            </div>
+          `,
+          margin: {
+            top: '44mm',    // Header (34mm) + padding (10mm)
+            right: '0mm',   // No side margins (handled in @page)
+            bottom: '15mm', // Small margin for page numbers - spacer reserves rest for full footer
+            left: '0mm'     // No side margins (handled in @page)
+          }
+        };
+
     const browserlessResponse = await fetch(
       `https://production-sfo.browserless.io/pdf?token=${browserlessToken}`,
       {
@@ -335,29 +379,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           html: fullHtml,
-          options: {
-            format: 'A4',
-            printBackground: true,
-            displayHeaderFooter: true,
-            headerTemplate: `
-              <div style="width: 100%; margin: 0; padding: 0; font-size: 10px;">
-                <img src="${HEADER_PDF_BASE64}" style="width: 100%; display: block;" />
-              </div>
-            `,
-            footerTemplate: `
-              <div style="width: 100%; font-size: 10px; text-align: center; padding-top: 5px; direction: rtl; background: white; font-family: Arial, sans-serif;">
-                <span>עמוד <span class="pageNumber"></span> מתוך <span class="totalPages"></span></span>
-                <span style="margin: 0 10px;">|</span>
-                <span style="font-weight: bold;">משרד רואי חשבון פרנקו ושות' בע"מ</span>
-              </div>
-            `,
-            margin: {
-              top: '44mm',    // Header (34mm) + padding (10mm)
-              right: '0mm',   // No side margins (handled in @page)
-              bottom: '15mm', // Small margin for page numbers - spacer reserves rest for full footer
-              left: '0mm'     // No side margins (handled in @page)
-            }
-          },
+          options: pdfOptions,
         }),
       }
     );
@@ -370,9 +392,15 @@ serve(async (req) => {
     const initialPdfBuffer = await browserlessResponse.arrayBuffer();
     console.log('Initial PDF generated successfully');
 
-    // 6b. Post-process: Add full footer to last page only
-    console.log('Adding full footer to last page...');
-    const finalPdfBytes = await addFullFooterToLastPage(initialPdfBuffer, FOOTER_PDF_BASE64);
+    // 6b. Post-process: Add full footer to last page only (skip for standalone templates)
+    let finalPdfBytes: Uint8Array;
+    if (isStandaloneTemplate) {
+      console.log('Standalone template - skipping footer image');
+      finalPdfBytes = new Uint8Array(initialPdfBuffer);
+    } else {
+      console.log('Adding full footer to last page...');
+      finalPdfBytes = await addFullFooterToLastPage(initialPdfBuffer, FOOTER_PDF_BASE64);
+    }
     console.log('PDF post-processing complete');
 
     // 7. Upload PDF to Supabase Storage with descriptive filename

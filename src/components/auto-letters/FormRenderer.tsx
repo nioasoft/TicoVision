@@ -21,6 +21,7 @@ import type {
   MortgageOsekUnsubmittedVariables,
   AuditCompletionVariables,
   VatFileOpenedVariables,
+  AccountantAppointmentVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -62,6 +63,9 @@ import { TaxPaymentNoticeForm } from './forms/tax-notices';
 
 // Audit Completion forms
 import { AuditCompletionForm } from './forms/audit-completion';
+
+// Protocols forms
+import { AccountantAppointmentForm } from './forms/protocols';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -118,6 +122,9 @@ export function FormRenderer({
 
     case 'audit_completion':
       return renderAuditCompletionForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+
+    case 'protocols':
+      return renderProtocolsForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     default:
       return null;
@@ -443,6 +450,37 @@ function renderAuditCompletionForm(
         <Card className="mb-6">
           <CardContent className="py-8 text-center text-gray-500">
             סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderProtocolsForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string
+) {
+  switch (letterTypeId) {
+    case 'accountant_appointment':
+      return (
+        <AccountantAppointmentForm
+          value={value as Partial<AccountantAppointmentVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג פרוטוקול לא מוכר
           </CardContent>
         </Card>
       );

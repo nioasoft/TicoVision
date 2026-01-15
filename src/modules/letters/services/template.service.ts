@@ -3336,8 +3336,11 @@ export class TemplateService extends BaseService {
       const tenantId = await this.getTenantId();
       const { previewOnly = false, existingLetterId } = options || {};
 
-      // 1. Load header
-      const header = await this.loadTemplateFile('components/header.html');
+      // Check if this is a standalone template (no header/footer)
+      const isStandaloneTemplate = templateType.startsWith('protocols_');
+
+      // 1. Load header (skip for standalone templates)
+      const header = isStandaloneTemplate ? '' : await this.loadTemplateFile('components/header.html');
 
       // 2. Load body based on template type
       const bodyFile = this.getAutoLetterBodyFileName(templateType);
@@ -3346,8 +3349,8 @@ export class TemplateService extends BaseService {
       }
       const body = await this.loadTemplateFile(bodyFile);
 
-      // 3. Load footer
-      const footer = await this.loadTemplateFile('components/footer.html');
+      // 3. Load footer (skip for standalone templates)
+      const footer = isStandaloneTemplate ? '' : await this.loadTemplateFile('components/footer.html');
 
       // 4. Process variables
       const processedVariables = this.processAutoLetterVariables(templateType, variables);
@@ -3359,7 +3362,7 @@ export class TemplateService extends BaseService {
       fullHtml = this.processMustacheSections(fullHtml, processedVariables);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3511,7 +3514,9 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_unsubmitted': 'bodies/mortgage-approvals/osek-unsubmitted.html',
       'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html',
       // Audit Completion
-      'audit_completion_general': 'bodies/audit-completion/general.html'
+      'audit_completion_general': 'bodies/audit-completion/general.html',
+      // Protocols
+      'protocols_accountant_appointment': 'bodies/protocols/accountant-appointment.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3539,7 +3544,9 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_unsubmitted': 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
       'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
       // Audit Completion
-      'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי'
+      'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
+      // Protocols
+      'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3572,7 +3579,9 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_unsubmitted': 'אישור משכנתא - עוסק',
       'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום',
       // Audit Completion
-      'audit_completion_general': 'סיום ביקורת דוחות כספיים'
+      'audit_completion_general': 'סיום ביקורת דוחות כספיים',
+      // Protocols
+      'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -3950,6 +3959,26 @@ export class TemplateService extends BaseService {
         // Swap: header will show addressee lines, body uses client_name/client_id
         processed.company_name = processed.addressee_line1 || '';
         processed.group_name = processed.addressee_line2 || '';
+        break;
+
+      case 'protocols_accountant_appointment':
+        // Format meeting_date to Hebrew date format
+        if (processed.meeting_date && typeof processed.meeting_date === 'string') {
+          processed.meeting_date_formatted = this.formatIsraeliDate(new Date(processed.meeting_date as string));
+        }
+        // Build attendees list HTML (each attendee on a new line)
+        if (processed.attendees && Array.isArray(processed.attendees)) {
+          processed.attendees_list = (processed.attendees as Array<{ name: string; is_chairman: boolean }>)
+            .map(a => a.name?.trim())
+            .filter(Boolean)
+            .join('<br>');
+        } else {
+          processed.attendees_list = '';
+        }
+        // Ensure new_firm has default value
+        if (!processed.new_firm) {
+          processed.new_firm = "פרנקו ושות' - רואי חשבון";
+        }
         break;
     }
 

@@ -31,14 +31,15 @@ export type AutoLetterCategory =
   | 'mortgage_approvals'   // אישורי משכנתא
   | 'tax_notices'          // הודעות מס
   | 'audit_completion'     // סיום ביקורת דוחות כספיים
-  | 'tax_advances';        // מקדמות מ"ה
+  | 'tax_advances'         // מקדמות מ"ה
+  | 'protocols';           // פרוטוקולים
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck' | 'Banknote';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck' | 'Banknote' | 'FileSignature';
   enabled: boolean;
 }
 
@@ -107,6 +108,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     icon: 'Banknote',
     enabled: true,
   },
+  {
+    id: 'protocols',
+    label: 'פרוטוקולים',
+    description: 'פרוטוקולים מאסיפות בעלי מניות',
+    icon: 'FileSignature',
+    enabled: true,
+  },
 ];
 
 // ============================================================================
@@ -142,7 +150,9 @@ export type AutoLetterTemplateType =
   | 'audit_completion_general'
   // Tax Advances (מקדמות מ"ה)
   | 'tax_advances_monthly'
-  | 'tax_advances_quarterly';
+  | 'tax_advances_quarterly'
+  // Protocols (פרוטוקולים)
+  | 'protocols_accountant_appointment';  // פרוטוקול מינוי רואה חשבון
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -322,6 +332,15 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הודעה על מקדמה רבעונית למס הכנסה',
       templateType: 'tax_advances_quarterly',
       icon: 'CalendarDays',
+    },
+  ],
+  protocols: [
+    {
+      id: 'accountant_appointment',
+      label: 'פרוטוקול מינוי רואה חשבון',
+      description: 'פרוטוקול מאסיפת בעלי מניות למינוי רואה חשבון חדש',
+      templateType: 'protocols_accountant_appointment',
+      icon: 'FileSignature',
     },
   ],
 };
@@ -642,6 +661,32 @@ export interface TaxAdvancesQuarterlyVariables extends AutoLetterSharedData {
 }
 
 // ============================================================================
+// PROTOCOLS VARIABLES (פרוטוקולים)
+// ============================================================================
+
+/** Single attendee entry for protocol */
+export interface AttendeeEntry {
+  /** שם הנוכח */
+  name: string;
+  /** האם יו"ר */
+  is_chairman: boolean;
+}
+
+/** Variables for Protocols - Accountant Appointment (פרוטוקול מינוי רואה חשבון) */
+export interface AccountantAppointmentVariables extends AutoLetterSharedData {
+  /** תאריך האסיפה */
+  meeting_date: string;
+  /** שם היו"ר */
+  chairman_name: string;
+  /** רשימת הנוכחים (כולל היו"ר) */
+  attendees: AttendeeEntry[];
+  /** שם משרד רואי החשבון הקודם */
+  previous_firm: string;
+  /** שם משרד רואי החשבון החדש (קבוע: "פרנקו ושות' - רואי חשבון") */
+  new_firm: string;
+}
+
+// ============================================================================
 // DEFAULT VALUES
 // ============================================================================
 
@@ -668,6 +713,8 @@ export const DEFAULT_SUBJECTS = {
   // Tax Advances (מקדמות מ"ה)
   tax_advances_monthly: 'מקדמת מס הכנסה חודשית',
   tax_advances_quarterly: 'מקדמת מס הכנסה רבעונית',
+  // Protocols (פרוטוקולים)
+  protocols_accountant_appointment: 'פרוטוקול מאסיפת בעלי המניות',
 } as const;
 
 // ============================================================================
@@ -724,6 +771,11 @@ export interface TaxAdvancesDocumentData {
   quarterlyAdvance: Partial<TaxAdvancesQuarterlyVariables>;
 }
 
+/** Document data for Protocols letters */
+export interface ProtocolsDocumentData {
+  accountantAppointment: Partial<AccountantAppointmentVariables>;
+}
+
 /** Document data for Reminder Letters */
 export interface ReminderLettersDocumentData {
   personalReportReminder: Partial<PersonalReportReminderVariables>;
@@ -773,6 +825,7 @@ export interface AutoLetterFormState {
     tax_notices: TaxNoticesDocumentData;
     audit_completion: AuditCompletionDocumentData;
     tax_advances: TaxAdvancesDocumentData;
+    protocols: ProtocolsDocumentData;
   };
 }
 
@@ -961,6 +1014,15 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           quarter: 1,
           advance_amount: 0,
           due_date: '',
+        },
+      },
+      protocols: {
+        accountantAppointment: {
+          meeting_date: '',
+          chairman_name: '',
+          attendees: [{ name: '', is_chairman: true }],
+          previous_firm: '',
+          new_firm: "פרנקו ושות' - רואי חשבון",
         },
       },
     },
@@ -1309,5 +1371,24 @@ export function validateTaxAdvancesQuarterly(data: Partial<TaxAdvancesQuarterlyV
     data.advance_amount !== undefined &&
     data.advance_amount > 0 &&
     data.due_date
+  );
+}
+
+// ============================================================================
+// PROTOCOLS VALIDATION
+// ============================================================================
+
+/** Validate Protocol - Accountant Appointment (פרוטוקול מינוי רואה חשבון) */
+export function validateAccountantAppointment(data: Partial<AccountantAppointmentVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.meeting_date &&
+    data.chairman_name?.trim() &&
+    data.attendees &&
+    data.attendees.length > 0 &&
+    data.attendees.every(a => a.name?.trim()) &&
+    data.previous_firm?.trim()
   );
 }

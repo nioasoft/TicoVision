@@ -54,6 +54,7 @@ import {
   validateMortgageOsekSubmitted,
   validateMortgageOsekUnsubmitted,
   validateAuditCompletion,
+  validateAccountantAppointment,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -307,6 +308,12 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'protocols') {
+      if (selectedLetterTypeId === 'accountant_appointment') {
+        return formState.documentData.protocols.accountantAppointment;
+      }
+    }
+
     return {};
   };
 
@@ -409,6 +416,12 @@ export function AutoLettersPage() {
     if (selectedCategory === 'audit_completion') {
       if (selectedLetterTypeId === 'general') {
         return validateAuditCompletion(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'protocols') {
+      if (selectedLetterTypeId === 'accountant_appointment') {
+        return validateAccountantAppointment(mergedData);
       }
     }
 
@@ -941,6 +954,21 @@ export function AutoLettersPage() {
             audit_completion: {
               ...prev.documentData.audit_completion,
               general: data,
+            },
+          },
+        }));
+      }
+    }
+
+    if (selectedCategory === 'protocols') {
+      if (selectedLetterTypeId === 'accountant_appointment') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            protocols: {
+              ...prev.documentData.protocols,
+              accountantAppointment: data,
             },
           },
         }));
