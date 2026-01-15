@@ -3,7 +3,7 @@
  * Replaces accordion with a scrollable sidebar design
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -51,13 +51,16 @@ export function CategoryLetterSelector({
 }: CategoryLetterSelectorProps) {
   const enabledCategories = getEnabledCategories();
 
-  // Track which category is expanded
-  const [expandedCategory, setExpandedCategory] = useState<AutoLetterCategory | null>(
-    selectedCategory
-  );
+  // Track which category is expanded - start with all closed
+  const [expandedCategory, setExpandedCategory] = useState<AutoLetterCategory | null>(null);
+  const isInitialMount = useRef(true);
 
-  // When selection changes externally, expand the relevant category
+  // When selection changes externally (after initial mount), expand the relevant category
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (selectedCategory) {
       setExpandedCategory(selectedCategory);
     }

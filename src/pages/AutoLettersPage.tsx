@@ -1011,9 +1011,9 @@ export function AutoLettersPage() {
       </div>
 
       {/* 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
         {/* Right Sidebar - Category & Letter Type Selection */}
-        <div className="lg:order-2">
+        <div className="lg:order-1">
           <CategoryLetterSelector
             selectedCategory={formState.selectedCategory}
             selectedLetterTypeId={formState.selectedLetterTypeId}
@@ -1023,7 +1023,7 @@ export function AutoLettersPage() {
         </div>
 
         {/* Main Content */}
-        <div className="lg:order-1 space-y-6">
+        <div className="lg:order-2 space-y-6">
           {/* Recipient Selection */}
           <Card>
         <CardHeader>
