@@ -167,7 +167,8 @@ import {
   Undo, Redo, Minus, Palette, Highlighter, Type, AlignLeft, AlignCenter,
   AlignRight, Stamp, Table as TableIcon, Trash2, Plus, Split, Merge,
   ArrowDown, ArrowUp, ArrowLeft, ArrowRight, PanelTop, PanelLeft, BoxSelect,
-  Link as LinkIcon, Square, Unlink, MoveHorizontal, Columns, Equal
+  Link as LinkIcon, Square, Unlink, MoveHorizontal, Columns, Equal,
+  RemoveFormatting
 } from 'lucide-react';
 import { LinkDialog } from './LinkDialog';
 import { Button } from '@/components/ui/button';
@@ -1175,6 +1176,23 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Clear Formatting Button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              editor.chain()
+                .focus()
+                .unsetAllMarks()  // Remove bold, italic, color, highlight, etc.
+                .clearNodes()     // Convert special nodes (bullets, headings) to paragraphs
+                .run();
+            }}
+            title="נקה עיצוב"
+          >
+            <RemoveFormatting className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="h-6 w-px bg-border mx-1" />
