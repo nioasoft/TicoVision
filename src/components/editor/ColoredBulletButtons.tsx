@@ -39,6 +39,58 @@ const BULLET_BUTTONS: BulletButtonConfig[] = [
   },
 ];
 
+/**
+ * Apply bullet with auto-split for multi-line text.
+ * If selected text contains newlines, splits into separate bullets per line.
+ * If no newlines, applies bullet normally.
+ */
+const applyBulletWithSplit = (
+  editor: Editor,
+  command: string,
+  extensionName: string
+) => {
+  const { state } = editor;
+  const { from, to } = state.selection;
+
+  // Get selected text (using newline as block separator)
+  const selectedText = state.doc.textBetween(from, to, '\n');
+
+  // If already active, just toggle off
+  if (editor.isActive(extensionName)) {
+    editor.chain().focus()[command as keyof typeof editor.commands]().run();
+    return;
+  }
+
+  // Check if text contains newlines
+  if (selectedText.includes('\n')) {
+    const lines = selectedText.split('\n').filter((line) => line.trim());
+
+    if (lines.length > 1) {
+      // Delete the selected content first
+      editor.chain().focus().deleteSelection().run();
+
+      // Insert each line as a separate bullet
+      lines.forEach((line, index) => {
+        if (index > 0) {
+          // Add a new paragraph before inserting the next bullet
+          editor.chain().focus().splitBlock().run();
+        }
+        // Insert the line content and convert to bullet
+        editor
+          .chain()
+          .focus()
+          .insertContent(line.trim())
+          [command as keyof typeof editor.commands]()
+          .run();
+      });
+      return;
+    }
+  }
+
+  // No newlines or single line - apply bullet normally
+  editor.chain().focus()[command as keyof typeof editor.commands]().run();
+};
+
 export const ColoredBulletButtons: React.FC<ColoredBulletButtonsProps> = ({
   editor,
 }) => {
@@ -54,7 +106,7 @@ export const ColoredBulletButtons: React.FC<ColoredBulletButtonsProps> = ({
             variant={isActive ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() =>
-              editor.chain().focus()[config.command as keyof typeof editor.commands]().run()
+              applyBulletWithSplit(editor, config.command, config.extensionName)
             }
             title={config.title}
             className="relative"
@@ -76,7 +128,9 @@ export const BlueBulletButton: React.FC<{ editor: Editor }> = ({ editor }) => {
       type="button"
       variant={isActive ? 'secondary' : 'ghost'}
       size="sm"
-      onClick={() => editor.chain().focus().toggleBlueBullet().run()}
+      onClick={() =>
+        applyBulletWithSplit(editor, 'toggleBlueBullet', 'blueBullet')
+      }
       title="בולט כחול"
       className="relative"
     >
@@ -93,7 +147,9 @@ export const DarkRedBulletButton: React.FC<{ editor: Editor }> = ({ editor }) =>
       type="button"
       variant={isActive ? 'secondary' : 'ghost'}
       size="sm"
-      onClick={() => editor.chain().focus().toggleDarkRedBullet().run()}
+      onClick={() =>
+        applyBulletWithSplit(editor, 'toggleDarkRedBullet', 'darkRedBullet')
+      }
       title="בולט אדום כהה"
       className="relative"
     >
@@ -110,7 +166,9 @@ export const BlackBulletButton: React.FC<{ editor: Editor }> = ({ editor }) => {
       type="button"
       variant={isActive ? 'secondary' : 'ghost'}
       size="sm"
-      onClick={() => editor.chain().focus().toggleBlackBullet().run()}
+      onClick={() =>
+        applyBulletWithSplit(editor, 'toggleBlackBullet', 'blackBullet')
+      }
       title="בולט שחור"
       className="relative"
     >
