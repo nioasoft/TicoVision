@@ -339,6 +339,52 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         dir: 'rtl',
         style: `min-height: ${minHeight}; white-space: pre-line;`, // Preserve line breaks
       },
+      // Clean up pasted HTML - remove font-family and font-size, keep basic formatting
+      transformPastedHTML(html: string) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+
+        // Remove unwanted inline styles while keeping bold/italic/underline
+        doc.querySelectorAll('[style]').forEach(el => {
+          const style = el.getAttribute('style') || '';
+          // Keep only basic formatting (font-weight for bold, font-style for italic, text-decoration for underline)
+          const keepStyles = style.match(/(font-weight|font-style|text-decoration):[^;]+/g);
+          if (keepStyles) {
+            el.setAttribute('style', keepStyles.join(';'));
+          } else {
+            el.removeAttribute('style');
+          }
+        });
+
+        // Also remove font-family and font-size from computed styles
+        doc.querySelectorAll('*').forEach(el => {
+          if (el instanceof HTMLElement) {
+            el.style.fontFamily = '';
+            el.style.fontSize = '';
+          }
+        });
+
+        // Remove Word/Google Docs specific elements that can cause issues
+        doc.querySelectorAll('style, meta, link, script').forEach(el => el.remove());
+
+        return doc.body.innerHTML;
+      },
+      // Handle Ctrl+Shift+V for paste as plain text
+      handleKeyDown(view, event) {
+        // Ctrl+Shift+V or Cmd+Shift+V = paste as plain text
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'v') {
+          event.preventDefault();
+          navigator.clipboard.readText().then(text => {
+            // Insert plain text without any formatting
+            const { state, dispatch } = view;
+            const tr = state.tr.insertText(text);
+            dispatch(tr);
+          }).catch(err => {
+            console.error('Failed to read clipboard:', err);
+          });
+          return true;
+        }
+        return false;
+      },
     },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
