@@ -39,6 +39,7 @@ const FilesManagerPage = lazy(() => import('@/pages/FilesManagerPage'));
 const LetterViewer = lazy(() => import('@/pages/LetterViewer'));
 const WelcomePage = lazy(() => import('@/pages/WelcomePage').then(m => ({ default: m.WelcomePage })));
 const UnderConstructionPage = lazy(() => import('@/pages/UnderConstructionPage'));
+const EditorDemo = lazy(() => import('@/pages/EditorDemo').then(m => ({ default: m.EditorDemo })));
 
 // Capital Declaration System
 const CapitalDeclarationPage = lazy(() => import('@/pages/CapitalDeclarationPage').then(m => ({ default: m.CapitalDeclarationPage })));
@@ -155,6 +156,15 @@ function App() {
                         <WelcomePage />
                       </ErrorBoundary>
                     } />
+
+                    {/* Editor Demo page - admin only for testing */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
+                      <Route path="/editor-demo" element={
+                        <ErrorBoundary>
+                          <EditorDemo />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
 
                     {/* Help page - accessible to admin and accountant only */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant']} />}>
