@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { TiptapEditor } from '@/components/editor/TiptapEditor';
 import { LexicalEditor } from '@/components/editor/LexicalEditor';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Code, Eye, Maximize2, Minimize2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 /**
  * Editor Comparison Demo Page
@@ -13,9 +22,112 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
  * - Bold/italic formatting
  * - List behavior
  */
+// Preview component for rendered HTML
+interface PreviewPaneProps {
+  content: string;
+  onFullscreen?: () => void;
+}
+
+function PreviewPane({ content, onFullscreen }: PreviewPaneProps) {
+  return (
+    <div className="mt-4 border rounded-lg overflow-hidden">
+      <Tabs defaultValue="preview" className="w-full">
+        <div className="flex items-center justify-between bg-muted px-3 py-1">
+          <TabsList className="h-8">
+            <TabsTrigger value="preview" className="text-xs gap-1.5 h-7">
+              <Eye className="h-3.5 w-3.5" />
+              תצוגה מקדימה
+            </TabsTrigger>
+            <TabsTrigger value="html" className="text-xs gap-1.5 h-7">
+              <Code className="h-3.5 w-3.5" />
+              HTML
+            </TabsTrigger>
+          </TabsList>
+          {onFullscreen && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              onClick={onFullscreen}
+              title="תצוגה מלאה"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <TabsContent value="preview" className="m-0">
+          <div
+            className="p-4 bg-white min-h-[200px] max-h-[400px] overflow-auto preview-content"
+            style={{
+              fontFamily: '"David Libre", "Heebo", "Assistant", sans-serif',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              direction: 'rtl'
+            }}
+          >
+            {content ? (
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            ) : (
+              <p style={{ color: '#999', textAlign: 'right' }}>(ריק)</p>
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="html" className="m-0">
+          <pre className="p-3 text-xs overflow-auto max-h-[400px] whitespace-pre-wrap bg-slate-50 font-mono">
+            {content || '(ריק)'}
+          </pre>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// Fullscreen preview dialog
+interface FullscreenPreviewProps {
+  open: boolean;
+  onClose: () => void;
+  content: string;
+  title: string;
+}
+
+function FullscreenPreview({ open, onClose, content, title }: FullscreenPreviewProps) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="text-right flex items-center justify-between">
+            <span>תצוגה מקדימה - {title}</span>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <Minimize2 className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-auto border rounded-lg bg-white p-6">
+          <div
+            className="preview-content"
+            style={{
+              fontFamily: '"David Libre", "Heebo", "Assistant", sans-serif',
+              fontSize: '16px',
+              lineHeight: '1.5',
+              direction: 'rtl'
+            }}
+          >
+            {content ? (
+              <div dangerouslySetInnerHTML={{ __html: content }} />
+            ) : (
+              <p style={{ color: '#999', textAlign: 'right' }}>(ריק)</p>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function EditorDemo() {
   const [tiptapContent, setTiptapContent] = useState('');
   const [lexicalContent, setLexicalContent] = useState('');
+  const [fullscreenPreview, setFullscreenPreview] = useState<{ content: string; title: string } | null>(null);
 
   return (
     <div className="container mx-auto p-4" dir="rtl">
@@ -41,12 +153,10 @@ export function EditorDemo() {
               onChange={setTiptapContent}
               minHeight="400px"
             />
-            <div className="mt-4 p-3 bg-muted rounded text-sm text-right">
-              <strong>תוכן:</strong>
-              <pre className="mt-2 text-xs overflow-auto max-h-32 whitespace-pre-wrap">
-                {tiptapContent || '(ריק)'}
-              </pre>
-            </div>
+            <PreviewPane
+              content={tiptapContent}
+              onFullscreen={() => setFullscreenPreview({ content: tiptapContent, title: 'TipTap' })}
+            />
           </CardContent>
         </Card>
 
@@ -63,12 +173,10 @@ export function EditorDemo() {
               onChange={setLexicalContent}
               minHeight="400px"
             />
-            <div className="mt-4 p-3 bg-muted rounded text-sm text-right">
-              <strong>תוכן:</strong>
-              <pre className="mt-2 text-xs overflow-auto max-h-32 whitespace-pre-wrap">
-                {lexicalContent || '(ריק)'}
-              </pre>
-            </div>
+            <PreviewPane
+              content={lexicalContent}
+              onFullscreen={() => setFullscreenPreview({ content: lexicalContent, title: 'Lexical' })}
+            />
           </CardContent>
         </Card>
       </div>
@@ -101,6 +209,14 @@ export function EditorDemo() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Fullscreen Preview Dialog */}
+      <FullscreenPreview
+        open={fullscreenPreview !== null}
+        onClose={() => setFullscreenPreview(null)}
+        content={fullscreenPreview?.content || ''}
+        title={fullscreenPreview?.title || ''}
+      />
     </div>
   );
 }
