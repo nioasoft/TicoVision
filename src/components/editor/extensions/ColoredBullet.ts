@@ -162,12 +162,17 @@ export const createColoredBullet = (color: BulletColor) => {
             return this.editor.commands.setNode('paragraph');
           }
 
-          // Split the block and create a new bullet of the same type
-          return this.editor
-            .chain()
-            .splitBlock()
-            .setNode(this.name)
-            .run();
+          // Split the block - the new block will be a paragraph by default
+          // Then convert it to the same bullet type
+          const success = this.editor.commands.splitBlock();
+          if (success) {
+            // Use setTimeout to ensure the split is complete before converting
+            // This avoids the hardBreak content issue
+            setTimeout(() => {
+              this.editor.commands.setNode(this.name);
+            }, 0);
+          }
+          return success;
         },
       };
     },
