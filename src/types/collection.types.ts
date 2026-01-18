@@ -335,6 +335,9 @@ export interface CollectionDashboardData {
  * Dashboard filters
  */
 export interface CollectionFilters {
+  // Text search (company name)
+  search?: string;
+
   // Payment status filter
   status?:
     | 'all'

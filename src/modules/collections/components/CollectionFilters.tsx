@@ -1,12 +1,13 @@
 /**
  * Collection Filters Component
- * Compact inline filters for status, payment method, time range, amount, and alerts
+ * Compact inline filters for search, status, payment method, time range, amount, and alerts
  */
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FilterX } from 'lucide-react';
+import { FilterX, Search, X } from 'lucide-react';
 import type { CollectionFilters } from '@/types/collection.types';
 
 interface CollectionFiltersProps {
@@ -20,8 +21,34 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
   onFiltersChange,
   onReset,
 }) => {
+  // Local search state for debouncing
+  const [searchValue, setSearchValue] = useState(filters.search || '');
+
+  // Sync local state when filters.search changes externally (e.g., reset)
+  useEffect(() => {
+    setSearchValue(filters.search || '');
+  }, [filters.search]);
+
+  // Debounced search handler
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchValue !== filters.search) {
+        onFiltersChange({ search: searchValue });
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchValue, filters.search, onFiltersChange]);
+
+  // Clear search handler
+  const handleClearSearch = useCallback(() => {
+    setSearchValue('');
+    onFiltersChange({ search: '' });
+  }, [onFiltersChange]);
+
   // Check if any filter is active (not 'all')
   const hasActiveFilters =
+    (filters.search && filters.search.trim() !== '') ||
     (filters.status && filters.status !== 'all') ||
     (filters.payment_method && filters.payment_method !== 'all') ||
     (filters.time_range && filters.time_range !== 'all') ||
@@ -30,6 +57,27 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
 
   return (
     <div className="flex flex-wrap items-center gap-2" dir="rtl">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="חיפוש לקוח..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="h-8 w-[180px] text-xs pr-8 pl-7 border-gray-200 bg-white rtl:text-right"
+        />
+        {searchValue && (
+          <button
+            onClick={handleClearSearch}
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            type="button"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
       {/* Status Filter */}
       <Select
         value={filters.status || 'all'}

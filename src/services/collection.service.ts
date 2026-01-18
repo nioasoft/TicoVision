@@ -1095,6 +1095,13 @@ class CollectionService extends BaseService {
       }
     }
 
+    // Search filter (searches company_name and company_name_hebrew)
+    if (filters.search && filters.search.trim()) {
+      const searchTerm = filters.search.trim();
+      // Use ilike for case-insensitive search on both Hebrew and English names
+      q = q.or(`company_name.ilike.%${searchTerm}%,company_name_hebrew.ilike.%${searchTerm}%`);
+    }
+
     return q;
   }
 

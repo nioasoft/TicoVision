@@ -39,6 +39,7 @@ interface CollectionState {
 }
 
 const DEFAULT_FILTERS: CollectionFilters = {
+  search: '',
   status: 'all',
   payment_method: 'all',
   time_range: 'all',
