@@ -2818,6 +2818,24 @@ export class TemplateService extends BaseService {
         }
       }
 
+      // Handle VAT file opened template conditionals
+      if (templateType === 'company_onboarding_vat_file_opened') {
+        const vatFileVars = variables as { certificate_link?: string };
+        if (vatFileVars.certificate_link && vatFileVars.certificate_link.trim()) {
+          const certificateSectionHtml = `
+                <tr>
+                    <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.7; color: #09090b; text-align: right; padding-bottom: 8px;">
+                        <span style="color: #cc0000; font-size: 18px; margin-left: 5px;">◆</span>
+                        <span>תעודת עוסק מורשה: </span>
+                        <a href="${vatFileVars.certificate_link}" target="_blank" style="color: #395BF7; text-decoration: underline;">לצפייה בתעודה</a>
+                    </td>
+                </tr>`;
+          body = body.replace('{{certificate_section}}', certificateSectionHtml);
+        } else {
+          body = body.replace('{{certificate_section}}', '');
+        }
+      }
+
       // Handle price quote template conditionals (both small company and restaurant)
       if (templateType === 'company_onboarding_price_quote_small' || templateType === 'company_onboarding_price_quote_restaurant') {
         const priceVars = variables as PriceQuoteVariables;
@@ -2960,6 +2978,7 @@ export class TemplateService extends BaseService {
   private getCompanyOnboardingBodyFileName(templateType: CompanyOnboardingTemplateType): string {
     const bodyMap: Record<CompanyOnboardingTemplateType, string> = {
       'company_onboarding_vat_registration': 'vat-registration.html',
+      'company_onboarding_vat_file_opened': 'vat-file-opened.html',
       'company_onboarding_price_quote_small': 'price-quote-small.html',
       'company_onboarding_price_quote_restaurant': 'price-quote-restaurant.html',
       'company_onboarding_previous_accountant': 'previous-accountant-request.html'
@@ -3066,6 +3085,18 @@ export class TemplateService extends BaseService {
         }
       } else {
         processed.subjects_section = 'הנדון: ';
+      }
+    }
+
+    // Handle VAT file opened - format the first report date from YYYY-MM-DD to DD/MM/YYYY
+    if (templateType === 'company_onboarding_vat_file_opened') {
+      const vatFirstReportDate = (variables as { vat_first_report_date?: string }).vat_first_report_date;
+      if (vatFirstReportDate && typeof vatFirstReportDate === 'string') {
+        // Convert from YYYY-MM-DD to DD/MM/YYYY
+        const dateParts = vatFirstReportDate.split('-');
+        if (dateParts.length === 3) {
+          processed.vat_first_report_date = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        }
       }
     }
 

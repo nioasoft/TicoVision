@@ -100,7 +100,7 @@ export function FormRenderer({
   // Render form based on category and letter type
   switch (category) {
     case 'company_onboarding':
-      return renderCompanyOnboardingForm(letterTypeId, value, onChange, disabled);
+      return renderCompanyOnboardingForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     case 'setting_dates':
       return renderSettingDatesForm(letterTypeId, value, onChange, disabled);
@@ -135,7 +135,9 @@ function renderCompanyOnboardingForm(
   letterTypeId: string,
   value: Record<string, unknown>,
   onChange: (data: Record<string, unknown>) => void,
-  disabled?: boolean
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string
 ) {
   switch (letterTypeId) {
     case 'vat_registration':
@@ -153,6 +155,7 @@ function renderCompanyOnboardingForm(
           value={value as Partial<VatFileOpenedVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
+          companyId={companyId}
         />
       );
 

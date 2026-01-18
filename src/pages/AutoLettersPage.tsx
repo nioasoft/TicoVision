@@ -55,6 +55,7 @@ import {
   validateMortgageOsekUnsubmitted,
   validateAuditCompletion,
   validateAccountantAppointment,
+  validateVatFileOpened,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -238,6 +239,9 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'vat_registration') {
         return formState.documentData.company_onboarding.vatRegistration;
       }
+      if (selectedLetterTypeId === 'vat_file_opened') {
+        return formState.documentData.company_onboarding.vatFileOpened;
+      }
       if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
         return formState.documentData.company_onboarding.priceQuote;
       }
@@ -348,6 +352,9 @@ export function AutoLettersPage() {
     if (selectedCategory === 'company_onboarding') {
       if (selectedLetterTypeId === 'vat_registration') {
         return validateVatRegistration(mergedData);
+      }
+      if (selectedLetterTypeId === 'vat_file_opened') {
+        return validateVatFileOpened(mergedData);
       }
       if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
         return validatePriceQuote(mergedData);
@@ -729,6 +736,18 @@ export function AutoLettersPage() {
           },
         }));
       }
+      if (selectedLetterTypeId === 'vat_file_opened') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              vatFileOpened: data,
+            },
+          },
+        }));
+      }
       if (selectedLetterTypeId === 'price_quote_small' || selectedLetterTypeId === 'price_quote_restaurant') {
         setFormState(prev => ({
           ...prev,
@@ -998,20 +1017,15 @@ export function AutoLettersPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl" dir="rtl">
-      {/* Page Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <FileStack className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-right">מכתבים אוטומטיים</h1>
-        </div>
-        <p className="text-gray-600 text-right">
-          מערכת ליצירת מכתבים אוטומטיים לפי קטגוריות
-        </p>
+    <div className="container mx-auto p-4 max-w-7xl" dir="rtl">
+      {/* Page Header - Compact */}
+      <div className="flex items-center gap-2 mb-4">
+        <FileStack className="h-6 w-6 text-blue-600" />
+        <h1 className="text-2xl font-bold text-right">מכתבים אוטומטיים</h1>
       </div>
 
       {/* 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
         {/* Right Sidebar - Category & Letter Type Selection */}
         <div className="lg:order-1">
           <CategoryLetterSelector
@@ -1023,220 +1037,178 @@ export function AutoLettersPage() {
         </div>
 
         {/* Main Content */}
-        <div className="lg:order-2 space-y-6">
-          {/* Recipient Selection */}
+        <div className="lg:order-2 space-y-4">
+          {/* Combined Recipient & Date Selection */}
           <Card>
-        <CardHeader>
-          <CardTitle className="text-right">בחירת נמען</CardTitle>
-          <CardDescription className="text-right">
-            בחר לקוח, קבוצה, איש קשר מהמערכת או הזן פרטי נמען באופן חופשי
-          </CardDescription>
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-right text-base">בחירת נמען</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Recipient Mode Toggle */}
+        <CardContent className="space-y-3 px-4 pb-4 pt-0">
+          {/* Recipient Mode Toggle - Compact */}
           <RadioGroup
             value={formState.recipientMode}
             onValueChange={(value) => handleRecipientModeChange(value as 'client' | 'group' | 'contact' | 'adhoc')}
-            className="flex flex-wrap gap-4"
+            className="flex flex-wrap gap-3"
             dir="rtl"
           >
             <div className="flex items-center space-x-2 space-x-reverse">
               <RadioGroupItem value="client" id="mode-client" />
-              <Label htmlFor="mode-client" className="flex items-center gap-2 cursor-pointer">
-                <User className="h-4 w-4" />
+              <Label htmlFor="mode-client" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                <User className="h-3.5 w-3.5" />
                 לקוח בודד
               </Label>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
               <RadioGroupItem value="group" id="mode-group" />
-              <Label htmlFor="mode-group" className="flex items-center gap-2 cursor-pointer">
-                <Users className="h-4 w-4" />
+              <Label htmlFor="mode-group" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                <Users className="h-3.5 w-3.5" />
                 קבוצה
               </Label>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
               <RadioGroupItem value="contact" id="mode-contact" />
-              <Label htmlFor="mode-contact" className="flex items-center gap-2 cursor-pointer">
-                <Contact className="h-4 w-4" />
+              <Label htmlFor="mode-contact" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                <Contact className="h-3.5 w-3.5" />
                 איש קשר מהמערכת
               </Label>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
               <RadioGroupItem value="adhoc" id="mode-adhoc" />
-              <Label htmlFor="mode-adhoc" className="flex items-center gap-2 cursor-pointer">
-                <UserPlus className="h-4 w-4" />
+              <Label htmlFor="mode-adhoc" className="flex items-center gap-1.5 cursor-pointer text-sm">
+                <UserPlus className="h-3.5 w-3.5" />
                 נמען חופשי
               </Label>
             </div>
           </RadioGroup>
 
-          {/* Client Selector */}
-          {formState.recipientMode === 'client' && (
-            <div className="space-y-2">
-              <Label className="text-right block">
-                בחר לקוח <span className="text-red-500">*</span>
-              </Label>
-              <Combobox
-                options={clientOptions}
-                value={selectedClient?.id || ''}
-                onValueChange={(value) => {
-                  const client = clients.find((c) => c.id === value);
-                  setSelectedClient(client || null);
-                }}
-                placeholder={isLoadingClients ? 'טוען לקוחות...' : 'חפש לקוח...'}
-                emptyText="לא נמצאו לקוחות"
-                disabled={isLoadingClients || generating}
-                className="text-right"
-              />
-            </div>
-          )}
-
-          {/* Group Selector */}
-          {formState.recipientMode === 'group' && (
-            <div className="space-y-2">
-              <Label className="text-right block">
-                בחר קבוצה <span className="text-red-500">*</span>
-              </Label>
-              <Combobox
-                options={groupOptions}
-                value={selectedGroup?.id || ''}
-                onValueChange={(value) => {
-                  const group = groups.find((g) => g.id === value);
-                  setSelectedGroup(group || null);
-                }}
-                placeholder={isLoadingGroups ? 'טוען קבוצות...' : 'חפש קבוצה...'}
-                emptyText="לא נמצאו קבוצות"
-                disabled={isLoadingGroups || generating}
-                className="text-right"
-              />
-            </div>
-          )}
-
-          {/* Contact Selector */}
-          {formState.recipientMode === 'contact' && (
-            <div className="space-y-2">
-              <Label className="text-right block">
-                בחר איש קשר <span className="text-red-500">*</span>
-              </Label>
-              <Combobox
-                options={contacts.map((c) => ({
-                  value: c.id,
-                  label: `${c.full_name}${c.job_title ? ` - ${c.job_title}` : ''}${c.email ? ` (${c.email})` : ''}`,
-                }))}
-                value={selectedContact?.id || ''}
-                onValueChange={(value) => {
-                  const contact = contacts.find((c) => c.id === value);
-                  setSelectedContact(contact || null);
-                }}
-                placeholder={isLoadingContacts ? 'טוען אנשי קשר...' : 'חפש איש קשר...'}
-                emptyText="לא נמצאו אנשי קשר"
-                disabled={isLoadingContacts || generating}
-                className="text-right"
-              />
-            </div>
-          )}
-
-          {/* Adhoc Contact Form */}
-          {formState.recipientMode === 'adhoc' && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="adhoc-name" className="text-right block">
-                  שם הנמען <span className="text-red-500">*</span>
+          {/* Client/Group/Contact Selector - Side by side with date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Client Selector */}
+            {formState.recipientMode === 'client' && (
+              <div className="space-y-1">
+                <Label className="text-right block text-sm">
+                  בחר לקוח <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="adhoc-name"
-                  type="text"
-                  value={formState.adhocContact?.name || ''}
-                  onChange={(e) => {
-                    const newName = e.target.value;
-                    setFormState(prev => ({
-                      ...prev,
-                      adhocContact: {
-                        name: newName,
-                        email: prev.adhocContact?.email || '',
-                      },
-                      sharedData: {
-                        ...prev.sharedData,
-                        company_name: newName,
-                      },
-                    }));
+                <Combobox
+                  options={clientOptions}
+                  value={selectedClient?.id || ''}
+                  onValueChange={(value) => {
+                    const client = clients.find((c) => c.id === value);
+                    setSelectedClient(client || null);
                   }}
-                  disabled={generating}
+                  placeholder={isLoadingClients ? 'טוען לקוחות...' : 'חפש לקוח...'}
+                  emptyText="לא נמצאו לקוחות"
+                  disabled={isLoadingClients || generating}
                   className="text-right"
-                  dir="rtl"
-                  placeholder="הזן שם נמען..."
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="adhoc-email" className="text-right block">
-                  אימייל (אופציונלי)
+            )}
+
+            {/* Group Selector */}
+            {formState.recipientMode === 'group' && (
+              <div className="space-y-1">
+                <Label className="text-right block text-sm">
+                  בחר קבוצה <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="adhoc-email"
-                  type="email"
-                  value={formState.adhocContact?.email || ''}
-                  onChange={(e) =>
-                    setFormState(prev => ({
-                      ...prev,
-                      adhocContact: {
-                        name: prev.adhocContact?.name || '',
-                        email: e.target.value,
-                      },
-                    }))
-                  }
-                  disabled={generating}
-                  className="text-left"
-                  dir="ltr"
-                  placeholder="כתובת אימייל"
+                <Combobox
+                  options={groupOptions}
+                  value={selectedGroup?.id || ''}
+                  onValueChange={(value) => {
+                    const group = groups.find((g) => g.id === value);
+                    setSelectedGroup(group || null);
+                  }}
+                  placeholder={isLoadingGroups ? 'טוען קבוצות...' : 'חפש קבוצה...'}
+                  emptyText="לא נמצאו קבוצות"
+                  disabled={isLoadingGroups || generating}
+                  className="text-right"
                 />
-                <p className="text-sm text-gray-500 text-right">
-                  האימייל ישמש לשליחת המכתב
-                </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Additional Recipient Line (optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="recipient-line" className="text-right block">
-              שורת נמען נוספת (אופציונלי)
-            </Label>
-            <Input
-              id="recipient-line"
-              type="text"
-              value={formState.sharedData.recipient_line || ''}
-              onChange={(e) =>
-                setFormState({
-                  ...formState,
-                  sharedData: {
-                    ...formState.sharedData,
-                    recipient_line: e.target.value,
-                  },
-                })
-              }
-              disabled={generating}
-              className="text-right"
-              dir="rtl"
-            />
-            <p className="text-sm text-gray-500 text-right">
-              שם איש קשר ותפקיד (יופיע מתחת לשם החברה)
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Contact Selector */}
+            {formState.recipientMode === 'contact' && (
+              <div className="space-y-1">
+                <Label className="text-right block text-sm">
+                  בחר איש קשר <span className="text-red-500">*</span>
+                </Label>
+                <Combobox
+                  options={contacts.map((c) => ({
+                    value: c.id,
+                    label: `${c.full_name}${c.job_title ? ` - ${c.job_title}` : ''}${c.email ? ` (${c.email})` : ''}`,
+                  }))}
+                  value={selectedContact?.id || ''}
+                  onValueChange={(value) => {
+                    const contact = contacts.find((c) => c.id === value);
+                    setSelectedContact(contact || null);
+                  }}
+                  placeholder={isLoadingContacts ? 'טוען אנשי קשר...' : 'חפש איש קשר...'}
+                  emptyText="לא נמצאו אנשי קשר"
+                  disabled={isLoadingContacts || generating}
+                  className="text-right"
+                />
+              </div>
+            )}
 
-      {/* Shared Data - Document Date */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-right">נתונים משותפים</CardTitle>
-          <CardDescription className="text-right">
-            נתונים שמופיעים בכל המסמכים
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="document-date" className="text-right block">
+            {/* Adhoc Contact Form */}
+            {formState.recipientMode === 'adhoc' && (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="adhoc-name" className="text-right block text-sm">
+                    שם הנמען <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="adhoc-name"
+                    type="text"
+                    value={formState.adhocContact?.name || ''}
+                    onChange={(e) => {
+                      const newName = e.target.value;
+                      setFormState(prev => ({
+                        ...prev,
+                        adhocContact: {
+                          name: newName,
+                          email: prev.adhocContact?.email || '',
+                        },
+                        sharedData: {
+                          ...prev.sharedData,
+                          company_name: newName,
+                        },
+                      }));
+                    }}
+                    disabled={generating}
+                    className="text-right"
+                    dir="rtl"
+                    placeholder="הזן שם נמען..."
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="adhoc-email" className="text-right block text-sm">
+                    אימייל (אופציונלי)
+                  </Label>
+                  <Input
+                    id="adhoc-email"
+                    type="email"
+                    value={formState.adhocContact?.email || ''}
+                    onChange={(e) =>
+                      setFormState(prev => ({
+                        ...prev,
+                        adhocContact: {
+                          name: prev.adhocContact?.name || '',
+                          email: e.target.value,
+                        },
+                      }))
+                    }
+                    disabled={generating}
+                    className="text-left"
+                    dir="ltr"
+                    placeholder="כתובת אימייל"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Document Date - Always visible */}
+            <div className="space-y-1">
+              <Label htmlFor="document-date" className="text-right block text-sm">
                 תאריך המסמך <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -1257,15 +1229,31 @@ export function AutoLettersPage() {
                 dir="ltr"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-right block">נמען נבחר</Label>
-              <Input
-                value={formState.sharedData.company_name || ''}
-                disabled
-                className="text-right bg-gray-50"
-                dir="rtl"
-              />
-            </div>
+          </div>
+
+          {/* Additional Recipient Line (optional) - Compact */}
+          <div className="space-y-1">
+            <Label htmlFor="recipient-line" className="text-right block text-sm">
+              שורת נמען נוספת (אופציונלי)
+            </Label>
+            <Input
+              id="recipient-line"
+              type="text"
+              value={formState.sharedData.recipient_line || ''}
+              onChange={(e) =>
+                setFormState({
+                  ...formState,
+                  sharedData: {
+                    ...formState.sharedData,
+                    recipient_line: e.target.value,
+                  },
+                })
+              }
+              disabled={generating}
+              className="text-right"
+              dir="rtl"
+              placeholder="שם איש קשר ותפקיד (יופיע מתחת לשם החברה)"
+            />
           </div>
         </CardContent>
       </Card>
@@ -1281,23 +1269,22 @@ export function AutoLettersPage() {
         companyId={selectedClient?.tax_id}
       />
 
-      {/* Action Buttons */}
-      <div className="flex gap-4 justify-end rtl:flex-row-reverse pb-4">
+      {/* Action Buttons - Compact */}
+      <div className="flex gap-3 justify-end rtl:flex-row-reverse">
         <Button
           onClick={handleGenerateDocument}
           disabled={!canGenerate || generating}
-          size="lg"
-          className="min-w-[200px]"
+          size="default"
         >
           {generating ? (
             <>
-              <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-              יוצר מסמך...
+              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              יוצר...
             </>
           ) : (
             <>
-              <Download className="ml-2 h-5 w-5" />
-              הפק מסמך PDF
+              <Download className="ml-2 h-4 w-4" />
+              הפק PDF
             </>
           )}
         </Button>
@@ -1305,30 +1292,13 @@ export function AutoLettersPage() {
         <Button
           variant="outline"
           disabled={!canGenerate || generating}
-          size="lg"
-          className="min-w-[200px]"
+          size="default"
           onClick={handlePreview}
         >
-          <Eye className="ml-2 h-5 w-5" />
+          <Eye className="ml-2 h-4 w-4" />
           תצוגה מקדימה
         </Button>
       </div>
-
-      {/* Instructions */}
-      {!hasRecipient && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h3 className="font-medium text-blue-900 mb-2 text-right">הוראות:</h3>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 text-right">
-            <li>בחר קטגוריה וסוג מכתב מהצד השמאלי</li>
-            <li>בחר לקוח, קבוצה, או איש קשר</li>
-            <li>הוסף שורת נמען נוספת (אופציונלי)</li>
-            <li>בחר תאריך למסמך</li>
-            <li>מלא את השדות הנדרשים בטופס</li>
-            <li>לחץ על "תצוגה מקדימה" לצפייה במסמך</li>
-            <li>לחץ על "הפק מסמך PDF" ליצירת המסמך הסופי</li>
-          </ol>
-        </div>
-      )}
         </div>
       </div>
 

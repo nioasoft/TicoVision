@@ -91,6 +91,7 @@ export interface PreviousAccountantRequestVariables {
 
 export type CompanyOnboardingTemplateType =
   | 'company_onboarding_vat_registration'           // Document #1
+  | 'company_onboarding_vat_file_opened'            // Document #1b - VAT File Opened Notification
   | 'company_onboarding_price_quote_small'          // Document #2a - Small Company
   | 'company_onboarding_price_quote_restaurant'     // Document #2b - Restaurant
   | 'company_onboarding_previous_accountant';       // Document #3 - Previous Accountant Request
