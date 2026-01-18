@@ -118,12 +118,12 @@ export function formatIsraeliDate(date: Date): string {
 /**
  * Generate check dates description (for num_checks)
  * @param numChecks - Number of checks (default: 8)
- * @param taxYear - Tax year (default: next year)
+ * @param taxYear - Tax year (default: current year)
  * @returns Hebrew description of check dates
  */
 export function generateCheckDatesDescription(
   numChecks: number = 8,
-  taxYear: number = new Date().getFullYear() + 1
+  taxYear: number = new Date().getFullYear()
 ): string {
   const startMonth = 1; // January
   const endMonth = startMonth + numChecks - 1;

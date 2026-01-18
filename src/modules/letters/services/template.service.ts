@@ -747,11 +747,11 @@ export class TemplateService extends BaseService {
         monthly_amount: monthlyAmount,
         letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
         year: variables.year || new Date().getFullYear(),
-        tax_year: variables.tax_year || (new Date().getFullYear() + 1),
+        tax_year: variables.tax_year || new Date().getFullYear(),
         num_checks: variables.num_checks || 8,
         check_dates_description: this.generateCheckDatesDescription(
           (variables.num_checks as 8 | 12) || 8,
-          variables.tax_year || (new Date().getFullYear() + 1)
+          variables.tax_year || new Date().getFullYear()
         ),
         // Add fee_id and client_id for payment tracking links
         fee_id: feeCalculationId || variables.fee_id,
@@ -973,16 +973,16 @@ export class TemplateService extends BaseService {
         ...variables,
         service_description: variables.service_description || serviceDescription,
         letter_date: variables.letter_date || this.formatIsraeliDate(new Date()),
-        year: variables.year || nextYear,
+        year: variables.year || currentYear,
         previous_year: variables.previous_year || previousYear,
-        tax_year: variables.tax_year || nextYear,
+        tax_year: variables.tax_year || currentYear,
         num_checks: variables.num_checks || 8,
         check_dates_description: this.generateCheckDatesDescription(
           (variables.num_checks as 8 | 12) || 8,
-          variables.tax_year || nextYear
+          variables.tax_year || currentYear
         ),
         // Preserve fee_id and client_id if provided in variables (for preview with payment links)
-        fee_id: variables.fee_id,
+        fee_id: feeCalculationId || variables.fee_id,
         client_id: variables.client_id
       };
 
