@@ -34,6 +34,7 @@ import { installmentService } from '@/services/installment.service';
 import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
 import { PAYMENT_METHOD_LABELS, PAYMENT_DISCOUNTS } from '@/types/payment.types';
 import { formatILS } from '@/lib/formatters';
+import { calculateBeforeVAT } from '@/lib/payment-utils';
 
 interface ActualPaymentEntryDialogProps {
   open: boolean;
@@ -64,10 +65,23 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
       : PAYMENT_DISCOUNTS[paymentMethod]
   );
 
+  // Manual discount override - allows free-form discount entry
+  const [manualDiscountOverride, setManualDiscountOverride] = useState<number | null>(null);
+
+  // Effective discount: manual override takes precedence
+  const effectiveDiscount = manualDiscountOverride !== null ? manualDiscountOverride : appliedDiscountPercent;
+
   // Calculate expected amount after discount
   const calculatedExpectedAmount = useMemo(() => {
-    return props.originalAmount * (1 - appliedDiscountPercent / 100);
-  }, [props.originalAmount, appliedDiscountPercent]);
+    return props.originalAmount * (1 - effectiveDiscount / 100);
+  }, [props.originalAmount, effectiveDiscount]);
+
+  // Calculate before-VAT amount from the WITH-VAT original amount
+  // (props.originalAmount comes from fee_calculations.total_amount which INCLUDES VAT)
+  const originalBeforeVat = useMemo(
+    () => calculateBeforeVAT(props.originalAmount),
+    [props.originalAmount]
+  );
 
   const [amountPaid, setAmountPaid] = useState<number>(calculatedExpectedAmount);
   const [paymentReference, setPaymentReference] = useState<string>('');
@@ -150,7 +164,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
         numInstallments: hasInstallments ? numInstallments : undefined,
         attachmentIds,
         notes,
-        appliedDiscountPercent, // Pass the discount that was actually applied
+        appliedDiscountPercent: effectiveDiscount, // Pass the effective discount (may be manual override)
       };
 
       if (hasInstallments && numInstallments > 0) {
@@ -208,7 +222,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between items-center">
                 <span className="rtl:text-right ltr:text-left">סכום מקורי (לפני הנחה):</span>
-                <AmountDisplay beforeVat={props.originalAmount} size="sm" />
+                <AmountDisplay beforeVat={originalBeforeVat} size="sm" />
               </div>
 
               {/* Client selected discount via email */}
@@ -262,9 +276,56 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                 </div>
               )}
 
+              {/* Manual discount override - allows free-form percentage */}
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="rtl:text-right ltr:text-left block text-sm font-medium">
+                  🔧 הנחה ידנית (דורס את ההנחה לפי שיטת תשלום):
+                </Label>
+                <div className="flex items-center gap-2 rtl:flex-row-reverse">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    placeholder="אחוז הנחה..."
+                    value={manualDiscountOverride ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                      setManualDiscountOverride(val);
+                      if (val !== null) {
+                        const newExpected = props.originalAmount * (1 - val / 100);
+                        setAmountPaid(newExpected);
+                      }
+                      markDirty();
+                    }}
+                    className="w-24 rtl:text-right"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                  {manualDiscountOverride !== null && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setManualDiscountOverride(null);
+                        const newExpected = props.originalAmount * (1 - appliedDiscountPercent / 100);
+                        setAmountPaid(newExpected);
+                        markDirty();
+                      }}
+                    >
+                      איפוס
+                    </Button>
+                  )}
+                </div>
+                {manualDiscountOverride !== null && (
+                  <p className="text-xs text-amber-600 rtl:text-right">
+                    ⚠️ הנחה ידנית פעילה ({manualDiscountOverride}%) - דורסת את ההנחה לפי שיטת תשלום
+                  </p>
+                )}
+              </div>
+
               <div className="flex justify-between items-center font-medium pt-2 border-t">
-                <span className="rtl:text-right ltr:text-left">סכום אחרי הנחה ({appliedDiscountPercent}%):</span>
-                <AmountDisplay beforeVat={calculatedExpectedAmount} size="sm" />
+                <span className="rtl:text-right ltr:text-left">סכום אחרי הנחה ({effectiveDiscount}%):</span>
+                <AmountDisplay beforeVat={calculateBeforeVAT(calculatedExpectedAmount)} size="sm" />
               </div>
             </div>
           </Card>
@@ -305,7 +366,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                   className="rtl:text-right ltr:text-left"
                 />
                 <div className="text-xs text-muted-foreground rtl:text-right ltr:text-left">
-                  <AmountWithVATBreakdown beforeVat={vatBreakdown.beforeVat} />
+                  <AmountWithVATBreakdown beforeVat={vatBreakdown.beforeVat} totalAmount={amountPaid} />
                 </div>
               </div>
             </div>

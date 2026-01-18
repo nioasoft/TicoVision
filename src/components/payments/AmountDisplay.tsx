@@ -81,13 +81,18 @@ export function AmountDisplayCompact({
 
 /**
  * VAT breakdown - shows calculation details
+ * @param beforeVat - Amount before VAT
+ * @param totalAmount - Optional: Original total amount (prevents rounding errors when recalculating)
  */
 export function AmountWithVATBreakdown({
   beforeVat,
+  totalAmount,
   className,
-}: Pick<AmountDisplayProps, 'beforeVat' | 'className'>) {
-  const vatAmount = beforeVat * 0.18;
-  const withVat = beforeVat + vatAmount;
+}: Pick<AmountDisplayProps, 'beforeVat' | 'className'> & { totalAmount?: number }) {
+  // Use provided total if available, otherwise calculate
+  // This prevents floating-point rounding errors (e.g., 110000.0012 → 110001)
+  const withVat = totalAmount ?? Math.round((beforeVat * 1.18) * 100) / 100;
+  const vatAmount = withVat - beforeVat;
 
   return (
     <div className={cn('space-y-1 rtl:text-right ltr:text-left text-sm', className)}>
