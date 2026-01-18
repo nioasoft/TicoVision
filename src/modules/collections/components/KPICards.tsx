@@ -79,16 +79,16 @@ const FilterCard: React.FC<{
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all border-2 hover:shadow-md',
+        'cursor-pointer transition-all border hover:shadow-md',
         c.border,
         isSelected && `ring-2 ring-offset-1 ${c.ring} ${c.bg}`
       )}
       onClick={onClick}
     >
-      <CardContent className="py-2 px-3 flex items-center gap-2" dir="rtl">
-        <span className={cn('text-xl font-bold', c.text)}>{formatNumber(count)}</span>
-        <span className="text-sm font-medium text-gray-700 flex-1">{title}</span>
-        <Icon className={cn('h-5 w-5 flex-shrink-0', c.icon)} />
+      <CardContent className="py-1.5 px-2 flex items-center gap-1.5" dir="rtl">
+        <span className={cn('text-base font-bold', c.text)}>{formatNumber(count)}</span>
+        <span className="text-xs font-medium text-gray-700 flex-1 truncate">{title}</span>
+        <Icon className={cn('h-4 w-4 flex-shrink-0', c.icon)} />
       </CardContent>
     </Card>
   );
@@ -111,8 +111,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
             <div className="h-4 bg-gray-200 rounded w-full"></div>
           </CardContent>
         </Card>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-          {[...Array(7)].map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1.5">
+          {[...Array(8)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="py-2 px-3">
                 <div className="h-6 bg-gray-200 rounded"></div>
@@ -168,7 +168,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
       </Card>
 
       {/* Row 2: Filter Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2" dir="rtl">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1.5" dir="rtl">
         <FilterCard
           title="הכל"
           count={kpis.clients_sent}
