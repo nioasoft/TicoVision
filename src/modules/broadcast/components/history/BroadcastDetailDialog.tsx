@@ -3,7 +3,7 @@
  * Shows detailed stats and recipient list for a broadcast
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Table,
@@ -28,10 +29,14 @@ import {
   Mail,
   Eye,
   EyeOff,
+  RotateCcw,
 } from 'lucide-react';
 import { broadcastService } from '../../services/broadcast.service';
+import { useBroadcastStore } from '../../store/broadcastStore';
+import { SendProgressDialog } from '../send/SendProgressDialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { toast } from 'sonner';
 import type { BroadcastDetails, RecipientStatus } from '../../types/broadcast.types';
 
 interface BroadcastDetailDialogProps {
@@ -52,18 +57,46 @@ export const BroadcastDetailDialog: React.FC<BroadcastDetailDialogProps> = ({
   onOpenChange,
   broadcastId,
 }) => {
+  const { retryFailedRecipients } = useBroadcastStore();
   const [details, setDetails] = useState<BroadcastDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryProgressOpen, setRetryProgressOpen] = useState(false);
+
+  const fetchDetails = useCallback(async () => {
+    if (!broadcastId) return;
+    setLoading(true);
+    const { data } = await broadcastService.getDetails(broadcastId);
+    setDetails(data);
+    setLoading(false);
+  }, [broadcastId]);
 
   useEffect(() => {
     if (open && broadcastId) {
-      setLoading(true);
-      broadcastService.getDetails(broadcastId).then(({ data }) => {
-        setDetails(data);
-        setLoading(false);
-      });
+      fetchDetails();
     }
-  }, [open, broadcastId]);
+  }, [open, broadcastId, fetchDetails]);
+
+  const handleRetryFailed = async () => {
+    if (!details || details.stats.failed === 0) return;
+
+    setIsRetrying(true);
+    try {
+      await retryFailedRecipients(broadcastId);
+      setRetryProgressOpen(true);
+    } catch {
+      toast.error('שגיאה בניסיון חוזר לשליחה');
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  const handleRetryComplete = async () => {
+    setRetryProgressOpen(false);
+    toast.success('שליחה חוזרת הושלמה');
+    // Refresh details
+    await fetchDetails();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,6 +139,35 @@ export const BroadcastDetailDialog: React.FC<BroadcastDetailDialogProps> = ({
                 iconColor={details.stats.open_rate > 0 ? 'text-primary' : 'text-muted-foreground'}
               />
             </div>
+
+            {/* Retry Failed Button */}
+            {details.status === 'completed' && details.stats.failed > 0 && (
+              <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <XCircle className="h-5 w-5 text-amber-600" />
+                <span className="text-sm text-amber-800 flex-1">
+                  {details.stats.failed} נמענים נכשלו בשליחה
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRetryFailed}
+                  disabled={isRetrying}
+                  className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                >
+                  {isRetrying ? (
+                    <>
+                      <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+                      מנסה שוב...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-4 w-4 ml-1" />
+                      נסה שוב {details.stats.failed} נכשלו
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
 
             {/* Metadata */}
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -194,6 +256,15 @@ export const BroadcastDetailDialog: React.FC<BroadcastDetailDialogProps> = ({
           </div>
         )}
       </DialogContent>
+
+      {/* Retry Progress Dialog */}
+      {retryProgressOpen && (
+        <SendProgressDialog
+          open={retryProgressOpen}
+          broadcastId={broadcastId}
+          onComplete={handleRetryComplete}
+        />
+      )}
     </Dialog>
   );
 };

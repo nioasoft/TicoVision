@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type {
   DistributionList,
   DistributionListWithMembers,
-  Broadcast,
   BroadcastHistoryRow,
   EligibleClient,
   RecipientSummary,
@@ -57,6 +56,10 @@ interface BroadcastStore {
   sendBroadcast: (broadcastId: string) => Promise<void>;
   pollProgress: (broadcastId: string) => Promise<SendProgress | null>;
   clearSendProgress: () => void;
+
+  // Actions - Testing & Retry
+  sendTestEmail: (params: { subject: string; content: string; testEmails: string[] }) => Promise<{ sent: number; failed: number } | null>;
+  retryFailedRecipients: (broadcastId: string) => Promise<void>;
 }
 
 export const useBroadcastStore = create<BroadcastStore>((set, get) => ({
@@ -183,5 +186,20 @@ export const useBroadcastStore = create<BroadcastStore>((set, get) => ({
 
   clearSendProgress: () => {
     set({ sendProgress: null });
+  },
+
+  // Actions - Testing & Retry
+  sendTestEmail: async (params) => {
+    const { data, error } = await broadcastService.sendTestEmail(params);
+    if (error || !data) {
+      return null;
+    }
+    return data;
+  },
+
+  retryFailedRecipients: async (broadcastId: string) => {
+    await broadcastService.retryFailedRecipients(broadcastId);
+    // Refresh broadcasts list after retry
+    await get().fetchBroadcasts();
   },
 }));

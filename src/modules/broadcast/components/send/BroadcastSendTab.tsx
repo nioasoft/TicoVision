@@ -17,10 +17,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Send, Users, Mail, Eye, AlertCircle } from 'lucide-react';
+import { Loader2, Send, Users, Mail, Eye, AlertCircle, TestTube2 } from 'lucide-react';
 import { useBroadcastStore } from '../../store/broadcastStore';
 import { RecipientPreview } from './RecipientPreview';
 import { SendProgressDialog } from './SendProgressDialog';
+import { TestSendDialog } from './TestSendDialog';
+import { EmailPreviewDialog } from './EmailPreviewDialog';
 import { broadcastService } from '../../services/broadcast.service';
 import { toast } from 'sonner';
 import type { BroadcastListType } from '../../types/broadcast.types';
@@ -47,6 +49,10 @@ export const BroadcastSendTab: React.FC = () => {
   // Progress dialog
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [currentBroadcastId, setCurrentBroadcastId] = useState<string | null>(null);
+
+  // Test and preview dialogs
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
 
   // Resolve recipients when list type or selection changes
   useEffect(() => {
@@ -263,9 +269,31 @@ export const BroadcastSendTab: React.FC = () => {
                   placeholder="כתוב כאן את תוכן ההודעה..."
                   className="rtl:text-right min-h-[200px]"
                 />
-                <p className="text-xs text-muted-foreground rtl:text-right">
-                  בעתיד: תמיכה בעורך עשיר (TipTap) ותבניות מוכנות
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground rtl:text-right">
+                    בעתיד: תמיכה בעורך עשיר (TipTap) ותבניות מוכנות
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPreviewDialogOpen(true)}
+                      disabled={!content.trim()}
+                    >
+                      <Eye className="h-4 w-4 ml-1" />
+                      תצוגה מקדימה
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTestDialogOpen(true)}
+                      disabled={!subject.trim() || !content.trim()}
+                    >
+                      <TestTube2 className="h-4 w-4 ml-1" />
+                      שלח בדיקה
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -326,6 +354,22 @@ export const BroadcastSendTab: React.FC = () => {
           onComplete={handleProgressComplete}
         />
       )}
+
+      {/* Test Send Dialog */}
+      <TestSendDialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
+        subject={subject}
+        content={content}
+      />
+
+      {/* Email Preview Dialog */}
+      <EmailPreviewDialog
+        open={previewDialogOpen}
+        onOpenChange={setPreviewDialogOpen}
+        subject={subject}
+        content={content}
+      />
     </div>
   );
 };

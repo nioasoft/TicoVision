@@ -3,7 +3,6 @@ import type { ServiceResponse, PaginationParams } from '@/services/base.service'
 import { supabase } from '@/lib/supabase';
 import type {
   Broadcast,
-  BroadcastRecipient,
   BroadcastHistoryRow,
   BroadcastDetails,
   CreateBroadcastDto,
@@ -423,6 +422,101 @@ class BroadcastService extends BaseService {
       if (error) throw this.handleError(error);
 
       await this.logAction('delete_broadcast', broadcastId);
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      return { data: null, error: error as Error };
+    }
+  }
+
+  /**
+   * Send a test email to specific addresses without creating a broadcast
+   */
+  async sendTestEmail(params: {
+    subject: string;
+    content: string;
+    testEmails: string[];
+  }): Promise<ServiceResponse<{ sent: number; failed: number }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Call the edge function in test mode
+      const { data, error: functionError } = await supabase.functions.invoke('send-broadcast', {
+        body: {
+          tenantId,
+          testMode: true,
+          testEmails: params.testEmails,
+          subject: params.subject,
+          content: params.content,
+        },
+      });
+
+      if (functionError) throw functionError;
+
+      await this.logAction('send_test_email', null, { emails: params.testEmails });
+
+      return {
+        data: {
+          sent: data?.sent || 0,
+          failed: data?.failed || 0,
+        },
+        error: null,
+      };
+    } catch (error) {
+      return { data: null, error: error as Error };
+    }
+  }
+
+  /**
+   * Retry sending to failed recipients of a completed broadcast
+   */
+  async retryFailedRecipients(broadcastId: string): Promise<ServiceResponse<void>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Reset failed recipients to pending
+      const { error: resetError } = await supabase
+        .from('broadcast_recipients')
+        .update({
+          status: 'pending',
+          error_message: null,
+          sent_at: null,
+        })
+        .eq('broadcast_id', broadcastId)
+        .eq('status', 'failed');
+
+      if (resetError) throw this.handleError(resetError);
+
+      // Update broadcast status to sending
+      const { error: updateError } = await supabase
+        .from('broadcasts')
+        .update({
+          status: 'sending',
+          started_at: new Date().toISOString(),
+        })
+        .eq('id', broadcastId);
+
+      if (updateError) throw this.handleError(updateError);
+
+      // Call the edge function to process retries
+      const { error: functionError } = await supabase.functions.invoke('send-broadcast', {
+        body: {
+          broadcastId,
+          tenantId,
+        },
+      });
+
+      if (functionError) {
+        // Revert status on error
+        await supabase
+          .from('broadcasts')
+          .update({ status: 'completed' })
+          .eq('id', broadcastId);
+
+        throw functionError;
+      }
+
+      await this.logAction('retry_failed_broadcast', broadcastId);
 
       return { data: undefined, error: null };
     } catch (error) {

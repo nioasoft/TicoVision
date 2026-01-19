@@ -16,8 +16,13 @@ const BATCH_SIZE = 50;
 const DELAY_BETWEEN_BATCHES_MS = 1000;
 
 interface SendBroadcastRequest {
-  broadcastId: string;
+  broadcastId?: string;
   tenantId: string;
+  // Test mode fields
+  testMode?: boolean;
+  testEmails?: string[];
+  subject?: string;
+  content?: string;
 }
 
 interface BroadcastRecipient {
@@ -141,10 +146,10 @@ serve(async (req) => {
   }
 
   try {
-    const { broadcastId, tenantId }: SendBroadcastRequest = await req.json();
+    const { broadcastId, tenantId, testMode, testEmails, subject, content }: SendBroadcastRequest = await req.json();
 
-    if (!broadcastId || !tenantId) {
-      return new Response(JSON.stringify({ error: 'Missing broadcastId or tenantId' }), {
+    if (!tenantId) {
+      return new Response(JSON.stringify({ error: 'Missing tenantId' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -154,6 +159,83 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
       auth: { persistSession: false },
     });
+
+    // ============================================================================
+    // TEST MODE: Send test emails without creating broadcast records
+    // ============================================================================
+    if (testMode) {
+      if (!testEmails || testEmails.length === 0 || !subject || !content) {
+        return new Response(JSON.stringify({ error: 'Test mode requires testEmails, subject, and content' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Get tenant email settings
+      const { data: tenantSettings } = await supabase
+        .from('tenant_settings')
+        .select('sender_email, sender_name, reply_to_email')
+        .eq('tenant_id', tenantId)
+        .single();
+
+      const fromEmail = tenantSettings?.sender_email || 'sigal@franco.co.il';
+      const fromName = tenantSettings?.sender_name || 'פרנקו ושות';
+      const replyTo = tenantSettings?.reply_to_email || fromEmail;
+
+      // Build test email content
+      const htmlContent = buildBroadcastEmailHtml(content);
+      const testSubject = `[TEST] ${subject}`;
+
+      let sent = 0;
+      let failed = 0;
+
+      // Send to each test email
+      for (const email of testEmails) {
+        const trimmedEmail = email.trim();
+        if (!trimmedEmail) continue;
+
+        const result = await sendEmail(
+          trimmedEmail,
+          null,
+          testSubject,
+          htmlContent,
+          fromEmail,
+          fromName,
+          replyTo
+        );
+
+        if (result.success) {
+          sent++;
+        } else {
+          failed++;
+          console.error(`Test email failed for ${trimmedEmail}:`, result.error);
+        }
+      }
+
+      console.log(`Test emails sent: ${sent}, failed: ${failed}`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          testMode: true,
+          sent,
+          failed,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // ============================================================================
+    // REGULAR MODE: Send broadcast to recipients
+    // ============================================================================
+    if (!broadcastId) {
+      return new Response(JSON.stringify({ error: 'Missing broadcastId for non-test mode' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get broadcast details
     const { data: broadcast, error: broadcastError } = await supabase
