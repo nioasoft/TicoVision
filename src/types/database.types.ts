@@ -179,6 +179,163 @@ export type Database = {
           },
         ]
       }
+      broadcast_recipients: {
+        Row: {
+          broadcast_id: string
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          email: string
+          error_message: string | null
+          generated_letter_id: string | null
+          id: string
+          last_opened_at: string | null
+          open_count: number | null
+          opened_at: string | null
+          recipient_name: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          broadcast_id: string
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          email: string
+          error_message?: string | null
+          generated_letter_id?: string | null
+          id?: string
+          last_opened_at?: string | null
+          open_count?: number | null
+          opened_at?: string | null
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          broadcast_id?: string
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          generated_letter_id?: string | null
+          id?: string
+          last_opened_at?: string | null
+          open_count?: number | null
+          opened_at?: string | null
+          recipient_name?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_recipients_broadcast_id_fkey"
+            columns: ["broadcast_id"]
+            isOneToOne: false
+            referencedRelation: "broadcasts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_recipients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_recipients_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_recipients_generated_letter_id_fkey"
+            columns: ["generated_letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcasts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          custom_content_html: string | null
+          id: string
+          includes_payment_section: boolean | null
+          list_id: string | null
+          list_type: string
+          name: string
+          recipient_count: number
+          scheduled_at: string | null
+          started_at: string | null
+          status: string
+          subject: string
+          template_type: string | null
+          tenant_id: string
+          total_emails_failed: number | null
+          total_emails_opened: number | null
+          total_emails_sent: number | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_content_html?: string | null
+          id?: string
+          includes_payment_section?: boolean | null
+          list_id?: string | null
+          list_type: string
+          name: string
+          recipient_count?: number
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          subject: string
+          template_type?: string | null
+          tenant_id: string
+          total_emails_failed?: number | null
+          total_emails_opened?: number | null
+          total_emails_sent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_content_html?: string | null
+          id?: string
+          includes_payment_section?: boolean | null
+          list_id?: string | null
+          list_type?: string
+          name?: string
+          recipient_count?: number
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: string
+          subject?: string
+          template_type?: string | null
+          tenant_id?: string
+          total_emails_failed?: number | null
+          total_emails_opened?: number | null
+          total_emails_sent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcasts_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       capital_declaration_communications: {
         Row: {
           communicated_at: string | null
@@ -1299,6 +1456,7 @@ export type Database = {
           phone: string | null
           postal_code_new: string | null
           preferred_language: string | null
+          receives_as_group: boolean | null
           receives_letters: boolean | null
           shareholders: string[] | null
           signature_path: string | null
@@ -1350,6 +1508,7 @@ export type Database = {
           phone?: string | null
           postal_code_new?: string | null
           preferred_language?: string | null
+          receives_as_group?: boolean | null
           receives_letters?: boolean | null
           shareholders?: string[] | null
           signature_path?: string | null
@@ -1401,6 +1560,7 @@ export type Database = {
           phone?: string | null
           postal_code_new?: string | null
           preferred_language?: string | null
+          receives_as_group?: boolean | null
           receives_letters?: boolean | null
           shareholders?: string[] | null
           signature_path?: string | null
@@ -1491,6 +1651,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      distribution_list_members: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          client_id: string
+          id: string
+          list_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          client_id: string
+          id?: string
+          list_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          client_id?: string
+          id?: string
+          list_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_list_members_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribution_list_members_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      distribution_lists: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       document_permissions: {
         Row: {
@@ -4727,6 +4956,17 @@ export type Database = {
           supplement: number
         }[]
       }
+      get_broadcast_eligible_clients: {
+        Args: never
+        Returns: {
+          client_id: string
+          company_name: string
+          company_name_hebrew: string
+          contact_count: number
+          email_count: number
+          tax_id: string
+        }[]
+      }
       get_budget_by_category: {
         Args: { p_tax_year: number; p_tenant_id: string }
         Returns: {
@@ -4777,6 +5017,15 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           name: string
+        }[]
+      }
+      get_client_broadcast_emails: {
+        Args: { p_client_id: string }
+        Returns: {
+          contact_id: string
+          email: string
+          email_preference: string
+          full_name: string
         }[]
       }
       get_client_contacts_detailed: {
@@ -4989,6 +5238,18 @@ export type Database = {
           other_groups_count: number
           phone: string
           phone_secondary: string
+        }[]
+      }
+      get_list_members_with_details: {
+        Args: { p_list_id: string }
+        Returns: {
+          added_at: string
+          client_id: string
+          company_name: string
+          company_name_hebrew: string
+          contact_count: number
+          email_count: number
+          tax_id: string
         }[]
       }
       get_next_ticket_number: { Args: { p_tenant_id: string }; Returns: number }

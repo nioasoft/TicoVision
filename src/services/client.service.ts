@@ -127,6 +127,7 @@ export interface Client {
   internal_external: InternalExternal;
   pays_fees: boolean;
   receives_letters: boolean;
+  receives_as_group: boolean | null; // Override for group combined_letters setting. NULL=use group default
   is_retainer: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
   group?: ClientGroup; // For joined queries
@@ -182,6 +183,7 @@ export interface CreateClientDto {
   internal_external?: InternalExternal;
   pays_fees?: boolean;
   receives_letters?: boolean;
+  receives_as_group?: boolean | null; // Override for group combined_letters setting. NULL=use group default
   is_retainer?: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
   payment_role?: PaymentRole; // NEW: תפקיד תשלום בקבוצה

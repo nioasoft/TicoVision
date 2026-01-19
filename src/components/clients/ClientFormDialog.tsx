@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,6 +113,8 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   company_status: 'active',
   company_subtype: undefined,
   pays_fees: true, // NEW DEFAULT: true instead of false
+  receives_letters: true, // ברירת מחדל: מקבל מכתבים כלליים
+  receives_as_group: null, // null = השתמש בברירת מחדל של הקבוצה
   is_retainer: false, // NEW: לקוח ריטיינר - default false
   group_id: null,
   payment_role: 'independent', // NEW: תפקיד תשלום - default independent
@@ -177,6 +180,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           company_status: client.company_status || 'active',
           company_subtype: client.company_subtype || undefined,
           pays_fees: client.pays_fees || false,
+          receives_letters: client.receives_letters ?? true, // טעינת סטטוס קבלת מכתבים
+          receives_as_group: client.receives_as_group ?? null, // טעינת אופן קבלה בקבוצה
           is_retainer: client.is_retainer || false, // NEW: טעינת סטטוס ריטיינר
           group_id: client.group_id || undefined, // NEW: טעינת קבוצה
           payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
@@ -883,8 +888,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <div></div>
               )}
 
-              {/* Row 6: Folder Responsibility, Status, Checkboxes (4 cols in one row) */}
-              <div className="col-span-3 grid grid-cols-4 gap-4">
+              {/* Row 6: Folder Responsibility, Status, Checkboxes (5 cols in one row) */}
+              <div className="col-span-3 grid grid-cols-5 gap-4">
                 <div>
                   <Label htmlFor="collection_responsibility" className="text-right block mb-2">
                     אחריות/אמא לתיק
@@ -940,7 +945,25 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     </Label>
                   </div>
                   <p className="text-xs text-gray-500 rtl:text-right mt-1">
-                    אם לא מסומן, הלקוח לא יקבל מכתבי שכר טרחה אוטומטית
+                    אם לא מסומן, לא יקבל מכתבי שכ"ט
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="receives_letters"
+                      checked={formData.receives_letters ?? true}
+                      onCheckedChange={(checked) =>
+                        handleFormChange('receives_letters', checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="receives_letters" className="cursor-pointer">
+                      מכתבים כלליים
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 rtl:text-right mt-1">
+                    האם להכליל ברשימות תפוצה?
                   </p>
                 </div>
 
@@ -958,10 +981,57 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     </Label>
                   </div>
                   <p className="text-xs text-gray-500 rtl:text-right mt-1">
-                    לקוחות ריטיינר מקבלים מכתבים מסוג E1/E2
+                    מכתבים מסוג E1/E2
                   </p>
                 </div>
               </div>
+
+              {/* Group Letter Options - only show if client is in a group and receives_letters is true */}
+              {formData.group_id && formData.receives_letters && (
+                <div className="col-span-3 pr-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <Label className="block mb-3 rtl:text-right font-medium text-blue-800">
+                    אופן קבלת מכתבים כלליים בקבוצה:
+                  </Label>
+                  <RadioGroup
+                    value={
+                      formData.receives_as_group === false
+                        ? 'individual'
+                        : 'group_default'
+                    }
+                    onValueChange={(value) => {
+                      if (value === 'group_default') {
+                        handleFormChange('receives_as_group', null);
+                      } else {
+                        handleFormChange('receives_as_group', false);
+                      }
+                    }}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-start gap-3 rtl:flex-row-reverse">
+                      <RadioGroupItem value="group_default" id="group_default" className="mt-1" />
+                      <div className="flex-1 rtl:text-right">
+                        <Label htmlFor="group_default" className="cursor-pointer text-sm font-medium block">
+                          עקוב אחרי הגדרות הקבוצה (ברירת מחדל)
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          אם הקבוצה מוגדרת לקבל מכתב משותף - יקבל כחלק מהקבוצה. אם לא - יקבל מכתב אישי.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 rtl:flex-row-reverse">
+                      <RadioGroupItem value="individual" id="individual" className="mt-1" />
+                      <div className="flex-1 rtl:text-right">
+                        <Label htmlFor="individual" className="cursor-pointer text-sm font-medium block">
+                          תמיד מכתב אישי
+                        </Label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          לקוח זה תמיד יקבל מכתב אישי משלו, גם אם הקבוצה מקבלת מכתב משותף.
+                        </p>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
 
               {/* Row 8: Accountant Contact with Autocomplete (Add mode only) */}
               {mode === 'add' && (
