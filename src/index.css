@@ -1,39 +1,142 @@
-@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;500;600;700;800&family=Heebo:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --color-border: hsl(214.3 31.8% 91.4%);
-  --color-input: hsl(214.3 31.8% 91.4%);
-  --color-ring: hsl(222.2 84% 4.9%);
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(222.2 84% 4.9%);
-  --color-primary: hsl(222.2 47.4% 11.2%);
-  --color-primary-foreground: hsl(210 40% 98%);
-  --color-secondary: hsl(210 40% 96.1%);
-  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
-  --color-muted: hsl(210 40% 96.1%);
-  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
-  --color-accent: hsl(210 40% 96.1%);
-  --color-accent-foreground: hsl(222.2 47.4% 11.2%);
-  --color-destructive: hsl(0 84.2% 60.2%);
-  --color-destructive-foreground: hsl(210 40% 98%);
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(222.2 84% 4.9%);
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(222.2 84% 4.9%);
-
-  /* Client Form Design Enhancements */
+:root {
+  --background: oklch(0.9967 0.0054 95.0974);
+  --foreground: oklch(0 0 0);
+  --card: oklch(0.9455 0.0722 103.4177);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0.7976 0.1678 75.6124);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.8268 0.1555 97.5674);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.9632 0.0521 102.6097);
+  --muted-foreground: oklch(0.3211 0 0);
+  --accent: oklch(0.8680 0.1720 96.2559);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0 0 0);
+  --destructive-foreground: oklch(0.9401 0 0);
+  --border: oklch(0 0 0);
+  --input: oklch(0 0 0);
+  --ring: oklch(0.4510 0.1825 24.1200);
+  --chart-1: oklch(0.6785 0.1617 12.0060);
+  --chart-2: oklch(0.8268 0.1555 97.5674);
+  --chart-3: oklch(0.6574 0.1420 245.5369);
+  --chart-4: oklch(0.7182 0.2269 141.0983);
+  --chart-5: oklch(0.5411 0.2439 319.7706);
+  --sidebar: oklch(0.9551 0 0);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.6785 0.1617 12.0060);
+  --sidebar-primary-foreground: oklch(1.0000 0 0);
+  --sidebar-accent: oklch(0.6574 0.1420 245.5369);
+  --sidebar-accent-foreground: oklch(1.0000 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0.6785 0.1617 12.0060);
+  --font-sans: Assistant, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Space Mono, monospace;
+  --radius: 0.3rem;
+  --shadow-2xs: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 0.50);
+  --shadow-xs: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 0.50);
+  --shadow-sm: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 1.00), 4px 1px 2px -3.5px hsl(0 0% 10.1961% / 1.00);
+  --shadow: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 1.00), 4px 1px 2px -3.5px hsl(0 0% 10.1961% / 1.00);
+  --shadow-md: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 1.00), 4px 2px 4px -3.5px hsl(0 0% 10.1961% / 1.00);
+  --shadow-lg: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 1.00), 4px 4px 6px -3.5px hsl(0 0% 10.1961% / 1.00);
+  --shadow-xl: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 1.00), 4px 8px 10px -3.5px hsl(0 0% 10.1961% / 1.00);
+  --shadow-2xl: 4px 4px 0px -2.5px hsl(0 0% 10.1961% / 2.50);
   --color-input-bg: hsl(45 100% 96%);
   --color-input-border: hsl(40 80% 85%);
   --color-focus-ring: hsl(45 95% 50%);
-
-  --radius: 0.5rem;
-
-  --font-sans: 'Assistant', system-ui, sans-serif;
   --font-hebrew: 'Heebo', 'Assistant', system-ui, sans-serif;
 }
 
-/* Enable text selection globally */
+.dark {
+  --background: oklch(0 0 0);
+  --foreground: oklch(1.0000 0 0);
+  --card: oklch(0.3211 0 0);
+  --card-foreground: oklch(1.0000 0 0);
+  --popover: oklch(0.3211 0 0);
+  --popover-foreground: oklch(1.0000 0 0);
+  --primary: oklch(0.7727 0.1068 8.7821);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.8659 0.1314 98.5703);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.2178 0 0);
+  --muted-foreground: oklch(0.8452 0 0);
+  --accent: oklch(0.7637 0.1042 231.8158);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(1.0000 0 0);
+  --destructive-foreground: oklch(0 0 0);
+  --border: oklch(1.0000 0 0);
+  --input: oklch(1.0000 0 0);
+  --ring: oklch(0.7727 0.1068 8.7821);
+  --chart-1: oklch(0.7727 0.1068 8.7821);
+  --chart-2: oklch(0.8659 0.1314 98.5703);
+  --chart-3: oklch(0.7637 0.1042 231.8158);
+  --chart-4: oklch(0.7302 0.1628 140.4156);
+  --chart-5: oklch(0.6066 0.1727 320.7975);
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(1.0000 0 0);
+  --sidebar-primary: oklch(0.7727 0.1068 8.7821);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.7637 0.1042 231.8158);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(1.0000 0 0);
+  --sidebar-ring: oklch(0.7727 0.1068 8.7821);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+}
+
 .select-text,
 .select-text * {
   user-select: text !important;
@@ -43,12 +146,6 @@
   cursor: text;
 }
 
-/* Ensure HTML content in dangerouslySetInnerHTML is selectable */
-[style*="user-select"] {
-  user-select: text !important;
-}
-
-/* Base styles */
 * {
   border-color: var(--color-border);
 }
@@ -59,12 +156,10 @@ body {
   font-family: var(--font-sans);
 }
 
-/* RTL Support for Hebrew */
 [dir="rtl"] {
   font-family: var(--font-hebrew);
 }
 
-/* RTL Input placeholder alignment - force right alignment for Hebrew */
 input::placeholder,
 textarea::placeholder,
 input::-webkit-input-placeholder,
@@ -78,14 +173,12 @@ textarea:-ms-input-placeholder {
   unicode-bidi: plaintext !important;
 }
 
-/* All inputs should be RTL by default in this Hebrew app */
 input,
 textarea {
   text-align: right;
   direction: rtl;
 }
 
-/* Force placeholder text to flow from right */
 input[dir="rtl"],
 textarea[dir="rtl"] {
   text-align: right !important;
@@ -97,7 +190,6 @@ textarea[dir="rtl"]::placeholder {
   direction: rtl !important;
 }
 
-/* Force right alignment for date inputs with dir="ltr" */
 input[type="date"][dir="ltr"] {
   text-align: right !important;
 }
@@ -122,20 +214,17 @@ input[type="date"][dir="ltr"]::-webkit-datetime-edit-year-field {
   text-align: right !important;
 }
 
-/* Hebrew-specific styles */
 .hebrew {
   font-family: var(--font-hebrew);
   direction: rtl;
   text-align: right;
 }
 
-/* Currency formatting for ILS */
 .currency-ils::before {
   content: '₪';
   margin-inline-end: 0.25rem;
 }
 
-/* Remove spinner arrows from number inputs */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -146,14 +235,13 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Tiptap Editor - Heading Styles (in editor) */
 .ProseMirror h1 {
   font-size: 2em;
   font-weight: 700;
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   line-height: 1.2;
-  color: hsl(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
 .ProseMirror h2 {
@@ -162,7 +250,7 @@ input[type="number"] {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   line-height: 1.2;
-  color: hsl(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
 .ProseMirror h3 {
@@ -171,18 +259,16 @@ input[type="number"] {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   line-height: 1.2;
-  color: hsl(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
-/* Letter Preview & Email - Heading Styles (global h1/h2/h3) */
-/* These apply to dangerouslySetInnerHTML content in preview dialogs */
 .select-text h1 {
   font-size: 2em;
   font-weight: 700;
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   line-height: 1.2;
-  color: hsl(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
 .select-text h2 {
@@ -191,7 +277,7 @@ input[type="number"] {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   line-height: 1.2;
-  color: hsl(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
 .select-text h3 {
@@ -200,10 +286,9 @@ input[type="number"] {
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   line-height: 1.2;
-  color: hsl(var(--color-foreground));
+  color: var(--color-foreground);
 }
 
-/* Preview & Email - List Styles */
 .select-text ul {
   list-style-type: disc;
   padding-right: 1.5em;
@@ -226,14 +311,12 @@ input[type="number"] {
   margin: 0;
 }
 
-/* Tiptap Editor - Horizontal Rule */
 .ProseMirror hr {
   border: none;
-  border-top: 1px solid hsl(var(--color-border));
+  border-top: 1px solid var(--color-border);
   margin: 1.5rem 0;
 }
 
-/* Tiptap Editor - Link Buttons */
 .ProseMirror a[data-button="true"] {
   display: inline-block !important;
   padding: 10px 24px !important;
@@ -243,7 +326,6 @@ input[type="number"] {
   cursor: pointer !important;
 }
 
-/* Preview and Email - Link Buttons */
 .select-text a[data-button="true"],
 [dir="rtl"] a[data-button="true"] {
   display: inline-block !important;
@@ -253,7 +335,6 @@ input[type="number"] {
   font-weight: 500 !important;
 }
 
-/* Tiptap Editor - Table Styles */
 .ProseMirror table {
   border-collapse: collapse;
   table-layout: fixed;
@@ -274,8 +355,8 @@ input[type="number"] {
 
 .ProseMirror th {
   font-weight: bold;
-  text-align: right; /* Default RTL */
-  background-color: hsl(var(--color-muted));
+  text-align: right;
+  background-color: var(--color-muted);
 }
 
 .ProseMirror .selectedCell:after {
@@ -287,30 +368,25 @@ input[type="number"] {
   pointer-events: none;
 }
 
-/* Table resize cursor when hovering over column borders */
 .ProseMirror.resize-cursor {
   cursor: col-resize !important;
 }
 
 .ProseMirror table {
   cursor: default;
-  /* Fix RTL table resize - table structure is LTR for correct resize behavior */
   direction: ltr !important;
 }
 
-/* Keep cell content RTL */
 .ProseMirror td,
 .ProseMirror th {
   direction: rtl;
   text-align: right;
 }
 
-/* Exception: Colored bullet tables should be RTL (bullet on right side) */
 .ProseMirror table:has(img[alt="•"]) {
   direction: rtl !important;
 }
 
-/* Make the resize handle more visible */
 .ProseMirror .column-resize-handle {
   position: absolute;
   right: -2px;
@@ -322,7 +398,6 @@ input[type="number"] {
   z-index: 20;
 }
 
-/* Add hover effect on table cell borders for resize hint */
 .ProseMirror td,
 .ProseMirror th {
   position: relative;
@@ -345,19 +420,12 @@ input[type="number"] {
   background-color: rgba(59, 130, 246, 0.2);
 }
 
-/* ============================================
-   Colored Bullet Items (BlueBullet, DarkRedBullet, BlackBullet)
-   Show the actual bullet icon, hide table borders
-   ============================================ */
-
-/* Base styles for all colored bullet items */
 .ProseMirror .blue-bullet-item,
 .ProseMirror .darkred-bullet-item,
 .ProseMirror .black-bullet-item {
   margin-bottom: 8px;
 }
 
-/* Remove table borders for colored bullet layout tables */
 .ProseMirror .blue-bullet-item table,
 .ProseMirror .darkred-bullet-item table,
 .ProseMirror .black-bullet-item table {
@@ -375,7 +443,6 @@ input[type="number"] {
   vertical-align: top !important;
 }
 
-/* Show the bullet icon */
 .ProseMirror .blue-bullet-item img,
 .ProseMirror .darkred-bullet-item img,
 .ProseMirror .black-bullet-item img {
@@ -385,12 +452,6 @@ input[type="number"] {
   margin-top: 4px;
 }
 
-/* ============================================
-   Preview & Email - Colored Bullet Tables (no borders)
-   These are tables that contain bullet icons from template.service
-   ============================================ */
-
-/* Tables containing bullet icons should not have visible borders */
 .select-text table:has(img[alt="•"]),
 .letter-body-content table:has(img[alt="•"]) {
   border: none !important;
@@ -404,7 +465,6 @@ input[type="number"] {
   vertical-align: top !important;
 }
 
-/* Also target tables where first cell contains bullet image */
 .select-text table td:first-child:has(img[alt="•"]),
 .letter-body-content table td:first-child:has(img[alt="•"]) {
   width: 20px !important;
@@ -412,9 +472,6 @@ input[type="number"] {
   padding-right: 8px !important;
 }
 
-/* ============================================ */
-
-/* Tiptap Editor - List Styles */
 .ProseMirror ul {
   list-style-type: disc;
   padding-right: 1.5em;
@@ -441,11 +498,6 @@ input[type="number"] {
   margin: 0;
 }
 
-/* ============================================
-   Paged.js Preview Styles
-   ============================================ */
-
-/* Pages container - vertical stack */
 .paged-preview-container .pagedjs_pages {
   display: flex;
   flex-direction: column;
@@ -453,42 +505,31 @@ input[type="number"] {
   align-items: center;
 }
 
-/* Individual page - A4 appearance */
 .paged-preview-container .pagedjs_page {
   background: white;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   margin: 0 auto;
 }
 
-/* Page content box - RTL */
 .paged-preview-container .pagedjs_pagebox {
   direction: rtl;
   text-align: right;
 }
 
-/* Ensure content stays RTL */
 .paged-preview-container .pagedjs_page_content {
   direction: rtl;
   text-align: right;
 }
 
-/* Page number indicators (if shown by Paged.js) */
 .paged-preview-container .pagedjs_margin-top-center,
 .paged-preview-container .pagedjs_margin-bottom-center {
   font-size: 10px;
   color: #666;
 }
 
-/* Scale down for preview (A4 is 210mm wide, scale to fit container) */
 .paged-preview-container .pagedjs_page {
   transform-origin: top center;
-  /* Scale is applied dynamically if needed */
 }
-
-/* ============================================
-   Enhanced Toast Styling
-   Bigger, bolder, more prominent toasts
-   ============================================ */
 
 [data-sonner-toaster] {
   --width: 420px;
@@ -513,27 +554,22 @@ input[type="number"] {
   opacity: 0.9;
 }
 
-/* Error toast - more prominent with colored border */
 [data-sonner-toast][data-type="error"] {
   border-right: 4px solid hsl(0 84.2% 60.2%) !important;
 }
 
-/* Success toast */
 [data-sonner-toast][data-type="success"] {
   border-right: 4px solid hsl(142 76% 36%) !important;
 }
 
-/* Warning toast */
 [data-sonner-toast][data-type="warning"] {
   border-right: 4px solid hsl(38 92% 50%) !important;
 }
 
-/* Info toast */
 [data-sonner-toast][data-type="info"] {
   border-right: 4px solid hsl(217 91% 60%) !important;
 }
 
-/* Larger icons */
 [data-sonner-toast] [data-icon] svg {
   width: 22px !important;
   height: 22px !important;
