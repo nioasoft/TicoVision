@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +21,49 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Save, Lock, ArrowRight, CalendarDays, FileText } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import {
+  RESPONSIBILITY_TYPES,
+  CONTENT_SECTION_TYPES,
+  getResponsibilityTypeInfo,
+  getContentSectionTypeInfo,
+} from '../types/protocol.types';
+import type { AttendeeSourceType, ContentSectionType } from '../types/protocol.types';
+import {
+  Save,
+  Lock,
+  ArrowRight,
+  CalendarDays,
+  FileText,
+  Eye,
+  FileDown,
+  Loader2,
+  Download,
+  FolderPlus,
+  Check,
+  Users,
+  ListTodo,
+  Building2,
+  User as UserIcon,
+  Calculator,
+  Users as UsersIcon,
+  AlertTriangle,
+  Megaphone,
+  BookOpen,
+  Lightbulb,
+  Briefcase,
+} from 'lucide-react';
 import { AttendeeSelector } from './AttendeeSelector';
 import { DecisionsList } from './DecisionsList';
 import { ContentSectionEditor } from './ContentSectionEditor';
@@ -50,9 +93,18 @@ export function ProtocolBuilder({
   onSave,
   onCancel,
 }: ProtocolBuilderProps) {
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [savingToFileManager, setSavingToFileManager] = useState(false);
+  const [savedToFileManager, setSavedToFileManager] = useState(false);
+  const [savedProtocolId, setSavedProtocolId] = useState<string | null>(protocol?.id || null);
   const [formState, setFormState] = useState<ProtocolFormState>({
     meeting_date: format(new Date(), 'yyyy-MM-dd'),
     title: '',
@@ -170,17 +222,207 @@ export function ProtocolBuilder({
 
   const isNew = !protocol;
 
+  // Handle preview
+  const handlePreview = () => {
+    setPreviewOpen(true);
+  };
+
+  // Save and generate PDF from preview
+  const handleSaveAndGeneratePdf = async () => {
+    setSaving(true);
+    setGeneratingPdf(true);
+    try {
+      // First save the protocol
+      const { data: savedProtocol, error: saveError } = await protocolService.saveProtocolForm(
+        savedProtocolId,
+        clientId,
+        groupId,
+        formState
+      );
+
+      if (saveError || !savedProtocol) {
+        console.error('Failed to save protocol:', saveError);
+        toast({
+          title: 'שגיאה',
+          description: 'שמירת הפרוטוקול נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Update saved protocol ID for future saves
+      setSavedProtocolId(savedProtocol.id);
+
+      // Then generate PDF
+      const { data: pdfData, error: pdfError } = await protocolService.generateProtocolPdf(savedProtocol.id);
+      if (pdfError || !pdfData) {
+        toast({
+          title: 'שגיאה',
+          description: pdfError?.message || 'יצירת PDF נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setPdfUrl(pdfData.pdfUrl);
+      setPdfFileName(pdfData.fileName);
+      setSavedToFileManager(false);
+      setPreviewOpen(false);
+      setPdfDialogOpen(true);
+    } finally {
+      setSaving(false);
+      setGeneratingPdf(false);
+    }
+  };
+
+  // Download PDF
+  const handleDownloadPdf = () => {
+    if (!pdfUrl) return;
+    const link = document.createElement('a');
+    link.href = pdfUrl;
+    link.download = pdfFileName || 'protocol.pdf';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Save to file manager
+  const handleSaveToFileManager = async () => {
+    if (!pdfUrl || !savedProtocolId) return;
+    setSavingToFileManager(true);
+    try {
+      const { error } = await protocolService.saveProtocolToFileManager(
+        savedProtocolId,
+        pdfUrl,
+        clientId,
+        groupId
+      );
+      if (error) {
+        toast({
+          title: 'שגיאה',
+          description: error.message || 'שמירה למנהל הקבצים נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setSavedToFileManager(true);
+      toast({
+        title: 'הצלחה',
+        description: 'הפרוטוקול נשמר למנהל הקבצים',
+      });
+    } catch {
+      toast({
+        title: 'שגיאה',
+        description: 'שמירה למנהל הקבצים נכשלה',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingToFileManager(false);
+    }
+  };
+
+  // Close PDF dialog and go back to editing
+  const handleClosePdfDialog = () => {
+    setPdfDialogOpen(false);
+  };
+
+  // Save from preview and close
+  const handleSaveFromPreview = async () => {
+    setSaving(true);
+    try {
+      const { data: savedProtocol, error } = await protocolService.saveProtocolForm(
+        savedProtocolId,
+        clientId,
+        groupId,
+        formState
+      );
+
+      if (error || !savedProtocol) {
+        console.error('Failed to save protocol:', error);
+        toast({
+          title: 'שגיאה',
+          description: 'שמירת הפרוטוקול נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setSavedProtocolId(savedProtocol.id);
+      setPreviewOpen(false);
+      onSave();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Helper functions for preview icons
+  const getSourceIcon = (type: AttendeeSourceType) => {
+    switch (type) {
+      case 'contact':
+        return <UserIcon className="h-3 w-3" />;
+      case 'employee':
+        return <Building2 className="h-3 w-3" />;
+      case 'external':
+        return <Briefcase className="h-3 w-3" />;
+    }
+  };
+
+  const getResponsibilityIcon = (type: string) => {
+    switch (type) {
+      case 'office':
+        return <Building2 className="h-4 w-4" />;
+      case 'client':
+        return <UserIcon className="h-4 w-4" />;
+      case 'bookkeeper':
+        return <Calculator className="h-4 w-4" />;
+      case 'other':
+        return <UsersIcon className="h-4 w-4" />;
+    }
+  };
+
+  const getSectionIcon = (type: ContentSectionType) => {
+    switch (type) {
+      case 'announcement':
+        return <Megaphone className="h-4 w-4" />;
+      case 'background_story':
+        return <BookOpen className="h-4 w-4" />;
+      case 'recommendation':
+        return <Lightbulb className="h-4 w-4" />;
+    }
+  };
+
+  // Group decisions by responsibility type for preview
+  const groupedDecisions = RESPONSIBILITY_TYPES.map((typeInfo) => ({
+    ...typeInfo,
+    decisions: formState.decisions.filter((d) => d.responsibility_type === typeInfo.type),
+  })).filter((g) => g.decisions.length > 0);
+
+  // Group content sections by type for preview
+  const groupedSections = CONTENT_SECTION_TYPES.map((typeInfo) => ({
+    ...typeInfo,
+    sections: formState.content_sections.filter((s) => s.section_type === typeInfo.type),
+  })).filter((g) => g.sections.length > 0);
+
   return (
     <>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-row-reverse">
             <div className="flex items-center gap-2 flex-row-reverse">
+              <Button
+                onClick={handlePreview}
+                variant="secondary"
+                className="flex items-center gap-2 flex-row-reverse"
+              >
+                <Eye className="h-4 w-4" />
+                תצוגה מקדימה
+              </Button>
               {!isNew && (
                 <Button
                   onClick={() => setLockDialogOpen(true)}
                   disabled={saving || locking}
-                  variant="secondary"
+                  variant="outline"
                   className="flex items-center gap-2 flex-row-reverse"
                 >
                   <Lock className="h-4 w-4" />
@@ -289,11 +531,19 @@ export function ProtocolBuilder({
 
           {/* Bottom Action Buttons */}
           <div className="flex items-center justify-start gap-2 flex-row-reverse pt-4">
+            <Button
+              onClick={handlePreview}
+              variant="secondary"
+              className="flex items-center gap-2 flex-row-reverse"
+            >
+              <Eye className="h-4 w-4" />
+              תצוגה מקדימה
+            </Button>
             {!isNew && (
               <Button
                 onClick={() => setLockDialogOpen(true)}
                 disabled={saving || locking}
-                variant="secondary"
+                variant="outline"
                 className="flex items-center gap-2 flex-row-reverse"
               >
                 <Lock className="h-4 w-4" />
@@ -332,6 +582,235 @@ export function ProtocolBuilder({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Preview Dialog - Document Style (like PDF) */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden p-0" dir="rtl">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle className="text-right flex items-center gap-2 flex-row-reverse">
+              <Eye className="h-5 w-5" />
+              תצוגה מקדימה
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              כך יראה המסמך לאחר ייצוא ל-PDF
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[60vh] overflow-auto">
+            {/* Document Container - styled like A4 paper */}
+            <div className="mx-6 mb-4 bg-white border border-gray-300 shadow-sm rounded" dir="rtl">
+              <div className="p-8 font-serif text-right" style={{ fontFamily: "'David Libre', 'Heebo', serif" }}>
+                {/* Document Header - Centered */}
+                <div className="text-center mb-8 border-b pb-6">
+                  <h1 className="text-2xl font-bold mb-2">פרוטוקול פגישה</h1>
+                  <p className="text-lg text-gray-700">{recipientName}</p>
+                </div>
+
+                {/* Meeting Details Box */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-6 text-right">
+                  <p className="mb-1">
+                    <strong>תאריך פגישה:</strong>{' '}
+                    {format(new Date(formState.meeting_date), 'EEEE, dd בMMMM yyyy', { locale: he })}
+                  </p>
+                  {formState.title && (
+                    <p className="mt-2">
+                      <strong>נושא:</strong> {formState.title}
+                    </p>
+                  )}
+                </div>
+
+                {/* Attendees - Simple bullet list like PDF */}
+                {formState.attendees.length > 0 && (
+                  <div className="mb-6 text-right">
+                    <h2 className="text-base font-bold mb-3 border-b pb-2 text-right">משתתפים</h2>
+                    <ul className="space-y-1 pr-5" style={{ listStyleType: 'disc', listStylePosition: 'inside' }}>
+                      {formState.attendees.map((attendee, idx) => (
+                        <li key={idx}>{attendee.display_name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Decisions - Grouped by responsibility with colored boxes like PDF */}
+                {formState.decisions.length > 0 && (
+                  <div className="mb-6 text-right">
+                    <h2 className="text-base font-bold mb-3 border-b pb-2 text-right">החלטות</h2>
+                    <div className="space-y-4">
+                      {groupedDecisions.map((group) => {
+                        const bgColor = group.type === 'office' ? 'bg-red-50' :
+                                       group.type === 'client' ? 'bg-yellow-50' :
+                                       group.type === 'bookkeeper' ? 'bg-green-50' : 'bg-gray-50';
+                        const borderColor = group.type === 'office' ? 'border-red-200' :
+                                           group.type === 'client' ? 'border-yellow-200' :
+                                           group.type === 'bookkeeper' ? 'border-green-200' : 'border-gray-200';
+                        return (
+                          <div
+                            key={group.type}
+                            className={cn('rounded-lg border-2 p-4 text-right', bgColor, borderColor)}
+                          >
+                            <h3 className="font-bold mb-3 text-right">{group.label}</h3>
+                            <ol className="space-y-2 pr-5" style={{ listStyleType: 'decimal', listStylePosition: 'inside' }}>
+                              {group.decisions.map((decision, idx) => (
+                                <li key={idx} className="leading-relaxed text-right">
+                                  {decision.content}
+                                  {decision.urgency === 'urgent' && (
+                                    <span className="text-red-600 font-bold mr-2">(דחוף)</span>
+                                  )}
+                                  {decision.assigned_other_name && (
+                                    <span className="text-gray-500 text-sm mr-2">
+                                      - {decision.assigned_other_name}
+                                    </span>
+                                  )}
+                                  {decision.audit_report_year && (
+                                    <span className="text-gray-500 text-sm mr-2">
+                                      (דוח {decision.audit_report_year})
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Sections */}
+                {formState.content_sections.length > 0 && (
+                  <div className="mb-6 text-right">
+                    <h2 className="text-base font-bold mb-3 border-b pb-2 text-right">תוכן נוסף</h2>
+                    <div className="space-y-4">
+                      {groupedSections.map((group) => {
+                        const typeInfo = getContentSectionTypeInfo(group.type);
+                        return (
+                          <div key={group.type} className="text-right">
+                            <h3 className="font-bold mb-2 text-right">{typeInfo.labelPlural}</h3>
+                            {group.sections.map((section, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 text-right"
+                              >
+                                <p className="whitespace-pre-wrap text-right">{section.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {formState.attendees.length === 0 &&
+                  formState.decisions.length === 0 &&
+                  formState.content_sections.length === 0 && (
+                  <div className="text-center py-12 text-gray-400">
+                    <FileText className="h-16 w-16 mx-auto mb-4" />
+                    <p className="text-lg">הפרוטוקול ריק</p>
+                    <p className="text-sm">הוסף משתתפים, החלטות או תוכן</p>
+                  </div>
+                )}
+
+                {/* Signature Lines */}
+                {(formState.attendees.length > 0 || formState.decisions.length > 0 || formState.content_sections.length > 0) && (
+                  <div className="mt-12 pt-6 border-t">
+                    <div className="flex justify-between flex-row-reverse">
+                      <div className="text-center w-2/5">
+                        <p className="text-gray-500 text-sm mb-10">חתימת נציג המשרד:</p>
+                        <div className="border-b border-black w-32 mx-auto"></div>
+                      </div>
+                      <div className="text-center w-2/5">
+                        <p className="text-gray-500 text-sm mb-10">חתימת הלקוח:</p>
+                        <div className="border-b border-black w-32 mx-auto"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="px-6 pb-6 flex gap-2 flex-row-reverse justify-start">
+            <Button
+              onClick={handleSaveAndGeneratePdf}
+              disabled={saving || generatingPdf}
+              className="flex items-center gap-2 flex-row-reverse"
+            >
+              {generatingPdf ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
+              {generatingPdf ? 'יוצר PDF...' : 'שמור וייצא PDF'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSaveFromPreview}
+              disabled={saving}
+              className="flex items-center gap-2 flex-row-reverse"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'שומר...' : 'שמירה'}
+            </Button>
+            <Button variant="ghost" onClick={() => setPreviewOpen(false)}>
+              חזרה לעריכה
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Options Dialog */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2 flex-row-reverse">
+              <Check className="h-5 w-5 text-green-600" />
+              PDF נוצר בהצלחה
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              בחר מה לעשות עם קובץ ה-PDF
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 flex-row-reverse"
+              onClick={handleDownloadPdf}
+            >
+              <Download className="h-4 w-4" />
+              הורד למחשב
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 flex-row-reverse"
+              onClick={handleSaveToFileManager}
+              disabled={savingToFileManager || savedToFileManager}
+            >
+              {savingToFileManager ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : savedToFileManager ? (
+                <Check className="h-4 w-4 text-green-600" />
+              ) : (
+                <FolderPlus className="h-4 w-4" />
+              )}
+              {savingToFileManager
+                ? 'שומר...'
+                : savedToFileManager
+                ? 'נשמר למנהל קבצים'
+                : 'שמור למנהל קבצים'}
+            </Button>
+          </div>
+          <DialogFooter className="flex gap-2 flex-row-reverse justify-start">
+            <Button onClick={onSave}>
+              סיום
+            </Button>
+            <Button variant="ghost" onClick={handleClosePdfDialog}>
+              חזרה לעריכה
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
