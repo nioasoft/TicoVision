@@ -3410,6 +3410,206 @@ export type Database = {
         }
         Relationships: []
       }
+      protocol_attendees: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          display_name: string
+          id: string
+          protocol_id: string
+          role_title: string | null
+          source_type: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          display_name: string
+          id?: string
+          protocol_id: string
+          role_title?: string | null
+          source_type: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          protocol_id?: string
+          role_title?: string | null
+          source_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_attendees_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocol_attendees_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocol_content_sections: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          protocol_id: string
+          section_type: string
+          sort_order: number
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          protocol_id: string
+          section_type: string
+          sort_order?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          protocol_id?: string
+          section_type?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_content_sections_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocol_decisions: {
+        Row: {
+          assigned_employee_id: string | null
+          assigned_other_name: string | null
+          audit_report_year: number | null
+          content: string
+          created_at: string | null
+          id: string
+          protocol_id: string
+          responsibility_type: string
+          sort_order: number
+          urgency: string
+        }
+        Insert: {
+          assigned_employee_id?: string | null
+          assigned_other_name?: string | null
+          audit_report_year?: number | null
+          content: string
+          created_at?: string | null
+          id?: string
+          protocol_id: string
+          responsibility_type: string
+          sort_order?: number
+          urgency?: string
+        }
+        Update: {
+          assigned_employee_id?: string | null
+          assigned_other_name?: string | null
+          audit_report_year?: number | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          protocol_id?: string
+          responsibility_type?: string
+          sort_order?: number
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocol_decisions_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      protocols: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          group_id: string | null
+          id: string
+          locked_at: string | null
+          locked_by: string | null
+          meeting_date: string
+          pdf_url: string | null
+          status: string
+          tenant_id: string
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          group_id?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          meeting_date: string
+          pdf_url?: string | null
+          status?: string
+          tenant_id: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          group_id?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          meeting_date?: string
+          pdf_url?: string | null
+          status?: string
+          tenant_id?: string
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "protocols_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocols_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "client_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "protocols_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reminder_rules: {
         Row: {
           actions: Json

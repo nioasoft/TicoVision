@@ -53,6 +53,9 @@ const HelpPage = lazy(() => import('@/modules/help/pages/HelpPage'));
 // Broadcast System
 const BroadcastPage = lazy(() => import('@/modules/broadcast/pages/BroadcastPage'));
 
+// Protocol Management System
+const ProtocolsPage = lazy(() => import('@/modules/protocols/pages/ProtocolsPage'));
+
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
 const TodaysWorklistPage = lazy(() => import('@/modules/collections/pages/TodaysWorklistPage').then(m => ({ default: m.TodaysWorklistPage })));
@@ -360,6 +363,13 @@ function App() {
                       <Route path="/broadcast" element={
                         <ErrorBoundary>
                           <BroadcastPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Protocol Management System */}
+                      <Route path="/protocols" element={
+                        <ErrorBoundary>
+                          <ProtocolsPage />
                         </ErrorBoundary>
                       } />
 

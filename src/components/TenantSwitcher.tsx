@@ -124,7 +124,7 @@ export default function TenantSwitcher() {
 
   if (loading) {
     return (
-      <Button variant="outline" disabled className="w-[250px] justify-between">
+      <Button variant="outline" disabled className="w-full justify-between">
         <Building2 className="ml-2 h-4 w-4" />
         טוען...
       </Button>
@@ -153,7 +153,7 @@ export default function TenantSwitcher() {
           role="combobox"
           aria-expanded={open}
           aria-label="בחר עסק"
-          className="w-[250px] justify-between"
+          className="w-full justify-between"
         >
           <div className="flex items-center gap-2 truncate">
             {currentTenant ? (
@@ -176,7 +176,7 @@ export default function TenantSwitcher() {
           <ChevronsUpDown className="mr-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[250px]" align="start">
+      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]" align="start">
         <DropdownMenuLabel>עסקים זמינים</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
