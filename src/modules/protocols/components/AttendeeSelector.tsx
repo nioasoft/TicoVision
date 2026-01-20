@@ -290,19 +290,19 @@ export function AttendeeSelector({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="contact">
-                    <div className="flex items-center gap-2 flex-row-reverse">
+                    <div className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       אנשי קשר מהלקוח
                     </div>
                   </SelectItem>
                   <SelectItem value="employee">
-                    <div className="flex items-center gap-2 flex-row-reverse">
+                    <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
                       עובדי המשרד
                     </div>
                   </SelectItem>
                   <SelectItem value="external">
-                    <div className="flex items-center gap-2 flex-row-reverse">
+                    <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4" />
                       משתתף חיצוני
                     </div>
