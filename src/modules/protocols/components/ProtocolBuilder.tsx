@@ -221,7 +221,7 @@ export function ProtocolBuilder({
         <CardContent className="space-y-8">
           {/* Header Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-right flex items-center gap-2 flex-row-reverse">
+            <h3 className="text-lg font-semibold text-left flex items-center gap-2" dir="rtl">
               <CalendarDays className="h-5 w-5" />
               פרטי הפגישה
             </h3>
