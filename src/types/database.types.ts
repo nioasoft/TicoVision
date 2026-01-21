@@ -22,10 +22,11 @@ export type Database = {
           amount_with_vat: number
           applied_discount_percent: number | null
           attachment_ids: string[] | null
+          billing_letter_id: string | null
           client_id: string
           created_at: string
           created_by: string | null
-          fee_calculation_id: string
+          fee_calculation_id: string | null
           group_calculation_id: string | null
           id: string
           notes: string | null
@@ -44,10 +45,11 @@ export type Database = {
           amount_with_vat: number
           applied_discount_percent?: number | null
           attachment_ids?: string[] | null
+          billing_letter_id?: string | null
           client_id: string
           created_at?: string
           created_by?: string | null
-          fee_calculation_id: string
+          fee_calculation_id?: string | null
           group_calculation_id?: string | null
           id?: string
           notes?: string | null
@@ -66,10 +68,11 @@ export type Database = {
           amount_with_vat?: number
           applied_discount_percent?: number | null
           attachment_ids?: string[] | null
+          billing_letter_id?: string | null
           client_id?: string
           created_at?: string
           created_by?: string | null
-          fee_calculation_id?: string
+          fee_calculation_id?: string | null
           group_calculation_id?: string | null
           id?: string
           notes?: string | null
@@ -83,18 +86,18 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "actual_payments_billing_letter_id_fkey"
+            columns: ["billing_letter_id"]
+            isOneToOne: false
+            referencedRelation: "billing_letters"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "actual_payments_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "actual_payments_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
           },
           {
             foreignKeyName: "actual_payments_fee_calculation_id_fkey"
@@ -172,6 +175,120 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_audit_logs_tenant_id"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_letters: {
+        Row: {
+          actual_payment_id: string | null
+          amount_after_discount: number | null
+          amount_before_vat: number
+          bank_discount_percentage: number
+          client_id: string
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          generated_letter_id: string | null
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_reference: string | null
+          sent_at: string | null
+          sent_manually: boolean
+          sent_method: string | null
+          service_description: string
+          status: string
+          tenant_id: string
+          total_amount: number
+          updated_at: string
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          actual_payment_id?: string | null
+          amount_after_discount?: number | null
+          amount_before_vat: number
+          bank_discount_percentage?: number
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          generated_letter_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          sent_at?: string | null
+          sent_manually?: boolean
+          sent_method?: string | null
+          service_description: string
+          status?: string
+          tenant_id: string
+          total_amount: number
+          updated_at?: string
+          vat_amount: number
+          vat_rate?: number
+        }
+        Update: {
+          actual_payment_id?: string | null
+          amount_after_discount?: number | null
+          amount_before_vat?: number
+          bank_discount_percentage?: number
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          generated_letter_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          sent_at?: string | null
+          sent_manually?: boolean
+          sent_method?: string | null
+          service_description?: string
+          status?: string
+          tenant_id?: string
+          total_amount?: number
+          updated_at?: string
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_letters_actual_payment_id_fkey"
+            columns: ["actual_payment_id"]
+            isOneToOne: false
+            referencedRelation: "actual_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_letters_actual_payment_id_fkey"
+            columns: ["actual_payment_id"]
+            isOneToOne: false
+            referencedRelation: "fee_tracking_enhanced_view"
+            referencedColumns: ["actual_payment_id"]
+          },
+          {
+            foreignKeyName: "billing_letters_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_letters_generated_letter_id_fkey"
+            columns: ["generated_letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_letters_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1201,13 +1318,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_interactions_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
           },
           {
             foreignKeyName: "client_interactions_fee_calculation_id_fkey"
@@ -2946,13 +3056,6 @@ export type Database = {
             foreignKeyName: "payment_deviations_fee_calculation_id_fkey"
             columns: ["fee_calculation_id"]
             isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
-          },
-          {
-            foreignKeyName: "payment_deviations_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
             referencedRelation: "fee_calculations"
             referencedColumns: ["id"]
           },
@@ -3028,13 +3131,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_disputes_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
           },
           {
             foreignKeyName: "payment_disputes_fee_calculation_id_fkey"
@@ -3178,13 +3274,6 @@ export type Database = {
             foreignKeyName: "payment_method_selections_fee_calculation_id_fkey"
             columns: ["fee_calculation_id"]
             isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
-          },
-          {
-            foreignKeyName: "payment_method_selections_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
             referencedRelation: "fee_calculations"
             referencedColumns: ["id"]
           },
@@ -3268,13 +3357,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_reminders_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
           },
           {
             foreignKeyName: "payment_reminders_fee_calculation_id_fkey"
@@ -3466,6 +3548,7 @@ export type Database = {
           protocol_id: string
           section_type: string
           sort_order: number
+          style: Json | null
         }
         Insert: {
           content: string
@@ -3474,6 +3557,7 @@ export type Database = {
           protocol_id: string
           section_type: string
           sort_order?: number
+          style?: Json | null
         }
         Update: {
           content?: string
@@ -3482,6 +3566,7 @@ export type Database = {
           protocol_id?: string
           section_type?: string
           sort_order?: number
+          style?: Json | null
         }
         Relationships: [
           {
@@ -3504,6 +3589,7 @@ export type Database = {
           protocol_id: string
           responsibility_type: string
           sort_order: number
+          style: Json | null
           urgency: string
         }
         Insert: {
@@ -3516,6 +3602,7 @@ export type Database = {
           protocol_id: string
           responsibility_type: string
           sort_order?: number
+          style?: Json | null
           urgency?: string
         }
         Update: {
@@ -3528,6 +3615,7 @@ export type Database = {
           protocol_id?: string
           responsibility_type?: string
           sort_order?: number
+          style?: Json | null
           urgency?: string
         }
         Relationships: [
@@ -3707,13 +3795,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "short_links_fee_calculation_id_fkey"
-            columns: ["fee_calculation_id"]
-            isOneToOne: false
-            referencedRelation: "collection_dashboard_view"
-            referencedColumns: ["fee_calculation_id"]
           },
           {
             foreignKeyName: "short_links_fee_calculation_id_fkey"
@@ -4843,6 +4924,7 @@ export type Database = {
           amount_original: number | null
           amount_paid: number | null
           amount_remaining: number | null
+          billing_letter_id: string | null
           bookkeeping_base_amount: number | null
           bookkeeping_before_vat: number | null
           bookkeeping_with_vat: number | null
@@ -4863,24 +4945,11 @@ export type Database = {
           payment_method_selected: string | null
           payment_status: string | null
           reminder_count: number | null
+          service_description: string | null
+          source_type: string | null
           tenant_id: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fee_calculations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_fee_calculations_tenant_id"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       cron_job_monitoring: {
         Row: {
@@ -4959,6 +5028,23 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      unified_collection_view: {
+        Row: {
+          amount: number | null
+          client_id: string | null
+          company_name: string | null
+          company_name_hebrew: string | null
+          created_at: string | null
+          letter_sent_date: string | null
+          payment_date: string | null
+          service_description: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string | null
+          tenant_id: string | null
+        }
+        Relationships: []
       }
       unused_indexes_analysis: {
         Row: {
@@ -5185,6 +5271,11 @@ export type Database = {
           audit_retainer_before_vat: number
           audit_retainer_count: number
           audit_retainer_with_vat: number
+          billing_letters_actual_before_vat: number
+          billing_letters_actual_with_vat: number
+          billing_letters_before_vat: number
+          billing_letters_count: number
+          billing_letters_with_vat: number
           bookkeeping_internal_actual_before_vat: number
           bookkeeping_internal_actual_with_vat: number
           bookkeeping_internal_before_vat: number
@@ -5313,6 +5404,8 @@ export type Database = {
           amount_pending: number
           audit_before_vat: number
           audit_with_vat: number
+          billing_before_vat: number
+          billing_with_vat: number
           bookkeeping_before_vat: number
           bookkeeping_with_vat: number
           clients_paid_count: number

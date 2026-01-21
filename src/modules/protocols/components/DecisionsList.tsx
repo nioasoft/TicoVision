@@ -53,7 +53,9 @@ import type {
   CreateDecisionDto,
   ResponsibilityType,
   DecisionUrgency,
+  ItemStyle,
 } from '../types/protocol.types';
+import { StyleToolbar, getContentClasses, getContentStyle } from './StyleToolbar';
 
 interface DecisionsListProps {
   decisions: CreateDecisionDto[];
@@ -67,6 +69,7 @@ interface DecisionFormState {
   assigned_employee_id: string | null;
   assigned_other_name: string | null;
   audit_report_year: number | null;
+  style: ItemStyle;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -86,6 +89,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
     assigned_employee_id: null,
     assigned_other_name: null,
     audit_report_year: null,
+    style: {},
   });
 
   // Fetch employees for assignment (only accountants and admins)
@@ -135,6 +139,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
       assigned_employee_id: null,
       assigned_other_name: null,
       audit_report_year: null,
+      style: {},
     });
     setEditIndex(null);
   };
@@ -155,6 +160,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
       assigned_employee_id: decision.assigned_employee_id || null,
       assigned_other_name: decision.assigned_other_name || null,
       audit_report_year: decision.audit_report_year || null,
+      style: decision.style || {},
     });
     setEditIndex(index);
     setDialogOpen(true);
@@ -178,6 +184,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
       assigned_other_name:
         formState.responsibility_type === 'other' ? formState.assigned_other_name : null,
       audit_report_year: formState.audit_report_year,
+      style: formState.style,
     };
 
     if (editIndex !== null) {
@@ -308,7 +315,12 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
-                              <p className="text-sm">{decision.content}</p>
+                              <p
+                                className={cn('text-sm', getContentClasses(decision.style))}
+                                style={getContentStyle(decision.style)}
+                              >
+                                {decision.content}
+                              </p>
                             </div>
                             <div className="flex items-center gap-2 mt-2 flex-row-reverse">
                               {decision.urgency === 'urgent' && (
@@ -371,6 +383,10 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                 placeholder="תאר את ההחלטה או המשימה"
                 className="text-right min-h-[80px]"
                 dir="rtl"
+              />
+              <StyleToolbar
+                style={formState.style}
+                onChange={(style) => handleFieldChange('style', style)}
               />
             </div>
 

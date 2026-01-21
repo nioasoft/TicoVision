@@ -67,6 +67,7 @@ import {
 import { AttendeeSelector } from './AttendeeSelector';
 import { DecisionsList } from './DecisionsList';
 import { ContentSectionEditor } from './ContentSectionEditor';
+import { getContentClasses, getContentStyle } from './StyleToolbar';
 import { protocolService } from '../services/protocol.service';
 import type {
   ProtocolWithRelations,
@@ -134,11 +135,13 @@ export function ProtocolBuilder({
           assigned_other_name: d.assigned_other_name,
           audit_report_year: d.audit_report_year,
           sort_order: d.sort_order,
+          style: d.style || {},
         })),
         content_sections: protocol.content_sections.map((s) => ({
           section_type: s.section_type,
           content: s.content,
           sort_order: s.sort_order,
+          style: s.style || {},
         })),
       });
     }
@@ -587,7 +590,7 @@ export function ProtocolBuilder({
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden p-0" dir="rtl">
           <DialogHeader className="px-6 pt-6 pb-2">
-            <DialogTitle className="text-right flex items-center gap-2 flex-row-reverse">
+            <DialogTitle className="text-right flex items-center gap-2">
               <Eye className="h-5 w-5" />
               תצוגה מקדימה
             </DialogTitle>
@@ -651,7 +654,7 @@ export function ProtocolBuilder({
                             <h3 className="font-bold mb-3 text-right">{group.label}</h3>
                             <ol className="space-y-2 pr-5" style={{ listStyleType: 'decimal', listStylePosition: 'inside' }}>
                               {group.decisions.map((decision, idx) => (
-                                <li key={idx} className="leading-relaxed text-right">
+                                <li key={idx} className={cn('leading-relaxed text-right', getContentClasses(decision.style))} style={getContentStyle(decision.style)}>
                                   {decision.content}
                                   {decision.urgency === 'urgent' && (
                                     <span className="text-red-600 font-bold mr-2">(דחוף)</span>
@@ -691,7 +694,7 @@ export function ProtocolBuilder({
                                 key={idx}
                                 className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 text-right"
                               >
-                                <p className="whitespace-pre-wrap text-right">{section.content}</p>
+                                <p className={cn('whitespace-pre-wrap text-right', getContentClasses(section.style))} style={getContentStyle(section.style)}>{section.content}</p>
                               </div>
                             ))}
                           </div>

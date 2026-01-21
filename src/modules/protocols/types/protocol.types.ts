@@ -10,6 +10,30 @@
 export type ProtocolStatus = 'draft' | 'locked';
 
 // ============================================================================
+// Item Style Types
+// ============================================================================
+
+export type ItemStyleColor = 'default' | 'blue' | 'green' | 'red';
+
+export interface ItemStyle {
+  bold?: boolean;
+  underline?: boolean;
+  color?: ItemStyleColor;
+}
+
+export const ITEM_STYLE_COLORS: { value: ItemStyleColor; label: string; hex: string; className: string }[] = [
+  { value: 'default', label: 'ברירת מחדל', hex: 'inherit', className: 'text-inherit' },
+  { value: 'blue', label: 'כחול', hex: '#2563eb', className: 'text-blue-600' },
+  { value: 'green', label: 'ירוק', hex: '#16a34a', className: 'text-green-600' },
+  { value: 'red', label: 'אדום', hex: '#dc2626', className: 'text-red-600' },
+];
+
+export function getItemStyleColor(color?: ItemStyleColor): { hex: string; className: string } {
+  const found = ITEM_STYLE_COLORS.find(c => c.value === color);
+  return found || ITEM_STYLE_COLORS[0];
+}
+
+// ============================================================================
 // Attendee Types
 // ============================================================================
 
@@ -52,6 +76,7 @@ export interface ProtocolDecision {
   assigned_other_name: string | null;
   audit_report_year: number | null;
   sort_order: number;
+  style: ItemStyle;
   created_at: string;
 }
 
@@ -63,6 +88,7 @@ export interface CreateDecisionDto {
   assigned_other_name?: string | null;
   audit_report_year?: number | null;
   sort_order?: number;
+  style?: ItemStyle;
 }
 
 export interface UpdateDecisionDto extends Partial<CreateDecisionDto> {
@@ -81,6 +107,7 @@ export interface ProtocolContentSection {
   section_type: ContentSectionType;
   content: string;
   sort_order: number;
+  style: ItemStyle;
   created_at: string;
 }
 
@@ -88,6 +115,7 @@ export interface CreateContentSectionDto {
   section_type: ContentSectionType;
   content: string;
   sort_order?: number;
+  style?: ItemStyle;
 }
 
 export interface UpdateContentSectionDto extends Partial<CreateContentSectionDto> {

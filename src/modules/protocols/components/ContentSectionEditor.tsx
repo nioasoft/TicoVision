@@ -44,7 +44,9 @@ import {
   CONTENT_SECTION_TYPES,
   getContentSectionTypeInfo,
 } from '../types/protocol.types';
-import type { CreateContentSectionDto, ContentSectionType } from '../types/protocol.types';
+import type { CreateContentSectionDto, ContentSectionType, ItemStyle } from '../types/protocol.types';
+import { StyleToolbar, getContentClasses, getContentStyle } from './StyleToolbar';
+import { cn } from '@/lib/utils';
 
 interface ContentSectionEditorProps {
   sections: CreateContentSectionDto[];
@@ -54,6 +56,7 @@ interface ContentSectionEditorProps {
 interface SectionFormState {
   section_type: ContentSectionType;
   content: string;
+  style: ItemStyle;
 }
 
 export function ContentSectionEditor({ sections, onChange }: ContentSectionEditorProps) {
@@ -62,6 +65,7 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
   const [formState, setFormState] = useState<SectionFormState>({
     section_type: 'announcement',
     content: '',
+    style: {},
   });
 
   // Get icon for section type
@@ -89,6 +93,7 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
     setFormState({
       section_type: 'announcement',
       content: '',
+      style: {},
     });
     setEditIndex(null);
   };
@@ -108,6 +113,7 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
     setFormState({
       section_type: section.section_type,
       content: section.content,
+      style: section.style || {},
     });
     setEditIndex(index);
     setDialogOpen(true);
@@ -125,6 +131,7 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
     const newSection: CreateContentSectionDto = {
       section_type: formState.section_type,
       content: formState.content.trim(),
+      style: formState.style,
     };
 
     if (editIndex !== null) {
@@ -217,7 +224,10 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                          <p className="text-sm text-right whitespace-pre-wrap flex-1">
+                          <p
+                            className={cn('text-sm text-right whitespace-pre-wrap flex-1', getContentClasses(section.style))}
+                            style={getContentStyle(section.style)}
+                          >
                             {section.content}
                           </p>
                         </div>
@@ -295,6 +305,10 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
                 }
                 className="text-right min-h-[120px]"
                 dir="rtl"
+              />
+              <StyleToolbar
+                style={formState.style}
+                onChange={(style) => handleFieldChange('style', style)}
               />
             </div>
           </div>

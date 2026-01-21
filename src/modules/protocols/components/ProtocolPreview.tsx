@@ -52,6 +52,7 @@ import {
   getContentSectionTypeInfo,
 } from '../types/protocol.types';
 import type { ProtocolWithRelations, AttendeeSourceType, ContentSectionType } from '../types/protocol.types';
+import { getContentClasses, getContentStyle } from './StyleToolbar';
 
 interface ProtocolPreviewProps {
   protocol: ProtocolWithRelations;
@@ -371,7 +372,12 @@ export function ProtocolPreview({
                                 {idx + 1}.
                               </span>
                               <div className="flex-1 rtl:text-right">
-                                <p className="text-sm">{decision.content}</p>
+                                <p
+                                  className={cn('text-sm', getContentClasses(decision.style))}
+                                  style={getContentStyle(decision.style)}
+                                >
+                                  {decision.content}
+                                </p>
                                 <div className="flex items-center gap-2 mt-2 rtl:flex-row-reverse flex-wrap">
                                   {decision.urgency === 'urgent' && (
                                     <Badge variant="destructive" className="flex items-center gap-1">
@@ -428,7 +434,10 @@ export function ProtocolPreview({
                             key={section.id}
                             className="bg-gray-50 rounded-lg p-4 border print:bg-white print:p-3"
                           >
-                            <p className="text-sm rtl:text-right whitespace-pre-wrap">
+                            <p
+                              className={cn('text-sm rtl:text-right whitespace-pre-wrap', getContentClasses(section.style))}
+                              style={getContentStyle(section.style)}
+                            >
                               {section.content}
                             </p>
                           </div>

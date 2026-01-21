@@ -23,12 +23,38 @@ import type {
   ProtocolContentSection,
   CreateContentSectionDto,
   ProtocolFormState,
+  ItemStyle,
 } from '../types/protocol.types';
 import {
   RESPONSIBILITY_TYPES,
   CONTENT_SECTION_TYPES,
   getContentSectionTypeInfo,
+  ITEM_STYLE_COLORS,
 } from '../types/protocol.types';
+
+/**
+ * Generate inline CSS style string from ItemStyle
+ */
+function getInlineStyle(style?: ItemStyle): string {
+  if (!style) return '';
+
+  const styles: string[] = [];
+
+  if (style.bold) {
+    styles.push('font-weight: bold');
+  }
+  if (style.underline) {
+    styles.push('text-decoration: underline');
+  }
+  if (style.color && style.color !== 'default') {
+    const colorInfo = ITEM_STYLE_COLORS.find(c => c.value === style.color);
+    if (colorInfo) {
+      styles.push(`color: ${colorInfo.hex}`);
+    }
+  }
+
+  return styles.length > 0 ? ` style="${styles.join('; ')}"` : '';
+}
 
 export class ProtocolService extends BaseService {
   constructor() {
@@ -369,6 +395,7 @@ export class ProtocolService extends BaseService {
           assigned_other_name: decision.assigned_other_name,
           audit_report_year: decision.audit_report_year,
           sort_order: decision.sort_order,
+          style: decision.style,
         });
       }
 
@@ -378,6 +405,7 @@ export class ProtocolService extends BaseService {
           section_type: section.section_type,
           content: section.content,
           sort_order: section.sort_order,
+          style: section.style,
         });
       }
 
@@ -461,6 +489,7 @@ export class ProtocolService extends BaseService {
           assigned_other_name: dto.assigned_other_name || null,
           audit_report_year: dto.audit_report_year || null,
           sort_order: dto.sort_order || 0,
+          style: dto.style || {},
         })
         .select()
         .single();
@@ -533,6 +562,7 @@ export class ProtocolService extends BaseService {
           section_type: dto.section_type,
           content: dto.content,
           sort_order: dto.sort_order || 0,
+          style: dto.style || {},
         })
         .select()
         .single();
@@ -755,7 +785,7 @@ export class ProtocolService extends BaseService {
                 <ol style="margin: 0; padding-right: 20px;">
                   ${group.decisions.map((d) => `
                     <li style="margin-bottom: 8px;">
-                      ${d.content}
+                      <span${getInlineStyle(d.style)}>${d.content}</span>
                       ${d.urgency === 'urgent' ? '<span style="color: #dc2626; font-weight: bold; margin-right: 8px;"> (דחוף)</span>' : ''}
                       ${d.assigned_other_name ? `<span style="color: #6b7280; font-size: 12px;"> - ${d.assigned_other_name}</span>` : ''}
                       ${d.audit_report_year ? `<span style="color: #6b7280; font-size: 12px;"> (דוח ${d.audit_report_year})</span>` : ''}
@@ -781,7 +811,7 @@ export class ProtocolService extends BaseService {
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">${sectionTypeInfo.labelPlural}</h3>
                 ${group.sections.map((s) => `
                   <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
-                    <p style="margin: 0; white-space: pre-wrap;">${s.content}</p>
+                    <p style="margin: 0; white-space: pre-wrap;"${getInlineStyle(s.style)}>${s.content}</p>
                   </div>
                 `).join('')}
               </div>
