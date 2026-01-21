@@ -82,8 +82,18 @@ const CollectionTableRow: React.FC<{
 
       {/* Client Name */}
       <TableCell className="py-2.5 px-2 border-l border-slate-100">
-        <div className="rtl:text-right ltr:text-left">
-          <div className="font-medium text-sm truncate max-w-[140px] text-slate-800">{row.company_name_hebrew || row.client_name}</div>
+        <div className="text-right">
+          <div className="flex items-center gap-1.5 justify-end rtl:flex-row-reverse">
+            <span className="font-medium text-sm truncate max-w-[120px] text-slate-800">{row.company_name_hebrew || row.client_name}</span>
+            {row.source_type === 'billing' && (
+              <Badge variant="outline" className="text-[10px] px-1 py-0 bg-purple-50 text-purple-700 border-purple-200 shrink-0">
+                חיוב
+              </Badge>
+            )}
+          </div>
+          {row.service_description && (
+            <div className="text-[10px] text-slate-400 truncate max-w-[140px] text-right">{row.service_description}</div>
+          )}
         </div>
       </TableCell>
 

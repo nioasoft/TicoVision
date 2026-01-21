@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { KPICards, type KPICardFilter } from '../components/KPICards';
 import { CollectionFilters } from '../components/CollectionFilters';
 import { CollectionTable } from '../components/CollectionTable';
@@ -18,7 +18,7 @@ import { HistoryDialog } from '../components/HistoryDialog';
 import { PromisePaymentDialog } from '../components/PromisePaymentDialog';
 import { useCollectionStore } from '../store/collectionStore';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Receipt, Plus } from 'lucide-react';
 import type { CollectionRow } from '@/types/collection.types';
 
 export const CollectionDashboard: React.FC = () => {
@@ -173,15 +173,29 @@ export const CollectionDashboard: React.FC = () => {
             מעקב אחר מכתבי שכר טרחה ותשלומים
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => refreshData()}
-          disabled={loading}
-          className="rtl:flex-row-reverse gap-2"
-        >
-          <RefreshCw className={loading ? 'animate-spin h-4 w-4' : 'h-4 w-4'} />
-          <span className="rtl:text-right ltr:text-left">רענון נתונים</span>
-        </Button>
+        <div className="flex gap-2 rtl:flex-row-reverse">
+          <Button
+            variant="outline"
+            onClick={() => refreshData()}
+            disabled={loading}
+            className="rtl:flex-row-reverse gap-2"
+          >
+            <RefreshCw className={loading ? 'animate-spin h-4 w-4' : 'h-4 w-4'} />
+            <span className="rtl:text-right ltr:text-left">רענון נתונים</span>
+          </Button>
+          <Link to="/collections/billing">
+            <Button variant="outline" className="rtl:flex-row-reverse gap-2">
+              <Receipt className="h-4 w-4" />
+              <span>מכתבי חיוב</span>
+            </Button>
+          </Link>
+          <Link to="/collections/billing/new">
+            <Button className="rtl:flex-row-reverse gap-2">
+              <Plus className="h-4 w-4" />
+              <span>מכתב חיוב חדש</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* KPIs */}

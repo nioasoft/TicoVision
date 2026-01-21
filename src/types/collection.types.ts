@@ -262,6 +262,9 @@ export type AlertType =
  * Comprehensive data for each client in the collection dashboard table
  */
 export interface CollectionRow {
+  // Source type: 'fee' for fee calculations, 'billing' for billing letters
+  source_type: 'fee' | 'billing';
+
   // Client info
   client_id: string;
   client_name: string;
@@ -269,8 +272,12 @@ export interface CollectionRow {
   contact_email: string;
   contact_phone?: string;
 
-  // Fee calculation
-  fee_calculation_id: string;
+  // Fee calculation (for source_type='fee')
+  fee_calculation_id: string | null;
+
+  // Billing letter (for source_type='billing')
+  billing_letter_id: string | null;
+  service_description?: string;
 
   // Letter tracking
   letter_sent_date: string;

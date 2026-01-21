@@ -31,7 +31,7 @@ class DashboardService extends BaseService {
 
   /**
    * קבלת תקן תקציב לשנה מסוימת
-   * מחזיר סכומי שכר טרחה + הנהלת חשבונות לפני ואחרי מע"מ 18%
+   * מחזיר סכומי שכר טרחה + הנהלת חשבונות + חיובים כלליים לפני ואחרי מע"מ 18%
    *
    * @param taxYear - שנת מס (Tax Year) - השנה עבורה מבוצע החישוב (לדוגמה: 2026)
    *                  NOT the year when calculation was performed
@@ -57,11 +57,26 @@ class DashboardService extends BaseService {
         throw this.handleError(error);
       }
 
+      // Query billing letters for the given year
+      const { data: billingData, error: billingError } = await supabase
+        .from('billing_letters')
+        .select('amount_before_vat, total_amount, status')
+        .eq('tenant_id', tenantId)
+        .neq('status', 'cancelled')
+        .gte('created_at', `${taxYear}-01-01`)
+        .lt('created_at', `${taxYear + 1}-01-01`);
+
+      if (billingError) {
+        throw this.handleError(billingError);
+      }
+
       // Calculate totals
       let audit_before_vat = 0;
       let audit_with_vat = 0;
       let bookkeeping_before_vat = 0;
       let bookkeeping_with_vat = 0;
+      let billing_before_vat = 0;
+      let billing_with_vat = 0;
 
       if (data) {
         for (const row of data) {
@@ -82,13 +97,23 @@ class DashboardService extends BaseService {
         }
       }
 
+      // חיובים כלליים (Billing letters)
+      if (billingData) {
+        for (const row of billingData) {
+          billing_before_vat += row.amount_before_vat || 0;
+          billing_with_vat += row.total_amount || 0;
+        }
+      }
+
       const budget: BudgetStandard = {
         audit_before_vat,
         audit_with_vat,
         bookkeeping_before_vat,
         bookkeeping_with_vat,
-        total_before_vat: audit_before_vat + bookkeeping_before_vat,
-        total_with_vat: audit_with_vat + bookkeeping_with_vat,
+        billing_before_vat,
+        billing_with_vat,
+        total_before_vat: audit_before_vat + bookkeeping_before_vat + billing_before_vat,
+        total_with_vat: audit_with_vat + bookkeeping_with_vat + billing_with_vat,
       };
 
       await this.logAction('get_budget_standard', undefined, { tax_year: taxYear });
@@ -251,8 +276,10 @@ class DashboardService extends BaseService {
           audit_with_vat: data.audit_with_vat || 0,
           bookkeeping_before_vat: data.bookkeeping_before_vat || 0,
           bookkeeping_with_vat: data.bookkeeping_with_vat || 0,
-          total_before_vat: (data.audit_before_vat || 0) + (data.bookkeeping_before_vat || 0),
-          total_with_vat: (data.audit_with_vat || 0) + (data.bookkeeping_with_vat || 0),
+          billing_before_vat: data.billing_before_vat || 0,
+          billing_with_vat: data.billing_with_vat || 0,
+          total_before_vat: (data.audit_before_vat || 0) + (data.bookkeeping_before_vat || 0) + (data.billing_before_vat || 0),
+          total_with_vat: (data.audit_with_vat || 0) + (data.bookkeeping_with_vat || 0) + (data.billing_with_vat || 0),
         },
         letter_stats: {
           clients_sent_count: data.clients_sent_count || 0,
@@ -312,6 +339,8 @@ class DashboardService extends BaseService {
       const freelancersTotal = data.freelancers_with_vat || 0;
       const exceptionsTotal = 0; // בקרוב
 
+      const billingLettersTotal = data.billing_letters_with_vat || 0;
+
       const breakdown: BudgetByCategory = {
         audit_external: {
           before_vat: data.audit_external_before_vat || 0,
@@ -359,6 +388,13 @@ class DashboardService extends BaseService {
           actual_with_vat: data.freelancers_actual_with_vat || 0,
           client_count: data.freelancers_count || 0,
         },
+        billing_letters: {
+          before_vat: data.billing_letters_before_vat || 0,
+          with_vat: data.billing_letters_with_vat || 0,
+          actual_before_vat: data.billing_letters_actual_before_vat || 0,
+          actual_with_vat: data.billing_letters_actual_with_vat || 0,
+          client_count: data.billing_letters_count || 0,
+        },
         exceptions: {
           before_vat: 0,
           with_vat: 0,
@@ -367,7 +403,7 @@ class DashboardService extends BaseService {
           client_count: 0,
         },
 
-        grand_total: auditTotal + bookkeepingTotal + freelancersTotal + exceptionsTotal,
+        grand_total: auditTotal + bookkeepingTotal + freelancersTotal + billingLettersTotal + exceptionsTotal,
       };
 
       await this.logAction('get_budget_by_category', undefined, { tax_year: taxYear });
@@ -503,7 +539,7 @@ class DashboardService extends BaseService {
 
   /**
    * Get budget with actual payments
-   * - Combines budget standard (from fee_calculations)
+   * - Combines budget standard (from fee_calculations + billing_letters)
    * - With actual payments (from actual_payments)
    *
    * @param year - Tax year
@@ -520,7 +556,7 @@ class DashboardService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Get budget standard
+      // Get budget standard from fee_calculations
       const { data: budgetData, error: budgetError } = await supabase
         .from('fee_calculations')
         .select('final_amount, total_amount')
@@ -528,6 +564,17 @@ class DashboardService extends BaseService {
         .eq('year', year);
 
       if (budgetError) throw budgetError;
+
+      // Get billing letters for the year
+      const { data: billingData, error: billingError } = await supabase
+        .from('billing_letters')
+        .select('amount_before_vat, total_amount, status')
+        .eq('tenant_id', tenantId)
+        .neq('status', 'cancelled')
+        .gte('created_at', `${year}-01-01`)
+        .lt('created_at', `${year + 1}-01-01`);
+
+      if (billingError) throw billingError;
 
       // Get actual payments
       const { data: paymentsData, error: paymentsError } = await supabase
@@ -539,10 +586,18 @@ class DashboardService extends BaseService {
 
       if (paymentsError) throw paymentsError;
 
-      // Calculate budget standard
-      const budgetStandard = {
+      // Calculate budget standard (fee_calculations + billing_letters)
+      const feesBudget = {
         beforeVat: budgetData?.reduce((sum, f) => sum + (f.final_amount || 0), 0) || 0,
         withVat: budgetData?.reduce((sum, f) => sum + (f.total_amount || 0), 0) || 0,
+      };
+      const billingBudget = {
+        beforeVat: billingData?.reduce((sum, b) => sum + (b.amount_before_vat || 0), 0) || 0,
+        withVat: billingData?.reduce((sum, b) => sum + (b.total_amount || 0), 0) || 0,
+      };
+      const budgetStandard = {
+        beforeVat: feesBudget.beforeVat + billingBudget.beforeVat,
+        withVat: feesBudget.withVat + billingBudget.withVat,
       };
 
       // Calculate actual payments

@@ -16,6 +16,7 @@ export interface ClientFilters {
   clientType: string;
   companySubtype: string;
   groupId: string;
+  status: string; // Client status: all, active, inactive, pending, adhoc
 }
 
 export interface UseClientsReturn {
@@ -65,6 +66,7 @@ const DEFAULT_FILTERS: ClientFilters = {
   clientType: 'all',
   companySubtype: 'all',
   groupId: 'all',
+  status: 'all', // Default: show all client statuses
 };
 
 const PAGE_SIZE = 20;
@@ -102,7 +104,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
   // Load clients whenever search/filters/page changes
   useEffect(() => {
     loadClients();
-  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, currentPage]);
+  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, currentPage]);
 
   // Load clients
   const loadClients = useCallback(async () => {
@@ -124,6 +126,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
         if (filters.companySubtype !== 'all') apiFilters.company_subtype = filters.companySubtype;
         if (filters.groupId === 'none') apiFilters.group_id = 'null';
         else if (filters.groupId !== 'all') apiFilters.group_id = filters.groupId;
+        if (filters.status !== 'all') apiFilters.status = filters.status;
 
         // Exclude freelancers if requested (used on Companies page)
         if (excludeFreelancers) apiFilters.client_type_neq = 'freelancer';

@@ -1113,21 +1113,30 @@ class CollectionService extends BaseService {
     return Promise.all(
       viewData.map(async (row) => {
         const daysSinceSent = Number(row.days_since_sent || 0);
+        const sourceType = (row.source_type as string) || 'fee';
+        const feeCalculationId = row.fee_calculation_id as string | null;
+        const billingLetterId = row.billing_letter_id as string | null;
 
-        // Calculate alerts
-        const alerts = await this.calculateRowAlerts(row.fee_calculation_id as string, daysSinceSent);
+        // Calculate alerts (only for fee calculations, billing letters don't have alerts yet)
+        const alerts = feeCalculationId
+          ? await this.calculateRowAlerts(feeCalculationId, daysSinceSent)
+          : [];
 
         const amountPaid = Number(row.amount_paid || 0);
         const amountOriginal = Number(row.amount_original || 0);
         const amountRemaining = Number(row.amount_remaining || 0);
 
         return {
+          // Source type for distinguishing fee vs billing
+          source_type: sourceType as 'fee' | 'billing',
           client_id: row.client_id as string,
           client_name: row.company_name as string,
           company_name_hebrew: row.company_name_hebrew as string | undefined,
           contact_email: row.contact_email as string,
           contact_phone: row.contact_phone as string | undefined,
-          fee_calculation_id: row.fee_calculation_id as string,
+          fee_calculation_id: feeCalculationId,
+          billing_letter_id: billingLetterId,
+          service_description: row.service_description as string | undefined,
           letter_sent_date: row.letter_sent_date as string,
           letter_opened: !!row.letter_opened_at,
           letter_opened_at: row.letter_opened_at as string | undefined,
@@ -1135,7 +1144,7 @@ class CollectionService extends BaseService {
           days_since_sent: daysSinceSent,
           amount_original: amountOriginal,
           amount_before_vat: row.amount_before_vat ? Number(row.amount_before_vat) : undefined,
-          // Bookkeeping: use total annual amounts from view
+          // Bookkeeping: use total annual amounts from view (only for fees)
           bookkeeping_before_vat: row.bookkeeping_before_vat ? Number(row.bookkeeping_before_vat) : undefined,
           bookkeeping_with_vat: row.bookkeeping_with_vat ? Number(row.bookkeeping_with_vat) : undefined,
           payment_method_selected: row.payment_method_selected as string | undefined,

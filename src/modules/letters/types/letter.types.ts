@@ -15,7 +15,7 @@ export type LetterStatus =
   | 'sent_print'     // הודפס - printed
   | 'cancelled';     // בוטל - cancelled, excluded from collection
 
-export type LetterTemplateType = 
+export type LetterTemplateType =
   | 'external_index_only'        // A - חיצוניים - שינוי מדד
   | 'external_real_change'       // B - חיצוניים - שינוי ריאלי
   | 'external_as_agreed'         // C - חיצוניים - כמוסכם
@@ -26,7 +26,8 @@ export type LetterTemplateType =
   | 'retainer_real'              // E2 - ריטיינר - שינוי ריאלי
   | 'internal_bookkeeping_index' // F1 - פנימי הנהלת חשבונות - שינוי מדד
   | 'internal_bookkeeping_real'  // F2 - פנימי הנהלת חשבונות - שינוי ריאלי
-  | 'internal_bookkeeping_agreed'; // F3 - פנימי הנהלת חשבונות - כמוסכם
+  | 'internal_bookkeeping_agreed' // F3 - פנימי הנהלת חשבונות - כמוסכם
+  | 'billing_letter';            // G - מכתב חיוב כללי
 
 export interface LetterTemplate {
   id: string;

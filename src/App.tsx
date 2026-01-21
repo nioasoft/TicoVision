@@ -56,6 +56,11 @@ const BroadcastPage = lazy(() => import('@/modules/broadcast/pages/BroadcastPage
 // Protocol Management System
 const ProtocolsPage = lazy(() => import('@/modules/protocols/pages/ProtocolsPage'));
 
+// Billing Letters System
+const BillingLetterBuilder = lazy(() => import('@/modules/billing/components/BillingLetterBuilder').then(m => ({ default: m.BillingLetterBuilder })));
+const BillingLetterPreview = lazy(() => import('@/modules/billing/components/BillingLetterPreview').then(m => ({ default: m.BillingLetterPreview })));
+const BillingLetterList = lazy(() => import('@/modules/billing/components/BillingLetterList').then(m => ({ default: m.BillingLetterList })));
+
 // Collection System pages
 const CollectionDashboard = lazy(() => import('@/modules/collections/pages/CollectionDashboard').then(m => ({ default: m.CollectionDashboard })));
 const TodaysWorklistPage = lazy(() => import('@/modules/collections/pages/TodaysWorklistPage').then(m => ({ default: m.TodaysWorklistPage })));
@@ -356,6 +361,23 @@ function App() {
                       <Route path="/collections/disputes" element={
                         <ErrorBoundary>
                           <DisputesPage />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Billing Letters - within Collection System */}
+                      <Route path="/collections/billing" element={
+                        <ErrorBoundary>
+                          <BillingLetterList />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/collections/billing/new" element={
+                        <ErrorBoundary>
+                          <BillingLetterBuilder />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/collections/billing/:id" element={
+                        <ErrorBoundary>
+                          <BillingLetterPreview />
                         </ErrorBoundary>
                       } />
 

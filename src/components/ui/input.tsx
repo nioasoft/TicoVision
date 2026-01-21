@@ -9,7 +9,10 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 
     React.useLayoutEffect(() => {
       if (inputRef.current && dir === "ltr" && type === "date") {
-        inputRef.current.style.setProperty('text-align', 'right', 'important')
+        // Only set text-align if not explicitly provided in style prop
+        if (!style?.textAlign) {
+          inputRef.current.style.setProperty('text-align', 'right', 'important')
+        }
       }
     }, [dir, type, style])
 
@@ -24,7 +27,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
         )}
         style={{
           ...style,
-          textAlign: (dir === "ltr" && type === "date") ? 'right' : (style?.textAlign || 'right'),
+          textAlign: style?.textAlign || ((dir === "ltr" && type === "date") ? 'right' : 'right'),
         } as React.CSSProperties}
         ref={inputRef}
         {...props}

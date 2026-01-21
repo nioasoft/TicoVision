@@ -25,7 +25,10 @@ import type { ClientAttachment } from '@/types/file-attachment.types';
  */
 export interface RecordPaymentData {
   clientId: string;
-  feeCalculationId: string;
+  /** Fee calculation ID - required for fee-based payments */
+  feeCalculationId?: string;
+  /** Billing letter ID - required for billing letter payments */
+  billingLetterId?: string;
 
   // Payment details
   amountPaid: number;                    // Total amount paid
@@ -113,15 +116,20 @@ class ActualPaymentService extends BaseService {
   /**
    * Record a new actual payment
    * - Creates actual_payment record
-   * - Calculates and creates payment_deviation
-   * - Updates fee_calculation with actual_payment_id
+   * - Calculates and creates payment_deviation (for fee calculations only)
+   * - Updates fee_calculation or billing_letter with actual_payment_id
    * - Optionally creates installments
    *
-   * @param data - Payment data to record
+   * @param data - Payment data to record (must have either feeCalculationId or billingLetterId)
    * @returns Created payment record
    */
   async recordPayment(data: RecordPaymentData): Promise<ServiceResponse<ActualPayment>> {
     try {
+      // Validate that we have at least one source
+      if (!data.feeCalculationId && !data.billingLetterId) {
+        throw new Error('חובה לציין feeCalculationId או billingLetterId');
+      }
+
       const tenantId = await this.getTenantId();
 
       // 1. Calculate VAT breakdown
@@ -136,7 +144,8 @@ class ActualPaymentService extends BaseService {
         .insert({
           tenant_id: tenantId,
           client_id: data.clientId,
-          fee_calculation_id: data.feeCalculationId,
+          fee_calculation_id: data.feeCalculationId || null,
+          billing_letter_id: data.billingLetterId || null,
           amount_paid: data.amountPaid,
           amount_before_vat: vatBreakdown.beforeVat,
           amount_vat: vatBreakdown.vat,
@@ -155,58 +164,81 @@ class ActualPaymentService extends BaseService {
 
       if (paymentError) throw paymentError;
 
-      // 3. Calculate and create deviation
-      const { data: deviationCalc, error: deviationCalcError } = await supabase
-        .rpc('calculate_payment_deviation', {
-          p_fee_calculation_id: data.feeCalculationId,
-          p_actual_amount: data.amountPaid,
-        })
-        .single();
+      // 3. For fee calculations only: Calculate and create deviation
+      if (data.feeCalculationId) {
+        const { data: deviationCalc, error: deviationCalcError } = await supabase
+          .rpc('calculate_payment_deviation', {
+            p_fee_calculation_id: data.feeCalculationId,
+            p_actual_amount: data.amountPaid,
+          })
+          .single();
 
-      if (deviationCalcError) {
-        // Deviation calculation is not critical - log but continue
-        console.error('Failed to calculate deviation:', deviationCalcError);
-      }
+        if (deviationCalcError) {
+          // Deviation calculation is not critical - log but continue
+          console.error('Failed to calculate deviation:', deviationCalcError);
+        }
 
-      if (deviationCalc?.success) {
+        if (deviationCalc?.success) {
+          await supabase
+            .from('payment_deviations')
+            .insert({
+              tenant_id: tenantId,
+              client_id: data.clientId,
+              fee_calculation_id: data.feeCalculationId,
+              actual_payment_id: payment.id,
+              expected_discount_percent: deviationCalc.expected_discount_percent,
+              expected_amount: deviationCalc.expected_amount,
+              actual_amount: deviationCalc.actual_amount,
+              deviation_amount: deviationCalc.deviation_amount,
+              deviation_percent: deviationCalc.deviation_percent,
+              alert_level: deviationCalc.alert_level,
+              alert_message: deviationCalc.alert_message,
+            });
+        }
+
+        // 4a. Update fee_calculation
         await supabase
-          .from('payment_deviations')
-          .insert({
-            tenant_id: tenantId,
-            client_id: data.clientId,
-            fee_calculation_id: data.feeCalculationId,
+          .from('fee_calculations')
+          .update({
             actual_payment_id: payment.id,
-            expected_discount_percent: deviationCalc.expected_discount_percent,
-            expected_amount: deviationCalc.expected_amount,
-            actual_amount: deviationCalc.actual_amount,
-            deviation_amount: deviationCalc.deviation_amount,
-            deviation_percent: deviationCalc.deviation_percent,
-            alert_level: deviationCalc.alert_level,
-            alert_message: deviationCalc.alert_message,
-          });
-      }
+            has_deviation: deviationCalc?.alert_level !== 'info',
+            deviation_alert_level: deviationCalc?.alert_level,
+            status: 'paid',
+            payment_date: data.paymentDate.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', data.feeCalculationId)
+          .eq('tenant_id', tenantId);
 
-      // 4. Update fee_calculation
-      await supabase
-        .from('fee_calculations')
-        .update({
-          actual_payment_id: payment.id,
+        // 5a. Log action for fee payment
+        await this.logAction('record_payment', payment.id, {
+          client_id: data.clientId,
+          amount: data.amountPaid,
+          method: data.paymentMethod,
           has_deviation: deviationCalc?.alert_level !== 'info',
-          deviation_alert_level: deviationCalc?.alert_level,
-          status: 'paid',
-          payment_date: data.paymentDate.toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', data.feeCalculationId)
-        .eq('tenant_id', tenantId);
+        });
+      } else if (data.billingLetterId) {
+        // 4b. Update billing_letter
+        await supabase
+          .from('billing_letters')
+          .update({
+            actual_payment_id: payment.id,
+            status: 'paid',
+            payment_date: data.paymentDate.toISOString().split('T')[0],
+            payment_reference: data.paymentReference || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', data.billingLetterId)
+          .eq('tenant_id', tenantId);
 
-      // 5. Log action
-      await this.logAction('record_payment', payment.id, {
-        client_id: data.clientId,
-        amount: data.amountPaid,
-        method: data.paymentMethod,
-        has_deviation: deviationCalc?.alert_level !== 'info',
-      });
+        // 5b. Log action for billing letter payment
+        await this.logAction('record_billing_payment', payment.id, {
+          client_id: data.clientId,
+          billing_letter_id: data.billingLetterId,
+          amount: data.amountPaid,
+          method: data.paymentMethod,
+        });
+      }
 
       return { data: payment, error: null };
     } catch (error) {

@@ -56,6 +56,23 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
 
       {/* Filter Selects */}
       <div className="flex gap-3 items-center flex-wrap">
+        {/* Client Status Filter (active, inactive, pending, adhoc) */}
+        <Select
+          value={filters.status || 'all'}
+          onValueChange={(value) => onFilterChange({ status: value })}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="סוג לקוח" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">כל הלקוחות</SelectItem>
+            <SelectItem value="active">פעילים</SelectItem>
+            <SelectItem value="adhoc">חריגים/חד-פעמיים</SelectItem>
+            <SelectItem value="inactive">לא פעילים</SelectItem>
+            <SelectItem value="pending">ממתינים</SelectItem>
+          </SelectContent>
+        </Select>
+
         {/* Company Status Filter */}
         <Select
           value={filters.companyStatus}

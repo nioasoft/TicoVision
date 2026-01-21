@@ -118,7 +118,7 @@ export interface Client {
     city?: string;
     postal_code?: string;
   };
-  status: 'active' | 'inactive' | 'pending';
+  status: 'active' | 'inactive' | 'pending' | 'adhoc';
   // New classification fields
   client_type: ClientType;
   company_status: CompanyStatus;
@@ -174,7 +174,7 @@ export interface CreateClientDto {
     city?: string;
     postal_code?: string;
   };
-  status?: 'active' | 'inactive' | 'pending';
+  status?: 'active' | 'inactive' | 'pending' | 'adhoc';
   // Classification fields
   client_type?: ClientType;
   company_status?: CompanyStatus;
@@ -830,13 +830,13 @@ export class ClientService extends BaseService {
     }
   }
 
-  async updateStatus(id: string, status: 'active' | 'inactive' | 'pending'): Promise<ServiceResponse<Client>> {
+  async updateStatus(id: string, status: 'active' | 'inactive' | 'pending' | 'adhoc'): Promise<ServiceResponse<Client>> {
     return this.update(id, { status });
   }
 
   async bulkUpdateStatus(
     ids: string[],
-    status: 'active' | 'inactive' | 'pending'
+    status: 'active' | 'inactive' | 'pending' | 'adhoc'
   ): Promise<ServiceResponse<boolean>> {
     try {
       const tenantId = await this.getTenantId();

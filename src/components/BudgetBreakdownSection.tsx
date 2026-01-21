@@ -27,10 +27,13 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
     breakdown.bookkeeping_internal.actual_before_vat +
     breakdown.bookkeeping_retainer.actual_before_vat;
 
+  const billingLettersActualBeforeVat = breakdown.billing_letters?.actual_before_vat || 0;
+
   const grandTotalActualBeforeVat =
     auditActualBeforeVat +
     bookkeepingActualBeforeVat +
     breakdown.freelancers.actual_before_vat +
+    billingLettersActualBeforeVat +
     breakdown.exceptions.actual_before_vat;
 
   // חישוב סכומים תקן (STANDARD - before discounts) לכל קטגוריה
@@ -43,10 +46,13 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
     breakdown.bookkeeping_internal.before_vat +
     breakdown.bookkeeping_retainer.before_vat;
 
+  const billingLettersBeforeVat = breakdown.billing_letters?.before_vat || 0;
+
   const grandTotalBeforeVat =
     auditBeforeVat +
     bookkeepingBeforeVat +
     breakdown.freelancers.before_vat +
+    billingLettersBeforeVat +
     breakdown.exceptions.before_vat;
 
   return (
@@ -243,26 +249,72 @@ export function BudgetBreakdownSection({ breakdown, taxYear }: Props) {
           </CardContent>
         </Card>
 
-        {/* 3️⃣ חריגים */}
-        <Card className="border-orange-200 opacity-60">
+        {/* 3️⃣ הכנסה חריגה (מכתבי חיוב) */}
+        <Card className="hover:shadow-lg transition-shadow border-orange-200">
           <CardHeader className="pb-3 bg-orange-50">
             <CardTitle className="text-lg rtl:text-right ltr:text-left text-orange-700 flex items-center justify-between">
-              <span>חריגים</span>
+              <span>הכנסה חריגה</span>
               <span className="text-2xl">⚡</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="text-3xl font-bold text-gray-400 mb-1">
-              ₪0
+            {/* סכום בפועל - בולט */}
+            <div className="text-3xl font-bold text-orange-700 mb-1">
+              {formatILS(billingLettersActualBeforeVat)}
             </div>
-            <p className="text-xs text-gray-400">בקרוב</p>
+            {/* סכום תקן - קטן עם toggle */}
+            {showStandard && (
+              <button
+                onClick={() => setShowStandard(false)}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1"
+              >
+                <Eye className="w-3 h-3" />
+                <span>תקן: {formatILS(billingLettersBeforeVat)}</span>
+              </button>
+            )}
+            {!showStandard && (
+              <button
+                onClick={() => setShowStandard(true)}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 mb-1"
+              >
+                <EyeOff className="w-3 h-3" />
+                <span>הצג תקן</span>
+              </button>
+            )}
+            <p className="text-xs text-gray-500">כולל מע"מ: {formatILS(breakdown.billing_letters?.with_vat || 0)}</p>
 
-            <div className="mt-4 px-3 py-2 bg-orange-50 rounded-md flex items-start gap-2">
-              <AlertCircle size={16} className="text-orange-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-orange-700">
-                הכנסות חריגות יתווספו בגרסה הבאה
-              </p>
-            </div>
+            <button
+              onClick={() => toggleExpand('billing')}
+              className="w-full mt-4 px-3 py-2 flex items-center justify-between text-sm font-medium text-orange-600 hover:bg-orange-50 rounded-md transition-colors"
+            >
+              <span>{formatNumber(breakdown.billing_letters?.client_count || 0)} מכתבי חיוב</span>
+              {expandedColumn === 'billing' ?
+                <ChevronUp size={18} /> :
+                <ChevronDown size={18} />
+              }
+            </button>
+
+            {expandedColumn === 'billing' && (
+              <div className="mt-4 text-sm border-t border-orange-100 pt-4">
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold text-gray-700">סה"כ חיובים</span>
+                    <span className="text-orange-700 font-bold">
+                      {formatILS(billingLettersBeforeVat)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>כולל מע"מ:</span>
+                      <span>{formatILS(breakdown.billing_letters?.with_vat || 0)}</span>
+                    </div>
+                    <p className="text-gray-500 mt-2">
+                      מכתבי חיוב כלליים (לא שכ"ט)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

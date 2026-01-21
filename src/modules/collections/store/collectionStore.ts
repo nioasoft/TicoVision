@@ -140,7 +140,8 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
   // Select all rows
   selectAll: () => {
     const rows = get().dashboardData?.rows || [];
-    const allIds = rows.map((row) => row.fee_calculation_id);
+    // Use fee_calculation_id for fees, billing_letter_id for billing letters
+    const allIds = rows.map((row) => row.fee_calculation_id || row.billing_letter_id || '').filter(Boolean);
     set({ selectedRows: allIds });
   },
 

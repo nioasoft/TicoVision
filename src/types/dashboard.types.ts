@@ -5,7 +5,7 @@
 
 /**
  * תקן תקציב (Budget Standard)
- * סכומי שכר טרחה + הנהלת חשבונות לפני ואחרי מע"מ
+ * סכומי שכר טרחה + הנהלת חשבונות + חיובים כלליים לפני ואחרי מע"מ
  */
 export interface BudgetStandard {
   // שכר טרחה (Audit fees)
@@ -15,6 +15,10 @@ export interface BudgetStandard {
   // הנהלת חשבונות (Bookkeeping fees)
   bookkeeping_before_vat: number;
   bookkeeping_with_vat: number;
+
+  // חיובים כלליים (Billing letters - general charges)
+  billing_before_vat: number;
+  billing_with_vat: number;
 
   // סה"כ (Total)
   total_before_vat: number;
@@ -76,6 +80,7 @@ export interface BudgetByCategory {
 
   // נוספים
   freelancers: BudgetCategory;  // עצמאים
+  billing_letters: BudgetCategory;  // חיובים כלליים (מכתבי חיוב)
   exceptions: BudgetCategory;   // חריגים (בקרוב)
 
   // סה"כ כללי

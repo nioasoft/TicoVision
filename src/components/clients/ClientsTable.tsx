@@ -51,6 +51,15 @@ interface ClientRowProps {
 const ClientRow = React.memo<ClientRowProps>(
   ({ client, isSelected, canEdit, canDelete, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
     const getStatusBadge = (status: string) => {
+      // Adhoc clients have a special purple badge
+      if (status === 'adhoc') {
+        return (
+          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+            חד-פעמי
+          </Badge>
+        );
+      }
+
       const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
         active: 'default',
         inactive: 'secondary',
