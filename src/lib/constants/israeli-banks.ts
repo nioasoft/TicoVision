@@ -17,4 +17,5 @@ export const ISRAELI_BANKS: ComboboxOption[] = [
   { value: 'בנק אוצר החייל', label: 'בנק אוצר החייל' },
   { value: 'בנק מרכנתיל דיסקונט', label: 'בנק מרכנתיל דיסקונט' },
   { value: 'ONE ZERO', label: 'ONE ZERO' },
+  { value: 'לכל מען דבעי', label: 'לכל מען דבעי' },
 ];
