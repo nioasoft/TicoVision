@@ -2207,7 +2207,6 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                                 handleAddManualEmail();
                               }
                             }}
-                            placeholder="example@email.com"
                             dir="ltr"
                             className="flex-1 text-left"
                           />

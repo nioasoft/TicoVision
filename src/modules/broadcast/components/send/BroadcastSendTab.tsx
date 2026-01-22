@@ -240,7 +240,7 @@ export const BroadcastSendTab: React.FC = () => {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="לדוגמה: עדכון שכר טרחה 2026"
+                  placeholder="שם ההפצה"
                   className="rtl:text-right"
                 />
               </div>

@@ -260,7 +260,6 @@ export function PublicTicketForm() {
               id="name"
               value={formData.submitter_name}
               onChange={(e) => handleInputChange('submitter_name', e.target.value)}
-              placeholder="ישראל ישראלי"
               className="pr-10 text-right"
               dir="rtl"
             />
@@ -279,7 +278,6 @@ export function PublicTicketForm() {
               type="email"
               value={formData.submitter_email}
               onChange={(e) => handleInputChange('submitter_email', e.target.value)}
-              placeholder="your@email.com"
               className="pr-10"
               dir="ltr"
             />
@@ -322,7 +320,6 @@ export function PublicTicketForm() {
             id="tax_id"
             value={formData.submitter_tax_id}
             onChange={(e) => handleInputChange('submitter_tax_id', e.target.value)}
-            placeholder="514788590"
             className="max-w-xs"
             dir="ltr"
           />
