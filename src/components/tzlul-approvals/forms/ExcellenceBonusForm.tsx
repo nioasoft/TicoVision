@@ -23,7 +23,7 @@ export function ExcellenceBonusForm({ value, onChange, disabled }: ExcellenceBon
           {/* Statement Date */}
           <div className="space-y-2">
             <Label htmlFor="statement-date" className="text-right block">
-              תאריך ההצהרה <span className="text-red-500">*</span>
+              תאריך ההצהרה 
             </Label>
             <Input
               id="statement-date"

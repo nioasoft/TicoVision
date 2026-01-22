@@ -150,7 +150,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
           {/* Company Name */}
           <div className="space-y-2">
             <Label htmlFor="companyName" className="text-right block">
-              שם החברה <span className="text-red-500">*</span>
+              שם החברה 
             </Label>
             <Input
               id="companyName"
@@ -168,7 +168,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
           {/* Tax ID */}
           <div className="space-y-2">
             <Label htmlFor="taxId" className="text-right block">
-              ח.פ (מספר עוסק) <span className="text-red-500">*</span>
+              ח.פ (מספר עוסק) 
             </Label>
             <Input
               id="taxId"
@@ -187,7 +187,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-right block">
-              אימייל <span className="text-red-500">*</span>
+              אימייל 
             </Label>
             <Input
               id="email"

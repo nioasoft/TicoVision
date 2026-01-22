@@ -28,7 +28,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -45,7 +45,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
           {/* Tax Year */}
           <div className="space-y-2">
             <Label htmlFor="tax-year" className="text-right block">
-              שנת המס <span className="text-red-500">*</span>
+              שנת המס 
             </Label>
             <Input
               id="tax-year"
@@ -62,7 +62,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
           {/* Bookkeeper Name */}
           <div className="space-y-2">
             <Label htmlFor="bookkeeper-name" className="text-right block">
-              שם מנהל/ת חשבונות לשליחה <span className="text-red-500">*</span>
+              שם מנהל/ת חשבונות לשליחה 
             </Label>
             <Input
               id="bookkeeper-name"
@@ -82,7 +82,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
           {/* Free Text Documents - Main Free Text Field */}
           <div className="space-y-2">
             <Label htmlFor="free-text-documents" className="text-right block">
-              רשימת המסמכים הנדרשים <span className="text-red-500">*</span>
+              רשימת המסמכים הנדרשים 
             </Label>
             <Textarea
               id="free-text-documents"

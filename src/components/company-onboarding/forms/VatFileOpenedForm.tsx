@@ -50,7 +50,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
           {/* Subject Line (הנדון) - readonly */}
           <div className="space-y-1">
             <Label htmlFor="subject" className="text-right block text-sm">
-              הנדון <span className="text-red-500">*</span>
+              הנדון 
             </Label>
             <Input
               id="subject"
@@ -66,7 +66,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="company-id" className="text-right block text-sm">
-                מספר ח.פ <span className="text-red-500">*</span>
+                מספר ח.פ 
               </Label>
               <Input
                 id="company-id"
@@ -83,7 +83,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
 
             <div className="space-y-1">
               <Label htmlFor="vat-number" className="text-right block text-sm">
-                מספר עוסק מורשה <span className="text-red-500">*</span>
+                מספר עוסק מורשה 
               </Label>
               <Input
                 id="vat-number"
@@ -103,7 +103,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label htmlFor="vat-report-frequency" className="text-right block text-sm">
-                תדירות דיווח <span className="text-red-500">*</span>
+                תדירות דיווח 
               </Label>
               <Select
                 value={value.vat_report_frequency || 'חודשי'}
@@ -122,7 +122,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
 
             <div className="space-y-1">
               <Label htmlFor="first-report-date" className="text-right block text-sm">
-                מועד דיווח ראשון <span className="text-red-500">*</span>
+                מועד דיווח ראשון 
               </Label>
               <Input
                 id="first-report-date"
@@ -137,7 +137,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
 
             <div className="space-y-1">
               <Label htmlFor="first-report-period" className="text-right block text-sm">
-                בגין חודש <span className="text-red-500">*</span>
+                בגין חודש 
               </Label>
               <Input
                 id="first-report-period"

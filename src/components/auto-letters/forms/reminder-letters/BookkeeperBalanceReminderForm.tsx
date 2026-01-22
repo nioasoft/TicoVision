@@ -27,7 +27,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -44,7 +44,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
           {/* Bookkeeper Name */}
           <div className="space-y-2">
             <Label htmlFor="bookkeeper-name" className="text-right block">
-              שם מנהל/ת החשבונות <span className="text-red-500">*</span>
+              שם מנהל/ת החשבונות 
             </Label>
             <Input
               id="bookkeeper-name"
@@ -64,7 +64,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
           {/* Meeting Date */}
           <div className="space-y-2">
             <Label htmlFor="meeting-date" className="text-right block">
-              תאריך הישיבה <span className="text-red-500">*</span>
+              תאריך הישיבה 
             </Label>
             <Input
               id="meeting-date"
@@ -83,7 +83,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
           {/* Fiscal Year */}
           <div className="space-y-2">
             <Label htmlFor="fiscal-year" className="text-right block">
-              שנת המס <span className="text-red-500">*</span>
+              שנת המס 
             </Label>
             <Input
               id="fiscal-year"

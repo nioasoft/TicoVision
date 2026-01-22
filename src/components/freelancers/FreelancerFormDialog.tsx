@@ -296,7 +296,7 @@ export function FreelancerFormDialog({
             {/* Tax ID - Separate field */}
             <div className="space-y-2">
               <Label htmlFor="tax_id" className="rtl:text-right">
-                תעודת זהות <span className="text-destructive">*</span>
+                תעודת זהות 
               </Label>
               <Input
                 id="tax_id"

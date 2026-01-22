@@ -250,7 +250,7 @@ export function BranchManagementDialog({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="branch-name" className="text-right block">
-                      שם הסניף <span className="text-red-500">*</span>
+                      שם הסניף 
                     </Label>
                     <Input
                       id="branch-name"

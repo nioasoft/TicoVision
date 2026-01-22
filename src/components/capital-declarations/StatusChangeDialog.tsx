@@ -218,7 +218,7 @@ export function StatusChangeDialog({
               {/* Screenshot upload */}
               <div className="space-y-2">
                 <Label className="text-sm">
-                  צילום הגשה <span className="text-red-500">*</span>
+                  צילום הגשה 
                 </Label>
 
                 {screenshot ? (

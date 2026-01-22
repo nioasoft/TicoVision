@@ -28,7 +28,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -45,7 +45,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
           {/* Deadline Topic */}
           <div className="space-y-2">
             <Label htmlFor="deadline-topic" className="text-right block">
-              נושא הדדליין <span className="text-red-500">*</span>
+              נושא הדדליין 
             </Label>
             <Input
               id="deadline-topic"
@@ -62,7 +62,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
           {/* Deadline Date */}
           <div className="space-y-2">
             <Label htmlFor="deadline-date" className="text-right block">
-              תאריך הדדליין <span className="text-red-500">*</span>
+              תאריך הדדליין 
             </Label>
             <Input
               id="deadline-date"
@@ -78,7 +78,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
           {/* Required Actions */}
           <div className="space-y-2">
             <Label htmlFor="required-actions" className="text-right block">
-              פעולות נדרשות <span className="text-red-500">*</span>
+              פעולות נדרשות 
             </Label>
             <Textarea
               id="required-actions"

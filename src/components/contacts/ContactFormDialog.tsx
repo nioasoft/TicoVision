@@ -276,7 +276,7 @@ export function ContactFormDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name" className="text-right block">
-                    שם מלא <span className="text-destructive">*</span>
+                    שם מלא 
                   </Label>
                   <Input
                     id="full_name"

@@ -125,7 +125,7 @@ export function IncomeConfirmationForm({
           {/* Recipient (לכבוד) */}
           <div className="space-y-2">
             <Label htmlFor="recipient-name" className="text-right block">
-              לכבוד (נמען) <span className="text-red-500">*</span>
+              לכבוד (נמען) 
             </Label>
             <Input
               id="recipient-name"
@@ -142,7 +142,7 @@ export function IncomeConfirmationForm({
           {/* Company Display (from main recipient selection) */}
           <div className="space-y-2">
             <Label className="text-right block">
-              פרטי החברה <span className="text-red-500">*</span>
+              פרטי החברה 
             </Label>
             {companyName ? (
               <div className="p-3 bg-gray-50 border rounded-md">

@@ -24,7 +24,7 @@ export function TransferredAmountsForm({ value, onChange, disabled }: Transferre
             {/* Period Start */}
             <div className="space-y-2">
               <Label htmlFor="period-start" className="text-right block">
-                תחילת תקופה <span className="text-red-500">*</span>
+                תחילת תקופה 
               </Label>
               <Input
                 id="period-start"
@@ -40,7 +40,7 @@ export function TransferredAmountsForm({ value, onChange, disabled }: Transferre
             {/* Period End */}
             <div className="space-y-2">
               <Label htmlFor="period-end" className="text-right block">
-                סוף תקופה <span className="text-red-500">*</span>
+                סוף תקופה 
               </Label>
               <Input
                 id="period-end"
@@ -56,7 +56,7 @@ export function TransferredAmountsForm({ value, onChange, disabled }: Transferre
             {/* As Of Date */}
             <div className="space-y-2">
               <Label htmlFor="as-of-date" className="text-right block">
-                נכון ליום <span className="text-red-500">*</span>
+                נכון ליום 
               </Label>
               <Input
                 id="as-of-date"

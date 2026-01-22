@@ -79,7 +79,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
           {/* Scenario Selection */}
           <div className="space-y-3">
             <Label className="text-right block">
-              בחר תרחיש <span className="text-red-500">*</span>
+              בחר תרחיש 
             </Label>
 
             {/* Scenario A: 12+ months */}
@@ -144,7 +144,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="period-start-12" className="text-right block">
-                      חודש התחלה <span className="text-red-500">*</span>
+                      חודש התחלה 
                     </Label>
                     <Input
                       id="period-start-12"
@@ -170,7 +170,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="period-end-12" className="text-right block">
-                      חודש סיום <span className="text-red-500">*</span>
+                      חודש סיום 
                     </Label>
                     <Input
                       id="period-end-12"
@@ -194,7 +194,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="total-turnover-12" className="text-right block">
-                    סך מחזור (ש"ח) <span className="text-red-500">*</span>
+                    סך מחזור (ש"ח) 
                   </Label>
                   <MoneyInput
                     value={value.scenario_12_plus?.total_turnover === 0 ? '' : (value.scenario_12_plus?.total_turnover || '')}
@@ -225,7 +225,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="period-start-4" className="text-right block">
-                      חודש התחלה <span className="text-red-500">*</span>
+                      חודש התחלה 
                     </Label>
                     <Input
                       id="period-start-4"
@@ -269,7 +269,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="months-count" className="text-right block">
-                      מספר חודשים <span className="text-red-500">*</span>
+                      מספר חודשים 
                     </Label>
                     <Input
                       id="months-count"
@@ -298,7 +298,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="total-turnover-4" className="text-right block">
-                    סך מחזור (ש"ח) <span className="text-red-500">*</span>
+                    סך מחזור (ש"ח) 
                   </Label>
                   <MoneyInput
                     value={value.scenario_4_to_11?.total_turnover === 0 ? '' : (value.scenario_4_to_11?.total_turnover || '')}
@@ -328,7 +328,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="estimated-costs" className="text-right block">
-                    עלות הקמת העסק (ש"ח) <span className="text-red-500">*</span>
+                    עלות הקמת העסק (ש"ח) 
                   </Label>
                   <MoneyInput
                     value={value.scenario_up_to_3?.estimated_annual_costs === 0 ? '' : (value.scenario_up_to_3?.estimated_annual_costs || '')}
@@ -349,7 +349,7 @@ export function TurnoverApprovalTab({ value, onChange, disabled, accountantTotal
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="estimate-basis" className="text-right block">
-                    בסיס להערכה <span className="text-red-500">*</span>
+                    בסיס להערכה 
                   </Label>
                   <Textarea
                     id="estimate-basis"

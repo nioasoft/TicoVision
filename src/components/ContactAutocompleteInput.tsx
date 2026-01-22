@@ -234,7 +234,6 @@ export function ContactAutocompleteInput({
         <div>
           <Label htmlFor={`${label}-phone`} className="text-right flex items-center justify-end gap-1 mb-2 rtl:text-right rtl:flex-row-reverse">
             <Smartphone className="h-4 w-4" />
-            {required && <span className="text-red-500">*</span>}
           </Label>
           <Input
             id={`${label}-phone`}

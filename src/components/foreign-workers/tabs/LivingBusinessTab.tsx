@@ -31,7 +31,7 @@ export function LivingBusinessTab({ value, onChange, disabled }: LivingBusinessT
           {/* Foreign Experts Count */}
           <div className="space-y-2">
             <Label htmlFor="foreign-experts" className="text-right block">
-              כמות עובדים זרים מומחים <span className="text-red-500">*</span>
+              כמות עובדים זרים מומחים 
             </Label>
             <Input
               id="foreign-experts"

@@ -103,7 +103,7 @@ export function AccountantAppointmentForm({
           {/* Company Display */}
           <div className="space-y-2">
             <Label className="text-right block">
-              פרטי החברה <span className="text-red-500">*</span>
+              פרטי החברה 
             </Label>
             {companyName ? (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -126,7 +126,7 @@ export function AccountantAppointmentForm({
           {/* Meeting Date */}
           <div className="space-y-2">
             <Label htmlFor="meeting-date" className="text-right block">
-              תאריך האסיפה <span className="text-red-500">*</span>
+              תאריך האסיפה 
             </Label>
             <Input
               id="meeting-date"
@@ -149,7 +149,7 @@ export function AccountantAppointmentForm({
           {/* Chairman */}
           <div className="space-y-2">
             <Label htmlFor="chairman-name" className="text-right block">
-              יו"ר האסיפה <span className="text-red-500">*</span>
+              יו"ר האסיפה 
             </Label>
             <div className="flex items-center gap-2 rtl:flex-row-reverse ltr:flex-row">
               <Input
@@ -229,7 +229,7 @@ export function AccountantAppointmentForm({
           {/* Previous Firm */}
           <div className="space-y-2">
             <Label htmlFor="previous-firm" className="text-right block">
-              משרד רואי החשבון הקודם <span className="text-red-500">*</span>
+              משרד רואי החשבון הקודם 
             </Label>
             <Input
               id="previous-firm"

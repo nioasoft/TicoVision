@@ -99,7 +99,7 @@ export function AuditedCompanyForm({
           {/* Company Display */}
           <div className="space-y-2">
             <Label className="text-right block">
-              פרטי החברה <span className="text-red-500">*</span>
+              פרטי החברה 
             </Label>
             {companyName ? (
               <div className="p-3 bg-gray-50 border rounded-md">
@@ -122,7 +122,7 @@ export function AuditedCompanyForm({
           {/* Bank Name */}
           <div className="space-y-2">
             <Label htmlFor="bank-name" className="text-right block">
-              שם הבנק <span className="text-red-500">*</span>
+              שם הבנק 
             </Label>
             <Combobox
               options={ISRAELI_BANKS}
@@ -147,7 +147,7 @@ export function AuditedCompanyForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="applicant-name" className="text-right block text-sm">
-                  שם מבקש/ת המשכנתא <span className="text-red-500">*</span>
+                  שם מבקש/ת המשכנתא 
                 </Label>
                 <Input
                   id="applicant-name"
@@ -162,7 +162,7 @@ export function AuditedCompanyForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="applicant-role" className="text-right block text-sm">
-                  תפקיד בחברה <span className="text-red-500">*</span>
+                  תפקיד בחברה 
                 </Label>
                 <Input
                   id="applicant-role"
@@ -188,7 +188,7 @@ export function AuditedCompanyForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="audited-year" className="text-right block text-sm">
-                  שנת הדוח המבוקר <span className="text-red-500">*</span>
+                  שנת הדוח המבוקר 
                 </Label>
                 <Input
                   id="audited-year"
@@ -205,7 +205,7 @@ export function AuditedCompanyForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="audit-date" className="text-right block text-sm">
-                  תאריך חוות הדעת <span className="text-red-500">*</span>
+                  תאריך חוות הדעת 
                 </Label>
                 <Input
                   id="audit-date"
@@ -235,7 +235,7 @@ export function AuditedCompanyForm({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="revenue-turnover" className="text-right block text-sm">
-                  מחזור ההכנסות (ללא מע"מ) <span className="text-red-500">*</span>
+                  מחזור ההכנסות (ללא מע"מ) 
                 </Label>
                 <div className="relative">
                   <Input
@@ -260,7 +260,7 @@ export function AuditedCompanyForm({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="net-profit-current" className="text-right block text-sm">
-                    רווח נקי לפני מס - שנה נוכחית <span className="text-red-500">*</span>
+                    רווח נקי לפני מס - שנה נוכחית 
                   </Label>
                   <div className="relative">
                     <Input
@@ -284,7 +284,7 @@ export function AuditedCompanyForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="net-profit-previous" className="text-right block text-sm">
-                    רווח נקי - שנה קודמת <span className="text-red-500">*</span>
+                    רווח נקי - שנה קודמת 
                   </Label>
                   <div className="relative">
                     <Input
@@ -309,7 +309,7 @@ export function AuditedCompanyForm({
 
               <div className="space-y-2">
                 <Label htmlFor="retained-earnings" className="text-right block text-sm">
-                  יתרת עודפים <span className="text-red-500">*</span>
+                  יתרת עודפים 
                 </Label>
                 <div className="relative">
                   <Input
@@ -356,7 +356,7 @@ export function AuditedCompanyForm({
 
             <div className="space-y-2">
               <Label htmlFor="registrar-date" className="text-right block text-sm">
-                תאריך דוח רשם החברות <span className="text-red-500">*</span>
+                תאריך דוח רשם החברות 
               </Label>
               <Input
                 id="registrar-date"

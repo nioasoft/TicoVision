@@ -55,7 +55,7 @@ export function OsekSubmittedForm({
           {/* Business Owner Display */}
           <div className="space-y-2">
             <Label className="text-right block">
-              פרטי העוסק <span className="text-red-500">*</span>
+              פרטי העוסק 
             </Label>
             {companyName ? (
               <div className="p-3 bg-gray-50 border rounded-md">
@@ -78,7 +78,7 @@ export function OsekSubmittedForm({
           {/* Bank Name */}
           <div className="space-y-2">
             <Label htmlFor="bank-name" className="text-right block">
-              שם הבנק <span className="text-red-500">*</span>
+              שם הבנק 
             </Label>
             <Combobox
               options={ISRAELI_BANKS}
@@ -98,7 +98,7 @@ export function OsekSubmittedForm({
           {/* Applicant Details */}
           <div className="space-y-2">
             <Label htmlFor="applicant-name" className="text-right block">
-              שם מבקש/ת המשכנתא <span className="text-red-500">*</span>
+              שם מבקש/ת המשכנתא 
             </Label>
             <Input
               id="applicant-name"
@@ -122,7 +122,7 @@ export function OsekSubmittedForm({
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="report-year" className="text-right block text-sm">
-                  שנת הדוח <span className="text-red-500">*</span>
+                  שנת הדוח 
                 </Label>
                 <Input
                   id="report-year"
@@ -139,7 +139,7 @@ export function OsekSubmittedForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="submission-date" className="text-right block text-sm">
-                  תאריך הגשה <span className="text-red-500">*</span>
+                  תאריך הגשה 
                 </Label>
                 <Input
                   id="submission-date"
@@ -153,7 +153,7 @@ export function OsekSubmittedForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tax-office" className="text-right block text-sm">
-                  משרד השומה <span className="text-red-500">*</span>
+                  משרד השומה 
                 </Label>
                 <Input
                   id="tax-office"
@@ -184,7 +184,7 @@ export function OsekSubmittedForm({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="revenue-turnover" className="text-right block text-sm">
-                  מחזור ההכנסות (ללא מע"מ) <span className="text-red-500">*</span>
+                  מחזור ההכנסות (ללא מע"מ) 
                 </Label>
                 <div className="relative">
                   <Input
@@ -208,7 +208,7 @@ export function OsekSubmittedForm({
 
               <div className="space-y-2">
                 <Label htmlFor="taxable-income" className="text-right block text-sm">
-                  הכנסה חייבת מיגיעה אישית <span className="text-red-500">*</span>
+                  הכנסה חייבת מיגיעה אישית 
                 </Label>
                 <div className="relative">
                   <Input
@@ -232,7 +232,7 @@ export function OsekSubmittedForm({
 
               <div className="space-y-2">
                 <Label htmlFor="income-tax" className="text-right block text-sm">
-                  סכום מס ההכנסה <span className="text-red-500">*</span>
+                  סכום מס ההכנסה 
                 </Label>
                 <div className="relative">
                   <Input

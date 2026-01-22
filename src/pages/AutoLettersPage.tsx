@@ -1087,7 +1087,7 @@ export function AutoLettersPage() {
             {formState.recipientMode === 'client' && (
               <div className="space-y-1">
                 <Label className="text-right block text-sm">
-                  בחר לקוח <span className="text-red-500">*</span>
+                  בחר לקוח 
                 </Label>
                 <Combobox
                   options={clientOptions}
@@ -1108,7 +1108,7 @@ export function AutoLettersPage() {
             {formState.recipientMode === 'group' && (
               <div className="space-y-1">
                 <Label className="text-right block text-sm">
-                  בחר קבוצה <span className="text-red-500">*</span>
+                  בחר קבוצה 
                 </Label>
                 <Combobox
                   options={groupOptions}
@@ -1129,7 +1129,7 @@ export function AutoLettersPage() {
             {formState.recipientMode === 'contact' && (
               <div className="space-y-1">
                 <Label className="text-right block text-sm">
-                  בחר איש קשר <span className="text-red-500">*</span>
+                  בחר איש קשר 
                 </Label>
                 <Combobox
                   options={contacts.map((c) => ({
@@ -1154,7 +1154,7 @@ export function AutoLettersPage() {
               <>
                 <div className="space-y-1">
                   <Label htmlFor="adhoc-name" className="text-right block text-sm">
-                    שם הנמען <span className="text-red-500">*</span>
+                    שם הנמען 
                   </Label>
                   <Input
                     id="adhoc-name"
@@ -1209,7 +1209,7 @@ export function AutoLettersPage() {
             {/* Document Date - Always visible */}
             <div className="space-y-1">
               <Label htmlFor="document-date" className="text-right block text-sm">
-                תאריך המסמך <span className="text-red-500">*</span>
+                תאריך המסמך 
               </Label>
               <Input
                 id="document-date"

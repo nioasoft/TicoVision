@@ -588,7 +588,7 @@ export function TzlulApprovalsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="document-date" className="text-right block">
-                תאריך ההצהרה <span className="text-red-500">*</span>
+                תאריך ההצהרה 
               </Label>
               <Input
                 id="document-date"

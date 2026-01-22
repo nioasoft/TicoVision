@@ -43,7 +43,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
             {/* Local Authority */}
             <div className="space-y-2">
               <Label htmlFor="local-authority" className="text-right block">
-                רשות מקומית <span className="text-red-500">*</span>
+                רשות מקומית 
               </Label>
               <Input
                 id="local-authority"
@@ -60,7 +60,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
             {/* Tender Number */}
             <div className="space-y-2">
               <Label htmlFor="tender-number" className="text-right block">
-                מספר מכרז <span className="text-red-500">*</span>
+                מספר מכרז 
               </Label>
               <Input
                 id="tender-number"
@@ -80,7 +80,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
             {/* Period Start */}
             <div className="space-y-2">
               <Label htmlFor="period-start" className="text-right block">
-                מחודש <span className="text-red-500">*</span>
+                מחודש 
               </Label>
               <Input
                 id="period-start"
@@ -97,7 +97,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
             {/* Period End */}
             <div className="space-y-2">
               <Label htmlFor="period-end" className="text-right block">
-                עד חודש <span className="text-red-500">*</span>
+                עד חודש 
               </Label>
               <Input
                 id="period-end"

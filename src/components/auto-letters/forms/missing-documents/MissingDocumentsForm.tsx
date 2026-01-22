@@ -28,7 +28,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -45,7 +45,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
           {/* Missing Documents List - Main Free Text Field */}
           <div className="space-y-2">
             <Label htmlFor="missing-documents" className="text-right block">
-              רשימת המסמכים החסרים <span className="text-red-500">*</span>
+              רשימת המסמכים החסרים 
             </Label>
             <Textarea
               id="missing-documents"

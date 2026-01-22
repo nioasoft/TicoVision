@@ -53,7 +53,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
           {/* Month/Year */}
           <div className="space-y-2">
             <Label htmlFor="month-year" className="text-right block">
-              חודש/שנה <span className="text-red-500">*</span>
+              חודש/שנה 
             </Label>
             <Input
               id="month-year"
@@ -70,7 +70,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
           {/* Location */}
           <div className="space-y-2">
             <Label htmlFor="location" className="text-right block">
-              מיקום <span className="text-red-500">*</span>
+              מיקום 
             </Label>
             <Input
               id="location"
@@ -89,7 +89,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
           {/* Contract Number */}
           <div className="space-y-2">
             <Label htmlFor="contract-number" className="text-right block">
-              מספר חוזה <span className="text-red-500">*</span>
+              מספר חוזה 
             </Label>
             <Input
               id="contract-number"
@@ -108,7 +108,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
           {/* Invoices */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <Label className="text-right">חשבוניות <span className="text-red-500">*</span></Label>
+              <Label className="text-right">חשבוניות </Label>
               <Button
                 type="button"
                 variant="outline"

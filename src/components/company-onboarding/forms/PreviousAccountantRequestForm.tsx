@@ -55,7 +55,7 @@ export function PreviousAccountantRequestForm({ value, onChange, disabled }: Pre
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label className="text-right block">
-                הנדון (שמות החברות) <span className="text-red-500">*</span>
+                הנדון (שמות החברות) 
               </Label>
               <Button
                 type="button"
@@ -105,7 +105,7 @@ export function PreviousAccountantRequestForm({ value, onChange, disabled }: Pre
           {/* Email for Documents */}
           <div className="space-y-2">
             <Label htmlFor="email-for-documents" className="text-right block">
-              כתובת מייל לקבלת המסמכים <span className="text-red-500">*</span>
+              כתובת מייל לקבלת המסמכים 
             </Label>
             <Input
               id="email-for-documents"

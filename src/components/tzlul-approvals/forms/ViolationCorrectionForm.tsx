@@ -32,7 +32,7 @@ export function ViolationCorrectionForm({ value, onChange, disabled }: Violation
           {/* Violations Date */}
           <div className="space-y-2">
             <Label htmlFor="violations-date" className="text-right block">
-              תאריך דוח הבדיקה התקופתית <span className="text-red-500">*</span>
+              תאריך דוח הבדיקה התקופתית 
             </Label>
             <Input
               id="violations-date"
@@ -51,7 +51,7 @@ export function ViolationCorrectionForm({ value, onChange, disabled }: Violation
           {/* Local Council */}
           <div className="space-y-2">
             <Label htmlFor="local-council" className="text-right block">
-              שם המועצה/רשות <span className="text-red-500">*</span>
+              שם המועצה/רשות 
             </Label>
             <Input
               id="local-council"

@@ -47,7 +47,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
           {/* Subject Line (הנדון) */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -66,7 +66,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
             {/* Fee Amount (שכר טרחה) */}
             <div className="space-y-2">
               <Label htmlFor="fee-amount" className="text-right block">
-                שכר טרחה (ש"ח + מע"מ) <span className="text-red-500">*</span>
+                שכר טרחה (ש"ח + מע"מ) 
               </Label>
               <Input
                 id="fee-amount"
@@ -83,7 +83,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
             {/* Tax Year (שנת מס) */}
             <div className="space-y-2">
               <Label htmlFor="tax-year" className="text-right block">
-                שנת המס <span className="text-red-500">*</span>
+                שנת המס 
               </Label>
               <Select
                 value={String(value.tax_year || 2026)}

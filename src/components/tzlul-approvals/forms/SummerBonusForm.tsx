@@ -47,7 +47,7 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           {/* Month/Year */}
           <div className="space-y-2">
             <Label htmlFor="month-year" className="text-right block">
-              חודש/שנה <span className="text-red-500">*</span>
+              חודש/שנה 
             </Label>
             <Input
               id="month-year"
@@ -63,7 +63,7 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           {/* Location */}
           <div className="space-y-2">
             <Label htmlFor="location" className="text-right block">
-              מיקום <span className="text-red-500">*</span>
+              מיקום 
             </Label>
             <Input
               id="location"
@@ -79,7 +79,7 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           {/* Contract Number */}
           <div className="space-y-2">
             <Label htmlFor="contract-number" className="text-right block">
-              מספר חוזה <span className="text-red-500">*</span>
+              מספר חוזה 
             </Label>
             <Input
               id="contract-number"
@@ -95,7 +95,7 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           {/* Total Amount */}
           <div className="space-y-2">
             <Label htmlFor="total-amount" className="text-right block">
-              סכום כולל (ש"ח) <span className="text-red-500">*</span>
+              סכום כולל (ש"ח) 
             </Label>
             <Input
               id="total-amount"
@@ -111,7 +111,7 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           {/* Invoice Numbers */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <Label className="text-right">מספרי חשבוניות <span className="text-red-500">*</span></Label>
+              <Label className="text-right">מספרי חשבוניות </Label>
               <Button
                 type="button"
                 variant="outline"

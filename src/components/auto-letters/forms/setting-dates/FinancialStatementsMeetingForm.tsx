@@ -28,7 +28,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -45,7 +45,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
           {/* Fiscal Year */}
           <div className="space-y-2">
             <Label htmlFor="fiscal-year" className="text-right block">
-              שנת דיווח <span className="text-red-500">*</span>
+              שנת דיווח 
             </Label>
             <Input
               id="fiscal-year"
@@ -64,7 +64,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
             {/* Meeting Date */}
             <div className="space-y-2">
               <Label htmlFor="meeting-date" className="text-right block">
-                תאריך הישיבה <span className="text-red-500">*</span>
+                תאריך הישיבה 
               </Label>
               <Input
                 id="meeting-date"
@@ -80,7 +80,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
             {/* Meeting Time */}
             <div className="space-y-2">
               <Label htmlFor="meeting-time" className="text-right block">
-                שעת הישיבה <span className="text-red-500">*</span>
+                שעת הישיבה 
               </Label>
               <Input
                 id="meeting-time"
@@ -97,7 +97,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
           {/* Meeting Location */}
           <div className="space-y-2">
             <Label htmlFor="meeting-location" className="text-right block">
-              מיקום הישיבה <span className="text-red-500">*</span>
+              מיקום הישיבה 
             </Label>
             <Input
               id="meeting-location"

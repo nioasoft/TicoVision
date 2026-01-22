@@ -251,7 +251,7 @@ export function PublicTicketForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-right flex items-center gap-2">
-            <span className="text-red-500">*</span>
+            
             שם מלא
           </Label>
           <div className="relative">
@@ -269,7 +269,7 @@ export function PublicTicketForm() {
 
         <div className="space-y-2">
           <Label htmlFor="email" className="text-right flex items-center gap-2">
-            <span className="text-red-500">*</span>
+            
             אימייל
           </Label>
           <div className="relative">
@@ -413,7 +413,7 @@ export function PublicTicketForm() {
 
       <div className="space-y-2">
         <Label htmlFor="subject" className="text-right flex items-center gap-2">
-          <span className="text-red-500">*</span>
+          
           נושא הפנייה
         </Label>
         <Input
@@ -428,7 +428,7 @@ export function PublicTicketForm() {
 
       <div className="space-y-2">
         <Label htmlFor="description" className="text-right flex items-center gap-2">
-          <span className="text-red-500">*</span>
+          
           פירוט הפנייה
         </Label>
         <Textarea

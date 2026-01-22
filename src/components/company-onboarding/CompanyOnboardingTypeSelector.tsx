@@ -12,7 +12,7 @@ export function CompanyOnboardingTypeSelector({ value, onChange, disabled }: Com
   return (
     <div className="space-y-2" dir="rtl">
       <Label className="text-right block">
-        סוג המכתב <span className="text-red-500">*</span>
+        סוג המכתב 
       </Label>
       <Select
         value={value.toString()}

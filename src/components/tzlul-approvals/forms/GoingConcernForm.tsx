@@ -24,7 +24,7 @@ export function GoingConcernForm({ value, onChange, disabled }: GoingConcernForm
           {/* Last Audited Report Date */}
           <div className="space-y-2">
             <Label htmlFor="last-audited-report-date" className="text-right block">
-              תאריך הדוח הכספי המבוקר האחרון <span className="text-red-500">*</span>
+              תאריך הדוח הכספי המבוקר האחרון 
             </Label>
             <Input
               id="last-audited-report-date"
@@ -43,7 +43,7 @@ export function GoingConcernForm({ value, onChange, disabled }: GoingConcernForm
           {/* Audit Opinion Date */}
           <div className="space-y-2">
             <Label htmlFor="audit-opinion-date" className="text-right block">
-              תאריך חתימת חוות הדעת <span className="text-red-500">*</span>
+              תאריך חתימת חוות הדעת 
             </Label>
             <Input
               id="audit-opinion-date"
@@ -62,7 +62,7 @@ export function GoingConcernForm({ value, onChange, disabled }: GoingConcernForm
           {/* Reviewed Statements Option */}
           <div className="space-y-4">
             <Label className="text-right block">
-              דוחות כספיים סקורים לאחר הדוח המבוקר <span className="text-red-500">*</span>
+              דוחות כספיים סקורים לאחר הדוח המבוקר 
             </Label>
             <RadioGroup
               value={value.reviewed_statements_option || ''}

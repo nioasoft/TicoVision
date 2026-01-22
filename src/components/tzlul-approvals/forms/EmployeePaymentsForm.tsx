@@ -65,7 +65,7 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
             {/* Tender Number */}
             <div className="space-y-2">
               <Label htmlFor="tender-number" className="text-right block">
-                מספר מכרז <span className="text-red-500">*</span>
+                מספר מכרז 
               </Label>
               <Input
                 id="tender-number"
@@ -81,7 +81,7 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
             {/* Municipality Name */}
             <div className="space-y-2">
               <Label htmlFor="municipality" className="text-right block">
-                שם הרשות <span className="text-red-500">*</span>
+                שם הרשות 
               </Label>
               <Input
                 id="municipality"
@@ -97,7 +97,7 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
             {/* Period Start */}
             <div className="space-y-2">
               <Label htmlFor="period-start" className="text-right block">
-                מחודש <span className="text-red-500">*</span>
+                מחודש 
               </Label>
               <Input
                 id="period-start"
@@ -113,7 +113,7 @@ export function EmployeePaymentsForm({ value, onChange, disabled }: EmployeePaym
             {/* Period End */}
             <div className="space-y-2">
               <Label htmlFor="period-end" className="text-right block">
-                עד חודש <span className="text-red-500">*</span>
+                עד חודש 
               </Label>
               <Input
                 id="period-end"

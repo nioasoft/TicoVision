@@ -47,7 +47,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
           {/* Addressee Line 1 - שורה ראשונה של "לכבוד" */}
           <div className="space-y-2">
             <Label htmlFor="addressee-line1" className="text-right block">
-              לכבוד - שורה ראשונה <span className="text-red-500">*</span>
+              לכבוד - שורה ראשונה 
             </Label>
             <Input
               id="addressee-line1"
@@ -82,7 +82,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
           {/* Audit Year */}
           <div className="space-y-2">
             <Label htmlFor="audit-year" className="text-right block">
-              שנת המס של הביקורת <span className="text-red-500">*</span>
+              שנת המס של הביקורת 
             </Label>
             <Input
               id="audit-year"
@@ -103,7 +103,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
           {/* Completion Date */}
           <div className="space-y-2">
             <Label htmlFor="completion-date" className="text-right block">
-              צפי סיום הביקורת <span className="text-red-500">*</span>
+              צפי סיום הביקורת 
             </Label>
             <Input
               id="completion-date"

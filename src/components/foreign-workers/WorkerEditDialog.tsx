@@ -144,7 +144,7 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
           <TabsContent value="details" className="space-y-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-right block">שם מלא <span className="text-red-500">*</span></Label>
+                <Label className="text-right block">שם מלא </Label>
                 <Input
                   value={fullName}
                   onChange={(e) => {
@@ -156,7 +156,7 @@ export function WorkerEditDialog({ open, onOpenChange, worker, onWorkerUpdated }
               </div>
               
               <div className="space-y-2">
-                <Label className="text-right block">מספר דרכון <span className="text-red-500">*</span></Label>
+                <Label className="text-right block">מספר דרכון </Label>
                 <Input
                   value={passportNumber}
                   onChange={(e) => {

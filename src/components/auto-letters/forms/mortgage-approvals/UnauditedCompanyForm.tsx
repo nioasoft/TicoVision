@@ -98,7 +98,7 @@ export function UnauditedCompanyForm({
           {/* Company Display */}
           <div className="space-y-2">
             <Label className="text-right block">
-              פרטי החברה <span className="text-red-500">*</span>
+              פרטי החברה 
             </Label>
             {companyName ? (
               <div className="p-3 bg-gray-50 border rounded-md">
@@ -121,7 +121,7 @@ export function UnauditedCompanyForm({
           {/* Bank Name */}
           <div className="space-y-2">
             <Label htmlFor="bank-name" className="text-right block">
-              שם הבנק <span className="text-red-500">*</span>
+              שם הבנק 
             </Label>
             <Combobox
               options={ISRAELI_BANKS}
@@ -146,7 +146,7 @@ export function UnauditedCompanyForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="applicant-name" className="text-right block text-sm">
-                  שם מבקש/ת המשכנתא <span className="text-red-500">*</span>
+                  שם מבקש/ת המשכנתא 
                 </Label>
                 <Input
                   id="applicant-name"
@@ -161,7 +161,7 @@ export function UnauditedCompanyForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="applicant-role" className="text-right block text-sm">
-                  תפקיד בחברה <span className="text-red-500">*</span>
+                  תפקיד בחברה 
                 </Label>
                 <Input
                   id="applicant-role"
@@ -187,7 +187,7 @@ export function UnauditedCompanyForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="period-months" className="text-right block text-sm">
-                  מספר חודשים <span className="text-red-500">*</span>
+                  מספר חודשים 
                 </Label>
                 <Input
                   id="period-months"
@@ -204,7 +204,7 @@ export function UnauditedCompanyForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="period-end-date" className="text-right block text-sm">
-                  תאריך סיום התקופה <span className="text-red-500">*</span>
+                  תאריך סיום התקופה 
                 </Label>
                 <Input
                   id="period-end-date"
@@ -234,7 +234,7 @@ export function UnauditedCompanyForm({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="revenue-turnover" className="text-right block text-sm">
-                  מחזור ההכנסות (ללא מע"מ) <span className="text-red-500">*</span>
+                  מחזור ההכנסות (ללא מע"מ) 
                 </Label>
                 <div className="relative">
                   <Input
@@ -258,7 +258,7 @@ export function UnauditedCompanyForm({
 
               <div className="space-y-2">
                 <Label htmlFor="salary-expenses" className="text-right block text-sm">
-                  הוצאות השכר <span className="text-red-500">*</span>
+                  הוצאות השכר 
                 </Label>
                 <div className="relative">
                   <Input
@@ -282,7 +282,7 @@ export function UnauditedCompanyForm({
 
               <div className="space-y-2">
                 <Label htmlFor="estimated-profit" className="text-right block text-sm">
-                  רווח חשבונאי משוער לפני מס (ללא תיאומים) <span className="text-red-500">*</span>
+                  רווח חשבונאי משוער לפני מס (ללא תיאומים) 
                 </Label>
                 <div className="relative">
                   <Input
@@ -329,7 +329,7 @@ export function UnauditedCompanyForm({
 
             <div className="space-y-2">
               <Label htmlFor="registrar-date" className="text-right block text-sm">
-                תאריך דוח רשם החברות <span className="text-red-500">*</span>
+                תאריך דוח רשם החברות 
               </Label>
               <Input
                 id="registrar-date"

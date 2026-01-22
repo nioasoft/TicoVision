@@ -473,11 +473,11 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                   <h4 className="font-medium mb-3 text-blue-800">פרטי עובד חדש:</h4>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                       <div className="space-y-2">
-                        <Label>מספר דרכון <span className="text-red-500">*</span></Label>
+                        <Label>מספר דרכון </Label>
                         <Input value={passportInput} onChange={e => setPassportInput(e.target.value)} />
                       </div>
                       <div className="space-y-2">
-                        <Label>שם מלא <span className="text-red-500">*</span></Label>
+                        <Label>שם מלא </Label>
                         <Input value={nameInput} onChange={e => setNameInput(e.target.value)} />
                       </div>
                       <div className="space-y-2">

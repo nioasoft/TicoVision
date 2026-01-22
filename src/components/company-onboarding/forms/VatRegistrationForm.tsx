@@ -24,7 +24,7 @@ export function VatRegistrationForm({ value, onChange, disabled }: VatRegistrati
           {/* Subject Line (הנדון) */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -41,7 +41,7 @@ export function VatRegistrationForm({ value, onChange, disabled }: VatRegistrati
           {/* Google Drive Link */}
           <div className="space-y-2">
             <Label htmlFor="google-drive-link" className="text-right block">
-              לינק ל-Google Drive <span className="text-red-500">*</span>
+              לינק ל-Google Drive 
             </Label>
             <Input
               id="google-drive-link"

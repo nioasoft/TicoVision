@@ -1747,7 +1747,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               {/* RIGHT COLUMN: Email Subject */}
               <div>
                 <Label htmlFor="email_subject" className="text-right rtl:text-right block text-sm font-medium mb-2">
-                  נושא המייל <span className="text-red-500">*</span>
+                  נושא המייל 
                 </Label>
                 <Input
                   id="email_subject"
@@ -2950,7 +2950,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           <div className="space-y-4">
             <div>
               <Label htmlFor="template_name" className="text-right rtl:text-right block">
-                שם התבנית <span className="text-red-500">*</span>
+                שם התבנית 
               </Label>
               <Input
                 id="template_name"

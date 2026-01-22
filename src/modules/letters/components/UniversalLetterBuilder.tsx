@@ -2984,7 +2984,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   {/* Letter Name - Required for saving */}
                   <div>
                     <Label htmlFor="letter-name" className="text-right rtl:text-right block text-sm font-medium mb-2">
-                      שם המכתב <span className="text-red-500">*</span>
+                      שם המכתב 
                     </Label>
                     <Input
                       id="letter-name"
@@ -3072,7 +3072,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   {/* Email Subject */}
                   <div>
                     <Label htmlFor="email_subject" className="text-right rtl:text-right block text-sm font-medium mb-2">
-                      נושא המייל <span className="text-red-500">*</span>
+                      נושא המייל 
                     </Label>
                     <Input
                       id="email_subject"
@@ -3386,7 +3386,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           <div className="space-y-4">
             <div>
               <Label htmlFor="template_name" className="text-right rtl:text-right block">
-                שם התבנית <span className="text-red-500">*</span>
+                שם התבנית 
               </Label>
               <Input
                 id="template_name"

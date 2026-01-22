@@ -49,7 +49,7 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
           {/* Tax Year */}
           <div className="space-y-2">
             <Label htmlFor="tax-year" className="text-right block">
-              שנת המס <span className="text-red-500">*</span>
+              שנת המס 
             </Label>
             <Input
               id="tax-year"
@@ -65,7 +65,7 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
           {/* Greeting Name */}
           <div className="space-y-2">
             <Label htmlFor="greeting-name" className="text-right block">
-              שם לפנייה אישית <span className="text-red-500">*</span>
+              שם לפנייה אישית 
             </Label>
             <Input
               id="greeting-name"
@@ -81,7 +81,7 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
           {/* Tax Amount */}
           <div className="space-y-2">
             <Label htmlFor="tax-amount" className="text-right block">
-              סכום חבות המס <span className="text-red-500">*</span>
+              סכום חבות המס 
             </Label>
             <div className="flex items-center gap-2">
               <Input

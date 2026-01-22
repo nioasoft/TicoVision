@@ -116,7 +116,7 @@ export function SharedDataForm({
           {/* Client Selector - filters by assignment for bookkeepers */}
           <div className="space-y-2">
             <Label htmlFor="client-select" className="text-right block">
-              בחר לקוח <span className="text-red-500">*</span>
+              בחר לקוח 
             </Label>
             <ClientSelector
               value={selectedClientId}
@@ -144,7 +144,7 @@ export function SharedDataForm({
           {/* Document Date */}
           <div className="space-y-2">
             <Label htmlFor="document-date" className="text-right block">
-              תאריך המסמך <span className="text-red-500">*</span>
+              תאריך המסמך 
             </Label>
             <Input
               id="document-date"
@@ -175,7 +175,7 @@ export function SharedDataForm({
         {(!selectedClientId || !value.document_date) && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
             <p className="text-sm text-yellow-800 text-right">
-              יש למלא את כל השדות המסומנים ב-<span className="text-red-500">*</span> לפני מעבר לטאבים
+              יש למלא את כל השדות המסומנים ב- לפני מעבר לטאבים
             </p>
           </div>
         )}

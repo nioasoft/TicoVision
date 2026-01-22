@@ -28,7 +28,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -45,7 +45,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
           {/* Meeting Topic */}
           <div className="space-y-2">
             <Label htmlFor="meeting-topic" className="text-right block">
-              נושא הפגישה <span className="text-red-500">*</span>
+              נושא הפגישה 
             </Label>
             <Input
               id="meeting-topic"
@@ -64,7 +64,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
             {/* Meeting Date */}
             <div className="space-y-2">
               <Label htmlFor="meeting-date" className="text-right block">
-                תאריך הפגישה <span className="text-red-500">*</span>
+                תאריך הפגישה 
               </Label>
               <Input
                 id="meeting-date"
@@ -80,7 +80,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
             {/* Meeting Time */}
             <div className="space-y-2">
               <Label htmlFor="meeting-time" className="text-right block">
-                שעת הפגישה <span className="text-red-500">*</span>
+                שעת הפגישה 
               </Label>
               <Input
                 id="meeting-time"
@@ -97,7 +97,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
           {/* Meeting Location */}
           <div className="space-y-2">
             <Label htmlFor="meeting-location" className="text-right block">
-              מיקום הפגישה <span className="text-red-500">*</span>
+              מיקום הפגישה 
             </Label>
             <Input
               id="meeting-location"

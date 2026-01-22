@@ -42,7 +42,7 @@ export function CutoffDateForm({ value, onChange, disabled }: CutoffDateFormProp
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject" className="text-right block">
-              הנדון (נושא המכתב) <span className="text-red-500">*</span>
+              הנדון (נושא המכתב) 
             </Label>
             <Input
               id="subject"
@@ -59,7 +59,7 @@ export function CutoffDateForm({ value, onChange, disabled }: CutoffDateFormProp
           {/* Cutoff Date */}
           <div className="space-y-2">
             <Label htmlFor="cutoff-date" className="text-right block">
-              תאריך החיתוך <span className="text-red-500">*</span>
+              תאריך החיתוך 
             </Label>
             <Input
               id="cutoff-date"
@@ -75,7 +75,7 @@ export function CutoffDateForm({ value, onChange, disabled }: CutoffDateFormProp
           {/* Report Type */}
           <div className="space-y-2">
             <Label className="text-right block">
-              סוג הדו"ח <span className="text-red-500">*</span>
+              סוג הדו"ח 
             </Label>
             <Select
               value={value.report_type || ''}

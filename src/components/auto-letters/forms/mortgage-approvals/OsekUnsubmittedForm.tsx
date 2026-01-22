@@ -56,7 +56,7 @@ export function OsekUnsubmittedForm({
           {/* Business Owner Display */}
           <div className="space-y-2">
             <Label className="text-right block">
-              פרטי העוסק <span className="text-red-500">*</span>
+              פרטי העוסק 
             </Label>
             {companyName ? (
               <div className="p-3 bg-gray-50 border rounded-md">
@@ -79,7 +79,7 @@ export function OsekUnsubmittedForm({
           {/* Bank Name */}
           <div className="space-y-2">
             <Label htmlFor="bank-name" className="text-right block">
-              שם הבנק <span className="text-red-500">*</span>
+              שם הבנק 
             </Label>
             <Combobox
               options={ISRAELI_BANKS}
@@ -99,7 +99,7 @@ export function OsekUnsubmittedForm({
           {/* Applicant Details */}
           <div className="space-y-2">
             <Label htmlFor="applicant-name" className="text-right block">
-              שם מבקש/ת המשכנתא <span className="text-red-500">*</span>
+              שם מבקש/ת המשכנתא 
             </Label>
             <Input
               id="applicant-name"
@@ -123,7 +123,7 @@ export function OsekUnsubmittedForm({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="period-months" className="text-right block text-sm">
-                  מספר חודשים <span className="text-red-500">*</span>
+                  מספר חודשים 
                 </Label>
                 <Input
                   id="period-months"
@@ -140,7 +140,7 @@ export function OsekUnsubmittedForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="period-end-date" className="text-right block text-sm">
-                  תאריך סיום התקופה <span className="text-red-500">*</span>
+                  תאריך סיום התקופה 
                 </Label>
                 <Input
                   id="period-end-date"
@@ -170,7 +170,7 @@ export function OsekUnsubmittedForm({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="revenue-turnover" className="text-right block text-sm">
-                  מחזור ההכנסות (ללא מע"מ) <span className="text-red-500">*</span>
+                  מחזור ההכנסות (ללא מע"מ) 
                 </Label>
                 <div className="relative">
                   <Input
@@ -194,7 +194,7 @@ export function OsekUnsubmittedForm({
 
               <div className="space-y-2">
                 <Label htmlFor="estimated-profit" className="text-right block text-sm">
-                  רווח משוער לפני מס (ללא תיאומים וביטוח לאומי) <span className="text-red-500">*</span>
+                  רווח משוער לפני מס (ללא תיאומים וביטוח לאומי) 
                 </Label>
                 <div className="relative">
                   <Input
@@ -228,7 +228,7 @@ export function OsekUnsubmittedForm({
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="last-submitted-year" className="text-right block text-sm">
-                  שנת הדוח <span className="text-red-500">*</span>
+                  שנת הדוח 
                 </Label>
                 <Input
                   id="last-submitted-year"
@@ -245,7 +245,7 @@ export function OsekUnsubmittedForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="last-submission-date" className="text-right block text-sm">
-                  תאריך הגשה <span className="text-red-500">*</span>
+                  תאריך הגשה 
                 </Label>
                 <Input
                   id="last-submission-date"
@@ -259,7 +259,7 @@ export function OsekUnsubmittedForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tax-office" className="text-right block text-sm">
-                  משרד השומה <span className="text-red-500">*</span>
+                  משרד השומה 
                 </Label>
                 <Input
                   id="tax-office"
@@ -285,7 +285,7 @@ export function OsekUnsubmittedForm({
           {/* Credit Points */}
           <div className="space-y-2">
             <Label htmlFor="credit-points" className="text-right block">
-              נקודות זיכוי <span className="text-red-500">*</span>
+              נקודות זיכוי 
             </Label>
             <Input
               id="credit-points"

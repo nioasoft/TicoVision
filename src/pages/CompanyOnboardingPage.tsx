@@ -474,7 +474,7 @@ export function CompanyOnboardingPage() {
           {formState.recipientMode === 'client' && (
             <div className="space-y-2">
               <Label className="text-right block">
-                בחר לקוח <span className="text-red-500">*</span>
+                בחר לקוח 
               </Label>
               <Combobox
                 options={clientOptions}
@@ -495,7 +495,7 @@ export function CompanyOnboardingPage() {
           {formState.recipientMode === 'group' && (
             <div className="space-y-2">
               <Label className="text-right block">
-                בחר קבוצה <span className="text-red-500">*</span>
+                בחר קבוצה 
               </Label>
               <Combobox
                 options={groupOptions}
@@ -553,7 +553,7 @@ export function CompanyOnboardingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="document-date" className="text-right block">
-                תאריך המסמך <span className="text-red-500">*</span>
+                תאריך המסמך 
               </Label>
               <Input
                 id="document-date"
