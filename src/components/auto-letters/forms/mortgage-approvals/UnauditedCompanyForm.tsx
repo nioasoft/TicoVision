@@ -9,11 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Combobox } from '@/components/ui/combobox';
 import { Plus, Trash2 } from 'lucide-react';
 import type { MortgageUnauditedCompanyVariables, ShareholderEntry } from '@/types/auto-letters.types';
 import { formatIsraeliDate } from '@/lib/formatters';
-import { ISRAELI_BANKS } from '@/lib/constants/israeli-banks';
 
 interface UnauditedCompanyFormProps {
   value: Partial<MortgageUnauditedCompanyVariables>;
@@ -121,18 +119,17 @@ export function UnauditedCompanyForm({
           {/* Bank Name */}
           <div className="space-y-2">
             <Label htmlFor="bank-name" className="text-right block">
-              שם הבנק 
+              שם הבנק
             </Label>
-            <Combobox
-              options={ISRAELI_BANKS}
+            <Input
+              id="bank-name"
+              type="text"
               value={value.bank_name || ''}
-              onValueChange={(val) => onChange({ ...value, bank_name: val })}
+              onChange={(e) => onChange({ ...value, bank_name: e.target.value })}
               disabled={disabled}
-              placeholder="בחר בנק"
-              searchPlaceholder="חיפוש בנק..."
-              emptyText="לא נמצא בנק"
-              allowCustomValue={true}
-              customValueLabel='השתמש ב: "{value}"'
+              className="text-right"
+              dir="rtl"
+              placeholder="שם הבנק או המוסד"
             />
           </div>
 
@@ -258,7 +255,7 @@ export function UnauditedCompanyForm({
 
               <div className="space-y-2">
                 <Label htmlFor="salary-expenses" className="text-right block text-sm">
-                  הוצאות השכר 
+                  הוצאות השכר
                 </Label>
                 <div className="relative">
                   <Input
@@ -281,8 +278,32 @@ export function UnauditedCompanyForm({
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="applicant-salary" className="text-right block text-sm">
+                  שכר מבקש/ת המשכנתא בתקופה
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="applicant-salary"
+                    type="number"
+                    value={value.applicant_salary || ''}
+                    onChange={(e) => onChange({ ...value, applicant_salary: parseFloat(e.target.value) || 0 })}
+                    disabled={disabled}
+                    className="text-left pl-8"
+                    dir="ltr"
+                    placeholder="0"
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+                </div>
+                {value.applicant_salary ? (
+                  <div className="text-xs text-gray-500 text-right">
+                    {formatCurrency(value.applicant_salary)} ₪
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="estimated-profit" className="text-right block text-sm">
-                  רווח חשבונאי משוער לפני מס (ללא תיאומים) 
+                  רווח חשבונאי משוער לפני מס (ללא תיאומים)
                 </Label>
                 <div className="relative">
                   <Input

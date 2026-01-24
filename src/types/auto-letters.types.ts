@@ -550,6 +550,7 @@ export interface MortgageUnauditedCompanyVariables extends AutoLetterSharedData 
   // נתונים כספיים (בלתי מבוקרים)
   revenue_turnover: number;         // מחזור ההכנסות (ללא מע"מ)
   salary_expenses: number;          // הוצאות השכר
+  applicant_salary: number;         // שכר מבקש/ת המשכנתא
   estimated_profit: number;         // רווח חשבונאי משוער לפני מס
 
   // בעלי מניות
@@ -786,6 +787,7 @@ export interface ReminderLettersDocumentData {
 export interface AdhocContact {
   name: string;
   email: string;
+  company_id?: string;  // For mortgage approvals - allows entering tax ID manually
 }
 
 /** Complete form state for Auto Letters */
@@ -956,6 +958,7 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           period_end_date: '',
           revenue_turnover: 0,
           salary_expenses: 0,
+          applicant_salary: 0,
           estimated_profit: 0,
           registrar_report_date: '',
           shareholders: [{ name: '', id_number: '', holding_percentage: 100 }],

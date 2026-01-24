@@ -1203,6 +1203,39 @@ export function AutoLettersPage() {
                     placeholder="כתובת אימייל"
                   />
                 </div>
+
+                {/* Company ID - Only for mortgage approvals */}
+                {formState.selectedCategory === 'mortgage_approvals' && (
+                  <div className="space-y-1">
+                    <Label htmlFor="adhoc-tax-id" className="text-right block text-sm">
+                      מספר ח"פ/ע.מ./ע.פ (אופציונלי)
+                    </Label>
+                    <Input
+                      id="adhoc-tax-id"
+                      type="text"
+                      value={formState.adhocContact?.company_id || ''}
+                      onChange={(e) => {
+                        const newCompanyId = e.target.value;
+                        setFormState(prev => ({
+                          ...prev,
+                          adhocContact: {
+                            name: prev.adhocContact?.name || '',
+                            email: prev.adhocContact?.email || '',
+                            company_id: newCompanyId,
+                          },
+                          sharedData: {
+                            ...prev.sharedData,
+                            company_id: newCompanyId,
+                          },
+                        }));
+                      }}
+                      disabled={generating}
+                      className="text-right"
+                      dir="ltr"
+                      placeholder="הזן מספר..."
+                    />
+                  </div>
+                )}
               </>
             )}
 
