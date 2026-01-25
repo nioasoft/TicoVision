@@ -3798,8 +3798,8 @@ export class TemplateService extends BaseService {
         // Save original company_name for body template's "הנדון"
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
-        // Header "לכבוד" shows bank_name
-        processed.company_name = processed.bank_name || '';
+        // Header "לכבוד" shows entity_name (company/client name)
+        // company_name stays as-is (already has the entity name)
         processed.group_name = '';
 
         // Compute previous_year from audited_year
@@ -3850,8 +3850,8 @@ export class TemplateService extends BaseService {
         // Save original company_name for body template's "הנדון"
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
-        // Header "לכבוד" shows bank_name
-        processed.company_name = processed.bank_name || '';
+        // Header "לכבוד" shows entity_name (company/client name)
+        // company_name stays as-is (already has the entity name)
         processed.group_name = '';
 
         // Format period_end_date to Israeli format
@@ -3894,8 +3894,8 @@ export class TemplateService extends BaseService {
         // Save original company_name for body template's "הנדון"
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
-        // Header "לכבוד" shows bank_name
-        processed.company_name = processed.bank_name || '';
+        // Header "לכבוד" shows entity_name (company/client name)
+        // company_name stays as-is (already has the entity name)
         processed.group_name = '';
 
         // Format submission_date to Israeli format
@@ -3919,8 +3919,8 @@ export class TemplateService extends BaseService {
         // Save original company_name for body template's "הנדון"
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
-        // Header "לכבוד" shows bank_name
-        processed.company_name = processed.bank_name || '';
+        // Header "לכבוד" shows entity_name (company/client name)
+        // company_name stays as-is (already has the entity name)
         processed.group_name = '';
 
         // Format period_end_date to Israeli format
