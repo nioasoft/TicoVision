@@ -3876,6 +3876,9 @@ export class TemplateService extends BaseService {
         if (typeof processed.salary_expenses === 'number') {
           processed.salary_expenses = processed.salary_expenses.toLocaleString('he-IL', { minimumFractionDigits: 0 });
         }
+        if (typeof processed.applicant_salary === 'number') {
+          processed.applicant_salary = processed.applicant_salary.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
         if (typeof processed.estimated_profit === 'number') {
           processed.estimated_profit = processed.estimated_profit.toLocaleString('he-IL', { minimumFractionDigits: 0 });
         }

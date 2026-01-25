@@ -61,6 +61,22 @@ export function UnauditedCompanyForm({
     });
   }, [applicantName, onChange, value]);
 
+  // Auto-calculate EBITDA adjusted = estimated_profit - applicant_salary
+  useEffect(() => {
+    const estimatedProfit = value.estimated_profit || 0;
+    const applicantSalary = value.applicant_salary || 0;
+    const calculatedEbitda = estimatedProfit - applicantSalary;
+
+    // Only update if both values exist and the current ebitda is different
+    if ((value.estimated_profit !== undefined || value.applicant_salary !== undefined) &&
+        value.ebitda_adjusted !== calculatedEbitda) {
+      onChange({
+        ...value,
+        ebitda_adjusted: calculatedEbitda,
+      });
+    }
+  }, [value.estimated_profit, value.applicant_salary]);
+
   const handleAddShareholder = () => {
     onChange({
       ...value,
