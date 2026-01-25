@@ -58,7 +58,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
             <Input
               id="month-year"
               type="text"
-              placeholder="לדוגמה: 10/2025"
+
               value={value.month_year || ''}
               onChange={(e) => onChange({ ...value, month_year: e.target.value })}
               disabled={disabled}
@@ -132,7 +132,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
                       disabled={disabled}
                       className="text-right rtl:text-right"
                       dir="rtl"
-                      placeholder="לדוגמה: 42602"
+
                     />
                   </div>
                   <div className="flex-1 space-y-1">
@@ -144,7 +144,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
                       disabled={disabled}
                       className="text-right rtl:text-right"
                       dir="rtl"
-                      placeholder="לדוגמה: 5000"
+
                     />
                   </div>
                   {(value.invoices?.length || 0) > 1 && (

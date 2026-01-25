@@ -2213,7 +2213,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                       value={selectedClient?.id || null}
                       onChange={handleClientChange}
                       label="בחר לקוח"
-                      placeholder="חפש לפי שם או ח.פ..."
+
                     />
 
                     {/* Company Name */}
@@ -2338,8 +2338,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             const group = groups.find(g => g.id === groupId);
                             handleGroupChange(group || null);
                           }}
-                          placeholder="בחר קבוצה מהרשימה..."
-                          searchPlaceholder="חיפוש קבוצה..."
+
+
                           emptyText="לא נמצאה קבוצה"
                           disabled={recipientMode !== 'group'}
                         />
@@ -2464,8 +2464,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         }))}
                         value={selectedManualContact?.id || manualCompanyName || undefined}
                         onValueChange={handleManualContactSelect}
-                        placeholder="הקלד שם או בחר מאנשי קשר..."
-                        searchPlaceholder="חיפוש איש קשר..."
+
+
                         allowCustomValue={true}
                         customValueLabel='השתמש ב: "{value}"'
                         emptyText="לא נמצא איש קשר"
@@ -2518,7 +2518,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             value={taggedClientId}
                             onChange={(client) => setTaggedClientId(client?.id || null)}
                             label=""
-                            placeholder="בחר לקוח לשיוך..."
+
                           />
                         </div>
                       )}
@@ -2530,7 +2530,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                             value={taggedGroupId}
                             onChange={handleTagGroup}
                             label=""
-                            placeholder="בחר קבוצה לשיוך..."
+
                           />
                         </div>
                       )}
@@ -2921,7 +2921,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     disabled={savedTemplates.length === 0}
                   >
                     <SelectTrigger dir="rtl" className="w-48">
-                      <SelectValue placeholder={savedTemplates.length > 0 ? "בחר תבנית..." : "אין תבניות"} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent dir="rtl">
                       {savedTemplates.map((template) => (

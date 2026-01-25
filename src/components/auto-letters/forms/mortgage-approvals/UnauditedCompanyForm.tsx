@@ -129,7 +129,7 @@ export function UnauditedCompanyForm({
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="שם הבנק או המוסד"
+
             />
           </div>
 
@@ -153,7 +153,7 @@ export function UnauditedCompanyForm({
                   disabled={disabled}
                   className="text-right"
                   dir="rtl"
-                  placeholder="ישראל ישראלי"
+
                 />
               </div>
               <div className="space-y-2">
@@ -168,7 +168,7 @@ export function UnauditedCompanyForm({
                   disabled={disabled}
                   className="text-right"
                   dir="rtl"
-                  placeholder="בעל מניות / מנכ״ל / דירקטור"
+
                 />
               </div>
             </div>
@@ -196,7 +196,7 @@ export function UnauditedCompanyForm({
                   disabled={disabled}
                   className="text-right"
                   dir="ltr"
-                  placeholder="12"
+
                 />
               </div>
               <div className="space-y-2">
@@ -242,7 +242,7 @@ export function UnauditedCompanyForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -266,7 +266,7 @@ export function UnauditedCompanyForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -290,7 +290,7 @@ export function UnauditedCompanyForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -314,7 +314,7 @@ export function UnauditedCompanyForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -391,7 +391,7 @@ export function UnauditedCompanyForm({
                         disabled={disabled}
                         className="text-right"
                         dir="rtl"
-                        placeholder="שם מלא"
+
                       />
                     </div>
                     <div className="space-y-1">
@@ -403,7 +403,7 @@ export function UnauditedCompanyForm({
                         disabled={disabled}
                         className="text-right"
                         dir="ltr"
-                        placeholder="ת.ז. / ח.פ."
+
                       />
                     </div>
                     <div className="space-y-1">
@@ -418,7 +418,7 @@ export function UnauditedCompanyForm({
                           disabled={disabled}
                           className="text-left pr-8"
                           dir="ltr"
-                          placeholder="0"
+
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
                       </div>
@@ -473,7 +473,7 @@ export function UnauditedCompanyForm({
                     disabled={disabled}
                     className="text-right"
                     dir="rtl"
-                    placeholder="לדוגמה: 50,000 ₪ לישראל ישראלי"
+
                   />
                 </div>
               </div>
@@ -514,7 +514,7 @@ export function UnauditedCompanyForm({
                       disabled={disabled}
                       className="text-left pl-8 max-w-[200px]"
                       dir="ltr"
-                      placeholder="0"
+
                     />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                   </div>

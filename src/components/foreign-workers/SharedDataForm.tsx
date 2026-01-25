@@ -122,7 +122,7 @@ export function SharedDataForm({
               value={selectedClientId}
               onChange={handleClientChange}
               label=""
-              placeholder="בחר לקוח מהרשימה..."
+
               filterByAssignment={true}
             />
           </div>
@@ -136,7 +136,7 @@ export function SharedDataForm({
               clientId={selectedClientId}
               value={selectedBranchId}
               onChange={handleBranchChange}
-              placeholder="בחר סניף..."
+
               disabled={!selectedClientId}
             />
           </div>

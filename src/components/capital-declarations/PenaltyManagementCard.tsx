@@ -202,7 +202,7 @@ export function PenaltyManagementCard({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="בחר סטטוס" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {(Object.keys(PENALTY_STATUS_LABELS) as PenaltyStatus[]).map(
@@ -228,7 +228,7 @@ export function PenaltyManagementCard({
                         e.target.value ? Number(e.target.value) : null
                       )
                     }
-                    placeholder="0"
+
                     className="pr-8"
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
@@ -258,7 +258,7 @@ export function PenaltyManagementCard({
                 onChange={(e) =>
                   handleFieldChange('penalty_notes', e.target.value || null)
                 }
-                placeholder="הערות כלליות לגבי הקנס..."
+
                 rows={2}
               />
             </div>
@@ -288,7 +288,7 @@ export function PenaltyManagementCard({
                     onChange={(e) =>
                       handleFieldChange('appeal_notes', e.target.value || null)
                     }
-                    placeholder="פרטים על הערעור..."
+
                     rows={2}
                   />
                 </div>
@@ -326,7 +326,7 @@ export function PenaltyManagementCard({
                             e.target.value ? Number(e.target.value) : null
                           )
                         }
-                        placeholder="0"
+
                         className="pr-8"
                       />
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">

@@ -20,7 +20,7 @@ export function CompanyOnboardingTypeSelector({ value, onChange, disabled }: Com
         disabled={disabled}
       >
         <SelectTrigger className="text-right rtl:text-right" dir="rtl">
-          <SelectValue placeholder="בחר סוג מכתב" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent dir="rtl">
           {COMPANY_ONBOARDING_LETTER_TYPES.map((letterType: CompanyOnboardingLetterType) => (

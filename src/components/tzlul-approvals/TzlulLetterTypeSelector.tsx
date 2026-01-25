@@ -20,7 +20,7 @@ export function TzlulLetterTypeSelector({ value, onChange, disabled }: TzlulLett
         disabled={disabled}
       >
         <SelectTrigger className="text-right rtl:text-right" dir="rtl">
-          <SelectValue placeholder="בחר סוג מכתב" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent dir="rtl">
           {TZLUL_LETTER_TYPES.map((letterType: TzlulLetterType) => (

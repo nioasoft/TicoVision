@@ -287,7 +287,7 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
                     min={0}
                     max={100}
                     step={0.5}
-                    placeholder="אחוז הנחה..."
+
                     value={manualDiscountOverride ?? ''}
                     onChange={(e) => {
                       const val = e.target.value === '' ? null : parseFloat(e.target.value);

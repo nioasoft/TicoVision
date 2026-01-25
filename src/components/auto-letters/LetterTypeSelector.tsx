@@ -56,7 +56,7 @@ export function LetterTypeSelector({
           dir="rtl"
         >
           <SelectTrigger className="w-full text-right" dir="rtl">
-            <SelectValue placeholder="בחר סוג מכתב..." />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent dir="rtl">
             {letterTypes.map((letterType) => (

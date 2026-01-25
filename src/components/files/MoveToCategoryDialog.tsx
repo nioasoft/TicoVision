@@ -146,7 +146,7 @@ export function MoveToCategoryDialog({
             disabled={isMoving}
           >
             <SelectTrigger className="rtl:text-right">
-              <SelectValue placeholder="בחר קטגוריה יעד" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {availableCategories.map((category) => (

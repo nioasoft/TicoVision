@@ -86,7 +86,7 @@ export function TicketFiltersComponent({
         <div className="relative lg:col-span-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="חיפוש..."
+
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
             className="pr-9 text-right"
@@ -101,7 +101,7 @@ export function TicketFiltersComponent({
           <SelectTrigger className="text-right">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              <SelectValue placeholder="עדיפות" />
+              <SelectValue />
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -121,7 +121,7 @@ export function TicketFiltersComponent({
           <SelectTrigger className="text-right">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              <SelectValue placeholder="קטגוריה" />
+              <SelectValue />
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -144,7 +144,7 @@ export function TicketFiltersComponent({
           <SelectTrigger className="text-right">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              <SelectValue placeholder="משויך ל" />
+              <SelectValue />
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -164,7 +164,7 @@ export function TicketFiltersComponent({
           onValueChange={(v) => updateFilter('clientMatch', v as TicketFilters['clientMatch'])}
         >
           <SelectTrigger className="text-right">
-            <SelectValue placeholder="שיוך לקוח" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הפניות</SelectItem>

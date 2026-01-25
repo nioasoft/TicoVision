@@ -130,7 +130,7 @@ export function ClientListPopup({
         {/* Filters */}
         <div className="flex gap-2">
           <Input
-            placeholder="חפש לקוח..."
+
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 text-right"

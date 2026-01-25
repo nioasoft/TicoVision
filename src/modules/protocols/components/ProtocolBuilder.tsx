@@ -492,7 +492,7 @@ export function ProtocolBuilder({
                   id="title"
                   value={formState.title}
                   onChange={(e) => handleFieldChange('title', e.target.value)}
-                  placeholder="תאר את נושא הפגישה"
+
                   className="text-right"
                   dir="rtl"
                 />

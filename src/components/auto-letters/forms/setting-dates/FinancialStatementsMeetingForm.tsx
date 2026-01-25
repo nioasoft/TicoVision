@@ -38,7 +38,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="הזמנה לישיבה על מאזנים"
+
             />
           </div>
 
@@ -55,7 +55,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="2024"
+
             />
           </div>
 
@@ -107,7 +107,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="במשרדנו / בזום / אחר"
+
             />
           </div>
 
@@ -123,7 +123,7 @@ export function FinancialStatementsMeetingForm({ value, onChange, disabled }: Fi
               disabled={disabled}
               className="text-right min-h-[80px]"
               dir="rtl"
-              placeholder="הערות נוספות למכתב..."
+
             />
           </div>
 

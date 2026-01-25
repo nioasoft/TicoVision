@@ -118,7 +118,7 @@ export const TestSendDialog: React.FC<TestSendDialogProps> = ({
               id="testEmails"
               value={testEmails}
               onChange={(e) => setTestEmails(e.target.value)}
-              placeholder="כתובות מופרדות בפסיק"
+
               className="rtl:text-right font-mono text-sm"
               dir="ltr"
             />

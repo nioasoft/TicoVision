@@ -511,7 +511,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   }}
                   onKeyDown={handleKeyDown}
                   maxLength={11}
-                  placeholder=""
+
                   required
                   dir="ltr"
                   className={taxIdExists ? 'border-red-500' : ''}
@@ -689,7 +689,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="בחר קבוצה" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
@@ -781,7 +781,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       value={formData.payer_client_id}
                       onChange={(selectedClient) => handleFormChange('payer_client_id', selectedClient?.id || null)}
                       label="בחר לקוח משלם *"
-                      placeholder="חיפוש לפי שם או ח.פ..."
+
                     />
                     <p className="text-xs text-gray-500 mt-1 rtl:text-right">
                       הלקוח הנבחר ישלם את שכר הטרחה עבור לקוח זה
@@ -874,7 +874,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="בחר תת סוג" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="commercial_restaurant">מסחרית מסעדה</SelectItem>

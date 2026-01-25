@@ -56,7 +56,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="לדוגמה: בנק מזרחי טפחות"
+
             />
             <p className="text-xs text-gray-500 text-right">
               יופיע בכותרת המכתב תחת "לכבוד:"
@@ -75,7 +75,7 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="לדוגמה: באמצעות הפקיד המטפל"
+
             />
           </div>
 

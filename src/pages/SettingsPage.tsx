@@ -137,11 +137,11 @@ export function SettingsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="terminal">מספר מסוף</Label>
-              <Input id="terminal" type="password" placeholder="****" />
+              <Input id="terminal" type="password" />
             </div>
             <div>
               <Label htmlFor="api-key">מפתח API</Label>
-              <Input id="api-key" type="password" placeholder="****" />
+              <Input id="api-key" type="password" />
             </div>
             <Button variant="outline">בדוק חיבור</Button>
           </CardContent>
@@ -165,7 +165,7 @@ export function SettingsPage() {
                   type="email"
                   value={emailSettings.sender_email}
                   onChange={(e) => setEmailSettings(prev => ({ ...prev, sender_email: e.target.value }))}
-                  placeholder="tico@franco.co.il"
+
                   dir="ltr"
                 />
               </div>
@@ -175,7 +175,7 @@ export function SettingsPage() {
                   id="sender-name"
                   value={emailSettings.sender_name}
                   onChange={(e) => setEmailSettings(prev => ({ ...prev, sender_name: e.target.value }))}
-                  placeholder="תיקו פרנקו - משרד רואי חשבון"
+
                 />
               </div>
               <div>
@@ -185,7 +185,7 @@ export function SettingsPage() {
                   type="email"
                   value={emailSettings.reply_to_email}
                   onChange={(e) => setEmailSettings(prev => ({ ...prev, reply_to_email: e.target.value }))}
-                  placeholder="sigal@franco.co.il"
+
                   dir="ltr"
                 />
               </div>
@@ -196,7 +196,7 @@ export function SettingsPage() {
                   type="email"
                   value={emailSettings.alert_email}
                   onChange={(e) => setEmailSettings(prev => ({ ...prev, alert_email: e.target.value }))}
-                  placeholder="sigal@franco.co.il"
+
                   dir="ltr"
                 />
               </div>

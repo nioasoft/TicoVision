@@ -380,7 +380,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                 id="content"
                 value={formState.content}
                 onChange={(e) => handleFieldChange('content', e.target.value)}
-                placeholder="תאר את ההחלטה או המשימה"
+
                 className="text-right min-h-[80px]"
                 dir="rtl"
               />
@@ -452,7 +452,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                   dir="rtl"
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="בחר עובד" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">ללא בחירה</SelectItem>
@@ -476,7 +476,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                   id="other_name"
                   value={formState.assigned_other_name || ''}
                   onChange={(e) => handleFieldChange('assigned_other_name', e.target.value || null)}
-                  placeholder="הקלד שם האחראי"
+
                   className="text-right"
                   dir="rtl"
                 />
@@ -492,7 +492,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                 dir="rtl"
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="בחר שנה" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">ללא קשר לדוח</SelectItem>

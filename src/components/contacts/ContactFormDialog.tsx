@@ -323,7 +323,7 @@ export function ContactFormDialog({
                     onValueChange={(value) => handleFieldChange('contact_type', value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="בחר סוג" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="owner">בעלים</SelectItem>
@@ -347,7 +347,7 @@ export function ContactFormDialog({
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleFieldChange('phone', e.target.value)}
-                    placeholder=""
+
                     dir="ltr"
                     className="text-left"
                   />
@@ -361,7 +361,7 @@ export function ContactFormDialog({
                     id="phone_secondary"
                     value={formData.phone_secondary}
                     onChange={(e) => handleFieldChange('phone_secondary', e.target.value)}
-                    placeholder=""
+
                     dir="ltr"
                     className="text-left"
                   />

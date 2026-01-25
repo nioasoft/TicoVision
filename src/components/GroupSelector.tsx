@@ -13,7 +13,6 @@ interface GroupSelectorProps {
   value: string | null;
   onChange: (group: ClientGroup | null) => void;
   label?: string;
-  placeholder?: string;
   className?: string;
 }
 
@@ -21,7 +20,6 @@ export function GroupSelector({
   value,
   onChange,
   label = 'בחר קבוצה',
-  placeholder = 'בחר קבוצה מהרשימה...',
   className = ''
 }: GroupSelectorProps) {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
@@ -82,8 +80,8 @@ export function GroupSelector({
           }))}
           value={value || undefined}
           onValueChange={handleValueChange}
-          placeholder={placeholder}
-          searchPlaceholder="חיפוש קבוצה..."
+
+
           emptyText="לא נמצאה קבוצה"
         />
       )}

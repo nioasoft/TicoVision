@@ -483,7 +483,7 @@ export function CompanyOnboardingPage() {
                   const client = clients.find((c) => c.id === value);
                   setSelectedClient(client || null);
                 }}
-                placeholder={isLoadingClients ? 'טוען לקוחות...' : 'חפש לקוח...'}
+
                 emptyText="לא נמצאו לקוחות"
                 disabled={isLoadingClients || generating}
                 className="text-right"
@@ -504,7 +504,7 @@ export function CompanyOnboardingPage() {
                   const group = groups.find((g) => g.id === value);
                   setSelectedGroup(group || null);
                 }}
-                placeholder={isLoadingGroups ? 'טוען קבוצות...' : 'חפש קבוצה...'}
+
                 emptyText="לא נמצאו קבוצות"
                 disabled={isLoadingGroups || generating}
                 className="text-right"

@@ -46,7 +46,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
       <div className="relative flex-1 max-w-md">
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
-          placeholder="חיפוש לפי שם, ת.ז, או איש קשר..."
+
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pr-10"
@@ -62,7 +62,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           onValueChange={(value) => onFilterChange({ status: value })}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="סוג לקוח" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הלקוחות</SelectItem>
@@ -79,7 +79,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           onValueChange={(value) => onFilterChange({ companyStatus: value })}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="סטטוס חברה" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הסטטוסים</SelectItem>
@@ -94,7 +94,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           onValueChange={(value) => onFilterChange({ clientType: value })}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="סוג לקוח" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הסוגים</SelectItem>
@@ -110,7 +110,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           onValueChange={(value) => onFilterChange({ companySubtype: value })}
         >
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="תת סוג חברה" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל תתי הסוגים</SelectItem>
@@ -127,7 +127,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           onValueChange={(value) => onFilterChange({ groupId: value })}
         >
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="קבוצה" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הקבוצות</SelectItem>

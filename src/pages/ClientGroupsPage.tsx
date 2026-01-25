@@ -529,7 +529,7 @@ export default function ClientGroupsPage() {
       <div className="relative">
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="חיפוש לפי שם קבוצה או בעל שליטה..."
+
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pr-10"
@@ -818,8 +818,8 @@ export default function ClientGroupsPage() {
                       address: { ...formData.address, city: value }
                     })
                   }
-                  placeholder="בחר עיר"
-                  searchPlaceholder="חפש עיר..."
+
+
                   emptyText="לא נמצאה עיר"
                 />
               </div>
@@ -956,8 +956,8 @@ export default function ClientGroupsPage() {
                       address: { ...formData.address, city: value }
                     })
                   }
-                  placeholder="בחר עיר"
-                  searchPlaceholder="חפש עיר..."
+
+
                   emptyText="לא נמצאה עיר"
                 />
               </div>

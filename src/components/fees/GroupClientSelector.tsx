@@ -271,8 +271,8 @@ export function GroupClientSelector({
             }))}
             value={selectedClientId || undefined}
             onValueChange={handleClientSelect}
-            placeholder="בחר לקוח מהרשימה..."
-            searchPlaceholder="חיפוש לפי שם או ח.פ..."
+
+
             emptyText="לא נמצא לקוח"
             disabled={disabled}
           />
@@ -286,8 +286,8 @@ export function GroupClientSelector({
               }))}
               value={selectedGroupId || undefined}
               onValueChange={handleGroupSelect}
-              placeholder="בחר קבוצה מהרשימה..."
-              searchPlaceholder="חיפוש קבוצה..."
+
+
               emptyText="לא נמצאה קבוצה"
               disabled={disabled}
             />

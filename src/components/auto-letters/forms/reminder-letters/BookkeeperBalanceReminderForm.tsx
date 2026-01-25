@@ -37,7 +37,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="סיכום פרטיכל מישיבה שנערכה במשרדנו"
+
             />
           </div>
 
@@ -54,7 +54,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="שם מנהל/ת החשבונות"
+
             />
             <p className="text-sm text-gray-500 text-right">
               יופיע בפנייה: "[שם] היקר/ה"
@@ -93,7 +93,7 @@ export function BookkeeperBalanceReminderForm({ value, onChange, disabled }: Boo
               disabled={disabled}
               className="text-right w-32"
               dir="ltr"
-              placeholder="2024"
+
             />
             <p className="text-sm text-gray-500 text-right">
               שנת המס של הדוחות המבוקרים

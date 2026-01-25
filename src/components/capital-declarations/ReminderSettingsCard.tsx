@@ -169,7 +169,7 @@ export function ReminderSettingsCard() {
             <Input
               id="weekly-report-email"
               type="email"
-              placeholder="כתובת אימייל"
+
               value={weeklyReportEmail}
               onChange={(e) => setWeeklyReportEmail(e.target.value)}
               disabled={!enableWeeklyReport}

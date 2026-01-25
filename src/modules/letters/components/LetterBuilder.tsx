@@ -258,7 +258,7 @@ export function LetterBuilder() {
             </Label>
             <Select value={selectedTemplate} onValueChange={(value) => setSelectedTemplate(value as LetterTemplateType)}>
               <SelectTrigger id="template" dir="rtl" className="[&>span]:text-right">
-                <SelectValue placeholder="בחר סוג מכתב" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent dir="rtl">
                 {TEMPLATE_OPTIONS.map((option) => (
@@ -280,7 +280,7 @@ export function LetterBuilder() {
                 value={selectedClient?.id || null}
                 onChange={handleClientChange}
                 label="בחר לקוח"
-                placeholder="בחר לקוח או הקלד ידנית למטה..."
+
               />
             </div>
 

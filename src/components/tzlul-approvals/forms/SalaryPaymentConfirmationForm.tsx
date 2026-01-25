@@ -48,7 +48,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
               <Input
                 id="local-authority"
                 type="text"
-                placeholder="לדוגמה: עיריית כפר יונה"
+
                 value={value.local_authority || ''}
                 onChange={(e) => onChange({ ...value, local_authority: e.target.value })}
                 disabled={disabled}
@@ -65,7 +65,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
               <Input
                 id="tender-number"
                 type="text"
-                placeholder="לדוגמה: שנ6/2022/"
+
                 value={value.tender_number || ''}
                 onChange={(e) => handleTenderNumberChange(e.target.value)}
                 disabled={disabled}
@@ -85,7 +85,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
               <Input
                 id="period-start"
                 type="text"
-                placeholder="MM/YY לדוגמה: 09/25"
+
                 value={value.period_start || ''}
                 onChange={(e) => onChange({ ...value, period_start: e.target.value })}
                 disabled={disabled}
@@ -102,7 +102,7 @@ export function SalaryPaymentConfirmationForm({ value, onChange, disabled }: Sal
               <Input
                 id="period-end"
                 type="text"
-                placeholder="MM/YY לדוגמה: 09/25"
+
                 value={value.period_end || ''}
                 onChange={(e) => onChange({ ...value, period_end: e.target.value })}
                 disabled={disabled}

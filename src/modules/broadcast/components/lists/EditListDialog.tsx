@@ -116,7 +116,7 @@ export const EditListDialog: React.FC<EditListDialogProps> = ({
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="שם הרשימה"
+
                   className="rtl:text-right"
                 />
               </div>
@@ -130,7 +130,7 @@ export const EditListDialog: React.FC<EditListDialogProps> = ({
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="תיאור קצר של הרשימה..."
+
                   className="rtl:text-right resize-none"
                   rows={2}
                 />

@@ -528,7 +528,7 @@ export function SharePdfDialog({
                     type="text"
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
-                    placeholder={defaultSubject || `מסמך - ${clientName}`}
+
                     className="text-right"
                     disabled={sending}
                   />
@@ -663,7 +663,7 @@ export function SharePdfDialog({
                 type="text"
                 value={emailSubject}
                 onChange={(e) => setEmailSubject(e.target.value)}
-                placeholder={defaultSubject || `מסמך - ${clientName}`}
+
                 className="text-right"
                 disabled={sending}
               />

@@ -95,7 +95,7 @@ export function DocumentsView({
             <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               type="text"
-              placeholder="חיפוש בנמען או נדון..."
+
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-[220px] h-8 text-sm pr-8 pl-8 text-right"
@@ -118,7 +118,7 @@ export function DocumentsView({
           {/* Sort Dropdown */}
           <Select value={sortField} onValueChange={(v: any) => setSortField(v)}>
             <SelectTrigger className="w-[140px] h-8 text-xs">
-              <SelectValue placeholder="מיין לפי" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="date">תאריך (חדש ישן)</SelectItem>

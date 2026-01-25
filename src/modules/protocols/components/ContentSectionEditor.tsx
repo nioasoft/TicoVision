@@ -296,13 +296,7 @@ export function ContentSectionEditor({ sections, onChange }: ContentSectionEdito
                 id="content"
                 value={formState.content}
                 onChange={(e) => handleFieldChange('content', e.target.value)}
-                placeholder={
-                  formState.section_type === 'announcement'
-                    ? 'תוכן ההכרזה...'
-                    : formState.section_type === 'background_story'
-                    ? 'סיפור הרקע...'
-                    : 'תוכן ההמלצה...'
-                }
+
                 className="text-right min-h-[120px]"
                 dir="rtl"
               />

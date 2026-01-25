@@ -1096,7 +1096,7 @@ export function AutoLettersPage() {
                     const client = clients.find((c) => c.id === value);
                     setSelectedClient(client || null);
                   }}
-                  placeholder={isLoadingClients ? 'טוען לקוחות...' : 'חפש לקוח...'}
+
                   emptyText="לא נמצאו לקוחות"
                   disabled={isLoadingClients || generating}
                   className="text-right"
@@ -1117,7 +1117,7 @@ export function AutoLettersPage() {
                     const group = groups.find((g) => g.id === value);
                     setSelectedGroup(group || null);
                   }}
-                  placeholder={isLoadingGroups ? 'טוען קבוצות...' : 'חפש קבוצה...'}
+
                   emptyText="לא נמצאו קבוצות"
                   disabled={isLoadingGroups || generating}
                   className="text-right"
@@ -1141,7 +1141,7 @@ export function AutoLettersPage() {
                     const contact = contacts.find((c) => c.id === value);
                     setSelectedContact(contact || null);
                   }}
-                  placeholder={isLoadingContacts ? 'טוען אנשי קשר...' : 'חפש איש קשר...'}
+
                   emptyText="לא נמצאו אנשי קשר"
                   disabled={isLoadingContacts || generating}
                   className="text-right"
@@ -1177,7 +1177,7 @@ export function AutoLettersPage() {
                     disabled={generating}
                     className="text-right"
                     dir="rtl"
-                    placeholder="הזן שם נמען..."
+
                   />
                 </div>
                 <div className="space-y-1">
@@ -1200,7 +1200,7 @@ export function AutoLettersPage() {
                     disabled={generating}
                     className="text-left"
                     dir="ltr"
-                    placeholder="כתובת אימייל"
+
                   />
                 </div>
 
@@ -1232,7 +1232,7 @@ export function AutoLettersPage() {
                       disabled={generating}
                       className="text-right"
                       dir="ltr"
-                      placeholder="הזן מספר..."
+
                     />
                   </div>
                 )}
@@ -1285,7 +1285,7 @@ export function AutoLettersPage() {
               disabled={generating}
               className="text-right"
               dir="rtl"
-              placeholder="שם איש קשר ותפקיד (יופיע מתחת לשם החברה)"
+
             />
           </div>
         </CardContent>

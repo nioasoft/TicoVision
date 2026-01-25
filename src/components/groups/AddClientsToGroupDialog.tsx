@@ -215,7 +215,7 @@ export function AddClientsToGroupDialog({
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="חיפוש לפי שם או מספר מזהה..."
+
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pr-10 rtl:text-right ltr:text-left"

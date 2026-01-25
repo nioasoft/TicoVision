@@ -66,7 +66,7 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
       {/* Status Filter */}
       <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as TrackingFilter)}>
         <SelectTrigger className="h-8 w-auto min-w-[150px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="סטטוס: הכל" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">סטטוס: הכל ({kpis?.total_clients || 0})</SelectItem>
@@ -81,7 +81,7 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
       {/* Year Filter */}
       <Select value={yearFilter.toString()} onValueChange={(v) => onYearChange(parseInt(v))}>
         <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="שנת מס" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           {availableYears.map((year) => (
@@ -98,7 +98,7 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
         onValueChange={(v) => onPaymentMethodChange(v as PaymentMethod | 'all' | 'not_selected')}
       >
         <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="תשלום: הכל" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">תשלום: הכל</SelectItem>
@@ -112,7 +112,7 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
 
       {/* Search Input */}
       <Input
-        placeholder="חיפוש לפי שם או ח.פ..."
+
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         className="h-8 w-auto min-w-[200px] max-w-[300px] text-xs border-gray-200 bg-white"

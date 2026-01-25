@@ -38,7 +38,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="בקשה להמצאת מסמכים חסרים"
+
             />
           </div>
 
@@ -54,7 +54,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
               disabled={disabled}
               className="text-right min-h-[150px]"
               dir="rtl"
-              placeholder={`רשום כאן את המסמכים החסרים:\n\n1. אישור ניהול ספרים\n2. דו"ח שנתי 2023\n3. אישור מס הכנסה`}
+
             />
             <p className="text-sm text-gray-500 text-right">
               הטקסט יופיע במכתב בדיוק כפי שתכתוב אותו
@@ -92,7 +92,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
               disabled={disabled}
               className="text-right min-h-[80px]"
               dir="rtl"
-              placeholder="הערות נוספות למכתב..."
+
             />
           </div>
 

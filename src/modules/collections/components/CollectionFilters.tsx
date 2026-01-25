@@ -62,7 +62,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
         <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
         <Input
           type="text"
-          placeholder="חיפוש לקוח..."
+
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           className="h-8 w-[180px] text-xs pr-8 pl-7 border-gray-200 bg-white rtl:text-right"
@@ -84,7 +84,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
         onValueChange={(value) => onFiltersChange({ status: value as typeof filters.status })}
       >
         <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="סטטוס" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">סטטוס: הכל</SelectItem>
@@ -104,7 +104,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
         onValueChange={(value) => onFiltersChange({ payment_method: value as typeof filters.payment_method })}
       >
         <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="אופן תשלום" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">תשלום: הכל</SelectItem>
@@ -122,7 +122,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
         onValueChange={(value) => onFiltersChange({ time_range: value as typeof filters.time_range })}
       >
         <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="זמן" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">זמן: הכל</SelectItem>
@@ -140,7 +140,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
         onValueChange={(value) => onFiltersChange({ amount_range: value as typeof filters.amount_range })}
       >
         <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="סכום" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">סכום: הכל</SelectItem>
@@ -156,7 +156,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
         onValueChange={(value) => onFiltersChange({ alert_type: value as typeof filters.alert_type })}
       >
         <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs border-gray-200 bg-white">
-          <SelectValue placeholder="התראה" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">התראה: הכל</SelectItem>

@@ -58,7 +58,7 @@ export const RecipientPreview: React.FC<RecipientPreviewProps> = ({ summary }) =
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש..."
+
             className="pr-9 h-8 text-sm rtl:text-right"
           />
         </div>

@@ -86,8 +86,8 @@ export function OsekUnsubmittedForm({
               value={value.bank_name || ''}
               onValueChange={(val) => onChange({ ...value, bank_name: val })}
               disabled={disabled}
-              placeholder="בחר בנק"
-              searchPlaceholder="חיפוש בנק..."
+
+
               emptyText="לא נמצא בנק"
               allowCustomValue={true}
               customValueLabel='השתמש ב: "{value}"'
@@ -109,7 +109,7 @@ export function OsekUnsubmittedForm({
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="ישראל ישראלי"
+
             />
           </div>
 
@@ -135,7 +135,7 @@ export function OsekUnsubmittedForm({
                   disabled={disabled}
                   className="text-right"
                   dir="ltr"
-                  placeholder="12"
+
                 />
               </div>
               <div className="space-y-2">
@@ -181,7 +181,7 @@ export function OsekUnsubmittedForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -205,7 +205,7 @@ export function OsekUnsubmittedForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -240,7 +240,7 @@ export function OsekUnsubmittedForm({
                   disabled={disabled}
                   className="text-right"
                   dir="ltr"
-                  placeholder="2023"
+
                 />
               </div>
               <div className="space-y-2">
@@ -269,7 +269,7 @@ export function OsekUnsubmittedForm({
                   disabled={disabled}
                   className="text-right"
                   dir="rtl"
-                  placeholder="תל אביב / ירושלים / חיפה"
+
                 />
               </div>
             </div>
@@ -298,7 +298,7 @@ export function OsekUnsubmittedForm({
               disabled={disabled}
               className="text-right max-w-[150px]"
               dir="ltr"
-              placeholder="2.25"
+
             />
             <div className="text-xs text-gray-500 text-right">
               מספר נקודות הזיכוי של הלקוח (לדוגמה: 2.25)
@@ -339,7 +339,7 @@ export function OsekUnsubmittedForm({
                       disabled={disabled}
                       className="text-left pl-8 max-w-[200px]"
                       dir="ltr"
-                      placeholder="0"
+
                     />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                   </div>

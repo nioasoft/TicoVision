@@ -57,7 +57,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="הצעת מחיר לשירותי ראיית חשבון"
+
             />
           </div>
 
@@ -76,7 +76,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
                 disabled={disabled}
                 className="text-left"
                 dir="ltr"
-                placeholder="30,000"
+
               />
             </div>
 
@@ -91,7 +91,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
                 disabled={disabled}
               >
                 <SelectTrigger className="text-right" dir="rtl">
-                  <SelectValue placeholder="בחר שנת מס" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent dir="rtl">
                   {YEAR_OPTIONS.map((year) => (
@@ -131,7 +131,7 @@ export function PriceQuoteForm({ value, onChange, disabled }: PriceQuoteFormProp
               disabled={disabled}
               className="text-right min-h-[80px]"
               dir="rtl"
-              placeholder="הערות שיופיעו לאחר סעיף שכר הטרחה ולפני פרטי הבנק..."
+
             />
           </div>
 

@@ -342,7 +342,7 @@ export const IsraeliWorkersTab = forwardRef<IsraeliWorkersTabRef, IsraeliWorkers
                                 min="0"
                                 value={displayValue}
                                 onChange={(e) => handleCountChange(monthKey, parseInt(e.target.value, 10) || 0)}
-                                placeholder={isInactive ? '-' : '0'}
+
                                 disabled={disabled || isInactive}
                                 className={`text-right rtl:text-right w-24 ${isInactive ? 'bg-gray-100 text-gray-400' : ''}`}
                                 dir="rtl"

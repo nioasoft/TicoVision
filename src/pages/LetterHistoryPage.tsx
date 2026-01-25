@@ -631,7 +631,7 @@ export function LetterHistoryPage() {
             <div className="relative flex-1">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="חיפוש לפי שם לקוח או נושא..."
+
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -672,7 +672,7 @@ export function LetterHistoryPage() {
               <ClientSelector
                 value={selectedClientId}
                 onChange={(client) => setSelectedClientId(client?.id || null)}
-                placeholder="סינון לפי לקוח..."
+
               />
             </div>
 
@@ -682,7 +682,7 @@ export function LetterHistoryPage() {
               onValueChange={(value) => setSelectedGroupId(value === 'all' ? null : value)}
             >
               <SelectTrigger className="w-[200px] rtl:text-right ltr:text-left">
-                <SelectValue placeholder="סינון לפי קבוצה..." />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="rtl:text-right ltr:text-left">
                 <SelectItem value="all">כל הקבוצות</SelectItem>

@@ -292,7 +292,7 @@ export function PublicTicketForm() {
               id="phone"
               value={formData.submitter_phone}
               onChange={(e) => handleInputChange('submitter_phone', e.target.value)}
-              placeholder="מספר טלפון"
+
               className="pr-10"
               dir="ltr"
             />
@@ -307,7 +307,7 @@ export function PublicTicketForm() {
               id="company"
               value={formData.submitter_company_name}
               onChange={(e) => handleInputChange('submitter_company_name', e.target.value)}
-              placeholder="חברה בע״מ"
+
               className="pr-10 text-right"
               dir="rtl"
             />
@@ -417,7 +417,7 @@ export function PublicTicketForm() {
           id="subject"
           value={formData.subject}
           onChange={(e) => handleInputChange('subject', e.target.value)}
-          placeholder="תארו בקצרה את הפנייה"
+
           className="text-right"
           dir="rtl"
         />
@@ -432,7 +432,7 @@ export function PublicTicketForm() {
           id="description"
           value={formData.description}
           onChange={(e) => handleInputChange('description', e.target.value)}
-          placeholder="תארו בפירוט את הבקשה או השאלה שלכם..."
+
           className="text-right min-h-[150px]"
           dir="rtl"
         />

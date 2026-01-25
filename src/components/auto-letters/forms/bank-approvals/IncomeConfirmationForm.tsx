@@ -135,7 +135,7 @@ export function IncomeConfirmationForm({
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder='למשל: בנק לאומי, מרכז קניות וכו'
+
             />
           </div>
 
@@ -219,7 +219,7 @@ export function IncomeConfirmationForm({
                           dir="rtl"
                         >
                           <SelectTrigger className="text-right" dir="rtl">
-                            <SelectValue placeholder="בחר חודש" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent dir="rtl">
                             {HEBREW_MONTHS.map((month) => (
@@ -241,7 +241,7 @@ export function IncomeConfirmationForm({
                           dir="rtl"
                         >
                           <SelectTrigger className="text-right" dir="rtl">
-                            <SelectValue placeholder="בחר שנה" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent dir="rtl">
                             {yearOptions.map((year) => (
@@ -263,7 +263,7 @@ export function IncomeConfirmationForm({
                           disabled={disabled}
                           className="text-right"
                           dir="ltr"
-                          placeholder="0"
+
                         />
                       </div>
                     </div>

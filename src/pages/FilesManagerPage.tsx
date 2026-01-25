@@ -87,7 +87,7 @@ export default function FilesManagerPage() {
                   value={selectedClient?.id || null}
                   onChange={setSelectedClient}
                   label="בחר לקוח"
-                  placeholder="חפש לקוח לפי שם או ח.פ..."
+
                 />
               </div>
             </TabsContent>
@@ -98,7 +98,7 @@ export default function FilesManagerPage() {
                   value={selectedGroup?.id || null}
                   onChange={setSelectedGroup}
                   label="בחר קבוצה"
-                  placeholder="חפש קבוצה לפי שם..."
+
                 />
               </div>
             </TabsContent>

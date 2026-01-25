@@ -76,7 +76,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
                 disabled={disabled}
                 className="text-right h-9"
                 dir="rtl"
-                placeholder="9 ספרות"
+
                 maxLength={9}
               />
             </div>
@@ -93,7 +93,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
                 disabled={disabled}
                 className="text-right h-9"
                 dir="rtl"
-                placeholder="מועתק אוטומטית"
+
                 maxLength={9}
               />
             </div>
@@ -111,7 +111,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
                 disabled={disabled}
               >
                 <SelectTrigger className="text-right h-9" dir="rtl">
-                  <SelectValue placeholder="בחר" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="חודשי">חודשי</SelectItem>
@@ -147,7 +147,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
                 disabled={disabled}
                 className="text-right h-9"
                 dir="rtl"
-                placeholder="אפריל 2025"
+
               />
             </div>
           </div>
@@ -165,7 +165,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
               disabled={disabled}
               className="text-left h-9"
               dir="ltr"
-              placeholder="https://..."
+
             />
           </div>
 

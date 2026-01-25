@@ -129,8 +129,8 @@ export function AuditedCompanyForm({
               value={value.bank_name || ''}
               onValueChange={(val) => onChange({ ...value, bank_name: val })}
               disabled={disabled}
-              placeholder="בחר בנק"
-              searchPlaceholder="חיפוש בנק..."
+
+
               emptyText="לא נמצא בנק"
               allowCustomValue={true}
               customValueLabel='השתמש ב: "{value}"'
@@ -157,7 +157,7 @@ export function AuditedCompanyForm({
                   disabled={disabled}
                   className="text-right"
                   dir="rtl"
-                  placeholder="ישראל ישראלי"
+
                 />
               </div>
               <div className="space-y-2">
@@ -172,7 +172,7 @@ export function AuditedCompanyForm({
                   disabled={disabled}
                   className="text-right"
                   dir="rtl"
-                  placeholder="בעל מניות / מנכ״ל / דירקטור"
+
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ export function AuditedCompanyForm({
                   disabled={disabled}
                   className="text-right"
                   dir="ltr"
-                  placeholder="2024"
+
                 />
               </div>
               <div className="space-y-2">
@@ -246,7 +246,7 @@ export function AuditedCompanyForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -271,7 +271,7 @@ export function AuditedCompanyForm({
                       disabled={disabled}
                       className="text-left pl-8"
                       dir="ltr"
-                      placeholder="0"
+
                     />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                   </div>
@@ -295,7 +295,7 @@ export function AuditedCompanyForm({
                       disabled={disabled}
                       className="text-left pl-8"
                       dir="ltr"
-                      placeholder="0"
+
                     />
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                   </div>
@@ -320,7 +320,7 @@ export function AuditedCompanyForm({
                     disabled={disabled}
                     className="text-left pl-8"
                     dir="ltr"
-                    placeholder="0"
+
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
                 </div>
@@ -397,7 +397,7 @@ export function AuditedCompanyForm({
                         disabled={disabled}
                         className="text-right"
                         dir="rtl"
-                        placeholder="שם מלא"
+
                       />
                     </div>
                     <div className="space-y-1">
@@ -409,7 +409,7 @@ export function AuditedCompanyForm({
                         disabled={disabled}
                         className="text-right"
                         dir="ltr"
-                        placeholder="ת.ז. / ח.פ."
+
                       />
                     </div>
                     <div className="space-y-1">
@@ -424,7 +424,7 @@ export function AuditedCompanyForm({
                           disabled={disabled}
                           className="text-left pr-8"
                           dir="ltr"
-                          placeholder="0"
+
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
                       </div>
@@ -479,7 +479,7 @@ export function AuditedCompanyForm({
                     disabled={disabled}
                     className="text-right"
                     dir="rtl"
-                    placeholder="לדוגמה: 50,000 ₪ לישראל ישראלי"
+
                   />
                 </div>
               </div>

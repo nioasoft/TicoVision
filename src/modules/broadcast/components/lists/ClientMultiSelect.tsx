@@ -71,7 +71,7 @@ export const ClientMultiSelect: React.FC<ClientMultiSelectProps> = ({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש לקוח..."
+
             className="pr-9 rtl:text-right"
           />
         </div>

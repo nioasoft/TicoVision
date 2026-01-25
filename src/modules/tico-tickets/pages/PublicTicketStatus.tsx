@@ -252,7 +252,7 @@ export function PublicTicketStatus() {
                   <Textarea
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="כתבו תגובה..."
+
                     className="text-right min-h-[100px]"
                     dir="rtl"
                   />

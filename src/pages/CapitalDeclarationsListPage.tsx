@@ -604,7 +604,7 @@ export function CapitalDeclarationsListPage() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="חיפוש לפי שם או מייל..."
+
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -622,7 +622,7 @@ export function CapitalDeclarationsListPage() {
               }}
             >
               <SelectTrigger className="w-[140px] rtl:text-right">
-                <SelectValue placeholder="דחיפות" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="rtl:text-right">
                 <SelectItem value="all">כל הדחיפויות</SelectItem>
@@ -642,7 +642,7 @@ export function CapitalDeclarationsListPage() {
               }}
             >
               <SelectTrigger className="w-[160px] rtl:text-right">
-                <SelectValue placeholder="סטטוס" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="rtl:text-right">
                 <SelectItem value="all">כל הסטטוסים</SelectItem>
@@ -662,7 +662,7 @@ export function CapitalDeclarationsListPage() {
               }}
             >
               <SelectTrigger className="w-[160px] rtl:text-right">
-                <SelectValue placeholder="רו&quot;ח מטפל" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="rtl:text-right">
                 <SelectItem value="all">כל המטפלים</SelectItem>
@@ -683,7 +683,7 @@ export function CapitalDeclarationsListPage() {
               }}
             >
               <SelectTrigger className="w-[130px] rtl:text-right">
-                <SelectValue placeholder="שנת מס" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent className="rtl:text-right">
                 <SelectItem value="all">כל השנים</SelectItem>
@@ -792,7 +792,7 @@ export function CapitalDeclarationsListPage() {
                           <AssignAccountantSelect
                             value={declaration.assigned_to}
                             onChange={(userId) => handleAssignmentChange(declaration.id, userId)}
-                            placeholder="לא משויך"
+
                             className="h-6 text-[10px] w-[80px]"
                           />
                         </TableCell>

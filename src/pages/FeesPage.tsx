@@ -1854,7 +1854,7 @@ export function FeesPage() {
                               step="0.1"
                               disabled={formData.isNewClient}
                               className={`text-lg ${formData.isNewClient ? 'opacity-50 bg-gray-100' : ''} pr-8`}
-                              placeholder=""
+
                             />
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none font-semibold">
                               %
@@ -2070,7 +2070,7 @@ export function FeesPage() {
                           value={formData.retainer_inflation_rate === 0 ? '' : formData.retainer_inflation_rate}
                           onChange={(e) => setFormData({ ...formData, retainer_inflation_rate: e.target.value === '' ? '' : parseFloat(e.target.value) })}
                           step="0.1"
-                          placeholder=""
+
                           disabled={!formData.retainer_apply_inflation_index}
                           className={!formData.retainer_apply_inflation_index ? 'opacity-50' : ''}
                         />
@@ -2184,7 +2184,7 @@ export function FeesPage() {
                         setFormData({ ...formData, inflation_rate: e.target.value === '' ? 0 : newRate, final_target: newFinalTarget });
                       }}
                       step="0.1"
-                      placeholder=""
+
                       disabled={!formData.apply_inflation_index}
                       className={!formData.apply_inflation_index ? 'opacity-50' : ''}
                     />
@@ -2397,7 +2397,7 @@ export function FeesPage() {
                             setFormData({ ...formData, bookkeeping_inflation_rate: e.target.value === '' ? 0 : newRate, bookkeeping_final_target: newFinalTarget });
                           }}
                           step="0.1"
-                          placeholder=""
+
                           disabled={!formData.bookkeeping_apply_inflation_index}
                           className={!formData.bookkeeping_apply_inflation_index ? 'opacity-50' : ''}
                         />

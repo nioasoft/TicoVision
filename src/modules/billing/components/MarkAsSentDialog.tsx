@@ -136,7 +136,7 @@ export function MarkAsSentDialog({
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="הערות נוספות..."
+
               className="text-right"
               dir="rtl"
             />

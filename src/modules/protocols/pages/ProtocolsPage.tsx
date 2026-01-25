@@ -255,7 +255,7 @@ export function ProtocolsPage() {
                     setSelectedProtocol(null);
                   }}
                   label="בחר לקוח"
-                  placeholder="חפש לקוח לפי שם או ח.פ..."
+
                 />
               </div>
             </TabsContent>
@@ -270,7 +270,7 @@ export function ProtocolsPage() {
                     setSelectedProtocol(null);
                   }}
                   label="בחר קבוצה"
-                  placeholder="חפש קבוצה לפי שם..."
+
                 />
               </div>
             </TabsContent>
@@ -359,7 +359,7 @@ export function ProtocolsPage() {
                 onValueChange={(value) => setSelectedImportProtocolId(value || null)}
               >
                 <SelectTrigger className="rtl:text-right">
-                  <SelectValue placeholder="בחר פרוטוקול קודם..." />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {protocols.slice(0, 10).map((p) => (

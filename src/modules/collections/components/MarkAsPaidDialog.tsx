@@ -118,7 +118,7 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
               onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
             >
               <SelectTrigger className="rtl:text-right">
-                <SelectValue placeholder="בחר אמצעי תשלום" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {PAYMENT_METHODS.map((method) => (

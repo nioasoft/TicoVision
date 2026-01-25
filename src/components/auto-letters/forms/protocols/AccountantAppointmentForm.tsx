@@ -160,7 +160,7 @@ export function AccountantAppointmentForm({
                 disabled={disabled}
                 className="text-right flex-1"
                 dir="rtl"
-                placeholder="שם היו״ר"
+
               />
               <Crown className="h-5 w-5 text-amber-500 flex-shrink-0" />
             </div>
@@ -212,7 +212,7 @@ export function AccountantAppointmentForm({
                     disabled={disabled || index === 0}
                     className={`text-right flex-1 ${index === 0 ? 'bg-gray-50' : ''}`}
                     dir="rtl"
-                    placeholder={index === 0 ? 'יו"ר (מסונכרן מלמעלה)' : `נוכח ${index + 1}`}
+
                   />
                   {index === 0 ? (
                     <Crown className="h-5 w-5 text-amber-500 flex-shrink-0" />
@@ -239,7 +239,7 @@ export function AccountantAppointmentForm({
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="שם משרד רו״ח הקודם"
+
             />
             <p className="text-xs text-gray-500 text-right">
               יופיע בסעיף "הפסקת מינוי רואה חשבון קודם"

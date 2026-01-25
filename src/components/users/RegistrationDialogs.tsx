@@ -193,7 +193,7 @@ export const RejectRegistrationDialog = React.memo<RejectRegistrationDialogProps
                 onChange={(e) => setReason(e.target.value)}
                 rows={4}
                 dir="rtl"
-                placeholder="למשל: המידע שסופק אינו מלא, לא עומד בקריטריונים..."
+
               />
             </div>
           </div>

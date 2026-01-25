@@ -38,7 +38,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="הודעה על דדליין"
+
             />
           </div>
 
@@ -55,7 +55,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder='הגשת דו"ח שנתי, תשלום מס, וכו׳'
+
             />
           </div>
 
@@ -87,7 +87,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
               disabled={disabled}
               className="text-right min-h-[100px]"
               dir="rtl"
-              placeholder={`1. להעביר מסמכים\n2. לחתום על טפסים\n3. לשלם אגרה`}
+
             />
             <p className="text-sm text-gray-500 text-right">
               ניתן לכתוב מספר פעולות, כל אחת בשורה נפרדת
@@ -106,7 +106,7 @@ export function GeneralDeadlineForm({ value, onChange, disabled }: GeneralDeadli
               disabled={disabled}
               className="text-right min-h-[80px]"
               dir="rtl"
-              placeholder="הערות נוספות למכתב..."
+
             />
           </div>
 

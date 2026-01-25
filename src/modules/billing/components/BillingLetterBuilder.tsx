@@ -122,7 +122,7 @@ export function BillingLetterBuilder() {
                   value={selectedClient?.id || null}
                   onChange={setSelectedClient}
                   label="בחר לקוח"
-                  placeholder="חפש לקוח לפי שם או ח.פ..."
+
                 />
               </div>
               <Button
@@ -175,7 +175,7 @@ export function BillingLetterBuilder() {
             <Textarea
               value={serviceDescription}
               onChange={(e) => setServiceDescription(e.target.value)}
-              placeholder="לדוגמה: שירותי ייעוץ משפטי, הכנת דוח כספי מיוחד..."
+
               className="min-h-[100px] text-right"
               dir="rtl"
             />
@@ -201,7 +201,7 @@ export function BillingLetterBuilder() {
                 type="number"
                 value={amountBeforeVat}
                 onChange={handleAmountChange}
-                placeholder="הזן סכום"
+
                 min="0"
                 step="1"
                 className="text-right"
@@ -300,7 +300,7 @@ export function BillingLetterBuilder() {
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="הערות לשימוש פנימי בלבד..."
+
                 className="text-right"
                 dir="rtl"
               />

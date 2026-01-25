@@ -52,7 +52,7 @@ export function CutoffDateForm({ value, onChange, disabled }: CutoffDateFormProp
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder='קביעת מועד חיתוך לדו"חות'
+
             />
           </div>
 
@@ -84,7 +84,7 @@ export function CutoffDateForm({ value, onChange, disabled }: CutoffDateFormProp
               dir="rtl"
             >
               <SelectTrigger className="text-right" dir="rtl">
-                <SelectValue placeholder="בחר סוג דו״ח..." />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent dir="rtl">
                 {REPORT_TYPES.map((type) => (
@@ -108,7 +108,7 @@ export function CutoffDateForm({ value, onChange, disabled }: CutoffDateFormProp
               disabled={disabled}
               className="text-right min-h-[80px]"
               dir="rtl"
-              placeholder="הערות נוספות למכתב..."
+
             />
           </div>
 

@@ -26,8 +26,6 @@ export interface ComboboxProps {
   options: ComboboxOption[]
   value?: string
   onValueChange?: (value: string) => void
-  placeholder?: string
-  searchPlaceholder?: string
   emptyText?: string
   className?: string
   disabled?: boolean
@@ -40,8 +38,6 @@ export function Combobox({
   options,
   value,
   onValueChange,
-  placeholder = "בחר אפשרות",
-  searchPlaceholder = "חיפוש...",
   emptyText = "לא נמצאו תוצאות",
   className,
   disabled = false,
@@ -73,7 +69,7 @@ export function Combobox({
           disabled={disabled}
         >
           <span className="truncate">
-            {selectedOption ? selectedOption.label : (value || placeholder)}
+            {selectedOption ? selectedOption.label : (value || '')}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 rtl:ml-0 rtl:mr-2" />
         </Button>
@@ -81,7 +77,7 @@ export function Combobox({
       <PopoverContent className="w-full p-0" align="start">
         <Command>
           <CommandInput
-            placeholder={searchPlaceholder}
+
             className="rtl:text-right ltr:text-left"
             value={searchValue}
             onValueChange={setSearchValue}

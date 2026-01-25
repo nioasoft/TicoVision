@@ -80,7 +80,7 @@ export function PreviousAccountantRequestForm({ value, onChange, disabled }: Pre
                     disabled={disabled}
                     className="text-right flex-1"
                     dir="rtl"
-                    placeholder={`שם חברה ${index + 1}`}
+
                   />
                   {subjects.length > 1 && (
                     <Button
@@ -115,7 +115,7 @@ export function PreviousAccountantRequestForm({ value, onChange, disabled }: Pre
               disabled={disabled}
               className="text-left"
               dir="ltr"
-              placeholder="helli@franco.co.il"
+
             />
             <p className="text-sm text-gray-500 text-right">
               כתובת המייל שתופיע במכתב לקבלת המסמכים

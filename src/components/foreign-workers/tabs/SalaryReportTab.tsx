@@ -446,8 +446,8 @@ export const SalaryReportTab = forwardRef<SalaryReportTabRef, SalaryReportTabPro
                       ]}
                       value={isCreatingNew ? NEW_WORKER_VALUE : selectedWorkerId || undefined}
                       onValueChange={handleWorkerSelect}
-                      placeholder="בחר עובד מהרשימה..."
-                      searchPlaceholder="חפש לפי שם או דרכון..."
+
+
                       disabled={disabled || !branchId}
                   />
                 </div>

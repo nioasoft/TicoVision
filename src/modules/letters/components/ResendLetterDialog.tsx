@@ -163,7 +163,7 @@ export function ResendLetterDialog({
                       <div key={index} className="flex gap-2">
                         <Input
                           type="email"
-                          placeholder="כתובת אימייל"
+
                           value={email}
                           onChange={(e) => updateEmail(index, e.target.value)}
                           className="flex-1"

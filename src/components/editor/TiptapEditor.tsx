@@ -232,7 +232,6 @@ const FontSize = Extension.create({
 interface TiptapEditorProps {
   value: string;
   onChange: (html: string) => void;
-  placeholder?: string;
   minHeight?: string;
   className?: string;
 }

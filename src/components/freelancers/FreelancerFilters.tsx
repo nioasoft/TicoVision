@@ -36,7 +36,7 @@ export function FreelancerFilters({
       <div className="relative flex-1 max-w-md">
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="חיפוש לפי שם, ת.ז או אימייל..."
+
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pr-10 rtl:text-right"
@@ -51,7 +51,7 @@ export function FreelancerFilters({
           onValueChange={(value) => onFilterChange({ isPassiveIncome: value })}
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="סוג עצמאי" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">הכל</SelectItem>

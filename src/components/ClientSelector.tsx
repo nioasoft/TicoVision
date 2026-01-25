@@ -21,7 +21,6 @@ interface ClientSelectorProps {
   value: string | null;
   onChange: (client: Client | null) => void;
   label?: string;
-  placeholder?: string;
   className?: string;
   /** When true, non-admin users see only their assigned clients */
   filterByAssignment?: boolean;
@@ -31,7 +30,6 @@ export function ClientSelector({
   value,
   onChange,
   label = 'בחר לקוח',
-  placeholder = 'בחר לקוח מהרשימה...',
   className = '',
   filterByAssignment = false
 }: ClientSelectorProps) {
@@ -174,8 +172,6 @@ export function ClientSelector({
           }))}
           value={value || undefined}
           onValueChange={handleValueChange}
-          placeholder={placeholder}
-          searchPlaceholder="חיפוש לפי שם או ח.פ..."
           emptyText="לא נמצא לקוח"
         />
       )}

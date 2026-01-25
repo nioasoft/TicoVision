@@ -236,7 +236,7 @@ export function ComponentSimulator() {
             <div className="grid grid-cols-2 gap-3">
               <Select value={selectedCombinationId} onValueChange={setSelectedCombinationId}>
                 <SelectTrigger className="text-right">
-                  <SelectValue placeholder="טען קומבינציה שמורה..." />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {savedCombinations.map((combo) => (
@@ -277,7 +277,7 @@ export function ComponentSimulator() {
               value={selectedClient?.id || null}
               onChange={(client) => setSelectedClient(client)}
               label=""
-              placeholder="בחר לקוח..."
+
             />
           </div>
 
@@ -433,7 +433,7 @@ export function ComponentSimulator() {
               <Input
                 value={combinationName}
                 onChange={(e) => setCombinationName(e.target.value)}
-                placeholder='לדוגמא: "הנהח"ש רגיל"'
+
                 className="text-right"
                 dir="rtl"
               />

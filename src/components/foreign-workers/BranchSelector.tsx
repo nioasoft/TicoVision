@@ -22,8 +22,6 @@ interface BranchSelectorProps {
   onChange: (branchId: string | null, clientId: string | null, branchName: string | null, isDefault: boolean, isSingleBranch: boolean) => void;
   /** Whether to show the management button */
   showManagement?: boolean;
-  /** Placeholder text */
-  placeholder?: string;
   /** Disabled state */
   disabled?: boolean;
 }
@@ -33,7 +31,6 @@ export function BranchSelector({
   value,
   onChange,
   showManagement = true,
-  placeholder = 'בחר סניף...',
   disabled = false,
 }: BranchSelectorProps) {
   const [branches, setBranches] = useState<BranchWithDisplayName[]>([]);
@@ -124,7 +121,7 @@ export function BranchSelector({
           <SelectTrigger className="w-[280px] text-right">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder={placeholder} />
+              <SelectValue />
             </div>
           </SelectTrigger>
           <SelectContent dir="rtl" align="end">

@@ -180,7 +180,7 @@ export function LogCommunicationDialog({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, subject: e.target.value }))
               }
-              placeholder="למשל: תזכורת להעלאת מסמכים"
+
             />
           </div>
 
@@ -193,7 +193,7 @@ export function LogCommunicationDialog({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, content: e.target.value }))
               }
-              placeholder="פרטי השיחה/ההודעה..."
+
               rows={3}
             />
           </div>
@@ -207,7 +207,7 @@ export function LogCommunicationDialog({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, outcome: e.target.value }))
               }
-              placeholder="למשל: הלקוח התחייב להעלות עד יום ראשון"
+
             />
           </div>
         </div>

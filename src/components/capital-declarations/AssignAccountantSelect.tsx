@@ -25,7 +25,6 @@ interface AssignAccountantSelectProps {
   value: string | null;
   onChange: (userId: string | null) => void;
   disabled?: boolean;
-  placeholder?: string;
   className?: string;
 }
 
@@ -33,7 +32,6 @@ export function AssignAccountantSelect({
   value,
   onChange,
   disabled = false,
-  placeholder = 'בחר רו"ח מטפל',
   className,
 }: AssignAccountantSelectProps) {
   const [accountants, setAccountants] = useState<Accountant[]>([]);
@@ -69,7 +67,7 @@ export function AssignAccountantSelect({
       disabled={disabled || loading}
     >
       <SelectTrigger className={cn('w-full rtl:text-right', className)}>
-        <SelectValue placeholder={placeholder}>
+        <SelectValue>
           {loading ? (
             <span className="text-muted-foreground">טוען...</span>
           ) : value && selectedAccountant ? (

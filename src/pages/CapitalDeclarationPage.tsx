@@ -521,8 +521,8 @@ export function CapitalDeclarationPage() {
                   const client = clients.find((c) => c.id === value);
                   setSelectedClient(client || null);
                 }}
-                placeholder={isLoadingClients ? 'טוען לקוחות...' : 'בחר לקוח...'}
-                searchPlaceholder="חפש לקוח..."
+
+
                 emptyText="לא נמצאו לקוחות"
                 disabled={isLoadingClients}
               />
@@ -539,8 +539,8 @@ export function CapitalDeclarationPage() {
                   const group = groups.find((g) => g.id === value);
                   setSelectedGroup(group || null);
                 }}
-                placeholder={isLoadingGroups ? 'טוען קבוצות...' : 'בחר קבוצה...'}
-                searchPlaceholder="חפש קבוצה..."
+
+
                 emptyText="לא נמצאו קבוצות"
                 disabled={isLoadingGroups}
               />

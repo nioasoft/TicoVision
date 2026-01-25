@@ -38,7 +38,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="השלמות לדוח האישי"
+
             />
           </div>
 
@@ -55,7 +55,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
               disabled={disabled}
               className="text-right w-32"
               dir="ltr"
-              placeholder="2024"
+
             />
           </div>
 
@@ -72,7 +72,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="שם מנהל/ת החשבונות"
+
             />
             <p className="text-sm text-gray-500 text-right">
               יופיע במכתב: "את המסמכים עלייך להעביר ל[שם]"
@@ -91,7 +91,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
               disabled={disabled}
               className="text-right min-h-[150px]"
               dir="rtl"
-              placeholder={`רשום כאן את המסמכים הנדרשים:\n\n1. טופס 106 מכל המעסיקים\n2. אישור ניהול חשבון בנק\n3. דו"ח שנתי מקופות גמל`}
+
             />
             <p className="text-sm text-gray-500 text-right">
               הטקסט יופיע במכתב בדיוק כפי שתכתוב אותו (בתיבה מודגשת)
@@ -111,7 +111,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
               disabled={disabled}
               className="text-left"
               dir="ltr"
-              placeholder="https://drive.google.com/..."
+
             />
             <p className="text-sm text-gray-500 text-right">
               אם יוזן לינק, יתווסף למכתב: "לשרותך לינק להעברת מסמכים"

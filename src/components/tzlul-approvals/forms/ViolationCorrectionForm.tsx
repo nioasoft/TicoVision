@@ -61,7 +61,7 @@ export function ViolationCorrectionForm({ value, onChange, disabled }: Violation
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="המועצה המקומית גן יבנה"
+
             />
             <p className="text-sm text-gray-500 text-right">
               הרשות המקומית שאיתה יש התקשרות

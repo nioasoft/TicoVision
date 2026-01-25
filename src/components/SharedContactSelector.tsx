@@ -17,7 +17,6 @@ interface SharedContactSelectorProps {
   value?: TenantContact | null;
   onChange: (contact: TenantContact | null) => void;
   contactType?: ContactType;
-  placeholder?: string;
   disabled?: boolean;
   onCreateNew?: () => void; // Callback to open "create new contact" dialog
 }
@@ -26,7 +25,6 @@ export function SharedContactSelector({
   value,
   onChange,
   contactType,
-  placeholder = 'חפש או בחר איש קשר...',
   disabled = false,
   onCreateNew,
 }: SharedContactSelectorProps) {
@@ -83,7 +81,7 @@ export function SharedContactSelector({
           className="w-full justify-between rtl:text-right"
         >
           <span className="truncate rtl:text-right ltr:text-left">
-            {value ? value.full_name : placeholder}
+            {value ? value.full_name : ''}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -91,7 +89,7 @@ export function SharedContactSelector({
       <PopoverContent className="w-full p-0 rtl:text-right" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="הקלד לחיפוש..."
+
             value={searchQuery}
             onValueChange={setSearchQuery}
             className="rtl:text-right"

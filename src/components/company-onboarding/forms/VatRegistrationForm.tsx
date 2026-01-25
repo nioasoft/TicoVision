@@ -34,7 +34,7 @@ export function VatRegistrationForm({ value, onChange, disabled }: VatRegistrati
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder='הנחיות להעברת מסמכים לצורך פתיחת תיקי מע"מ'
+
             />
           </div>
 
@@ -51,7 +51,7 @@ export function VatRegistrationForm({ value, onChange, disabled }: VatRegistrati
               disabled={disabled}
               className="text-left"
               dir="ltr"
-              placeholder="https://drive.google.com/..."
+
             />
             <p className="text-sm text-gray-500 text-right">
               קישור לתיקייה בדרייב להעלאת המסמכים

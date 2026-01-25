@@ -668,7 +668,7 @@ export function CapitalDeclarationDetailPage() {
                 <AssignAccountantSelect
                   value={declaration.assigned_to}
                   onChange={handleAssignmentChange}
-                  placeholder="בחר רו&quot;ח"
+
                   className="h-8 text-xs"
                 />
               </div>

@@ -177,7 +177,7 @@ export const BroadcastSendTab: React.FC = () => {
                 <div className="pr-6">
                   <Select value={selectedListId} onValueChange={setSelectedListId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="בחר רשימת תפוצה" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {lists.length === 0 ? (
@@ -240,7 +240,7 @@ export const BroadcastSendTab: React.FC = () => {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="שם ההפצה"
+
                   className="rtl:text-right"
                 />
               </div>
@@ -253,7 +253,7 @@ export const BroadcastSendTab: React.FC = () => {
                   id="subject"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="הנושא שיופיע בתיבת הדואר"
+
                   className="rtl:text-right"
                 />
               </div>
@@ -266,7 +266,7 @@ export const BroadcastSendTab: React.FC = () => {
                   id="content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="כתוב כאן את תוכן ההודעה..."
+
                   className="rtl:text-right min-h-[200px]"
                 />
                 <div className="flex items-center justify-between">

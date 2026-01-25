@@ -38,7 +38,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="תזכורת לפגישה"
+
             />
           </div>
 
@@ -55,7 +55,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder='סקירת דו"חות, תכנון מס, וכו׳'
+
             />
           </div>
 
@@ -107,7 +107,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
               disabled={disabled}
               className="text-right"
               dir="rtl"
-              placeholder="במשרדנו / בזום / אחר"
+
             />
           </div>
 
@@ -123,7 +123,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
               disabled={disabled}
               className="text-right min-h-[80px]"
               dir="rtl"
-              placeholder="הערות נוספות למכתב..."
+
             />
           </div>
 

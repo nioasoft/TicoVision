@@ -267,7 +267,7 @@ export function StatusChangeDialog({
             </Label>
             <Textarea
               id="notes"
-              placeholder="הוסף הערה על השינוי..."
+
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="min-h-[80px] rtl:text-right"

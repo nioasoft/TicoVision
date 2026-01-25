@@ -130,7 +130,7 @@ export default function LetterHistoryPageV2() {
           <div className="relative w-64">
             <Search className="absolute rtl:right-3 ltr:left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="חפש לפי שם לקוח..."
+
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="rtl:pr-10 ltr:pl-10 rtl:text-right ltr:text-left"

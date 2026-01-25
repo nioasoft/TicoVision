@@ -166,7 +166,7 @@ export function ContactAutocompleteInput({
                   setOpen(true);
                 }
               }}
-              placeholder={namePlaceholder}
+
               disabled={disabled}
               className="rtl:text-right"
               dir="rtl"
@@ -223,7 +223,7 @@ export function ContactAutocompleteInput({
             type="email"
             value={emailValue}
             onChange={(e) => handleEmailChange(e.target.value)}
-            placeholder={emailPlaceholder}
+
             disabled={disabled}
             className="rtl:text-right"
             dir="rtl"
@@ -240,7 +240,7 @@ export function ContactAutocompleteInput({
             type="tel"
             value={phoneValue}
             onChange={(e) => handlePhoneChange(e.target.value)}
-            placeholder={phonePlaceholder}
+
             disabled={disabled}
             className="rtl:text-right"
             dir="rtl"
@@ -257,7 +257,7 @@ export function ContactAutocompleteInput({
             type="tel"
             value={phoneSecondaryValue}
             onChange={(e) => handlePhoneSecondaryChange(e.target.value)}
-            placeholder={phoneSecondaryPlaceholder}
+
             disabled={disabled}
             className="rtl:text-right"
             dir="rtl"

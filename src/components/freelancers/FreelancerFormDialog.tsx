@@ -305,7 +305,7 @@ export function FreelancerFormDialog({
                   const formatted = formatIsraeliTaxId(e.target.value);
                   handleFormChange('tax_id', formatted);
                 }}
-                placeholder="מספר ת.ז."
+
                 className="rtl:text-right font-mono max-w-xs"
                 dir="ltr"
               />
@@ -321,19 +321,19 @@ export function FreelancerFormDialog({
                 <Input
                   value={formData.address.street}
                   onChange={(e) => handleAddressChange('street', e.target.value)}
-                  placeholder="רחוב ומספר"
+
                   className="rtl:text-right"
                 />
                 <Input
                   value={formData.address.city}
                   onChange={(e) => handleAddressChange('city', e.target.value)}
-                  placeholder="עיר"
+
                   className="rtl:text-right"
                 />
                 <Input
                   value={formData.address.postal_code}
                   onChange={(e) => handleAddressChange('postal_code', e.target.value)}
-                  placeholder="מיקוד"
+
                   className="rtl:text-right"
                   dir="ltr"
                 />
@@ -363,7 +363,7 @@ export function FreelancerFormDialog({
               <ClientSelector
                 value={formData.linked_company_id}
                 onChange={(company) => handleFormChange('linked_company_id', company?.id || null)}
-                placeholder="בחר חברה לקישור"
+
                 filterType="company"
               />
               <p className="text-sm text-muted-foreground rtl:text-right">

@@ -8,7 +8,6 @@ interface MoneyInputProps {
   max?: number;
   disabled?: boolean;
   className?: string;
-  placeholder?: string;
 }
 
 /**
@@ -23,7 +22,6 @@ export function MoneyInput({
   max,
   disabled,
   className,
-  placeholder,
 }: MoneyInputProps) {
   // Format number with commas using he-IL locale
   const formatValue = (val: number | ''): string => {
@@ -101,7 +99,7 @@ export function MoneyInput({
       onBlur={handleBlur}
       onFocus={handleFocus}
       disabled={disabled}
-      placeholder={placeholder}
+
       className={cn(
         'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors',
         'file:border-0 file:bg-transparent file:text-sm file:font-medium',

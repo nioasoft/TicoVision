@@ -373,7 +373,7 @@ export function AttendeeSelector({
                     id="external_name"
                     value={externalName}
                     onChange={(e) => setExternalName(e.target.value)}
-                    placeholder="הקלד שם המשתתף"
+
                     className="text-right"
                     dir="rtl"
                   />
@@ -386,7 +386,7 @@ export function AttendeeSelector({
                     id="external_role"
                     value={externalRole}
                     onChange={(e) => setExternalRole(e.target.value)}
-                    placeholder="תפקיד המשתתף"
+
                     className="text-right"
                     dir="rtl"
                   />

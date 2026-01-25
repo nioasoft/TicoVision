@@ -209,7 +209,7 @@ export function TicketDetailSheet({
                   onValueChange={handleAssigneeChange}
                 >
                   <SelectTrigger className="text-right">
-                    <SelectValue placeholder="בחר" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">לא משויך</SelectItem>
@@ -371,7 +371,7 @@ export function TicketDetailSheet({
                 <Textarea
                   value={newReply}
                   onChange={(e) => setNewReply(e.target.value)}
-                  placeholder="כתוב תגובה..."
+
                   className="text-right min-h-[80px]"
                   dir="rtl"
                 />

@@ -56,7 +56,7 @@ export function RecipientLinesInput({
             <Input
               value={line}
               onChange={(e) => handleLineChange(index, e.target.value)}
-              placeholder={`שורה ${index + 1}`}
+
               disabled={disabled}
               className="text-right rtl:text-right flex-1"
               dir="rtl"

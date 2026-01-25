@@ -192,7 +192,7 @@ export default function SuperAdminDashboard() {
               <Search className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="חפש עסק..."
+
                 className="w-full pr-8 p-2 border rounded-md"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

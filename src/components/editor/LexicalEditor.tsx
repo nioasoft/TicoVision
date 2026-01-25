@@ -1153,7 +1153,6 @@ function Toolbar() {
 interface LexicalEditorProps {
   value?: string;
   onChange?: (html: string) => void;
-  placeholder?: string;
   minHeight?: string;
   className?: string;
 }
@@ -1161,7 +1160,6 @@ interface LexicalEditorProps {
 // Named export for the component
 const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
   onChange,
-  placeholder = 'הקלד כאן...',
   minHeight = '300px',
   className,
 }) => {
@@ -1209,11 +1207,7 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
                 style={{ minHeight }}
               />
             }
-            placeholder={
-              <div className="absolute top-4 right-4 text-gray-400 pointer-events-none">
-                {placeholder}
-              </div>
-            }
+
             ErrorBoundary={LexicalErrorBoundary}
           />
         </div>
