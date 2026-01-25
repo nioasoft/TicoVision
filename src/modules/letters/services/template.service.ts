@@ -3879,6 +3879,9 @@ export class TemplateService extends BaseService {
         if (typeof processed.estimated_profit === 'number') {
           processed.estimated_profit = processed.estimated_profit.toLocaleString('he-IL', { minimumFractionDigits: 0 });
         }
+        if (typeof processed.ebitda_adjusted === 'number') {
+          processed.ebitda_adjusted = processed.ebitda_adjusted.toLocaleString('he-IL', { minimumFractionDigits: 0 });
+        }
 
         // Build shareholders table rows
         if (Array.isArray(processed.shareholders)) {

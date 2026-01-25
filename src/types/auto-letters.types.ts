@@ -552,6 +552,7 @@ export interface MortgageUnauditedCompanyVariables extends AutoLetterSharedData 
   salary_expenses: number;          // הוצאות השכר
   applicant_salary: number;         // שכר מבקש/ת המשכנתא
   estimated_profit: number;         // רווח חשבונאי משוער לפני מס
+  ebitda_adjusted: number;          // EBITDA מתואם (בתוספת שכר בעל שליטה)
 
   // בעלי מניות
   registrar_report_date: string;
@@ -960,6 +961,7 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           salary_expenses: 0,
           applicant_salary: 0,
           estimated_profit: 0,
+          ebitda_adjusted: 0,
           registrar_report_date: '',
           shareholders: [{ name: '', id_number: '', holding_percentage: 100 }],
           has_dividend: false,
@@ -1285,6 +1287,7 @@ export function validateMortgageUnauditedCompany(data: Partial<MortgageUnaudited
     data.revenue_turnover !== undefined &&
     data.salary_expenses !== undefined &&
     data.estimated_profit !== undefined &&
+    data.ebitda_adjusted !== undefined &&
     data.registrar_report_date &&
     data.shareholders &&
     data.shareholders.length > 0 &&

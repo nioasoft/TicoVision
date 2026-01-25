@@ -78,7 +78,8 @@ export function UnauditedCompanyForm({
   const hasPeriod = (value.period_months ?? 0) > 0 && !!value.period_end_date;
   const hasFinancials = value.revenue_turnover !== undefined &&
     value.salary_expenses !== undefined &&
-    value.estimated_profit !== undefined;
+    value.estimated_profit !== undefined &&
+    value.ebitda_adjusted !== undefined;
   const hasShareholders = shareholders.length > 0 && shareholders.every(sh =>
     sh.name?.trim() && sh.id_number?.trim() && sh.holding_percentage >= 0
   );
@@ -321,6 +322,30 @@ export function UnauditedCompanyForm({
                 {value.estimated_profit ? (
                   <div className="text-xs text-gray-500 text-right">
                     {formatCurrency(value.estimated_profit)} ₪
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ebitda-adjusted" className="text-right block text-sm">
+                  EBITDA מתואם (בתוספת שכר בעל השליטה)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="ebitda-adjusted"
+                    type="number"
+                    value={value.ebitda_adjusted || ''}
+                    onChange={(e) => onChange({ ...value, ebitda_adjusted: parseFloat(e.target.value) || 0 })}
+                    disabled={disabled}
+                    className="text-left pl-8"
+                    dir="ltr"
+
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₪</span>
+                </div>
+                {value.ebitda_adjusted ? (
+                  <div className="text-xs text-gray-500 text-right">
+                    {formatCurrency(value.ebitda_adjusted)} ₪
                   </div>
                 ) : null}
               </div>
