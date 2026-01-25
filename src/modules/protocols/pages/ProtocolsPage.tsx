@@ -11,7 +11,6 @@ import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { ClientSelector } from '@/components/ClientSelector';
 import { GroupSelector } from '@/components/GroupSelector';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
@@ -204,101 +203,104 @@ export function ProtocolsPage() {
       {/* Page Header */}
       <div className="text-right">
         <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-3xl font-bold">פרוטוקולים</h1>
-          <ScrollText className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-semibold">פרוטוקולים</h1>
+          <ScrollText className="h-7 w-7 text-primary" />
         </div>
-        <p className="text-gray-600">
-          ניהול פרוטוקולים של פגישות עם לקוחות
+        <p className="text-sm text-gray-600 rtl:text-right">
+          ניהול פרוטוקולים של פגישות עם לקוחות וקבוצות
         </p>
       </div>
 
-      {/* Selection Mode & Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-right">בחירה</CardTitle>
-          <CardDescription className="text-right">
-            בחר אם ברצונך לנהל פרוטוקולים עבור לקוח בודד או קבוצת לקוחות
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs
-            value={mode}
-            onValueChange={(v) => {
-              setMode(v as 'client' | 'group');
-              // Reset selections when switching modes
-              if (v === 'client') setSelectedGroup(null);
-              else setSelectedClient(null);
-              setViewMode('list');
-              setSelectedProtocol(null);
-            }}
-            dir="rtl"
-            className="w-full"
-          >
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="client" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                לפי לקוח
-              </TabsTrigger>
-              <TabsTrigger value="group" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                לפי קבוצה
-              </TabsTrigger>
-            </TabsList>
+      {/* Selection Mode */}
+      <div className="rounded-md border bg-white px-3 py-2">
+        <div className="flex items-start justify-between gap-4">
+          <div className="text-right">
+            <p className="text-xs font-semibold">בחירת יעד</p>
+            <p className="text-[11px] text-gray-500">בחר לקוח או קבוצה כדי להתחיל לעבוד</p>
+          </div>
+          {isSelected && (
+            <div className="text-[11px] text-gray-500 rtl:text-right ltr:text-left">{getSelectedName()}</div>
+          )}
+        </div>
+        <Tabs
+          value={mode}
+          onValueChange={(v) => {
+            setMode(v as 'client' | 'group');
+            if (v === 'client') setSelectedGroup(null);
+            else setSelectedClient(null);
+            setViewMode('list');
+            setSelectedProtocol(null);
+          }}
+          dir="rtl"
+          className="w-full mt-2"
+        >
+          <TabsList className="flex w-full gap-2 bg-transparent p-0 h-auto">
+            <TabsTrigger
+              value="client"
+              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border bg-white py-2 text-xs text-gray-700 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
+            >
+              <User className="h-4 w-4" />
+              לפי לקוח
+            </TabsTrigger>
+            <TabsTrigger
+              value="group"
+              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border bg-white py-2 text-xs text-gray-700 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
+            >
+              <Users className="h-4 w-4" />
+              לפי קבוצה
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="client">
-              <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4">
-                <ClientSelector
-                  value={selectedClient?.id || null}
-                  onChange={(client) => {
-                    setSelectedClient(client);
-                    setViewMode('list');
-                    setSelectedProtocol(null);
-                  }}
-                  label="בחר לקוח"
+          <TabsContent value="client" className="mt-2">
+            <div className="rounded-md border bg-gray-50/60 px-2 py-2">
+              <ClientSelector
+                value={selectedClient?.id || null}
+                onChange={(client) => {
+                  setSelectedClient(client);
+                  setViewMode('list');
+                  setSelectedProtocol(null);
+                }}
+                label="בחר לקוח"
+              />
+            </div>
+          </TabsContent>
 
-                />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="group">
-              <div className="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4">
-                <GroupSelector
-                  value={selectedGroup?.id || null}
-                  onChange={(group) => {
-                    setSelectedGroup(group);
-                    setViewMode('list');
-                    setSelectedProtocol(null);
-                  }}
-                  label="בחר קבוצה"
-
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+          <TabsContent value="group" className="mt-2">
+            <div className="rounded-md border bg-gray-50/60 px-2 py-2">
+              <GroupSelector
+                value={selectedGroup?.id || null}
+                onChange={(group) => {
+                  setSelectedGroup(group);
+                  setViewMode('list');
+                  setSelectedProtocol(null);
+                }}
+                label="בחר קבוצה"
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+        {!isSelected && (
+          <p className="text-[11px] text-gray-500 mt-2 rtl:text-right">
+            בחר {mode === 'client' ? 'לקוח' : 'קבוצה'} מהרשימה כדי לראות פרוטוקולים קיימים או ליצור חדש.
+          </p>
+        )}
+      </div>
 
       {/* Main Content */}
-      {isSelected ? (
-        viewMode === 'list' ? (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between flex-row-reverse">
-                <Button onClick={handleNewProtocol} className="flex items-center gap-2 flex-row-reverse">
-                  <Plus className="h-4 w-4" />
-                  פרוטוקול חדש
-                </Button>
-                <div className="text-right">
-                  <CardTitle>
-                    פרוטוקולים - {getSelectedName()}
-                  </CardTitle>
-                  <CardDescription className="mt-1">
-                    {total} פרוטוקולים
-                  </CardDescription>
-                </div>
+      {isSelected &&
+        (viewMode === 'list' ? (
+          <div className="rounded-md border bg-white">
+            <div className="flex items-center justify-between gap-4 px-4 py-3 border-b">
+              <div className="text-right">
+                <h2 className="text-lg font-semibold">פרוטוקולים - {getSelectedName()}</h2>
+                <p className="text-xs text-gray-500 mt-1">{total} פרוטוקולים</p>
               </div>
-            </CardHeader>
-            <CardContent>
+              <Button onClick={handleNewProtocol} className="flex items-center gap-2 flex-row-reverse">
+                <Plus className="h-4 w-4" />
+                פרוטוקול חדש
+              </Button>
+            </div>
+            <div className="p-4">
               <ProtocolList
                 protocols={protocols}
                 loading={loading}
@@ -307,8 +309,8 @@ export function ProtocolsPage() {
                 onDuplicate={handleDuplicateProtocol}
                 onDelete={handleDeleteProtocol}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ) : viewMode === 'builder' ? (
           <ProtocolBuilder
             protocol={selectedProtocol}
@@ -325,22 +327,7 @@ export function ProtocolsPage() {
             onEdit={() => setViewMode('builder')}
             onDuplicate={() => selectedProtocol && handleDuplicateProtocol(selectedProtocol.id)}
           />
-        )
-      ) : (
-        <Card>
-          <CardContent className="py-16">
-            <div className="text-center">
-              <ScrollText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-700 mb-2">
-                בחר {mode === 'client' ? 'לקוח' : 'קבוצה'} להתחלה
-              </h3>
-              <p className="text-gray-500">
-                בחר {mode === 'client' ? 'לקוח' : 'קבוצה'} מהרשימה למעלה כדי לצפות ולנהל את הפרוטוקולים
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        ))}
 
       {/* Import Protocol Dialog */}
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>

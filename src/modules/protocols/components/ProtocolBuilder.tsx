@@ -466,7 +466,7 @@ export function ProtocolBuilder({
         <CardContent className="space-y-8">
           {/* Header Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-left flex items-center gap-2" dir="rtl">
+            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row-reverse" dir="rtl">
               <CalendarDays className="h-5 w-5" />
               פרטי הפגישה
             </h3>
@@ -512,17 +512,9 @@ export function ProtocolBuilder({
 
           <Separator />
 
-          {/* Decisions Section */}
-          <DecisionsList
-            decisions={formState.decisions}
-            onChange={handleDecisionsChange}
-          />
-
-          <Separator />
-
           {/* Content Sections */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-left flex items-center gap-2" dir="rtl">
+            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row-reverse" dir="rtl">
               <FileText className="h-5 w-5" />
               תוכן נוסף
             </h3>
@@ -531,6 +523,14 @@ export function ProtocolBuilder({
               onChange={handleContentSectionsChange}
             />
           </div>
+
+          <Separator />
+
+          {/* Decisions Section */}
+          <DecisionsList
+            decisions={formState.decisions}
+            onChange={handleDecisionsChange}
+          />
 
           {/* Bottom Action Buttons */}
           <div className="flex items-center justify-start gap-2 flex-row-reverse pt-4">

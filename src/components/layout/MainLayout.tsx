@@ -73,6 +73,7 @@ const navigation: NavigationItem[] = [
       { name: 'אנשי קשר', href: '/contacts', menuKey: 'contacts', allowedRoles: ['admin'] as UserRole[] },
     ]
   },
+  { name: 'פרוטוקולים', href: '/protocols', icon: ScrollText, menuKey: 'protocols', allowedRoles: ['admin', 'accountant'] as UserRole[] },
   {
     name: 'שכר טרחה',
     icon: Calculator,
@@ -118,7 +119,6 @@ const navigation: NavigationItem[] = [
     ]
   },
   { name: 'רשימות תפוצה', href: '/broadcast', icon: ListFilter, menuKey: 'broadcast', allowedRoles: ['admin'] as UserRole[] },
-  { name: 'פרוטוקולים', href: '/protocols', icon: ScrollText, menuKey: 'protocols', allowedRoles: ['admin', 'accountant'] as UserRole[] },
   { name: 'Tico Tickets', href: '/tico-tickets', icon: Ticket, menuKey: 'tico-tickets', allowedRoles: ['admin', 'accountant'] as UserRole[] },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
   { name: 'משתמשים', href: '/users', icon: UserCog, menuKey: 'users', allowedRoles: ['admin'] as UserRole[], showBadge: true },
