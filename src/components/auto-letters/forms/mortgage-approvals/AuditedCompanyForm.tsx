@@ -9,11 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Combobox } from '@/components/ui/combobox';
 import { Plus, Trash2 } from 'lucide-react';
 import type { MortgageAuditedCompanyVariables, ShareholderEntry } from '@/types/auto-letters.types';
 import { formatIsraeliDate } from '@/lib/formatters';
-import { ISRAELI_BANKS } from '@/lib/constants/israeli-banks';
 
 interface AuditedCompanyFormProps {
   value: Partial<MortgageAuditedCompanyVariables>;
@@ -124,16 +122,15 @@ export function AuditedCompanyForm({
             <Label htmlFor="bank-name" className="text-right block">
               שם הבנק 
             </Label>
-            <Combobox
-              options={ISRAELI_BANKS}
+            <Input
+              id="bank-name"
+              type="text"
               value={value.bank_name || ''}
-              onValueChange={(val) => onChange({ ...value, bank_name: val })}
+              onChange={(e) => onChange({ ...value, bank_name: e.target.value })}
               disabled={disabled}
+              className="text-right"
+              dir="rtl"
 
-
-              emptyText="לא נמצא בנק"
-              allowCustomValue={true}
-              customValueLabel='השתמש ב: "{value}"'
             />
           </div>
 

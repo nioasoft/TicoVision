@@ -7,10 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Combobox } from '@/components/ui/combobox';
 import type { MortgageOsekSubmittedVariables } from '@/types/auto-letters.types';
 import { formatIsraeliDate } from '@/lib/formatters';
-import { ISRAELI_BANKS } from '@/lib/constants/israeli-banks';
 
 interface OsekSubmittedFormProps {
   value: Partial<MortgageOsekSubmittedVariables>;
@@ -80,16 +78,15 @@ export function OsekSubmittedForm({
             <Label htmlFor="bank-name" className="text-right block">
               שם הבנק 
             </Label>
-            <Combobox
-              options={ISRAELI_BANKS}
+            <Input
+              id="bank-name"
+              type="text"
               value={value.bank_name || ''}
-              onValueChange={(val) => onChange({ ...value, bank_name: val })}
+              onChange={(e) => onChange({ ...value, bank_name: e.target.value })}
               disabled={disabled}
+              className="text-right"
+              dir="rtl"
 
-
-              emptyText="לא נמצא בנק"
-              allowCustomValue={true}
-              customValueLabel='השתמש ב: "{value}"'
             />
           </div>
 
