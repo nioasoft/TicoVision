@@ -789,6 +789,7 @@ export interface AdhocContact {
   name: string;
   email: string;
   company_id?: string;  // For mortgage approvals - allows entering tax ID manually
+  hide_recipient_header?: boolean;  // For mortgage approvals - hide "לכבוד" when recipient is also the applicant
 }
 
 /** Complete form state for Auto Letters */

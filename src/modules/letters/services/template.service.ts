@@ -3799,7 +3799,10 @@ export class TemplateService extends BaseService {
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
-        // company_name stays as-is (already has the entity name)
+        // If hide_recipient_header is true (adhoc recipient is the applicant), clear company_name
+        if (processed.hide_recipient_header) {
+          processed.company_name = '';
+        }
         processed.group_name = (processed.applicant_name as string) || '';
 
         // Compute previous_year from audited_year
@@ -3851,7 +3854,10 @@ export class TemplateService extends BaseService {
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
-        // company_name stays as-is (already has the entity name)
+        // If hide_recipient_header is true (adhoc recipient is the applicant), clear company_name
+        if (processed.hide_recipient_header) {
+          processed.company_name = '';
+        }
         processed.group_name = (processed.applicant_name as string) || '';
 
         // Format period_end_date to Israeli format
@@ -3901,7 +3907,10 @@ export class TemplateService extends BaseService {
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
-        // company_name stays as-is (already has the entity name)
+        // If hide_recipient_header is true (adhoc recipient is the applicant), clear company_name
+        if (processed.hide_recipient_header) {
+          processed.company_name = '';
+        }
         processed.group_name = (processed.applicant_name as string) || '';
 
         // Format submission_date to Israeli format
@@ -3926,7 +3935,10 @@ export class TemplateService extends BaseService {
         processed.entity_name = processed.company_name;
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
-        // company_name stays as-is (already has the entity name)
+        // If hide_recipient_header is true (adhoc recipient is the applicant), clear company_name
+        if (processed.hide_recipient_header) {
+          processed.company_name = '';
+        }
         processed.group_name = (processed.applicant_name as string) || '';
 
         // Format period_end_date to Israeli format

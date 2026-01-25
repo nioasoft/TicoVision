@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FileStack, Eye, Download, Loader2, Users, User, Contact, UserPlus } from 'lucide-react';
 import { CategoryLetterSelector, FormRenderer } from '@/components/auto-letters';
@@ -463,10 +464,15 @@ export function AutoLettersPage() {
       }
 
       // Merge shared data with document-specific data
-      const variables = {
+      const variables: Record<string, unknown> = {
         ...formState.sharedData,
         ...getDocumentData(),
       };
+
+      // Add hide_recipient_header flag for adhoc mortgage approvals
+      if (formState.recipientMode === 'adhoc' && formState.adhocContact?.hide_recipient_header) {
+        variables.hide_recipient_header = true;
+      }
 
       // Generate document based on category
       let result;
@@ -632,10 +638,15 @@ export function AutoLettersPage() {
       }
 
       // Merge shared data with document-specific data
-      const variables = {
+      const variables: Record<string, unknown> = {
         ...formState.sharedData,
         ...getDocumentData(),
       };
+
+      // Add hide_recipient_header flag for adhoc mortgage approvals
+      if (formState.recipientMode === 'adhoc' && formState.adhocContact?.hide_recipient_header) {
+        variables.hide_recipient_header = true;
+      }
 
       // Generate preview HTML (without saving to DB) based on category
       let result;
@@ -1189,35 +1200,59 @@ export function AutoLettersPage() {
 
                 {/* Company ID - Only for mortgage approvals */}
                 {formState.selectedCategory === 'mortgage_approvals' && (
-                  <div className="space-y-1">
-                    <Label htmlFor="adhoc-tax-id" className="text-right block text-sm">
-                      מספר ע.מ./ע.פ./ת.ז
-                    </Label>
-                    <Input
-                      id="adhoc-tax-id"
-                      type="text"
-                      value={formState.adhocContact?.company_id || ''}
-                      onChange={(e) => {
-                        const newCompanyId = e.target.value;
-                        setFormState(prev => ({
-                          ...prev,
-                          adhocContact: {
-                            name: prev.adhocContact?.name || '',
-                            email: prev.adhocContact?.email || '',
-                            company_id: newCompanyId,
-                          },
-                          sharedData: {
-                            ...prev.sharedData,
-                            company_id: newCompanyId,
-                          },
-                        }));
-                      }}
-                      disabled={generating}
-                      className="text-right"
-                      dir="ltr"
-
-                    />
-                  </div>
+                  <>
+                    <div className="space-y-1">
+                      <Label htmlFor="adhoc-tax-id" className="text-right block text-sm">
+                        מספר ע.מ./ע.פ./ת.ז
+                      </Label>
+                      <Input
+                        id="adhoc-tax-id"
+                        type="text"
+                        value={formState.adhocContact?.company_id || ''}
+                        onChange={(e) => {
+                          const newCompanyId = e.target.value;
+                          setFormState(prev => ({
+                            ...prev,
+                            adhocContact: {
+                              name: prev.adhocContact?.name || '',
+                              email: prev.adhocContact?.email || '',
+                              company_id: newCompanyId,
+                              hide_recipient_header: prev.adhocContact?.hide_recipient_header,
+                            },
+                            sharedData: {
+                              ...prev.sharedData,
+                              company_id: newCompanyId,
+                            },
+                          }));
+                        }}
+                        disabled={generating}
+                        className="text-right"
+                        dir="ltr"
+                      />
+                    </div>
+                    {/* Hide recipient header checkbox */}
+                    <div className="col-span-2 flex items-center space-x-2 rtl:space-x-reverse pt-2">
+                      <Checkbox
+                        id="hide-recipient-header"
+                        checked={formState.adhocContact?.hide_recipient_header || false}
+                        onCheckedChange={(checked) =>
+                          setFormState(prev => ({
+                            ...prev,
+                            adhocContact: {
+                              name: prev.adhocContact?.name || '',
+                              email: prev.adhocContact?.email || '',
+                              company_id: prev.adhocContact?.company_id,
+                              hide_recipient_header: !!checked,
+                            },
+                          }))
+                        }
+                        disabled={generating}
+                      />
+                      <Label htmlFor="hide-recipient-header" className="text-right cursor-pointer text-sm">
+                        הנמען הוא מבקש/ת המשכנתא (הסתר כפילות ב"לכבוד")
+                      </Label>
+                    </div>
+                  </>
                 )}
               </>
             )}
