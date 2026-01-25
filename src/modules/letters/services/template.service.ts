@@ -3800,7 +3800,7 @@ export class TemplateService extends BaseService {
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
         // company_name stays as-is (already has the entity name)
-        processed.group_name = '';
+        processed.group_name = (processed.applicant_name as string) || '';
 
         // Compute previous_year from audited_year
         if (processed.audited_year && typeof processed.audited_year === 'number') {
@@ -3852,7 +3852,7 @@ export class TemplateService extends BaseService {
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
         // company_name stays as-is (already has the entity name)
-        processed.group_name = '';
+        processed.group_name = (processed.applicant_name as string) || '';
 
         // Format period_end_date to Israeli format
         if (processed.period_end_date && typeof processed.period_end_date === 'string') {
@@ -3899,7 +3899,7 @@ export class TemplateService extends BaseService {
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
         // company_name stays as-is (already has the entity name)
-        processed.group_name = '';
+        processed.group_name = (processed.applicant_name as string) || '';
 
         // Format submission_date to Israeli format
         if (processed.submission_date && typeof processed.submission_date === 'string') {
@@ -3924,7 +3924,7 @@ export class TemplateService extends BaseService {
         processed.entity_id = processed.company_id;
         // Header "לכבוד" shows entity_name (company/client name)
         // company_name stays as-is (already has the entity name)
-        processed.group_name = '';
+        processed.group_name = (processed.applicant_name as string) || '';
 
         // Format period_end_date to Israeli format
         if (processed.period_end_date && typeof processed.period_end_date === 'string') {
