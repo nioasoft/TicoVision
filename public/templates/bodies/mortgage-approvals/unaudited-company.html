@@ -2,7 +2,7 @@
 <!-- Template Type: mortgage_approvals_unaudited_company -->
 <!-- Variables: {{bank_name}}, {{company_name}}, {{company_id}}, {{period_months}}, {{period_end_date}}, -->
 <!--            {{applicant_name}}, {{applicant_role}}, {{revenue_turnover}}, {{salary_expenses}}, {{applicant_salary}}, -->
-<!--            {{estimated_profit}}, {{registrar_report_date}}, {{shareholders_table}}, -->
+<!--            {{estimated_profit}}, {{ebitda_adjusted}}, {{registrar_report_date}}, {{shareholders_table}}, -->
 <!--            has_dividend (conditional), {{dividend_date}}, {{dividend_details}} -->
 <!-- Based on: נוסח אחיד - גרסה עבור בעל שליטה בחברה שדוחותיה הכספיים טרם בוקרו -->
 
@@ -10,7 +10,7 @@
 <tr>
     <td style="padding-top: 12px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; line-height: 1.3; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 12px;">
-            הנדון: חברת {{entity_name}} (ח.פ. {{entity_id}}) להלן: "החברה" - דוח הכנסות והוצאות בלתי מבוקר לתקופה של {{period_months}} חודשים שהסתיימה ביום {{period_end_date}} (להלן: "התקופה") לצורך קבלת משכנתה על ידי המבקש/ת {{applicant_name}} שהינו {{applicant_role}} בחברה.
+            הנדון: חברת {{entity_name}} (ח.פ. {{entity_id}}) להלן: "החברה" - דוח הכנסות והוצאות בלתי מבוקר לתקופה של {{period_months}} חודשים שהסתיימה ביום {{period_end_date}} (להלן: "התקופה") לצורך קבלת משכנתה על ידי מבקש/ת המשכנתה {{applicant_name}} שהינו/ה {{applicant_role}} בחברה.
         </div>
     </td>
 </tr>
@@ -19,7 +19,7 @@
 <tr>
     <td style="padding-top: 10px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.5; color: #09090b; text-align: justify;">
-            לבקשתכם וכרואי חשבון המבקרים של חברתכם, ולצורך הגשת מכתבנו זה על ידי חברתכם ל{{bank_name}} לצורך קבלת משכנתה על ידי המבקש/ת {{applicant_name}} ולצרכים אלה בלבד, מצ"ב חישוב בלתי מבוקר של רווח משוער לפני מס (ללא תיאומים למס הכנסה) בהתאם לנתוני הנהלת חשבונות הבלתי מבוקרים של החברה לתקופה, המסומן בחותמתנו לשם זיהוי בלבד (להלן: "הדוח הבלתי מבוקר").
+            לבקשתכם וכרואי חשבון המבקרים של חברתכם, ולצורך הגשת מכתבנו זה על ידי חברתכם ל{{bank_name}} לצורך קבלת משכנתה על ידי מבקש/ת המשכנתה {{applicant_name}} ולצרכים אלה בלבד, מצ"ב חישוב בלתי מבוקר של רווח משוער לפני מס (ללא תיאומים למס הכנסה) בהתאם לנתוני הנהלת חשבונות הבלתי מבוקרים של החברה לתקופה, המסומן בחותמתנו לשם זיהוי בלבד (להלן: "הדוח הבלתי מבוקר").
         </div>
     </td>
 </tr>
@@ -49,10 +49,13 @@
             <strong>1.</strong> מחזור ההכנסות של החברה (ללא מס ערך מוסף) בתקופה הסתכם לסך <strong>{{revenue_turnover}}</strong> ₪.
         </div>
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.6; color: #09090b; text-align: right;">
-            <strong>2.</strong> הוצאות השכר בחברה בתקופה הסתכמו לסך <strong>{{salary_expenses}}</strong> ₪. מתוך זה שכרו של {{applicant_name}} הסתכם ל-<strong>{{applicant_salary}}</strong> ש"ח.
+            <strong>2.</strong> הוצאות השכר בחברה בתקופה הסתכמו לסך <strong>{{salary_expenses}}</strong> ₪. מתוך זה שכרו/ה של {{applicant_name}} הסתכם ל-<strong>{{applicant_salary}}</strong> ש"ח.
         </div>
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.6; color: #09090b; text-align: right;">
             <strong>3.</strong> הרווח החשבונאי המשוער לפני מס ולפני הוצאות השכר של {{applicant_name}} (ללא תיאומים למס הכנסה) בחברה בתקופה הסתכם לסך <strong>{{estimated_profit}}</strong> ₪.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.6; color: #09090b; text-align: right;">
+            <strong>4.</strong> ה-EBITDA המתואם (בתוספת שכר בעל השליטה {{applicant_name}}) בתקופה הסתכם לסך <strong>{{ebitda_adjusted}}</strong> ₪.
         </div>
     </td>
 </tr>
@@ -89,6 +92,17 @@
                 </td>
                 <td width="30%" style="border: 1px solid #000000; padding: 5px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
                     אחוז החזקה בחברה
+                </td>
+            </tr>
+            <tr>
+                <td width="40%" style="border: 1px solid #000000; padding: 5px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; text-align: right;">
+                    {{applicant_name}}
+                </td>
+                <td width="30%" style="border: 1px solid #000000; padding: 5px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; text-align: center;">
+                    &nbsp;
+                </td>
+                <td width="30%" style="border: 1px solid #000000; padding: 5px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; text-align: center;">
+                    &nbsp;
                 </td>
             </tr>
             <!-- Table Body - Dynamic rows -->
