@@ -101,7 +101,7 @@ export function PersonalReportReminderForm({ value, onChange, disabled }: Person
           {/* Google Drive Link (Optional) */}
           <div className="space-y-2">
             <Label htmlFor="google-drive-link" className="text-right block">
-              לינק לגוגל דרייב (אופציונלי)
+              לינק לגוגל דרייב
             </Label>
             <Input
               id="google-drive-link"

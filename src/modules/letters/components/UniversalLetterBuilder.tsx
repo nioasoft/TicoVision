@@ -86,8 +86,7 @@ const PreviewWithPageBreaks: React.FC<{ html: string }> = ({ html }) => {
         setPageBreakPositions(positions);
         setPageCount(numPages);
 
-        console.log('[PageBreaks] Content height:', contentHeight, 'px, Pages:', numPages);
-      });
+              });
     };
 
     // Small delay to ensure images/fonts are loaded
@@ -167,10 +166,7 @@ const getContactTypeLabel = (contactType: string): string => {
 const convertBulletTablesToHtml = (html: string): string => {
   let result = html;
 
-  console.log('🔧 [convertBulletTablesToHtml] Input length:', html.length);
-  console.log('🔧 [convertBulletTablesToHtml] Has <table>:', html.includes('<table'));
-  console.log('🔧 [convertBulletTablesToHtml] Has bullet img:', html.includes('alt="•"'));
-
+      
   // Step 1: Remove HTML comments (like <!-- Section Heading -->, <!-- Paragraph -->)
   result = result.replace(/<!--[\s\S]*?-->/g, '');
 
@@ -186,19 +182,16 @@ const convertBulletTablesToHtml = (html: string): string => {
         .replace(/<[^>]+>/g, '') // Remove all HTML tags
         .replace(/\s/g, ''); // Remove all whitespace
       if (/^[•\-\*]+$/.test(strippedContent)) {
-        console.log('🔧 [convertBulletTablesToHtml] Removing single-cell bullet table');
-        return '';
+                return '';
       }
 
       // TYPE 1: Check if this table contains bullet icons (indicator it's a bullet list)
       if (!tableMatch.includes('alt="•"') && !tableMatch.includes('bullet_star')) {
         // Not a bullet table - preserve it (it's a user-created table)
-        console.log('🔧 [convertBulletTablesToHtml] Preserving user table');
-        return tableMatch;
+                return tableMatch;
       }
 
-      console.log('🔧 [convertBulletTablesToHtml] Converting bullet table...');
-
+      
       // Extract all content cells (the second td in each row)
       const bulletItems: string[] = [];
 
@@ -221,13 +214,11 @@ const convertBulletTablesToHtml = (html: string): string => {
       }
 
       if (bulletItems.length > 0) {
-        console.log('🔧 [convertBulletTablesToHtml] Extracted', bulletItems.length, 'bullet items');
-        return bulletItems.join('\n');
+                return bulletItems.join('\n');
       }
 
       // Fallback: if we couldn't extract rows, return empty (remove the bullet table)
-      console.log('🔧 [convertBulletTablesToHtml] No bullet items extracted, removing table');
-      return '';
+            return '';
     }
   );
 
@@ -277,8 +268,7 @@ const convertBulletTablesToHtml = (html: string): string => {
       .replace(/<[^>]+>/g, '') // Remove all HTML tags
       .replace(/[\s•*-]/g, ''); // Remove whitespace and bullet chars
     if (stripped.length === 0) {
-      console.log('🔧 [convertBulletTablesToHtml] Removing empty/bullet-only table');
-      return '';
+            return '';
     }
     return tableMatch;
   });
@@ -304,11 +294,7 @@ const convertBulletTablesToHtml = (html: string): string => {
     '<div$1>$2</div>'
   );
 
-  console.log('🔧 [convertBulletTablesToHtml] Output length:', result.length);
-  console.log('🔧 [convertBulletTablesToHtml] Still has <table>:', result.includes('<table'));
-  console.log('🔧 [convertBulletTablesToHtml] Still has bullet img:', result.includes('alt="•"'));
-  console.log('🔧 [convertBulletTablesToHtml] Still has bullet char:', result.includes('•'));
-
+        
   return result.trim();
 };
 
@@ -774,11 +760,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     }
 
     // Debug logging
-    console.log('🔍 [Preview Debug] customHeaderLines:', customHeaderLines);
-    console.log('🔍 [Preview Debug] מספר שורות:', customHeaderLines.length);
-    console.log('🔍 [Preview Debug] showCommercialName:', showCommercialName);
-    console.log('🔍 [Preview Debug] commercialName:', commercialName);
-
+                
     setIsLoadingPreview(true);
     try {
       // Build variables
@@ -790,8 +772,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         tagMode: tagMode, // ⭐ Save tag mode for restore
       };
 
-      console.log('🔍 [Preview Debug] variables.commercial_name:', variables.commercial_name);
-
+      
       // Add email subject if provided
       if (emailSubject.trim()) {
         variables.subject = emailSubject;
@@ -912,8 +893,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       // ✅ CRITICAL: Check if letter already exists (saved before) AND not creating new copy
       if (savedLetterId && !createNewCopy) {
         // UPDATE existing letter
-        console.log('🔄 Updating existing letter:', savedLetterId);
-
+        
         const updateResult = await templateService.updateLetterContent({
           letterId: savedLetterId,
           plainText: letterContent,
@@ -935,8 +915,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         toast.success('המכתב עודכן בהצלחה');
       } else {
         // INSERT new letter (first save or creating copy)
-        console.log(createNewCopy ? '📋 Creating copy of letter' : '✅ Creating new letter (first save)');
-
+        
         const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
@@ -1535,8 +1514,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
     // This caused: INSERT → PDF generation → UPDATE → PDF deletion → PDF regeneration
     // Result: PDF always showed old content because UPDATE happened after first PDF
     if (generatingPdf) {
-      console.log('⚠️ PDF generation already in progress, skipping duplicate call...');
-      return;
+            return;
     }
 
     // Validate content
@@ -1595,8 +1573,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       if (!letterId) {
         // ✅ NEW LETTER: Save letter to database
-        console.log('✅ Creating new letter for PDF generation');
-        const result = await templateService.generateFromCustomText({
+                const result = await templateService.generateFromCustomText({
           plainText: letterContent,
           clientId: selectedClient?.id || taggedClientId || null, // ⭐ Support client tagging in manual mode
           groupId: recipientMode === 'group' ? selectedGroup?.id : (tagMode === 'group' ? taggedGroupId : null), // ⭐ Save group ID for group letters
@@ -1619,8 +1596,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         setSavedLetterId(letterId); // ✅ Also update savedLetterId for consistency
       } else {
         // ✅ EXISTING LETTER: Update content with latest changes
-        console.log('🔄 Updating existing letter:', letterId);
-
+        
         const updateResult = await templateService.updateLetterContent({
           letterId,
           plainText: letterContent,
@@ -1638,26 +1614,22 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           return;
         }
 
-        console.log('✅ Letter content updated successfully');
-      }
+              }
 
       // ✅ CRITICAL: Delete old PDF to force browser cache invalidation
       // This ensures the browser loads the new PDF instead of cached version
       // Old PDF is deleted from Storage before generating new one
-      console.log('🗑️ Deleting old PDF from Storage...');
-      await pdfService.deletePDF(letterId);
+            await pdfService.deletePDF(letterId);
 
       // ✅ CRITICAL: Always force PDF regeneration to reflect latest changes
       // This is especially important for edited letters
-      console.log('🔄 Generating fresh PDF for letter:', letterId);
-      const pdfUrl = await pdfService.getOrGeneratePDF(letterId, true);
+            const pdfUrl = await pdfService.getOrGeneratePDF(letterId, true);
 
       // ✅ CRITICAL: Add cache-busting timestamp to force browser to reload PDF
       // Without this, browser shows cached version even after file deletion + regeneration
       // Same URL = browser cache hit, different query param = cache miss
       const urlWithTimestamp = `${pdfUrl}?t=${Date.now()}`;
-      console.log('📄 PDF ready with cache-busting URL:', urlWithTimestamp);
-
+      
       // Fetch the full HTML from the letter for email sending
       const { data: letterData } = await supabase
         .from('generated_letters')
@@ -1721,9 +1693,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       if (letter.body_content_html) {
         let content = letter.body_content_html;
 
-        console.log('📄 [loadLetterForEdit] Original body_content_html length:', content.length);
-        console.log('📄 [loadLetterForEdit] First 500 chars:', content.substring(0, 500));
-
+                
         // Strip ALL <tr><td> wrappers - may have multiple layers from old saves
         // Loop until no more wrappers are found (handles double/triple wrapping bugs)
         let strippedLayers = 0;
@@ -1743,8 +1713,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           if (matchWithClass) {
             content = matchWithClass[1];
             strippedLayers++;
-            console.log('📄 [loadLetterForEdit] Stripped layer', strippedLayers, '(with class)');
-            continue;
+                        continue;
           }
 
           // Fallback: extract from <tr><td>...</td></tr> without class
@@ -1752,16 +1721,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           if (matchSimple) {
             content = matchSimple[1];
             strippedLayers++;
-            console.log('📄 [loadLetterForEdit] Stripped layer', strippedLayers, '(simple)');
-            continue;
+                        continue;
           }
 
           break; // No regex match, stop
         }
 
-        console.log('📄 [loadLetterForEdit] Stripped', strippedLayers, 'wrapper layers. Length:', content.length);
-        console.log('📄 [loadLetterForEdit] Content has <table>:', content.includes('<table'));
-
+                
         // Store ORIGINAL content for preview/PDF (keeps styled bullets with blue stars)
         setOriginalBodyContent(content);
 
@@ -1769,16 +1735,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         // Old letters use tables for bullet styling - these show as ugly tables in Tiptap
         // After conversion, bullets appear as regular text that Tiptap can edit
         const convertedContent = convertBulletTablesToHtml(content);
-        console.log('📄 [loadLetterForEdit] After conversion, has <table>:', convertedContent.includes('<table'));
-        console.log('📄 [loadLetterForEdit] Converted content first 2000 chars:', convertedContent.substring(0, 2000));
-
-        // LOG: Check if there are any remaining table tags and what they contain
-        const tableMatches = convertedContent.match(/<table[^>]*>[\s\S]*?<\/table>/gi);
-        if (tableMatches) {
-          console.log('📄 [loadLetterForEdit] Found remaining tables:', tableMatches.length);
-          tableMatches.forEach((t, i) => console.log(`📄 Table ${i + 1}:`, t.substring(0, 200)));
-        }
-
+                
         setLetterContent(convertedContent); // ✅ Clean content for Tiptap!
       } else if (letter.generated_content_html) {
         // Fallback for old letters created before migration 101
@@ -2481,7 +2438,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     {/* ⭐ ENHANCED: Client OR Group Tagging for Manual Letters */}
                     <div className={recipientMode !== 'manual' ? 'opacity-50 pointer-events-none' : ''}>
                       <Label className="text-right block mb-2">
-                        שיוך לישות (אופציונלי)
+                        שיוך לישות
                         <span className="text-xs text-gray-500 mr-1">- לשיוך המכתב להיסטוריה ו/או שליפת מיילים</span>
                       </Label>
 
@@ -2653,7 +2610,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             <div className="mt-4 p-4 border rounded-lg bg-gray-50">
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
-                  2. שורות נוספות מתחת לשם הנמען (אופציונלי)
+                  2. שורות נוספות מתחת לשם הנמען
                 </Label>
                 <div className="flex gap-2">
                   <Button
@@ -3398,7 +3355,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
             <div>
               <Label htmlFor="template_description" className="text-right rtl:text-right block">
-                תיאור (אופציונלי)
+                תיאור
               </Label>
               <Input
                 id="template_description"

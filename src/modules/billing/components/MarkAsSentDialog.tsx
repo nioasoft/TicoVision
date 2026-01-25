@@ -130,7 +130,7 @@ export function MarkAsSentDialog({
           {/* Notes */}
           <div>
             <Label htmlFor="notes" className="text-right block mb-2">
-              הערות (אופציונלי)
+              הערות
             </Label>
             <Textarea
               id="notes"

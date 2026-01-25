@@ -155,7 +155,7 @@ export const PromisePaymentDialog: React.FC<PromisePaymentDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="promise-note" className="rtl:text-right block">
-              הערה (אופציונלי)
+              הערה
             </Label>
             <Textarea
               id="promise-note"

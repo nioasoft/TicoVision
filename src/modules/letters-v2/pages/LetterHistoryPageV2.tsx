@@ -225,8 +225,7 @@ export default function LetterHistoryPageV2() {
           onClose={() => setSelectedLetter(null)}
           letterId={selectedLetter}
           mode="view"
-          onEdit={(id) => {
-            console.log('Edit letter:', id);
+          onEdit={() => {
             // TODO: Navigate to edit
           }}
         />

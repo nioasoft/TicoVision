@@ -114,7 +114,7 @@ export function MeetingReminderForm({ value, onChange, disabled }: MeetingRemind
           {/* Additional Notes */}
           <div className="space-y-2">
             <Label htmlFor="additional-notes" className="text-right block">
-              הערות נוספות (אופציונלי)
+              הערות נוספות
             </Label>
             <Textarea
               id="additional-notes"

@@ -71,7 +71,6 @@ export function LetterPreviewDialog({
   // Existing state
   const [previewHtml, setPreviewHtml] = useState('');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [recipientEmails, setRecipientEmails] = useState<string[]>([]);
   const [contactsDetails, setContactsDetails] = useState<AssignedContact[]>([]);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [variables, setVariables] = useState<Partial<LetterVariables> | null>(null);
@@ -144,7 +143,6 @@ export function LetterPreviewDialog({
 
       // Load all eligible emails for fee letters using centralized function
       const emails = await TenantContactService.getClientEmails(clientId, 'important');
-      setRecipientEmails(emails);
 
       // Initialize ALL emails as enabled by default
       setPrimaryEnabledEmails(new Set(emails));
@@ -346,7 +344,6 @@ export function LetterPreviewDialog({
 
       // Remove duplicates
       const uniqueEmails = [...new Set(allEmails)];
-      setRecipientEmails(uniqueEmails);
       setPrimaryEnabledEmails(new Set(uniqueEmails));
       setSecondaryEnabledEmails(new Set(uniqueEmails));
 
@@ -580,8 +577,7 @@ export function LetterPreviewDialog({
   const saveLetterAsDraft = async (): Promise<string | null> => {
     // If already saved, return existing ID
     if (savedLetterId) {
-      console.log('✅ Letter already saved:', savedLetterId);
-      return savedLetterId;
+            return savedLetterId;
     }
 
     // Check for necessary data (supports both client and group mode)
@@ -589,8 +585,7 @@ export function LetterPreviewDialog({
     const hasGroupData = !!groupId && !!groupFeeCalculationId;
 
     if (!variables || (!hasClientData && !hasGroupData) || !previewHtml || !letterSelection) {
-      console.warn('⚠️ Missing data for saving letter', { variables: !!variables, hasClientData, hasGroupData, previewHtml: !!previewHtml });
-      return null;
+            return null;
     }
 
     try {
@@ -615,8 +610,7 @@ export function LetterPreviewDialog({
           .maybeSingle();
 
         if (existingLetter) {
-          console.log('✅ Found existing letter for calculation, using:', existingLetter.id);
-          setSavedLetterId(existingLetter.id);
+                    setSavedLetterId(existingLetter.id);
           return existingLetter.id;
         }
       }
@@ -667,8 +661,7 @@ export function LetterPreviewDialog({
       }
 
       setSavedLetterId(data.id);
-      console.log('✅ Letter saved as draft:', data.id);
-
+      
       // Update variables with letter_id for payment tracking
       const updatedVariables = {
         ...variables,
@@ -879,8 +872,7 @@ export function LetterPreviewDialog({
           ? effectivePrimaryTemplate
           : effectiveSecondaryTemplate!;
 
-      console.log(`📧 Sending ${currentLetterStage} letter (${templateType}) to ${finalRecipients.length} recipients...`);
-
+      
       // Get fresh session token for authorization
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -890,7 +882,7 @@ export function LetterPreviewDialog({
 
       // Call Supabase Edge Function
       // Pass letterId to prevent duplicate INSERT in Edge Function
-      const { data, error } = await supabase.functions.invoke('send-letter', {
+      const { error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails: finalRecipients,
           recipientName: variables.company_name || 'לקוח יקר',
@@ -910,8 +902,7 @@ export function LetterPreviewDialog({
         throw error;
       }
 
-      console.log('✅ Email sent successfully:', data);
-
+      
       // Update fee_calculations status to 'sent' (only after all letters sent)
       // Only for individual clients
       if (feeId && (currentLetterStage === 'secondary' || !effectiveSecondaryTemplate)) {
@@ -958,8 +949,7 @@ export function LetterPreviewDialog({
         letterError = updateError;
 
         if (!updateError) {
-          console.log('✅ Updated existing letter to sent:', savedLetterId);
-
+          
           // Save PDF to file manager after successful email send
           await savePdfToFileManager(savedLetterId);
         }
@@ -995,8 +985,7 @@ export function LetterPreviewDialog({
         letterError = insertError;
 
         if (!insertError && data) {
-          console.log('✅ Inserted new letter:', data.id);
-          setSavedLetterId(data.id);
+                    setSavedLetterId(data.id);
 
           // Save PDF to file manager
           await savePdfToFileManager(data.id);
@@ -1084,8 +1073,7 @@ export function LetterPreviewDialog({
    */
   useEffect(() => {
     if (previewHtml && !savedLetterId && !isLoadingPreview) {
-      console.log('🔄 Auto-saving letter as draft...');
-      saveLetterAsDraft();
+            saveLetterAsDraft();
     }
   }, [previewHtml, savedLetterId, isLoadingPreview]);
 

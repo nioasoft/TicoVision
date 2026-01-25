@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { MoneyInput } from '@/components/ui/money-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Combobox } from '@/components/ui/combobox';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,7 +26,6 @@ import {
   TrendingUp,
   Coins,
   FileText,
-  Calendar,
   Plus,
   Minus,
   ChevronLeft,
@@ -115,14 +113,11 @@ export function FeesPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientDetails, setSelectedClientDetails] = useState<Client | null>(null);
   const [relatedCompanies, setRelatedCompanies] = useState<Client[]>([]);
-  const [feeCalculations, setFeeCalculations] = useState<FeeCalculation[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Group mode state
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('client');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
-  const [groupCalculation, setGroupCalculation] = useState<GroupFeeCalculation | null>(null);
   const [previousYearDataSaved, setPreviousYearDataSaved] = useState(false);
   const [savingPreviousData, setSavingPreviousData] = useState(false);
   const [showOverwriteWarning, setShowOverwriteWarning] = useState(false);
@@ -311,7 +306,6 @@ export function FeesPage() {
         setSelectedClientDetails(null);
         setRelatedCompanies([]);
         setCurrentDraftId(null);
-        setGroupCalculation(null);
 
         // Reset form data to defaults (except year)
         setFormData(prev => ({
@@ -414,7 +408,6 @@ export function FeesPage() {
       // Load recent fee calculations
       const feesResponse = await feeService.list({ page: 1, pageSize: 20 });
       if (feesResponse.data) {
-        setFeeCalculations(feesResponse.data.fees || []);
       }
     } catch (error) {
       logger.error('Error loading data:', error);
@@ -502,13 +495,7 @@ export function FeesPage() {
         setCurrentDraftId(draft.id);
 
         // Debug logging to verify correct data
-        console.log('🔍 [LoadDraft] טעינת draft:', {
-          id: draft.id,
-          status: draft.status,
-          client_adjustment: draft.client_requested_adjustment,
-          client_adjustment_note: draft.client_requested_adjustment_note
-        });
-
+        
         // Fill form with draft data (preserve previous_year_amount from loadPreviousYearData)
         setFormData(prev => {
           const baseAmount = draft.base_amount || prev.base_amount;
@@ -569,19 +556,13 @@ export function FeesPage() {
         // No draft found - try to load latest sent/calculated for reference
         setCurrentDraftId(null);
 
-        console.log('🔍 [LoadDraft] אין draft - מנסה לטעון חישוב שנשלח');
-
+        
         // NEW: Try to load sent/calculated calculation to populate form
         const latestResponse = await feeService.getLatestCalculationForYear(clientId, formData.year);
 
         if (latestResponse.data) {
           const latest = latestResponse.data;
-          console.log('📋 [LoadLatest] נטען חישוב שנשלח:', {
-            id: latest.id,
-            status: latest.status,
-            inflation_rate: latest.inflation_rate
-          });
-
+          
           // Fill form with sent data (same logic as draft, just from 'latest')
           // Don't set currentDraftId - user will create a new draft if they save
           setFormData(prev => {
@@ -641,8 +622,7 @@ export function FeesPage() {
           });
         } else {
           // No calculation found at all - reset client adjustment fields
-          console.log('🔍 [LoadDraft] אין חישוב כלל - מנקה שדות');
-          setFormData(prev => ({
+                    setFormData(prev => ({
             ...prev,
             client_requested_adjustment: 0,
             client_requested_adjustment_note: ''
@@ -683,8 +663,7 @@ export function FeesPage() {
    */
   const loadGroupCalculation = async (groupId: string) => {
     try {
-      console.log('🔄 [FeesPage] loadGroupCalculation called', { groupId, year: formData.year });
-      
+            
       let updates: Partial<FeeCalculatorForm> = {};
 
       // 1. Fetch Previous Year Data (year - 1)
@@ -705,8 +684,7 @@ export function FeesPage() {
           };
         } else {
              // FALLBACK: Try aggregated data from individual clients
-             console.log('⚠️ [FeesPage] No group calculation found for previous year, trying aggregation.');
-             const aggResponse = await groupFeeService.getAggregatedGroupData(groupId, formData.year - 1);
+                          const aggResponse = await groupFeeService.getAggregatedGroupData(groupId, formData.year - 1);
              
              if (aggResponse.data) {
                  const base = aggResponse.data.base_amount || 0;
@@ -752,11 +730,8 @@ export function FeesPage() {
 
       // 2. Fetch Current Year Data
       const response = await groupFeeService.getGroupCalculation(groupId, formData.year);
-      console.log('📦 [FeesPage] loadGroupCalculation response:', response);
-
+      
       if (response.data) {
-        console.log('✅ [FeesPage] Found group calculation data:', response.data);
-        setGroupCalculation(response.data);
         
         const currentYearFields = {
           base_amount: response.data.audit_base_amount ?? 0,
@@ -787,8 +762,6 @@ export function FeesPage() {
           description: 'נתוני חישוב קיימים נטענו בהצלחה',
         });
       } else {
-        console.log('⚠️ [FeesPage] No group calculation found, resetting form.');
-        setGroupCalculation(null);
         setPreviousYearDataSaved(true);
         
         const resetFields = {
@@ -826,7 +799,6 @@ export function FeesPage() {
     } catch (error) {
       logger.error('Error loading group calculation:', error);
       console.error('❌ [FeesPage] Error loading group calculation:', error);
-      setGroupCalculation(null);
     }
   };
 
@@ -1197,7 +1169,6 @@ export function FeesPage() {
         }
 
         if (response.data) {
-          setGroupCalculation(response.data);
           toast({
             title: 'הצלחה',
             description: 'חישוב קבוצתי נשמר בהצלחה',
@@ -1398,7 +1369,6 @@ export function FeesPage() {
         }
 
         if (response.data) {
-          setGroupCalculation(response.data);
           // Open group letter preview dialog
           setLetterPreviewOpen(false);
           setTimeout(() => {
@@ -1675,8 +1645,6 @@ export function FeesPage() {
                       // Clear selections when switching modes
                       if (mode === 'client') {
                         setSelectedGroupId(null);
-                        setSelectedGroup(null);
-                        setGroupCalculation(null);
                       } else {
                         setFormData(prev => ({ ...prev, client_id: '' }));
                         setSelectedClientDetails(null);
@@ -1696,9 +1664,7 @@ export function FeesPage() {
                     }}
                     onGroupSelect={(group) => {
                       setSelectedGroupId(group?.id || null);
-                      setSelectedGroup(group);
                       if (!group) {
-                        setGroupCalculation(null);
                       }
                       setPreviousYearDataSaved(false);
                     }}
@@ -2301,7 +2267,7 @@ export function FeesPage() {
                   {formData.client_requested_adjustment < 0 && (
                     <div>
                       <Label htmlFor="client_adjustment_note" className="text-right">
-                        הערה לתיקון (אופציונלי - עד 50 תווים)
+                        הערה לתיקון (עד 50 תווים)
                       </Label>
                       <Input
                         id="client_adjustment_note"

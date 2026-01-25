@@ -380,7 +380,7 @@ export function AttendeeSelector({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="external_role" className="text-right block">
-                    תפקיד (אופציונלי)
+                    תפקיד
                   </Label>
                   <Input
                     id="external_role"

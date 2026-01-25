@@ -1772,7 +1772,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               {/* LEFT COLUMN: Template Selection */}
               <div>
                 <Label className="text-right rtl:text-right block text-sm font-medium mb-2">
-                  בחר תבנית שמורה (אופציונלי)
+                  בחר תבנית שמורה
                 </Label>
                 <div className="flex gap-2 rtl:flex-row-reverse">
                   <Select
@@ -2095,7 +2095,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     {/* ⭐ ENHANCED: Client OR Group Tagging for Manual Letters */}
                     <div className={recipientMode !== 'manual' ? 'opacity-50 pointer-events-none' : ''}>
                       <Label className="text-right block mb-2">
-                        שיוך לישות (אופציונלי)
+                        שיוך לישות
                         <span className="text-xs text-gray-500 mr-1">- לשיוך המכתב להיסטוריה ו/או שליפת מיילים</span>
                       </Label>
 
@@ -2267,7 +2267,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             <div className="mt-4 p-4 border rounded-lg bg-gray-50">
               <div className="flex justify-between items-center mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
-                  3. שורות נוספות מתחת לשם הנמען (אופציונלי)
+                  3. שורות נוספות מתחת לשם הנמען
                 </Label>
                 <div className="flex gap-2">
                   <Button
@@ -2962,7 +2962,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
             <div>
               <Label htmlFor="template_description" className="text-right rtl:text-right block">
-                תיאור (אופציונלי)
+                תיאור
               </Label>
               <Input
                 id="template_description"

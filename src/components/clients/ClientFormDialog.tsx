@@ -52,8 +52,7 @@ import type {
   ClientGroup,
   PaymentRole,
 } from '@/services';
-import { clientService, TenantContactService } from '@/services';
-import type { TenantContact } from '@/types/tenant-contact.types';
+import { clientService } from '@/services';
 import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 import {
   validateIsraeliPostalCode,
@@ -340,15 +339,13 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           // If we have a PDF file and a client ID, upload it to company_registry
           if (mode === 'add' && importedPdfFile && clientId) {
             try {
-              console.log('Uploading PDF to company_registry for client:', clientId);
-              await fileUploadService.uploadFileToCategory(
+                            await fileUploadService.uploadFileToCategory(
                 importedPdfFile,
                 clientId,
                 'company_registry',
                 'תמצית רשם חברות'
               );
-              console.log('PDF uploaded successfully');
-            } catch (uploadError) {
+                          } catch (uploadError) {
               console.error('Failed to upload PDF:', uploadError);
               // Don't fail the whole operation if PDF upload fails
             }
@@ -435,8 +432,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const handlePdfDataExtracted = useCallback((data: ExtractedCompanyData | null, file: File) => {
       // Data extraction via Claude API is disabled
       // Just save the file reference for later upload to file manager
-      console.log('PDF file selected for upload:', file.name);
-      setImportedPdfFile(file);
+            setImportedPdfFile(file);
       setHasUnsavedChanges(true);
     }, []);
 
@@ -1062,7 +1058,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     }}
                     contactType="accountant_manager"
                     required={false}
-                    namePlaceholder="שם מנהלת חשבונות (אופציונלי)"
+                    namePlaceholder="שם מנהלת חשבונות"
                     emailPlaceholder="דוא״ל"
                     phonePlaceholder=""
                     phoneSecondaryPlaceholder=""

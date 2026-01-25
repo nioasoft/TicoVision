@@ -155,7 +155,7 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
           {/* Certificate Link (optional) */}
           <div className="space-y-1">
             <Label htmlFor="certificate-link" className="text-right block text-sm">
-              קישור לתעודת עוסק (אופציונלי)
+              קישור לתעודת עוסק
             </Label>
             <Input
               id="certificate-link"

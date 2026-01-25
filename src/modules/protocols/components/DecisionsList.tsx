@@ -445,7 +445,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
             {/* Employee Assignment (for office responsibility) */}
             {formState.responsibility_type === 'office' && (
               <div className="space-y-2">
-                <Label className="text-right block">עובד אחראי (אופציונלי)</Label>
+                <Label className="text-right block">עובד אחראי</Label>
                 <Select
                   value={formState.assigned_employee_id || '__none__'}
                   onValueChange={(v) => handleFieldChange('assigned_employee_id', v === '__none__' ? null : v)}
@@ -485,7 +485,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
 
             {/* Audit Report Year */}
             <div className="space-y-2">
-              <Label className="text-right block">קשור לדוח מבוקר לשנת (אופציונלי)</Label>
+              <Label className="text-right block">קשור לדוח מבוקר לשנת</Label>
               <Select
                 value={formState.audit_report_year?.toString() || '__none__'}
                 onValueChange={(v) => handleFieldChange('audit_report_year', v === '__none__' ? null : parseInt(v))}

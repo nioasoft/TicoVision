@@ -279,7 +279,7 @@ export function BillingLetterBuilder() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="dueDate" className="text-right block mb-2">
-                תאריך יעד לתשלום (אופציונלי)
+                תאריך יעד לתשלום
               </Label>
               <Input
                 id="dueDate"
@@ -294,7 +294,7 @@ export function BillingLetterBuilder() {
 
             <div>
               <Label htmlFor="notes" className="text-right block mb-2">
-                הערות פנימיות (אופציונלי)
+                הערות פנימיות
               </Label>
               <Textarea
                 id="notes"

@@ -140,7 +140,7 @@ export function StatusChangeDialog({
         <DialogHeader>
           <DialogTitle className="rtl:text-right">שינוי סטטוס</DialogTitle>
           <DialogDescription className="rtl:text-right">
-            בחר סטטוס חדש והוסף הערות (אופציונלי)
+            בחר סטטוס חדש והוסף הערות
           </DialogDescription>
         </DialogHeader>
 
@@ -263,7 +263,7 @@ export function StatusChangeDialog({
           {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="notes" className="rtl:text-right block">
-              הערות (אופציונלי)
+              הערות
             </Label>
             <Textarea
               id="notes"

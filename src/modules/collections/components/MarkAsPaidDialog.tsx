@@ -143,7 +143,7 @@ export const MarkAsPaidDialog: React.FC<MarkAsPaidDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment-ref" className="rtl:text-right ltr:text-left">אסמכתא / מספר עסקה (אופציונלי)</Label>
+            <Label htmlFor="payment-ref" className="rtl:text-right ltr:text-left">אסמכתא / מספר עסקה</Label>
             <Input
               id="payment-ref"
               value={paymentReference}

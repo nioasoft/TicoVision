@@ -63,10 +63,10 @@ export function AuditCompletionForm({ value, onChange, disabled, companyName, co
             </p>
           </div>
 
-          {/* Addressee Line 2 - שורה שנייה של "לכבוד" (אופציונלי) */}
+          {/* Addressee Line 2 - שורה שנייה של "לכבוד" */}
           <div className="space-y-2">
             <Label htmlFor="addressee-line2" className="text-right block">
-              לכבוד - שורה שנייה (אופציונלי)
+              לכבוד - שורה שנייה
             </Label>
             <Input
               id="addressee-line2"

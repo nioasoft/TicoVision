@@ -64,7 +64,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
           {/* Deadline Date (Optional) */}
           <div className="space-y-2">
             <Label htmlFor="deadline-date" className="text-right block">
-              תאריך יעד להמצאה (אופציונלי)
+              תאריך יעד להמצאה
             </Label>
             <Input
               id="deadline-date"
@@ -83,7 +83,7 @@ export function MissingDocumentsForm({ value, onChange, disabled }: MissingDocum
           {/* Additional Notes */}
           <div className="space-y-2">
             <Label htmlFor="additional-notes" className="text-right block">
-              הערות נוספות (אופציונלי)
+              הערות נוספות
             </Label>
             <Textarea
               id="additional-notes"

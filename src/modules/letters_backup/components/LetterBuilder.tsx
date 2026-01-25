@@ -298,7 +298,7 @@ export function LetterBuilder() {
 
               <div>
                 <Label htmlFor="group_name" className="text-right block">
-                  שם קבוצה (אופציונלי) {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
+                  שם קבוצה {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
                 </Label>
                 <Input
                   id="group_name"

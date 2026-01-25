@@ -367,7 +367,7 @@ export function PublicTicketForm() {
       {/* Subcategories */}
       {selectedCategory?.subcategories && selectedCategory.subcategories.length > 0 && (
         <div className="space-y-3">
-          <Label className="text-right">בחרו תת-נושא (אופציונלי)</Label>
+          <Label className="text-right">בחרו תת-נושא</Label>
           <div className="flex flex-wrap gap-2">
             {selectedCategory.subcategories.map((sub) => (
               <Badge

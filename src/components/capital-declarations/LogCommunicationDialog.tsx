@@ -173,7 +173,7 @@ export function LogCommunicationDialog({
 
           {/* Subject */}
           <div className="space-y-2">
-            <Label htmlFor="subject">נושא (אופציונלי)</Label>
+            <Label htmlFor="subject">נושא</Label>
             <Input
               id="subject"
               value={formData.subject}
@@ -186,7 +186,7 @@ export function LogCommunicationDialog({
 
           {/* Content */}
           <div className="space-y-2">
-            <Label htmlFor="content">תוכן (אופציונלי)</Label>
+            <Label htmlFor="content">תוכן</Label>
             <Textarea
               id="content"
               value={formData.content}
@@ -200,7 +200,7 @@ export function LogCommunicationDialog({
 
           {/* Outcome */}
           <div className="space-y-2">
-            <Label htmlFor="outcome">תוצאה/סיכום (אופציונלי)</Label>
+            <Label htmlFor="outcome">תוצאה/סיכום</Label>
             <Input
               id="outcome"
               value={formData.outcome}

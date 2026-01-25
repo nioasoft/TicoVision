@@ -51,8 +51,7 @@ export function BranchSelector({
 
         // If no branches exist, create a default one automatically
         if (branchList.length === 0) {
-          console.log('No branches found, creating default branch...');
-          const defaultBranchId = await BranchService.getOrCreateDefaultBranch(clientId);
+                    const defaultBranchId = await BranchService.getOrCreateDefaultBranch(clientId);
           
           if (defaultBranchId) {
             // Reload branches to get the newly created one with full details

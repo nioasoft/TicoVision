@@ -330,7 +330,7 @@ export function LoginPage() {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="reg-message">הודעה למנהל (אופציונלי)</Label>
+                    <Label htmlFor="reg-message">הודעה למנהל</Label>
                     <Textarea
                       id="reg-message"
                       value={regMessage}

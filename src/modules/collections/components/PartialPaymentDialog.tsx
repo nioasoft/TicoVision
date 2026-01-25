@@ -120,7 +120,7 @@ export const PartialPaymentDialog: React.FC<PartialPaymentDialogProps> = ({
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="rtl:text-right ltr:text-left">הערות (אופציונלי)</Label>
+            <Label htmlFor="notes" className="rtl:text-right ltr:text-left">הערות</Label>
             <Textarea
               id="notes"
               value={notes}

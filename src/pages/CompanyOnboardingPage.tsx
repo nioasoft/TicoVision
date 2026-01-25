@@ -266,7 +266,7 @@ export function CompanyOnboardingPage() {
         );
 
         if (saveResult.error) {
-          console.warn('Failed to save PDF reference to File Manager:', saveResult.error);
+          toast.error('לא ניתן לשמור את הקובץ במנהל הקבצים');
         } else {
           toast.success('הקובץ נשמר במנהל הקבצים');
         }
@@ -515,7 +515,7 @@ export function CompanyOnboardingPage() {
           {/* Additional Recipient Line (optional) */}
           <div className="space-y-2">
             <Label htmlFor="recipient-line" className="text-right block">
-              שורת נמען נוספת (אופציונלי)
+              שורת נמען נוספת
             </Label>
             <Input
               id="recipient-line"
@@ -663,7 +663,7 @@ export function CompanyOnboardingPage() {
           <h3 className="font-medium text-blue-900 mb-2 text-right">הוראות:</h3>
           <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 text-right">
             <li>בחר לקוח או קבוצה מהרשימה</li>
-            <li>הוסף שורת נמען נוספת (אופציונלי)</li>
+            <li>הוסף שורת נמען נוספת</li>
             <li>בחר תאריך למסמך</li>
             <li>בחר את סוג המכתב מהרשימה</li>
             <li>מלא את השדות הנדרשים בטופס</li>

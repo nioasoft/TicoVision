@@ -359,7 +359,7 @@ export function FreelancerFormDialog({
 
             {/* Link to Company */}
             <div className="space-y-2">
-              <Label className="rtl:text-right">קישור לחברה (אופציונלי)</Label>
+              <Label className="rtl:text-right">קישור לחברה</Label>
               <ClientSelector
                 value={formData.linked_company_id}
                 onChange={(company) => handleFormChange('linked_company_id', company?.id || null)}

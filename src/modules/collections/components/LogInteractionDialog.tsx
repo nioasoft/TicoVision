@@ -156,7 +156,7 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="content" className="rtl:text-right ltr:text-left">תוכן (אופציונלי)</Label>
+            <Label htmlFor="content" className="rtl:text-right ltr:text-left">תוכן</Label>
             <Textarea
               id="content"
               value={content}
@@ -170,7 +170,7 @@ export const LogInteractionDialog: React.FC<LogInteractionDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="outcome" className="rtl:text-right ltr:text-left">תוצאה (אופציונלי)</Label>
+            <Label htmlFor="outcome" className="rtl:text-right ltr:text-left">תוצאה</Label>
             <Input
               id="outcome"
               value={outcome}

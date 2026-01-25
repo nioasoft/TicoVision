@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
@@ -539,7 +539,7 @@ export function AutoLettersPage() {
         );
 
         if (saveResult.error) {
-          console.warn('Failed to save PDF reference to File Manager:', saveResult.error);
+          toast.error('לא ניתן לשמור את הקובץ במנהל הקבצים');
         } else {
           toast.success('הקובץ נשמר במנהל הקבצים');
         }
@@ -672,23 +672,6 @@ export function AutoLettersPage() {
     } finally {
       setGenerating(false);
     }
-  };
-
-  // Handle category change - reset letter type
-  const handleCategoryChange = (category: AutoLetterCategory) => {
-    setFormState(prev => ({
-      ...prev,
-      selectedCategory: category,
-      selectedLetterTypeId: null,
-    }));
-  };
-
-  // Handle letter type change
-  const handleLetterTypeChange = (letterTypeId: string) => {
-    setFormState(prev => ({
-      ...prev,
-      selectedLetterTypeId: letterTypeId,
-    }));
   };
 
   // Combined handler for accordion-based selection
@@ -1182,7 +1165,7 @@ export function AutoLettersPage() {
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="adhoc-email" className="text-right block text-sm">
-                    אימייל (אופציונלי)
+                    אימייל
                   </Label>
                   <Input
                     id="adhoc-email"
@@ -1208,7 +1191,7 @@ export function AutoLettersPage() {
                 {formState.selectedCategory === 'mortgage_approvals' && (
                   <div className="space-y-1">
                     <Label htmlFor="adhoc-tax-id" className="text-right block text-sm">
-                      מספר ח"פ/ע.מ./ע.פ (אופציונלי)
+                      מספר ע.מ./ע.פ./ת.ז
                     </Label>
                     <Input
                       id="adhoc-tax-id"
@@ -1267,7 +1250,7 @@ export function AutoLettersPage() {
           {/* Additional Recipient Line (optional) - Compact */}
           <div className="space-y-1">
             <Label htmlFor="recipient-line" className="text-right block text-sm">
-              שורת נמען נוספת (אופציונלי)
+              שורת נמען נוספת
             </Label>
             <Input
               id="recipient-line"

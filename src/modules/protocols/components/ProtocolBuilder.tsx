@@ -486,7 +486,7 @@ export function ProtocolBuilder({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title" className="text-right block">
-                  כותרת (אופציונלי)
+                  כותרת
                 </Label>
                 <Input
                   id="title"

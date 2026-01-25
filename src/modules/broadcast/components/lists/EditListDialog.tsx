@@ -124,7 +124,7 @@ export const EditListDialog: React.FC<EditListDialogProps> = ({
               {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="rtl:text-right">
-                  תיאור (אופציונלי)
+                  תיאור
                 </Label>
                 <Textarea
                   id="description"

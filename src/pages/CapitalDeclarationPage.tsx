@@ -476,7 +476,7 @@ export function CapitalDeclarationPage() {
 
           {/* Optional: Link to Client/Group */}
           <div className="space-y-4 p-4 border rounded-lg">
-            <Label className="text-lg font-semibold">קישור להיסטוריה (אופציונלי)</Label>
+            <Label className="text-lg font-semibold">קישור להיסטוריה</Label>
             <p className="text-sm text-muted-foreground">
               ניתן לקשר את ההצהרה ללקוח או קבוצה כדי שתופיע בהיסטוריית המכתבים שלהם
             </p>
@@ -549,7 +549,7 @@ export function CapitalDeclarationPage() {
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label>הערות (אופציונלי)</Label>
+            <Label>הערות</Label>
             <Textarea
               value={formState.notes}
               onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}

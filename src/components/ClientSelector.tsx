@@ -151,7 +151,7 @@ export function ClientSelector({
     <div className={className}>
       {label && (
         <Label className="text-right block mb-2 text-base">
-          {label} <span className="text-gray-500 text-sm">(אופציונלי)</span>
+          {label}
         </Label>
       )}
 

@@ -19,7 +19,6 @@ import { supabase } from '@/lib/supabase';
 import { ClientSelector } from '@/components/ClientSelector';
 import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { Checkbox } from '@/components/ui/checkbox';
-import { clientService } from '@/services';
 import type { Client } from '@/services/client.service';
 import { TenantContactService } from '@/services/tenant-contact.service';
 import type { AssignedContact } from '@/types/tenant-contact.types';
@@ -202,8 +201,7 @@ export function LetterBuilder() {
         check_dates_description: `החל מיום 5.1.${variables.tax_year || nextYear} ועד ליום 5.8.${variables.tax_year || nextYear}`
       };
 
-      console.log('📧 Sending letter via Edge Function...');
-
+      
       // Get fresh session token for authorization
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -212,7 +210,7 @@ export function LetterBuilder() {
       }
 
       // Call Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('send-letter', {
+      const { error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails: selectedRecipients, // Array of emails
           recipientName: fullVariables.company_name || 'לקוח יקר',
@@ -230,7 +228,6 @@ export function LetterBuilder() {
         throw error;
       }
 
-      console.log('✅ Email sent successfully:', data);
       toast.success(`מכתב נשלח בהצלחה ל-${selectedRecipients.length} נמענים`);
 
     } catch (error) {
@@ -299,7 +296,7 @@ export function LetterBuilder() {
 
               <div>
                 <Label htmlFor="group_name" className="text-right block">
-                  שם קבוצה (אופציונלי) {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
+                  שם קבוצה {selectedClient && <span className="text-xs text-blue-600">(נבחר אוטומטית)</span>}
                 </Label>
                 <Input
                   id="group_name"

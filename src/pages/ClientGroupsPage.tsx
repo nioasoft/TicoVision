@@ -850,7 +850,7 @@ export default function ClientGroupsPage() {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="company_structure_link">לינק למצגת החזקות (אופציונלי)</Label>
+                <Label htmlFor="company_structure_link">לינק למצגת החזקות</Label>
                 <Input
                   id="company_structure_link"
                   type="url"
@@ -860,7 +860,7 @@ export default function ClientGroupsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="canva_link">לינק ל-Canva (אופציונלי)</Label>
+                <Label htmlFor="canva_link">לינק ל-Canva</Label>
                 <Input
                   id="canva_link"
                   type="url"
@@ -981,7 +981,7 @@ export default function ClientGroupsPage() {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="edit_company_structure_link">לינק למצגת החזקות (אופציונלי)</Label>
+                <Label htmlFor="edit_company_structure_link">לינק למצגת החזקות</Label>
                 <Input
                   id="edit_company_structure_link"
                   type="url"
@@ -991,7 +991,7 @@ export default function ClientGroupsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="edit_canva_link">לינק ל-Canva (אופציונלי)</Label>
+                <Label htmlFor="edit_canva_link">לינק ל-Canva</Label>
                 <Input
                   id="edit_canva_link"
                   type="url"
