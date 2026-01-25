@@ -3782,7 +3782,7 @@ export class TemplateService extends BaseService {
         // Swap: header will show recipient (bank), body uses confirmed_company_name
         processed.company_name = processed.recipient_name;
         // group_name should be empty for bank letters (no client group hierarchy)
-        processed.group_name = '';
+        processed.group_name = (processed.applicant_name as string) || '';
 
         // Build income table rows
         if (Array.isArray(processed.income_entries)) {

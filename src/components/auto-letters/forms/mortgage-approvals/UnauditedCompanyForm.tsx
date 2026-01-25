@@ -3,6 +3,7 @@
  * אישור רו"ח למשכנתא עבור בעל שליטה בחברה בע"מ שדוחותיה טרם בוקרו
  */
 
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,23 @@ export function UnauditedCompanyForm({
   companyId,
 }: UnauditedCompanyFormProps) {
   const shareholders = value.shareholders || [{ ...emptyShareholderEntry }];
+  const applicantName = value.applicant_name?.trim();
+
+  useEffect(() => {
+    if (!applicantName) return;
+    const currentShareholders = value.shareholders || [];
+    const firstShareholder = currentShareholders[0];
+    if (firstShareholder?.name?.trim()) return;
+
+    const nextShareholders = currentShareholders.length
+      ? [...currentShareholders]
+      : [{ ...emptyShareholderEntry }];
+    nextShareholders[0] = { ...nextShareholders[0], name: applicantName };
+    onChange({
+      ...value,
+      shareholders: nextShareholders,
+    });
+  }, [applicantName, onChange, value]);
 
   const handleAddShareholder = () => {
     onChange({
