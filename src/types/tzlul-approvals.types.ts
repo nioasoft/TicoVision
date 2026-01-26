@@ -180,6 +180,9 @@ export interface HealthBenefitsVariables extends TzlulSharedData {
 
   /** Array of invoices with number and amount */
   invoices: HealthBenefitsInvoice[];
+
+  /** Benefit type e.g., "דמי הבראה, מחלה ותוספת ותק" */
+  benefit_type: string;
 }
 
 // ============================================================================
@@ -475,6 +478,7 @@ export function createInitialTzlulFormState(): TzlulFormState {
         location: 'רשות שדות התעופה – גשר אלנבי',
         contract_number: '2022/070/0002/00',
         invoices: [{ invoice_number: '', amount: 0 }],
+        benefit_type: 'דמי הבראה, מחלה ותוספת ותק',
       },
       salaryPaymentConfirmation: {
         local_authority: '',

@@ -53,7 +53,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
           {/* Month/Year */}
           <div className="space-y-2">
             <Label htmlFor="month-year" className="text-right block">
-              חודש/שנה 
+              חודש/שנה
             </Label>
             <Input
               id="month-year"
@@ -65,6 +65,25 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
               className="text-right rtl:text-right"
               dir="rtl"
             />
+          </div>
+
+          {/* Benefit Type */}
+          <div className="space-y-2">
+            <Label htmlFor="benefit-type" className="text-right block">
+              סוג הטבה
+            </Label>
+            <Input
+              id="benefit-type"
+              type="text"
+              value={value.benefit_type || 'דמי הבראה, מחלה ותוספת ותק'}
+              onChange={(e) => onChange({ ...value, benefit_type: e.target.value })}
+              disabled={disabled}
+              className="text-right rtl:text-right"
+              dir="rtl"
+            />
+            <p className="text-xs text-gray-500 text-right">
+              ברירת מחדל: דמי הבראה, מחלה ותוספת ותק
+            </p>
           </div>
 
           {/* Location */}
@@ -174,7 +193,7 @@ export function HealthBenefitsForm({ value, onChange, disabled }: HealthBenefits
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <h4 className="font-medium text-blue-900 mb-2 text-right">תוכן המסמך:</h4>
             <p className="text-sm text-blue-800 text-right">
-              חוות דעת על תחשיב תשלומים והפרשות בגין דמי הבראה, מחלה ותוספת ותק בחודש{' '}
+              חוות דעת על תחשיב תשלומים והפרשות בגין {value.benefit_type || 'דמי הבראה, מחלה ותוספת ותק'} בחודש{' '}
               <strong>{value.month_year || '_'}</strong>
               {(value.invoices?.length || 0) > 0 && value.invoices?.some(inv => inv.amount > 0) && (
                 <>
