@@ -67,6 +67,10 @@ export function buildFullHTML(
 
 /**
  * Replace {{variables}} in HTML template
+ * Supports:
+ * - Basic variables: {{variable}}
+ * - Mustache conditionals: {{#var}}content{{/var}} - shows content if var is truthy
+ * - Mustache inverse: {{^var}}content{{/var}} - shows content if var is falsy/empty
  * @param html - HTML content with {{variable}} placeholders
  * @param variables - Key-value pairs to replace
  * @returns HTML with replaced variables
@@ -77,6 +81,27 @@ export function replaceVariables(
 ): string {
   let result = html;
 
+  // Step 1: Process Mustache conditionals {{#var}}...{{/var}}
+  // If variable has truthy value → keep content, remove tags
+  // If variable is falsy/empty → remove entire block
+  const conditionalRegex = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  result = result.replace(conditionalRegex, (_match, varName, content) => {
+    const value = variables[varName];
+    const isTruthy = value !== undefined && value !== null && value !== '';
+    return isTruthy ? content : '';
+  });
+
+  // Step 2: Process inverse conditionals {{^var}}...{{/var}}
+  // If variable is falsy/empty → keep content, remove tags
+  // If variable has truthy value → remove entire block
+  const inverseRegex = /\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  result = result.replace(inverseRegex, (_match, varName, content) => {
+    const value = variables[varName];
+    const isTruthy = value !== undefined && value !== null && value !== '';
+    return isTruthy ? '' : content;
+  });
+
+  // Step 3: Simple variable replacement {{var}}
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`{{${key}}}`, 'g');
     result = result.replace(regex, String(value || ''));
