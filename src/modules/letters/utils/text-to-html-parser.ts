@@ -274,7 +274,10 @@ export function parseTextToHTML(plainText: string, isHtml: boolean = false): str
 
 /**
  * Replace variables in text
- * Supports basic variables: {{company_name}}, {{letter_date}}, {{year}}, {{amount}}
+ * Supports:
+ * - Basic variables: {{company_name}}, {{letter_date}}, {{year}}, {{amount}}
+ * - Mustache conditionals: {{#var}}content{{/var}} - shows content if var is truthy
+ * - Mustache inverse: {{^var}}content{{/var}} - shows content if var is falsy/empty
  */
 export function replaceVariables(
   text: string,
@@ -282,6 +285,27 @@ export function replaceVariables(
 ): string {
   let result = text;
 
+  // Step 1: Process Mustache conditionals {{#var}}...{{/var}}
+  // If variable has truthy value → keep content, remove tags
+  // If variable is falsy/empty → remove entire block
+  const conditionalRegex = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  result = result.replace(conditionalRegex, (_match, varName, content) => {
+    const value = variables[varName];
+    const isTruthy = value !== undefined && value !== null && value !== '';
+    return isTruthy ? content : '';
+  });
+
+  // Step 2: Process inverse conditionals {{^var}}...{{/var}}
+  // If variable is falsy/empty → keep content, remove tags
+  // If variable has truthy value → remove entire block
+  const inverseRegex = /\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  result = result.replace(inverseRegex, (_match, varName, content) => {
+    const value = variables[varName];
+    const isTruthy = value !== undefined && value !== null && value !== '';
+    return isTruthy ? '' : content;
+  });
+
+  // Step 3: Simple variable replacement {{var}}
   for (const [key, value] of Object.entries(variables)) {
     const placeholder = `{{${key}}}`;
     const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
