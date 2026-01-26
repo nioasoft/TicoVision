@@ -83,6 +83,11 @@ export class TemplateParser {
 
   /**
    * Replace variables in template content
+   * Supports:
+   * - [variable] pattern
+   * - {{variable}} pattern
+   * - {{#var}}content{{/var}} - Mustache conditionals (shows content if var is truthy)
+   * - {{^var}}content{{/var}} - Mustache inverse (shows content if var is falsy/empty)
    * Uses HTML escaping for all variables to prevent XSS
    */
   static replaceVariables(
@@ -95,7 +100,27 @@ export class TemplateParser {
     // Map common Hebrew variable names to their values
     const variableMap = this.buildVariableMap(variables);
 
-    // Replace [variable] pattern
+    // Step 1: Process Mustache conditionals {{#var}}...{{/var}}
+    // If variable has truthy value → keep content, remove tags
+    // If variable is falsy/empty → remove entire block
+    const conditionalRegex = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+    result = result.replace(conditionalRegex, (_match, varName, content) => {
+      const value = this.getVariableValue(varName, variableMap, variables);
+      const isTruthy = value !== undefined && value !== null && value !== '';
+      return isTruthy ? content : '';
+    });
+
+    // Step 2: Process inverse conditionals {{^var}}...{{/var}}
+    // If variable is falsy/empty → keep content, remove tags
+    // If variable has truthy value → remove entire block
+    const inverseRegex = /\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+    result = result.replace(inverseRegex, (_match, varName, content) => {
+      const value = this.getVariableValue(varName, variableMap, variables);
+      const isTruthy = value !== undefined && value !== null && value !== '';
+      return isTruthy ? '' : content;
+    });
+
+    // Step 3: Replace [variable] pattern
     result = result.replace(this.VARIABLE_PATTERN, (match, variableName) => {
       const value = this.getVariableValue(variableName, variableMap, variables);
       if (value === undefined) return match;
@@ -109,7 +134,7 @@ export class TemplateParser {
       return this.escapeHtml(value);
     });
 
-    // Replace {{variable}} pattern
+    // Step 4: Replace {{variable}} pattern
     result = result.replace(this.BRACKET_VARIABLE_PATTERN, (match, variableName) => {
       const value = this.getVariableValue(variableName, variableMap, variables);
       if (value === undefined) return match;
