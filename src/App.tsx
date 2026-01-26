@@ -76,6 +76,7 @@ const DocumentCategoryPage = lazy(() => import('@/modules/documents/pages/Docume
 const PublicTicketForm = lazy(() => import('@/modules/tico-tickets/pages/PublicTicketForm').then(m => ({ default: m.PublicTicketForm })));
 const PublicTicketStatus = lazy(() => import('@/modules/tico-tickets/pages/PublicTicketStatus').then(m => ({ default: m.PublicTicketStatus })));
 const TicketDashboard = lazy(() => import('@/modules/tico-tickets/pages/TicketDashboard').then(m => ({ default: m.TicketDashboard })));
+const TicketSettings = lazy(() => import('@/modules/tico-tickets/pages/TicketSettings').then(m => ({ default: m.TicketSettings })));
 
 // Loading component
 const PageLoader = () => (
@@ -399,6 +400,11 @@ function App() {
                       <Route path="/tico-tickets" element={
                         <ErrorBoundary>
                           <TicketDashboard />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/tico-tickets/settings" element={
+                        <ErrorBoundary>
+                          <TicketSettings />
                         </ErrorBoundary>
                       } />
 

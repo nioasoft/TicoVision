@@ -4,11 +4,11 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,19 +30,20 @@ import {
   Phone,
   Mail,
   Tag,
-  AlertTriangle,
   MessageSquare,
   Link2,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { getAssigneeColors } from '../utils/assigneeColors';
 import { ticketService } from '../services/ticket.service';
 import type {
   TicketWithDetails,
   SupportTicketStatus,
   AssignableUser,
-  TicketReply,
+  SupportTicketReply,
 } from '../types/ticket.types';
 
 interface TicketDetailSheetProps {
@@ -54,11 +55,11 @@ interface TicketDetailSheetProps {
   onUpdate: () => void;
 }
 
-const PRIORITY_CONFIG = {
-  low: { label: 'נמוכה', color: 'bg-gray-100 text-gray-700' },
-  normal: { label: 'רגילה', color: 'bg-blue-100 text-blue-700' },
-  high: { label: 'גבוהה', color: 'bg-orange-100 text-orange-700' },
-  urgent: { label: 'דחופה', color: 'bg-red-100 text-red-700' },
+const STATUS_TONE: Record<string, string> = {
+  new: 'bg-primary',
+  in_progress: 'bg-muted-foreground',
+  in_review: 'bg-muted-foreground',
+  completed: 'bg-muted-foreground',
 };
 
 export function TicketDetailSheet({
@@ -69,7 +70,7 @@ export function TicketDetailSheet({
   assignees,
   onUpdate,
 }: TicketDetailSheetProps) {
-  const [replies, setReplies] = useState<TicketReply[]>([]);
+  const [replies, setReplies] = useState<SupportTicketReply[]>([]);
   const [newReply, setNewReply] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -160,21 +161,31 @@ export function TicketDetailSheet({
 
   if (!ticket) return null;
 
-  const priorityConfig = PRIORITY_CONFIG[ticket.priority as keyof typeof PRIORITY_CONFIG];
+  const archiveStatus = statuses.find(status => status.key === 'archived');
+  const completedStatus = statuses.find(status => status.key === 'completed');
+  const canArchive = Boolean(
+    archiveStatus && completedStatus && ticket.status_id === completedStatus.id
+  );
+  const isCompleted = ticket.status?.key === 'completed' || Boolean(ticket.resolved_at);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full sm:max-w-xl p-0">
-        <SheetHeader className="p-4 border-b">
-          <div className="flex items-center justify-between">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden rtl:text-right" dir="rtl">
+        <DialogHeader className="p-4 border-b">
+          <div className="flex items-center gap-2">
+            {isCompleted && (
+              <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
+                הושלם
+              </Badge>
+            )}
+            <DialogTitle className="text-right">{ticket.subject}</DialogTitle>
             <Badge variant="outline" className="font-mono">
               #{ticket.ticket_number}
             </Badge>
-            <SheetTitle className="text-right">{ticket.subject}</SheetTitle>
           </div>
-        </SheetHeader>
+        </DialogHeader>
 
-        <ScrollArea className="h-[calc(100vh-80px)]">
+        <ScrollArea className="h-[calc(90vh-80px)]">
           <div className="p-4 space-y-6">
             {/* Quick actions */}
             <div className="grid grid-cols-3 gap-3">
@@ -190,8 +201,10 @@ export function TicketDetailSheet({
                       <SelectItem key={status.id} value={status.id}>
                         <div className="flex items-center gap-2">
                           <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: status.color }}
+                            className={cn(
+                              'w-2 h-2 rounded-full',
+                              STATUS_TONE[status.key] || 'bg-muted-foreground'
+                            )}
                           />
                           {status.name_hebrew || status.name}
                         </div>
@@ -213,11 +226,23 @@ export function TicketDetailSheet({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">לא משויך</SelectItem>
-                    {assignees.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
-                      </SelectItem>
-                    ))}
+                    {assignees.map((user) => {
+                      const colors = getAssigneeColors(user.id);
+                      return (
+                        <SelectItem key={user.id} value={user.id}>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{
+                                backgroundColor: colors.bg,
+                                border: `1px solid ${colors.border}`,
+                              }}
+                            />
+                            <span>{user.name}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -238,6 +263,16 @@ export function TicketDetailSheet({
                 </Select>
               </div>
             </div>
+
+            {canArchive && archiveStatus && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleStatusChange(archiveStatus.id)}
+              >
+                העבר לארכיון
+              </Button>
+            )}
 
             <Separator />
 
@@ -273,12 +308,12 @@ export function TicketDetailSheet({
 
               {/* Client match status */}
               {ticket.matched_client_id ? (
-                <div className="flex items-center justify-end gap-2 text-sm text-green-600">
+                <div className="flex items-center justify-end gap-2 text-sm text-primary">
                   <span>משויך ללקוח: {ticket.client_name}</span>
                   <CheckCircle2 className="h-4 w-4" />
                 </div>
               ) : ticket.is_new_lead ? (
-                <div className="flex items-center justify-end gap-2 text-sm text-amber-600">
+                <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
                   <Button variant="outline" size="sm" className="gap-1">
                     <Link2 className="h-3 w-3" />
                     שייך ללקוח
@@ -314,6 +349,12 @@ export function TicketDetailSheet({
                 <Clock className="h-3 w-3" />
                 נפתח: {formatDate(ticket.created_at)}
               </span>
+              {ticket.resolved_at && (
+                <span className="flex items-center gap-1 text-primary">
+                  <CheckCircle2 className="h-3 w-3" />
+                  הושלם: {formatDate(ticket.resolved_at)}
+                </span>
+              )}
             </div>
 
             <Separator />
@@ -336,10 +377,10 @@ export function TicketDetailSheet({
                       key={reply.id}
                       className={`rounded-lg p-3 ${
                         reply.is_internal
-                          ? 'bg-amber-50 border border-amber-200'
+                          ? 'bg-muted/60 border border-border'
                           : reply.is_from_client
-                          ? 'bg-blue-50 mr-6'
-                          : 'bg-muted/50 ml-6'
+                          ? 'bg-primary/10 mr-6'
+                          : 'bg-muted/40 ml-6'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -348,7 +389,7 @@ export function TicketDetailSheet({
                         </span>
                         <div className="flex items-center gap-2">
                           {reply.is_internal && (
-                            <Badge variant="outline" className="text-xs bg-amber-100">
+                            <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
                               פנימי
                             </Badge>
                           )}
@@ -398,7 +439,7 @@ export function TicketDetailSheet({
             </div>
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

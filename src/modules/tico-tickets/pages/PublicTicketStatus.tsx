@@ -28,20 +28,20 @@ import type { PublicTicketView } from '../types/ticket.types';
 
 // Status colors
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  new: { bg: 'bg-blue-100', text: 'text-blue-800' },
-  in_progress: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  on_hold: { bg: 'bg-orange-100', text: 'text-orange-800' },
-  in_review: { bg: 'bg-purple-100', text: 'text-purple-800' },
-  waiting_client: { bg: 'bg-pink-100', text: 'text-pink-800' },
-  completed: { bg: 'bg-green-100', text: 'text-green-800' },
+  new: { bg: 'bg-primary/10', text: 'text-primary' },
+  in_progress: { bg: 'bg-primary/10', text: 'text-primary' },
+  on_hold: { bg: 'bg-muted', text: 'text-foreground' },
+  in_review: { bg: 'bg-muted', text: 'text-foreground' },
+  waiting_client: { bg: 'bg-muted', text: 'text-foreground' },
+  completed: { bg: 'bg-muted', text: 'text-foreground' },
 };
 
 // Priority labels
 const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
-  low: { label: 'נמוכה', color: 'text-gray-600' },
-  normal: { label: 'רגילה', color: 'text-blue-600' },
-  high: { label: 'גבוהה', color: 'text-orange-600' },
-  urgent: { label: 'דחופה', color: 'text-red-600' },
+  low: { label: 'נמוכה', color: 'text-muted-foreground' },
+  normal: { label: 'רגילה', color: 'text-foreground' },
+  high: { label: 'גבוהה', color: 'text-primary' },
+  urgent: { label: 'דחופה', color: 'text-destructive' },
 };
 
 export function PublicTicketStatus() {
@@ -112,7 +112,7 @@ export function PublicTicketStatus() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center tico-tickets-theme" dir="rtl">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">טוען פנייה...</p>
@@ -123,13 +123,13 @@ export function PublicTicketStatus() {
 
   if (error || !ticket) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
-        <Card className="max-w-md w-full">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4 tico-tickets-theme" dir="rtl">
+        <Card className="max-w-md w-full border-border">
           <CardContent className="pt-6 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-red-600" />
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
-            <h2 className="text-xl font-bold text-red-600 mb-2">שגיאה</h2>
+            <h2 className="text-xl font-bold text-destructive mb-2">שגיאה</h2>
             <p className="text-muted-foreground">{error || 'הפנייה לא נמצאה'}</p>
             <Button
               variant="outline"
@@ -150,7 +150,7 @@ export function PublicTicketStatus() {
   const isResolved = ticket.status_key === 'completed';
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4" dir="rtl">
+    <div className="min-h-screen bg-background py-8 px-4 tico-tickets-theme" dir="rtl">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -162,7 +162,7 @@ export function PublicTicketStatus() {
         </div>
 
         {/* Status card */}
-        <Card className="shadow-lg mb-6">
+        <Card className="shadow-sm border-border mb-6">
           <CardHeader className="text-right">
             <div className="flex items-center justify-between">
               <Badge className={`${statusColors.bg} ${statusColors.text} border-0`}>
@@ -189,15 +189,15 @@ export function PublicTicketStatus() {
             </div>
 
             {/* Description */}
-            <div className="bg-muted/50 rounded-lg p-4 text-right whitespace-pre-wrap">
+            <div className="bg-muted/40 rounded-lg p-4 text-right whitespace-pre-wrap">
               {ticket.description}
             </div>
 
             {/* Resolved notice */}
             {isResolved && ticket.resolved_at && (
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
+              <Alert className="bg-primary/10 border-primary/20">
+                <CheckCircle className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-foreground">
                   פנייה זו הושלמה בתאריך {formatDate(ticket.resolved_at)}
                 </AlertDescription>
               </Alert>
@@ -206,7 +206,7 @@ export function PublicTicketStatus() {
         </Card>
 
         {/* Replies */}
-        <Card className="shadow-lg mb-6">
+        <Card className="shadow-sm border-border mb-6">
           <CardHeader className="text-right">
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
@@ -225,8 +225,8 @@ export function PublicTicketStatus() {
                   <div
                     className={`rounded-lg p-4 ${
                       reply.is_from_client
-                        ? 'bg-blue-50 mr-8'
-                        : 'bg-gray-50 ml-8'
+                        ? 'bg-primary/10 mr-8'
+                        : 'bg-muted/40 ml-8'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">

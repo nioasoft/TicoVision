@@ -25,6 +25,9 @@ interface KanbanBoardProps {
   tickets: TicketWithDetails[];
   onStatusChange: (ticketId: string, newStatusId: string) => Promise<void>;
   onTicketClick: (ticket: TicketWithDetails) => void;
+  collapsedTicketIds: Set<string>;
+  onToggleCollapse: (ticketId: string) => void;
+  expectedColumnCount?: number;
   isLoading?: boolean;
 }
 
@@ -33,6 +36,9 @@ export function KanbanBoard({
   tickets,
   onStatusChange,
   onTicketClick,
+  collapsedTicketIds,
+  onToggleCollapse,
+  expectedColumnCount,
   isLoading,
 }: KanbanBoardProps) {
   const [activeTicket, setActiveTicket] = useState<TicketWithDetails | null>(null);
@@ -112,11 +118,12 @@ export function KanbanBoard({
   const grouped = ticketsByStatus();
 
   if (isLoading) {
+    const skeletonCount = expectedColumnCount || columns.length || 4;
     return (
       <div className="flex gap-4 p-4 overflow-x-auto">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
+        {Array.from({ length: skeletonCount }).map((_, index) => (
           <div
-            key={i}
+            key={`skeleton-${index}`}
             className="w-[300px] min-w-[300px] h-[400px] bg-muted/30 rounded-lg animate-pulse"
           />
         ))}
@@ -136,13 +143,15 @@ export function KanbanBoard({
         className="w-full overflow-x-auto"
         dir="rtl"
       >
-        <div className="flex gap-4 p-4 min-w-max">
+        <div className="flex gap-4 p-4 min-w-max w-full justify-center">
           {columns.map((column) => (
             <KanbanColumn
               key={column.id}
               column={column}
               tickets={grouped[column.id] || []}
               onTicketClick={onTicketClick}
+              collapsedTicketIds={collapsedTicketIds}
+              onToggleCollapse={onToggleCollapse}
             />
           ))}
         </div>
@@ -150,7 +159,7 @@ export function KanbanBoard({
 
       <DragOverlay>
         {activeTicket && (
-          <Card className="w-[280px] shadow-xl rotate-3 opacity-90">
+          <Card className="w-[280px] shadow-lg opacity-95">
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-2">
                 <Badge variant="outline" className="text-xs">

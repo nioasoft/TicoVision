@@ -188,3 +188,20 @@ export type TicketHistoryAction =
   | 'client_linked'
   | 'attachment_added'
   | 'due_date_set';
+
+// Ticket settings
+export interface TicketSettings {
+  id: string;
+  tenant_id: string;
+  visible_column_keys: string[];
+  auto_assign_enabled: boolean;
+  default_assignee_id: string | null;
+  round_robin_enabled: boolean;
+  notify_on_new_ticket: boolean;
+  notify_assignee_on_assign: boolean;
+  default_response_hours: number;
+  urgent_response_hours: number;
+  auto_archive_days: number;
+  created_at: string;
+  updated_at: string;
+}

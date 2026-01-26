@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { BaseService } from '@/services/base.service';
+import { userService } from '@/services/user.service';
 import type {
   TicketWithDetails,
   TicketDashboardData,
@@ -14,6 +15,7 @@ import type {
   AssignableUser,
   KanbanColumn,
   SupportTicketHistory,
+  TicketSettings,
 } from '../types/ticket.types';
 
 class TicketServiceClass extends BaseService {
@@ -27,7 +29,8 @@ class TicketServiceClass extends BaseService {
 
   async getDashboardData(
     filters?: TicketFilters,
-    sort?: TicketSort
+    sort?: TicketSort,
+    options?: { statusKeys?: string[] }
   ): Promise<ServiceResponse<TicketDashboardData>> {
     try {
       const tenantId = await this.getTenantId();
@@ -43,6 +46,11 @@ class TicketServiceClass extends BaseService {
       if (statusError) throw statusError;
 
       // Build ticket query
+      const statusKeys = options?.statusKeys;
+      const visibleStatuses = statusKeys?.length
+        ? (statuses || []).filter(status => statusKeys.includes(status.key))
+        : (statuses || []);
+
       let query = supabase
         .from('support_tickets')
         .select(`
@@ -53,6 +61,13 @@ class TicketServiceClass extends BaseService {
           matched_client:clients(id, company_name, email, phone)
         `)
         .eq('tenant_id', tenantId);
+
+      if (statusKeys?.length) {
+        const statusIds = visibleStatuses.map(status => status.id);
+        if (statusIds.length > 0) {
+          query = query.in('status_id', statusIds);
+        }
+      }
 
       // Apply filters
       if (filters?.status_id) {
@@ -91,36 +106,21 @@ class TicketServiceClass extends BaseService {
 
       if (ticketError) throw ticketError;
 
-      // Get assigned user info separately (auth.users not directly joinable)
-      const assignedUserIds = [...new Set(tickets?.filter(t => t.assigned_to).map(t => t.assigned_to) || [])];
-      let userMap: Record<string, { id: string; email: string; raw_user_meta_data: Record<string, unknown> | null }> = {};
+      // Get reply counts per ticket using optimized RPC
+      const ticketIds = tickets?.map(t => t.id) || [];
+      const replyCountMap: Record<string, number> = {};
 
-      if (assignedUserIds.length > 0) {
-        const { data: users } = await supabase
-          .from('user_tenant_access')
-          .select('user_id')
-          .eq('tenant_id', tenantId)
-          .in('user_id', assignedUserIds);
-
-        // For each user, we'll need to get their metadata from auth.users
-        // This is a limitation - we'll use what we have from user_tenant_access
-        // In a real app, you might want to sync user profiles to a public table
+      if (ticketIds.length > 0) {
+        const { data: replyCounts } = await supabase.rpc('get_ticket_reply_counts', {
+          p_ticket_ids: ticketIds,
+        });
+        replyCounts?.forEach((r: { ticket_id: string; reply_count: number }) => {
+          replyCountMap[r.ticket_id] = r.reply_count;
+        });
       }
 
-      // Get reply counts per ticket
-      const ticketIds = tickets?.map(t => t.id) || [];
-      const { data: replyCounts } = await supabase
-        .from('support_ticket_replies')
-        .select('ticket_id')
-        .in('ticket_id', ticketIds);
-
-      const replyCountMap: Record<string, number> = {};
-      replyCounts?.forEach(r => {
-        replyCountMap[r.ticket_id] = (replyCountMap[r.ticket_id] || 0) + 1;
-      });
-
       // Organize tickets into columns
-      const columns: KanbanColumn[] = (statuses || []).map(status => ({
+      const columns: KanbanColumn[] = visibleStatuses.map(status => ({
         id: status.id,
         key: status.key,
         name: status.name,
@@ -150,53 +150,28 @@ class TicketServiceClass extends BaseService {
   }
 
   private async calculateKPIs(tenantId: string): Promise<TicketKPIs> {
-    // Get closed status IDs
-    const { data: closedStatuses } = await supabase
-      .from('support_ticket_statuses')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('is_closed_status', true);
+    // Use optimized RPC for all KPIs in a single query
+    const { data: kpis, error } = await supabase.rpc('get_ticket_kpis', {
+      p_tenant_id: tenantId,
+    });
 
-    const closedStatusIds = closedStatuses?.map(s => s.id) || [];
-
-    // Total open tickets
-    const { count: totalOpen } = await supabase
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .not('status_id', 'in', `(${closedStatusIds.join(',')})`);
-
-    // Tickets created today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const { count: totalToday } = await supabase
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .gte('created_at', today.toISOString());
-
-    // Unassigned tickets
-    const { count: unassignedCount } = await supabase
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .is('assigned_to', null)
-      .not('status_id', 'in', `(${closedStatusIds.join(',')})`);
-
-    // Urgent tickets
-    const { count: urgentCount } = await supabase
-      .from('support_tickets')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .eq('priority', 'urgent')
-      .not('status_id', 'in', `(${closedStatusIds.join(',')})`);
+    if (error || !kpis) {
+      console.error('Error calculating KPIs:', error);
+      return {
+        total_open: 0,
+        total_today: 0,
+        avg_response_time_hours: null,
+        unassigned_count: 0,
+        urgent_count: 0,
+      };
+    }
 
     return {
-      total_open: totalOpen || 0,
-      total_today: totalToday || 0,
-      avg_response_time_hours: null, // TODO: Calculate from first_response_at
-      unassigned_count: unassignedCount || 0,
-      urgent_count: urgentCount || 0,
+      total_open: kpis.total_open || 0,
+      total_today: kpis.total_today || 0,
+      avg_response_time_hours: kpis.avg_response_time_hours || null,
+      unassigned_count: kpis.unassigned_count || 0,
+      urgent_count: kpis.urgent_count || 0,
     };
   }
 
@@ -564,26 +539,25 @@ class TicketServiceClass extends BaseService {
 
   async getAssignableUsers(): Promise<ServiceResponse<AssignableUser[]>> {
     try {
-      const tenantId = await this.getTenantId();
+      // Get all active users (no role filter)
+      const usersResponse = await userService.getUsers(undefined, {
+        is_active: true,
+      });
 
-      const { data, error } = await supabase
-        .from('user_tenant_access')
-        .select('user_id, role')
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true)
-        .in('role', ['admin', 'accountant']);
+      if (usersResponse.error) {
+        return { data: null, error: usersResponse.error };
+      }
 
-      if (error) throw error;
-
-      // Get user emails from auth.users via RPC or edge function
-      // For now, return basic structure
-      const users: AssignableUser[] = (data || []).map(u => ({
-        id: u.user_id,
-        name: '', // Would be populated from user metadata
-        email: '', // Would be populated from auth.users
-        role: u.role,
-        avatar_url: null,
-      }));
+      // Filter to accountants and admins (רואי חשבון ומנהלי מערכת)
+      const users = (usersResponse.data?.users || [])
+        .filter((user) => user.role === 'accountant' || user.role === 'admin')
+        .map((user) => ({
+          id: user.id,
+          name: user.full_name,
+          email: user.email,
+          role: user.role,
+          avatar_url: null,
+        }));
 
       return { data: users, error: null };
     } catch (error) {
@@ -636,6 +610,100 @@ class TicketServiceClass extends BaseService {
       });
     } catch (error) {
       console.error('Failed to add history:', error);
+    }
+  }
+
+  // =============================================
+  // SETTINGS
+  // =============================================
+
+  async getSettings(): Promise<ServiceResponse<TicketSettings>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('support_ticket_settings')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (error) {
+        // If no settings exist, return defaults
+        if (error.code === 'PGRST116') {
+          return {
+            data: {
+              id: '',
+              tenant_id: tenantId,
+              visible_column_keys: ['new', 'in_progress', 'in_review', 'completed'],
+              auto_assign_enabled: false,
+              default_assignee_id: null,
+              round_robin_enabled: false,
+              notify_on_new_ticket: true,
+              notify_assignee_on_assign: true,
+              default_response_hours: 24,
+              urgent_response_hours: 4,
+              auto_archive_days: 30,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+            error: null,
+          };
+        }
+        throw error;
+      }
+
+      return { data: data as TicketSettings, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  async updateSettings(settings: Partial<TicketSettings>): Promise<ServiceResponse<TicketSettings>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('support_ticket_settings')
+        .upsert({
+          tenant_id: tenantId,
+          ...settings,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'tenant_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('settings_updated', null, settings);
+
+      return { data: data as TicketSettings, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  async updateStatusWipLimit(
+    statusId: string,
+    wipLimit: number | null,
+    warnAtPercent?: number
+  ): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { error } = await supabase
+        .from('support_ticket_statuses')
+        .update({
+          wip_limit: wipLimit,
+          warn_at_percent: warnAtPercent ?? 80,
+        })
+        .eq('id', statusId)
+        .eq('tenant_id', tenantId);
+
+      if (error) throw error;
+
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
     }
   }
 }

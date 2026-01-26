@@ -25,7 +25,6 @@ import {
   CheckCircle,
   Ticket,
   ChevronLeft,
-  ChevronRight,
   Receipt,
   FileSpreadsheet,
   Shield,
@@ -59,18 +58,18 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
 
 // Category colors
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; icon: string }> = {
-  income_tax: { bg: 'bg-blue-50', border: 'border-blue-200 hover:border-blue-400', icon: 'text-blue-600' },
-  vat: { bg: 'bg-green-50', border: 'border-green-200 hover:border-green-400', icon: 'text-green-600' },
-  bituach_leumi: { bg: 'bg-purple-50', border: 'border-purple-200 hover:border-purple-400', icon: 'text-purple-600' },
-  financial_statements: { bg: 'bg-indigo-50', border: 'border-indigo-200 hover:border-indigo-400', icon: 'text-indigo-600' },
-  payroll: { bg: 'bg-orange-50', border: 'border-orange-200 hover:border-orange-400', icon: 'text-orange-600' },
-  company_registry: { bg: 'bg-cyan-50', border: 'border-cyan-200 hover:border-cyan-400', icon: 'text-cyan-600' },
-  bookkeeping: { bg: 'bg-yellow-50', border: 'border-yellow-200 hover:border-yellow-400', icon: 'text-yellow-600' },
-  billing: { bg: 'bg-rose-50', border: 'border-rose-200 hover:border-rose-400', icon: 'text-rose-600' },
-  documents: { bg: 'bg-teal-50', border: 'border-teal-200 hover:border-teal-400', icon: 'text-teal-600' },
-  consulting: { bg: 'bg-amber-50', border: 'border-amber-200 hover:border-amber-400', icon: 'text-amber-600' },
-  technical: { bg: 'bg-slate-50', border: 'border-slate-200 hover:border-slate-400', icon: 'text-slate-600' },
-  other: { bg: 'bg-gray-50', border: 'border-gray-200 hover:border-gray-400', icon: 'text-gray-600' },
+  income_tax: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  vat: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  bituach_leumi: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  financial_statements: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  payroll: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  company_registry: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  bookkeeping: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  billing: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  documents: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  consulting: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  technical: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
+  other: { bg: 'bg-card', border: 'border-border hover:border-primary/40', icon: 'text-primary' },
 };
 
 // Form steps
@@ -222,8 +221,8 @@ export function PublicTicketForm() {
                   isActive
                     ? 'bg-primary border-primary text-primary-foreground'
                     : isCompleted
-                    ? 'bg-green-500 border-green-500 text-white'
-                    : 'bg-muted border-muted-foreground/30 text-muted-foreground'
+                    ? 'bg-primary/10 border-primary/40 text-primary'
+                    : 'bg-muted border-border text-muted-foreground'
                 }`}
               >
                 {isCompleted ? <CheckCircle className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
@@ -351,11 +350,11 @@ export function PublicTicketForm() {
             <button
               key={category.id}
               onClick={() => handleCategorySelect(category.id)}
-              className={`p-4 rounded-lg border-2 text-right transition-all ${colors.bg} ${colors.border} ${
+              className={`p-4 rounded-lg border text-right transition-all ${colors.bg} ${colors.border} ${
                 isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
               }`}
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${colors.icon} bg-white/50`}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${colors.icon} bg-muted/50`}>
                 <Icon className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium">{category.name_hebrew}</span>
@@ -460,12 +459,12 @@ export function PublicTicketForm() {
   // Render success step
   const renderSuccessStep = () => (
     <div className="text-center space-y-6 py-8">
-      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-        <CheckCircle className="h-10 w-10 text-green-600" />
+      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+        <CheckCircle className="h-10 w-10 text-primary" />
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-green-600">הפנייה נשלחה בהצלחה!</h2>
+        <h2 className="text-2xl font-bold text-foreground">הפנייה נשלחה בהצלחה!</h2>
         <p className="text-muted-foreground">
           מספר פנייה: <strong className="text-foreground">{successData?.ticketNumber}</strong>
         </p>
@@ -498,7 +497,7 @@ export function PublicTicketForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
+      <div className="min-h-screen bg-background flex items-center justify-center tico-tickets-theme" dir="rtl">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">טוען...</p>
@@ -508,7 +507,7 @@ export function PublicTicketForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8 px-4" dir="rtl">
+    <div className="min-h-screen bg-background py-8 px-4 tico-tickets-theme" dir="rtl">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -523,7 +522,7 @@ export function PublicTicketForm() {
         {step !== 'success' && renderStepIndicator()}
 
         {/* Form card */}
-        <Card className="shadow-lg">
+        <Card className="shadow-sm border-border">
           <CardHeader className="text-right">
             {step === 'contact' && (
               <>
