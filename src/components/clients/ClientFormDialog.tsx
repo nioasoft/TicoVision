@@ -687,7 +687,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[300px] overflow-y-auto">
                     <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
                     {groups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
