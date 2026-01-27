@@ -789,7 +789,7 @@ export default function ClientGroupsPage() {
             </div>
 
             {/* Address Section */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="address_street">רחוב</Label>
                 <Input
@@ -821,22 +821,6 @@ export default function ClientGroupsPage() {
 
 
                   emptyText="לא נמצאה עיר"
-                />
-              </div>
-              <div>
-                <Label htmlFor="address_postal_code">מיקוד</Label>
-                <Input
-                  id="address_postal_code"
-                  value={formData.address?.postal_code || ''}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    setFormData({
-                      ...formData,
-                      address: { ...formData.address, postal_code: value }
-                    });
-                  }}
-                  maxLength={7}
-                  dir="ltr"
                 />
               </div>
             </div>
@@ -927,7 +911,7 @@ export default function ClientGroupsPage() {
             </div>
 
             {/* Address Section */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit_address_street">רחוב</Label>
                 <Input
@@ -959,22 +943,6 @@ export default function ClientGroupsPage() {
 
 
                   emptyText="לא נמצאה עיר"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_address_postal_code">מיקוד</Label>
-                <Input
-                  id="edit_address_postal_code"
-                  value={formData.address?.postal_code || ''}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '');
-                    setFormData({
-                      ...formData,
-                      address: { ...formData.address, postal_code: value }
-                    });
-                  }}
-                  maxLength={7}
-                  dir="ltr"
                 />
               </div>
             </div>

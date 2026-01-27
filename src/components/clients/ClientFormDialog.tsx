@@ -55,7 +55,6 @@ import type {
 import { clientService } from '@/services';
 import { PAYMENT_ROLE_LABELS, PAYMENT_ROLE_DESCRIPTIONS } from '@/lib/labels';
 import {
-  validateIsraeliPostalCode,
   formatIsraeliPhone,
   formatIsraeliLandline,
   formatIsraeliTaxId,
@@ -295,9 +294,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         }
       }
 
-      if (formData.address?.postal_code?.trim() && !validateIsraeliPostalCode(formData.address.postal_code)) {
-        errors.push('מיקוד חייב להכיל 7 ספרות בדיוק');
-      }
 
       // Email format validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -561,7 +557,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </h3>
               </div>
 
-              {/* Row 2: Address, City, Postal Code (3 cols) */}
+              {/* Row 2: Address, City (2 cols) */}
               <div>
                 <Label htmlFor="address_street" className="text-right block mb-2">
                   כתובת
@@ -598,33 +594,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              <div>
-                <Label htmlFor="address_postal_code" className="text-right block mb-2">
-                  מיקוד (7 ספרות)
-                </Label>
-                <Input
-                  id="address_postal_code"
-                  value={formData.address?.postal_code || ''}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, ''); // Only digits
-                    handleFormChange('address', {
-                      ...formData.address,
-                      postal_code: value
-                    });
-                  }}
-                  onKeyDown={handleKeyDown}
-                  maxLength={7}
-                  pattern="\d{7}"
-                  required
-                  dir="ltr"
-                />
-                {formData.address?.postal_code &&
-                 !validateIsraeliPostalCode(formData.address.postal_code) && (
-                  <p className="text-xs text-red-500 mt-1 rtl:text-right">
-                    מיקוד ישראלי חייב להכיל 7 ספרות בדיוק
-                  </p>
-                )}
-              </div>
+              {/* Empty div for grid alignment */}
+              <div></div>
 
               {/* Category Header: Primary Contact */}
               <div className="col-span-3 mt-4 mb-2">

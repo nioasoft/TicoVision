@@ -28,7 +28,6 @@ import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput'
 import type { Client, CreateClientDto } from '@/services';
 import { clientService } from '@/services';
 import {
-  validateIsraeliPostalCode,
   formatIsraeliTaxId,
   stripTaxIdFormatting,
 } from '@/lib/validators';
@@ -192,9 +191,6 @@ export function FreelancerFormDialog({
       return 'נא להזין כתובת אימייל';
     }
 
-    if (formData.address.postal_code && !validateIsraeliPostalCode(formData.address.postal_code)) {
-      return 'מיקוד לא תקין';
-    }
 
     return null;
   }, [formData, taxIdExists]);
@@ -317,25 +313,18 @@ export function FreelancerFormDialog({
             {/* Address */}
             <div className="space-y-2">
               <Label className="rtl:text-right">כתובת</Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   value={formData.address.street}
                   onChange={(e) => handleAddressChange('street', e.target.value)}
-
+                  placeholder="רחוב ומספר"
                   className="rtl:text-right"
                 />
                 <Input
                   value={formData.address.city}
                   onChange={(e) => handleAddressChange('city', e.target.value)}
-
+                  placeholder="עיר"
                   className="rtl:text-right"
-                />
-                <Input
-                  value={formData.address.postal_code}
-                  onChange={(e) => handleAddressChange('postal_code', e.target.value)}
-
-                  className="rtl:text-right"
-                  dir="ltr"
                 />
               </div>
             </div>

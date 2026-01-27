@@ -262,10 +262,10 @@ export class ClientService extends BaseService {
       }
 
       // Validate address fields
-      if (!data.address?.street?.trim() || !data.address?.city?.trim() || !data.address?.postal_code?.trim()) {
+      if (!data.address?.street?.trim() || !data.address?.city?.trim()) {
         return {
           data: null,
-          error: new Error('שדות כתובת חובה: רחוב, עיר ומיקוד'),
+          error: new Error('שדות כתובת חובה: רחוב ועיר'),
         };
       }
 
