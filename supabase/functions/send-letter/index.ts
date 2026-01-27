@@ -127,6 +127,16 @@ function escapeHtml(unsafe: string | number): string {
 
 /**
  * Replace variables in HTML with HTML escaping to prevent XSS
+ * Supports:
+ * - Simple variables: {{variable}}
+ * - Mustache conditionals: {{#var}}content{{/var}} - shows content if var is truthy
+ * - Mustache inverse: {{^var}}content{{/var}} - shows content if var is falsy/empty
+ *
+ * SYNC: This logic is also in:
+ * - src/modules/letters/utils/template-parser.ts
+ * - src/modules/letters/utils/component-loader.ts
+ * - src/modules/letters/utils/text-to-html-parser.ts
+ *
  * @param html - HTML template with {{variable}} placeholders
  * @param variables - Object with variable values
  * @param allowHtmlVariables - Array of variable names that can contain HTML (won't be escaped)
@@ -137,6 +147,28 @@ function replaceVariables(
   allowHtmlVariables: string[] = []
 ): string {
   let result = html;
+
+  // Step 1: Process Mustache conditionals {{#var}}...{{/var}}
+  // If variable is truthy → keep content, remove tags
+  // If variable is falsy/empty → remove entire block
+  const conditionalRegex = /\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  result = result.replace(conditionalRegex, (_match, varName, content) => {
+    const value = variables[varName];
+    const isTruthy = value !== undefined && value !== null && value !== '';
+    return isTruthy ? content : '';
+  });
+
+  // Step 2: Process inverse conditionals {{^var}}...{{/var}}
+  // If variable is falsy/empty → keep content, remove tags
+  // If variable is truthy → remove entire block
+  const inverseRegex = /\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g;
+  result = result.replace(inverseRegex, (_match, varName, content) => {
+    const value = variables[varName];
+    const isTruthy = value !== undefined && value !== null && value !== '';
+    return isTruthy ? '' : content;
+  });
+
+  // Step 3: Simple variable replacement {{var}}
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
     // Allow HTML for whitelisted variables (e.g., custom_payment_text)
@@ -148,6 +180,7 @@ function replaceVariables(
       result = result.replace(regex, escapeHtml(value));
     }
   }
+
   return result;
 }
 
