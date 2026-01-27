@@ -29,17 +29,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
   RESPONSIBILITY_TYPES,
   CONTENT_SECTION_TYPES,
-  getResponsibilityTypeInfo,
   getContentSectionTypeInfo,
 } from '../types/protocol.types';
-import type { AttendeeSourceType, ContentSectionType } from '../types/protocol.types';
 import {
   Save,
   Lock,
@@ -52,23 +55,16 @@ import {
   Download,
   FolderPlus,
   Check,
-  Users,
-  ListTodo,
-  Building2,
-  User as UserIcon,
-  Calculator,
-  Users as UsersIcon,
-  AlertTriangle,
-  Megaphone,
-  BookOpen,
-  Lightbulb,
-  Briefcase,
+  Mail,
 } from 'lucide-react';
 import { AttendeeSelector } from './AttendeeSelector';
 import { DecisionsList } from './DecisionsList';
 import { ContentSectionEditor } from './ContentSectionEditor';
 import { getContentClasses, getContentStyle } from './StyleToolbar';
+import { SendProtocolEmailDialog } from './SendProtocolEmailDialog';
 import { protocolService } from '../services/protocol.service';
+import { userService } from '@/services/user.service';
+import type { User } from '@/services/user.service';
 import type {
   ProtocolWithRelations,
   ProtocolFormState,
@@ -98,6 +94,8 @@ export function ProtocolBuilder({
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const [lockSuccessDialogOpen, setLockSuccessDialogOpen] = useState(false);
+  const [lockedProtocolId, setLockedProtocolId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
@@ -106,6 +104,8 @@ export function ProtocolBuilder({
   const [savingToFileManager, setSavingToFileManager] = useState(false);
   const [savedToFileManager, setSavedToFileManager] = useState(false);
   const [savedProtocolId, setSavedProtocolId] = useState<string | null>(protocol?.id || null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [employees, setEmployees] = useState<User[]>([]);
   const [formState, setFormState] = useState<ProtocolFormState>({
     meeting_date: format(new Date(), 'yyyy-MM-dd'),
     title: '',
@@ -113,6 +113,23 @@ export function ProtocolBuilder({
     decisions: [],
     content_sections: [],
   });
+
+  // Load employees for displaying assigned employee names
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const { data } = await userService.getUsers();
+      if (data) {
+        setEmployees(data.users.filter((u) => u.is_active));
+      }
+    };
+    loadEmployees();
+  }, []);
+
+  // Create employee map for quick lookup
+  const employeeMap = employees.reduce<Record<string, User>>((acc, emp) => {
+    acc[emp.id] = emp;
+    return acc;
+  }, {});
 
   // Initialize form state from existing protocol
   useEffect(() => {
@@ -216,10 +233,39 @@ export function ProtocolBuilder({
         return;
       }
 
-      onSave();
+      // Store the locked protocol ID and show success dialog
+      setLockedProtocolId(savedProtocol.id);
+      setLockDialogOpen(false);
+      setLockSuccessDialogOpen(true);
     } finally {
       setLocking(false);
-      setLockDialogOpen(false);
+    }
+  };
+
+  // Generate PDF for the locked protocol (from lock success dialog)
+  const handleGeneratePdfAfterLock = async () => {
+    if (!lockedProtocolId) return;
+
+    setGeneratingPdf(true);
+    try {
+      const { data: pdfData, error: pdfError } = await protocolService.generateProtocolPdf(lockedProtocolId);
+      if (pdfError || !pdfData) {
+        toast({
+          title: 'שגיאה',
+          description: pdfError?.message || 'יצירת PDF נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setPdfUrl(pdfData.pdfUrl);
+      setPdfFileName(pdfData.fileName);
+      setSavedProtocolId(lockedProtocolId);
+      setSavedToFileManager(false);
+      setLockSuccessDialogOpen(false);
+      setPdfDialogOpen(true);
+    } finally {
+      setGeneratingPdf(false);
     }
   };
 
@@ -359,42 +405,6 @@ export function ProtocolBuilder({
     }
   };
 
-  // Helper functions for preview icons
-  const getSourceIcon = (type: AttendeeSourceType) => {
-    switch (type) {
-      case 'contact':
-        return <UserIcon className="h-3 w-3" />;
-      case 'employee':
-        return <Building2 className="h-3 w-3" />;
-      case 'external':
-        return <Briefcase className="h-3 w-3" />;
-    }
-  };
-
-  const getResponsibilityIcon = (type: string) => {
-    switch (type) {
-      case 'office':
-        return <Building2 className="h-4 w-4" />;
-      case 'client':
-        return <UserIcon className="h-4 w-4" />;
-      case 'bookkeeper':
-        return <Calculator className="h-4 w-4" />;
-      case 'other':
-        return <UsersIcon className="h-4 w-4" />;
-    }
-  };
-
-  const getSectionIcon = (type: ContentSectionType) => {
-    switch (type) {
-      case 'announcement':
-        return <Megaphone className="h-4 w-4" />;
-      case 'background_story':
-        return <BookOpen className="h-4 w-4" />;
-      case 'recommendation':
-        return <Lightbulb className="h-4 w-4" />;
-    }
-  };
-
   // Group decisions by responsibility type for preview
   const groupedDecisions = RESPONSIBILITY_TYPES.map((typeInfo) => ({
     ...typeInfo,
@@ -411,40 +421,9 @@ export function ProtocolBuilder({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between flex-row-reverse">
-            <div className="flex items-center gap-2 flex-row-reverse">
-              <Button
-                onClick={handlePreview}
-                variant="secondary"
-                className="flex items-center gap-2 flex-row-reverse"
-              >
-                <Eye className="h-4 w-4" />
-                תצוגה מקדימה
-              </Button>
-              {!isNew && (
-                <Button
-                  onClick={() => setLockDialogOpen(true)}
-                  disabled={saving || locking}
-                  variant="outline"
-                  className="flex items-center gap-2 flex-row-reverse"
-                >
-                  <Lock className="h-4 w-4" />
-                  שמור ונעל
-                </Button>
-              )}
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 flex-row-reverse"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? 'שומר...' : 'שמירה'}
-              </Button>
-              <Button variant="outline" onClick={onCancel}>
-                ביטול
-              </Button>
-            </div>
-            <div className="flex items-center gap-3 flex-row-reverse">
+          <div className="flex items-center justify-between" dir="rtl">
+            {/* Right side - Back button and title */}
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
@@ -461,12 +440,68 @@ export function ProtocolBuilder({
                 </CardDescription>
               </div>
             </div>
+            {/* Left side - Action buttons */}
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? 'שומר...' : 'שמירה'}
+              </Button>
+              <Button
+                onClick={handlePreview}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                תצוגה מקדימה
+              </Button>
+              <Button
+                onClick={handleSaveAndGeneratePdf}
+                disabled={generatingPdf || saving}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {generatingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4" />
+                )}
+                {generatingPdf ? 'יוצר PDF...' : 'ייצוא PDF'}
+              </Button>
+              {!isNew && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          onClick={() => setLockDialogOpen(true)}
+                          disabled={saving || locking || !savedToFileManager}
+                          variant="secondary"
+                          className="flex items-center gap-2"
+                        >
+                          <Lock className="h-4 w-4" />
+                          שמור ונעל
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!savedToFileManager && (
+                      <TooltipContent side="bottom">
+                        <p>יש לייצא PDF ולשמור למנהל קבצים לפני נעילה</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Header Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row-reverse" dir="rtl">
+            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row justify-end" dir="ltr">
               <CalendarDays className="h-5 w-5" />
               פרטי הפגישה
             </h3>
@@ -500,8 +535,6 @@ export function ProtocolBuilder({
             </div>
           </div>
 
-          <Separator />
-
           {/* Attendees Section */}
           <AttendeeSelector
             clientId={clientId}
@@ -509,8 +542,6 @@ export function ProtocolBuilder({
             attendees={formState.attendees}
             onChange={handleAttendeesChange}
           />
-
-          <Separator />
 
           {/* Content Sections */}
           <div className="space-y-4">
@@ -531,40 +562,6 @@ export function ProtocolBuilder({
             decisions={formState.decisions}
             onChange={handleDecisionsChange}
           />
-
-          {/* Bottom Action Buttons */}
-          <div className="flex items-center justify-start gap-2 flex-row-reverse pt-4">
-            <Button
-              onClick={handlePreview}
-              variant="secondary"
-              className="flex items-center gap-2 flex-row-reverse"
-            >
-              <Eye className="h-4 w-4" />
-              תצוגה מקדימה
-            </Button>
-            {!isNew && (
-              <Button
-                onClick={() => setLockDialogOpen(true)}
-                disabled={saving || locking}
-                variant="outline"
-                className="flex items-center gap-2 flex-row-reverse"
-              >
-                <Lock className="h-4 w-4" />
-                שמור ונעל
-              </Button>
-            )}
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 flex-row-reverse"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? 'שומר...' : 'שמירה'}
-            </Button>
-            <Button variant="outline" onClick={onCancel}>
-              ביטול
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -659,6 +656,11 @@ export function ProtocolBuilder({
                                   {decision.urgency === 'urgent' && (
                                     <span className="text-red-600 font-bold mr-2">(דחוף)</span>
                                   )}
+                                  {decision.assigned_employee_id && (
+                                    <span className="text-blue-600 text-sm mr-2">
+                                      - אחראי: {employeeMap[decision.assigned_employee_id]?.full_name || 'עובד'}
+                                    </span>
+                                  )}
                                   {decision.assigned_other_name && (
                                     <span className="text-gray-500 text-sm mr-2">
                                       - {decision.assigned_other_name}
@@ -714,22 +716,6 @@ export function ProtocolBuilder({
                     <p className="text-sm">הוסף משתתפים, החלטות או תוכן</p>
                   </div>
                 )}
-
-                {/* Signature Lines */}
-                {(formState.attendees.length > 0 || formState.decisions.length > 0 || formState.content_sections.length > 0) && (
-                  <div className="mt-12 pt-6 border-t">
-                    <div className="flex justify-between flex-row-reverse">
-                      <div className="text-center w-2/5">
-                        <p className="text-gray-500 text-sm mb-10">חתימת נציג המשרד:</p>
-                        <div className="border-b border-black w-32 mx-auto"></div>
-                      </div>
-                      <div className="text-center w-2/5">
-                        <p className="text-gray-500 text-sm mb-10">חתימת הלקוח:</p>
-                        <div className="border-b border-black w-32 mx-auto"></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </ScrollArea>
@@ -767,7 +753,7 @@ export function ProtocolBuilder({
       <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
         <DialogContent className="text-right" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-right flex items-center gap-2 flex-row-reverse">
+            <DialogTitle className="text-right flex items-center gap-2">
               <Check className="h-5 w-5 text-green-600" />
               PDF נוצר בהצלחה
             </DialogTitle>
@@ -778,7 +764,7 @@ export function ProtocolBuilder({
           <div className="space-y-3 py-4">
             <Button
               variant="outline"
-              className="w-full flex items-center justify-center gap-2 flex-row-reverse"
+              className="w-full flex items-center justify-center gap-2"
               onClick={handleDownloadPdf}
             >
               <Download className="h-4 w-4" />
@@ -786,7 +772,7 @@ export function ProtocolBuilder({
             </Button>
             <Button
               variant="outline"
-              className="w-full flex items-center justify-center gap-2 flex-row-reverse"
+              className="w-full flex items-center justify-center gap-2"
               onClick={handleSaveToFileManager}
               disabled={savingToFileManager || savedToFileManager}
             >
@@ -803,8 +789,19 @@ export function ProtocolBuilder({
                 ? 'נשמר למנהל קבצים'
                 : 'שמור למנהל קבצים'}
             </Button>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2"
+              onClick={() => {
+                setPdfDialogOpen(false);
+                setEmailDialogOpen(true);
+              }}
+            >
+              <Mail className="h-4 w-4" />
+              שלח במייל
+            </Button>
           </div>
-          <DialogFooter className="flex gap-2 flex-row-reverse justify-start">
+          <DialogFooter className="flex gap-2 justify-start">
             <Button onClick={onSave}>
               סיום
             </Button>
@@ -814,6 +811,62 @@ export function ProtocolBuilder({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Lock Success Dialog - Show after protocol is locked */}
+      <Dialog open={lockSuccessDialogOpen} onOpenChange={setLockSuccessDialogOpen}>
+        <DialogContent className="text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <Lock className="h-5 w-5 text-green-600" />
+              הפרוטוקול ננעל בהצלחה
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              הפרוטוקול נשמר ונעול. מה תרצה לעשות עכשיו?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <Button
+              className="w-full flex items-center justify-center gap-2"
+              onClick={handleGeneratePdfAfterLock}
+              disabled={generatingPdf}
+            >
+              {generatingPdf ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
+              {generatingPdf ? 'יוצר PDF...' : 'ייצא PDF'}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2"
+              onClick={() => {
+                setLockSuccessDialogOpen(false);
+                onSave();
+              }}
+            >
+              <ArrowRight className="h-4 w-4" />
+              חזרה לרשימה
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Email Dialog */}
+      <SendProtocolEmailDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        protocolId={savedProtocolId}
+        clientId={clientId}
+        groupId={groupId}
+        recipientName={recipientName}
+        onSuccess={() => {
+          toast({
+            title: 'הצלחה',
+            description: 'הפרוטוקול נשלח בהצלחה',
+          });
+        }}
+      />
     </>
   );
 }

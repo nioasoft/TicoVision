@@ -40,7 +40,6 @@ import {
   User as UserIcon,
   Calculator,
   Users,
-  GripVertical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { userService } from '@/services/user.service';
@@ -291,62 +290,62 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
                       {group.decisions.map((decision) => (
                         <div
                           key={decision.originalIndex}
-                          className="bg-white rounded-lg p-3 border flex items-start gap-3 flex-row-reverse"
+                          className="bg-white rounded-lg p-3 border"
                           dir="rtl"
                         >
-                          <GripVertical className="h-5 w-5 text-gray-300 flex-shrink-0 cursor-move mt-0.5" />
-                          <div className="flex-1 text-right">
-                            <div className="flex items-start justify-between flex-row-reverse">
-                              <div className="flex items-center gap-1 flex-row-reverse flex-shrink-0 ml-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7"
-                                  onClick={() => handleEdit(decision.originalIndex)}
-                                >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-red-500 hover:text-red-600"
-                                  onClick={() => handleDelete(decision.originalIndex)}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                              <p
-                                className={cn('text-sm', getContentClasses(decision.style))}
-                                style={getContentStyle(decision.style)}
+                          <div className="flex items-start justify-between gap-3">
+                            <p
+                              className={cn('text-sm flex-1 text-right', getContentClasses(decision.style))}
+                              style={getContentStyle(decision.style)}
+                            >
+                              {decision.content}
+                            </p>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleEdit(decision.originalIndex)}
                               >
-                                {decision.content}
-                              </p>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-500 hover:text-red-600"
+                                onClick={() => handleDelete(decision.originalIndex)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
-                            <div className="flex items-center gap-2 mt-2 flex-row-reverse">
+                          </div>
+                          {/* Badges - improved layout */}
+                          {(decision.urgency === 'urgent' || decision.assigned_employee_id || decision.assigned_other_name || decision.audit_report_year) && (
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                               {decision.urgency === 'urgent' && (
-                                <Badge variant="destructive" className="flex items-center gap-1">
+                                <Badge variant="destructive" className="h-5 flex items-center gap-1 text-xs">
                                   <AlertTriangle className="h-3 w-3" />
                                   דחוף
                                 </Badge>
                               )}
                               {decision.assigned_employee_id && (
-                                <Badge variant="outline" className="text-xs">
-                                  {employees.find((e) => e.id === decision.assigned_employee_id)
+                                <Badge variant="outline" className="h-5 text-xs text-blue-600 border-blue-300 bg-blue-50">
+                                  אחראי: {employees.find((e) => e.id === decision.assigned_employee_id)
                                     ?.full_name || 'עובד'}
                                 </Badge>
                               )}
                               {decision.assigned_other_name && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="h-5 text-xs">
                                   {decision.assigned_other_name}
                                 </Badge>
                               )}
                               {decision.audit_report_year && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="h-5 text-xs">
                                   דוח {decision.audit_report_year}
                                 </Badge>
                               )}
                             </div>
-                          </div>
+                          )}
                         </div>
                       ))}
                     </div>

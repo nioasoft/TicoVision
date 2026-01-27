@@ -3,7 +3,7 @@
  * Read-only view of a locked protocol with print/PDF capability
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   ArrowRight,
   Lock,
@@ -41,10 +54,15 @@ import {
   FolderPlus,
   Loader2,
   Check,
+  MoreHorizontal,
+  Pencil,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { protocolService } from '../services/protocol.service';
+import { userService } from '@/services/user.service';
+import type { User } from '@/services/user.service';
 import {
   RESPONSIBILITY_TYPES,
   CONTENT_SECTION_TYPES,
@@ -53,6 +71,7 @@ import {
 } from '../types/protocol.types';
 import type { ProtocolWithRelations, AttendeeSourceType, ContentSectionType } from '../types/protocol.types';
 import { getContentClasses, getContentStyle } from './StyleToolbar';
+import { SendProtocolEmailDialog } from './SendProtocolEmailDialog';
 
 interface ProtocolPreviewProps {
   protocol: ProtocolWithRelations;
@@ -74,6 +93,25 @@ export function ProtocolPreview({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   const [savedToFileManager, setSavedToFileManager] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [employees, setEmployees] = useState<User[]>([]);
+
+  // Load employees for displaying assigned employee names
+  useEffect(() => {
+    const loadEmployees = async () => {
+      const { data } = await userService.getUsers();
+      if (data) {
+        setEmployees(data.users.filter((u) => u.is_active));
+      }
+    };
+    loadEmployees();
+  }, []);
+
+  // Create employee map for quick lookup
+  const employeeMap = employees.reduce<Record<string, string>>((acc, emp) => {
+    acc[emp.id] = emp.full_name;
+    return acc;
+  }, {});
 
   const recipientName = protocol.client
     ? protocol.client.company_name_hebrew || protocol.client.company_name
@@ -214,48 +252,39 @@ export function ProtocolPreview({
   return (
     <Card>
       <CardHeader className="rtl:text-right print:pb-2">
-        <div className="flex items-center justify-between rtl:flex-row-reverse print:hidden">
-          <div className="flex items-center gap-3 rtl:flex-row-reverse">
+        <div className="flex items-center justify-between print:hidden" dir="rtl">
+          {/* Right side - Back button and title */}
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className="rtl:rotate-180"
             >
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <div>
-              <CardTitle className="rtl:text-right flex items-center gap-2 rtl:flex-row-reverse">
-                <Lock className="h-5 w-5 text-gray-400" />
-                פרוטוקול נעול
+            <div className="text-right">
+              <CardTitle className="flex items-center gap-2">
+                {protocol.status === 'locked' ? (
+                  <>
+                    <Lock className="h-5 w-5 text-gray-400" />
+                    פרוטוקול נעול
+                  </>
+                ) : (
+                  'פרוטוקול'
+                )}
               </CardTitle>
-              <CardDescription className="rtl:text-right mt-1">
+              <CardDescription className="mt-1">
                 {recipientName}
               </CardDescription>
             </div>
           </div>
-          <div className="flex items-center gap-2 rtl:flex-row-reverse">
+          {/* Left side - Actions */}
+          <div className="flex items-center gap-2">
+            {/* Primary action: Export PDF */}
             <Button
-              variant="outline"
-              onClick={onDuplicate}
-              className="flex items-center gap-2 rtl:flex-row-reverse"
-            >
-              <Copy className="h-4 w-4" />
-              שכפול
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handlePrint}
-              className="flex items-center gap-2 rtl:flex-row-reverse"
-            >
-              <Printer className="h-4 w-4" />
-              הדפסה
-            </Button>
-            <Button
-              variant="outline"
               onClick={handleGeneratePdf}
               disabled={generatingPdf}
-              className="flex items-center gap-2 rtl:flex-row-reverse"
+              className="flex items-center gap-2"
             >
               {generatingPdf ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -264,9 +293,46 @@ export function ProtocolPreview({
               )}
               {generatingPdf ? 'יוצר PDF...' : 'ייצוא PDF'}
             </Button>
-            {protocol.status !== 'locked' && (
-              <Button onClick={onEdit}>עריכה</Button>
-            )}
+            {/* More actions dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" dir="rtl">
+                <DropdownMenuItem onClick={onDuplicate}>
+                  <Copy className="h-4 w-4 ml-2" />
+                  שכפול
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handlePrint}>
+                  <Printer className="h-4 w-4 ml-2" />
+                  הדפסה
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {protocol.status === 'locked' ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="px-2 py-1.5 text-sm text-gray-400 flex items-center cursor-not-allowed">
+                          <Pencil className="h-4 w-4 ml-2" />
+                          עריכה
+                          <Lock className="h-3 w-3 mr-auto" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>לא ניתן לערוך פרוטוקול נעול</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Pencil className="h-4 w-4 ml-2" />
+                    עריכה
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -304,9 +370,9 @@ export function ProtocolPreview({
         {protocol.attendees.length > 0 && (
           <>
             <Separator className="print:my-2" />
-            <div>
-              <div className="flex items-center gap-2 rtl:flex-row-reverse mb-3">
-                <Users className="h-5 w-5 text-gray-600" />
+            <div className="bg-blue-50/50 rounded-lg p-4 print:bg-white print:p-3">
+              <div className="flex items-center gap-2 mb-3" dir="rtl">
+                <Users className="h-5 w-5 text-blue-600" />
                 <h3 className="font-semibold">משתתפים</h3>
                 <Badge variant="secondary">{protocol.attendees.length}</Badge>
               </div>
@@ -314,16 +380,16 @@ export function ProtocolPreview({
                 {protocol.attendees.map((attendee) => (
                   <div
                     key={attendee.id}
-                    className="bg-gray-50 rounded-lg p-3 print:bg-white print:border print:p-2"
+                    className="bg-white rounded-lg p-3 border print:p-2"
                   >
-                    <div className="flex items-center gap-2 rtl:flex-row-reverse mb-1">
+                    <div className="flex items-center gap-2 mb-1" dir="rtl">
                       <Badge variant="outline" className="flex items-center gap-1">
                         {getSourceIcon(attendee.source_type)}
                       </Badge>
                       <span className="font-medium text-sm">{attendee.display_name}</span>
                     </div>
                     {attendee.role_title && (
-                      <p className="text-xs text-gray-500 rtl:text-right">{attendee.role_title}</p>
+                      <p className="text-xs text-gray-500 text-right">{attendee.role_title}</p>
                     )}
                   </div>
                 ))}
@@ -383,6 +449,11 @@ export function ProtocolPreview({
                                     <Badge variant="destructive" className="flex items-center gap-1">
                                       <AlertTriangle className="h-3 w-3" />
                                       דחוף
+                                    </Badge>
+                                  )}
+                                  {decision.assigned_employee_id && (
+                                    <Badge variant="outline" className="text-xs text-blue-600">
+                                      אחראי: {employeeMap[decision.assigned_employee_id] || 'עובד'}
                                     </Badge>
                                   )}
                                   {decision.assigned_other_name && (
@@ -466,38 +537,22 @@ export function ProtocolPreview({
           )}
         </div>
 
-        {/* Signature Line (Print Only) */}
-        <div className="hidden print:block mt-8">
-          <div className="border-t pt-4">
-            <div className="grid grid-cols-2 gap-8">
-              <div className="rtl:text-right">
-                <p className="text-sm text-gray-500 mb-8">חתימת נציג המשרד:</p>
-                <div className="border-b border-black w-48 mx-auto rtl:mx-0 rtl:ml-auto"></div>
-              </div>
-              <div className="rtl:text-right">
-                <p className="text-sm text-gray-500 mb-8">חתימת הלקוח:</p>
-                <div className="border-b border-black w-48 mx-auto rtl:mx-0 rtl:ml-auto"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* PDF Options Dialog */}
         <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
-          <DialogContent className="rtl:text-right" dir="rtl">
+          <DialogContent className="text-right" dir="rtl">
             <DialogHeader>
-              <DialogTitle className="rtl:text-right flex items-center gap-2 rtl:flex-row-reverse">
+              <DialogTitle className="text-right flex items-center gap-2">
                 <Check className="h-5 w-5 text-green-600" />
                 PDF נוצר בהצלחה
               </DialogTitle>
-              <DialogDescription className="rtl:text-right">
+              <DialogDescription className="text-right">
                 בחר מה לעשות עם קובץ ה-PDF
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-4">
               <Button
                 variant="outline"
-                className="w-full flex items-center justify-center gap-2 rtl:flex-row-reverse"
+                className="w-full flex items-center justify-center gap-2"
                 onClick={handleDownloadPdf}
               >
                 <Download className="h-4 w-4" />
@@ -505,7 +560,7 @@ export function ProtocolPreview({
               </Button>
               <Button
                 variant="outline"
-                className="w-full flex items-center justify-center gap-2 rtl:flex-row-reverse"
+                className="w-full flex items-center justify-center gap-2"
                 onClick={handleSaveToFileManager}
                 disabled={savingToFileManager || savedToFileManager}
               >
@@ -522,6 +577,17 @@ export function ProtocolPreview({
                   ? 'נשמר למנהל קבצים'
                   : 'שמור למנהל קבצים'}
               </Button>
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={() => {
+                  setPdfDialogOpen(false);
+                  setEmailDialogOpen(true);
+                }}
+              >
+                <Mail className="h-4 w-4" />
+                שלח במייל
+              </Button>
             </div>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setPdfDialogOpen(false)}>
@@ -530,6 +596,22 @@ export function ProtocolPreview({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Send Email Dialog */}
+        <SendProtocolEmailDialog
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+          protocolId={protocol.id}
+          clientId={protocol.client_id}
+          groupId={protocol.group_id}
+          recipientName={recipientName}
+          onSuccess={() => {
+            toast({
+              title: 'הצלחה',
+              description: 'הפרוטוקול נשלח בהצלחה',
+            });
+          }}
+        />
       </CardContent>
     </Card>
   );

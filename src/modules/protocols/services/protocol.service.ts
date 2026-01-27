@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { fileUploadService } from '@/services/file-upload.service';
+import { userService } from '@/services/user.service';
 import type { ClientAttachment } from '@/types/file-attachment.types';
 import type {
   Protocol,
@@ -734,7 +735,7 @@ export class ProtocolService extends BaseService {
   /**
    * Generate HTML content for a protocol (for PDF generation)
    */
-  generateProtocolHtml(protocol: ProtocolWithRelations): string {
+  generateProtocolHtml(protocol: ProtocolWithRelations, employeeNameMap: Record<string, string> = {}): string {
     const recipientName = protocol.client
       ? protocol.client.company_name_hebrew || protocol.client.company_name
       : protocol.group
@@ -787,6 +788,7 @@ export class ProtocolService extends BaseService {
                     <li style="margin-bottom: 8px;">
                       <span${getInlineStyle(d.style)}>${d.content}</span>
                       ${d.urgency === 'urgent' ? '<span style="color: #dc2626; font-weight: bold; margin-right: 8px;"> (דחוף)</span>' : ''}
+                      ${d.assigned_employee_id && employeeNameMap[d.assigned_employee_id] ? `<span style="color: #2563eb; font-size: 12px;"> - אחראי: ${employeeNameMap[d.assigned_employee_id]}</span>` : ''}
                       ${d.assigned_other_name ? `<span style="color: #6b7280; font-size: 12px;"> - ${d.assigned_other_name}</span>` : ''}
                       ${d.audit_report_year ? `<span style="color: #6b7280; font-size: 12px;"> (דוח ${d.audit_report_year})</span>` : ''}
                     </li>
@@ -840,20 +842,6 @@ export class ProtocolService extends BaseService {
         ${decisionsHtml}
         ${contentSectionsHtml}
 
-        <!-- Signature Lines -->
-        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd;">
-          <div style="display: flex; justify-content: space-between;">
-            <div style="width: 45%; text-align: center;">
-              <p style="color: #6b7280; margin-bottom: 40px;">חתימת נציג המשרד:</p>
-              <div style="border-bottom: 1px solid #000; width: 150px; margin: 0 auto;"></div>
-            </div>
-            <div style="width: 45%; text-align: center;">
-              <p style="color: #6b7280; margin-bottom: 40px;">חתימת הלקוח:</p>
-              <div style="border-bottom: 1px solid #000; width: 150px; margin: 0 auto;"></div>
-            </div>
-          </div>
-        </div>
-
         <!-- Footer -->
         <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af;">
           <p>נוצר: ${format(new Date(protocol.created_at), 'dd/MM/yyyy HH:mm', { locale: he })}</p>
@@ -876,8 +864,18 @@ export class ProtocolService extends BaseService {
         return { data: null, error: fetchError || new Error('Protocol not found') };
       }
 
+      // Load employees for displaying assigned employee names
+      let employeeNameMap: Record<string, string> = {};
+      const { data: employeesData } = await userService.getUsers();
+      if (employeesData) {
+        employeeNameMap = employeesData.users.reduce<Record<string, string>>((acc, emp) => {
+          acc[emp.id] = emp.full_name;
+          return acc;
+        }, {});
+      }
+
       // Generate HTML content
-      const htmlContent = this.generateProtocolHtml(protocol);
+      const htmlContent = this.generateProtocolHtml(protocol, employeeNameMap);
 
       // Get recipient name for filename
       const recipientName = protocol.client
@@ -1024,6 +1022,81 @@ export class ProtocolService extends BaseService {
       }
 
       return { data: null, error: new Error('No client or group specified') };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  // ============================================================================
+  // Email Sending
+  // ============================================================================
+
+  /**
+   * Send protocol via email using simpleMode
+   * First generates PDF if needed, then sends email with PDF info
+   */
+  async sendProtocolByEmail(
+    protocolId: string,
+    recipientEmails: string[],
+    recipientName: string
+  ): Promise<ServiceResponse<void>> {
+    try {
+      // Get protocol with relations
+      const { data: protocol, error: fetchError } = await this.getProtocolById(protocolId);
+      if (fetchError || !protocol) {
+        return { data: null, error: fetchError || new Error('Protocol not found') };
+      }
+
+      // Generate PDF if not already generated
+      let pdfUrl = protocol.pdf_url;
+      if (!pdfUrl) {
+        const { data: pdfData, error: pdfError } = await this.generateProtocolPdf(protocolId);
+        if (pdfError || !pdfData) {
+          return { data: null, error: pdfError || new Error('PDF generation failed') };
+        }
+        pdfUrl = pdfData.pdfUrl;
+      }
+
+      // Format meeting date for email
+      const meetingDate = format(new Date(protocol.meeting_date), 'dd/MM/yyyy', { locale: he });
+
+      // Build email content
+      const subject = `פרוטוקול פגישה - ${recipientName} - ${meetingDate}`;
+      const emailContent = `שלום,
+
+מצורף פרוטוקול הפגישה מתאריך ${meetingDate}.
+
+לצפייה בפרוטוקול: ${pdfUrl}
+
+${protocol.title ? `נושא הפגישה: ${protocol.title}` : ''}
+
+בברכה,
+צוות TicoVision`;
+
+      // Send via Edge Function (simpleMode)
+      const { error: sendError } = await supabase.functions.invoke('send-letter', {
+        body: {
+          recipientEmails,
+          recipientName,
+          subject,
+          customText: emailContent,
+          simpleMode: true,
+          clientId: protocol.client_id,
+        },
+      });
+
+      if (sendError) {
+        logger.error('Email sending failed:', sendError);
+        return { data: null, error: new Error('שליחת האימייל נכשלה') };
+      }
+
+      // Log the action
+      await this.logAction('send_protocol_email', protocolId, {
+        recipientEmails,
+        recipientName
+      });
+
+      return { data: undefined, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }

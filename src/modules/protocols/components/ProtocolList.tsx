@@ -43,6 +43,8 @@ import {
   Lock,
   FileEdit,
   ScrollText,
+  FileDown,
+  Mail,
 } from 'lucide-react';
 import type { Protocol } from '../types/protocol.types';
 
@@ -53,6 +55,8 @@ interface ProtocolListProps {
   onView: (protocolId: string) => void;
   onDuplicate: (protocolId: string) => void;
   onDelete: (protocolId: string) => void;
+  onGeneratePdf?: (protocolId: string) => void;
+  onSendEmail?: (protocolId: string) => void;
 }
 
 export function ProtocolList({
@@ -62,6 +66,8 @@ export function ProtocolList({
   onView,
   onDuplicate,
   onDelete,
+  onGeneratePdf,
+  onSendEmail,
 }: ProtocolListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [protocolToDelete, setProtocolToDelete] = useState<Protocol | null>(null);
@@ -152,7 +158,7 @@ export function ProtocolList({
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" dir="rtl">
                     {protocol.status === 'locked' ? (
                       <DropdownMenuItem onClick={() => onView(protocol.id)}>
                         <Eye className="h-4 w-4 ml-2" />
@@ -164,6 +170,19 @@ export function ProtocolList({
                         עריכה
                       </DropdownMenuItem>
                     )}
+                    {onGeneratePdf && (
+                      <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
+                        <FileDown className="h-4 w-4 ml-2" />
+                        ייצוא PDF
+                      </DropdownMenuItem>
+                    )}
+                    {onSendEmail && (
+                      <DropdownMenuItem onClick={() => onSendEmail(protocol.id)}>
+                        <Mail className="h-4 w-4 ml-2" />
+                        שלח במייל
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
                       <Copy className="h-4 w-4 ml-2" />
                       שכפול
