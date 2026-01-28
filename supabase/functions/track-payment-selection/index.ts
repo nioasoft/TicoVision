@@ -286,7 +286,7 @@ serve(async (req) => {
 
     switch (method) {
       case 'bank_transfer':
-        redirectUrl = `${APP_URL}/bank-transfer-details.html?fee_id=${feeId}&client_id=${clientId}&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(displayName)}&group_name=${encodeURIComponent(groupName)}`;
+        redirectUrl = `${APP_URL}/bank-transfer-details.html?fee_id=${feeId}&client_id=${clientId}&original_amount=${originalAmount}&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(displayName)}&group_name=${encodeURIComponent(groupName)}`;
         break;
 
       case 'cc_single':

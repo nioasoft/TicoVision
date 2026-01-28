@@ -300,7 +300,9 @@
         // Get parameters from URL
         const urlParams = new URLSearchParams(window.location.search);
         const clientId = urlParams.get('client_id') || 'unknown';
-        const amountOriginal = urlParams.get('amount') || '10,000';
+        // Get both amounts from URL - Edge Function already calculated the discount
+        const originalAmountParam = urlParams.get('original_amount') || urlParams.get('amount') || '10,000';
+        const amountAfterParam = urlParams.get('amount') || '10,000';
         const companyName = urlParams.get('company_name') || 'לקוח';
         const groupName = urlParams.get('group_name') || '';
 
@@ -322,15 +324,14 @@
             document.getElementById('group-name').style.display = 'none';
         }
 
-        // Calculate discount (9%)
-        const cleanAmount = parseFloat(amountOriginal.replace(/,/g, ''));
-        const amountAfterDiscount = Math.round(cleanAmount * 0.91);
-        const formattedAmountAfter = amountAfterDiscount.toLocaleString('he-IL');
+        // Format amounts for display (already calculated by Edge Function)
+        const originalAmount = parseFloat(originalAmountParam.replace(/,/g, '')).toLocaleString('he-IL');
+        const amountAfterDiscount = parseFloat(amountAfterParam.replace(/,/g, '')).toLocaleString('he-IL');
 
-        // Update all amount displays
-        document.getElementById('amount-original').textContent = amountOriginal;
-        document.getElementById('amount-after').textContent = formattedAmountAfter;
-        document.getElementById('amount-final').textContent = formattedAmountAfter;
+        // Update all amount displays - NO recalculation needed!
+        document.getElementById('amount-original').textContent = originalAmount;
+        document.getElementById('amount-after').textContent = amountAfterDiscount;
+        document.getElementById('amount-final').textContent = amountAfterDiscount;
 
         // Handle form submission
         document.getElementById('confirmForm').addEventListener('submit', async function(e) {
@@ -338,8 +339,8 @@
 
             const formData = {
                 client_id: clientId,
-                amount: formattedAmountAfter,  // Amount after discount
-                amount_original: amountOriginal,  // Original amount before discount
+                amount: amountAfterDiscount,  // Amount after discount
+                amount_original: originalAmount,  // Original amount before discount
                 full_name: document.getElementById('fullName').value,
                 email: document.getElementById('email').value,
                 transfer_date: document.getElementById('transferDate').value,
