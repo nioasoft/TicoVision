@@ -218,7 +218,8 @@ serve(async (req) => {
     // Calculate discount
     // Priority: URL amount (already includes VAT from letter) > retainer total_with_vat > fee total_amount with VAT
     const discountPercent = DISCOUNT_RATES[method];
-    const urlAmount = amountFromUrl ? parseFloat(amountFromUrl) : null;
+    // Remove commas from formatted numbers (e.g., "51,079" -> "51079")
+    const urlAmount = amountFromUrl ? parseFloat(amountFromUrl.replace(/,/g, '')) : null;
 
     let originalAmount: number;
     if (urlAmount && urlAmount > 0) {
@@ -252,6 +253,7 @@ serve(async (req) => {
     const { error: selectionError } = await supabase
       .from('payment_method_selections')
       .insert({
+        tenant_id: feeData.tenant_id,
         fee_calculation_id: feeId,
         client_id: clientId,
         selected_method: method,
