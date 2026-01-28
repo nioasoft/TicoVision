@@ -151,6 +151,7 @@ export type AutoLetterTemplateType =
   // Tax Advances (מקדמות מ"ה)
   | 'tax_advances_monthly'
   | 'tax_advances_quarterly'
+  | 'tax_advances_rate_notification'
   // Protocols (פרוטוקולים)
   | 'protocols_accountant_appointment';  // פרוטוקול מינוי רואה חשבון
 
@@ -332,6 +333,13 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הודעה על מקדמה רבעונית למס הכנסה',
       templateType: 'tax_advances_quarterly',
       icon: 'CalendarDays',
+    },
+    {
+      id: 'rate_notification',
+      label: 'הודעה על שיעור מקדמה',
+      description: 'הודעה ללקוח על שיעור מקדמת מס החברות שנקבע',
+      templateType: 'tax_advances_rate_notification',
+      icon: 'Percent',
     },
   ],
   protocols: [
@@ -662,6 +670,20 @@ export interface TaxAdvancesQuarterlyVariables extends AutoLetterSharedData {
   due_date: string;
 }
 
+/** Meeting type options for rate notification */
+export type MeetingType = 'רבעונית' | 'שלישונית' | 'חצי-שנתית';
+
+/** Variables for Tax Advances - Rate Notification (הודעה על שיעור מקדמה) */
+export interface TaxAdvancesRateNotificationVariables extends AutoLetterSharedData {
+  subject: string;
+  /** שנת המס */
+  tax_year: number;
+  /** שיעור המקדמה באחוזים */
+  advance_rate: number;
+  /** סוג פגישה (רבעונית/שלישונית/חצי-שנתית) */
+  meeting_type: MeetingType;
+}
+
 // ============================================================================
 // PROTOCOLS VARIABLES (פרוטוקולים)
 // ============================================================================
@@ -715,6 +737,7 @@ export const DEFAULT_SUBJECTS = {
   // Tax Advances (מקדמות מ"ה)
   tax_advances_monthly: 'מקדמת מס הכנסה חודשית',
   tax_advances_quarterly: 'מקדמת מס הכנסה רבעונית',
+  tax_advances_rate_notification: 'הודעה על שיעור מקדמות מס',
   // Protocols (פרוטוקולים)
   protocols_accountant_appointment: 'פרוטוקול מאסיפת בעלי המניות',
 } as const;
@@ -771,6 +794,7 @@ export interface AuditCompletionDocumentData {
 export interface TaxAdvancesDocumentData {
   monthlyAdvance: Partial<TaxAdvancesMonthlyVariables>;
   quarterlyAdvance: Partial<TaxAdvancesQuarterlyVariables>;
+  rateNotification: Partial<TaxAdvancesRateNotificationVariables>;
 }
 
 /** Document data for Protocols letters */
@@ -1020,6 +1044,12 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           quarter: 1,
           advance_amount: 0,
           due_date: '',
+        },
+        rateNotification: {
+          subject: DEFAULT_SUBJECTS.tax_advances_rate_notification,
+          tax_year: new Date().getFullYear(),
+          advance_rate: undefined,
+          meeting_type: 'רבעונית',
         },
       },
       protocols: {
@@ -1378,6 +1408,19 @@ export function validateTaxAdvancesQuarterly(data: Partial<TaxAdvancesQuarterlyV
     data.advance_amount !== undefined &&
     data.advance_amount > 0 &&
     data.due_date
+  );
+}
+
+/** Validate Tax Advances - Rate Notification letter */
+export function validateTaxAdvancesRateNotification(data: Partial<TaxAdvancesRateNotificationVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.tax_year && data.tax_year > 2000 &&
+    data.advance_rate !== undefined &&
+    data.advance_rate > 0 &&
+    data.advance_rate <= 100 &&
+    data.meeting_type
   );
 }
 

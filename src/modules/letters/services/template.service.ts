@@ -3549,7 +3549,11 @@ export class TemplateService extends BaseService {
       // Audit Completion
       'audit_completion_general': 'bodies/audit-completion/general.html',
       // Protocols
-      'protocols_accountant_appointment': 'bodies/protocols/accountant-appointment.html'
+      'protocols_accountant_appointment': 'bodies/protocols/accountant-appointment.html',
+      // Tax Advances
+      'tax_advances_monthly': 'bodies/tax-advances/monthly.html',
+      'tax_advances_quarterly': 'bodies/tax-advances/quarterly.html',
+      'tax_advances_rate_notification': 'bodies/tax-advances/rate-notification.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3579,7 +3583,11 @@ export class TemplateService extends BaseService {
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
       // Protocols
-      'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות'
+      'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות',
+      // Tax Advances
+      'tax_advances_monthly': 'מקדמת מס הכנסה חודשית',
+      'tax_advances_quarterly': 'מקדמת מס הכנסה רבעונית',
+      'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3614,7 +3622,11 @@ export class TemplateService extends BaseService {
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת דוחות כספיים',
       // Protocols
-      'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות'
+      'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות',
+      // Tax Advances
+      'tax_advances_monthly': 'מקדמת מס הכנסה חודשית',
+      'tax_advances_quarterly': 'מקדמת מס הכנסה רבעונית',
+      'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -4030,6 +4042,25 @@ export class TemplateService extends BaseService {
         if (!processed.new_firm) {
           processed.new_firm = "פרנקו ושות' - רואי חשבון";
         }
+        break;
+
+      case 'tax_advances_rate_notification':
+        // Calculate previous_year and next_year from tax_year
+        if (processed.tax_year && typeof processed.tax_year === 'number') {
+          processed.previous_year = processed.tax_year - 1;
+          processed.next_year = processed.tax_year + 1;
+        }
+        // Ensure meeting_type has default value
+        if (!processed.meeting_type) {
+          processed.meeting_type = 'רבעונית';
+        }
+        // Build subject section
+        processed.subjects_section = `
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">הנדון: הודעה על שיעור מקדמות מס חברות לשנת ${processed.tax_year}</div>
+    </td>
+</tr>`;
         break;
     }
 

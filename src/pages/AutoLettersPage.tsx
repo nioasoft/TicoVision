@@ -57,6 +57,7 @@ import {
   validateAuditCompletion,
   validateAccountantAppointment,
   validateVatFileOpened,
+  validateTaxAdvancesRateNotification,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -319,6 +320,12 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'tax_advances') {
+      if (selectedLetterTypeId === 'rate_notification') {
+        return formState.documentData.tax_advances.rateNotification;
+      }
+    }
+
     return {};
   };
 
@@ -430,6 +437,12 @@ export function AutoLettersPage() {
     if (selectedCategory === 'protocols') {
       if (selectedLetterTypeId === 'accountant_appointment') {
         return validateAccountantAppointment(mergedData);
+      }
+    }
+
+    if (selectedCategory === 'tax_advances') {
+      if (selectedLetterTypeId === 'rate_notification') {
+        return validateTaxAdvancesRateNotification(mergedData);
       }
     }
 
@@ -982,6 +995,21 @@ export function AutoLettersPage() {
             protocols: {
               ...prev.documentData.protocols,
               accountantAppointment: data,
+            },
+          },
+        }));
+      }
+    }
+
+    if (selectedCategory === 'tax_advances') {
+      if (selectedLetterTypeId === 'rate_notification') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            tax_advances: {
+              ...prev.documentData.tax_advances,
+              rateNotification: data,
             },
           },
         }));

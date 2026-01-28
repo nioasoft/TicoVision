@@ -22,6 +22,7 @@ import type {
   AuditCompletionVariables,
   VatFileOpenedVariables,
   AccountantAppointmentVariables,
+  TaxAdvancesRateNotificationVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -66,6 +67,9 @@ import { AuditCompletionForm } from './forms/audit-completion';
 
 // Protocols forms
 import { AccountantAppointmentForm } from './forms/protocols';
+
+// Tax Advances forms
+import { TaxAdvancesRateNotificationForm } from './forms/tax-advances';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -125,6 +129,9 @@ export function FormRenderer({
 
     case 'protocols':
       return renderProtocolsForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+
+    case 'tax_advances':
+      return renderTaxAdvancesForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     default:
       return null;
@@ -484,6 +491,36 @@ function renderProtocolsForm(
         <Card className="mb-6">
           <CardContent className="py-8 text-center text-gray-500">
             סוג פרוטוקול לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderTaxAdvancesForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  _companyId?: string
+) {
+  switch (letterTypeId) {
+    case 'rate_notification':
+      return (
+        <TaxAdvancesRateNotificationForm
+          value={value as Partial<TaxAdvancesRateNotificationVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב מקדמות לא מוכר
           </CardContent>
         </Card>
       );
