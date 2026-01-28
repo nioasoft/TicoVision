@@ -131,12 +131,14 @@ serve(async (req) => {
     const feeId = url.searchParams.get('fee_id');
     const method = url.searchParams.get('method') as PaymentMethod;
     const clientId = url.searchParams.get('client_id');
+    const amountFromUrl = url.searchParams.get('amount');
 
     console.log('📥 [Debug] Payment Selection Request:');
     console.log('  - Full URL:', req.url);
     console.log('  - fee_id:', feeId || 'MISSING');
     console.log('  - method:', method || 'MISSING');
     console.log('  - client_id:', clientId || 'MISSING');
+    console.log('  - amount (from URL):', amountFromUrl || 'NOT PROVIDED');
 
     // Validate required parameters
     if (!feeId || !method || !clientId) {
@@ -214,18 +216,34 @@ serve(async (req) => {
     const groupName = clientData?.client_groups?.group_name_hebrew || '';
 
     // Calculate discount
-    // For retainer clients, use retainer_calculation.total_with_vat instead of total_amount
+    // Priority: URL amount (already includes VAT from letter) > retainer total_with_vat > fee total_amount with VAT
     const discountPercent = DISCOUNT_RATES[method];
-    const retainerAmount = feeData.retainer_calculation?.total_with_vat || 0;
-    const originalAmount = retainerAmount > 0 ? retainerAmount : feeData.total_amount;
+    const urlAmount = amountFromUrl ? parseFloat(amountFromUrl) : null;
+
+    let originalAmount: number;
+    if (urlAmount && urlAmount > 0) {
+      // Use amount from URL (already includes VAT, matches what's shown in the letter)
+      originalAmount = urlAmount;
+    } else {
+      // Fallback: calculate from DB
+      const retainerAmount = feeData.retainer_calculation?.total_with_vat || 0;
+      if (retainerAmount > 0) {
+        originalAmount = retainerAmount;
+      } else {
+        // total_amount is before VAT, so add VAT (18%)
+        originalAmount = Math.round(feeData.total_amount * 1.18);
+      }
+    }
+
     const discountAmount = originalAmount * (discountPercent / 100);
-    const amountAfterDiscount = originalAmount - discountAmount;
+    const amountAfterDiscount = Math.ceil(originalAmount - discountAmount);
 
     console.log('💰 Amount calculation:', {
-      retainerAmount,
+      urlAmount,
+      retainerAmount: feeData.retainer_calculation?.total_with_vat || 0,
       totalAmount: feeData.total_amount,
       usedAmount: originalAmount,
-      isRetainer: retainerAmount > 0,
+      source: urlAmount && urlAmount > 0 ? 'URL' : (feeData.retainer_calculation?.total_with_vat > 0 ? 'retainer' : 'fee_with_vat'),
     });
 
     console.log(`📊 Payment selection: ${method}, Original: ₪${originalAmount}, Discount: ${discountPercent}%, Final: ₪${amountAfterDiscount}`);
