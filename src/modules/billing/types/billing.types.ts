@@ -25,7 +25,8 @@ export interface BillingLetter {
   tenant_id: string;
   client_id: string;
 
-  // Service description
+  // Subject and description
+  billing_subject: string | null;
   service_description: string;
 
   // Amounts
@@ -55,6 +56,9 @@ export interface BillingLetter {
   generated_letter_id: string | null;
   actual_payment_id: string | null;
 
+  // Reminder tracking
+  reminder_count: number;
+
   // Metadata
   notes: string | null;
   created_at: string;
@@ -67,6 +71,7 @@ export interface BillingLetter {
  */
 export interface CreateBillingLetterInput {
   client_id: string;
+  billing_subject: string;
   service_description: string;
   amount_before_vat: number;
   bank_discount_percentage?: number;
@@ -78,6 +83,7 @@ export interface CreateBillingLetterInput {
  * Input for updating a billing letter
  */
 export interface UpdateBillingLetterInput {
+  billing_subject?: string;
   service_description?: string;
   amount_before_vat?: number;
   bank_discount_percentage?: number;

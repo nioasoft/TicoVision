@@ -528,7 +528,8 @@ export class TemplateService extends BaseService {
       'retainer_real',
       'internal_bookkeeping_index',
       'internal_bookkeeping_real',
-      'internal_bookkeeping_agreed'
+      'internal_bookkeeping_agreed',
+      'billing_letter'
     ];
 
     return paymentLetters.includes(templateType);
@@ -660,8 +661,12 @@ export class TemplateService extends BaseService {
       const needsPayment = this.isPaymentLetter(templateType);
       let paymentSection = '';
       if (needsPayment) {
-        // Check if bank transfer only mode is enabled
-        if (variables.bank_transfer_only) {
+        // IMPORTANT: Check billing_letter FIRST - it has its own dedicated simple template
+        if (templateType === 'billing_letter') {
+          // Billing letters use dedicated billing payment section (no fee/tax year text)
+          paymentSection = await this.loadTemplateFile('components/payment-section-billing.html');
+        } else if (variables.bank_transfer_only) {
+          // Bank transfer only mode for other letter types
           paymentSection = await this.loadTemplateFile('components/payment-section-bank-only.html');
 
           // Hide all discount-related lines when discount is 0%
@@ -822,7 +827,8 @@ export class TemplateService extends BaseService {
       'retainer_real': 'retainer-real-change.html',
       'internal_bookkeeping_index': 'bookkeeping-index.html',
       'internal_bookkeeping_real': 'bookkeeping-real-change.html',
-      'internal_bookkeeping_agreed': 'bookkeeping-as-agreed.html'
+      'internal_bookkeeping_agreed': 'bookkeeping-as-agreed.html',
+      'billing_letter': 'billing-letter.html'
     };
 
     return bodyMap[templateType] || 'annual-fee.html';
@@ -914,8 +920,12 @@ export class TemplateService extends BaseService {
       const needsPayment = this.isPaymentLetter(templateType);
       let paymentSection = '';
       if (needsPayment) {
-        // Check if bank transfer only mode is enabled
-        if (variables.bank_transfer_only) {
+        // IMPORTANT: Check billing_letter FIRST - it has its own dedicated simple template
+        if (templateType === 'billing_letter') {
+          // Billing letters use dedicated billing payment section (no fee/tax year text)
+          paymentSection = await this.loadTemplateFile('components/payment-section-billing.html');
+        } else if (variables.bank_transfer_only) {
+          // Bank transfer only mode for other letter types
           paymentSection = await this.loadTemplateFile('components/payment-section-bank-only.html');
 
           // Hide all discount-related lines when discount is 0%

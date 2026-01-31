@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -56,6 +57,12 @@ import type {
 } from '../types/protocol.types';
 import { StyleToolbar, getContentClasses, getContentStyle } from './StyleToolbar';
 
+// Helper to ensure responsibility_types is always an array
+const ensureArray = (types: ResponsibilityType[] | undefined): ResponsibilityType[] => {
+  if (!types || !Array.isArray(types)) return ['office'];
+  return types;
+};
+
 interface DecisionsListProps {
   decisions: CreateDecisionDto[];
   onChange: (decisions: CreateDecisionDto[]) => void;
@@ -64,7 +71,7 @@ interface DecisionsListProps {
 interface DecisionFormState {
   content: string;
   urgency: DecisionUrgency;
-  responsibility_type: ResponsibilityType;
+  responsibility_types: ResponsibilityType[];
   assigned_employee_id: string | null;
   assigned_other_name: string | null;
   audit_report_year: number | null;
@@ -84,7 +91,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
   const [formState, setFormState] = useState<DecisionFormState>({
     content: '',
     urgency: 'normal',
-    responsibility_type: 'office',
+    responsibility_types: ['office'],
     assigned_employee_id: null,
     assigned_other_name: null,
     audit_report_year: null,
@@ -110,12 +117,12 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
     }
   }, [dialogOpen, fetchEmployees]);
 
-  // Group decisions by responsibility type
+  // Group decisions by responsibility type (decisions with multiple types appear in multiple groups)
   const groupedDecisions = RESPONSIBILITY_TYPES.map((typeInfo) => ({
     ...typeInfo,
     decisions: decisions
       .map((d, index) => ({ ...d, originalIndex: index }))
-      .filter((d) => d.responsibility_type === typeInfo.type),
+      .filter((d) => ensureArray(d.responsibility_types).includes(typeInfo.type)),
   }));
 
   // Toggle group expansion
@@ -134,7 +141,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
     setFormState({
       content: '',
       urgency: 'normal',
-      responsibility_type: 'office',
+      responsibility_types: ['office'],
       assigned_employee_id: null,
       assigned_other_name: null,
       audit_report_year: null,
@@ -155,7 +162,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
     setFormState({
       content: decision.content,
       urgency: decision.urgency || 'normal',
-      responsibility_type: decision.responsibility_type,
+      responsibility_types: decision.responsibility_types || ['office'],
       assigned_employee_id: decision.assigned_employee_id || null,
       assigned_other_name: decision.assigned_other_name || null,
       audit_report_year: decision.audit_report_year || null,
@@ -177,11 +184,11 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
     const newDecision: CreateDecisionDto = {
       content: formState.content.trim(),
       urgency: formState.urgency,
-      responsibility_type: formState.responsibility_type,
+      responsibility_types: formState.responsibility_types,
       assigned_employee_id:
-        formState.responsibility_type === 'office' ? formState.assigned_employee_id : null,
+        formState.responsibility_types.includes('office') ? formState.assigned_employee_id : null,
       assigned_other_name:
-        formState.responsibility_type === 'other' ? formState.assigned_other_name : null,
+        formState.responsibility_types.includes('other') ? formState.assigned_other_name : null,
       audit_report_year: formState.audit_report_year,
       style: formState.style,
     };
@@ -224,7 +231,11 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-row-reverse">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold text-left flex items-center gap-2">
+          <ListTodo className="h-5 w-5" />
+          החלטות
+        </h3>
         <Button
           variant="outline"
           size="sm"
@@ -234,10 +245,6 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
           <Plus className="h-4 w-4" />
           הוסף החלטה
         </Button>
-        <h3 className="text-lg font-semibold text-right flex items-center gap-2 flex-row-reverse">
-          <ListTodo className="h-5 w-5" />
-          החלטות
-        </h3>
       </div>
 
       {/* Grouped Decisions */}
@@ -412,37 +419,60 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
               </Select>
             </div>
 
-            {/* Responsibility Type */}
+            {/* Responsibility Types - Checkboxes */}
             <div className="space-y-2">
-              <Label className="text-right block">אחראי</Label>
-              <Select
-                value={formState.responsibility_type}
-                onValueChange={(v) => {
-                  handleFieldChange('responsibility_type', v as ResponsibilityType);
-                  // Reset assignment fields when changing type
-                  handleFieldChange('assigned_employee_id', null);
-                  handleFieldChange('assigned_other_name', null);
-                }}
-                dir="rtl"
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESPONSIBILITY_TYPES.map((type) => (
-                    <SelectItem key={type.type} value={type.type}>
-                      <div className="flex items-center gap-2 flex-row-reverse">
+              <Label className="text-right block">אחראיים (ניתן לבחור מספר)</Label>
+              <div className="space-y-2 border rounded-lg p-3">
+                {RESPONSIBILITY_TYPES.map((type) => {
+                  const currentTypes = ensureArray(formState.responsibility_types);
+                  const isChecked = currentTypes.includes(type.type);
+                  return (
+                    <div
+                      key={type.type}
+                      className="flex items-center gap-3 flex-row-reverse"
+                    >
+                      <Checkbox
+                        id={`resp-${type.type}`}
+                        checked={isChecked}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormState((prev) => ({
+                              ...prev,
+                              responsibility_types: [...ensureArray(prev.responsibility_types), type.type],
+                            }));
+                          } else {
+                            // Don't allow unchecking the last one
+                            const prevTypes = ensureArray(formState.responsibility_types);
+                            if (prevTypes.length > 1) {
+                              setFormState((prev) => ({
+                                ...prev,
+                                responsibility_types: ensureArray(prev.responsibility_types).filter((t) => t !== type.type),
+                                // Reset related fields in the same update
+                                assigned_employee_id: type.type === 'office' ? null : prev.assigned_employee_id,
+                                assigned_other_name: type.type === 'other' ? null : prev.assigned_other_name,
+                              }));
+                            }
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`resp-${type.type}`}
+                        className={cn(
+                          'flex items-center gap-2 flex-row-reverse cursor-pointer',
+                          type.color
+                        )}
+                      >
                         {getResponsibilityIcon(type.type)}
-                        <span className={type.color}>{type.label}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                        <span>{type.label}</span>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Employee Assignment (for office responsibility) */}
-            {formState.responsibility_type === 'office' && (
+            {formState.responsibility_types.includes('office') && (
               <div className="space-y-2">
                 <Label className="text-right block">עובד אחראי</Label>
                 <Select
@@ -466,7 +496,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
             )}
 
             {/* Other Name (for other responsibility) */}
-            {formState.responsibility_type === 'other' && (
+            {formState.responsibility_types.includes('other') && (
               <div className="space-y-2">
                 <Label htmlFor="other_name" className="text-right block">
                   שם האחראי
@@ -506,7 +536,7 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
           </div>
 
           <DialogFooter className="flex-row-reverse gap-2 sm:justify-start">
-            <Button onClick={handleSave} disabled={!formState.content.trim()}>
+            <Button onClick={handleSave} disabled={!formState.content.trim() || formState.responsibility_types.length === 0}>
               {editIndex !== null ? 'עדכון' : 'הוספה'}
             </Button>
             <Button

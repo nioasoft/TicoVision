@@ -146,6 +146,7 @@ export interface Client {
   assigned_accountant?: string;
   notes?: string;
   google_drive_link?: string; // Link to Google Drive folder (optional)
+  canva_link?: string; // Link to Canva design (optional)
   tags?: string[];
   created_by?: string;
   updated_by?: string;
@@ -199,6 +200,7 @@ export interface CreateClientDto {
   assigned_accountant?: string;
   notes?: string;
   google_drive_link?: string; // Link to Google Drive folder (optional)
+  canva_link?: string; // Link to Canva design (optional)
   tags?: string[];
 }
 

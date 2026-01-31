@@ -1,0 +1,75 @@
+<!-- Letter Payment Section Component - BILLING LETTER -->
+<!-- Dedicated payment section for billing letters (מכתב חיוב כללי) -->
+<!-- Styled bank transfer details - no fee/tax year text, no contact person -->
+<!-- Variables: amount_after_discount_with_vat -->
+
+<!-- BODY: Payment Section - Billing Letter -->
+<tr>
+    <td style="padding-top: 20px;">
+        <div style="border-top: 1px solid #000000;"></div>
+
+        <!-- Payment Method Title -->
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.5; font-weight: 700; color: #09090b; text-align: right; margin: 20px 0 16px 0;">
+            אופן התשלום:
+        </div>
+
+        <!-- Bank Transfer Box -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #EEEDD8; border-radius: 4px;">
+            <tr>
+                <td style="padding: 20px;">
+                    <!-- Request text -->
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right; margin-bottom: 16px;">
+                        נודה על העברה בנקאית לחשבון המשרד:
+                    </div>
+
+                    <!-- Bank Details Card -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 4px;">
+                        <tr>
+                            <td style="padding: 16px;">
+                                <!-- Bank Name Row -->
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 18px; font-weight: 700; color: #09090b; text-align: right; padding-bottom: 12px;">
+                                            בנק הפועלים (12)
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <!-- Details Grid -->
+                                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                    <tr>
+                                        <td width="50%" style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+                                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #6b7280; text-align: right;">סניף</div>
+                                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">532</div>
+                                        </td>
+                                        <td width="50%" style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+                                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #6b7280; text-align: right;">מספר חשבון</div>
+                                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">539990</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" style="padding: 8px 0; border-top: 1px solid #e5e7eb;">
+                                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; color: #6b7280; text-align: right;">לפקודת</div>
+                                            <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; font-weight: 600; color: #09090b; text-align: right;">פרנקו ושות' רו"ח</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- Amount Summary -->
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 16px;">
+                        <tr>
+                            <td style="background-color: #395BF7; padding: 14px 20px; border-radius: 4px;">
+                                <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.4; color: #ffffff; text-align: center; font-weight: 700;">
+                                    סכום לתשלום: ₪{{amount_after_discount_with_vat}} כולל מע"מ
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>

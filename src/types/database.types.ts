@@ -188,6 +188,7 @@ export type Database = {
           amount_after_discount: number | null
           amount_before_vat: number
           bank_discount_percentage: number
+          billing_subject: string | null
           client_id: string
           created_at: string
           created_by: string | null
@@ -197,6 +198,7 @@ export type Database = {
           notes: string | null
           payment_date: string | null
           payment_reference: string | null
+          reminder_count: number
           sent_at: string | null
           sent_manually: boolean
           sent_method: string | null
@@ -213,6 +215,7 @@ export type Database = {
           amount_after_discount?: number | null
           amount_before_vat: number
           bank_discount_percentage?: number
+          billing_subject?: string | null
           client_id: string
           created_at?: string
           created_by?: string | null
@@ -222,6 +225,7 @@ export type Database = {
           notes?: string | null
           payment_date?: string | null
           payment_reference?: string | null
+          reminder_count?: number
           sent_at?: string | null
           sent_manually?: boolean
           sent_method?: string | null
@@ -238,6 +242,7 @@ export type Database = {
           amount_after_discount?: number | null
           amount_before_vat?: number
           bank_discount_percentage?: number
+          billing_subject?: string | null
           client_id?: string
           created_at?: string
           created_by?: string | null
@@ -247,6 +252,7 @@ export type Database = {
           notes?: string | null
           payment_date?: string | null
           payment_reference?: string | null
+          reminder_count?: number
           sent_at?: string | null
           sent_manually?: boolean
           sent_method?: string | null
@@ -1534,6 +1540,7 @@ export type Database = {
           address: Json | null
           annual_revenue: number | null
           business_type: string | null
+          canva_link: string | null
           city_new: string | null
           client_type: string | null
           collection_responsibility: string | null
@@ -1586,6 +1593,7 @@ export type Database = {
           address?: Json | null
           annual_revenue?: number | null
           business_type?: string | null
+          canva_link?: string | null
           city_new?: string | null
           client_type?: string | null
           collection_responsibility?: string | null
@@ -1638,6 +1646,7 @@ export type Database = {
           address?: Json | null
           annual_revenue?: number | null
           business_type?: string | null
+          canva_link?: string | null
           city_new?: string | null
           client_type?: string | null
           collection_responsibility?: string | null
@@ -2370,6 +2379,7 @@ export type Database = {
       }
       generated_letters: {
         Row: {
+          billing_letter_id: string | null
           body_content_html: string | null
           cancelled_at: string | null
           cancelled_by: string | null
@@ -2412,6 +2422,7 @@ export type Database = {
           version_number: number
         }
         Insert: {
+          billing_letter_id?: string | null
           body_content_html?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -2454,6 +2465,7 @@ export type Database = {
           version_number?: number
         }
         Update: {
+          billing_letter_id?: string | null
           body_content_html?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -2496,6 +2508,13 @@ export type Database = {
           version_number?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "generated_letters_billing_letter_id_fkey"
+            columns: ["billing_letter_id"]
+            isOneToOne: false
+            referencedRelation: "billing_letters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "generated_letters_client_id_fkey"
             columns: ["client_id"]
@@ -3587,7 +3606,7 @@ export type Database = {
           created_at: string | null
           id: string
           protocol_id: string
-          responsibility_type: string
+          responsibility_types: string[]
           sort_order: number
           style: Json | null
           urgency: string
@@ -3600,7 +3619,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           protocol_id: string
-          responsibility_type: string
+          responsibility_types: string[]
           sort_order?: number
           style?: Json | null
           urgency?: string
@@ -3613,7 +3632,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           protocol_id?: string
-          responsibility_type?: string
+          responsibility_types?: string[]
           sort_order?: number
           style?: Json | null
           urgency?: string
@@ -4100,6 +4119,62 @@ export type Database = {
           },
         ]
       }
+      support_ticket_settings: {
+        Row: {
+          auto_archive_days: number | null
+          auto_assign_enabled: boolean | null
+          created_at: string | null
+          default_assignee_id: string | null
+          default_response_hours: number | null
+          id: string
+          notify_assignee_on_assign: boolean | null
+          notify_on_new_ticket: boolean | null
+          round_robin_enabled: boolean | null
+          tenant_id: string
+          updated_at: string | null
+          urgent_response_hours: number | null
+          visible_column_keys: string[] | null
+        }
+        Insert: {
+          auto_archive_days?: number | null
+          auto_assign_enabled?: boolean | null
+          created_at?: string | null
+          default_assignee_id?: string | null
+          default_response_hours?: number | null
+          id?: string
+          notify_assignee_on_assign?: boolean | null
+          notify_on_new_ticket?: boolean | null
+          round_robin_enabled?: boolean | null
+          tenant_id: string
+          updated_at?: string | null
+          urgent_response_hours?: number | null
+          visible_column_keys?: string[] | null
+        }
+        Update: {
+          auto_archive_days?: number | null
+          auto_assign_enabled?: boolean | null
+          created_at?: string | null
+          default_assignee_id?: string | null
+          default_response_hours?: number | null
+          id?: string
+          notify_assignee_on_assign?: boolean | null
+          notify_on_new_ticket?: boolean | null
+          round_robin_enabled?: boolean | null
+          tenant_id?: string
+          updated_at?: string | null
+          urgent_response_hours?: number | null
+          visible_column_keys?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_ticket_statuses: {
         Row: {
           auto_close_after_days: number | null
@@ -4116,6 +4191,8 @@ export type Database = {
           name: string
           name_hebrew: string
           tenant_id: string
+          warn_at_percent: number | null
+          wip_limit: number | null
         }
         Insert: {
           auto_close_after_days?: number | null
@@ -4132,6 +4209,8 @@ export type Database = {
           name: string
           name_hebrew: string
           tenant_id: string
+          warn_at_percent?: number | null
+          wip_limit?: number | null
         }
         Update: {
           auto_close_after_days?: number | null
@@ -4148,6 +4227,8 @@ export type Database = {
           name?: string
           name_hebrew?: string
           tenant_id?: string
+          warn_at_percent?: number | null
+          wip_limit?: number | null
         }
         Relationships: [
           {
@@ -5616,6 +5697,14 @@ export type Database = {
           tenant_name: string
           ticket_number: number
           updated_at: string
+        }[]
+      }
+      get_ticket_kpis: { Args: { p_tenant_id: string }; Returns: Json }
+      get_ticket_reply_counts: {
+        Args: { p_ticket_ids: string[] }
+        Returns: {
+          reply_count: number
+          ticket_id: string
         }[]
       }
       get_user_accessible_clients: {

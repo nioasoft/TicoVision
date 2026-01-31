@@ -43,6 +43,7 @@ class BillingLetterService extends BaseService {
         .insert({
           tenant_id: tenantId,
           client_id: input.client_id,
+          billing_subject: input.billing_subject,
           service_description: input.service_description,
           amount_before_vat: amounts.amountBeforeVat,
           vat_rate: VAT_RATE * 100, // Store as percentage (18)
@@ -464,6 +465,46 @@ class BillingLetterService extends BaseService {
       if (error) throw error;
 
       return { data: data as BillingLetterWithClient[], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Increment the reminder count for a billing letter
+   * Called after a reminder email is successfully sent
+   */
+  async incrementReminderCount(id: string): Promise<ServiceResponse<BillingLetter>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Get current count
+      const { data: current, error: fetchError } = await supabase
+        .from('billing_letters')
+        .select('reminder_count')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newCount = (current.reminder_count || 0) + 1;
+
+      const { data, error } = await supabase
+        .from('billing_letters')
+        .update({ reminder_count: newCount })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('send_billing_letter_reminder', id, {
+        reminder_number: newCount,
+      });
+
+      return { data, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }

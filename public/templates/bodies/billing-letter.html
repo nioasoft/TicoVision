@@ -1,24 +1,26 @@
 <!-- Letter Body: Billing Letter (General Charge) -->
 <!-- Template Type: billing_letter (מכתב חיוב כללי) -->
-<!-- Variables: {{company_name}}, {{service_description}}, {{billing_amount}} -->
-<!-- Uses payment-section-bank-only.html for payment details -->
+<!-- Variables: {{company_name}}, {{billing_subject}}, {{billing_body}}, {{is_reminder}} -->
+<!-- Uses payment-section-billing.html for payment details -->
 <!-- CID Images: cid:bullet_star_blue -->
+
+<!-- REMINDER BADGE: Shows when is_reminder is true -->
+{{#is_reminder}}
+<tr>
+    <td style="text-align: center; padding: 16px 0 24px 0;">
+        <span style="background-color: #DC2626; color: white; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; padding: 8px 24px; border-radius: 4px; display: inline-block;">
+            תזכורת
+        </span>
+    </td>
+</tr>
+{{/is_reminder}}
 
 <!-- BODY: Subject -->
 <tr>
     <td style="padding-top: 20px;">
         <!-- Subject line -->
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">
-            הנדון: מכתב חיוב בגין {{service_description}}
-        </div>
-    </td>
-</tr>
-
-<!-- BODY: Opening -->
-<tr>
-    <td style="padding-top: 20px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right;">
-            {{company_name}} שלום רב,
+            הנדון: הודעת חיוב - {{billing_subject}}
         </div>
     </td>
 </tr>
@@ -44,27 +46,21 @@
     </td>
 </tr>
 
-<!-- BODY: Section 2 - Service Details -->
+<!-- BODY: Section 2 - Billing Details -->
 <tr>
     <td style="padding-top: 20px;">
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.2; font-weight: 700; color: #09090b; text-align: right; margin-bottom: 20px;">
             לגופו של עניין:
         </div>
-        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right; margin-bottom: 16px;">
+            הננו מתכבדים לשלוח לידיכם הודעת חיוב בגין השירותים הבאים:
+        </div>
+
+        <!-- Services Box - Light Yellow -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #EEEDD8; border-radius: 4px; margin-bottom: 16px;">
             <tr>
-                <td width="20" style="vertical-align: top; padding-top: 4px;">
-                    <img src="cid:bullet_star_blue" width="11" height="11" alt="•" style="display: block; border: 0;">
-                </td>
-                <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right; padding-bottom: 16px;">
-                    הננו מתכבדים לשלוח אליכם מכתב חיוב בגין {{service_description}} שביצענו עבורכם.
-                </td>
-            </tr>
-            <tr>
-                <td width="20" style="vertical-align: top; padding-top: 4px;">
-                    <img src="cid:bullet_star_blue" width="11" height="11" alt="•" style="display: block; border: 0;">
-                </td>
-                <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.6; color: #09090b; text-align: right;">
-                    נא למצוא מטה את פרטי התשלום.
+                <td style="padding: 16px 20px;">
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.8; color: #09090b; text-align: right; white-space: pre-wrap;">{{billing_body}}</div>
                 </td>
             </tr>
         </table>

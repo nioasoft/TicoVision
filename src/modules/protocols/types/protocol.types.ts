@@ -71,7 +71,7 @@ export interface ProtocolDecision {
   protocol_id: string;
   content: string;
   urgency: DecisionUrgency;
-  responsibility_type: ResponsibilityType;
+  responsibility_types: ResponsibilityType[];
   assigned_employee_id: string | null;
   assigned_other_name: string | null;
   audit_report_year: number | null;
@@ -83,7 +83,7 @@ export interface ProtocolDecision {
 export interface CreateDecisionDto {
   content: string;
   urgency?: DecisionUrgency;
-  responsibility_type: ResponsibilityType;
+  responsibility_types: ResponsibilityType[];
   assigned_employee_id?: string | null;
   assigned_other_name?: string | null;
   audit_report_year?: number | null;
@@ -273,4 +273,16 @@ export function getResponsibilityTypeInfo(type: ResponsibilityType): Responsibil
  */
 export function getContentSectionTypeInfo(type: ContentSectionType): ContentSectionTypeInfo {
   return CONTENT_SECTION_TYPES.find(s => s.type === type) || CONTENT_SECTION_TYPES[0];
+}
+
+// ============================================================================
+// Auto-Save Types
+// ============================================================================
+
+export type SaveStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+
+export interface SaveStatusInfo {
+  status: SaveStatus;
+  lastSaved: Date | null;
+  error: Error | null;
 }

@@ -3,7 +3,7 @@
  * Form for creating and editing meeting protocols
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,12 +29,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +36,7 @@ import {
   RESPONSIBILITY_TYPES,
   CONTENT_SECTION_TYPES,
   getContentSectionTypeInfo,
+  type SaveStatusInfo,
 } from '../types/protocol.types';
 import {
   Save,
@@ -62,6 +57,8 @@ import { DecisionsList } from './DecisionsList';
 import { ContentSectionEditor } from './ContentSectionEditor';
 import { getContentClasses, getContentStyle } from './StyleToolbar';
 import { SendProtocolEmailDialog } from './SendProtocolEmailDialog';
+import { SaveStatusIndicator } from './SaveStatusIndicator';
+import { useProtocolAutoSave } from '../hooks/useProtocolAutoSave';
 import { protocolService } from '../services/protocol.service';
 import { userService } from '@/services/user.service';
 import type { User } from '@/services/user.service';
@@ -114,6 +111,22 @@ export function ProtocolBuilder({
     content_sections: [],
   });
 
+  // Check if protocol is locked
+  const isLocked = protocol?.status === 'locked';
+
+  // Auto-save hook
+  const { saveStatus, triggerSave, resetStatus } = useProtocolAutoSave({
+    protocolId: savedProtocolId,
+    clientId,
+    groupId,
+    formState,
+    isLocked,
+    debounceDelay: 2000,
+    onProtocolIdChange: (newId) => {
+      setSavedProtocolId(newId);
+    },
+  });
+
   // Load employees for displaying assigned employee names
   useEffect(() => {
     const loadEmployees = async () => {
@@ -131,6 +144,9 @@ export function ProtocolBuilder({
     return acc;
   }, {});
 
+  // Track if protocol has been loaded (to reset auto-save after loading)
+  const protocolLoadedRef = useRef(false);
+
   // Initialize form state from existing protocol
   useEffect(() => {
     if (protocol) {
@@ -147,7 +163,7 @@ export function ProtocolBuilder({
         decisions: protocol.decisions.map((d) => ({
           content: d.content,
           urgency: d.urgency,
-          responsibility_type: d.responsibility_type,
+          responsibility_types: d.responsibility_types || ['office'],
           assigned_employee_id: d.assigned_employee_id,
           assigned_other_name: d.assigned_other_name,
           audit_report_year: d.audit_report_year,
@@ -161,8 +177,23 @@ export function ProtocolBuilder({
           style: s.style || {},
         })),
       });
+      // Mark that we need to reset auto-save status after form state updates
+      protocolLoadedRef.current = true;
     }
   }, [protocol]);
+
+  // Reset auto-save status after protocol data is loaded into form
+  // This prevents auto-save from thinking the loaded data is "dirty"
+  useEffect(() => {
+    if (protocolLoadedRef.current && protocol) {
+      // Use setTimeout to ensure form state has been applied
+      const timer = setTimeout(() => {
+        resetStatus();
+        protocolLoadedRef.current = false;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [protocol, resetStatus]);
 
   // Handle form field changes
   const handleFieldChange = (field: keyof ProtocolFormState, value: string) => {
@@ -188,8 +219,8 @@ export function ProtocolBuilder({
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { error } = await protocolService.saveProtocolForm(
-        protocol?.id || null,
+      const { data, error } = await protocolService.saveProtocolForm(
+        savedProtocolId,
         clientId,
         groupId,
         formState
@@ -199,6 +230,14 @@ export function ProtocolBuilder({
         console.error('Failed to save protocol:', error);
         return;
       }
+
+      // Update saved protocol ID if new
+      if (data?.id && !savedProtocolId) {
+        setSavedProtocolId(data.id);
+      }
+
+      // Reset auto-save status since we just saved
+      resetStatus();
 
       onSave();
     } finally {
@@ -405,10 +444,10 @@ export function ProtocolBuilder({
     }
   };
 
-  // Group decisions by responsibility type for preview
+  // Group decisions by responsibility type for preview (decisions with multiple types appear in multiple groups)
   const groupedDecisions = RESPONSIBILITY_TYPES.map((typeInfo) => ({
     ...typeInfo,
-    decisions: formState.decisions.filter((d) => d.responsibility_type === typeInfo.type),
+    decisions: formState.decisions.filter((d) => d.responsibility_types.includes(typeInfo.type)),
   })).filter((g) => g.decisions.length > 0);
 
   // Group content sections by type for preview
@@ -432,9 +471,15 @@ export function ProtocolBuilder({
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <div className="text-right">
-                <CardTitle>
-                  {isNew ? 'פרוטוקול חדש' : 'עריכת פרוטוקול'}
-                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <CardTitle>
+                    {isNew ? 'פרוטוקול חדש' : 'עריכת פרוטוקול'}
+                  </CardTitle>
+                  <SaveStatusIndicator
+                    saveStatus={saveStatus}
+                    onRetry={triggerSave}
+                  />
+                </div>
                 <CardDescription className="mt-1">
                   {recipientName}
                 </CardDescription>
@@ -472,28 +517,16 @@ export function ProtocolBuilder({
                 {generatingPdf ? 'יוצר PDF...' : 'ייצוא PDF'}
               </Button>
               {!isNew && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button
-                          onClick={() => setLockDialogOpen(true)}
-                          disabled={saving || locking || !savedToFileManager}
-                          variant="secondary"
-                          className="flex items-center gap-2"
-                        >
-                          <Lock className="h-4 w-4" />
-                          שמור ונעל
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    {!savedToFileManager && (
-                      <TooltipContent side="bottom">
-                        <p>יש לייצא PDF ולשמור למנהל קבצים לפני נעילה</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
+                <Button
+                  onClick={() => setLockDialogOpen(true)}
+                  disabled={saving || locking || !savedToFileManager}
+                  variant="secondary"
+                  className="flex items-center gap-2"
+                  title={!savedToFileManager ? 'יש לייצא PDF ולשמור למנהל קבצים לפני נעילה' : undefined}
+                >
+                  <Lock className="h-4 w-4" />
+                  שמור ונעל
+                </Button>
               )}
             </div>
           </div>
@@ -545,7 +578,7 @@ export function ProtocolBuilder({
 
           {/* Content Sections */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row-reverse" dir="rtl">
+            <h3 className="text-lg font-semibold text-left flex items-center gap-2" dir="rtl">
               <FileText className="h-5 w-5" />
               תוכן נוסף
             </h3>

@@ -391,7 +391,7 @@ export class ProtocolService extends BaseService {
         await this.addDecision(newProtocol.id, {
           content: decision.content,
           urgency: decision.urgency,
-          responsibility_type: decision.responsibility_type,
+          responsibility_types: decision.responsibility_types,
           assigned_employee_id: decision.assigned_employee_id,
           assigned_other_name: decision.assigned_other_name,
           audit_report_year: decision.audit_report_year,
@@ -485,7 +485,7 @@ export class ProtocolService extends BaseService {
           protocol_id: protocolId,
           content: dto.content,
           urgency: dto.urgency || 'normal',
-          responsibility_type: dto.responsibility_type,
+          responsibility_types: dto.responsibility_types,
           assigned_employee_id: dto.assigned_employee_id || null,
           assigned_other_name: dto.assigned_other_name || null,
           audit_report_year: dto.audit_report_year || null,
@@ -744,10 +744,10 @@ export class ProtocolService extends BaseService {
 
     const meetingDate = format(new Date(protocol.meeting_date), 'EEEE, dd בMMMM yyyy', { locale: he });
 
-    // Group decisions by responsibility type
+    // Group decisions by responsibility type (decisions with multiple types appear in multiple groups)
     const groupedDecisions = RESPONSIBILITY_TYPES.map((typeInfo) => ({
       ...typeInfo,
-      decisions: protocol.decisions.filter((d) => d.responsibility_type === typeInfo.type),
+      decisions: protocol.decisions.filter((d) => d.responsibility_types.includes(typeInfo.type)),
     })).filter((g) => g.decisions.length > 0);
 
     // Group content sections by type

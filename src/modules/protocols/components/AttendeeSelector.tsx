@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -67,7 +68,7 @@ export function AttendeeSelector({
   const [sourceType, setSourceType] = useState<AttendeeSourceType>('contact');
   const [contacts, setContacts] = useState<AssignedContact[]>([]);
   const [employees, setEmployees] = useState<UserType[]>([]);
-  const [selectedOption, setSelectedOption] = useState<string>('');
+  const [selectedOptions, setSelectedOptions] = useState<Set<string>>(new Set());
   const [externalName, setExternalName] = useState('');
   const [externalRole, setExternalRole] = useState('');
   const [loading, setLoading] = useState(false);
@@ -134,7 +135,18 @@ export function AttendeeSelector({
     });
   };
 
-  // Add attendee
+  // Toggle selection
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedOptions);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedOptions(newSelected);
+  };
+
+  // Add attendees (multiple)
   const handleAdd = () => {
     if (sourceType === 'external') {
       if (!externalName.trim()) return;
@@ -149,22 +161,28 @@ export function AttendeeSelector({
       setExternalName('');
       setExternalRole('');
     } else {
-      if (!selectedOption) return;
+      if (selectedOptions.size === 0) return;
 
       const options = getAvailableOptions();
-      const selected = options.find((o) => o.id === selectedOption);
-      if (!selected) return;
+      const newAttendees: CreateAttendeeDto[] = [];
 
-      const newAttendee: CreateAttendeeDto = {
-        source_type: sourceType,
-        contact_id: sourceType === 'contact' ? selected.id : null,
-        user_id: sourceType === 'employee' ? selected.id : null,
-        display_name: selected.name,
-        role_title: selected.role,
-      };
+      selectedOptions.forEach((id) => {
+        const selected = options.find((o) => o.id === id);
+        if (selected && !isAlreadyAdded(id, sourceType)) {
+          newAttendees.push({
+            source_type: sourceType,
+            contact_id: sourceType === 'contact' ? selected.id : null,
+            user_id: sourceType === 'employee' ? selected.id : null,
+            display_name: selected.name,
+            role_title: selected.role,
+          });
+        }
+      });
 
-      onChange([...attendees, newAttendee]);
-      setSelectedOption('');
+      if (newAttendees.length > 0) {
+        onChange([...attendees, ...newAttendees]);
+      }
+      setSelectedOptions(new Set());
     }
   };
 
@@ -203,7 +221,11 @@ export function AttendeeSelector({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-row-reverse">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold text-left flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          משתתפים
+        </h3>
         <Button
           variant="outline"
           size="sm"
@@ -213,10 +235,6 @@ export function AttendeeSelector({
           <UserPlus className="h-4 w-4" />
           הוסף משתתף
         </Button>
-        <h3 className="text-lg font-semibold text-right flex items-center gap-2 flex-row-reverse">
-          <Users className="h-5 w-5" />
-          משתתפים
-        </h3>
       </div>
 
       {/* Attendees List */}
@@ -279,7 +297,7 @@ export function AttendeeSelector({
                 value={sourceType}
                 onValueChange={(v) => {
                   setSourceType(v as AttendeeSourceType);
-                  setSelectedOption('');
+                  setSelectedOptions(new Set());
                   setExternalName('');
                   setExternalRole('');
                 }}
@@ -330,30 +348,39 @@ export function AttendeeSelector({
                     <div className="p-2 space-y-1">
                       {availableOptions.map((option) => {
                         const alreadyAdded = isAlreadyAdded(option.id, sourceType);
+                        const isSelected = selectedOptions.has(option.id);
                         return (
-                          <button
+                          <div
                             key={option.id}
-                            type="button"
-                            onClick={() => !alreadyAdded && setSelectedOption(option.id)}
-                            disabled={alreadyAdded}
-                            className={`w-full text-right p-2 rounded-md transition-colors ${
-                              selectedOption === option.id
-                                ? 'bg-primary text-primary-foreground'
-                                : alreadyAdded
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
+                              alreadyAdded
+                                ? 'bg-gray-100 text-gray-400'
+                                : isSelected
+                                ? 'bg-primary/10'
                                 : 'hover:bg-gray-100'
                             }`}
                           >
-                            <p className="font-medium">{option.name}</p>
-                            {option.role && (
-                              <p className="text-sm opacity-70">{option.role}</p>
-                            )}
-                            {alreadyAdded && (
-                              <Badge variant="secondary" className="mt-1">
-                                כבר נוסף
-                              </Badge>
-                            )}
-                          </button>
+                            <Checkbox
+                              id={`attendee-${option.id}`}
+                              checked={isSelected}
+                              disabled={alreadyAdded}
+                              onCheckedChange={() => !alreadyAdded && toggleSelection(option.id)}
+                            />
+                            <label
+                              htmlFor={`attendee-${option.id}`}
+                              className={`flex-1 text-right cursor-pointer ${alreadyAdded ? 'cursor-not-allowed' : ''}`}
+                            >
+                              <p className="font-medium">{option.name}</p>
+                              {option.role && (
+                                <p className="text-sm opacity-70">{option.role}</p>
+                              )}
+                              {alreadyAdded && (
+                                <Badge variant="secondary" className="mt-1">
+                                  כבר נוסף
+                                </Badge>
+                              )}
+                            </label>
+                          </div>
                         );
                       })}
                     </div>
@@ -401,10 +428,14 @@ export function AttendeeSelector({
               disabled={
                 sourceType === 'external'
                   ? !externalName.trim()
-                  : !selectedOption
+                  : selectedOptions.size === 0
               }
             >
-              הוסף
+              {sourceType === 'external'
+                ? 'הוסף'
+                : selectedOptions.size > 1
+                  ? `הוסף ${selectedOptions.size} משתתפים`
+                  : 'הוסף'}
             </Button>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               סגור

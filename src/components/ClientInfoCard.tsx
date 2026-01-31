@@ -1,4 +1,4 @@
-import { Building2, Users, Briefcase, Link2, FolderOpen } from 'lucide-react';
+import { Building2, Users, Briefcase, Link2, FolderOpen, Palette } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -49,18 +49,31 @@ export function ClientInfoCard({ client, relatedCompanies = [] }: ClientInfoCard
   return (
     <Card className="bg-gray-50 border-gray-200 rtl:text-right ltr:text-left">
       <CardContent className="p-4">
-        {/* Google Drive Link Button */}
-        {client.google_drive_link && (
-          <div className="mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(client.google_drive_link, '_blank')}
-              className="gap-2"
-            >
-              <FolderOpen className="h-4 w-4 text-green-600" />
-              Google Drive
-            </Button>
+        {/* External Links Buttons */}
+        {(client.google_drive_link || client.canva_link) && (
+          <div className="mb-4 flex gap-2">
+            {client.google_drive_link && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(client.google_drive_link, '_blank')}
+                className="gap-2"
+              >
+                <FolderOpen className="h-4 w-4 text-green-600" />
+                Google Drive
+              </Button>
+            )}
+            {client.canva_link && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(client.canva_link, '_blank')}
+                className="gap-2"
+              >
+                <Palette className="h-4 w-4 text-purple-600" />
+                Canva
+              </Button>
+            )}
           </div>
         )}
 
