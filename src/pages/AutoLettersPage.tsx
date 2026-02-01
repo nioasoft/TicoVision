@@ -350,11 +350,15 @@ export function AutoLettersPage() {
       companyName = formState.adhocContact.name || '';
     }
 
+    // Get document data (includes user-entered company_id for forms like vat_file_opened)
+    const documentData = getDocumentData();
+
     const mergedData = {
       ...formState.sharedData,
-      ...getDocumentData(),
+      ...documentData,
       company_name: companyName,
-      company_id: companyId,
+      // Only override company_id if we have one from the client, otherwise use form data
+      ...(companyId ? { company_id: companyId } : {}),
     };
 
     if (selectedCategory === 'company_onboarding') {

@@ -574,21 +574,6 @@ function ForeignWorkersPageContent({
           ))}
         </TabsList>
 
-        {/* Month Range Badge - shown for monthly data tabs (0, 1, 4) */}
-        {isSharedDataComplete && selectedBranchId && [0, 1, 4].includes(activeTab) && (
-          <div className="flex justify-end mt-4">
-            {range ? (
-              <MonthLimitBadge />
-            ) : (
-              !isLoadingRange && (
-                <div className="text-sm text-muted-foreground">
-                  יש לאתחל טווח חודשים לצפייה ועריכת נתונים חודשיים
-                </div>
-              )
-            )}
-          </div>
-        )}
-
         {/* Tab Content */}
         <TabsContent value="0" className="mt-6">
           <AccountantTurnoverTab
