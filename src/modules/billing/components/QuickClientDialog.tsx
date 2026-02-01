@@ -4,6 +4,7 @@
  * - Company name (required)
  * - Tax ID (required)
  * - Email (required)
+ * - Phone (required)
  *
  * The client is created with status: 'adhoc'
  */
@@ -34,6 +35,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
   const [companyName, setCompanyName] = useState('');
   const [taxId, setTaxId] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -41,6 +43,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
     setCompanyName('');
     setTaxId('');
     setEmail('');
+    setPhone('');
     setErrors({});
   };
 
@@ -63,6 +66,10 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
       newErrors.email = 'כתובת אימייל לא תקינה';
     }
 
+    if (!phone.trim()) {
+      newErrors.phone = 'טלפון הוא שדה חובה';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -83,6 +90,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
         company_name: companyName.trim(),
         tax_id: taxId.trim(),
         contact_email: email.trim(),
+        contact_phone: phone.trim(),
       });
 
       if (error) {
@@ -119,7 +127,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 rtl:flex-row-reverse text-right">
+          <DialogTitle className="flex items-center gap-2 text-left">
             <UserPlus className="h-5 w-5" />
             לקוח חד-פעמי חדש
           </DialogTitle>
@@ -169,7 +177,7 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
           {/* Email */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-right block">
-              אימייל 
+              אימייל
             </Label>
             <Input
               id="email"
@@ -182,6 +190,24 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
             />
             {errors.email && (
               <p className="text-sm text-red-500 text-right">{errors.email}</p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-right block">
+              טלפון
+            </Label>
+            <Input
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="text-right"
+              dir="ltr"
+              disabled={isSubmitting}
+            />
+            {errors.phone && (
+              <p className="text-sm text-red-500 text-right">{errors.phone}</p>
             )}
           </div>
 

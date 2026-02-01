@@ -935,6 +935,7 @@ export class ClientService extends BaseService {
     company_name: string;
     tax_id: string;
     contact_email: string;
+    contact_phone: string;
     contact_name?: string;
   }): Promise<ServiceResponse<Client>> {
     try {
@@ -1010,7 +1011,7 @@ export class ClientService extends BaseService {
           const owner = await TenantContactService.createOrGet({
             full_name: contactName,
             email: data.contact_email.trim(),
-            phone: null,
+            phone: data.contact_phone.trim(),
             contact_type: 'owner',
             job_title: 'איש קשר',
           });

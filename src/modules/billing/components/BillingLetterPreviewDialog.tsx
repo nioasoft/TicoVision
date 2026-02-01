@@ -345,9 +345,15 @@ export function BillingLetterPreviewDialog({
   /**
    * Save letter as draft to generated_letters
    * In create mode, first creates the billing letter
+   * Returns both letter ID and billing letter ID to avoid React state timing issues
    */
-  const saveLetterAsDraft = async (): Promise<string | null> => {
-    if (savedLetterId) return savedLetterId;
+  const saveLetterAsDraft = async (): Promise<{ letterId: string; billingLetterId: string } | null> => {
+    if (savedLetterId) {
+      const existingBillingLetterId = isCreateMode ? createdBillingLetter?.id : billingLetter?.id;
+      if (existingBillingLetterId) {
+        return { letterId: savedLetterId, billingLetterId: existingBillingLetterId };
+      }
+    }
 
     const effectiveData = getEffectiveData();
     if (!effectiveData || !previewHtml) return null;
@@ -387,7 +393,7 @@ export function BillingLetterPreviewDialog({
 
         if (existingLetter) {
           setSavedLetterId(existingLetter.id);
-          return existingLetter.id;
+          return { letterId: existingLetter.id, billingLetterId };
         }
       } else {
         return null;
@@ -434,7 +440,7 @@ export function BillingLetterPreviewDialog({
         data.id
       );
 
-      return data.id;
+      return { letterId: data.id, billingLetterId };
     } catch (error) {
       console.error('Error in saveLetterAsDraft:', error);
       toast.error('שגיאה בשמירת המכתב');
@@ -551,14 +557,17 @@ export function BillingLetterPreviewDialog({
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true);
     try {
-      const letterId = savedLetterId || (await saveLetterAsDraft());
-      if (letterId) {
-        await savePdfToFileManager(letterId);
+      const result = savedLetterId
+        ? { letterId: savedLetterId, billingLetterId: isCreateMode ? createdBillingLetter?.id : billingLetter?.id }
+        : await saveLetterAsDraft();
+
+      if (result?.letterId) {
+        await savePdfToFileManager(result.letterId);
 
         // In create mode, navigate to the billing letter view page
-        if (isCreateMode && createdBillingLetter) {
+        if (isCreateMode && result.billingLetterId) {
           resetUnsavedChanges();
-          onCreated?.(createdBillingLetter.id);
+          onCreated?.(result.billingLetterId);
           onOpenChange(false);
         }
       }
@@ -589,12 +598,13 @@ export function BillingLetterPreviewDialog({
       }
 
       // Save letter first if not saved (this also creates billing letter in create mode)
-      const letterId = savedLetterId || (await saveLetterAsDraft());
+      // We get both IDs directly from the result to avoid React state timing issues
+      const result = savedLetterId
+        ? { letterId: savedLetterId, billingLetterId: isCreateMode ? createdBillingLetter?.id : billingLetter?.id }
+        : await saveLetterAsDraft();
 
-      // Get the billing letter ID (from created or existing)
-      const billingLetterId = isCreateMode
-        ? createdBillingLetter?.id
-        : billingLetter?.id;
+      const letterId = result?.letterId;
+      const billingLetterId = result?.billingLetterId;
 
       if (!billingLetterId) {
         toast.error('שגיאה ביצירת מכתב החיוב');
