@@ -157,8 +157,8 @@ export function SharedDataForm({
           </div>
         </div>
 
-        {/* Display selected client details */}
-        {selectedClientId && (
+        {/* Display selected client details - Hidden per user request */}
+        {false && selectedClientId && (
           <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-md">
             <div className="space-y-1">
               <Label className="text-sm text-gray-600 text-right block">שם החברה</Label>
