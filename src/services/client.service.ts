@@ -918,6 +918,126 @@ export class ClientService extends BaseService {
     return sum % 10 === 0;
   }
 
+  /**
+   * Validate tax ID for adhoc clients - only checks format (9 digits), no Luhn
+   */
+  private validateTaxIdAdhoc(taxId: string): boolean {
+    return /^\d{9}$/.test(taxId);
+  }
+
+  /**
+   * Create an adhoc client with minimal validations
+   * - Tax ID: 9 digits only (no Luhn validation)
+   * - Phone: optional
+   * - Address: auto-filled with placeholders
+   */
+  async createAdhoc(data: {
+    company_name: string;
+    tax_id: string;
+    contact_email: string;
+    contact_name?: string;
+  }): Promise<ServiceResponse<Client>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Validate tax ID format only (9 digits, no Luhn)
+      if (!this.validateTaxIdAdhoc(data.tax_id)) {
+        return {
+          data: null,
+          error: new Error('ח.פ חייב להכיל 9 ספרות')
+        };
+      }
+
+      // Check for duplicate tax_id
+      const taxIdExists = await this.checkTaxIdExists(data.tax_id);
+      if (taxIdExists) {
+        return {
+          data: null,
+          error: new Error('לקוח עם מספר עוסק זה כבר קיים במערכת')
+        };
+      }
+
+      // Validate required fields for adhoc
+      if (!data.company_name?.trim()) {
+        return {
+          data: null,
+          error: new Error('שם החברה הוא שדה חובה')
+        };
+      }
+
+      if (!data.contact_email?.trim()) {
+        return {
+          data: null,
+          error: new Error('אימייל הוא שדה חובה')
+        };
+      }
+
+      // Create adhoc client with minimal data and placeholder values
+      const { data: client, error } = await supabase
+        .from('clients')
+        .insert({
+          company_name: data.company_name.trim(),
+          tax_id: data.tax_id.trim(),
+          contact_email: data.contact_email.trim(),
+          contact_name: data.contact_name?.trim() || data.company_name.trim(),
+          status: 'adhoc',
+          client_type: 'company',
+          company_status: 'active',
+          internal_external: 'external',
+          pays_fees: true,
+          receives_letters: true,
+          collection_responsibility: 'tiko',
+          payment_role: 'independent',
+          // Minimal placeholder address
+          address: {
+            street: '-',
+            city: '-',
+            postal_code: '0000000',
+          },
+          tenant_id: tenantId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      // Auto-create primary contact using shared contacts system
+      if (client) {
+        try {
+          const contactName = data.contact_name?.trim() || data.company_name.trim();
+          const owner = await TenantContactService.createOrGet({
+            full_name: contactName,
+            email: data.contact_email.trim(),
+            phone: null,
+            contact_type: 'owner',
+            job_title: 'איש קשר',
+          });
+
+          if (owner) {
+            await TenantContactService.assignToClient({
+              client_id: client.id,
+              contact_id: owner.id,
+              is_primary: true,
+              email_preference: 'all',
+              role_at_client: 'בעל הבית',
+            });
+          }
+        } catch (contactError) {
+          console.error('Failed to create contact for adhoc client:', contactError);
+          // Don't fail client creation if contact creation fails
+        }
+      }
+
+      await this.logAction('create_adhoc_client', client.id, { company_name: data.company_name });
+
+      return { data: client, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
   // Client Groups Management
   async createGroup(data: {
     group_name_hebrew: string; // Hebrew name only (required)

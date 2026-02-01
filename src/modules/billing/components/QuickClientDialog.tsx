@@ -77,37 +77,19 @@ export function QuickClientDialog({ open, onOpenChange, onClientCreated }: Quick
     setIsSubmitting(true);
 
     try {
-      // Check if tax ID already exists
-      const existingClient = await clientService.getByTaxId(taxId.trim());
-      if (existingClient.data) {
-        toast.error('לקוח עם ח.פ זה כבר קיים במערכת');
-        setErrors({ taxId: 'לקוח עם ח.פ זה כבר קיים במערכת' });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Create the adhoc client with minimal data
-      const { data: client, error } = await clientService.create({
+      // Create the adhoc client with minimal data using relaxed validation
+      // Note: createAdhoc already checks for duplicate tax_id
+      const { data: client, error } = await clientService.createAdhoc({
         company_name: companyName.trim(),
         tax_id: taxId.trim(),
         contact_email: email.trim(),
-        contact_name: companyName.trim(), // Use company name as contact name for adhoc
-        status: 'adhoc',
-        client_type: 'company',
-        company_status: 'active',
-        internal_external: 'external',
-        pays_fees: true,
-        receives_letters: true,
-        collection_responsibility: 'tiko',
-        // Minimal address for adhoc clients
-        address: {
-          street: '-',
-          city: '-',
-          postal_code: '0000000',
-        },
       });
 
       if (error) {
+        // Show specific error for duplicate tax_id
+        if (error.message.includes('מספר עוסק זה כבר קיים')) {
+          setErrors({ taxId: error.message });
+        }
         throw error;
       }
 
