@@ -77,12 +77,7 @@ const ClientRow = React.memo<ClientRowProps>(
 
     return (
       <TableRow className="border-b border-[#F4F4F4] hover:bg-gray-50/50">
-        <TableCell className="w-10">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(client.id)}
-          />
-        </TableCell>
+        {/* Company Name */}
         <TableCell className="font-medium">
           <div
             onClick={() => (onView || onEdit)(client)}
@@ -94,7 +89,9 @@ const ClientRow = React.memo<ClientRowProps>(
             )}
           </div>
         </TableCell>
+        {/* Tax ID */}
         <TableCell className="text-gray-600">{client.tax_id}</TableCell>
+        {/* Group */}
         <TableCell>
           {client.group ? (
             <Badge
@@ -108,7 +105,9 @@ const ClientRow = React.memo<ClientRowProps>(
             <span className="text-gray-400">-</span>
           )}
         </TableCell>
+        {/* Contact Name */}
         <TableCell className="text-gray-700">{client.contact_name || '-'}</TableCell>
+        {/* Phone */}
         <TableCell>
           {client.contact_phone ? (
             <TooltipProvider>
@@ -118,7 +117,7 @@ const ClientRow = React.memo<ClientRowProps>(
                     href={`https://wa.me/972${client.contact_phone.replace(/^0/, '').replace(/-/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#395BF7] hover:underline inline-flex items-center gap-1"
+                    className="text-gray-700 hover:text-[#395BF7] inline-flex items-center gap-1"
                     dir="ltr"
                   >
                     <MessageCircle className="h-4 w-4 text-green-600" />
@@ -134,6 +133,7 @@ const ClientRow = React.memo<ClientRowProps>(
             <span className="text-gray-400">-</span>
           )}
         </TableCell>
+        {/* Email */}
         <TableCell>
           {client.contact_email ? (
             <TooltipProvider>
@@ -141,7 +141,7 @@ const ClientRow = React.memo<ClientRowProps>(
                 <TooltipTrigger asChild>
                   <a
                     href={`mailto:${client.contact_email}`}
-                    className="text-[#395BF7] hover:underline inline-flex items-center gap-1 truncate max-w-[200px]"
+                    className="text-gray-700 hover:text-[#395BF7] inline-flex items-center gap-1 truncate max-w-[200px]"
                     dir="ltr"
                   >
                     <Mail className="h-4 w-4 flex-shrink-0" />
@@ -157,9 +157,29 @@ const ClientRow = React.memo<ClientRowProps>(
             <span className="text-gray-400">-</span>
           )}
         </TableCell>
+        {/* Status */}
         <TableCell>{getStatusBadge(client.status)}</TableCell>
+        {/* Actions */}
         <TableCell>
-          <div className="flex items-center gap-1 rtl:space-x-reverse">
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-[#395BF7] hover:bg-[#395BF7]/10"
+                    onClick={() => onDelete(client)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>מחק</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -177,27 +197,14 @@ const ClientRow = React.memo<ClientRowProps>(
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-
-            {canDelete && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
-                      onClick={() => onDelete(client)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>מחק</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
           </div>
+        </TableCell>
+        {/* Checkbox - At the end (left side in RTL) */}
+        <TableCell className="w-10">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(client.id)}
+          />
         </TableCell>
       </TableRow>
     );
@@ -224,21 +231,21 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   const allSelected = selectedClients.length === clients.length && clients.length > 0;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="border-b border-[#CECECE] bg-white hover:bg-white">
-            <TableHead className="w-10">
-              <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
-            </TableHead>
             <TableHead className="font-semibold text-gray-900">שם החברה</TableHead>
-            <TableHead className="font-semibold text-gray-900">ח.ז / ח.פ</TableHead>
+            <TableHead className="font-semibold text-gray-900">ח.ז/ח.פ</TableHead>
             <TableHead className="font-semibold text-gray-900">קבוצה</TableHead>
             <TableHead className="font-semibold text-gray-900">איש קשר</TableHead>
             <TableHead className="font-semibold text-gray-900">טלפון</TableHead>
             <TableHead className="font-semibold text-gray-900">אימייל</TableHead>
             <TableHead className="font-semibold text-gray-900">סטטוס</TableHead>
             <TableHead className="font-semibold text-gray-900">פעולות</TableHead>
+            <TableHead className="w-10">
+              <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
