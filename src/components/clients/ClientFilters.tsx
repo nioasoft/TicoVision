@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, RotateCcw, MoreVertical } from 'lucide-react';
+import { Search, MoreVertical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +49,9 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
     (filters.companySubtype && filters.companySubtype !== 'all') ||
     (filters.groupId && filters.groupId !== 'all');
 
+  // Base styles for filter triggers - white background with pill-shaped corners
+  const filterTriggerClass = "h-10 bg-white border border-gray-300 rounded-full hover:bg-white focus:bg-white data-[state=open]:bg-white";
+
   return (
     <div className="flex flex-wrap gap-3 items-center">
       {/* Search Bar */}
@@ -58,7 +61,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="חיפוש לפי שם, ת.ז או איש קשר..."
-          className="pr-10 h-10 bg-white border-gray-200 rounded-lg"
+          className="pr-10 h-10 bg-white border border-gray-300 rounded-full"
           dir="rtl"
         />
       </div>
@@ -69,7 +72,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={filters.status || 'all'}
           onValueChange={(value) => onFilterChange({ status: value })}
         >
-          <SelectTrigger className="w-[130px] h-10 bg-white border-gray-200 rounded-lg">
+          <SelectTrigger className={`w-[130px] ${filterTriggerClass}`}>
             <SelectValue placeholder="כל הלקוחות" />
           </SelectTrigger>
           <SelectContent>
@@ -89,7 +92,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={filters.companyStatus}
           onValueChange={(value) => onFilterChange({ companyStatus: value })}
         >
-          <SelectTrigger className="w-[100px] h-10 bg-white border-gray-200 rounded-lg">
+          <SelectTrigger className={`w-[100px] ${filterTriggerClass}`}>
             <SelectValue placeholder="פעילה" />
           </SelectTrigger>
           <SelectContent>
@@ -107,7 +110,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={filters.clientType}
           onValueChange={(value) => onFilterChange({ clientType: value })}
         >
-          <SelectTrigger className="w-[120px] h-10 bg-white border-gray-200 rounded-lg">
+          <SelectTrigger className={`w-[120px] ${filterTriggerClass}`}>
             <SelectValue placeholder="כל הסוגים" />
           </SelectTrigger>
           <SelectContent>
@@ -126,7 +129,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={filters.companySubtype}
           onValueChange={(value) => onFilterChange({ companySubtype: value })}
         >
-          <SelectTrigger className="w-[140px] h-10 bg-white border-gray-200 rounded-lg">
+          <SelectTrigger className={`w-[140px] ${filterTriggerClass}`}>
             <SelectValue placeholder="כל תתי הסוגים" />
           </SelectTrigger>
           <SelectContent>
@@ -146,7 +149,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={filters.groupId}
           onValueChange={(value) => onFilterChange({ groupId: value })}
         >
-          <SelectTrigger className="w-[130px] h-10 bg-white border-gray-200 rounded-lg">
+          <SelectTrigger className={`w-[130px] ${filterTriggerClass}`}>
             <SelectValue placeholder="כל הקבוצות" />
           </SelectTrigger>
           <SelectContent>
@@ -167,8 +170,8 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         variant="ghost"
         size="sm"
         onClick={onReset}
-        className={`h-10 px-4 rounded-lg bg-white border border-gray-200 ${
-          hasActiveFilters ? 'text-[#395BF7] hover:text-[#395BF7]' : 'text-gray-500'
+        className={`h-10 px-4 rounded-full bg-white border border-gray-300 hover:bg-gray-50 ${
+          hasActiveFilters ? 'text-[#395BF7]' : 'text-gray-500'
         }`}
         disabled={!hasActiveFilters}
       >
