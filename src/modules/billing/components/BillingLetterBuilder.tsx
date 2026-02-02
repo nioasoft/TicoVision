@@ -33,6 +33,11 @@ export function BillingLetterBuilder() {
   const [notes, setNotes] = useState('');
   const [quickClientOpen, setQuickClientOpen] = useState(false);
 
+  // New fields for billing letter improvements
+  const [openingText, setOpeningText] = useState('');               // בפתח הדברים (required)
+  const [additionalRecipient, setAdditionalRecipient] = useState(''); // לכבוד נוסף (optional)
+  const [additionalSubject, setAdditionalSubject] = useState('');     // נדון נוסף (optional)
+
   // Preview dialog state
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [formDataForPreview, setFormDataForPreview] = useState<BillingLetterFormData | null>(null);
@@ -45,8 +50,12 @@ export function BillingLetterBuilder() {
     return calculateBillingAmounts(amountBeforeVat, 0);
   }, [amountBeforeVat]);
 
-  // Form validation
-  const isValid = selectedClient && billingSubject.trim() && serviceDescription.trim() && amountBeforeVat && amountBeforeVat > 0;
+  // Form validation - openingText is now required
+  const isValid = selectedClient &&
+    billingSubject.trim() &&
+    openingText.trim() &&  // New: required field
+    serviceDescription.trim() &&
+    amountBeforeVat && amountBeforeVat > 0;
 
   /**
    * Open preview dialog instead of saving directly
@@ -69,6 +78,10 @@ export function BillingLetterBuilder() {
       bank_discount_percentage: 0, // No discount for billing letters
       due_date: dueDate || undefined,
       notes: notes.trim() || undefined,
+      // New fields for billing letter improvements
+      opening_text: openingText.trim(),
+      additional_recipient: additionalRecipient.trim() || undefined,
+      additional_subject: additionalSubject.trim() || undefined,
     });
 
     // Open preview dialog
@@ -157,6 +170,24 @@ export function BillingLetterBuilder() {
                 </div>
               </div>
             )}
+
+            {/* Additional Recipient - לכבוד נוסף */}
+            <div className="mt-4">
+              <Label htmlFor="additionalRecipient" className="text-right block mb-2">
+                לכבוד נוסף (שורה שנייה)
+              </Label>
+              <Input
+                id="additionalRecipient"
+                value={additionalRecipient}
+                onChange={(e) => setAdditionalRecipient(e.target.value)}
+                className="text-right"
+                dir="rtl"
+                maxLength={100}
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">
+                יופיע בשורה השנייה של "לכבוד" (אופציונלי)
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -196,10 +227,45 @@ export function BillingLetterBuilder() {
               </p>
             </div>
 
-            {/* Description (detailed) */}
+            {/* Additional Subject - נדון נוסף */}
+            <div>
+              <Label htmlFor="additionalSubject" className="text-right block mb-2">
+                נדון נוסף (שורה נוספת מתחת לנדון)
+              </Label>
+              <Input
+                id="additionalSubject"
+                value={additionalSubject}
+                onChange={(e) => setAdditionalSubject(e.target.value)}
+                className="text-right"
+                dir="rtl"
+                maxLength={150}
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">
+                טקסט נוסף שיופיע מתחת לשורת הנדון (אופציונלי)
+              </p>
+            </div>
+
+            {/* Opening Text - בפתח הדברים */}
+            <div>
+              <Label htmlFor="openingText" className="text-right block mb-2">
+                בפתח הדברים *
+              </Label>
+              <Textarea
+                id="openingText"
+                value={openingText}
+                onChange={(e) => setOpeningText(e.target.value)}
+                className="min-h-[80px] text-right"
+                dir="rtl"
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">
+                פסקת הפתיחה של המכתב (שדה חובה)
+              </p>
+            </div>
+
+            {/* Description (detailed) - לגופו של עניין */}
             <div>
               <Label htmlFor="serviceDescription" className="text-right block mb-2">
-                תוכן המכתב *
+                לגופו של עניין: *
               </Label>
               <Textarea
                 id="serviceDescription"
@@ -209,7 +275,7 @@ export function BillingLetterBuilder() {
                 dir="rtl"
               />
               <p className="text-xs text-muted-foreground mt-1 text-right">
-                המלל המפורט שיופיע בגוף המכתב
+                הטקסט שיופיע בסקשן "לגופו של עניין" במכתב
               </p>
             </div>
           </CardContent>

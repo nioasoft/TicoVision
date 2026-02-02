@@ -16,13 +16,14 @@ const CARDCOM_ENV = Deno.env.get('CARDCOM_ENV') || 'test';
 const CARDCOM_TERMINAL = Deno.env.get('CARDCOM_TERMINAL') || '';
 const CARDCOM_USERNAME = Deno.env.get('CARDCOM_USERNAME') || '';
 
-type PaymentMethod = 'bank_transfer' | 'cc_single' | 'cc_installments' | 'checks';
+type PaymentMethod = 'bank_transfer' | 'cc_single' | 'cc_installments' | 'checks' | 'cc_billing';
 
 interface DiscountConfig {
   bank_transfer: number;
   cc_single: number;
   cc_installments: number;
   checks: number;
+  cc_billing: number;
 }
 
 const DISCOUNT_RATES: DiscountConfig = {
@@ -30,6 +31,7 @@ const DISCOUNT_RATES: DiscountConfig = {
   cc_single: 8,        // 8% discount
   cc_installments: 4,  // 4% discount
   checks: 0,           // No discount
+  cc_billing: 0,       // No discount (billing letter credit card)
 };
 
 /**
@@ -129,25 +131,32 @@ serve(async (req) => {
     // Parse query parameters
     const url = new URL(req.url);
     const feeId = url.searchParams.get('fee_id');
+    const billingLetterId = url.searchParams.get('billing_letter_id'); // New: for billing letters
     const method = url.searchParams.get('method') as PaymentMethod;
     const clientId = url.searchParams.get('client_id');
     const amountFromUrl = url.searchParams.get('amount');
 
+    // Determine if this is a billing letter payment or fee payment
+    const isBillingLetterPayment = method === 'cc_billing' || !!billingLetterId;
+
     console.log('📥 [Debug] Payment Selection Request:');
     console.log('  - Full URL:', req.url);
     console.log('  - fee_id:', feeId || 'MISSING');
+    console.log('  - billing_letter_id:', billingLetterId || 'NOT PROVIDED');
     console.log('  - method:', method || 'MISSING');
     console.log('  - client_id:', clientId || 'MISSING');
     console.log('  - amount (from URL):', amountFromUrl || 'NOT PROVIDED');
+    console.log('  - isBillingLetterPayment:', isBillingLetterPayment);
 
-    // Validate required parameters
-    if (!feeId || !method || !clientId) {
+    // Validate required parameters (billing letters don't need fee_id)
+    if ((!feeId && !billingLetterId) || !method || !clientId) {
       console.error('❌ Missing required parameters');
       console.error('  - fee_id:', feeId ? '✓' : '✗');
+      console.error('  - billing_letter_id:', billingLetterId ? '✓' : '✗');
       console.error('  - method:', method ? '✓' : '✗');
       console.error('  - client_id:', clientId ? '✓' : '✗');
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters: fee_id, method, client_id' }),
+        JSON.stringify({ error: 'Missing required parameters: fee_id or billing_letter_id, method, client_id' }),
         {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
@@ -156,7 +165,7 @@ serve(async (req) => {
     }
 
     // Validate payment method
-    if (!['bank_transfer', 'cc_single', 'cc_installments', 'checks'].includes(method)) {
+    if (!['bank_transfer', 'cc_single', 'cc_installments', 'checks', 'cc_billing'].includes(method)) {
       return new Response(
         JSON.stringify({ error: 'Invalid payment method' }),
         {
@@ -180,18 +189,83 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     console.log('✅ Supabase client initialized successfully');
 
-    // Get fee calculation details (including retainer_calculation for retainer clients)
-    const { data: feeData, error: feeError } = await supabase
-      .from('fee_calculations')
-      .select('total_amount, tenant_id, client_id, retainer_calculation')
-      .eq('id', feeId)
-      .single();
+    // Variables to be populated from either fee_calculations or billing_letters
+    let tenantId: string;
+    let originalAmount: number;
+    let feeData: { total_amount: number; tenant_id: string; client_id: string; retainer_calculation?: { total_with_vat: number } } | null = null;
+    let billingLetterData: { id: string; amount_before_vat: number; tenant_id: string; client_id: string } | null = null;
 
-    if (feeError || !feeData) {
+    // Calculate discount
+    const discountPercent = DISCOUNT_RATES[method];
+    // Remove commas from formatted numbers (e.g., "51,079" -> "51079")
+    const urlAmount = amountFromUrl ? parseFloat(amountFromUrl.replace(/,/g, '')) : null;
+
+    if (isBillingLetterPayment && billingLetterId) {
+      // Billing letter payment - lookup billing_letters table
+      const { data, error } = await supabase
+        .from('billing_letters')
+        .select('id, amount_before_vat, tenant_id, client_id')
+        .eq('id', billingLetterId)
+        .single();
+
+      if (error || !data) {
+        console.error('❌ Billing letter not found:', error);
+        return new Response(
+          JSON.stringify({ error: 'Billing letter not found' }),
+          {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      billingLetterData = data;
+      tenantId = data.tenant_id;
+
+      // For billing letters, use URL amount or calculate from amount_before_vat
+      if (urlAmount && urlAmount > 0) {
+        originalAmount = urlAmount;
+      } else {
+        // amount_before_vat + 18% VAT
+        originalAmount = Math.round(data.amount_before_vat * 1.18);
+      }
+    } else if (feeId) {
+      // Fee calculation payment - existing logic
+      const { data, error: feeError } = await supabase
+        .from('fee_calculations')
+        .select('total_amount, tenant_id, client_id, retainer_calculation')
+        .eq('id', feeId)
+        .single();
+
+      if (feeError || !data) {
+        return new Response(
+          JSON.stringify({ error: 'Fee calculation not found' }),
+          {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      feeData = data;
+      tenantId = data.tenant_id;
+
+      // Priority: URL amount (already includes VAT from letter) > retainer total_with_vat > fee total_amount with VAT
+      if (urlAmount && urlAmount > 0) {
+        originalAmount = urlAmount;
+      } else {
+        const retainerAmount = data.retainer_calculation?.total_with_vat || 0;
+        if (retainerAmount > 0) {
+          originalAmount = retainerAmount;
+        } else {
+          originalAmount = Math.round(data.total_amount * 1.18);
+        }
+      }
+    } else {
       return new Response(
-        JSON.stringify({ error: 'Fee calculation not found' }),
+        JSON.stringify({ error: 'Either fee_id or billing_letter_id is required' }),
         {
-          status: 404,
+          status: 400,
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -215,46 +289,25 @@ serve(async (req) => {
     const displayName = clientData?.company_name || clientData?.commercial_name || 'לקוח';
     const groupName = clientData?.client_groups?.group_name_hebrew || '';
 
-    // Calculate discount
-    // Priority: URL amount (already includes VAT from letter) > retainer total_with_vat > fee total_amount with VAT
-    const discountPercent = DISCOUNT_RATES[method];
-    // Remove commas from formatted numbers (e.g., "51,079" -> "51079")
-    const urlAmount = amountFromUrl ? parseFloat(amountFromUrl.replace(/,/g, '')) : null;
-
-    let originalAmount: number;
-    if (urlAmount && urlAmount > 0) {
-      // Use amount from URL (already includes VAT, matches what's shown in the letter)
-      originalAmount = urlAmount;
-    } else {
-      // Fallback: calculate from DB
-      const retainerAmount = feeData.retainer_calculation?.total_with_vat || 0;
-      if (retainerAmount > 0) {
-        originalAmount = retainerAmount;
-      } else {
-        // total_amount is before VAT, so add VAT (18%)
-        originalAmount = Math.round(feeData.total_amount * 1.18);
-      }
-    }
-
     const discountAmount = originalAmount * (discountPercent / 100);
     const amountAfterDiscount = Math.ceil(originalAmount - discountAmount);
 
     console.log('💰 Amount calculation:', {
       urlAmount,
-      retainerAmount: feeData.retainer_calculation?.total_with_vat || 0,
-      totalAmount: feeData.total_amount,
+      isBillingLetterPayment,
       usedAmount: originalAmount,
-      source: urlAmount && urlAmount > 0 ? 'URL' : (feeData.retainer_calculation?.total_with_vat > 0 ? 'retainer' : 'fee_with_vat'),
+      source: urlAmount && urlAmount > 0 ? 'URL' : (isBillingLetterPayment ? 'billing_letter' : 'fee_calculation'),
     });
 
     console.log(`📊 Payment selection: ${method}, Original: ₪${originalAmount}, Discount: ${discountPercent}%, Final: ₪${amountAfterDiscount}`);
 
-    // Insert into payment_method_selections
+    // Insert into payment_method_selections (for both fee and billing letter payments)
     const { error: selectionError } = await supabase
       .from('payment_method_selections')
       .insert({
-        tenant_id: feeData.tenant_id,
-        fee_calculation_id: feeId,
+        tenant_id: tenantId,
+        fee_calculation_id: feeId || null, // null for billing letter payments
+        billing_letter_id: billingLetterId || null, // new: for billing letter tracking
         client_id: clientId,
         selected_method: method,
         original_amount: originalAmount,
@@ -267,18 +320,34 @@ serve(async (req) => {
       console.error('Error inserting payment selection:', selectionError);
     }
 
-    // Update fee_calculations
-    const { error: updateError } = await supabase
-      .from('fee_calculations')
-      .update({
-        payment_method_selected: method,
-        payment_method_selected_at: new Date().toISOString(),
-        amount_after_selected_discount: amountAfterDiscount,
-      })
-      .eq('id', feeId);
+    // Update the source record based on payment type
+    if (feeId && feeData) {
+      // Update fee_calculations for fee payments
+      const { error: updateError } = await supabase
+        .from('fee_calculations')
+        .update({
+          payment_method_selected: method,
+          payment_method_selected_at: new Date().toISOString(),
+          amount_after_selected_discount: amountAfterDiscount,
+        })
+        .eq('id', feeId);
 
-    if (updateError) {
-      console.error('Error updating fee calculation:', updateError);
+      if (updateError) {
+        console.error('Error updating fee calculation:', updateError);
+      }
+    } else if (billingLetterId && billingLetterData) {
+      // Update billing_letters for billing letter payments
+      const { error: updateError } = await supabase
+        .from('billing_letters')
+        .update({
+          payment_method_selected: method,
+          payment_method_selected_at: new Date().toISOString(),
+        })
+        .eq('id', billingLetterId);
+
+      if (updateError) {
+        console.error('Error updating billing letter:', updateError);
+      }
     }
 
     // Determine redirect URL
@@ -293,25 +362,26 @@ serve(async (req) => {
         const singlePaymentResult = await createCardcomPaymentPage(
           amountAfterDiscount,
           1,
-          feeId,
+          feeId || billingLetterId || 'unknown',
           displayName,
           clientData?.contact_email
         );
         if (singlePaymentResult) {
           // Save payment_transaction with LowProfileId
           await supabase.from('payment_transactions').insert({
-            tenant_id: feeData.tenant_id,
+            tenant_id: tenantId,
             client_id: clientId,
-            fee_calculation_id: feeId,
+            fee_calculation_id: feeId || null,
+            billing_letter_id: billingLetterId || null,
             cardcom_deal_id: singlePaymentResult.lowProfileId,
             amount: amountAfterDiscount,
             currency: 'ILS',
             status: 'pending',
             payment_method: 'credit_card',
           });
-          redirectUrl = singlePaymentResult.url || `${APP_URL}/payment/error?fee_id=${feeId}`;
+          redirectUrl = singlePaymentResult.url || `${APP_URL}/payment/error?fee_id=${feeId || billingLetterId}`;
         } else {
-          redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId}`;
+          redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId || billingLetterId}`;
         }
         break;
 
@@ -319,25 +389,54 @@ serve(async (req) => {
         const installmentsResult = await createCardcomPaymentPage(
           amountAfterDiscount,
           8,
-          feeId,
+          feeId || billingLetterId || 'unknown',
           displayName,
           clientData?.contact_email
         );
         if (installmentsResult) {
           // Save payment_transaction with LowProfileId
           await supabase.from('payment_transactions').insert({
-            tenant_id: feeData.tenant_id,
+            tenant_id: tenantId,
             client_id: clientId,
-            fee_calculation_id: feeId,
+            fee_calculation_id: feeId || null,
+            billing_letter_id: billingLetterId || null,
             cardcom_deal_id: installmentsResult.lowProfileId,
             amount: amountAfterDiscount,
             currency: 'ILS',
             status: 'pending',
             payment_method: 'credit_card',
           });
-          redirectUrl = installmentsResult.url || `${APP_URL}/payment/error?fee_id=${feeId}`;
+          redirectUrl = installmentsResult.url || `${APP_URL}/payment/error?fee_id=${feeId || billingLetterId}`;
         } else {
-          redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId}`;
+          redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId || billingLetterId}`;
+        }
+        break;
+
+      case 'cc_billing':
+        // Billing letter credit card payment - single payment, no discount
+        const billingCcResult = await createCardcomPaymentPage(
+          amountAfterDiscount, // Same as originalAmount since discount is 0%
+          1, // Single payment only
+          billingLetterId || 'unknown',
+          displayName,
+          clientData?.contact_email
+        );
+        if (billingCcResult) {
+          // Save payment_transaction with LowProfileId
+          await supabase.from('payment_transactions').insert({
+            tenant_id: tenantId,
+            client_id: clientId,
+            fee_calculation_id: null,
+            billing_letter_id: billingLetterId || null,
+            cardcom_deal_id: billingCcResult.lowProfileId,
+            amount: amountAfterDiscount,
+            currency: 'ILS',
+            status: 'pending',
+            payment_method: 'credit_card',
+          });
+          redirectUrl = billingCcResult.url || `${APP_URL}/payment/error?billing_letter_id=${billingLetterId}`;
+        } else {
+          redirectUrl = `${APP_URL}/payment/error?billing_letter_id=${billingLetterId}`;
         }
         break;
 
@@ -346,7 +445,7 @@ serve(async (req) => {
         break;
 
       default:
-        redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId}`;
+        redirectUrl = `${APP_URL}/payment/error?fee_id=${feeId || billingLetterId}`;
     }
 
     console.log(`✅ Redirecting to: ${redirectUrl}`);

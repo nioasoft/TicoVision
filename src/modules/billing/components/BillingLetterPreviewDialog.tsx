@@ -65,6 +65,10 @@ export interface BillingLetterFormData {
   bank_discount_percentage: number;
   due_date?: string;
   notes?: string;
+  // New fields for billing letter improvements
+  opening_text: string;           // בפתח הדברים (required)
+  additional_recipient?: string;  // לכבוד נוסף (optional)
+  additional_subject?: string;    // נדון נוסף (optional)
 }
 
 export interface BillingLetterPreviewDialogProps {
@@ -165,6 +169,10 @@ export function BillingLetterPreviewDialog({
         bankDiscountPercentage: formData.bank_discount_percentage,
         dueDate: formData.due_date,
         notes: formData.notes,
+        // New fields for billing letter improvements
+        openingText: formData.opening_text,
+        additionalRecipient: formData.additional_recipient,
+        additionalSubject: formData.additional_subject,
       };
     }
     if (billingLetter) {
@@ -177,6 +185,10 @@ export function BillingLetterPreviewDialog({
         bankDiscountPercentage: billingLetter.bank_discount_percentage || 0,
         dueDate: billingLetter.due_date || undefined,
         notes: billingLetter.notes || undefined,
+        // For existing billing letters, use empty values (these fields are only in formData)
+        openingText: '',
+        additionalRecipient: undefined,
+        additionalSubject: undefined,
       };
     }
     return null;
@@ -223,7 +235,19 @@ export function BillingLetterPreviewDialog({
         tax_year: new Date().getFullYear().toString(),
         letter_date: new Intl.DateTimeFormat('he-IL').format(new Date()),
 
-        // Payment section variables
+        // New fields for billing letter improvements
+        opening_text: effectiveData.openingText || '',
+        group_name: effectiveData.additionalRecipient || '', // לכבוד נוסף (uses same variable as header)
+        additional_subject: effectiveData.additionalSubject || '',
+
+        // Payment section variables - no discount for billing letters
+        amount_with_vat: formatNumber(amounts.totalAmount), // Full amount with VAT (no discount)
+        client_id: effectiveData.clientId,
+        // billing_letter_id and letter_id will be set after creation (or 'pending' for preview)
+        billing_letter_id: createdBillingLetter?.id || billingLetter?.id || 'pending',
+        letter_id: savedLetterId || 'pending',
+
+        // Legacy variables (kept for backward compatibility)
         bank_transfer_only: true,
         bank_discount: effectiveData.bankDiscountPercentage.toString(),
         amount_before_discount_no_vat: formatNumber(amounts.amountBeforeVat),
@@ -401,6 +425,12 @@ export function BillingLetterPreviewDialog({
 
       const finalRecipients = getFinalRecipients();
 
+      // Replace pending billing_letter_id with real ID in HTML before saving
+      let htmlToSave = previewHtml;
+      if (billingLetterId) {
+        htmlToSave = htmlToSave.replace(/billing_letter_id=pending/g, `billing_letter_id=${billingLetterId}`);
+      }
+
       const { data, error } = await supabase
         .from('generated_letters')
         .insert({
@@ -414,7 +444,7 @@ export function BillingLetterPreviewDialog({
             billing_subject: effectiveData.billingSubject,
             amount: amounts?.amountAfterDiscountWithVat || effectiveData.amountBeforeVat,
           },
-          generated_content_html: previewHtml,
+          generated_content_html: htmlToSave,
           recipient_emails: finalRecipients.length > 0 ? finalRecipients : null,
           status: 'draft',
           rendering_engine: 'legacy',
@@ -430,6 +460,15 @@ export function BillingLetterPreviewDialog({
         console.error('Error saving letter as draft:', error);
         toast.error('שגיאה בשמירת המכתב');
         return null;
+      }
+
+      // Now update the HTML with the real letter_id (we didn't have it before INSERT)
+      const finalHtmlWithIds = htmlToSave.replace(/letter_id=pending/g, `letter_id=${data.id}`);
+      if (finalHtmlWithIds !== htmlToSave) {
+        await supabase
+          .from('generated_letters')
+          .update({ generated_content_html: finalHtmlWithIds })
+          .eq('id', data.id);
       }
 
       setSavedLetterId(data.id);
@@ -621,13 +660,22 @@ export function BillingLetterPreviewDialog({
         throw new Error('לא מחובר - אנא התחבר מחדש');
       }
 
+      // Replace pending IDs with real IDs in the HTML before sending
+      let finalHtml = previewHtml;
+      if (billingLetterId) {
+        finalHtml = finalHtml.replace(/billing_letter_id=pending/g, `billing_letter_id=${billingLetterId}`);
+      }
+      if (letterId) {
+        finalHtml = finalHtml.replace(/letter_id=pending/g, `letter_id=${letterId}`);
+      }
+
       // Call send-letter Edge Function with the pre-generated HTML
       // We send the HTML directly (customText + isHtml) instead of templateType
       // to ensure the exact preview content is sent, not a regenerated version
       const { error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails: finalRecipients,
-          customText: previewHtml,
+          customText: finalHtml,
           isHtml: true,
           clientId: effectiveData.clientId,
           letterId,
