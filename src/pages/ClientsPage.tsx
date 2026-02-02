@@ -171,7 +171,7 @@ export default function ClientsPage() {
               <Button
                 variant="outline"
                 onClick={handleOpenAddDialog}
-                className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-lg"
+                className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full"
               >
                 <Plus className="ml-2 h-4 w-4" />
                 הוסף לקוח חדש
@@ -184,7 +184,7 @@ export default function ClientsPage() {
                 variant="outline"
                 onClick={handleOpenBulkDeleteDialog}
                 disabled={selectedClients.length === 0}
-                className="border-black text-black hover:bg-gray-100 rounded-lg disabled:opacity-50"
+                className="border-black text-black hover:bg-gray-100 rounded-full disabled:opacity-50"
               >
                 <Trash2 className="ml-2 h-4 w-4" />
                 מחיקת לקוחות
