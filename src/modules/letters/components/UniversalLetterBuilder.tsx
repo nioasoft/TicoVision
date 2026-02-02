@@ -2147,7 +2147,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </Label>
 
             {/* Three-Column Grid */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
               {/* RIGHT COLUMN: Client from List */}
               <div
@@ -2607,12 +2607,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
 
             {/* Custom Header Lines - Step 2 */}
-            <div className="mt-4 p-4 border rounded-lg bg-gray-50">
-              <div className="flex justify-between items-center mb-3">
+            <div className="mt-4 p-3 sm:p-4 border rounded-lg bg-gray-50">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
                   2. שורות נוספות מתחת לשם הנמען
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant="outline"
@@ -2643,7 +2643,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   {customHeaderLines.map((line, index) => (
                     <div
                       key={line.id}
-                      className="flex items-center gap-2 p-3 bg-white border rounded"
+                      className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 sm:p-3 bg-white border rounded"
                     >
                       <div className="flex flex-col gap-1">
                         <Button
@@ -2652,7 +2652,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           size="sm"
                           onClick={() => handleMoveLineUp(line.id)}
                           disabled={index === 0}
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                         >
                           <ArrowUp className="h-3 w-3" />
                         </Button>
@@ -2662,7 +2662,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           size="sm"
                           onClick={() => handleMoveLineDown(line.id)}
                           disabled={index === customHeaderLines.length - 1}
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                         >
                           <ArrowDown className="h-3 w-3" />
                         </Button>
@@ -2681,7 +2681,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                               onChange={(e) => handleUpdateLineContent(line.id, e.target.value)}
                               dir="rtl"
                             />
-                            <div className="flex gap-3 items-center">
+                            <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
                               <div className="flex items-center gap-2">
                                 <Checkbox
                                   id={`${line.id}-bold`}
@@ -2716,8 +2716,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
 
             {/* Subject Lines Section (הנדון) - Step 3 */}
-            <div className="mt-4 p-4 border rounded-lg bg-blue-50">
-              <div className="flex justify-between items-center mb-3">
+            <div className="mt-4 p-3 sm:p-4 border rounded-lg bg-blue-50">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                 <Label className="text-right rtl:text-right block text-base font-semibold">
                   3. שורות הנדון
                 </Label>
@@ -2739,7 +2739,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                   return (
                     <div
                       key={line.id}
-                      className="flex items-center gap-2 p-3 bg-white border rounded"
+                      className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 sm:p-3 bg-white border rounded"
                     >
                       {/* Move Up/Down Buttons */}
                       <div className="flex flex-col gap-1">
@@ -2750,7 +2750,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           onClick={() => handleMoveSubjectLineUp(line.id)}
                           disabled={index === 0}
                           title="הזז למעלה"
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                         >
                           <ArrowUp className="h-3 w-3" />
                         </Button>
@@ -2761,7 +2761,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           onClick={() => handleMoveSubjectLineDown(line.id)}
                           disabled={index === subjectLines.length - 1}
                           title="הזז למטה"
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 sm:h-6 sm:w-6 p-0"
                         >
                           <ArrowDown className="h-3 w-3" />
                         </Button>
@@ -2804,7 +2804,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                           )}
 
                           {/* Formatting Options - Bold & Underline only */}
-                          <div className="flex gap-3 items-center">
+                          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
                             <div className="flex items-center gap-2">
                               <Checkbox
                                 id={`${line.id}-bold`}
@@ -2870,14 +2870,14 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               </Label>
 
               {/* Template Selection + Save as Template */}
-              <div className="flex items-center gap-3">
-                <div className="flex gap-2 rtl:flex-row-reverse items-center">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                <div className="flex flex-wrap gap-2 rtl:flex-row-reverse items-center">
                   <Select
                     value={selectedTemplateId}
                     onValueChange={handleLoadTemplate}
                     disabled={savedTemplates.length === 0}
                   >
-                    <SelectTrigger dir="rtl" className="w-48">
+                    <SelectTrigger dir="rtl" className="w-full sm:w-48">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent dir="rtl">
@@ -2932,8 +2932,8 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </Label>
 
             {/* Overall border container */}
-            <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50/30">
-              <div className="grid grid-cols-3 gap-4">
+            <div className="border-2 border-gray-300 rounded-lg p-3 sm:p-4 bg-gray-50/30">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* COLUMN 1 (RIGHT in RTL): View & Save */}
                 <div className="space-y-4 border-2 border-blue-200 rounded-lg p-3 bg-blue-50/30">
                   <h3 className="text-lg font-semibold mb-4 rtl:text-right">צפה ושמור</h3>
@@ -3283,7 +3283,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       {/* Preview Dialog */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[85vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">תצוגה מקדימה - מכתב מותאם אישית</DialogTitle>
             <DialogDescription className="text-right">
@@ -3291,7 +3291,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </DialogDescription>
           </DialogHeader>
           <PreviewWithPageBreaks html={previewHtml} />
-          <div className="flex justify-end gap-2 rtl:flex-row-reverse">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 rtl:sm:flex-row-reverse">
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
               סגור
             </Button>
