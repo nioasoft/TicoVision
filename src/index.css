@@ -58,10 +58,10 @@
   --spacing: 0.25rem;
   /* Form colors matching the new color palette */
   --form-border: var(--border);
-  --form-bg: oklch(0.97 0.025 160);     /* ירוק מנטה בהיר - מדגיש שדות קלט */
+  --form-bg: oklch(1 0 0);              /* לבן - רקע נקי לשדות */
   --form-ring: var(--ring);
   --input-border: var(--border);
-  --input-bg: oklch(0.97 0.025 160);    /* ירוק מנטה בהיר - מדגיש שדות קלט */
+  --input-bg: oklch(1 0 0);             /* לבן - רקע נקי לשדות */
   --input-ring: var(--ring);
 }
 

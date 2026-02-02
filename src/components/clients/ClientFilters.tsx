@@ -49,8 +49,8 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
     (filters.companySubtype && filters.companySubtype !== 'all') ||
     (filters.groupId && filters.groupId !== 'all');
 
-  // Base styles for filter triggers - white background with pill-shaped corners
-  const filterTriggerClass = "h-10 bg-white border border-gray-300 rounded-full hover:bg-white focus:bg-white data-[state=open]:bg-white";
+  // Base styles for filter triggers - white background with !important to override CSS variables
+  const filterTriggerClass = "h-10 !bg-white border border-gray-300 rounded-full hover:!bg-white focus:!bg-white data-[state=open]:!bg-white";
 
   return (
     <div className="flex flex-wrap gap-3 items-center">
@@ -61,7 +61,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="חיפוש לפי שם, ת.ז או איש קשר..."
-          className="pr-10 h-10 bg-white border border-gray-300 rounded-full"
+          className="pr-10 h-10 !bg-white border border-gray-300 rounded-full"
           dir="rtl"
         />
       </div>
@@ -170,7 +170,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         variant="ghost"
         size="sm"
         onClick={onReset}
-        className={`h-10 px-4 rounded-full bg-white border border-gray-300 hover:bg-gray-50 ${
+        className={`h-10 px-4 rounded-full !bg-white border border-gray-300 hover:!bg-gray-50 ${
           hasActiveFilters ? 'text-[#395BF7]' : 'text-gray-500'
         }`}
         disabled={!hasActiveFilters}

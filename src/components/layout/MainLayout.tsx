@@ -460,7 +460,8 @@ export function MainLayout() {
                 <Input
                   type="search"
                   placeholder="חיפוש"
-                  className="pl-10 bg-white border-gray-200 rounded-lg"
+                  className="pl-10"
+                  style={{ borderRadius: '9999px', backgroundColor: 'white', borderColor: '#d1d5db' }}
                   dir="rtl"
                 />
               </div>
