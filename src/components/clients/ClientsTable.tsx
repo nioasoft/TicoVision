@@ -1,6 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, MoreHorizontal, MessageCircle, Mail, FolderOpen, Palette } from 'lucide-react';
-import { ClientBalanceBadge } from '@/modules/annual-balance/components/ClientBalanceBadge';
+import { Edit, Trash2, MessageCircle, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -13,16 +12,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { formatDate } from '@/lib/utils';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { Client } from '@/services';
-import { PAYMENT_ROLE_LABELS } from '@/lib/labels';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface ClientsTableProps {
@@ -57,16 +52,16 @@ const ClientRow = React.memo<ClientRowProps>(
       // Adhoc clients have a special purple badge
       if (status === 'adhoc') {
         return (
-          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+          <Badge className="bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-100">
             חד-פעמי
           </Badge>
         );
       }
 
-      const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-        active: 'default',
-        inactive: 'secondary',
-        pending: 'destructive',
+      const styles: Record<string, string> = {
+        active: 'bg-[#96ECAA] text-green-800 border-transparent hover:bg-[#96ECAA]',
+        inactive: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100',
+        pending: 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
       };
       const labels: Record<string, string> = {
         active: 'פעיל',
@@ -74,49 +69,37 @@ const ClientRow = React.memo<ClientRowProps>(
         pending: 'ממתין',
       };
       return (
-        <Badge variant={variants[status] || 'default'}>
+        <Badge className={`${styles[status] || styles.active} border`}>
           {labels[status] || status}
         </Badge>
       );
     };
 
-    const getClientTypeLabel = (clientType: string) => {
-      const labels: Record<string, string> = {
-        company: 'חברה',
-        freelancer: 'עצמאי',
-        salary_owner: 'בעל שליטה שכיר',
-      };
-      return labels[clientType] || clientType;
-    };
-
     return (
-      <TableRow key={client.id}>
+      <TableRow className="border-b border-[#F4F4F4] hover:bg-gray-50/50">
         <TableCell className="w-10">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelect(client.id)}
           />
         </TableCell>
-        <TableCell className="font-medium flex-1 min-w-[150px]">
+        <TableCell className="font-medium">
           <div
             onClick={() => (onView || onEdit)(client)}
-            className="cursor-pointer hover:text-blue-600 transition-colors"
+            className="cursor-pointer hover:text-[#395BF7] transition-colors"
           >
-            <div>{client.company_name}</div>
+            <div className="font-medium">{client.company_name}</div>
             {client.company_name_hebrew && (
               <div className="text-sm text-gray-500">{client.company_name_hebrew}</div>
             )}
           </div>
         </TableCell>
-        <TableCell className="w-24">{client.tax_id}</TableCell>
-        <TableCell className="w-32 hidden">
-          {getClientTypeLabel(client.client_type || 'company')}
-        </TableCell>
-        <TableCell className="w-32">
+        <TableCell className="text-gray-600">{client.tax_id}</TableCell>
+        <TableCell>
           {client.group ? (
             <Badge
-              variant="secondary"
-              className="text-xs cursor-pointer hover:bg-gray-300 transition-colors"
+              variant="outline"
+              className="text-xs cursor-pointer hover:bg-gray-100 transition-colors border-[#CECECE] bg-transparent"
               onClick={() => onGroupFilter?.(client.group_id!)}
             >
               {client.group.group_name_hebrew || client.group.group_name}
@@ -125,96 +108,96 @@ const ClientRow = React.memo<ClientRowProps>(
             <span className="text-gray-400">-</span>
           )}
         </TableCell>
-        <TableCell className="w-28">{client.contact_name}</TableCell>
-        <TableCell className="w-32 align-top">
+        <TableCell className="text-gray-700">{client.contact_name || '-'}</TableCell>
+        <TableCell>
           {client.contact_phone ? (
-            <a
-              href={`https://wa.me/972${client.contact_phone.replace(/^0/, '').replace(/-/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              dir="ltr"
-              title="שלח הודעת וואטסאפ"
-            >
-              <MessageCircle className="h-4 w-4" />
-              {client.contact_phone}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={`https://wa.me/972${client.contact_phone.replace(/^0/, '').replace(/-/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#395BF7] hover:underline inline-flex items-center gap-1"
+                    dir="ltr"
+                  >
+                    <MessageCircle className="h-4 w-4 text-green-600" />
+                    {client.contact_phone}
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>שלח הודעת וואטסאפ</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           ) : (
-            '-'
+            <span className="text-gray-400">-</span>
           )}
         </TableCell>
-        <TableCell className="flex-1 min-w-[180px] align-top">
+        <TableCell>
           {client.contact_email ? (
-            <a
-              href={`mailto:${client.contact_email}`}
-              className="text-blue-600 hover:underline inline-flex items-center gap-1"
-              dir="ltr"
-              title="שלח מייל"
-            >
-              <Mail className="h-4 w-4" />
-              {client.contact_email}
-            </a>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={`mailto:${client.contact_email}`}
+                    className="text-[#395BF7] hover:underline inline-flex items-center gap-1 truncate max-w-[200px]"
+                    dir="ltr"
+                  >
+                    <Mail className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{client.contact_email}</span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>שלח מייל</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           ) : (
-            '-'
+            <span className="text-gray-400">-</span>
           )}
         </TableCell>
-        <TableCell className="w-12">
-          {client.google_drive_link && (
-            <a
-              href={client.google_drive_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-600 hover:text-green-700 transition-colors"
-              title="Google Drive"
-            >
-              <FolderOpen className="h-4 w-4" />
-            </a>
-          )}
-        </TableCell>
-        <TableCell className="w-12">
-          {client.canva_link && (
-            <a
-              href={client.canva_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-purple-600 hover:text-purple-700 transition-colors"
-              title="Canva"
-            >
-              <Palette className="h-4 w-4" />
-            </a>
-          )}
-        </TableCell>
-        <TableCell className="w-20">{getStatusBadge(client.status)}</TableCell>
-        <TableCell className="w-20">
-          {(client.client_type === 'company' || client.client_type === 'partnership') && (
-            <ClientBalanceBadge clientId={client.id} />
-          )}
-        </TableCell>
-        <TableCell className="w-16 text-left">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>פעולות</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onEdit(client)}>
-                <Edit className="ml-2 h-4 w-4" />
-                {canEdit ? 'ערוך' : 'צפה'}
-              </DropdownMenuItem>
-              {canDelete && (
-                <DropdownMenuItem
-                  className="text-red-600"
-                  onClick={() => onDelete(client)}
-                >
-                  <Trash2 className="ml-2 h-4 w-4" />
-                  מחק
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <TableCell>{getStatusBadge(client.status)}</TableCell>
+        <TableCell>
+          <div className="flex items-center gap-1 rtl:space-x-reverse">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-[#395BF7] hover:bg-[#395BF7]/10"
+                    onClick={() => onEdit(client)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{canEdit ? 'ערוך' : 'צפה'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {canDelete && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => onDelete(client)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>מחק</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </TableCell>
       </TableRow>
     );
@@ -241,37 +224,33 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   const allSelected = selectedClients.length === clients.length && clients.length > 0;
 
   return (
-    <div className="border rounded-lg">
-      <Table className="[&_td]:px-1 [&_th]:px-1">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="border-b border-[#CECECE] bg-white hover:bg-white">
             <TableHead className="w-10">
               <Checkbox checked={allSelected} onCheckedChange={onSelectAll} />
             </TableHead>
-            <TableHead className="flex-1 min-w-[150px]">שם החברה</TableHead>
-            <TableHead className="w-24">ת.ז / ח.פ</TableHead>
-            <TableHead className="w-32 hidden">סוג לקוח</TableHead>
-            <TableHead className="w-32">קבוצה</TableHead>
-            <TableHead className="w-28">איש קשר</TableHead>
-            <TableHead className="w-32">טלפון</TableHead>
-            <TableHead className="flex-1 min-w-[180px]">אימייל</TableHead>
-            <TableHead className="w-12">Drive</TableHead>
-            <TableHead className="w-12">Canva</TableHead>
-            <TableHead className="w-20">סטטוס</TableHead>
-            <TableHead className="w-20">מאזן</TableHead>
-            <TableHead className="w-16 text-left">פעולות</TableHead>
+            <TableHead className="font-semibold text-gray-900">שם החברה</TableHead>
+            <TableHead className="font-semibold text-gray-900">ח.ז / ח.פ</TableHead>
+            <TableHead className="font-semibold text-gray-900">קבוצה</TableHead>
+            <TableHead className="font-semibold text-gray-900">איש קשר</TableHead>
+            <TableHead className="font-semibold text-gray-900">טלפון</TableHead>
+            <TableHead className="font-semibold text-gray-900">אימייל</TableHead>
+            <TableHead className="font-semibold text-gray-900">סטטוס</TableHead>
+            <TableHead className="font-semibold text-gray-900">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={12} className="text-center">
+              <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                 טוען נתונים...
               </TableCell>
             </TableRow>
           ) : clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={12} className="text-center">
+              <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                 לא נמצאו לקוחות
               </TableCell>
             </TableRow>

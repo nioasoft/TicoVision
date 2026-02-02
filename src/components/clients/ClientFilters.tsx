@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, RotateCcw, MoreVertical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,46 +40,57 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
     loadGroups();
   }, []);
 
+  // Check if any filter is active
+  const hasActiveFilters =
+    searchQuery ||
+    (filters.status && filters.status !== 'all') ||
+    (filters.companyStatus && filters.companyStatus !== 'all') ||
+    (filters.clientType && filters.clientType !== 'all') ||
+    (filters.companySubtype && filters.companySubtype !== 'all') ||
+    (filters.groupId && filters.groupId !== 'all');
+
   return (
-    <div className="space-y-4">
+    <div className="flex flex-wrap gap-3 items-center">
       {/* Search Bar */}
-      <div className="relative flex-1 max-w-md">
+      <div className="relative flex-1 min-w-[280px] max-w-[450px]">
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
         <Input
-
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pr-10"
+          placeholder="חיפוש לפי שם, ת.ז או איש קשר..."
+          className="pr-10 h-10 bg-white border-gray-200 rounded-lg"
           dir="rtl"
         />
       </div>
 
-      {/* Filter Selects */}
-      <div className="flex gap-3 items-center flex-wrap">
-        {/* Client Status Filter (active, inactive, pending, adhoc) */}
+      {/* Client Status Filter */}
+      <div className="flex items-center gap-1">
         <Select
           value={filters.status || 'all'}
           onValueChange={(value) => onFilterChange({ status: value })}
         >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
+          <SelectTrigger className="w-[130px] h-10 bg-white border-gray-200 rounded-lg">
+            <SelectValue placeholder="כל הלקוחות" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הלקוחות</SelectItem>
             <SelectItem value="active">פעילים</SelectItem>
-            <SelectItem value="adhoc">חריגים/חד-פעמיים</SelectItem>
+            <SelectItem value="adhoc">חריגים</SelectItem>
             <SelectItem value="inactive">לא פעילים</SelectItem>
             <SelectItem value="pending">ממתינים</SelectItem>
           </SelectContent>
         </Select>
+        <MoreVertical className="h-4 w-4 text-gray-400" />
+      </div>
 
-        {/* Company Status Filter */}
+      {/* Company Status Filter */}
+      <div className="flex items-center gap-1">
         <Select
           value={filters.companyStatus}
           onValueChange={(value) => onFilterChange({ companyStatus: value })}
         >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
+          <SelectTrigger className="w-[100px] h-10 bg-white border-gray-200 rounded-lg">
+            <SelectValue placeholder="פעילה" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הסטטוסים</SelectItem>
@@ -87,14 +98,17 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             <SelectItem value="inactive">לא פעילה</SelectItem>
           </SelectContent>
         </Select>
+        <MoreVertical className="h-4 w-4 text-gray-400" />
+      </div>
 
-        {/* Client Type Filter */}
+      {/* Client Type Filter */}
+      <div className="flex items-center gap-1">
         <Select
           value={filters.clientType}
           onValueChange={(value) => onFilterChange({ clientType: value })}
         >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
+          <SelectTrigger className="w-[120px] h-10 bg-white border-gray-200 rounded-lg">
+            <SelectValue placeholder="כל הסוגים" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הסוגים</SelectItem>
@@ -103,14 +117,17 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             <SelectItem value="salary_owner">שכיר בעל שליטה</SelectItem>
           </SelectContent>
         </Select>
+        <MoreVertical className="h-4 w-4 text-gray-400" />
+      </div>
 
-        {/* Company Subtype Filter */}
+      {/* Company Subtype Filter */}
+      <div className="flex items-center gap-1">
         <Select
           value={filters.companySubtype}
           onValueChange={(value) => onFilterChange({ companySubtype: value })}
         >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
+          <SelectTrigger className="w-[140px] h-10 bg-white border-gray-200 rounded-lg">
+            <SelectValue placeholder="כל תתי הסוגים" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל תתי הסוגים</SelectItem>
@@ -120,14 +137,17 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             <SelectItem value="holdings">החזקות</SelectItem>
           </SelectContent>
         </Select>
+        <MoreVertical className="h-4 w-4 text-gray-400" />
+      </div>
 
-        {/* Group Filter */}
+      {/* Group Filter */}
+      <div className="flex items-center gap-1">
         <Select
           value={filters.groupId}
           onValueChange={(value) => onFilterChange({ groupId: value })}
         >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue />
+          <SelectTrigger className="w-[130px] h-10 bg-white border-gray-200 rounded-lg">
+            <SelectValue placeholder="כל הקבוצות" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הקבוצות</SelectItem>
@@ -139,13 +159,21 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             ))}
           </SelectContent>
         </Select>
-
-        {/* Reset Filters Button */}
-        <Button variant="outline" size="sm" onClick={onReset} className="text-gray-600">
-          <Filter className="ml-2 h-4 w-4" />
-          איפוס סינונים
-        </Button>
+        <MoreVertical className="h-4 w-4 text-gray-400" />
       </div>
+
+      {/* Reset Filters Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onReset}
+        className={`h-10 px-4 rounded-lg bg-white border border-gray-200 ${
+          hasActiveFilters ? 'text-[#395BF7] hover:text-[#395BF7]' : 'text-gray-500'
+        }`}
+        disabled={!hasActiveFilters}
+      >
+        איפוס סינונים
+      </Button>
     </div>
   );
 });
