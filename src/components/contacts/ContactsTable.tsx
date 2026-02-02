@@ -214,7 +214,7 @@ export const ContactsTable = React.memo<ContactsTableProps>(({
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="flex gap-3 items-center flex-row-reverse">
+      <div className="flex gap-3 items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input

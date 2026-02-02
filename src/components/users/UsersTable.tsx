@@ -41,6 +41,7 @@ interface UsersTableProps {
   onDelete: (user: User) => void;
   onResetPassword: (user: User) => void;
   onAssignClients: (user: User) => void;
+  hideSearchAndFilters?: boolean;
 }
 
 interface UserRowProps {
@@ -148,34 +149,37 @@ export const UsersTable = React.memo<UsersTableProps>(({
   onDelete,
   onResetPassword,
   onAssignClients,
+  hideSearchAndFilters = false,
 }) => {
   return (
     <div className="space-y-4">
       {/* Search and Filters */}
-      <div className="flex gap-3 items-center flex-row-reverse">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
+      {!hideSearchAndFilters && (
+        <div className="flex gap-3 items-center flex-row-reverse">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
 
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pr-10"
-            dir="rtl"
-          />
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pr-10"
+              dir="rtl"
+            />
+          </div>
+          <Select value={selectedRole} onValueChange={(value) => onRoleChange(value as UserRole | 'all')}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">כל התפקידים</SelectItem>
+              <SelectItem value="admin">מנהל מערכת</SelectItem>
+              <SelectItem value="accountant">רואה חשבון</SelectItem>
+              <SelectItem value="bookkeeper">מנהלת חשבונות</SelectItem>
+              <SelectItem value="client">לקוח</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={selectedRole} onValueChange={(value) => onRoleChange(value as UserRole | 'all')}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">כל התפקידים</SelectItem>
-            <SelectItem value="admin">מנהל מערכת</SelectItem>
-            <SelectItem value="accountant">רואה חשבון</SelectItem>
-            <SelectItem value="bookkeeper">מנהלת חשבונות</SelectItem>
-            <SelectItem value="client">לקוח</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      )}
 
       {/* Table */}
       <div className="border rounded-lg" dir="rtl">

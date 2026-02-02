@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsers } from '@/hooks/useUsers';
@@ -25,6 +27,7 @@ import type { UserRole } from '@/types/user-role';
 
 export function UsersPage() {
   const { role: currentUserRole, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState('users');
 
   const {
     // State
@@ -223,14 +226,45 @@ export function UsersPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="users">משתמשים פעילים ({users.length})</TabsTrigger>
-          <TabsTrigger value="registrations">
-            בקשות הרשמה ({pendingCount})
-          </TabsTrigger>
-          <TabsTrigger value="rejected">נדחו ({rejectedCount})</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        {/* Tabs and Search in same row */}
+        <div className="flex gap-3 items-center flex-wrap">
+          <TabsList className="flex-nowrap">
+            <TabsTrigger value="users">משתמשים פעילים ({users.length})</TabsTrigger>
+            <TabsTrigger value="registrations">
+              בקשות הרשמה ({pendingCount})
+            </TabsTrigger>
+            <TabsTrigger value="rejected">נדחו ({rejectedCount})</TabsTrigger>
+          </TabsList>
+          
+          {/* Search and Role Filter - only show for users tab */}
+          {activeTab === 'users' && (
+            <div className="flex gap-3 items-center flex-row-reverse flex-1 min-w-0">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pr-10"
+                  dir="rtl"
+                  placeholder="חפש משתמשים..."
+                />
+              </div>
+              <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole | 'all')}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל התפקידים</SelectItem>
+                  <SelectItem value="admin">מנהל מערכת</SelectItem>
+                  <SelectItem value="accountant">רואה חשבון</SelectItem>
+                  <SelectItem value="bookkeeper">מנהלת חשבונות</SelectItem>
+                  <SelectItem value="client">לקוח</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
 
         {/* Active Users Tab */}
         <TabsContent value="users">
@@ -245,6 +279,7 @@ export function UsersPage() {
             onResetPassword={handleOpenResetPasswordDialog}
             onAssignClients={handleOpenAssignClientsDialog}
             onDelete={handleOpenDeleteDialog}
+            hideSearchAndFilters={true}
           />
         </TabsContent>
 

@@ -40,12 +40,12 @@ export default function FilesManagerPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="rtl:text-right">
-        <div className="flex items-center gap-3 rtl:flex-row-reverse mb-2">
+      <div className="text-left">
+        <div className="flex items-center gap-3 mb-2">
           <FolderOpen className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold rtl:text-right">מנהל קבצים ומסמכים</h1>
+          <h1 className="text-3xl font-bold text-left">מנהל קבצים ומסמכים</h1>
         </div>
-        <p className="text-gray-600 rtl:text-right">
+        <p className="text-gray-600 text-right">
           ניהול וארגון מסמכים ללקוחות וקבוצות לפי קטגוריות
         </p>
       </div>
