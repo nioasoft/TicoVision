@@ -241,6 +241,7 @@ export function BillingLetterPreviewDialog({
         additional_subject: effectiveData.additionalSubject || '',
 
         // Payment section variables - no discount for billing letters
+        amount_before_vat: formatNumber(amounts.amountBeforeVat), // Amount before VAT
         amount_with_vat: formatNumber(amounts.totalAmount), // Full amount with VAT (no discount)
         client_id: effectiveData.clientId,
         // billing_letter_id and letter_id will be set after creation (or 'pending' for preview)
