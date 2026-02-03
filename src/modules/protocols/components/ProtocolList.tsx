@@ -37,10 +37,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   MoreHorizontal,
   Pencil,
-  Eye,
   Copy,
   Trash2,
-  Lock,
   FileEdit,
   ScrollText,
   FileDown,
@@ -136,17 +134,10 @@ export function ProtocolList({
                 )}
               </TableCell>
               <TableCell className="rtl:text-right">
-                {protocol.status === 'locked' ? (
-                  <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                    <Lock className="h-3 w-3" />
-                    נעול
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                    <FileEdit className="h-3 w-3" />
-                    טיוטה
-                  </Badge>
-                )}
+                <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                  <FileEdit className="h-3 w-3" />
+                  טיוטה
+                </Badge>
               </TableCell>
               <TableCell className="rtl:text-right text-gray-500">
                 {format(new Date(protocol.created_at), 'dd/MM/yyyy', { locale: he })}
@@ -159,17 +150,10 @@ export function ProtocolList({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" dir="rtl">
-                    {protocol.status === 'locked' ? (
-                      <DropdownMenuItem onClick={() => onView(protocol.id)}>
-                        <Eye className="h-4 w-4 ml-2" />
-                        צפייה
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={() => onEdit(protocol.id)}>
-                        <Pencil className="h-4 w-4 ml-2" />
-                        עריכה
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={() => onEdit(protocol.id)}>
+                      <Pencil className="h-4 w-4 ml-2" />
+                      עריכה
+                    </DropdownMenuItem>
                     {onGeneratePdf && (
                       <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
                         <FileDown className="h-4 w-4 ml-2" />
@@ -187,18 +171,14 @@ export function ProtocolList({
                       <Copy className="h-4 w-4 ml-2" />
                       שכפול
                     </DropdownMenuItem>
-                    {protocol.status !== 'locked' && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(protocol)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          מחיקה
-                        </DropdownMenuItem>
-                      </>
-                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteClick(protocol)}
+                      className="text-red-600 focus:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 ml-2" />
+                      מחיקה
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

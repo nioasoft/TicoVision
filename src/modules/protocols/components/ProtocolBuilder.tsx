@@ -12,16 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -40,7 +30,6 @@ import {
 } from '../types/protocol.types';
 import {
   Save,
-  Lock,
   ArrowRight,
   CalendarDays,
   FileText,
@@ -89,10 +78,6 @@ export function ProtocolBuilder({
 }: ProtocolBuilderProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [locking, setLocking] = useState(false);
-  const [lockDialogOpen, setLockDialogOpen] = useState(false);
-  const [lockSuccessDialogOpen, setLockSuccessDialogOpen] = useState(false);
-  const [lockedProtocolId, setLockedProtocolId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
@@ -111,16 +96,12 @@ export function ProtocolBuilder({
     content_sections: [],
   });
 
-  // Check if protocol is locked
-  const isLocked = protocol?.status === 'locked';
-
   // Auto-save hook
   const { saveStatus, triggerSave, resetStatus } = useProtocolAutoSave({
     protocolId: savedProtocolId,
     clientId,
     groupId,
     formState,
-    isLocked,
     debounceDelay: 2000,
     onProtocolIdChange: (newId) => {
       setSavedProtocolId(newId);
@@ -242,69 +223,6 @@ export function ProtocolBuilder({
       onSave();
     } finally {
       setSaving(false);
-    }
-  };
-
-  // Lock the protocol
-  const handleLock = async () => {
-    if (!protocol?.id) return;
-
-    setLocking(true);
-    try {
-      // First save any pending changes
-      const { data: savedProtocol, error: saveError } = await protocolService.saveProtocolForm(
-        protocol.id,
-        clientId,
-        groupId,
-        formState
-      );
-
-      if (saveError || !savedProtocol) {
-        console.error('Failed to save before locking:', saveError);
-        return;
-      }
-
-      // Then lock
-      const { error: lockError } = await protocolService.lockProtocol(savedProtocol.id);
-
-      if (lockError) {
-        console.error('Failed to lock protocol:', lockError);
-        return;
-      }
-
-      // Store the locked protocol ID and show success dialog
-      setLockedProtocolId(savedProtocol.id);
-      setLockDialogOpen(false);
-      setLockSuccessDialogOpen(true);
-    } finally {
-      setLocking(false);
-    }
-  };
-
-  // Generate PDF for the locked protocol (from lock success dialog)
-  const handleGeneratePdfAfterLock = async () => {
-    if (!lockedProtocolId) return;
-
-    setGeneratingPdf(true);
-    try {
-      const { data: pdfData, error: pdfError } = await protocolService.generateProtocolPdf(lockedProtocolId);
-      if (pdfError || !pdfData) {
-        toast({
-          title: 'שגיאה',
-          description: pdfError?.message || 'יצירת PDF נכשלה',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setPdfUrl(pdfData.pdfUrl);
-      setPdfFileName(pdfData.fileName);
-      setSavedProtocolId(lockedProtocolId);
-      setSavedToFileManager(false);
-      setLockSuccessDialogOpen(false);
-      setPdfDialogOpen(true);
-    } finally {
-      setGeneratingPdf(false);
     }
   };
 
@@ -516,18 +434,6 @@ export function ProtocolBuilder({
                 )}
                 {generatingPdf ? 'יוצר PDF...' : 'ייצוא PDF'}
               </Button>
-              {!isNew && (
-                <Button
-                  onClick={() => setLockDialogOpen(true)}
-                  disabled={saving || locking || !savedToFileManager}
-                  variant="secondary"
-                  className="flex items-center gap-2"
-                  title={!savedToFileManager ? 'יש לייצא PDF ולשמור למנהל קבצים לפני נעילה' : undefined}
-                >
-                  <Lock className="h-4 w-4" />
-                  שמור ונעל
-                </Button>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -598,24 +504,6 @@ export function ProtocolBuilder({
         </CardContent>
       </Card>
 
-      {/* Lock Confirmation Dialog */}
-      <AlertDialog open={lockDialogOpen} onOpenChange={setLockDialogOpen}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-right">נעילת פרוטוקול</AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
-              לאחר נעילת הפרוטוקול לא ניתן יהיה לערוך אותו. האם ברצונך להמשיך?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2 sm:justify-start">
-            <AlertDialogAction onClick={handleLock} disabled={locking}>
-              {locking ? 'נועל...' : 'שמור ונעל'}
-            </AlertDialogAction>
-            <AlertDialogCancel>ביטול</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Preview Dialog - Document Style (like PDF) */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden p-0" dir="rtl">
@@ -664,6 +552,31 @@ export function ProtocolBuilder({
                   </div>
                 )}
 
+                {/* Content Sections */}
+                {formState.content_sections.length > 0 && (
+                  <div className="mb-6 text-right">
+                    <h2 className="text-base font-bold mb-3 border-b pb-2 text-right">תוכן נוסף</h2>
+                    <div className="space-y-4">
+                      {groupedSections.map((group) => {
+                        const typeInfo = getContentSectionTypeInfo(group.type);
+                        return (
+                          <div key={group.type} className="text-right">
+                            <h3 className="font-bold mb-2 text-right">{typeInfo.labelPlural}</h3>
+                            {group.sections.map((section, idx) => (
+                              <div
+                                key={idx}
+                                className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 text-right"
+                              >
+                                <p className={cn('whitespace-pre-wrap text-right', getContentClasses(section.style))} style={getContentStyle(section.style)}>{section.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Decisions - Grouped by responsibility with colored boxes like PDF */}
                 {formState.decisions.length > 0 && (
                   <div className="mb-6 text-right">
@@ -707,31 +620,6 @@ export function ProtocolBuilder({
                                 </li>
                               ))}
                             </ol>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Content Sections */}
-                {formState.content_sections.length > 0 && (
-                  <div className="mb-6 text-right">
-                    <h2 className="text-base font-bold mb-3 border-b pb-2 text-right">תוכן נוסף</h2>
-                    <div className="space-y-4">
-                      {groupedSections.map((group) => {
-                        const typeInfo = getContentSectionTypeInfo(group.type);
-                        return (
-                          <div key={group.type} className="text-right">
-                            <h3 className="font-bold mb-2 text-right">{typeInfo.labelPlural}</h3>
-                            {group.sections.map((section, idx) => (
-                              <div
-                                key={idx}
-                                className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-2 text-right"
-                              >
-                                <p className={cn('whitespace-pre-wrap text-right', getContentClasses(section.style))} style={getContentStyle(section.style)}>{section.content}</p>
-                              </div>
-                            ))}
                           </div>
                         );
                       })}

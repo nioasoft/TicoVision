@@ -26,14 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
   ArrowRight,
-  Lock,
   Copy,
   Printer,
   FileDown,
@@ -264,14 +257,7 @@ export function ProtocolPreview({
             </Button>
             <div className="text-right">
               <CardTitle className="flex items-center gap-2">
-                {protocol.status === 'locked' ? (
-                  <>
-                    <Lock className="h-5 w-5 text-gray-400" />
-                    פרוטוקול נעול
-                  </>
-                ) : (
-                  'פרוטוקול'
-                )}
+                פרוטוקול
               </CardTitle>
               <CardDescription className="mt-1">
                 {recipientName}
@@ -310,27 +296,10 @@ export function ProtocolPreview({
                   הדפסה
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {protocol.status === 'locked' ? (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="px-2 py-1.5 text-sm text-gray-400 flex items-center cursor-not-allowed">
-                          <Pencil className="h-4 w-4 ml-2" />
-                          עריכה
-                          <Lock className="h-3 w-3 mr-auto" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p>לא ניתן לערוך פרוטוקול נעול</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <DropdownMenuItem onClick={onEdit}>
-                    <Pencil className="h-4 w-4 ml-2" />
-                    עריכה
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={onEdit}>
+                  <Pencil className="h-4 w-4 ml-2" />
+                  עריכה
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -393,6 +362,48 @@ export function ProtocolPreview({
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Content Sections */}
+        {protocol.content_sections.length > 0 && (
+          <>
+            <Separator className="print:my-2" />
+            <div>
+              <div className="flex items-center gap-2 rtl:flex-row-reverse mb-3">
+                <FileText className="h-5 w-5 text-gray-600" />
+                <h3 className="font-semibold">תוכן נוסף</h3>
+              </div>
+              <div className="space-y-4 print:space-y-3">
+                {groupedSections.map((group) => {
+                  const typeInfo = getContentSectionTypeInfo(group.type);
+                  return (
+                    <div key={group.type} className="print:break-inside-avoid">
+                      <div className="flex items-center gap-2 rtl:flex-row-reverse mb-2">
+                        {getSectionIcon(group.type)}
+                        <span className="font-medium">{typeInfo.labelPlural}</span>
+                        <Badge variant="secondary">{group.sections.length}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {group.sections.map((section) => (
+                          <div
+                            key={section.id}
+                            className="bg-gray-50 rounded-lg p-4 border print:bg-white print:p-3"
+                          >
+                            <p
+                              className={cn('text-sm rtl:text-right whitespace-pre-wrap', getContentClasses(section.style))}
+                              style={getContentStyle(section.style)}
+                            >
+                              {section.content}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>
@@ -480,48 +491,6 @@ export function ProtocolPreview({
           </>
         )}
 
-        {/* Content Sections */}
-        {protocol.content_sections.length > 0 && (
-          <>
-            <Separator className="print:my-2" />
-            <div>
-              <div className="flex items-center gap-2 rtl:flex-row-reverse mb-3">
-                <FileText className="h-5 w-5 text-gray-600" />
-                <h3 className="font-semibold">תוכן נוסף</h3>
-              </div>
-              <div className="space-y-4 print:space-y-3">
-                {groupedSections.map((group) => {
-                  const typeInfo = getContentSectionTypeInfo(group.type);
-                  return (
-                    <div key={group.type} className="print:break-inside-avoid">
-                      <div className="flex items-center gap-2 rtl:flex-row-reverse mb-2">
-                        {getSectionIcon(group.type)}
-                        <span className="font-medium">{typeInfo.labelPlural}</span>
-                        <Badge variant="secondary">{group.sections.length}</Badge>
-                      </div>
-                      <div className="space-y-2">
-                        {group.sections.map((section) => (
-                          <div
-                            key={section.id}
-                            className="bg-gray-50 rounded-lg p-4 border print:bg-white print:p-3"
-                          >
-                            <p
-                              className={cn('text-sm rtl:text-right whitespace-pre-wrap', getContentClasses(section.style))}
-                              style={getContentStyle(section.style)}
-                            >
-                              {section.content}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-
         {/* Footer */}
         <Separator className="print:my-2" />
         <div className="flex items-center justify-between text-sm text-gray-500 rtl:flex-row-reverse print:text-xs">
@@ -529,12 +498,6 @@ export function ProtocolPreview({
             נוצר:{' '}
             {format(new Date(protocol.created_at), 'dd/MM/yyyy HH:mm', { locale: he })}
           </span>
-          {protocol.locked_at && (
-            <span>
-              ננעל:{' '}
-              {format(new Date(protocol.locked_at), 'dd/MM/yyyy HH:mm', { locale: he })}
-            </span>
-          )}
         </div>
 
         {/* PDF Options Dialog */}

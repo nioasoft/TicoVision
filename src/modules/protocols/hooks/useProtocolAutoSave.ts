@@ -17,8 +17,6 @@ interface UseProtocolAutoSaveOptions {
   groupId: string | null;
   /** Current form state */
   formState: ProtocolFormState;
-  /** Whether the protocol is locked */
-  isLocked: boolean;
   /** Debounce delay in ms (default: 2000) */
   debounceDelay?: number;
   /** Callback when protocol ID changes (for new protocols) */
@@ -46,7 +44,6 @@ export function useProtocolAutoSave({
   clientId,
   groupId,
   formState,
-  isLocked,
   debounceDelay = 2000,
   onProtocolIdChange,
 }: UseProtocolAutoSaveOptions): UseProtocolAutoSaveReturn {
@@ -64,7 +61,6 @@ export function useProtocolAutoSave({
   const formStateRef = useRef(formState);
   const clientIdRef = useRef(clientId);
   const groupIdRef = useRef(groupId);
-  const isLockedRef = useRef(isLocked);
   const internalProtocolIdRef = useRef(internalProtocolId);
   const onProtocolIdChangeRef = useRef(onProtocolIdChange);
   const lastSavedRef = useRef<Date | null>(null);
@@ -96,10 +92,6 @@ export function useProtocolAutoSave({
   useEffect(() => {
     groupIdRef.current = groupId;
   }, [groupId]);
-
-  useEffect(() => {
-    isLockedRef.current = isLocked;
-  }, [isLocked]);
 
   useEffect(() => {
     internalProtocolIdRef.current = internalProtocolId;
@@ -140,11 +132,6 @@ export function useProtocolAutoSave({
 
   // Save function - stable reference, uses refs for current values
   const performSave = useCallback(async () => {
-    // Don't save if locked
-    if (isLockedRef.current) {
-      return;
-    }
-
     // Don't save if already saving
     if (isSavingRef.current) {
       return;
@@ -228,11 +215,6 @@ export function useProtocolAutoSave({
 
     // Skip if the debounced value equals the last saved
     if (debouncedForm === lastSavedFormRef.current) {
-      return;
-    }
-
-    // Skip if locked
-    if (isLockedRef.current) {
       return;
     }
 

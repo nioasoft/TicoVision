@@ -82,7 +82,7 @@ export function TaxAdvancesRateNotificationForm({
             <Label htmlFor="advance-rate" className="text-right block">
               שיעור המקדמה (%)
             </Label>
-            <div className="flex items-center gap-2 rtl:flex-row-reverse">
+            <div className="flex items-center gap-2">
               <Input
                 id="advance-rate"
                 type="number"

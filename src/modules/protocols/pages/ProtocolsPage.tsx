@@ -145,11 +145,7 @@ export function ProtocolsPage() {
       return;
     }
     setSelectedProtocol(data);
-    if (data.status === 'locked') {
-      setViewMode('preview');
-    } else {
-      setViewMode('builder');
-    }
+    setViewMode('builder');
   };
 
   // Handle viewing a locked protocol

@@ -245,10 +245,6 @@ export class ProtocolService extends BaseService {
         return { data: null, error: new Error('Protocol not found') };
       }
 
-      if (existing.status === 'locked') {
-        return { data: null, error: new Error('Cannot update a locked protocol') };
-      }
-
       const { data, error } = await supabase
         .from('protocols')
         .update({
@@ -290,10 +286,6 @@ export class ProtocolService extends BaseService {
 
       if (checkError || !existing) {
         return { data: null, error: new Error('Protocol not found') };
-      }
-
-      if (existing.status === 'locked') {
-        return { data: null, error: new Error('Cannot delete a locked protocol') };
       }
 
       const { error } = await supabase
@@ -839,13 +831,12 @@ export class ProtocolService extends BaseService {
         </div>
 
         ${attendeesHtml}
-        ${decisionsHtml}
         ${contentSectionsHtml}
+        ${decisionsHtml}
 
         <!-- Footer -->
         <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af;">
           <p>נוצר: ${format(new Date(protocol.created_at), 'dd/MM/yyyy HH:mm', { locale: he })}</p>
-          ${protocol.locked_at ? `<p>ננעל: ${format(new Date(protocol.locked_at), 'dd/MM/yyyy HH:mm', { locale: he })}</p>` : ''}
         </div>
       </div>
     `;
