@@ -164,6 +164,12 @@ export function ProtocolPreview({
         protocol.group_id
       );
       if (error) {
+        console.error('Save to file manager failed:', {
+          protocolId: protocol.id,
+          clientId: protocol.client_id,
+          groupId: protocol.group_id,
+          error,
+        });
         toast({
           title: 'שגיאה',
           description: error.message || 'שמירה למנהל הקבצים נכשלה',
@@ -176,7 +182,8 @@ export function ProtocolPreview({
         title: 'הצלחה',
         description: 'הפרוטוקול נשמר למנהל הקבצים',
       });
-    } catch {
+    } catch (err) {
+      console.error('Save to file manager exception:', err);
       toast({
         title: 'שגיאה',
         description: 'שמירה למנהל הקבצים נכשלה',

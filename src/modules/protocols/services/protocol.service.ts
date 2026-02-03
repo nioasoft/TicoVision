@@ -975,6 +975,14 @@ export class ProtocolService extends BaseService {
           'protocols',
           protocol.title || `פרוטוקול פגישה - ${dateStr}`
         );
+        if (result.error) {
+          logger.error('savePdfReference failed:', {
+            clientId,
+            storagePath,
+            fileName,
+            error: result.error,
+          });
+        }
         return result;
       }
 
@@ -1004,6 +1012,12 @@ export class ProtocolService extends BaseService {
           .single();
 
         if (error) {
+          logger.error('Group file manager insert failed:', {
+            groupId,
+            storagePath,
+            fileName,
+            error,
+          });
           return { data: null, error: this.handleError(error) };
         }
 
@@ -1014,6 +1028,7 @@ export class ProtocolService extends BaseService {
 
       return { data: null, error: new Error('No client or group specified') };
     } catch (error) {
+      logger.error('saveProtocolToFileManager exception:', error);
       return { data: null, error: this.handleError(error as Error) };
     }
   }

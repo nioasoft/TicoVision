@@ -1050,6 +1050,10 @@ export class FileUploadService extends BaseService {
         .single();
 
       if (dbError) {
+        console.error('savePdfReference DB error:', {
+          error: dbError,
+          attachmentData,
+        });
         throw dbError;
       }
 
@@ -1066,6 +1070,7 @@ export class FileUploadService extends BaseService {
 
       return { data, error: null };
     } catch (error) {
+      console.error('savePdfReference exception:', error);
       return { data: null, error: this.handleError(error) };
     }
   }

@@ -46,6 +46,7 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
+  const listRef = React.useRef<HTMLDivElement>(null)
 
   // Safety check: ensure options is always an array
   const safeOptions = options || []
@@ -77,12 +78,17 @@ export function Combobox({
       <PopoverContent className="w-full p-0" align="start">
         <Command>
           <CommandInput
-
             className="rtl:text-right ltr:text-left"
             value={searchValue}
-            onValueChange={setSearchValue}
+            onValueChange={(value) => {
+              setSearchValue(value)
+              // Reset scroll to top when searching
+              requestAnimationFrame(() => {
+                listRef.current?.scrollTo({ top: 0 })
+              })
+            }}
           />
-          <CommandList>
+          <CommandList ref={listRef}>
             <CommandEmpty className="rtl:text-right ltr:text-left p-0">
               {allowCustomValue && searchValue.trim() ? (
                 <div
