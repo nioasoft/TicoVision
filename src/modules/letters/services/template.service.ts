@@ -3556,6 +3556,7 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_submitted': 'bodies/mortgage-approvals/osek-submitted.html',
       'mortgage_approvals_osek_unsubmitted': 'bodies/mortgage-approvals/osek-unsubmitted.html',
       'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html',
+      'tax_notices_annual_fee': 'bodies/tax-notices/annual-fee-notice.html',
       // Audit Completion
       'audit_completion_general': 'bodies/audit-completion/general.html',
       // Protocols
@@ -3590,6 +3591,7 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_submitted': 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
       'mortgage_approvals_osek_unsubmitted': 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
       'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
+      'tax_notices_annual_fee': 'חיוב אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
       // Protocols
@@ -3629,6 +3631,7 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_submitted': 'אישור משכנתא - עוסק',
       'mortgage_approvals_osek_unsubmitted': 'אישור משכנתא - עוסק',
       'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום',
+      'tax_notices_annual_fee': 'אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת דוחות כספיים',
       // Protocols
@@ -4018,6 +4021,21 @@ export class TemplateService extends BaseService {
         const taxYear = processed.tax_year || '';
         const companyName = processed.company_name || '';
         processed.subjects_section = `הנדון: הודעה על יתרת חבות מס שנותרה לתשלום בגין שנת המס ${taxYear}<div style="padding-right: 55px;">${companyName}</div>`;
+        break;
+
+      case 'tax_notices_annual_fee':
+        // Format fee_amount to currency format
+        if (processed.fee_amount !== undefined && typeof processed.fee_amount === 'number') {
+          processed.fee_amount_formatted = new Intl.NumberFormat('he-IL', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(processed.fee_amount as number) + ' ₪';
+        } else {
+          processed.fee_amount_formatted = '';
+        }
+        // Build subject section with fee year only (no company name)
+        const feeYear = processed.fee_year || '';
+        processed.subjects_section = `הנדון: חיוב אגרה שנתית לרשם החברות לשנת ${feeYear}`;
         break;
 
       case 'audit_completion_general':

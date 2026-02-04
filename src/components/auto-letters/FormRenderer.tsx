@@ -15,6 +15,7 @@ import type {
   BookkeeperBalanceReminderVariables,
   IncomeConfirmationVariables,
   TaxPaymentNoticeVariables,
+  AnnualFeeNoticeVariables,
   MortgageAuditedCompanyVariables,
   MortgageUnauditedCompanyVariables,
   MortgageOsekSubmittedVariables,
@@ -60,7 +61,7 @@ import {
 } from './forms/mortgage-approvals';
 
 // Tax Notices forms
-import { TaxPaymentNoticeForm } from './forms/tax-notices';
+import { TaxPaymentNoticeForm, AnnualFeeNoticeForm } from './forms/tax-notices';
 
 // Audit Completion forms
 import { AuditCompletionForm } from './forms/audit-completion';
@@ -419,6 +420,15 @@ function renderTaxNoticesForm(
       return (
         <TaxPaymentNoticeForm
           value={value as Partial<TaxPaymentNoticeVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    case 'annual_fee_notice':
+      return (
+        <AnnualFeeNoticeForm
+          value={value as Partial<AnnualFeeNoticeVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
         />

@@ -50,6 +50,7 @@ import {
   validateIncomeConfirmation,
   validateMortgageIncome,
   validateTaxPaymentNotice,
+  validateAnnualFeeNotice,
   validateMortgageAuditedCompany,
   validateMortgageUnauditedCompany,
   validateMortgageOsekSubmitted,
@@ -293,6 +294,9 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return formState.documentData.tax_notices.taxPaymentNotice;
       }
+      if (selectedLetterTypeId === 'annual_fee_notice') {
+        return formState.documentData.tax_notices.annualFeeNotice;
+      }
     }
 
     if (selectedCategory === 'mortgage_approvals') {
@@ -416,6 +420,9 @@ export function AutoLettersPage() {
     if (selectedCategory === 'tax_notices') {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return validateTaxPaymentNotice(mergedData);
+      }
+      if (selectedLetterTypeId === 'annual_fee_notice') {
+        return validateAnnualFeeNotice(mergedData);
       }
     }
 
@@ -916,6 +923,18 @@ export function AutoLettersPage() {
             tax_notices: {
               ...prev.documentData.tax_notices,
               taxPaymentNotice: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'annual_fee_notice') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            tax_notices: {
+              ...prev.documentData.tax_notices,
+              annualFeeNotice: data,
             },
           },
         }));

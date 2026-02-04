@@ -146,6 +146,7 @@ export type AutoLetterTemplateType =
   | 'mortgage_approvals_osek_unsubmitted'      // עוסק - טרם הוגש
   // Tax Notices (הודעות מס)
   | 'tax_notices_payment_notice'
+  | 'tax_notices_annual_fee'
   // Audit Completion (סיום ביקורת דוחות כספיים)
   | 'audit_completion_general'
   // Tax Advances (מקדמות מ"ה)
@@ -308,6 +309,13 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'הודעה ללקוח על יתרת חבות מס לאחר שידור דוחות כספיים',
       templateType: 'tax_notices_payment_notice',
       icon: 'FileText',
+    },
+    {
+      id: 'annual_fee_notice',
+      label: 'אגרה שנתית לרשם החברות',
+      description: 'הודעה ללקוח על חובת תשלום אגרה שנתית לרשם החברות',
+      templateType: 'tax_notices_annual_fee',
+      icon: 'Building2',
     },
   ],
   audit_completion: [
@@ -732,6 +740,7 @@ export const DEFAULT_SUBJECTS = {
   mortgage_osek_submitted: 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
   mortgage_osek_unsubmitted: 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
   tax_payment_notice: 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
+  annual_fee_notice: 'חיוב אגרה שנתית לרשם החברות',
   // Audit Completion (סיום ביקורת דוחות כספיים)
   audit_completion_general: 'סיום ביקורת ועריכת דוח כספי',
   // Tax Advances (מקדמות מ"ה)
@@ -783,6 +792,7 @@ export interface MortgageApprovalsDocumentData {
 /** Document data for Tax Notices letters */
 export interface TaxNoticesDocumentData {
   taxPaymentNotice: Partial<TaxPaymentNoticeVariables>;
+  annualFeeNotice: Partial<AnnualFeeNoticeVariables>;
 }
 
 /** Document data for Audit Completion letters */
@@ -1023,6 +1033,11 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           tax_amount: undefined,
           tax_payment_link: '',
         },
+        annualFeeNotice: {
+          fee_year: 2026,
+          fee_amount: 1338,
+          discount_deadline: '31/03/2026',
+        },
       },
       audit_completion: {
         general: {
@@ -1262,6 +1277,19 @@ export interface TaxPaymentNoticeVariables extends AutoLetterSharedData {
 /** Default subject for Tax Payment Notice */
 export const TAX_PAYMENT_NOTICE_DEFAULT_SUBJECT = 'יתרה לתשלום חבות המס שנותרה למס הכנסה';
 
+/** Variables for Annual Fee Notice letter (אגרה שנתית לרשם החברות) */
+export interface AnnualFeeNoticeVariables extends AutoLetterSharedData {
+  /** שנת האגרה */
+  fee_year: number;
+  /** סכום האגרה */
+  fee_amount: number;
+  /** תאריך אחרון להנחה (פורמט DD/MM/YYYY) */
+  discount_deadline: string;
+}
+
+/** Default subject for Annual Fee Notice */
+export const ANNUAL_FEE_NOTICE_DEFAULT_SUBJECT = 'חיוב אגרה שנתית לרשם החברות';
+
 /** Validate Tax Payment Notice letter */
 export function validateTaxPaymentNotice(data: Partial<TaxPaymentNoticeVariables>): boolean {
   return !!(
@@ -1271,6 +1299,18 @@ export function validateTaxPaymentNotice(data: Partial<TaxPaymentNoticeVariables
     data.greeting_name?.trim() &&
     data.tax_amount !== undefined &&
     data.tax_amount > 0
+  );
+}
+
+/** Validate Annual Fee Notice letter */
+export function validateAnnualFeeNotice(data: Partial<AnnualFeeNoticeVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.fee_year && data.fee_year > 2000 &&
+    data.fee_amount !== undefined &&
+    data.fee_amount > 0 &&
+    data.discount_deadline?.trim()
   );
 }
 
