@@ -740,46 +740,6 @@ export function ProtocolBuilder({
         </DialogContent>
       </Dialog>
 
-      {/* Lock Success Dialog - Show after protocol is locked */}
-      <Dialog open={lockSuccessDialogOpen} onOpenChange={setLockSuccessDialogOpen}>
-        <DialogContent className="text-right" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="text-right flex items-center gap-2">
-              <Lock className="h-5 w-5 text-green-600" />
-              הפרוטוקול ננעל בהצלחה
-            </DialogTitle>
-            <DialogDescription className="text-right">
-              הפרוטוקול נשמר ונעול. מה תרצה לעשות עכשיו?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            <Button
-              className="w-full flex items-center justify-center gap-2"
-              onClick={handleGeneratePdfAfterLock}
-              disabled={generatingPdf}
-            >
-              {generatingPdf ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileDown className="h-4 w-4" />
-              )}
-              {generatingPdf ? 'יוצר PDF...' : 'ייצא PDF'}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full flex items-center justify-center gap-2"
-              onClick={() => {
-                setLockSuccessDialogOpen(false);
-                onSave();
-              }}
-            >
-              <ArrowRight className="h-4 w-4" />
-              חזרה לרשימה
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* Send Email Dialog */}
       <SendProtocolEmailDialog
         open={emailDialogOpen}
