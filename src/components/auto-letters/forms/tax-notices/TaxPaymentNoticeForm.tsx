@@ -1,6 +1,6 @@
 /**
  * TaxPaymentNoticeForm - Form for Tax Payment Notice letter
- * הודעה על יתרת חבות מס לתשלום לאחר שידור דוחות כספיים
+ * הודעה על יתרת מס לתשלום לאחר שידור דוחות כספיים
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,9 +40,9 @@ export function TaxPaymentNoticeForm({ value, onChange, disabled }: TaxPaymentNo
     <div className="space-y-6" dir="rtl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-right">הודעה על יתרת חבות מס לתשלום</CardTitle>
+          <CardTitle className="text-right">הודעה על יתרת מס לתשלום</CardTitle>
           <CardDescription className="text-right">
-            הודעה ללקוח על יתרת חבות מס לאחר סיום הביקורת ושידור הדוחות הכספיים
+            הודעה ללקוח על יתרת מס לאחר סיום הביקורת ושידור הדוחות הכספיים
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

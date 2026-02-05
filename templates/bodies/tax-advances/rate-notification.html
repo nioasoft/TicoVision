@@ -1,6 +1,6 @@
 <!-- Letter Body: Tax Advances - Rate Notification -->
 <!-- Template Type: tax_advances_rate_notification -->
-<!-- Variables: {{advance_rate}}, {{tax_year}}, {{previous_year}}, {{next_year}}, {{meeting_type}} -->
+<!-- Variables: {{advance_rate}}, {{tax_year}}, {{previous_year}}, {{next_year}}, {{meeting_type}}, {{paragraph2_section}} -->
 
 <!-- BODY: Subject Line (הנדון) -->
 {{subjects_section}}
@@ -23,14 +23,8 @@
     </td>
 </tr>
 
-<!-- BODY: Paragraph 2 - Confirmation -->
-<tr>
-    <td style="padding-top: 15px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
-            <strong>2.</strong> מבדיקה שערכנו עולה כי שיעור זה מוצדק.
-        </div>
-    </td>
-</tr>
+<!-- BODY: Paragraph 2 - Confirmation / Different Rate (dynamic) -->
+{{paragraph2_section}}
 
 <!-- BODY: Paragraph 3 - Bookkeeper Notification -->
 <tr>

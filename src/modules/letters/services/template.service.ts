@@ -3405,7 +3405,7 @@ export class TemplateService extends BaseService {
       fullHtml = this.processMustacheSections(fullHtml, processedVariables);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3562,8 +3562,6 @@ export class TemplateService extends BaseService {
       // Protocols
       'protocols_accountant_appointment': 'bodies/protocols/accountant-appointment.html',
       // Tax Advances
-      'tax_advances_monthly': 'bodies/tax-advances/monthly.html',
-      'tax_advances_quarterly': 'bodies/tax-advances/quarterly.html',
       'tax_advances_rate_notification': 'bodies/tax-advances/rate-notification.html'
     };
 
@@ -3590,15 +3588,13 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_unaudited_company': 'אישור רו"ח למשכנתא - בעל שליטה (דוחות בלתי מבוקרים)',
       'mortgage_approvals_osek_submitted': 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
       'mortgage_approvals_osek_unsubmitted': 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
-      'tax_notices_payment_notice': 'יתרה לתשלום חבות המס שנותרה למס הכנסה',
+      'tax_notices_payment_notice': 'יתרת מס לתשלום בגין שנת המס',
       'company_registrar_annual_fee': 'חיוב אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
       // Protocols
       'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות',
       // Tax Advances
-      'tax_advances_monthly': 'מקדמת מס הכנסה חודשית',
-      'tax_advances_quarterly': 'מקדמת מס הכנסה רבעונית',
       'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס'
     };
 
@@ -3637,8 +3633,6 @@ export class TemplateService extends BaseService {
       // Protocols
       'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות',
       // Tax Advances
-      'tax_advances_monthly': 'מקדמת מס הכנסה חודשית',
-      'tax_advances_quarterly': 'מקדמת מס הכנסה רבעונית',
       'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס'
     };
 
@@ -4016,11 +4010,11 @@ export class TemplateService extends BaseService {
           processed.tax_amount_formatted = '';
         }
         // Build dual subject section - two lines
-        // Line 1: הודעה על יתרת חבות מס שנותרה לתשלום בגין שנת המס {{tax_year}}
+        // Line 1: הודעה על יתרת מס שנותרה לתשלום בגין שנת המס {{tax_year}}
         // Line 2: company name (indented, no "הנדון:" prefix)
         const taxYear = processed.tax_year || '';
         const companyName = processed.company_name || '';
-        processed.subjects_section = `הנדון: הודעה על יתרת חבות מס שנותרה לתשלום בגין שנת המס ${taxYear}<div style="padding-right: 55px;">${companyName}</div>`;
+        processed.subjects_section = `הנדון: הודעה על יתרת מס שנותרה לתשלום בגין שנת המס ${taxYear}<div style="padding-right: 55px;">${companyName}</div>`;
         break;
 
       case 'company_registrar_annual_fee':
@@ -4089,6 +4083,26 @@ export class TemplateService extends BaseService {
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">הנדון: הודעה על שיעור מקדמות מס חברות לשנת ${processed.tax_year}</div>
     </td>
 </tr>`;
+        // Build paragraph2_section based on rate_is_different toggle
+        if (processed.rate_is_different && processed.decided_rate) {
+          processed.paragraph2_section = `
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>2.</strong> מבדיקה שערכנו עולה כי שיעור זה אינו מוצדק ולפיכך החלטנו על שיעור מקדמה של <strong>${processed.decided_rate}%</strong>.
+        </div>
+    </td>
+</tr>`;
+        } else {
+          processed.paragraph2_section = `
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
+            <strong>2.</strong> מבדיקה שערכנו עולה כי שיעור זה מוצדק.
+        </div>
+    </td>
+</tr>`;
+        }
         break;
     }
 

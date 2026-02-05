@@ -1,11 +1,16 @@
 /**
  * TaxAdvancesRateNotificationForm - Form for Tax Advances Rate Notification letter
  * מכתב הודעה על שיעור מקדמה
+ *
+ * Supports two scenarios:
+ * - Scenario A (default): The assigned rate is justified
+ * - Scenario B (toggle on): We decided on a different rate
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TaxAdvancesRateNotificationVariables, MeetingType } from '@/types/auto-letters.types';
 
@@ -28,13 +33,21 @@ export function TaxAdvancesRateNotificationForm({
   disabled,
   companyName,
 }: TaxAdvancesRateNotificationFormProps) {
-  const isValid = !!(
+  const baseValid = !!(
     companyName?.trim() &&
     value.tax_year && value.tax_year > 2000 &&
     value.advance_rate !== undefined &&
     value.advance_rate > 0 &&
     value.advance_rate <= 100 &&
     value.meeting_type
+  );
+
+  const isValid = baseValid && (
+    !value.rate_is_different || (
+      value.decided_rate !== undefined &&
+      value.decided_rate > 0 &&
+      value.decided_rate <= 100
+    )
   );
 
   return (
@@ -77,10 +90,10 @@ export function TaxAdvancesRateNotificationForm({
             </p>
           </div>
 
-          {/* Advance Rate */}
+          {/* Advance Rate (as assigned by tax authority) */}
           <div className="space-y-2">
             <Label htmlFor="advance-rate" className="text-right block">
-              שיעור המקדמה (%)
+              שיעור המקדמה שנקבע (%)
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -101,6 +114,51 @@ export function TaxAdvancesRateNotificationForm({
               שיעור המקדמה החודשית שנקבע על ידי רשות המיסים
             </p>
           </div>
+
+          {/* Rate Is Different Toggle */}
+          <div className="flex items-center justify-between p-3 border rounded-md">
+            <Label htmlFor="rate-is-different" className="text-right cursor-pointer">
+              החלטנו על שיעור שונה
+            </Label>
+            <Switch
+              id="rate-is-different"
+              checked={!!value.rate_is_different}
+              onCheckedChange={(checked) => onChange({
+                ...value,
+                rate_is_different: checked,
+                // Clear decided_rate when turning off
+                ...(!checked && { decided_rate: undefined }),
+              })}
+              disabled={disabled}
+            />
+          </div>
+
+          {/* Decided Rate (shown only when toggle is ON) */}
+          {value.rate_is_different && (
+            <div className="space-y-2 p-3 bg-orange-50 border border-orange-200 rounded-md">
+              <Label htmlFor="decided-rate" className="text-right block">
+                שיעור המקדמה שהחלטנו (%)
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="decided-rate"
+                  type="number"
+                  min="0.1"
+                  max="100"
+                  step="0.1"
+                  value={value.decided_rate || ''}
+                  onChange={(e) => onChange({ ...value, decided_rate: parseFloat(e.target.value) || undefined })}
+                  disabled={disabled}
+                  className="text-left w-32"
+                  dir="ltr"
+                />
+                <span className="text-lg font-medium">%</span>
+              </div>
+              <p className="text-xs text-gray-600 text-right">
+                השיעור שהחלטנו עליו יופיע במכתב במקום "שיעור זה מוצדק"
+              </p>
+            </div>
+          )}
 
           {/* Meeting Type */}
           <div className="space-y-2">
@@ -132,7 +190,13 @@ export function TaxAdvancesRateNotificationForm({
           {value.tax_year && value.advance_rate && (
             <div className="p-3 bg-green-50 border border-green-200 rounded-md">
               <div className="text-sm text-green-800 text-right">
-                <strong>סיכום:</strong> שיעור מקדמה של {value.advance_rate}% לשנת המס {value.tax_year}
+                <strong>סיכום:</strong> שיעור מקדמה שנקבע: {value.advance_rate}% לשנת המס {value.tax_year}
+                {value.rate_is_different && value.decided_rate && (
+                  <>
+                    <br />
+                    <strong>שיעור שהחלטנו:</strong> {value.decided_rate}%
+                  </>
+                )}
                 <br />
                 <span className="text-xs">
                   (שנת דוח קודם: {value.tax_year - 1}, שנה הבאה: {value.tax_year + 1})
@@ -145,7 +209,9 @@ export function TaxAdvancesRateNotificationForm({
           {!isValid && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
               <p className="text-sm text-yellow-800 text-right">
-                יש לבחור לקוח ולמלא את שנת המס ושיעור המקדמה
+                {!baseValid
+                  ? 'יש לבחור לקוח ולמלא את שנת המס ושיעור המקדמה'
+                  : 'יש למלא את שיעור המקדמה שהחלטנו'}
               </p>
             </div>
           )}
