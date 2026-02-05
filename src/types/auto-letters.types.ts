@@ -30,6 +30,7 @@ export type AutoLetterCategory =
   | 'bank_approvals'       // אישורים לבנק/מוסדות
   | 'mortgage_approvals'   // אישורי משכנתא
   | 'tax_notices'          // הודעות מס
+  | 'company_registrar'    // רשם החברות
   | 'audit_completion'     // סיום ביקורת דוחות כספיים
   | 'tax_advances'         // מקדמות מ"ה
   | 'protocols';           // פרוטוקולים
@@ -95,6 +96,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     enabled: true,
   },
   {
+    id: 'company_registrar',
+    label: 'רשם החברות',
+    description: 'מכתבים בנושא רשם החברות - אגרות שנתיות ועוד',
+    icon: 'Building2',
+    enabled: true,
+  },
+  {
     id: 'audit_completion',
     label: 'סיום ביקורת דוחות כספיים',
     description: 'מכתבים בנושא סיום ביקורת ועריכת דוחות כספיים',
@@ -146,7 +154,8 @@ export type AutoLetterTemplateType =
   | 'mortgage_approvals_osek_unsubmitted'      // עוסק - טרם הוגש
   // Tax Notices (הודעות מס)
   | 'tax_notices_payment_notice'
-  | 'tax_notices_annual_fee'
+  // Company Registrar (רשם החברות)
+  | 'company_registrar_annual_fee'
   // Audit Completion (סיום ביקורת דוחות כספיים)
   | 'audit_completion_general'
   // Tax Advances (מקדמות מ"ה)
@@ -310,11 +319,13 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       templateType: 'tax_notices_payment_notice',
       icon: 'FileText',
     },
+  ],
+  company_registrar: [
     {
       id: 'annual_fee_notice',
       label: 'אגרה שנתית לרשם החברות',
       description: 'הודעה ללקוח על חובת תשלום אגרה שנתית לרשם החברות',
-      templateType: 'tax_notices_annual_fee',
+      templateType: 'company_registrar_annual_fee',
       icon: 'Building2',
     },
   ],
@@ -792,6 +803,10 @@ export interface MortgageApprovalsDocumentData {
 /** Document data for Tax Notices letters */
 export interface TaxNoticesDocumentData {
   taxPaymentNotice: Partial<TaxPaymentNoticeVariables>;
+}
+
+/** Document data for Company Registrar letters */
+export interface CompanyRegistrarDocumentData {
   annualFeeNotice: Partial<AnnualFeeNoticeVariables>;
 }
 
@@ -861,6 +876,7 @@ export interface AutoLetterFormState {
     bank_approvals: BankApprovalsDocumentData;
     mortgage_approvals: MortgageApprovalsDocumentData;
     tax_notices: TaxNoticesDocumentData;
+    company_registrar: CompanyRegistrarDocumentData;
     audit_completion: AuditCompletionDocumentData;
     tax_advances: TaxAdvancesDocumentData;
     protocols: ProtocolsDocumentData;
@@ -1033,6 +1049,8 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           tax_amount: undefined,
           tax_payment_link: '',
         },
+      },
+      company_registrar: {
         annualFeeNotice: {
           fee_year: 2026,
           fee_amount: 1338,

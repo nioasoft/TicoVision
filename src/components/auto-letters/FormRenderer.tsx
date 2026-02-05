@@ -125,6 +125,9 @@ export function FormRenderer({
     case 'tax_notices':
       return renderTaxNoticesForm(letterTypeId, value, onChange, disabled);
 
+    case 'company_registrar':
+      return renderCompanyRegistrarForm(letterTypeId, value, onChange, disabled);
+
     case 'audit_completion':
       return renderAuditCompletionForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
@@ -425,6 +428,24 @@ function renderTaxNoticesForm(
         />
       );
 
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
+}
+
+function renderCompanyRegistrarForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean
+) {
+  switch (letterTypeId) {
     case 'annual_fee_notice':
       return (
         <AnnualFeeNoticeForm

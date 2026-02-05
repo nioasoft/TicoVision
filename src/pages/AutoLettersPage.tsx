@@ -294,8 +294,11 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return formState.documentData.tax_notices.taxPaymentNotice;
       }
+    }
+
+    if (selectedCategory === 'company_registrar') {
       if (selectedLetterTypeId === 'annual_fee_notice') {
-        return formState.documentData.tax_notices.annualFeeNotice;
+        return formState.documentData.company_registrar.annualFeeNotice;
       }
     }
 
@@ -421,6 +424,9 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return validateTaxPaymentNotice(mergedData);
       }
+    }
+
+    if (selectedCategory === 'company_registrar') {
       if (selectedLetterTypeId === 'annual_fee_notice') {
         return validateAnnualFeeNotice(mergedData);
       }
@@ -927,13 +933,16 @@ export function AutoLettersPage() {
           },
         }));
       }
+    }
+
+    if (selectedCategory === 'company_registrar') {
       if (selectedLetterTypeId === 'annual_fee_notice') {
         setFormState(prev => ({
           ...prev,
           documentData: {
             ...prev.documentData,
-            tax_notices: {
-              ...prev.documentData.tax_notices,
+            company_registrar: {
+              ...prev.documentData.company_registrar,
               annualFeeNotice: data,
             },
           },
