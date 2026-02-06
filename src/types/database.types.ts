@@ -129,6 +129,110 @@ export type Database = {
           },
         ]
       }
+      annual_balance_sheets: {
+        Row: {
+          advances_letter_id: string | null
+          advances_updated_at: string | null
+          auditor_id: string | null
+          client_id: string
+          created_at: string | null
+          debt_letter_id: string | null
+          debt_letter_sent: boolean | null
+          id: string
+          materials_received_at: string | null
+          materials_received_by: string | null
+          meeting_date: string | null
+          new_advances_amount: number | null
+          notes: string | null
+          office_approved_at: string | null
+          office_approved_by: string | null
+          report_transmitted_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string | null
+          work_completed_at: string | null
+          work_started_at: string | null
+          year: number
+        }
+        Insert: {
+          advances_letter_id?: string | null
+          advances_updated_at?: string | null
+          auditor_id?: string | null
+          client_id: string
+          created_at?: string | null
+          debt_letter_id?: string | null
+          debt_letter_sent?: boolean | null
+          id?: string
+          materials_received_at?: string | null
+          materials_received_by?: string | null
+          meeting_date?: string | null
+          new_advances_amount?: number | null
+          notes?: string | null
+          office_approved_at?: string | null
+          office_approved_by?: string | null
+          report_transmitted_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+          work_completed_at?: string | null
+          work_started_at?: string | null
+          year: number
+        }
+        Update: {
+          advances_letter_id?: string | null
+          advances_updated_at?: string | null
+          auditor_id?: string | null
+          client_id?: string
+          created_at?: string | null
+          debt_letter_id?: string | null
+          debt_letter_sent?: boolean | null
+          id?: string
+          materials_received_at?: string | null
+          materials_received_by?: string | null
+          meeting_date?: string | null
+          new_advances_amount?: number | null
+          notes?: string | null
+          office_approved_at?: string | null
+          office_approved_by?: string | null
+          report_transmitted_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+          work_completed_at?: string | null
+          work_started_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "annual_balance_sheets_advances_letter_id_fkey"
+            columns: ["advances_letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annual_balance_sheets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annual_balance_sheets_debt_letter_id_fkey"
+            columns: ["debt_letter_id"]
+            isOneToOne: false
+            referencedRelation: "generated_letters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annual_balance_sheets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -175,6 +279,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_audit_logs_tenant_id"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      balance_sheet_status_history: {
+        Row: {
+          balance_sheet_id: string
+          changed_at: string | null
+          changed_by: string
+          from_status: string | null
+          id: string
+          note: string | null
+          tenant_id: string
+          to_status: string
+        }
+        Insert: {
+          balance_sheet_id: string
+          changed_at?: string | null
+          changed_by: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          tenant_id: string
+          to_status: string
+        }
+        Update: {
+          balance_sheet_id?: string
+          changed_at?: string | null
+          changed_by?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          tenant_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_sheet_status_history_balance_sheet_id_fkey"
+            columns: ["balance_sheet_id"]
+            isOneToOne: false
+            referencedRelation: "annual_balance_sheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balance_sheet_status_history_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -5831,6 +5983,10 @@ export type Database = {
             Returns: string
           }
       mark_declaration_complete: { Args: { p_token: string }; Returns: boolean }
+      mark_materials_received: {
+        Args: { p_balance_sheet_id: string; p_received_at?: string }
+        Returns: undefined
+      }
       match_client_by_contact: {
         Args: {
           p_email: string
