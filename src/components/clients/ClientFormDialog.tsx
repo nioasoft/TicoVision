@@ -39,6 +39,9 @@ import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { ClientSelector } from '@/components/ClientSelector';
+import { ClientBalanceTab } from '@/modules/annual-balance/components/ClientBalanceTab';
+import { MarkMaterialsDialog } from '@/modules/annual-balance/components/MarkMaterialsDialog';
+import type { AnnualBalanceSheetWithClient } from '@/modules/annual-balance/types/annual-balance.types';
 import type {
   Client,
   CreateClientDto,
@@ -82,6 +85,7 @@ interface ClientFormDialogProps {
   onUpdatePhone?: (phoneId: string, phoneData: Partial<CreateClientPhoneDto>) => Promise<boolean>;
   onDeletePhone?: (phoneId: string) => Promise<boolean>;
   onSetPrimaryPhone?: (phoneId: string) => Promise<boolean>;
+  userRole?: string;
 }
 
 const INITIAL_FORM_DATA: CreateClientDto = {
@@ -139,6 +143,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     onUpdatePhone,
     onDeletePhone,
     onSetPrimaryPhone,
+    userRole = '',
   }) => {
     const [formData, setFormData] = useState<CreateClientDto>(INITIAL_FORM_DATA);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -149,6 +154,10 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     const [taxIdExists, setTaxIdExists] = useState(false); // NEW: בדיקת כפילות מספר עוסק
     const [isCheckingTaxId, setIsCheckingTaxId] = useState(false);
     const taxIdCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Balance sheet mark materials dialog state
+    const [markMaterialsCase, setMarkMaterialsCase] = useState<AnnualBalanceSheetWithClient | null>(null);
+    const [markMaterialsOpen, setMarkMaterialsOpen] = useState(false);
 
     // Signature/stamp state
     const [signaturePath, setSignaturePath] = useState<string | null>(null);
@@ -1183,6 +1192,29 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   </div>
                 </>
               )}
+
+              {/* Annual Balance Sheets (Edit Mode Only, companies & partnerships) */}
+              {mode === 'edit' && client && (client.client_type === 'company' || client.client_type === 'partnership') && (
+                <>
+                  <div className="col-span-3 mt-4 mb-2">
+                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                      מאזנים שנתיים
+                    </h3>
+                  </div>
+                  <div className="col-span-3">
+                    <ClientBalanceTab
+                      clientId={client.id}
+                      clientName={client.company_name}
+                      clientTaxId={client.tax_id}
+                      userRole={userRole}
+                      onMarkMaterials={(balanceCase) => {
+                        setMarkMaterialsCase(balanceCase);
+                        setMarkMaterialsOpen(true);
+                      }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <DialogFooter>
@@ -1215,6 +1247,14 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Mark Materials Dialog (from balance tab quick action) */}
+        <MarkMaterialsDialog
+          open={markMaterialsOpen}
+          onOpenChange={setMarkMaterialsOpen}
+          balanceCase={markMaterialsCase}
+          userRole={userRole}
+        />
       </>
     );
   }

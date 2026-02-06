@@ -217,6 +217,7 @@ export default function ClientsPage() {
         onUpdateContact={updateContact}
         onDeleteContact={deleteContact}
         onSetPrimaryContact={setPrimaryContact}
+        userRole={role || ''}
       />
 
       {/* Delete Confirmation Dialog */}

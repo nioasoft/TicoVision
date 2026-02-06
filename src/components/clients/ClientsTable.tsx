@@ -1,5 +1,6 @@
 import React from 'react';
 import { Edit, Trash2, MoreHorizontal, MessageCircle, Mail, FolderOpen, Palette } from 'lucide-react';
+import { ClientBalanceBadge } from '@/modules/annual-balance/components/ClientBalanceBadge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -182,6 +183,11 @@ const ClientRow = React.memo<ClientRowProps>(
           )}
         </TableCell>
         <TableCell className="w-20">{getStatusBadge(client.status)}</TableCell>
+        <TableCell className="w-20">
+          {(client.client_type === 'company' || client.client_type === 'partnership') && (
+            <ClientBalanceBadge clientId={client.id} />
+          )}
+        </TableCell>
         <TableCell className="w-16 text-left">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -249,19 +255,20 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
             <TableHead className="w-12">Drive</TableHead>
             <TableHead className="w-12">Canva</TableHead>
             <TableHead className="w-20">סטטוס</TableHead>
+            <TableHead className="w-20">מאזן</TableHead>
             <TableHead className="w-16 text-left">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center">
+              <TableCell colSpan={12} className="text-center">
                 טוען נתונים...
               </TableCell>
             </TableRow>
           ) : clients.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={11} className="text-center">
+              <TableCell colSpan={12} className="text-center">
                 לא נמצאו לקוחות
               </TableCell>
             </TableRow>

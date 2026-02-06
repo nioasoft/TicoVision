@@ -42,3 +42,5 @@ export { AssignAuditorDialog } from './components/AssignAuditorDialog';
 export { UpdateStatusDialog } from './components/UpdateStatusDialog';
 export { UpdateAdvancesDialog } from './components/UpdateAdvancesDialog';
 export { BalanceDetailDialog } from './components/BalanceDetailDialog';
+export { ClientBalanceBadge } from './components/ClientBalanceBadge';
+export { ClientBalanceTab } from './components/ClientBalanceTab';

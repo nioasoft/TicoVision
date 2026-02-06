@@ -1100,6 +1100,7 @@ export default function ClientGroupsPage() {
           onUpdateContact={updateContact}
           onDeleteContact={deleteContact}
           onSetPrimaryContact={setPrimaryContact}
+          userRole={role || ''}
         />
       )}
     </div>
