@@ -56,6 +56,9 @@ const BroadcastPage = lazy(() => import('@/modules/broadcast/pages/BroadcastPage
 // Protocol Management System
 const ProtocolsPage = lazy(() => import('@/modules/protocols/pages/ProtocolsPage'));
 
+// Annual Balance Sheets System
+const AnnualBalancePage = lazy(() => import('@/modules/annual-balance/pages/AnnualBalancePage'));
+
 // Billing Letters System
 const BillingLetterBuilder = lazy(() => import('@/modules/billing/components/BillingLetterBuilder').then(m => ({ default: m.BillingLetterBuilder })));
 const BillingLetterPreview = lazy(() => import('@/modules/billing/components/BillingLetterPreview').then(m => ({ default: m.BillingLetterPreview })));
@@ -207,6 +210,15 @@ function App() {
                       <Route path="/client-groups" element={
                         <ErrorBoundary>
                           <ClientGroupsPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+
+                    {/* Annual Balance Sheets - accessible to admin, accountant, bookkeeper */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant', 'bookkeeper']} />}>
+                      <Route path="/annual-balance" element={
+                        <ErrorBoundary>
+                          <AnnualBalancePage />
                         </ErrorBoundary>
                       } />
                     </Route>

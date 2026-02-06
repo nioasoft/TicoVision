@@ -27,6 +27,7 @@ import {
   HelpCircle,
   Ticket,
   ListFilter,
+  Scale,
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -117,6 +118,7 @@ const navigation: NavigationItem[] = [
       { name: 'ניהול הצהרות', href: '/capital-declarations', menuKey: 'capital-declaration:manage' },
     ]
   },
+  { name: 'מאזנים', href: '/annual-balance', icon: Scale, menuKey: 'annual-balance', allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
   { name: 'רשימות תפוצה', href: '/broadcast', icon: ListFilter, menuKey: 'broadcast', allowedRoles: ['admin'] as UserRole[] },
   { name: 'Tico Tickets', href: '/tico-tickets', icon: Ticket, menuKey: 'tico-tickets', allowedRoles: ['admin', 'accountant'] as UserRole[] },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },
