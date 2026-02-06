@@ -37,3 +37,8 @@ export { BalanceFilters as BalanceFiltersComponent } from './components/BalanceF
 export { BalanceTable } from './components/BalanceTable';
 export { AuditorSummaryTable } from './components/AuditorSummaryTable';
 export { OpenYearDialog } from './components/OpenYearDialog';
+export { MarkMaterialsDialog } from './components/MarkMaterialsDialog';
+export { AssignAuditorDialog } from './components/AssignAuditorDialog';
+export { UpdateStatusDialog } from './components/UpdateStatusDialog';
+export { UpdateAdvancesDialog } from './components/UpdateAdvancesDialog';
+export { BalanceDetailDialog } from './components/BalanceDetailDialog';

@@ -1,6 +1,6 @@
 /**
  * Annual Balance Page - Main dashboard for the annual balance sheets module
- * Composes KPI cards, filters, data table, and auditor summary
+ * Composes KPI cards, filters, data table, auditor summary, and workflow dialogs
  */
 
 import { useEffect, useState, useCallback } from 'react';
@@ -14,8 +14,13 @@ import { BalanceFilters } from '../components/BalanceFilters';
 import { BalanceTable } from '../components/BalanceTable';
 import { AuditorSummaryTable } from '../components/AuditorSummaryTable';
 import { OpenYearDialog } from '../components/OpenYearDialog';
+import { MarkMaterialsDialog } from '../components/MarkMaterialsDialog';
+import { AssignAuditorDialog } from '../components/AssignAuditorDialog';
+import { UpdateStatusDialog } from '../components/UpdateStatusDialog';
+import { UpdateAdvancesDialog } from '../components/UpdateAdvancesDialog';
+import { BalanceDetailDialog } from '../components/BalanceDetailDialog';
 import { hasBalancePermission } from '../types/annual-balance.types';
-import type { BalanceStatus } from '../types/annual-balance.types';
+import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 export default function AnnualBalancePage() {
   const { role } = useAuth();
@@ -41,6 +46,14 @@ export default function AnnualBalancePage() {
   const [openYearDialogOpen, setOpenYearDialogOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Dialog state for each workflow action
+  const [selectedCase, setSelectedCase] = useState<AnnualBalanceSheetWithClient | null>(null);
+  const [markMaterialsOpen, setMarkMaterialsOpen] = useState(false);
+  const [assignAuditorOpen, setAssignAuditorOpen] = useState(false);
+  const [updateStatusOpen, setUpdateStatusOpen] = useState(false);
+  const [updateAdvancesOpen, setUpdateAdvancesOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+
   useEffect(() => {
     fetchCases();
     fetchDashboardStats();
@@ -56,21 +69,54 @@ export default function AnnualBalancePage() {
     setFilters({ status });
   }, [setFilters]);
 
-  const handleRowClick = useCallback(
-    // Phase 5 will add BalanceDetailDialog here
-    () => {},
-    []
-  );
+  const handleRowClick = useCallback((row: AnnualBalanceSheetWithClient) => {
+    setSelectedCase(row);
+    setDetailDialogOpen(true);
+  }, []);
 
-  const handleQuickAction = useCallback(
-    // Phase 5 will wire up workflow action dialogs here
-    () => {},
-    []
-  );
+  const handleQuickAction = useCallback((row: AnnualBalanceSheetWithClient, currentStatus: string) => {
+    setSelectedCase(row);
+
+    switch (currentStatus) {
+      case 'waiting_for_materials':
+        setMarkMaterialsOpen(true);
+        break;
+      case 'materials_received':
+        setAssignAuditorOpen(true);
+        break;
+      case 'report_transmitted':
+        setUpdateAdvancesOpen(true);
+        break;
+      default:
+        setUpdateStatusOpen(true);
+        break;
+    }
+  }, []);
 
   const handleOpenYearSuccess = useCallback(() => {
     refreshData();
   }, [refreshData]);
+
+  // Handlers for detail dialog action buttons
+  const handleMarkMaterialsFromDetail = useCallback((c: AnnualBalanceSheetWithClient) => {
+    setSelectedCase(c);
+    setMarkMaterialsOpen(true);
+  }, []);
+
+  const handleAssignAuditorFromDetail = useCallback((c: AnnualBalanceSheetWithClient) => {
+    setSelectedCase(c);
+    setAssignAuditorOpen(true);
+  }, []);
+
+  const handleUpdateStatusFromDetail = useCallback((c: AnnualBalanceSheetWithClient) => {
+    setSelectedCase(c);
+    setUpdateStatusOpen(true);
+  }, []);
+
+  const handleUpdateAdvancesFromDetail = useCallback((c: AnnualBalanceSheetWithClient) => {
+    setSelectedCase(c);
+    setUpdateAdvancesOpen(true);
+  }, []);
 
   const canOpenYear = hasBalancePermission(userRole, 'open_year');
 
@@ -155,11 +201,48 @@ export default function AnnualBalancePage() {
         </TabsContent>
       </Tabs>
 
-      {/* Open Year Dialog */}
+      {/* Dialogs */}
       <OpenYearDialog
         open={openYearDialogOpen}
         onOpenChange={setOpenYearDialogOpen}
         onSuccess={handleOpenYearSuccess}
+      />
+
+      <MarkMaterialsDialog
+        open={markMaterialsOpen}
+        onOpenChange={setMarkMaterialsOpen}
+        balanceCase={selectedCase}
+        userRole={userRole}
+      />
+
+      <AssignAuditorDialog
+        open={assignAuditorOpen}
+        onOpenChange={setAssignAuditorOpen}
+        balanceCase={selectedCase}
+      />
+
+      <UpdateStatusDialog
+        open={updateStatusOpen}
+        onOpenChange={setUpdateStatusOpen}
+        balanceCase={selectedCase}
+        isAdmin={userRole === 'admin'}
+      />
+
+      <UpdateAdvancesDialog
+        open={updateAdvancesOpen}
+        onOpenChange={setUpdateAdvancesOpen}
+        balanceCase={selectedCase}
+      />
+
+      <BalanceDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        balanceCase={selectedCase}
+        userRole={userRole}
+        onMarkMaterials={handleMarkMaterialsFromDetail}
+        onAssignAuditor={handleAssignAuditorFromDetail}
+        onUpdateStatus={handleUpdateStatusFromDetail}
+        onUpdateAdvances={handleUpdateAdvancesFromDetail}
       />
     </div>
   );
