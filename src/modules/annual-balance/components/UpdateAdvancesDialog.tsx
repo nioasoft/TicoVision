@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
+import { updateAdvancesSchema } from '../types/validation';
 import type { AnnualBalanceSheetWithClient } from '../types/annual-balance.types';
 
 interface UpdateAdvancesDialogProps {
@@ -44,8 +45,11 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
     if (!balanceCase) return;
 
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 0) {
-      setError('יש להזין סכום תקין');
+
+    // Zod validation
+    const validation = updateAdvancesSchema.safeParse({ amount: numAmount });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
 

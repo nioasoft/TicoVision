@@ -9,6 +9,7 @@ import type {
   AnnualBalanceSheetWithClient,
   BalanceDashboardStats,
   BalanceFilters,
+  BalanceStatus,
 } from '../types/annual-balance.types';
 
 interface AnnualBalanceState {
@@ -33,6 +34,7 @@ interface AnnualBalanceState {
   setPagination: (pagination: Partial<{ page: number; pageSize: number }>) => void;
   setActiveTab: (tab: 'all' | 'by-auditor') => void;
   refreshData: () => Promise<void>;
+  optimisticUpdateStatus: (caseId: string, newStatus: BalanceStatus) => void;
 }
 
 const DEFAULT_YEAR = new Date().getFullYear() - 1; // In 2026, default to מאזני 25
@@ -136,5 +138,16 @@ export const useAnnualBalanceStore = create<AnnualBalanceState>((set, get) => ({
   // Refresh all data
   refreshData: async () => {
     await Promise.all([get().fetchCases(), get().fetchDashboardStats()]);
+  },
+
+  // Optimistic status update - immediately update UI before server confirms
+  optimisticUpdateStatus: (caseId: string, newStatus: BalanceStatus) => {
+    set((state) => ({
+      cases: state.cases.map((c) =>
+        c.id === caseId
+          ? { ...c, status: newStatus, updated_at: new Date().toISOString() }
+          : c
+      ),
+    }));
   },
 }));

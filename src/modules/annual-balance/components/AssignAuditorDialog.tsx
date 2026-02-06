@@ -28,6 +28,7 @@ import { formatIsraeliDate } from '@/lib/formatters';
 import { supabase } from '@/lib/supabase';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
+import { assignAuditorSchema } from '../types/validation';
 import type { AnnualBalanceSheetWithClient } from '../types/annual-balance.types';
 
 interface AuditorOption {
@@ -117,7 +118,18 @@ export const AssignAuditorDialog: React.FC<AssignAuditorDialogProps> = ({
   }, [open, balanceCase]);
 
   const handleSubmit = async () => {
-    if (!balanceCase || !auditorId) return;
+    if (!balanceCase) return;
+
+    // Zod validation
+    const validation = assignAuditorSchema.safeParse({
+      auditorId,
+      meetingDate,
+      meetingTime,
+    });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);

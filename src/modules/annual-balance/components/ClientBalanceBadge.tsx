@@ -23,16 +23,20 @@ export function ClientBalanceBadge({ clientId, year, className }: ClientBalanceB
   const currentYear = year ?? new Date().getFullYear();
   const [record, setRecord] = useState<AnnualBalanceSheet | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const fetchStatus = async () => {
       setLoading(true);
+      setHasError(false);
       const result = await annualBalanceService.getByClientId(clientId);
       if (cancelled) return;
 
-      if (result.data) {
+      if (result.error) {
+        setHasError(true);
+      } else if (result.data) {
         // Find the record for the current year
         const yearRecord = result.data.find((r) => r.year === currentYear);
         setRecord(yearRecord ?? null);
@@ -51,6 +55,10 @@ export function ClientBalanceBadge({ clientId, year, className }: ClientBalanceB
 
   if (loading) {
     return <Loader2 className={cn('h-3 w-3 animate-spin text-gray-400', className)} />;
+  }
+
+  if (hasError) {
+    return <span className={cn('text-xs text-red-400', className)} title="שגיאה בטעינה">!</span>;
   }
 
   if (!record) {

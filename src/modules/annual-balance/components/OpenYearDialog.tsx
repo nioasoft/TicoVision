@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { annualBalanceService } from '../services/annual-balance.service';
+import { openYearSchema } from '../types/validation';
 
 interface OpenYearDialogProps {
   open: boolean;
@@ -74,6 +75,13 @@ export const OpenYearDialog: React.FC<OpenYearDialogProps> = ({
   };
 
   const handleSubmit = async () => {
+    // Zod validation
+    const validation = openYearSchema.safeParse({ year: selectedYear });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {

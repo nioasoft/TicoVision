@@ -82,6 +82,7 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
 }) => {
   const [history, setHistory] = useState<BalanceStatusHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesChanged, setNotesChanged] = useState(false);
@@ -92,11 +93,14 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
 
     setNotes(balanceCase.notes || '');
     setNotesChanged(false);
+    setHistoryError(null);
 
     const fetchHistory = async () => {
       setLoadingHistory(true);
       const result = await annualBalanceService.getStatusHistory(balanceCase.id);
-      if (result.data) {
+      if (result.error) {
+        setHistoryError('שגיאה בטעינת היסטוריה');
+      } else if (result.data) {
         setHistory(result.data);
       }
       setLoadingHistory(false);
@@ -185,6 +189,10 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>טוען היסטוריה...</span>
+              </div>
+            ) : historyError ? (
+              <div className="rounded-md border border-red-200 bg-red-50 p-2">
+                <p className="text-xs text-red-800">{historyError}</p>
               </div>
             ) : (
               <div className="space-y-0">

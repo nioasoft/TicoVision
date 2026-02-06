@@ -18,6 +18,7 @@ import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
 import { getNextStatus } from '../types/annual-balance.types';
+import { updateStatusSchema } from '../types/validation';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 interface UpdateStatusDialogProps {
@@ -38,17 +39,32 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refreshData } = useAnnualBalanceStore();
+  const { refreshData, optimisticUpdateStatus } = useAnnualBalanceStore();
 
   const nextStatus = targetStatus || (balanceCase ? getNextStatus(balanceCase.status) : null);
 
   const handleSubmit = async () => {
     if (!balanceCase || !nextStatus) return;
 
+    // Zod validation
+    const validation = updateStatusSchema.safeParse({
+      targetStatus: nextStatus,
+      note: note || undefined,
+    });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
+      // Optimistic update - show result immediately
+      optimisticUpdateStatus(balanceCase.id, nextStatus);
+      onOpenChange(false);
+      setNote('');
+
       const result = await annualBalanceService.updateStatus(
         balanceCase.id,
         nextStatus,
@@ -57,14 +73,15 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
       );
 
       if (result.error) {
+        // Revert on error by refreshing
         setError(result.error.message);
+        await refreshData();
         setSubmitting(false);
         return;
       }
 
+      // Confirm with full server data
       await refreshData();
-      onOpenChange(false);
-      setNote('');
     } catch {
       setError('שגיאה בעדכון סטטוס');
     }

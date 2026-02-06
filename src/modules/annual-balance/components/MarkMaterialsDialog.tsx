@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { formatIsraeliDate } from '@/lib/formatters';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
+import { markMaterialsSchema } from '../types/validation';
 import type { AnnualBalanceSheetWithClient } from '../types/annual-balance.types';
 
 interface MarkMaterialsDialogProps {
@@ -37,10 +38,17 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
   const [date, setDate] = useState<Date>(new Date());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refreshData } = useAnnualBalanceStore();
+  const { refreshData, optimisticUpdateStatus } = useAnnualBalanceStore();
 
   const handleSubmit = async () => {
     if (!balanceCase) return;
+
+    // Zod validation
+    const validation = markMaterialsSchema.safeParse({ receivedAt: date });
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -65,8 +73,10 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
         return;
       }
 
-      await refreshData();
+      // Optimistic update
+      optimisticUpdateStatus(balanceCase.id, 'materials_received');
       onOpenChange(false);
+      await refreshData();
     } catch {
       setError('שגיאה בעדכון סטטוס');
     }
