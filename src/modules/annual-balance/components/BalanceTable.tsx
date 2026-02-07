@@ -54,7 +54,7 @@ function getQuickActionLabel(status: BalanceStatus): string | null {
     waiting_for_materials: 'סמן הגיע חומר',
     materials_received: 'שייך מבקר',
     assigned_to_auditor: 'התחל עבודה',
-    in_progress: 'סיים עבודה',
+    in_progress: 'העבר לאישור',
     work_completed: 'סמן שודר',
     report_transmitted: 'עדכן מקדמות',
   };
