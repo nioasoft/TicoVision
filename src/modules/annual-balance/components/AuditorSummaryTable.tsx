@@ -23,19 +23,23 @@ interface AuditorSummaryTableProps {
 
 const VISIBLE_STATUSES = BALANCE_STATUSES.filter((s) => s !== 'office_approved');
 
-/** Extract initials from email */
-function getInitials(email: string): string {
-  const name = email.split('@')[0];
-  const parts = name.split(/[._-]/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+/** Extract initials from name or email */
+function getInitials(nameOrEmail: string): string {
+  // If it looks like an email, extract from username
+  if (nameOrEmail.includes('@')) {
+    const username = nameOrEmail.split('@')[0];
+    const parts = username.split(/[._-]/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return username.slice(0, 2).toUpperCase();
   }
-  return name.slice(0, 2).toUpperCase();
-}
-
-/** Extract username from email */
-function getUsername(email: string): string {
-  return email.split('@')[0];
+  // Extract from name parts
+  const parts = nameOrEmail.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return nameOrEmail.slice(0, 2).toUpperCase();
 }
 
 export const AuditorSummaryTable: React.FC<AuditorSummaryTableProps> = ({
@@ -76,14 +80,14 @@ export const AuditorSummaryTable: React.FC<AuditorSummaryTableProps> = ({
             <div className="flex items-center gap-3">
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="text-xs bg-primary/10 text-primary font-semibold">
-                  {getInitials(auditor.auditor_email)}
+                  {getInitials(auditor.auditor_name)}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="text-sm font-medium cursor-default">
-                      {getUsername(auditor.auditor_email)}
+                      {auditor.auditor_name}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">

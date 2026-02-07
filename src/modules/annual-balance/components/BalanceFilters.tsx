@@ -139,7 +139,7 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
             <SelectItem value="all">מבקר: הכל</SelectItem>
             {auditors.map((auditor) => (
               <SelectItem key={auditor.auditor_id} value={auditor.auditor_id}>
-                {auditor.auditor_email}
+                {auditor.auditor_name}
               </SelectItem>
             ))}
           </SelectContent>
