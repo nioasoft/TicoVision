@@ -13,7 +13,15 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
 import { updateAdvancesSchema } from '../types/validation';
@@ -31,15 +39,41 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
   balanceCase,
 }) => {
   const [amount, setAmount] = useState('');
+  const [selectedLetterId, setSelectedLetterId] = useState('');
+  const [letters, setLetters] = useState<Array<{ id: string; subject: string; created_at: string }>>([]);
+  const [loadingLetters, setLoadingLetters] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refreshData } = useAnnualBalanceStore();
 
   useEffect(() => {
-    if (open && balanceCase?.new_advances_amount) {
-      setAmount(String(balanceCase.new_advances_amount));
+    if (open && balanceCase) {
+      if (balanceCase.new_advances_amount) {
+        setAmount(String(balanceCase.new_advances_amount));
+      }
+      if (balanceCase.advances_letter_id) {
+        setSelectedLetterId(balanceCase.advances_letter_id);
+      }
+      // Fetch letters for this client
+      fetchLetters(balanceCase.client_id);
     }
   }, [open, balanceCase]);
+
+  const fetchLetters = async (clientId: string) => {
+    setLoadingLetters(true);
+    try {
+      const { data } = await supabase
+        .from('generated_letters')
+        .select('id, subject, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      setLetters(data ?? []);
+    } catch {
+      // Silently fail - letter link is optional
+    }
+    setLoadingLetters(false);
+  };
 
   const handleSubmit = async () => {
     if (!balanceCase) return;
@@ -47,7 +81,10 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
     const numAmount = parseFloat(amount);
 
     // Zod validation
-    const validation = updateAdvancesSchema.safeParse({ amount: numAmount });
+    const validation = updateAdvancesSchema.safeParse({
+      amount: numAmount,
+      letterId: selectedLetterId || undefined,
+    });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
@@ -59,7 +96,8 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
     try {
       const result = await annualBalanceService.updateAdvances(
         balanceCase.id,
-        numAmount
+        numAmount,
+        selectedLetterId || undefined
       );
 
       if (result.error) {
@@ -84,6 +122,8 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
   const handleClose = () => {
     onOpenChange(false);
     setAmount('');
+    setSelectedLetterId('');
+    setLetters([]);
     setError(null);
   };
 
@@ -112,6 +152,27 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
               step="0.01"
               className="rtl:text-right"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">קישור למכתב (אופציונלי):</label>
+            <Select
+              value={selectedLetterId}
+              onValueChange={(val) => setSelectedLetterId(val === 'none' ? '' : val)}
+              disabled={loadingLetters}
+            >
+              <SelectTrigger className="rtl:text-right">
+                <SelectValue placeholder={loadingLetters ? 'טוען מכתבים...' : 'בחר מכתב'} />
+              </SelectTrigger>
+              <SelectContent dir="rtl">
+                <SelectItem value="none">ללא מכתב</SelectItem>
+                {letters.map((letter) => (
+                  <SelectItem key={letter.id} value={letter.id}>
+                    {letter.subject || 'מכתב'} - {new Date(letter.created_at).toLocaleDateString('he-IL')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {error && (

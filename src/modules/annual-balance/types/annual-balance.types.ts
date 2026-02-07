@@ -40,20 +40,45 @@ export const BALANCE_STATUS_CONFIG: Record<BalanceStatus, BalanceStatusConfig> =
 
 /**
  * Get the next valid status in the workflow
+ * Skips 'office_approved' status - goes directly from 'work_completed' to 'report_transmitted'
  */
 export function getNextStatus(current: BalanceStatus): BalanceStatus | null {
   const currentIndex = BALANCE_STATUSES.indexOf(current);
   if (currentIndex === -1 || currentIndex === BALANCE_STATUSES.length - 1) return null;
-  return BALANCE_STATUSES[currentIndex + 1];
+  
+  // Skip 'office_approved' - go directly from 'work_completed' to 'report_transmitted'
+  if (current === 'work_completed') {
+    return 'report_transmitted';
+  }
+  
+  const nextStatus = BALANCE_STATUSES[currentIndex + 1];
+  // If next status is 'office_approved', skip to the one after it
+  if (nextStatus === 'office_approved') {
+    return BALANCE_STATUSES[currentIndex + 2] || null;
+  }
+  
+  return nextStatus;
 }
 
 /**
  * Check if a status transition is valid (forward only, unless admin revert)
+ * Allows skipping 'office_approved' - direct transition from 'work_completed' to 'report_transmitted'
  */
 export function isValidTransition(from: BalanceStatus, to: BalanceStatus, isAdmin: boolean): boolean {
   const fromIndex = BALANCE_STATUSES.indexOf(from);
   const toIndex = BALANCE_STATUSES.indexOf(to);
   if (isAdmin) return fromIndex !== toIndex; // Admin can go backward or forward
+  
+  // Allow skipping 'office_approved' - direct transition from 'work_completed' to 'report_transmitted'
+  if (from === 'work_completed' && to === 'report_transmitted') {
+    return true;
+  }
+  
+  // Don't allow transitioning to 'office_approved'
+  if (to === 'office_approved') {
+    return false;
+  }
+  
   return toIndex === fromIndex + 1; // Non-admin can only go forward by one step
 }
 

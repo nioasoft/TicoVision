@@ -64,12 +64,7 @@ export const BalanceKPICards: React.FC<BalanceKPICardsProps> = ({
   if (loading) {
     return (
       <div className="space-y-3">
-        <Card className="border-gray-200">
-          <CardContent className="py-3 px-4">
-            <div className="h-5 bg-gray-200 rounded w-48 animate-pulse" />
-          </CardContent>
-        </Card>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1.5">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1.5" dir="rtl">
           {[...Array(8)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="py-2 px-3">
@@ -83,22 +78,22 @@ export const BalanceKPICards: React.FC<BalanceKPICardsProps> = ({
   }
 
   const totalCases = stats?.totalCases ?? 0;
+  const statusesWithoutOfficeApproved = BALANCE_STATUSES.filter((status) => status !== 'office_approved');
 
   return (
     <div className="space-y-3">
-      {/* Summary stat */}
-      <Card className="border-gray-200">
-        <CardContent className="py-3 px-4">
-          <div className="flex items-center gap-2" dir="rtl">
-            <span className="text-sm text-gray-500">סה״כ תיקים:</span>
-            <span className="text-base font-bold text-gray-900">{formatNumber(totalCases)}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Status filter cards */}
+      {/* Status filter cards with total cases first */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1.5" dir="rtl">
-        {BALANCE_STATUSES.map((status) => {
+        {/* Total cases card - first */}
+        <Card className="border-gray-200">
+          <CardContent className="py-1.5 px-2 flex items-center gap-1.5" dir="rtl">
+            <span className="text-base font-bold text-gray-900">{formatNumber(totalCases)}</span>
+            <span className="text-xs font-medium text-gray-700 flex-1 truncate">סה״כ תיקים</span>
+          </CardContent>
+        </Card>
+
+        {/* Status cards */}
+        {statusesWithoutOfficeApproved.map((status) => {
           const config = BALANCE_STATUS_CONFIG[status];
           const colors = STATUS_CARD_COLORS[status];
           const Icon = STATUS_ICONS[status];

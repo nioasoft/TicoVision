@@ -23,6 +23,7 @@ export const updateStatusSchema = z.object({
 export const updateAdvancesSchema = z.object({
   amount: z.number({ required_error: 'יש להזין סכום' })
     .min(0, 'סכום חייב להיות חיובי'),
+  letterId: z.string().uuid().optional().or(z.literal('')),
 });
 
 export const openYearSchema = z.object({

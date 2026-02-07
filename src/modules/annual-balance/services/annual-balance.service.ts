@@ -54,10 +54,19 @@ class AnnualBalanceService extends BaseService {
         query = query.eq('auditor_id', filters.auditor_id);
       }
       if (filters.search) {
-        // Search by client company name or tax_id via the joined client
-        query = query.or(
-          `client.company_name.ilike.%${filters.search}%,client.tax_id.ilike.%${filters.search}%`
-        );
+        // Search by client name or tax_id - two-step approach since PostgREST
+        // .or() doesn't reliably filter on embedded/joined resource fields
+        const { data: matchingClients } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('tenant_id', tenantId)
+          .or(`company_name.ilike.%${filters.search}%,tax_id.ilike.%${filters.search}%`);
+
+        const matchingIds = matchingClients?.map((c) => c.id) ?? [];
+        if (matchingIds.length === 0) {
+          return { data: { data: [], total: 0 }, error: null };
+        }
+        query = query.in('client_id', matchingIds);
       }
 
       const from = (page - 1) * pageSize;

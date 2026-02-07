@@ -124,7 +124,9 @@ export default function AnnualBalancePage() {
     <div className="space-y-4" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">מאזנים שנתיים</h1>
+        <h1 className="text-2xl font-bold">
+          מאזנים שנתיים לשנת המס {filters.year}
+        </h1>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -164,10 +166,10 @@ export default function AnnualBalancePage() {
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as 'all' | 'by-auditor')}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-end">
           <TabsList>
-            <TabsTrigger value="all">כל התיקים</TabsTrigger>
             <TabsTrigger value="by-auditor">לפי מבקר</TabsTrigger>
+            <TabsTrigger value="all">כל התיקים</TabsTrigger>
           </TabsList>
         </div>
 

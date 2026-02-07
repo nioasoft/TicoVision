@@ -113,7 +113,7 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">סטטוס: הכל</SelectItem>
-          {BALANCE_STATUSES.map((status) => (
+          {BALANCE_STATUSES.filter((status) => status !== 'office_approved').map((status) => (
             <SelectItem key={status} value={status}>
               {BALANCE_STATUS_CONFIG[status].label}
             </SelectItem>

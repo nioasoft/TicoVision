@@ -53,8 +53,7 @@ function getQuickActionLabel(status: BalanceStatus): string | null {
     materials_received: 'שייך מבקר',
     assigned_to_auditor: 'התחל עבודה',
     in_progress: 'סיים עבודה',
-    work_completed: 'אשר',
-    office_approved: 'סמן שודר',
+    work_completed: 'סמן שודר', // Skip 'office_approved', go directly to 'report_transmitted'
     report_transmitted: 'עדכן מקדמות',
   };
   return labels[status] ?? null;
