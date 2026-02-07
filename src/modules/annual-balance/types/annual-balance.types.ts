@@ -38,6 +38,18 @@ export const BALANCE_STATUS_CONFIG: Record<BalanceStatus, BalanceStatusConfig> =
   advances_updated: { label: 'מקדמות עודכנו', color: 'text-emerald-700', bgColor: 'bg-emerald-100', order: 8 },
 };
 
+/** Solid background colors for stacked progress bars */
+export const STATUS_BAR_COLORS: Record<BalanceStatus, string> = {
+  waiting_for_materials: 'bg-gray-400',
+  materials_received: 'bg-blue-500',
+  assigned_to_auditor: 'bg-purple-500',
+  in_progress: 'bg-orange-500',
+  work_completed: 'bg-yellow-500',
+  office_approved: 'bg-cyan-500',
+  report_transmitted: 'bg-green-500',
+  advances_updated: 'bg-emerald-500',
+};
+
 /**
  * Get the next valid status in the workflow
  * Skips 'office_approved' status - goes directly from 'work_completed' to 'report_transmitted'

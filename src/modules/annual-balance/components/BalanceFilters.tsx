@@ -1,6 +1,6 @@
 /**
  * BalanceFilters - Filter bar for annual balance dashboard
- * Includes search, status, auditor, and year filters
+ * Includes search, status, auditor, and year filters with bigger controls
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -64,32 +64,35 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
   return (
     <div className="flex flex-wrap items-center gap-2" dir="rtl">
       {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+      <div className="relative flex-1 max-w-xs">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
           placeholder="חיפוש לפי שם חברה או ח.פ."
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="h-8 w-[200px] text-xs pr-8 pl-7 border-gray-200 bg-white rtl:text-right"
+          className="h-9 text-sm pr-9 pl-9 rounded-lg border-gray-200 bg-white rtl:text-right"
         />
         {searchValue && (
           <button
             onClick={handleClearSearch}
-            className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             type="button"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
+
+      {/* Vertical divider */}
+      <div className="h-5 w-px bg-border" />
 
       {/* Year Filter */}
       <Select
         value={String(filters.year)}
         onValueChange={(value) => onFiltersChange({ year: Number(value) })}
       >
-        <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs border-gray-200 bg-white">
+        <SelectTrigger className="h-9 w-auto min-w-[110px] text-sm rounded-lg border-gray-200 bg-white">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
@@ -108,7 +111,7 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
           onFiltersChange({ status: value === 'all' ? undefined : (value as BalanceFiltersType['status']) })
         }
       >
-        <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs border-gray-200 bg-white">
+        <SelectTrigger className="h-9 w-auto min-w-[140px] text-sm rounded-lg border-gray-200 bg-white">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
@@ -129,7 +132,7 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
             onFiltersChange({ auditor_id: value === 'all' ? undefined : value })
           }
         >
-          <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs border-gray-200 bg-white">
+          <SelectTrigger className="h-9 w-auto min-w-[140px] text-sm rounded-lg border-gray-200 bg-white">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="rtl:text-right">
@@ -149,9 +152,9 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
           variant="ghost"
           size="sm"
           onClick={onReset}
-          className="h-8 px-2 text-xs text-gray-500 hover:text-gray-700"
+          className="h-9 px-3 text-sm text-muted-foreground hover:text-foreground"
         >
-          <FilterX className="h-3.5 w-3.5 ml-1" />
+          <FilterX className="h-4 w-4 ml-1.5" />
           איפוס
         </Button>
       )}

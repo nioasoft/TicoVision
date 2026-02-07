@@ -3,10 +3,13 @@
  * Composes KPI cards, filters, data table, auditor summary, and workflow dialogs
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RefreshCw, CalendarPlus } from 'lucide-react';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { RefreshCw, CalendarPlus, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
 import { BalanceKPICards } from '../components/BalanceKPICards';
@@ -120,132 +123,189 @@ export default function AnnualBalancePage() {
 
   const canOpenYear = hasBalancePermission(userRole, 'open_year');
 
+  // Compute completion percentage
+  const completionPct = useMemo(() => {
+    if (!dashboardStats || dashboardStats.totalCases === 0) return 0;
+    const done = (dashboardStats.byStatus.report_transmitted ?? 0) + (dashboardStats.byStatus.advances_updated ?? 0);
+    return Math.round((done / dashboardStats.totalCases) * 100);
+  }, [dashboardStats]);
+
   return (
-    <div className="space-y-4" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          מאזנים שנתיים לשנת המס {filters.year}
-        </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-4" dir="rtl">
+        {/* Header card */}
+        <Card className="rounded-xl border bg-card shadow-sm">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <h1 className="text-2xl font-bold tracking-tight">
+                  מאזנים שנתיים {filters.year}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {dashboardStats ? `${dashboardStats.totalCases} תיקים` : 'טוען...'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="default"
+                  className="h-9"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  <RefreshCw className={cn('h-4 w-4 ml-1.5', refreshing && 'animate-spin')} />
+                  רענן
+                </Button>
+                {canOpenYear && (
+                  <Button size="default" className="h-9" onClick={() => setOpenYearDialogOpen(true)}>
+                    <CalendarPlus className="h-4 w-4 ml-1.5" />
+                    פתח שנה
+                  </Button>
+                )}
+              </div>
+            </div>
+            {/* Completion progress bar */}
+            {dashboardStats && dashboardStats.totalCases > 0 && (
+              <div className="mt-4 space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>התקדמות כוללת</span>
+                  <span className="tabular-nums font-medium">{completionPct}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-green-500 transition-all duration-500"
+                    style={{ width: `${completionPct}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Error display */}
+        {error && (
+          <Card className="rounded-xl border-destructive/30 bg-destructive/5">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="rounded-full bg-destructive/10 p-2">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-destructive">שגיאה בטעינת נתונים</p>
+                <p className="text-xs text-destructive/80 mt-0.5">{error.message}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* KPI Cards */}
+        <BalanceKPICards
+          stats={dashboardStats}
+          loading={loading}
+          selectedStatus={filters.status}
+          onStatusClick={handleStatusCardClick}
+        />
+
+        {/* Unified Tabs + Table card */}
+        <Card className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as 'all' | 'by-auditor')}
           >
-            <RefreshCw className={`h-4 w-4 ml-1 ${refreshing ? 'animate-spin' : ''}`} />
-            רענן
-          </Button>
-          {canOpenYear && (
-            <Button size="sm" onClick={() => setOpenYearDialogOpen(true)}>
-              <CalendarPlus className="h-4 w-4 ml-1" />
-              פתח שנה
-            </Button>
-          )}
-        </div>
+            {/* Tab header */}
+            <div className="flex items-center justify-end border-b px-4 py-2.5">
+              <TabsList className="bg-muted/50">
+                <TabsTrigger
+                  value="by-auditor"
+                  className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  לפי מבקר
+                </TabsTrigger>
+                <TabsTrigger
+                  value="all"
+                  className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                >
+                  כל התיקים
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="all" className="m-0">
+              {/* Filters row */}
+              <div className="border-b px-4 py-3">
+                <BalanceFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  onReset={resetFilters}
+                  auditors={dashboardStats?.byAuditor ?? []}
+                />
+              </div>
+
+              {/* Table (renders inside the card) */}
+              <BalanceTable
+                cases={cases}
+                loading={loading}
+                pagination={pagination}
+                onPageChange={(page) => setPagination({ page })}
+                onPageSizeChange={(pageSize) => setPagination({ pageSize })}
+                onRowClick={handleRowClick}
+                onQuickAction={handleQuickAction}
+                userRole={userRole}
+              />
+            </TabsContent>
+
+            <TabsContent value="by-auditor" className="m-0">
+              <AuditorSummaryTable
+                auditors={dashboardStats?.byAuditor ?? []}
+                loading={loading}
+              />
+            </TabsContent>
+          </Tabs>
+        </Card>
+
+        {/* Dialogs */}
+        <OpenYearDialog
+          open={openYearDialogOpen}
+          onOpenChange={setOpenYearDialogOpen}
+          onSuccess={handleOpenYearSuccess}
+        />
+
+        <MarkMaterialsDialog
+          open={markMaterialsOpen}
+          onOpenChange={setMarkMaterialsOpen}
+          balanceCase={selectedCase}
+          userRole={userRole}
+        />
+
+        <AssignAuditorDialog
+          open={assignAuditorOpen}
+          onOpenChange={setAssignAuditorOpen}
+          balanceCase={selectedCase}
+        />
+
+        <UpdateStatusDialog
+          open={updateStatusOpen}
+          onOpenChange={setUpdateStatusOpen}
+          balanceCase={selectedCase}
+          isAdmin={userRole === 'admin'}
+        />
+
+        <UpdateAdvancesDialog
+          open={updateAdvancesOpen}
+          onOpenChange={setUpdateAdvancesOpen}
+          balanceCase={selectedCase}
+        />
+
+        <BalanceDetailDialog
+          open={detailDialogOpen}
+          onOpenChange={setDetailDialogOpen}
+          balanceCase={selectedCase}
+          userRole={userRole}
+          onMarkMaterials={handleMarkMaterialsFromDetail}
+          onAssignAuditor={handleAssignAuditorFromDetail}
+          onUpdateStatus={handleUpdateStatusFromDetail}
+          onUpdateAdvances={handleUpdateAdvancesFromDetail}
+        />
       </div>
-
-      {/* Error display */}
-      {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-800">{error.message}</p>
-        </div>
-      )}
-
-      {/* KPI Cards */}
-      <BalanceKPICards
-        stats={dashboardStats}
-        loading={loading}
-        selectedStatus={filters.status}
-        onStatusClick={handleStatusCardClick}
-      />
-
-      {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setActiveTab(value as 'all' | 'by-auditor')}
-      >
-        <div className="flex items-center justify-end">
-          <TabsList>
-            <TabsTrigger value="by-auditor">לפי מבקר</TabsTrigger>
-            <TabsTrigger value="all">כל התיקים</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="all" className="space-y-3 mt-3">
-          {/* Filters */}
-          <BalanceFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            onReset={resetFilters}
-            auditors={dashboardStats?.byAuditor ?? []}
-          />
-
-          {/* Table */}
-          <BalanceTable
-            cases={cases}
-            loading={loading}
-            pagination={pagination}
-            onPageChange={(page) => setPagination({ page })}
-            onPageSizeChange={(pageSize) => setPagination({ pageSize })}
-            onRowClick={handleRowClick}
-            onQuickAction={handleQuickAction}
-            userRole={userRole}
-          />
-        </TabsContent>
-
-        <TabsContent value="by-auditor" className="mt-3">
-          <AuditorSummaryTable
-            auditors={dashboardStats?.byAuditor ?? []}
-            loading={loading}
-          />
-        </TabsContent>
-      </Tabs>
-
-      {/* Dialogs */}
-      <OpenYearDialog
-        open={openYearDialogOpen}
-        onOpenChange={setOpenYearDialogOpen}
-        onSuccess={handleOpenYearSuccess}
-      />
-
-      <MarkMaterialsDialog
-        open={markMaterialsOpen}
-        onOpenChange={setMarkMaterialsOpen}
-        balanceCase={selectedCase}
-        userRole={userRole}
-      />
-
-      <AssignAuditorDialog
-        open={assignAuditorOpen}
-        onOpenChange={setAssignAuditorOpen}
-        balanceCase={selectedCase}
-      />
-
-      <UpdateStatusDialog
-        open={updateStatusOpen}
-        onOpenChange={setUpdateStatusOpen}
-        balanceCase={selectedCase}
-        isAdmin={userRole === 'admin'}
-      />
-
-      <UpdateAdvancesDialog
-        open={updateAdvancesOpen}
-        onOpenChange={setUpdateAdvancesOpen}
-        balanceCase={selectedCase}
-      />
-
-      <BalanceDetailDialog
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
-        balanceCase={selectedCase}
-        userRole={userRole}
-        onMarkMaterials={handleMarkMaterialsFromDetail}
-        onAssignAuditor={handleAssignAuditorFromDetail}
-        onUpdateStatus={handleUpdateStatusFromDetail}
-        onUpdateAdvances={handleUpdateAdvancesFromDetail}
-      />
-    </div>
+    </TooltipProvider>
   );
 }
