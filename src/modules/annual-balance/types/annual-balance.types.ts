@@ -111,7 +111,7 @@ export interface AnnualBalanceSheet {
 
   // Step 3: Auditor assignment
   auditor_id: string | null;
-  meeting_date: string | null;
+  meeting_date: string | null; // Auto-set when auditor is assigned (תאריך שיוך)
 
   // Step 4-5: Work progress
   work_started_at: string | null;
@@ -153,6 +153,7 @@ export interface AnnualBalanceSheetWithDetails extends AnnualBalanceSheetWithCli
   auditor: {
     id: string;
     email: string;
+    name: string;
   } | null;
 }
 
@@ -184,6 +185,7 @@ export interface BalanceDashboardStats {
 export interface AuditorSummary {
   auditor_id: string;
   auditor_email: string;
+  auditor_name: string;
   total: number;
   byStatus: Partial<Record<BalanceStatus, number>>;
 }

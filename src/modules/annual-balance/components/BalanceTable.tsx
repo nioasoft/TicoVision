@@ -1,10 +1,10 @@
 /**
  * BalanceTable - Main data table for annual balance sheets
  * Shows client cases with merged company/tax_id, step indicator, avatar auditor,
- * visible quick actions on hover, and page pills pagination
+ * advances amount, visible quick actions on hover, and page pills pagination
  *
  * Column order (code order = LEFT to RIGHT visually in RTL):
- * פעולה הבאה | עדכון | פגישה | מבקר | סטטוס | חברה (rightmost = primary)
+ * פעולה הבאה | עדכון | מקדמות | מבקר | סטטוס | חברה (rightmost = primary)
  */
 
 import React from 'react';
@@ -29,13 +29,12 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronRight, ChevronLeft, FileSearch } from 'lucide-react';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
-import { formatIsraeliDate, formatIsraeliDateTime } from '@/lib/formatters';
+import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { getNextStatus, hasBalancePermission, BALANCE_STATUSES, BALANCE_STATUS_CONFIG } from '../types/annual-balance.types';
+import { getNextStatus, hasBalancePermission, BALANCE_STATUS_CONFIG } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 interface BalanceTableProps {
@@ -76,26 +75,39 @@ function formatRelativeTime(dateStr: string): string {
   return formatIsraeliDate(dateStr);
 }
 
-/** Get step number from status (1-7 excluding office_approved for display) */
+/** Get step number from status (1-6, skipping office_approved and assigned_to_auditor) */
 function getStepNumber(status: BalanceStatus): number {
-  const visibleStatuses = BALANCE_STATUSES.filter((s) => s !== 'office_approved');
-  const idx = visibleStatuses.indexOf(status);
-  return idx >= 0 ? idx + 1 : BALANCE_STATUSES.indexOf(status) + 1;
+  const stepMap: Record<BalanceStatus, number> = {
+    waiting_for_materials: 1,
+    materials_received: 2,
+    assigned_to_auditor: 3,
+    in_progress: 3,
+    work_completed: 4,
+    office_approved: 5,
+    report_transmitted: 5,
+    advances_updated: 6,
+  };
+  return stepMap[status];
 }
 
-/** Extract initials from email */
-function getInitials(email: string): string {
-  const name = email.split('@')[0];
-  const parts = name.split(/[._-]/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+/** Get the timestamp when the current status was entered */
+function getStatusDate(row: AnnualBalanceSheetWithClient): string | null {
+  switch (row.status) {
+    case 'materials_received':
+      return row.materials_received_at;
+    case 'assigned_to_auditor':
+      return row.meeting_date;
+    case 'in_progress':
+      return row.work_started_at;
+    case 'work_completed':
+      return row.work_completed_at;
+    case 'report_transmitted':
+      return row.report_transmitted_at;
+    case 'advances_updated':
+      return row.advances_updated_at;
+    default:
+      return null;
   }
-  return name.slice(0, 2).toUpperCase();
-}
-
-/** Extract username from email */
-function getUsername(email: string): string {
-  return email.split('@')[0];
 }
 
 /** Generate page numbers with ellipsis logic (max 5 visible) */
@@ -117,7 +129,23 @@ function generatePageNumbers(current: number, total: number): (number | '...')[]
   return pages;
 }
 
-const TOTAL_VISIBLE_STEPS = 7;
+/** Get subtle row background color by status */
+function getRowBgClass(status: BalanceStatus): string {
+  switch (status) {
+    case 'in_progress':
+      return 'bg-orange-50/30';
+    case 'work_completed':
+      return 'bg-yellow-50/30';
+    case 'report_transmitted':
+      return 'bg-green-50/50';
+    case 'advances_updated':
+      return 'bg-emerald-50/50';
+    default:
+      return '';
+  }
+}
+
+const TOTAL_VISIBLE_STEPS = 6;
 
 export const BalanceTable: React.FC<BalanceTableProps> = ({
   cases,
@@ -140,10 +168,10 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
             <TableRow className="bg-muted/30">
               <TableHead className="text-right w-[130px]"><span className="text-xs font-semibold text-muted-foreground">פעולה הבאה</span></TableHead>
               <TableHead className="text-right w-[110px]"><span className="text-xs font-semibold text-muted-foreground">עדכון</span></TableHead>
-              <TableHead className="text-right w-[120px]"><span className="text-xs font-semibold text-muted-foreground">פגישה</span></TableHead>
-              <TableHead className="text-right w-[140px]"><span className="text-xs font-semibold text-muted-foreground">מבקר</span></TableHead>
+              <TableHead className="text-right w-[110px]"><span className="text-xs font-semibold text-muted-foreground">מקדמות</span></TableHead>
+              <TableHead className="text-right w-[180px]"><span className="text-xs font-semibold text-muted-foreground">מבקר</span></TableHead>
               <TableHead className="text-right w-[160px]"><span className="text-xs font-semibold text-muted-foreground">סטטוס</span></TableHead>
-              <TableHead className="text-right w-[250px]"><span className="text-xs font-semibold text-muted-foreground">חברה</span></TableHead>
+              <TableHead className="text-right w-[210px]"><span className="text-xs font-semibold text-muted-foreground">חברה</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -151,7 +179,7 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
               <TableRow key={i}>
                 <TableCell className="py-3 px-3"><Skeleton className="h-7 w-24" /></TableCell>
                 <TableCell className="py-3 px-3"><Skeleton className="h-4 w-16" /></TableCell>
-                <TableCell className="py-3 px-3"><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell className="py-3 px-3"><Skeleton className="h-4 w-16" /></TableCell>
                 <TableCell className="py-3 px-3">
                   <div className="flex items-center gap-2">
                     <Skeleton className="h-7 w-7 rounded-full" />
@@ -197,16 +225,16 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
             <TableHead className="text-right w-[110px] py-3 px-3">
               <span className="text-xs font-semibold text-muted-foreground">עדכון</span>
             </TableHead>
-            <TableHead className="text-right w-[120px] py-3 px-3">
-              <span className="text-xs font-semibold text-muted-foreground">פגישה</span>
+            <TableHead className="text-right w-[110px] py-3 px-3">
+              <span className="text-xs font-semibold text-muted-foreground">מקדמות</span>
             </TableHead>
-            <TableHead className="text-right w-[140px] py-3 px-3">
+            <TableHead className="text-right w-[180px] py-3 px-3">
               <span className="text-xs font-semibold text-muted-foreground">מבקר</span>
             </TableHead>
             <TableHead className="text-right w-[160px] py-3 px-3">
               <span className="text-xs font-semibold text-muted-foreground">סטטוס</span>
             </TableHead>
-            <TableHead className="text-right w-[250px] py-3 px-3">
+            <TableHead className="text-right w-[210px] py-3 px-3">
               <span className="text-xs font-semibold text-muted-foreground">חברה</span>
             </TableHead>
           </TableRow>
@@ -221,12 +249,16 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                 : hasBalancePermission(userRole, 'change_status')
             );
             const stepNum = getStepNumber(row.status);
-            const auditorEmail = row.auditor_id ? (row as Record<string, unknown>).auditor_email as string : null;
+            const auditorName = row.auditor_id ? (row as Record<string, unknown>).auditor_name as string : null;
+
 
             return (
               <TableRow
                 key={row.id}
-                className="group cursor-pointer hover:bg-muted/40"
+                className={cn(
+                  'group cursor-pointer hover:bg-muted/40',
+                  getRowBgClass(row.status)
+                )}
                 onClick={() => onRowClick(row)}
               >
                 {/* Quick action (visible on row hover) - LEFTMOST */}
@@ -262,47 +294,48 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                   </Tooltip>
                 </TableCell>
 
-                {/* Meeting date */}
+                {/* Advances amount */}
                 <TableCell className="py-3 px-3">
                   <span className="text-sm text-muted-foreground">
-                    {row.meeting_date ? formatIsraeliDate(row.meeting_date) : (
-                      <span className="text-muted-foreground/40">--</span>
-                    )}
+                    {row.new_advances_amount !== null && row.new_advances_amount !== undefined
+                      ? formatILSInteger(row.new_advances_amount)
+                      : <span className="text-muted-foreground/40">--</span>
+                    }
                   </span>
                 </TableCell>
 
-                {/* Auditor: avatar + username */}
+                {/* Auditor: name + assignment date */}
                 <TableCell className="py-3 px-3">
-                  {auditorEmail ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-2 justify-end">
-                          <Avatar className="h-7 w-7">
-                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-medium">
-                              {getInitials(auditorEmail)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-muted-foreground truncate max-w-[80px]">
-                            {getUsername(auditorEmail)}
-                          </span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs">
-                        {auditorEmail}
-                      </TooltipContent>
-                    </Tooltip>
+                  {auditorName ? (
+                    <div className="text-right ms-auto">
+                      <span className="text-sm text-muted-foreground truncate block">
+                        {auditorName}
+                      </span>
+                      {row.meeting_date && (
+                        <span className="text-[10px] text-muted-foreground/60 block">
+                          {formatIsraeliDate(row.meeting_date)}
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-sm text-muted-foreground/40">--</span>
                   )}
                 </TableCell>
 
-                {/* Status: step indicator + badge */}
+                {/* Status: step indicator + badge + date */}
                 <TableCell className="py-3 px-3">
                   <div className="flex items-center gap-2 justify-end">
                     <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                       {stepNum}/{TOTAL_VISIBLE_STEPS}
                     </span>
-                    <BalanceStatusBadge status={row.status} />
+                    <div className="text-right">
+                      <BalanceStatusBadge status={row.status} />
+                      {getStatusDate(row) && (
+                        <span className="text-[10px] text-muted-foreground/60 block mt-0.5">
+                          {formatIsraeliDate(getStatusDate(row)!)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </TableCell>
 

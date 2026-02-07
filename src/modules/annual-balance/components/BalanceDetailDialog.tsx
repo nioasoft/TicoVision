@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Check, Circle, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
+import { formatIsraeliDate, formatILSInteger } from '@/lib/formatters';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
@@ -254,15 +254,15 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                 <div>
                   <span className="text-muted-foreground">מבקר:</span>
                   <span className="mr-1 font-medium">
-                    {(balanceCase as Record<string, unknown>).auditor_email as string || balanceCase.auditor_id}
+                    {(balanceCase as Record<string, unknown>).auditor_name as string || (balanceCase as Record<string, unknown>).auditor_email as string || balanceCase.auditor_id}
                   </span>
                 </div>
               )}
 
               {balanceCase.meeting_date && (
                 <div>
-                  <span className="text-muted-foreground">פגישה:</span>
-                  <span className="mr-1">{formatIsraeliDateTime(balanceCase.meeting_date)}</span>
+                  <span className="text-muted-foreground">תאריך שיוך:</span>
+                  <span className="mr-1">{formatIsraeliDate(balanceCase.meeting_date)}</span>
                 </div>
               )}
 

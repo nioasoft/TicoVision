@@ -41,6 +41,7 @@ import { registrationService } from '@/services/registration.service';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
 import { usePermissions } from '@/hooks/usePermissions';
+import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
 
 interface SubmenuItem {
@@ -145,6 +146,7 @@ export function MainLayout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [unassignedBalanceCount, setUnassignedBalanceCount] = useState(0);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [consecutiveErrors, setConsecutiveErrors] = useState(0);
 
@@ -206,6 +208,39 @@ export function MainLayout() {
       };
     }
   }, [role, loadPendingCount, consecutiveErrors]);
+
+  // Load count of balance sheets with materials_received but no auditor assigned
+  const loadUnassignedBalanceCount = useCallback(async () => {
+    if (document.hidden || !navigator.onLine) return;
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const tenantId = authUser?.user_metadata?.tenant_id;
+      if (!tenantId) return;
+
+      const { count } = await supabase
+        .from('annual_balance_sheets')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .eq('status', 'materials_received');
+
+      setUnassignedBalanceCount(count ?? 0);
+    } catch {
+      // Silently fail for background polling
+    }
+  }, []);
+
+  useEffect(() => {
+    if (role === 'admin' || role === 'accountant') {
+      loadUnassignedBalanceCount();
+      const interval = setInterval(loadUnassignedBalanceCount, 60000);
+      const handleVisibility = () => { if (!document.hidden) loadUnassignedBalanceCount(); };
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => {
+        clearInterval(interval);
+        document.removeEventListener('visibilitychange', handleVisibility);
+      };
+    }
+  }, [role, loadUnassignedBalanceCount]);
 
   // Auto-open submenu if currently on a child page
   useEffect(() => {
@@ -410,6 +445,11 @@ export function MainLayout() {
                       {item.showBadge && pendingCount > 0 && (
                         <Badge variant="destructive" className="ml-auto">
                           {pendingCount}
+                        </Badge>
+                      )}
+                      {item.menuKey === 'annual-balance' && unassignedBalanceCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto">
+                          {unassignedBalanceCount}
                         </Badge>
                       )}
                     </NavLink>

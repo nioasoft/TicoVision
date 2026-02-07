@@ -137,7 +137,7 @@ export function ClientBalanceTab({
               <TableHead className="w-16">שנה</TableHead>
               <TableHead className="w-28">סטטוס</TableHead>
               <TableHead className="w-28">הגעת חומר</TableHead>
-              <TableHead className="w-28">פגישה</TableHead>
+              <TableHead className="w-28">תאריך שיוך</TableHead>
               <TableHead className="w-28">שידור דוח</TableHead>
               <TableHead className="w-24">מקדמות</TableHead>
               <TableHead className="w-20">פעולות</TableHead>

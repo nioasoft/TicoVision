@@ -77,9 +77,40 @@ class AnnualBalanceService extends BaseService {
 
       if (error) throw error;
 
+      const rows = (data ?? []) as unknown as AnnualBalanceSheetWithClient[];
+
+      // Enrich rows with auditor name/email
+      const uniqueAuditorIds = [...new Set(rows.map((r) => r.auditor_id).filter(Boolean))] as string[];
+      const auditorMap = new Map<string, { email: string; name: string }>();
+
+      for (const auditorId of uniqueAuditorIds) {
+        try {
+          const { data: authUser } = await supabase.rpc('get_user_with_auth', {
+            p_user_id: auditorId,
+          });
+          if (authUser && authUser.length > 0) {
+            const fullName = authUser[0].full_name || '';
+            auditorMap.set(auditorId, {
+              email: authUser[0].email,
+              name: fullName || authUser[0].email,
+            });
+          }
+        } catch {
+          // Skip - no enrichment for this auditor
+        }
+      }
+
+      const enrichedRows = rows.map((row) => {
+        if (row.auditor_id && auditorMap.has(row.auditor_id)) {
+          const info = auditorMap.get(row.auditor_id)!;
+          return { ...row, auditor_email: info.email, auditor_name: info.name };
+        }
+        return row;
+      });
+
       return {
         data: {
-          data: (data ?? []) as unknown as AnnualBalanceSheetWithClient[],
+          data: enrichedRows,
           total: count ?? 0,
         },
         error: null,
@@ -106,7 +137,7 @@ class AnnualBalanceService extends BaseService {
       if (error) throw error;
 
       // Fetch auditor details separately if assigned
-      let auditor: { id: string; email: string } | null = null;
+      let auditor: { id: string; email: string; name: string } | null = null;
       if (data.auditor_id) {
         const { data: userData } = await supabase
           .from('user_tenant_access')
@@ -117,12 +148,16 @@ class AnnualBalanceService extends BaseService {
           .single();
 
         if (userData) {
-          // Get email from auth.users via RPC or join
           const { data: authUser } = await supabase.rpc('get_user_with_auth', {
             p_user_id: data.auditor_id,
           });
           if (authUser && authUser.length > 0) {
-            auditor = { id: data.auditor_id, email: authUser[0].email };
+            const fullName = authUser[0].full_name || '';
+            auditor = {
+              id: data.auditor_id,
+              email: authUser[0].email,
+              name: fullName || authUser[0].email,
+            };
           }
         }
       }
@@ -355,12 +390,11 @@ class AnnualBalanceService extends BaseService {
   }
 
   /**
-   * Assign auditor with optional meeting date
+   * Assign auditor and auto-set assignment date (meeting_date)
    */
   async assignAuditor(
     id: string,
-    auditorId: string,
-    meetingDate?: string
+    auditorId: string
   ): Promise<ServiceResponse<AnnualBalanceSheet>> {
     try {
       const tenantId = await this.getTenantId();
@@ -378,10 +412,10 @@ class AnnualBalanceService extends BaseService {
 
       const currentStatus = current.status as BalanceStatus;
 
-      // Build update - if status is materials_received, advance to assigned_to_auditor
+      // Build update - auto-set assignment timestamp, advance status if materials_received
       const updateData: Record<string, unknown> = {
         auditor_id: auditorId,
-        meeting_date: meetingDate ?? null,
+        meeting_date: new Date().toISOString(),
       };
 
       if (currentStatus === 'materials_received') {
@@ -412,7 +446,6 @@ class AnnualBalanceService extends BaseService {
 
       await this.logAction('assign_auditor', id, {
         auditor_id: auditorId,
-        meeting_date: meetingDate,
       });
 
       return { data: updated as AnnualBalanceSheet, error: null };
@@ -478,14 +511,17 @@ class AnnualBalanceService extends BaseService {
           const stats = auditorMap.get(auditorId)!;
           const total = Object.values(stats).reduce((sum, count) => sum + (count || 0), 0);
 
-          // Try to get email via RPC
+          // Try to get email + name via RPC
           let email = auditorId; // fallback
+          let name = auditorId; // fallback
           try {
             const { data: authUser } = await supabase.rpc('get_user_with_auth', {
               p_user_id: auditorId,
             });
             if (authUser && authUser.length > 0) {
               email = authUser[0].email;
+              const fullName = authUser[0].full_name || '';
+              name = fullName || email;
             }
           } catch {
             // Use ID as fallback
@@ -494,6 +530,7 @@ class AnnualBalanceService extends BaseService {
           byAuditor.push({
             auditor_id: auditorId,
             auditor_email: email,
+            auditor_name: name,
             total,
             byStatus: stats,
           });

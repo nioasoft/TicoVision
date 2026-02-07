@@ -11,8 +11,6 @@ export const markMaterialsSchema = z.object({
 
 export const assignAuditorSchema = z.object({
   auditorId: z.string().min(1, 'יש לבחור מבקר'),
-  meetingDate: z.date().optional(),
-  meetingTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'שעה לא תקינה').optional().or(z.literal('')),
 });
 
 export const updateStatusSchema = z.object({
