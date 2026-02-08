@@ -163,7 +163,7 @@ export const OpenYearDialog: React.FC<OpenYearDialogProps> = ({
                     <strong>{preview.clientCount}</strong> לקוחות (חברות ושותפויות פעילות).
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    כל התיקים ייפתחו בסטטוס &quot;ממתין לחומר&quot;.
+                    כל התיקים ייפתחו בסטטוס &quot;טרם התקבל חומר לידנו&quot;.
                   </p>
                 </div>
               )}

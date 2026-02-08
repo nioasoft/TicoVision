@@ -35,6 +35,10 @@ export default function ClientsPage() {
     currentPage,
     totalPages,
 
+    // Client type counts
+    clientTypeCounts,
+    totalClientCount,
+
     // Search & Filters
     searchQuery,
     filters,
@@ -134,6 +138,14 @@ export default function ClientsPage() {
     setFilters({ groupId });
   };
 
+  const CLIENT_TYPE_TABS = [
+    { value: 'all', label: 'הכל' },
+    { value: 'company', label: 'חברה' },
+    { value: 'salary_owner', label: 'שכיר בעל שליטה' },
+    { value: 'partnership', label: 'שותפות' },
+    { value: 'nonprofit', label: 'ארגון לא-רווחי' },
+  ] as const;
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -145,6 +157,30 @@ export default function ClientsPage() {
             הוסף לקוח חדש
           </Button>
         )}
+      </div>
+
+      {/* Client Type Filter Cards */}
+      <div className="flex gap-2 flex-wrap">
+        {CLIENT_TYPE_TABS.map((tab) => {
+          const count = tab.value === 'all'
+            ? totalClientCount
+            : (clientTypeCounts[tab.value] || 0);
+          const isActive = filters.clientType === tab.value;
+
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setFilters({ clientType: tab.value })}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                isActive
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background text-muted-foreground border-border hover:bg-muted'
+              }`}
+            >
+              {tab.label} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {/* Search and Filters */}

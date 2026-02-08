@@ -28,7 +28,7 @@ export interface BalanceStatusConfig {
 }
 
 export const BALANCE_STATUS_CONFIG: Record<BalanceStatus, BalanceStatusConfig> = {
-  waiting_for_materials: { label: 'ממתין לחומר', color: 'text-gray-700', bgColor: 'bg-gray-100', order: 1 },
+  waiting_for_materials: { label: 'טרם התקבל חומר לידנו', color: 'text-gray-700', bgColor: 'bg-gray-100', order: 1 },
   materials_received: { label: 'הגיע חומר', color: 'text-blue-700', bgColor: 'bg-blue-100', order: 2 },
   assigned_to_auditor: { label: 'שויך למבקר', color: 'text-purple-700', bgColor: 'bg-purple-100', order: 3 },
   in_progress: { label: 'בעבודה', color: 'text-orange-700', bgColor: 'bg-orange-100', order: 4 },

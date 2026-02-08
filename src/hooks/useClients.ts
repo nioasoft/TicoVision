@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { logger } from '@/lib/logger';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 import {
   clientService,
   type Client,
@@ -27,6 +28,10 @@ export interface UseClientsReturn {
   totalClients: number;
   currentPage: number;
   totalPages: number;
+
+  // Client type counts for filter cards
+  clientTypeCounts: Record<string, number>;
+  totalClientCount: number;
 
   // Search & Filters
   searchQuery: string;
@@ -91,6 +96,8 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFiltersState] = useState<ClientFilters>(DEFAULT_FILTERS);
   const [clientContacts, setClientContacts] = useState<ClientContact[]>([]);
+  const [clientTypeCounts, setClientTypeCounts] = useState<Record<string, number>>({});
+  const [totalClientCount, setTotalClientCount] = useState(0);
 
   // Debounce search query to reduce API calls
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -100,6 +107,51 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     () => Math.ceil(totalClients / PAGE_SIZE),
     [totalClients]
   );
+
+  // Load client type counts for filter cards
+  const loadClientTypeCounts = useCallback(async () => {
+    try {
+      let query = supabase
+        .from('clients')
+        .select('client_type', { count: 'exact', head: false });
+
+      // Respect companyStatus filter
+      if (filters.companyStatus !== 'all') {
+        query = query.eq('company_status', filters.companyStatus);
+      }
+
+      // Exclude freelancers if on the clients page
+      if (excludeFreelancers) {
+        query = query.neq('client_type', 'freelancer');
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        logger.error('Error loading client type counts:', error);
+        return;
+      }
+
+      const counts: Record<string, number> = {};
+      let total = 0;
+      if (data) {
+        for (const row of data) {
+          const type = row.client_type || 'unknown';
+          counts[type] = (counts[type] || 0) + 1;
+          total++;
+        }
+      }
+
+      setClientTypeCounts(counts);
+      setTotalClientCount(total);
+    } catch (error) {
+      logger.error('Error loading client type counts:', error);
+    }
+  }, [filters.companyStatus, excludeFreelancers]);
+
+  // Refetch counts when companyStatus changes
+  useEffect(() => {
+    loadClientTypeCounts();
+  }, [loadClientTypeCounts]);
 
   // Load clients whenever search/filters/page changes
   useEffect(() => {
@@ -424,6 +476,10 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     totalClients,
     currentPage,
     totalPages,
+
+    // Client type counts
+    clientTypeCounts,
+    totalClientCount,
 
     // Search & Filters
     searchQuery,
