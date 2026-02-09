@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Check, Circle, ArrowLeft, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Loader2, Check, Circle, ArrowLeft, ExternalLink, AlertTriangle, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIsraeliDate, formatILSInteger } from '@/lib/formatters';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
@@ -41,6 +41,7 @@ interface BalanceDetailDialogProps {
   onAssignAuditor: (balanceCase: AnnualBalanceSheetWithClient) => void;
   onUpdateStatus: (balanceCase: AnnualBalanceSheetWithClient) => void;
   onUpdateAdvances: (balanceCase: AnnualBalanceSheetWithClient) => void;
+  onRevertStatus?: (balanceCase: AnnualBalanceSheetWithClient, targetStatus: BalanceStatus) => void;
 }
 
 /**
@@ -81,6 +82,7 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
   onAssignAuditor,
   onUpdateStatus,
   onUpdateAdvances,
+  onRevertStatus,
 }) => {
   const [history, setHistory] = useState<BalanceStatusHistory[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -133,6 +135,7 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
 
   const currentStatusIndex = BALANCE_STATUSES.indexOf(balanceCase.status);
   const nextStatus = getNextStatus(balanceCase.status);
+  const canRevert = hasBalancePermission(userRole, 'revert_status');
 
   // Determine which action button to show
   const getActionButton = () => {
@@ -213,6 +216,7 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                   const isFuture = index > currentStatusIndex;
                   const timestamp = getStatusTimestamp(balanceCase, status);
                   const historyEntry = history.find((h) => h.to_status === status);
+                  const isClickableForRevert = canRevert && isCompleted && onRevertStatus;
 
                   return (
                     <div
@@ -220,8 +224,13 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                       className={cn(
                         'flex items-start gap-3 py-1.5 ps-2',
                         isCurrent && 'bg-slate-50 rounded-md',
-                        isFuture && 'opacity-40'
+                        isFuture && 'opacity-40',
+                        isClickableForRevert && 'cursor-pointer hover:bg-blue-50/50 rounded-md transition-colors group'
                       )}
+                      onClick={isClickableForRevert ? () => {
+                        onOpenChange(false);
+                        onRevertStatus(balanceCase, status);
+                      } : undefined}
                     >
                       {/* Icon */}
                       <div className="flex-shrink-0 mt-0.5">
@@ -254,6 +263,7 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="h-3 w-3" /> קישור לגיבוי
                           </a>
@@ -269,9 +279,22 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                           </div>
                         )}
                       </div>
+
+                      {/* Revert icon for admin on completed steps */}
+                      {isClickableForRevert && (
+                        <div className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100">
+                          <Undo2 className="h-3.5 w-3.5 text-blue-500" />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
+                {/* Hint text for admin */}
+                {canRevert && currentStatusIndex > 0 && (
+                  <p className="text-xs text-muted-foreground mt-2 ps-2">
+                    לחץ על שלב קודם להחזרת הסטטוס
+                  </p>
+                )}
               </div>
             )}
           </div>

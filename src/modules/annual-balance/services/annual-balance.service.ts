@@ -331,27 +331,71 @@ class AnnualBalanceService extends BaseService {
       const updateData: Record<string, unknown> = { status: newStatus };
       const now = new Date().toISOString();
 
-      switch (newStatus) {
-        case 'materials_received':
-          updateData.materials_received_at = now;
-          updateData.materials_received_by = user?.id;
-          break;
-        case 'in_progress':
-          updateData.work_started_at = now;
-          break;
-        case 'work_completed':
-          updateData.work_completed_at = now;
-          break;
-        case 'office_approved':
-          updateData.office_approved_at = now;
-          updateData.office_approved_by = user?.id;
-          break;
-        case 'report_transmitted':
-          updateData.report_transmitted_at = now;
-          break;
-        case 'advances_updated':
-          updateData.advances_updated_at = now;
-          break;
+      const fromIndex = BALANCE_STATUSES.indexOf(currentStatus);
+      const toIndex = BALANCE_STATUSES.indexOf(newStatus);
+      const isRevert = toIndex < fromIndex;
+
+      if (isRevert) {
+        // Null out timestamp fields for all statuses AFTER the target
+        const statusesToClear = BALANCE_STATUSES.slice(toIndex + 1);
+        for (const clearedStatus of statusesToClear) {
+          switch (clearedStatus) {
+            case 'materials_received':
+              updateData.materials_received_at = null;
+              updateData.materials_received_by = null;
+              break;
+            case 'assigned_to_auditor':
+              updateData.meeting_date = null;
+              break;
+            case 'in_progress':
+              updateData.work_started_at = null;
+              break;
+            case 'work_completed':
+              updateData.work_completed_at = null;
+              break;
+            case 'office_approved':
+              updateData.office_approved_at = null;
+              updateData.office_approved_by = null;
+              break;
+            case 'report_transmitted':
+              updateData.report_transmitted_at = null;
+              break;
+            case 'advances_updated':
+              updateData.advances_updated_at = null;
+              break;
+          }
+        }
+
+        // If reverting before assigned_to_auditor, reset auditor confirmation
+        const assignedIndex = BALANCE_STATUSES.indexOf('assigned_to_auditor');
+        if (toIndex < assignedIndex) {
+          updateData.auditor_confirmed = false;
+          updateData.auditor_confirmed_at = null;
+        }
+      } else {
+        // Forward transition - set timestamp for the target status
+        switch (newStatus) {
+          case 'materials_received':
+            updateData.materials_received_at = now;
+            updateData.materials_received_by = user?.id;
+            break;
+          case 'in_progress':
+            updateData.work_started_at = now;
+            break;
+          case 'work_completed':
+            updateData.work_completed_at = now;
+            break;
+          case 'office_approved':
+            updateData.office_approved_at = now;
+            updateData.office_approved_by = user?.id;
+            break;
+          case 'report_transmitted':
+            updateData.report_transmitted_at = now;
+            break;
+          case 'advances_updated':
+            updateData.advances_updated_at = now;
+            break;
+        }
       }
 
       // Update the record
@@ -366,6 +410,12 @@ class AnnualBalanceService extends BaseService {
       if (updateError) throw updateError;
 
       // Log status change in history
+      const historyNote = isRevert && note
+        ? `[החזרת סטטוס] ${note}`
+        : isRevert
+          ? '[החזרת סטטוס]'
+          : note ?? null;
+
       const { error: historyError } = await supabase
         .from('balance_sheet_status_history')
         .insert({
@@ -374,7 +424,7 @@ class AnnualBalanceService extends BaseService {
           from_status: currentStatus,
           to_status: newStatus,
           changed_by: user?.id ?? '',
-          note: note ?? null,
+          note: historyNote,
         });
 
       if (historyError) {

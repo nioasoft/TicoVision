@@ -58,6 +58,7 @@ export default function AnnualBalancePage() {
   const [updateAdvancesOpen, setUpdateAdvancesOpen] = useState(false);
   const [confirmAssignmentOpen, setConfirmAssignmentOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [revertTargetStatus, setRevertTargetStatus] = useState<BalanceStatus | undefined>(undefined);
 
   useEffect(() => {
     fetchCases();
@@ -124,6 +125,12 @@ export default function AnnualBalancePage() {
   const handleUpdateAdvancesFromDetail = useCallback((c: AnnualBalanceSheetWithClient) => {
     setSelectedCase(c);
     setUpdateAdvancesOpen(true);
+  }, []);
+
+  const handleRevertStatusFromDetail = useCallback((c: AnnualBalanceSheetWithClient, targetStatus: BalanceStatus) => {
+    setSelectedCase(c);
+    setRevertTargetStatus(targetStatus);
+    setUpdateStatusOpen(true);
   }, []);
 
   const canOpenYear = hasBalancePermission(userRole, 'open_year');
@@ -289,8 +296,12 @@ export default function AnnualBalancePage() {
 
         <UpdateStatusDialog
           open={updateStatusOpen}
-          onOpenChange={setUpdateStatusOpen}
+          onOpenChange={(open) => {
+            setUpdateStatusOpen(open);
+            if (!open) setRevertTargetStatus(undefined);
+          }}
           balanceCase={selectedCase}
+          targetStatus={revertTargetStatus}
           isAdmin={userRole === 'admin'}
         />
 
@@ -315,6 +326,7 @@ export default function AnnualBalancePage() {
           onAssignAuditor={handleAssignAuditorFromDetail}
           onUpdateStatus={handleUpdateStatusFromDetail}
           onUpdateAdvances={handleUpdateAdvancesFromDetail}
+          onRevertStatus={handleRevertStatusFromDetail}
         />
       </div>
     </TooltipProvider>
