@@ -34,10 +34,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. RLS policies prevent users from reading or writing messages outside their tenant
   3. Messages support soft delete (is_deleted flag) rather than hard deletion for audit trail
   4. Database queries on (tenant_id, balance_id, created_at) execute in under 100ms for 1000+ messages
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 01-01: TBD during planning
+- [ ] 01-01-PLAN.md — Create balance_chat_messages table with RLS policies, indexes, Realtime publication, and regenerate TypeScript types
 
 ### Phase 2: Chat Service Layer
 **Goal**: ChatService class provides CRUD operations for messages with automatic tenant isolation
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database Foundation | 0/TBD | Not started | - |
+| 1. Database Foundation | 0/1 | Planned | - |
 | 2. Chat Service Layer | 0/TBD | Not started | - |
 | 3. Chat UI Components | 0/TBD | Not started | - |
 | 4. Real-time Message Delivery | 0/TBD | Not started | - |
