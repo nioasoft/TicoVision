@@ -48,10 +48,10 @@ Plans:
   2. Service methods can fetch message history for a specific balance
   3. Service methods can create new messages with sender metadata
   4. Service handles database errors gracefully without exposing internal details
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 02-01: TBD during planning
+- [ ] 02-01-PLAN.md — Create BalanceChatService with types, four CRUD methods, sender enrichment, and singleton export
 
 ### Phase 3: Chat UI Components
 **Goal**: Users can open a side panel from a balance row to view and send messages
