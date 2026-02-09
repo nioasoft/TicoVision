@@ -195,6 +195,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           group_id: client.group_id || undefined, // NEW: טעינת קבוצה
           payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
           payer_client_id: client.payer_client_id || null, // NEW: לקוח שמשלם
+          tax_coding: client.tax_coding || '0', // קידוד מס - טופס 1214
         });
         // Load signature path
         setSignaturePath(client.signature_path || null);
@@ -573,6 +574,24 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   dir="rtl"
                 />
               </div>
+
+              {/* Tax Coding (1214) */}
+              <div>
+                <Label htmlFor="tax_coding" className="text-right block mb-2">
+                  קידוד מס (1214)
+                </Label>
+                <Input
+                  id="tax_coding"
+                  value={formData.tax_coding || '0'}
+                  onChange={(e) => handleFormChange('tax_coding', e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="w-24 rtl:text-right"
+                />
+              </div>
+
+              {/* Empty divs for grid alignment */}
+              <div></div>
+              <div></div>
 
               {/* Category Header: Address Details */}
               <div className="col-span-3 mt-4 mb-2">
