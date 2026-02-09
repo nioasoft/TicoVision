@@ -28,6 +28,7 @@ import {
   Ticket,
   ListFilter,
   Scale,
+  MessageCircle,
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,9 @@ import { authService } from '@/services/auth.service';
 import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
+import { ChatPanel } from '@/modules/chat/components/ChatPanel';
+import { UnreadBadge } from '@/modules/chat/components/UnreadBadge';
+import { useChatStore } from '@/modules/chat/store/chatStore';
 
 interface SubmenuItem {
   name: string;
@@ -495,6 +499,17 @@ export function MainLayout() {
             <h2 className="text-lg font-semibold text-gray-800">
               מערכת ניהול משרד רואי חשבון
             </h2>
+            {(role === 'admin' || role === 'accountant') && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => useChatStore.getState().togglePanel()}
+              >
+                <MessageCircle className="h-5 w-5" />
+                <UnreadBadge />
+              </Button>
+            )}
           </div>
         </header>
 
@@ -503,6 +518,9 @@ export function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Chat Panel */}
+      {(role === 'admin' || role === 'accountant') && <ChatPanel />}
     </div>
   );
 }
