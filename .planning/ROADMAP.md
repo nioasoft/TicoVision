@@ -13,7 +13,7 @@ This roadmap delivers a complete internal chat and notification system for the a
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Database Foundation** - Chat messages schema with tenant isolation and RLS policies
-- [ ] **Phase 2: Chat Service Layer** - Core service extending BaseService for message CRUD operations
+- [x] **Phase 2: Chat Service Layer** - Core service extending BaseService for message CRUD operations
 - [ ] **Phase 3: Chat UI Components** - Side panel Sheet with message display and send functionality
 - [ ] **Phase 4: Real-time Message Delivery** - Supabase Realtime integration with channel management
 - [ ] **Phase 5: Participant Permissions** - Role-based access control for chat visibility
@@ -51,7 +51,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md — Create BalanceChatService with types, four CRUD methods, sender enrichment, and singleton export
+- [x] 02-01-PLAN.md — Create BalanceChatService with types, four CRUD methods, sender enrichment, and singleton export
 
 ### Phase 3: Chat UI Components
 **Goal**: Users can open a side panel from a balance row to view and send messages
@@ -175,7 +175,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Database Foundation | 1/1 | ✓ Complete | 2026-02-09 |
-| 2. Chat Service Layer | 0/TBD | Not started | - |
+| 2. Chat Service Layer | 1/1 | ✓ Complete | 2026-02-10 |
 | 3. Chat UI Components | 0/TBD | Not started | - |
 | 4. Real-time Message Delivery | 0/TBD | Not started | - |
 | 5. Participant Permissions | 0/TBD | Not started | - |
