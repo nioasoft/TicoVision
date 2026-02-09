@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 1 complete — ready for Phase 2 (Chat Service Layer)
+**Current focus:** Phase 2 complete — ready for Phase 3 (Chat UI)
 
 ## Current Position
 
-Phase: 1 of 10 (Database Foundation)
+Phase: 2 of 10 (Chat Service Layer)
 Plan: 1 of 1 complete
-Status: Phase 1 verified and complete
-Last activity: 2026-02-09 — Completed 01-01-PLAN.md (balance_chat_messages table, RLS, indexes, Realtime)
+Status: Phase 2 verified and complete
+Last activity: 2026-02-10 — Completed 02-01-PLAN.md (BalanceChatService with 4 CRUD methods)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 7min
-- Total execution time: 0.1 hours
+- Total plans completed: 2
+- Average duration: 4.5min
+- Total execution time: 0.15 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-database-foundation | 1 | 7min | 7min |
+| 02-chat-service-layer | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7min)
-- Trend: Baseline
+- Last 5 plans: 01-01 (7min), 02-01 (2min)
+- Trend: Accelerating
 
 *Updated after each plan completion*
 
@@ -50,6 +51,9 @@ Recent decisions affecting current work:
 - New balance_chat_messages table (not modifying existing chat_messages) — different relationship model, separate systems
 - message_type column added in Phase 1 — avoids Phase 8 schema migration
 - Migration applied via Management API — local/remote history mismatch workaround
+- Used get_users_for_tenant RPC for batch sender enrichment (not per-user get_user_with_auth) — avoids N+1 queries
+- Service placed in annual-balance module (not generic chat module) — balance-scoped chat
+- Types derived from Database['public']['Tables']['balance_chat_messages'] — auto-synced with schema
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-09 — Phase 1 Plan 1 execution
-Stopped at: Completed 01-01-PLAN.md (database foundation)
-Resume file: .planning/phases/01-database-foundation/01-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 2 Plan 1 execution
+Stopped at: Completed 02-01-PLAN.md (chat service layer)
+Resume file: .planning/phases/02-chat-service-layer/02-01-SUMMARY.md
