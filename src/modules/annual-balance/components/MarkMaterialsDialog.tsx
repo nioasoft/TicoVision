@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIsraeliDate } from '@/lib/formatters';
@@ -36,6 +37,7 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
   userRole,
 }) => {
   const [date, setDate] = useState<Date>(new Date());
+  const [backupLink, setBackupLink] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refreshData, optimisticUpdateStatus } = useAnnualBalanceStore();
@@ -44,7 +46,7 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
     if (!balanceCase) return;
 
     // Zod validation
-    const validation = markMaterialsSchema.safeParse({ receivedAt: date });
+    const validation = markMaterialsSchema.safeParse({ receivedAt: date, backupLink });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
@@ -58,13 +60,23 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
       if (userRole === 'bookkeeper') {
         result = await annualBalanceService.markMaterialsReceived(
           balanceCase.id,
-          date.toISOString()
+          date.toISOString(),
+          backupLink
         );
       } else {
+        // Admin/accountant path: update status + set backup_link via direct update
         result = await annualBalanceService.updateStatus(
           balanceCase.id,
           'materials_received'
         );
+        // Also set the backup_link separately for the direct update path
+        if (!result.error) {
+          const { supabase } = await import('@/lib/supabase');
+          await supabase
+            .from('annual_balance_sheets')
+            .update({ backup_link: backupLink })
+            .eq('id', balanceCase.id);
+        }
       }
 
       if (result.error) {
@@ -123,6 +135,20 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
             </Popover>
           </div>
 
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              קישור לגיבוי (Google Drive): <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="url"
+              value={backupLink}
+              onChange={(e) => setBackupLink(e.target.value)}
+              placeholder="הכנס קישור לתיקיית גיבוי"
+              className="rtl:text-right"
+              dir="ltr"
+            />
+          </div>
+
           {error && (
             <div className="rounded-md border border-red-200 bg-red-50 p-3">
               <p className="text-sm text-red-800">{error}</p>
@@ -134,7 +160,7 @@ export const MarkMaterialsDialog: React.FC<MarkMaterialsDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             ביטול
           </Button>
-          <Button onClick={handleSubmit} disabled={submitting}>
+          <Button onClick={handleSubmit} disabled={submitting || !backupLink.trim()}>
             {submitting && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
             אישור
           </Button>

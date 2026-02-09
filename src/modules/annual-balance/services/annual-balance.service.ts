@@ -20,7 +20,7 @@ import type {
 } from '../types/annual-balance.types';
 import { BALANCE_STATUSES, isValidTransition } from '../types/annual-balance.types';
 
-const CLIENT_SELECT = 'id, company_name, company_name_hebrew, tax_id, client_type';
+const CLIENT_SELECT = 'id, company_name, company_name_hebrew, tax_id, client_type, tax_coding';
 
 class AnnualBalanceService extends BaseService {
   constructor() {
@@ -46,6 +46,11 @@ class AnnualBalanceService extends BaseService {
         )
         .eq('tenant_id', tenantId)
         .eq('year', filters.year);
+
+      // Filter inactive records by default (unless showInactive is true)
+      if (!filters.showInactive) {
+        query = query.eq('is_active', true);
+      }
 
       if (filters.status) {
         query = query.eq('status', filters.status);
@@ -281,7 +286,7 @@ class AnnualBalanceService extends BaseService {
       // Get current record
       const { data: current, error: fetchError } = await supabase
         .from('annual_balance_sheets')
-        .select('status')
+        .select('status, auditor_confirmed')
         .eq('id', id)
         .eq('tenant_id', tenantId)
         .single();
@@ -289,6 +294,14 @@ class AnnualBalanceService extends BaseService {
       if (fetchError) throw fetchError;
 
       const currentStatus = current.status as BalanceStatus;
+
+      // Guard: cannot start work without auditor confirmation
+      if (newStatus === 'in_progress' && !current.auditor_confirmed) {
+        return {
+          data: null,
+          error: new Error('יש לאשר קבלת תיק לפני תחילת עבודה'),
+        };
+      }
 
       // Validate transition
       if (!isValidTransition(currentStatus, newStatus, isAdmin)) {
@@ -369,18 +382,21 @@ class AnnualBalanceService extends BaseService {
    */
   async markMaterialsReceived(
     balanceSheetId: string,
-    receivedAt?: string
+    receivedAt?: string,
+    backupLink?: string
   ): Promise<ServiceResponse<void>> {
     try {
       const { error } = await supabase.rpc('mark_materials_received', {
         p_balance_sheet_id: balanceSheetId,
         p_received_at: receivedAt ?? new Date().toISOString(),
+        p_backup_link: backupLink ?? null,
       });
 
       if (error) throw error;
 
       await this.logAction('mark_materials_received', balanceSheetId, {
         received_at: receivedAt,
+        backup_link: backupLink,
       });
 
       return { data: undefined, error: null };
@@ -461,12 +477,13 @@ class AnnualBalanceService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Get all records for the year to compute stats
+      // Get all active records for the year to compute stats
       const { data: records, error } = await supabase
         .from('annual_balance_sheets')
         .select('status, auditor_id')
         .eq('tenant_id', tenantId)
-        .eq('year', year);
+        .eq('year', year)
+        .eq('is_active', true);
 
       if (error) throw error;
 
@@ -657,6 +674,105 @@ class AnnualBalanceService extends BaseService {
         .single();
 
       if (error) throw error;
+
+      return { data: data as AnnualBalanceSheet, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Confirm auditor assignment - auditor acknowledges receipt of file
+   */
+  async confirmAssignment(id: string): Promise<ServiceResponse<AnnualBalanceSheet>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase
+        .from('annual_balance_sheets')
+        .update({
+          auditor_confirmed: true,
+          auditor_confirmed_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log confirmation in status history
+      await supabase.from('balance_sheet_status_history').insert({
+        balance_sheet_id: id,
+        tenant_id: tenantId,
+        from_status: 'assigned_to_auditor',
+        to_status: 'assigned_to_auditor',
+        changed_by: user?.id ?? '',
+        note: 'מבקר אישר קבלת תיק',
+      });
+
+      await this.logAction('confirm_assignment', id);
+
+      return { data: data as AnnualBalanceSheet, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Update advance rate fields - DB trigger auto-calculates rate and alert
+   */
+  async updateAdvanceRate(
+    id: string,
+    data: { taxAmount: number; turnover: number; currentAdvanceRate: number }
+  ): Promise<ServiceResponse<AnnualBalanceSheet>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data: updated, error } = await supabase
+        .from('annual_balance_sheets')
+        .update({
+          tax_amount: data.taxAmount,
+          turnover: data.turnover,
+          current_advance_rate: data.currentAdvanceRate,
+        })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('update_advance_rate', id, data);
+
+      return { data: updated as AnnualBalanceSheet, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Toggle year activity for a balance sheet
+   */
+  async toggleYearActivity(
+    id: string,
+    isActive: boolean
+  ): Promise<ServiceResponse<AnnualBalanceSheet>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .from('annual_balance_sheets')
+        .update({ is_active: isActive })
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logAction('toggle_year_activity', id, { is_active: isActive });
 
       return { data: data as AnnualBalanceSheet, error: null };
     } catch (error) {

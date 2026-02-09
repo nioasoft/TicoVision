@@ -35,6 +35,9 @@ interface AnnualBalanceState {
   setActiveTab: (tab: 'all' | 'by-auditor') => void;
   refreshData: () => Promise<void>;
   optimisticUpdateStatus: (caseId: string, newStatus: BalanceStatus) => void;
+  confirmAssignment: (id: string) => Promise<boolean>;
+  toggleYearActivity: (id: string, isActive: boolean) => Promise<boolean>;
+  updateAdvanceRate: (id: string, data: { taxAmount: number; turnover: number; currentAdvanceRate: number }) => Promise<boolean>;
 }
 
 const DEFAULT_YEAR = new Date().getFullYear() - 1; // In 2026, default to מאזני 25
@@ -149,5 +152,49 @@ export const useAnnualBalanceStore = create<AnnualBalanceState>((set, get) => ({
           : c
       ),
     }));
+  },
+
+  // Confirm auditor assignment
+  confirmAssignment: async (id: string) => {
+    // Optimistic update
+    set((state) => ({
+      cases: state.cases.map((c) =>
+        c.id === id
+          ? { ...c, auditor_confirmed: true, auditor_confirmed_at: new Date().toISOString() }
+          : c
+      ),
+    }));
+
+    const result = await annualBalanceService.confirmAssignment(id);
+    if (result.error) {
+      // Revert on error
+      set((state) => ({
+        cases: state.cases.map((c) =>
+          c.id === id ? { ...c, auditor_confirmed: false, auditor_confirmed_at: null } : c
+        ),
+      }));
+      return false;
+    }
+
+    await get().refreshData();
+    return true;
+  },
+
+  // Toggle year activity
+  toggleYearActivity: async (id: string, isActive: boolean) => {
+    const result = await annualBalanceService.toggleYearActivity(id, isActive);
+    if (result.error) return false;
+
+    await get().refreshData();
+    return true;
+  },
+
+  // Update advance rate
+  updateAdvanceRate: async (id: string, data: { taxAmount: number; turnover: number; currentAdvanceRate: number }) => {
+    const result = await annualBalanceService.updateAdvanceRate(id, data);
+    if (result.error) return false;
+
+    await get().refreshData();
+    return true;
   },
 }));

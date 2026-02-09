@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
@@ -44,7 +45,12 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
   const [loadingLetters, setLoadingLetters] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refreshData } = useAnnualBalanceStore();
+  const { refreshData, updateAdvanceRate } = useAnnualBalanceStore();
+
+  // Advance rate fields
+  const [taxAmount, setTaxAmount] = useState('');
+  const [turnover, setTurnover] = useState('');
+  const [currentRate, setCurrentRate] = useState('');
 
   useEffect(() => {
     if (open && balanceCase) {
@@ -54,6 +60,10 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
       if (balanceCase.advances_letter_id) {
         setSelectedLetterId(balanceCase.advances_letter_id);
       }
+      // Pre-fill advance rate fields
+      if (balanceCase.tax_amount != null) setTaxAmount(String(balanceCase.tax_amount));
+      if (balanceCase.turnover != null) setTurnover(String(balanceCase.turnover));
+      if (balanceCase.current_advance_rate != null) setCurrentRate(String(balanceCase.current_advance_rate * 100));
       // Fetch letters for this client
       fetchLetters(balanceCase.client_id);
     }
@@ -94,6 +104,18 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
     setError(null);
 
     try {
+      // Save advance rate fields if provided
+      const numTaxAmount = parseFloat(taxAmount);
+      const numTurnover = parseFloat(turnover);
+      const numCurrentRate = parseFloat(currentRate) / 100; // Convert from % to decimal
+      if (!isNaN(numTaxAmount) && !isNaN(numTurnover) && !isNaN(numCurrentRate)) {
+        await updateAdvanceRate(balanceCase.id, {
+          taxAmount: numTaxAmount,
+          turnover: numTurnover,
+          currentAdvanceRate: numCurrentRate,
+        });
+      }
+
       const result = await annualBalanceService.updateAdvances(
         balanceCase.id,
         numAmount,
@@ -124,8 +146,20 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
     setAmount('');
     setSelectedLetterId('');
     setLetters([]);
+    setTaxAmount('');
+    setTurnover('');
+    setCurrentRate('');
     setError(null);
   };
+
+  // Compute calculated rate for display
+  const numTaxAmountDisplay = parseFloat(taxAmount);
+  const numTurnoverDisplay = parseFloat(turnover);
+  const numCurrentRateDisplay = parseFloat(currentRate);
+  const calculatedRate = (!isNaN(numTaxAmountDisplay) && !isNaN(numTurnoverDisplay) && numTurnoverDisplay > 0)
+    ? (numTaxAmountDisplay / numTurnoverDisplay * 100)
+    : null;
+  const hasAlert = calculatedRate !== null && !isNaN(numCurrentRateDisplay) && calculatedRate > numCurrentRateDisplay;
 
   if (!balanceCase) return null;
 
@@ -139,6 +173,65 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
         <div className="space-y-4 py-4">
           <div className="text-sm text-muted-foreground">
             {balanceCase.client?.company_name} ({balanceCase.client?.tax_id})
+          </div>
+
+          {/* Advance rate calculation section */}
+          <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+            <p className="text-sm font-medium">חישוב שיעור מקדמה:</p>
+
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">חובת מס (₪):</label>
+              <Input
+                type="number"
+                value={taxAmount}
+                onChange={(e) => setTaxAmount(e.target.value)}
+                min="0"
+                step="0.01"
+                className="rtl:text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">מחזור (₪):</label>
+              <Input
+                type="number"
+                value={turnover}
+                onChange={(e) => setTurnover(e.target.value)}
+                min="0"
+                step="0.01"
+                className="rtl:text-right"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm text-muted-foreground">שיעור מקדמה נוכחי (%):</label>
+              <Input
+                type="number"
+                value={currentRate}
+                onChange={(e) => setCurrentRate(e.target.value)}
+                min="0"
+                max="100"
+                step="0.01"
+                className="rtl:text-right"
+              />
+            </div>
+
+            {calculatedRate !== null && (
+              <div className={cn(
+                'rounded-md border p-3',
+                hasAlert ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'
+              )}>
+                <p className={cn('text-sm font-medium', hasAlert ? 'text-red-800' : 'text-green-800')}>
+                  שיעור מחושב: {calculatedRate.toFixed(2)}%
+                </p>
+                {hasAlert && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <p className="text-sm text-red-800">שיעור מחושב גבוה מהשיעור הנוכחי - נדרש עדכון מקדמות!</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

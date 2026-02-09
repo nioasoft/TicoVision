@@ -108,10 +108,13 @@ export interface AnnualBalanceSheet {
   // Step 2: Materials received
   materials_received_at: string | null;
   materials_received_by: string | null;
+  backup_link: string | null;
 
   // Step 3: Auditor assignment
   auditor_id: string | null;
   meeting_date: string | null; // Auto-set when auditor is assigned (תאריך שיוך)
+  auditor_confirmed: boolean;
+  auditor_confirmed_at: string | null;
 
   // Step 4-5: Work progress
   work_started_at: string | null;
@@ -128,6 +131,19 @@ export interface AnnualBalanceSheet {
   new_advances_amount: number | null;
   advances_updated_at: string | null;
   advances_letter_id: string | null;
+
+  // Advance rate calculation
+  tax_amount: number | null;
+  turnover: number | null;
+  current_advance_rate: number | null;
+  calculated_advance_rate: number | null;
+  advance_rate_alert: boolean;
+
+  // Tax coding (Form 1214)
+  tax_coding: string | null;
+
+  // Year activity
+  is_active: boolean;
 
   // Debt letter (optional)
   debt_letter_sent: boolean;
@@ -146,6 +162,7 @@ export interface AnnualBalanceSheetWithClient extends AnnualBalanceSheet {
     company_name_hebrew: string | null;
     tax_id: string;
     client_type: string;
+    tax_coding: string | null;
   };
 }
 
@@ -199,6 +216,7 @@ export interface BalanceFilters {
   auditor_id?: string;
   year: number;
   search?: string;
+  showInactive?: boolean;
 }
 
 // ============================================================================
@@ -212,6 +230,7 @@ export const BALANCE_PERMISSIONS: Record<string, BalanceUserRole[]> = {
   mark_materials: ['admin', 'accountant', 'bookkeeper'],
   change_status: ['admin', 'accountant'],
   assign_auditor: ['admin', 'accountant'],
+  confirm_assignment: ['admin', 'accountant'],
   open_year: ['admin'],
   revert_status: ['admin'],
 };

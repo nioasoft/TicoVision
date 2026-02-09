@@ -145,6 +145,7 @@ export interface Client {
   preferred_language?: 'he' | 'en';
   assigned_accountant?: string;
   notes?: string;
+  tax_coding?: string; // קידוד מס - טופס 1214
   google_drive_link?: string; // Link to Google Drive folder (optional)
   canva_link?: string; // Link to Canva design (optional)
   tags?: string[];
@@ -199,6 +200,7 @@ export interface CreateClientDto {
   preferred_language?: 'he' | 'en';
   assigned_accountant?: string;
   notes?: string;
+  tax_coding?: string; // קידוד מס - טופס 1214
   google_drive_link?: string; // Link to Google Drive folder (optional)
   canva_link?: string; // Link to Canva design (optional)
   tags?: string[];

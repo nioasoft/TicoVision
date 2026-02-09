@@ -30,7 +30,8 @@ import {
   TooltipContent,
 } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronRight, ChevronLeft, FileSearch } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ChevronRight, ChevronLeft, FileSearch, ExternalLink, AlertTriangle } from 'lucide-react';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -48,17 +49,27 @@ interface BalanceTableProps {
   userRole: string;
 }
 
-/** Quick action label for a given status */
-function getQuickActionLabel(status: BalanceStatus): string | null {
+/** Quick action label for a given status - auditor confirmation aware */
+function getQuickActionLabel(status: BalanceStatus, auditorConfirmed?: boolean): string | null {
+  if (status === 'assigned_to_auditor') {
+    return auditorConfirmed ? 'התחל עבודה' : 'אשר קבלת תיק';
+  }
   const labels: Partial<Record<BalanceStatus, string>> = {
     waiting_for_materials: 'סמן הגיע חומר',
     materials_received: 'שייך מבקר',
-    assigned_to_auditor: 'התחל עבודה',
     in_progress: 'העבר לאישור',
     work_completed: 'סמן שודר',
     report_transmitted: 'עדכן מקדמות',
   };
   return labels[status] ?? null;
+}
+
+/** Get the action type for quick action dispatch */
+function getQuickActionType(status: BalanceStatus, auditorConfirmed?: boolean): string {
+  if (status === 'assigned_to_auditor' && !auditorConfirmed) {
+    return 'confirm_assignment';
+  }
+  return status;
 }
 
 /** Format relative time for "last updated" display */
@@ -242,42 +253,59 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
         <TableBody>
           {cases.map((row) => {
             const nextStatus = getNextStatus(row.status);
-            const actionLabel = getQuickActionLabel(row.status);
-            const canAdvance = nextStatus && (
-              row.status === 'waiting_for_materials'
-                ? hasBalancePermission(userRole, 'mark_materials')
-                : hasBalancePermission(userRole, 'change_status')
+            const actionLabel = getQuickActionLabel(row.status, row.auditor_confirmed);
+            const actionType = getQuickActionType(row.status, row.auditor_confirmed);
+            const canAdvance = (
+              row.status === 'assigned_to_auditor' && !row.auditor_confirmed
+                ? hasBalancePermission(userRole, 'confirm_assignment')
+                : nextStatus && (
+                  row.status === 'waiting_for_materials'
+                    ? hasBalancePermission(userRole, 'mark_materials')
+                    : hasBalancePermission(userRole, 'change_status')
+                )
             );
             const stepNum = getStepNumber(row.status);
             const auditorName = row.auditor_id ? (row as Record<string, unknown>).auditor_name as string : null;
-
 
             return (
               <TableRow
                 key={row.id}
                 className={cn(
                   'group cursor-pointer hover:bg-muted/40',
-                  getRowBgClass(row.status)
+                  getRowBgClass(row.status),
+                  !row.is_active && 'opacity-50'
                 )}
                 onClick={() => onRowClick(row)}
               >
                 {/* Quick action (visible on row hover) - LEFTMOST */}
                 <TableCell className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
-                  {canAdvance && actionLabel ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        'h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity',
-                        nextStatus && BALANCE_STATUS_CONFIG[nextStatus].color
-                      )}
-                      onClick={() => onQuickAction(row, row.status)}
-                    >
-                      {actionLabel}
-                    </Button>
-                  ) : (
-                    <span className="text-sm text-muted-foreground/40">--</span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {row.advance_rate_alert && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          שיעור מחושב גבוה מהשיעור הנוכחי
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    {canAdvance && actionLabel ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          'h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity',
+                          nextStatus && BALANCE_STATUS_CONFIG[nextStatus].color
+                        )}
+                        onClick={() => onQuickAction(row, actionType)}
+                      >
+                        {actionLabel}
+                      </Button>
+                    ) : (
+                      <span className="text-sm text-muted-foreground/40">--</span>
+                    )}
+                  </div>
                 </TableCell>
 
                 {/* Last updated (relative + tooltip) */}
@@ -339,14 +367,46 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                   </div>
                 </TableCell>
 
-                {/* Company (two-line: name + tax_id) - RIGHTMOST (primary) */}
+                {/* Company (two-line: name + tax_id) + tax_coding badge + inactive badge - RIGHTMOST (primary) */}
                 <TableCell className="py-3 px-3">
                   <div className="text-right">
-                    <div className="font-medium text-sm leading-tight truncate">
-                      {row.client?.company_name || '--'}
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <div className="font-medium text-sm leading-tight truncate">
+                        {row.client?.company_name || '--'}
+                      </div>
+                      {(row.tax_coding || row.client?.tax_coding) && (row.tax_coding || row.client?.tax_coding) !== '0' && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0 font-mono">
+                          1214: {row.tax_coding || row.client?.tax_coding}
+                        </Badge>
+                      )}
+                      {!row.is_active && (
+                        <Badge variant="secondary" className="text-[10px] px-1 py-0 shrink-0">
+                          לא פעיל
+                        </Badge>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                      {row.client?.tax_id || '--'}
+                    <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {row.client?.tax_id || '--'}
+                      </span>
+                      {row.backup_link && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <a
+                              href={row.backup_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:text-blue-700"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            קישור לגיבוי
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
                 </TableCell>
