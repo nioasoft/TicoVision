@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
@@ -39,12 +39,25 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvanceWarning, setShowAdvanceWarning] = useState(false);
   const { refreshData, optimisticUpdateStatus } = useAnnualBalanceStore();
 
   const nextStatus = targetStatus || (balanceCase ? getNextStatus(balanceCase.status) : null);
 
   const handleSubmit = async () => {
     if (!balanceCase || !nextStatus) return;
+
+    // Guard: block in_progress if auditor not confirmed
+    if (nextStatus === 'in_progress' && !balanceCase.auditor_confirmed) {
+      setError('יש לאשר קבלת תיק לפני תחילת עבודה');
+      return;
+    }
+
+    // Guard: warn when advancing to report_transmitted with advance rate alert
+    if (nextStatus === 'report_transmitted' && balanceCase.advance_rate_alert && !showAdvanceWarning) {
+      setShowAdvanceWarning(true);
+      return;
+    }
 
     // Zod validation
     const validation = updateStatusSchema.safeParse({
@@ -92,6 +105,7 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
     onOpenChange(false);
     setNote('');
     setError(null);
+    setShowAdvanceWarning(false);
   };
 
   if (!balanceCase || !nextStatus) return null;
@@ -127,6 +141,17 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
             />
           </div>
 
+          {/* Advance rate warning */}
+          {showAdvanceWarning && (
+            <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <p className="text-sm font-medium text-yellow-800">שיעור מקדמה מחושב גבוה מהנוכחי</p>
+              </div>
+              <p className="text-xs text-yellow-700">האם להמשיך בכל זאת?</p>
+            </div>
+          )}
+
           {error && (
             <div className="rounded-md border border-red-200 bg-red-50 p-3">
               <p className="text-sm text-red-800">{error}</p>
@@ -140,7 +165,7 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
           </Button>
           <Button onClick={handleSubmit} disabled={submitting}>
             {submitting && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-            עדכן סטטוס
+            {showAdvanceWarning ? 'המשך בכל זאת' : 'עדכן סטטוס'}
           </Button>
         </DialogFooter>
       </DialogContent>

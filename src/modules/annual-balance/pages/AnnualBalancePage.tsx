@@ -21,6 +21,7 @@ import { MarkMaterialsDialog } from '../components/MarkMaterialsDialog';
 import { AssignAuditorDialog } from '../components/AssignAuditorDialog';
 import { UpdateStatusDialog } from '../components/UpdateStatusDialog';
 import { UpdateAdvancesDialog } from '../components/UpdateAdvancesDialog';
+import { ConfirmAssignmentDialog } from '../components/ConfirmAssignmentDialog';
 import { BalanceDetailDialog } from '../components/BalanceDetailDialog';
 import { hasBalancePermission } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
@@ -55,6 +56,7 @@ export default function AnnualBalancePage() {
   const [assignAuditorOpen, setAssignAuditorOpen] = useState(false);
   const [updateStatusOpen, setUpdateStatusOpen] = useState(false);
   const [updateAdvancesOpen, setUpdateAdvancesOpen] = useState(false);
+  const [confirmAssignmentOpen, setConfirmAssignmentOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -77,15 +79,18 @@ export default function AnnualBalancePage() {
     setDetailDialogOpen(true);
   }, []);
 
-  const handleQuickAction = useCallback((row: AnnualBalanceSheetWithClient, currentStatus: string) => {
+  const handleQuickAction = useCallback((row: AnnualBalanceSheetWithClient, actionType: string) => {
     setSelectedCase(row);
 
-    switch (currentStatus) {
+    switch (actionType) {
       case 'waiting_for_materials':
         setMarkMaterialsOpen(true);
         break;
       case 'materials_received':
         setAssignAuditorOpen(true);
+        break;
+      case 'confirm_assignment':
+        setConfirmAssignmentOpen(true);
         break;
       case 'report_transmitted':
         setUpdateAdvancesOpen(true);
@@ -292,6 +297,12 @@ export default function AnnualBalancePage() {
         <UpdateAdvancesDialog
           open={updateAdvancesOpen}
           onOpenChange={setUpdateAdvancesOpen}
+          balanceCase={selectedCase}
+        />
+
+        <ConfirmAssignmentDialog
+          open={confirmAssignmentOpen}
+          onOpenChange={setConfirmAssignmentOpen}
           balanceCase={selectedCase}
         />
 

@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FilterX, Search, X } from 'lucide-react';
 import { BALANCE_STATUS_CONFIG, BALANCE_STATUSES } from '../types/annual-balance.types';
 import type { BalanceFilters as BalanceFiltersType, AuditorSummary } from '../types/annual-balance.types';
@@ -55,7 +56,8 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
   const hasActiveFilters =
     (filters.search && filters.search.trim() !== '') ||
     filters.status ||
-    filters.auditor_id;
+    filters.auditor_id ||
+    filters.showInactive;
 
   // Generate year options: current year down to 5 years ago
   const currentYear = new Date().getFullYear();
@@ -145,6 +147,18 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
           </SelectContent>
         </Select>
       )}
+
+      {/* Show Inactive Toggle */}
+      <div className="flex items-center gap-1.5">
+        <Checkbox
+          id="showInactive"
+          checked={!!filters.showInactive}
+          onCheckedChange={(checked) => onFiltersChange({ showInactive: !!checked })}
+        />
+        <label htmlFor="showInactive" className="text-sm text-muted-foreground cursor-pointer">
+          הצג לא פעילים
+        </label>
+      </div>
 
       {/* Reset Button */}
       {hasActiveFilters && (
