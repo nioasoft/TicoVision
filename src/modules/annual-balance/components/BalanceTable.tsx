@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronLeft, FileSearch, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, FileSearch, ExternalLink, AlertTriangle, MessageCircle } from 'lucide-react';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
@@ -46,6 +46,7 @@ interface BalanceTableProps {
   onPageSizeChange: (pageSize: number) => void;
   onRowClick: (row: AnnualBalanceSheetWithClient) => void;
   onQuickAction: (row: AnnualBalanceSheetWithClient, action: string) => void;
+  onChatClick: (row: AnnualBalanceSheetWithClient) => void;
   userRole: string;
 }
 
@@ -166,6 +167,7 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
   onPageSizeChange,
   onRowClick,
   onQuickAction,
+  onChatClick,
   userRole,
 }) => {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
@@ -188,7 +190,12 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
           <TableBody>
             {[...Array(5)].map((_, i) => (
               <TableRow key={i}>
-                <TableCell className="py-3 px-3"><Skeleton className="h-7 w-24" /></TableCell>
+                <TableCell className="py-3 px-3">
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-7 w-7 rounded" />
+                    <Skeleton className="h-7 w-24" />
+                  </div>
+                </TableCell>
                 <TableCell className="py-3 px-3"><Skeleton className="h-4 w-16" /></TableCell>
                 <TableCell className="py-3 px-3"><Skeleton className="h-4 w-16" /></TableCell>
                 <TableCell className="py-3 px-3">
@@ -280,6 +287,14 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                 {/* Quick action (visible on row hover) - LEFTMOST */}
                 <TableCell className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => onChatClick(row)}
+                    >
+                      <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                     {row.advance_rate_alert && (
                       <Tooltip>
                         <TooltipTrigger asChild>

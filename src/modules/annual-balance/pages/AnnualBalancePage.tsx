@@ -23,6 +23,7 @@ import { UpdateStatusDialog } from '../components/UpdateStatusDialog';
 import { UpdateAdvancesDialog } from '../components/UpdateAdvancesDialog';
 import { ConfirmAssignmentDialog } from '../components/ConfirmAssignmentDialog';
 import { BalanceDetailDialog } from '../components/BalanceDetailDialog';
+import { BalanceChatSheet } from '../components/BalanceChatSheet';
 import { hasBalancePermission } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
@@ -59,6 +60,8 @@ export default function AnnualBalancePage() {
   const [confirmAssignmentOpen, setConfirmAssignmentOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [revertTargetStatus, setRevertTargetStatus] = useState<BalanceStatus | undefined>(undefined);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatBalanceCase, setChatBalanceCase] = useState<AnnualBalanceSheetWithClient | null>(null);
 
   useEffect(() => {
     fetchCases();
@@ -100,6 +103,11 @@ export default function AnnualBalancePage() {
         setUpdateStatusOpen(true);
         break;
     }
+  }, []);
+
+  const handleChatClick = useCallback((row: AnnualBalanceSheetWithClient) => {
+    setChatBalanceCase(row);
+    setChatOpen(true);
   }, []);
 
   const handleOpenYearSuccess = useCallback(() => {
@@ -261,6 +269,7 @@ export default function AnnualBalancePage() {
                 onPageSizeChange={(pageSize) => setPagination({ pageSize })}
                 onRowClick={handleRowClick}
                 onQuickAction={handleQuickAction}
+                onChatClick={handleChatClick}
                 userRole={userRole}
               />
             </TabsContent>
@@ -327,6 +336,12 @@ export default function AnnualBalancePage() {
           onUpdateStatus={handleUpdateStatusFromDetail}
           onUpdateAdvances={handleUpdateAdvancesFromDetail}
           onRevertStatus={handleRevertStatusFromDetail}
+        />
+
+        <BalanceChatSheet
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          balanceCase={chatBalanceCase}
         />
       </div>
     </TooltipProvider>

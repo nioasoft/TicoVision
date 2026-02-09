@@ -44,3 +44,12 @@ export { UpdateAdvancesDialog } from './components/UpdateAdvancesDialog';
 export { BalanceDetailDialog } from './components/BalanceDetailDialog';
 export { ClientBalanceBadge } from './components/ClientBalanceBadge';
 export { ClientBalanceTab } from './components/ClientBalanceTab';
+export { BalanceChatSheet } from './components/BalanceChatSheet';
+export { BalanceChatMessages } from './components/BalanceChatMessages';
+export { BalanceChatInput } from './components/BalanceChatInput';
+
+// Chat types
+export type { BalanceChatMessageWithSender, BalanceChatMessageRow, MessageType } from './types/balance-chat.types';
+
+// Chat service
+export { balanceChatService } from './services/balance-chat.service';
