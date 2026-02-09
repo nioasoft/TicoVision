@@ -5,13 +5,13 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 1 - Database Foundation
+**Current focus:** Phase 1 complete — ready for Phase 2 (Chat Service Layer)
 
 ## Current Position
 
 Phase: 1 of 10 (Database Foundation)
 Plan: 1 of 1 complete
-Status: Phase 1 plans complete
+Status: Phase 1 verified and complete
 Last activity: 2026-02-09 — Completed 01-01-PLAN.md (balance_chat_messages table, RLS, indexes, Realtime)
 
 Progress: [█░░░░░░░░░] 10%

@@ -12,7 +12,7 @@ This roadmap delivers a complete internal chat and notification system for the a
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Database Foundation** - Chat messages schema with tenant isolation and RLS policies
+- [x] **Phase 1: Database Foundation** - Chat messages schema with tenant isolation and RLS policies
 - [ ] **Phase 2: Chat Service Layer** - Core service extending BaseService for message CRUD operations
 - [ ] **Phase 3: Chat UI Components** - Side panel Sheet with message display and send functionality
 - [ ] **Phase 4: Real-time Message Delivery** - Supabase Realtime integration with channel management
@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md — Create balance_chat_messages table with RLS policies, indexes, Realtime publication, and regenerate TypeScript types
+- [x] 01-01-PLAN.md — Create balance_chat_messages table with RLS policies, indexes, Realtime publication, and regenerate TypeScript types
 
 ### Phase 2: Chat Service Layer
 **Goal**: ChatService class provides CRUD operations for messages with automatic tenant isolation
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Database Foundation | 0/1 | Planned | - |
+| 1. Database Foundation | 1/1 | ✓ Complete | 2026-02-09 |
 | 2. Chat Service Layer | 0/TBD | Not started | - |
 | 3. Chat UI Components | 0/TBD | Not started | - |
 | 4. Real-time Message Delivery | 0/TBD | Not started | - |
