@@ -129,7 +129,7 @@ export default function ClientProfilePage() {
 
       {/* Tabbed Content */}
       <Card className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <Tabs defaultValue="overview">
+        <Tabs defaultValue="overview" dir="rtl">
           <div className="border-b px-4 py-2.5">
             <TabsList className="bg-muted/50">
               <TabsTrigger value="overview" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">

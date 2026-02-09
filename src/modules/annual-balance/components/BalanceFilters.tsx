@@ -57,7 +57,8 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
     (filters.search && filters.search.trim() !== '') ||
     filters.status ||
     filters.auditor_id ||
-    filters.showInactive;
+    filters.showInactive ||
+    filters.hasTaxCoding !== undefined;
 
   // Generate year options: current year down to 5 years ago
   const currentYear = new Date().getFullYear();
@@ -147,6 +148,25 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
           </SelectContent>
         </Select>
       )}
+
+      {/* Tax Coding (1214) Filter */}
+      <Select
+        value={filters.hasTaxCoding === undefined ? 'all' : filters.hasTaxCoding ? 'yes' : 'no'}
+        onValueChange={(value) =>
+          onFiltersChange({
+            hasTaxCoding: value === 'all' ? undefined : value === 'yes',
+          })
+        }
+      >
+        <SelectTrigger className="h-9 w-auto min-w-[130px] text-sm rounded-lg border-gray-200 bg-white">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="rtl:text-right">
+          <SelectItem value="all">1214: הכל</SelectItem>
+          <SelectItem value="yes">יש קידוד מס</SelectItem>
+          <SelectItem value="no">ללא קידוד מס</SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Show Inactive Toggle */}
       <div className="flex items-center gap-1.5">

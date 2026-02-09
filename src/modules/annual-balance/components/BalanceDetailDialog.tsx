@@ -297,7 +297,7 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                 </div>
               )}
 
-              {balanceCase.client?.tax_coding && (
+              {balanceCase.client?.tax_coding && balanceCase.client.tax_coding !== '0' && (
                 <div>
                   <span className="text-muted-foreground">קידוד מס (1214):</span>
                   <span className="mr-1 font-medium">{balanceCase.client.tax_coding}</span>

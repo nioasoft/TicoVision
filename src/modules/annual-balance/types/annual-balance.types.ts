@@ -217,6 +217,7 @@ export interface BalanceFilters {
   year: number;
   search?: string;
   showInactive?: boolean;
+  hasTaxCoding?: boolean;
 }
 
 // ============================================================================

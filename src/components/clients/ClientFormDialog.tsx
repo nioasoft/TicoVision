@@ -162,6 +162,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     // Signature/stamp state
     const [signaturePath, setSignaturePath] = useState<string | null>(null);
 
+    // Tax coding (1214) checkbox state
+    const [hasTaxCoding, setHasTaxCoding] = useState(false);
+
     // Load client data when editing
     useEffect(() => {
       if (mode === 'edit' && client) {
@@ -195,8 +198,9 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           group_id: client.group_id || undefined, // NEW: טעינת קבוצה
           payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
           payer_client_id: client.payer_client_id || null, // NEW: לקוח שמשלם
-          tax_coding: client.tax_coding || '0', // קידוד מס - טופס 1214
+          tax_coding: client.tax_coding || '', // קידוד מס - טופס 1214
         });
+        setHasTaxCoding(!!client.tax_coding && client.tax_coding !== '0');
         // Load signature path
         setSignaturePath(client.signature_path || null);
         setHasUnsavedChanges(false);
@@ -212,6 +216,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
         }
       } else {
         setFormData(INITIAL_FORM_DATA);
+        setHasTaxCoding(false);
         setHasUnsavedChanges(false);
       }
     }, [mode, client, onLoadContacts]);
@@ -575,18 +580,35 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Tax Coding (1214) */}
+              {/* Tax Coding (1214) - checkbox + conditional value */}
               <div>
-                <Label htmlFor="tax_coding" className="text-right block mb-2">
-                  קידוד מס (1214)
-                </Label>
-                <Input
-                  id="tax_coding"
-                  value={formData.tax_coding || '0'}
-                  onChange={(e) => handleFormChange('tax_coding', e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-24 rtl:text-right"
-                />
+                <div className="flex items-center gap-2 mb-2">
+                  <Checkbox
+                    id="has_tax_coding"
+                    checked={hasTaxCoding}
+                    onCheckedChange={(checked) => {
+                      setHasTaxCoding(!!checked);
+                      if (!checked) {
+                        handleFormChange('tax_coding', '');
+                      } else if (formData.tax_coding === '0') {
+                        handleFormChange('tax_coding', '');
+                      }
+                    }}
+                  />
+                  <Label htmlFor="has_tax_coding" className="cursor-pointer">
+                    קידוד מס (1214)
+                  </Label>
+                </div>
+                {hasTaxCoding && (
+                  <Input
+                    id="tax_coding"
+                    value={formData.tax_coding || ''}
+                    onChange={(e) => handleFormChange('tax_coding', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="קוד"
+                    className="w-24 rtl:text-right"
+                  />
+                )}
               </div>
 
               {/* Empty divs for grid alignment */}

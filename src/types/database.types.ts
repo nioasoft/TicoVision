@@ -131,14 +131,21 @@ export type Database = {
       }
       annual_balance_sheets: {
         Row: {
+          advance_rate_alert: boolean | null
           advances_letter_id: string | null
           advances_updated_at: string | null
+          auditor_confirmed: boolean | null
+          auditor_confirmed_at: string | null
           auditor_id: string | null
+          backup_link: string | null
+          calculated_advance_rate: number | null
           client_id: string
           created_at: string | null
+          current_advance_rate: number | null
           debt_letter_id: string | null
           debt_letter_sent: boolean | null
           id: string
+          is_active: boolean | null
           materials_received_at: string | null
           materials_received_by: string | null
           meeting_date: string | null
@@ -148,21 +155,31 @@ export type Database = {
           office_approved_by: string | null
           report_transmitted_at: string | null
           status: string
+          tax_amount: number | null
+          tax_coding: string | null
           tenant_id: string
+          turnover: number | null
           updated_at: string | null
           work_completed_at: string | null
           work_started_at: string | null
           year: number
         }
         Insert: {
+          advance_rate_alert?: boolean | null
           advances_letter_id?: string | null
           advances_updated_at?: string | null
+          auditor_confirmed?: boolean | null
+          auditor_confirmed_at?: string | null
           auditor_id?: string | null
+          backup_link?: string | null
+          calculated_advance_rate?: number | null
           client_id: string
           created_at?: string | null
+          current_advance_rate?: number | null
           debt_letter_id?: string | null
           debt_letter_sent?: boolean | null
           id?: string
+          is_active?: boolean | null
           materials_received_at?: string | null
           materials_received_by?: string | null
           meeting_date?: string | null
@@ -172,21 +189,31 @@ export type Database = {
           office_approved_by?: string | null
           report_transmitted_at?: string | null
           status?: string
+          tax_amount?: number | null
+          tax_coding?: string | null
           tenant_id: string
+          turnover?: number | null
           updated_at?: string | null
           work_completed_at?: string | null
           work_started_at?: string | null
           year: number
         }
         Update: {
+          advance_rate_alert?: boolean | null
           advances_letter_id?: string | null
           advances_updated_at?: string | null
+          auditor_confirmed?: boolean | null
+          auditor_confirmed_at?: string | null
           auditor_id?: string | null
+          backup_link?: string | null
+          calculated_advance_rate?: number | null
           client_id?: string
           created_at?: string | null
+          current_advance_rate?: number | null
           debt_letter_id?: string | null
           debt_letter_sent?: boolean | null
           id?: string
+          is_active?: boolean | null
           materials_received_at?: string | null
           materials_received_by?: string | null
           meeting_date?: string | null
@@ -196,7 +223,10 @@ export type Database = {
           office_approved_by?: string | null
           report_transmitted_at?: string | null
           status?: string
+          tax_amount?: number | null
+          tax_coding?: string | null
           tenant_id?: string
+          turnover?: number | null
           updated_at?: string | null
           work_completed_at?: string | null
           work_started_at?: string | null
@@ -1095,6 +1125,132 @@ export type Database = {
           },
         ]
       }
+      chat_channels: {
+        Row: {
+          channel_type: string
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          channel_type: string
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          channel_type?: string
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_channels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_channels_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          channel_id: string
+          content: string
+          created_at: string | null
+          id: string
+          sender_id: string
+          tenant_id: string
+        }
+        Insert: {
+          channel_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          sender_id: string
+          tenant_id: string
+        }
+        Update: {
+          channel_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_read_status: {
+        Row: {
+          channel_id: string
+          id: string
+          last_read_at: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          id?: string
+          last_read_at?: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          id?: string
+          last_read_at?: string | null
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_read_status_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_read_status_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_attachments: {
         Row: {
           client_id: string | null
@@ -1731,6 +1887,7 @@ export type Database = {
           signature_path: string | null
           status: string
           tags: string[] | null
+          tax_coding: string | null
           tax_id: string
           tenant_id: string
           type: Database["public"]["Enums"]["client_type"] | null
@@ -1784,6 +1941,7 @@ export type Database = {
           signature_path?: string | null
           status?: string
           tags?: string[] | null
+          tax_coding?: string | null
           tax_id: string
           tenant_id: string
           type?: Database["public"]["Enums"]["client_type"] | null
@@ -1837,6 +1995,7 @@ export type Database = {
           signature_path?: string | null
           status?: string
           tags?: string[] | null
+          tax_coding?: string | null
           tax_id?: string
           tenant_id?: string
           type?: Database["public"]["Enums"]["client_type"] | null
@@ -5983,10 +6142,19 @@ export type Database = {
             Returns: string
           }
       mark_declaration_complete: { Args: { p_token: string }; Returns: boolean }
-      mark_materials_received: {
-        Args: { p_balance_sheet_id: string; p_received_at?: string }
-        Returns: undefined
-      }
+      mark_materials_received:
+        | {
+            Args: { p_balance_sheet_id: string; p_received_at?: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_backup_link?: string
+              p_balance_sheet_id: string
+              p_received_at?: string
+            }
+            Returns: undefined
+          }
       match_client_by_contact: {
         Args: {
           p_email: string

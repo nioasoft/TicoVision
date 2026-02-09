@@ -58,14 +58,30 @@ class AnnualBalanceService extends BaseService {
       if (filters.auditor_id) {
         query = query.eq('auditor_id', filters.auditor_id);
       }
-      if (filters.search) {
-        // Search by client name or tax_id - two-step approach since PostgREST
+      if (filters.search || filters.hasTaxCoding !== undefined) {
+        // Filter by client properties - two-step approach since PostgREST
         // .or() doesn't reliably filter on embedded/joined resource fields
-        const { data: matchingClients } = await supabase
+        let clientQuery = supabase
           .from('clients')
           .select('id')
-          .eq('tenant_id', tenantId)
-          .or(`company_name.ilike.%${filters.search}%,tax_id.ilike.%${filters.search}%`);
+          .eq('tenant_id', tenantId);
+
+        if (filters.search) {
+          clientQuery = clientQuery.or(
+            `company_name.ilike.%${filters.search}%,tax_id.ilike.%${filters.search}%`
+          );
+        }
+
+        if (filters.hasTaxCoding === true) {
+          clientQuery = clientQuery
+            .not('tax_coding', 'is', null)
+            .neq('tax_coding', '')
+            .neq('tax_coding', '0');
+        } else if (filters.hasTaxCoding === false) {
+          clientQuery = clientQuery.or('tax_coding.is.null,tax_coding.eq.,tax_coding.eq.0');
+        }
+
+        const { data: matchingClients } = await clientQuery;
 
         const matchingIds = matchingClients?.map((c) => c.id) ?? [];
         if (matchingIds.length === 0) {
