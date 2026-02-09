@@ -63,10 +63,10 @@ Plans:
   3. User can type and send a text message that appears immediately in the list via optimistic update
   4. Chat panel shows a loading spinner while fetching message history from the database
   5. Chat panel shows an empty state with Hebrew message when no messages exist yet for a balance
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 03-01: TBD during planning
+- [ ] 03-01-PLAN.md — Build 3 chat components (Sheet, Messages, Input) and wire into BalanceTable + AnnualBalancePage
 
 ### Phase 4: Real-time Message Delivery
 **Goal**: Messages are delivered instantly to all participants without requiring page refresh
