@@ -11,8 +11,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Check, Circle, ArrowLeft } from 'lucide-react';
+import { Loader2, Check, Circle, ArrowLeft, ExternalLink, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIsraeliDate, formatILSInteger } from '@/lib/formatters';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
@@ -86,7 +88,8 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
   const [notes, setNotes] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesChanged, setNotesChanged] = useState(false);
-  const { refreshData } = useAnnualBalanceStore();
+  const { refreshData, toggleYearActivity } = useAnnualBalanceStore();
+  const [togglingActive, setTogglingActive] = useState(false);
 
   useEffect(() => {
     if (!open || !balanceCase) return;
@@ -117,6 +120,13 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
       await refreshData();
     }
     setSavingNotes(false);
+  };
+
+  const handleToggleActive = async (checked: boolean) => {
+    if (!balanceCase) return;
+    setTogglingActive(true);
+    await toggleYearActivity(balanceCase.id, checked);
+    setTogglingActive(false);
   };
 
   if (!balanceCase) return null;
@@ -237,6 +247,27 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                         {historyEntry?.note && (
                           <p className="text-xs text-muted-foreground mt-0.5">{historyEntry.note}</p>
                         )}
+                        {/* Backup link at materials_received */}
+                        {status === 'materials_received' && balanceCase.backup_link && !isFuture && (
+                          <a
+                            href={balanceCase.backup_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+                          >
+                            <ExternalLink className="h-3 w-3" /> קישור לגיבוי
+                          </a>
+                        )}
+                        {/* Auditor confirmation at assigned_to_auditor */}
+                        {status === 'assigned_to_auditor' && !isFuture && (
+                          <div className="mt-0.5">
+                            {balanceCase.auditor_confirmed ? (
+                              <Badge variant="outline" className="text-green-700 text-xs">אישר קבלת תיק</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-yellow-700 text-xs">ממתין לאישור</Badge>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -266,6 +297,13 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                 </div>
               )}
 
+              {balanceCase.client?.tax_coding && (
+                <div>
+                  <span className="text-muted-foreground">קידוד מס (1214):</span>
+                  <span className="mr-1 font-medium">{balanceCase.client.tax_coding}</span>
+                </div>
+              )}
+
               {balanceCase.new_advances_amount !== null && balanceCase.new_advances_amount !== undefined && (
                 <div>
                   <span className="text-muted-foreground">מקדמות:</span>
@@ -277,7 +315,60 @@ export const BalanceDetailDialog: React.FC<BalanceDetailDialogProps> = ({
                 <span className="text-muted-foreground">מכתב חוב:</span>
                 <span className="mr-1">{balanceCase.debt_letter_sent ? 'נשלח' : 'לא'}</span>
               </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">פעיל:</span>
+                <Switch
+                  checked={balanceCase.is_active !== false}
+                  onCheckedChange={handleToggleActive}
+                  disabled={togglingActive}
+                />
+              </div>
             </div>
+
+            {/* Advance rate section */}
+            {(balanceCase.tax_amount != null || balanceCase.turnover != null || balanceCase.current_advance_rate != null) && (
+              <div className={cn(
+                'rounded-md border p-3 mt-2',
+                balanceCase.advance_rate_alert ? 'border-red-200 bg-red-50' : 'border-muted'
+              )}>
+                <p className="text-sm font-medium mb-2">שיעור מקדמה</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {balanceCase.tax_amount != null && (
+                    <div>
+                      <span className="text-muted-foreground">חובת מס:</span>
+                      <span className="mr-1">{formatILSInteger(balanceCase.tax_amount)}</span>
+                    </div>
+                  )}
+                  {balanceCase.turnover != null && (
+                    <div>
+                      <span className="text-muted-foreground">מחזור:</span>
+                      <span className="mr-1">{formatILSInteger(balanceCase.turnover)}</span>
+                    </div>
+                  )}
+                  {balanceCase.current_advance_rate != null && (
+                    <div>
+                      <span className="text-muted-foreground">שיעור נוכחי:</span>
+                      <span className="mr-1">{(balanceCase.current_advance_rate * 100).toFixed(2)}%</span>
+                    </div>
+                  )}
+                  {balanceCase.calculated_advance_rate != null && (
+                    <div>
+                      <span className="text-muted-foreground">שיעור מחושב:</span>
+                      <span className={cn('mr-1 font-medium', balanceCase.advance_rate_alert ? 'text-red-700' : 'text-green-700')}>
+                        {(balanceCase.calculated_advance_rate * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {balanceCase.advance_rate_alert && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <p className="text-xs text-red-800">שיעור מחושב גבוה מהשיעור הנוכחי - נדרש עדכון מקדמות!</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
