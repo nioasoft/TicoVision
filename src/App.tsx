@@ -59,6 +59,9 @@ const ProtocolsPage = lazy(() => import('@/modules/protocols/pages/ProtocolsPage
 // Annual Balance Sheets System
 const AnnualBalancePage = lazy(() => import('@/modules/annual-balance/pages/AnnualBalancePage'));
 
+// Client Profile
+const ClientProfilePage = lazy(() => import('@/modules/client-profile/pages/ClientProfilePage'));
+
 // Billing Letters System
 const BillingLetterBuilder = lazy(() => import('@/modules/billing/components/BillingLetterBuilder').then(m => ({ default: m.BillingLetterBuilder })));
 const BillingLetterPreview = lazy(() => import('@/modules/billing/components/BillingLetterPreview').then(m => ({ default: m.BillingLetterPreview })));
@@ -192,6 +195,11 @@ function App() {
                       <Route path="/clients" element={
                         <ErrorBoundary>
                           <ClientsPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/clients/:id" element={
+                        <ErrorBoundary>
+                          <ClientProfilePage />
                         </ErrorBoundary>
                       } />
                     </Route>

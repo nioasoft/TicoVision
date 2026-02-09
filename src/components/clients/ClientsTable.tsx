@@ -34,6 +34,7 @@ interface ClientsTableProps {
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  onView?: (client: Client) => void;
   onGroupFilter?: (groupId: string) => void;
 }
 
@@ -45,12 +46,13 @@ interface ClientRowProps {
   onToggleSelect: (clientId: string) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
+  onView?: (client: Client) => void;
   onGroupFilter?: (groupId: string) => void;
 }
 
 // Memoized row component to prevent unnecessary re-renders
 const ClientRow = React.memo<ClientRowProps>(
-  ({ client, isSelected, canEdit, canDelete, onToggleSelect, onEdit, onDelete, onGroupFilter }) => {
+  ({ client, isSelected, canEdit, canDelete, onToggleSelect, onEdit, onDelete, onView, onGroupFilter }) => {
     const getStatusBadge = (status: string) => {
       // Adhoc clients have a special purple badge
       if (status === 'adhoc') {
@@ -97,7 +99,7 @@ const ClientRow = React.memo<ClientRowProps>(
         </TableCell>
         <TableCell className="font-medium flex-1 min-w-[150px]">
           <div
-            onClick={() => onEdit(client)}
+            onClick={() => (onView || onEdit)(client)}
             className="cursor-pointer hover:text-blue-600 transition-colors"
           >
             <div>{client.company_name}</div>
@@ -230,6 +232,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   onToggleSelect,
   onEdit,
   onDelete,
+  onView,
   onGroupFilter,
 }) => {
   const { isMenuVisible } = usePermissions();
@@ -283,6 +286,7 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
                 onToggleSelect={onToggleSelect}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onView={onView}
                 onGroupFilter={onGroupFilter}
               />
             ))

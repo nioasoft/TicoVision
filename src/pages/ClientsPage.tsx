@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +26,11 @@ export default function ClientsPage() {
   const isAdmin = role === 'admin';
   const { isMenuVisible } = usePermissions();
   const canCreateClient = isMenuVisible('clients:create');
+  const navigate = useNavigate();
+
+  const handleViewClient = useCallback((client: { id: string }) => {
+    navigate(`/clients/${client.id}`);
+  }, [navigate]);
 
   // Exclude freelancers - they have their own page at /freelancers
   const {
@@ -212,6 +218,7 @@ export default function ClientsPage() {
         onToggleSelect={toggleClientSelection}
         onEdit={handleOpenEditDialog}
         onDelete={handleOpenDeleteDialog}
+        onView={handleViewClient}
         onGroupFilter={handleGroupFilter}
       />
 
