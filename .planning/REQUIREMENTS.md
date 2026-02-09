@@ -73,32 +73,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase ? | Pending |
-| INFRA-02 | Phase ? | Pending |
-| INFRA-03 | Phase ? | Pending |
-| INFRA-04 | Phase ? | Pending |
-| INFRA-05 | Phase ? | Pending |
-| CHAT-01 | Phase ? | Pending |
-| CHAT-02 | Phase ? | Pending |
-| CHAT-03 | Phase ? | Pending |
-| CHAT-04 | Phase ? | Pending |
-| CHAT-05 | Phase ? | Pending |
-| CHAT-06 | Phase ? | Pending |
-| CHAT-07 | Phase ? | Pending |
-| CHAT-08 | Phase ? | Pending |
-| CHAT-09 | Phase ? | Pending |
-| CHAT-10 | Phase ? | Pending |
-| UNRD-01 | Phase ? | Pending |
-| UNRD-02 | Phase ? | Pending |
-| UNRD-03 | Phase ? | Pending |
-| NOTF-01 | Phase ? | Pending |
-| NOTF-02 | Phase ? | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 6 | Pending |
+| INFRA-04 | Phase 1 | Pending |
+| INFRA-05 | Phase 1 | Pending |
+| CHAT-01 | Phase 3 | Pending |
+| CHAT-02 | Phase 3 | Pending |
+| CHAT-03 | Phase 3 | Pending |
+| CHAT-04 | Phase 4 | Pending |
+| CHAT-05 | Phase 3 | Pending |
+| CHAT-06 | Phase 3 | Pending |
+| CHAT-07 | Phase 5 | Pending |
+| CHAT-08 | Phase 8 | Pending |
+| CHAT-09 | Phase 6 | Pending |
+| CHAT-10 | Phase 4 | Pending |
+| UNRD-01 | Phase 7 | Pending |
+| UNRD-02 | Phase 7 | Pending |
+| UNRD-03 | Phase 7 | Pending |
+| NOTF-01 | Phase 9 | Pending |
+| NOTF-02 | Phase 9 | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️
+- Mapped to phases: 20
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-09*
-*Last updated: 2026-02-09 after initial definition*
+*Last updated: 2026-02-09 after roadmap creation - 100% coverage achieved*
