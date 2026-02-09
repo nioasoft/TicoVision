@@ -66,7 +66,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md — Build 3 chat components (Sheet, Messages, Input) and wire into BalanceTable + AnnualBalancePage
+- [x] 03-01-PLAN.md — Build 3 chat components (Sheet, Messages, Input) and wire into BalanceTable + AnnualBalancePage
 
 ### Phase 4: Real-time Message Delivery
 **Goal**: Messages are delivered instantly to all participants without requiring page refresh
@@ -176,7 +176,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Database Foundation | 1/1 | ✓ Complete | 2026-02-09 |
 | 2. Chat Service Layer | 1/1 | ✓ Complete | 2026-02-10 |
-| 3. Chat UI Components | 0/TBD | Not started | - |
+| 3. Chat UI Components | 1/1 | ✓ Complete | 2026-02-10 |
 | 4. Real-time Message Delivery | 0/TBD | Not started | - |
 | 5. Participant Permissions | 0/TBD | Not started | - |
 | 6. Read Tracking | 0/TBD | Not started | - |
