@@ -81,6 +81,7 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'capital-declaration', route: '/capital-declaration', label: 'הצהרת הון' },
   { menu: 'capital-declaration:create', route: '/capital-declaration', label: 'יצירת הצהרה', parent: 'capital-declaration' },
   { menu: 'capital-declaration:manage', route: '/capital-declarations', label: 'ניהול הצהרות', parent: 'capital-declaration' },
+  { menu: 'protocols', route: '/protocols', label: 'פרוטוקולים' },
   { menu: 'files', route: '/files', label: 'מנהל הקבצים' },
   { menu: 'users', route: '/users', label: 'משתמשים' },
   { menu: 'settings', route: '/settings', label: 'הגדרות' },
@@ -104,6 +105,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
+    'protocols',
     'files',
     'users',
     'settings',
@@ -115,6 +117,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
+    'protocols',
   ],
   bookkeeper: [
     'clients', 'clients:list', 'clients:create', 'clients:edit',
