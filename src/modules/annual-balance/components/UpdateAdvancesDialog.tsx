@@ -96,7 +96,7 @@ export const UpdateAdvancesDialog: React.FC<UpdateAdvancesDialogProps> = ({
       letterId: selectedLetterId || undefined,
     });
     if (!validation.success) {
-      setError(validation.error.errors[0].message);
+      setError(validation.error.issues[0].message);
       return;
     }
 

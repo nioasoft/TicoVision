@@ -76,7 +76,7 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
       note: note || undefined,
     });
     if (!validation.success) {
-      setError(validation.error.errors[0].message);
+      setError(validation.error.issues[0].message);
       return;
     }
 
