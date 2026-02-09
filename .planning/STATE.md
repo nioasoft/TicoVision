@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 2 complete — ready for Phase 3 (Chat UI)
+**Current focus:** Phase 3 complete — ready for Phase 4 (Real-time Delivery)
 
 ## Current Position
 
-Phase: 2 of 10 (Chat Service Layer)
+Phase: 3 of 10 (Chat UI Components)
 Plan: 1 of 1 complete
-Status: Phase 2 verified and complete
-Last activity: 2026-02-10 — Completed 02-01-PLAN.md (BalanceChatService with 4 CRUD methods)
+Status: Phase 3 verified and complete
+Last activity: 2026-02-10 — Completed 03-01-PLAN.md (Chat UI: Sheet panel, messages, input, table icon)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 4.5min
-- Total execution time: 0.15 hours
+- Total plans completed: 3
+- Average duration: 4min
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [██░░░░░░░░] 20%
 |-------|-------|-------|----------|
 | 01-database-foundation | 1 | 7min | 7min |
 | 02-chat-service-layer | 1 | 2min | 2min |
+| 03-chat-ui-components | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7min), 02-01 (2min)
+- Last 5 plans: 01-01 (7min), 02-01 (2min), 03-01 (3min)
 - Trend: Accelerating
 
 *Updated after each plan completion*
@@ -54,6 +55,9 @@ Recent decisions affecting current work:
 - Used get_users_for_tenant RPC for batch sender enrichment (not per-user get_user_with_auth) — avoids N+1 queries
 - Service placed in annual-balance module (not generic chat module) — balance-scoped chat
 - Types derived from Database['public']['Tables']['balance_chat_messages'] — auto-synced with schema
+- Chat icon in existing quick-action column (not new column) — avoids table width expansion
+- useState for chat state (not Zustand store) — local single-instance UI, store can be added in Phase 4
+- Optimistic send with revert — perceived performance for message sending
 
 ### Pending Todos
 
@@ -78,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 2 Plan 1 execution
-Stopped at: Completed 02-01-PLAN.md (chat service layer)
-Resume file: .planning/phases/02-chat-service-layer/02-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 3 Plan 1 execution
+Stopped at: Completed 03-01-PLAN.md (chat UI components)
+Resume file: .planning/phases/03-chat-ui-components/03-01-SUMMARY.md
