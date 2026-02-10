@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 10 in progress — Error handling & input polish done, accessibility remaining
+**Current focus:** All 10 phases complete — Balance chat feature fully implemented
 
 ## Current Position
 
 Phase: 10 of 10 (Polish & Edge Cases)
-Plan: 1 of 2 complete
-Status: Plan 10-01 complete, Plan 10-02 remaining
-Last activity: 2026-02-10 — Completed 10-01-PLAN.md (Error handling, offline detection, multiline input)
+Plan: 2 of 2 complete
+Status: ALL PHASES COMPLETE
+Last activity: 2026-02-10 — Completed 10-02-PLAN.md (Chat pagination, RTL timestamps, overflow-safe bubbles)
 
-Progress: [█████████▓] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 3min
-- Total execution time: 0.48 hours
+- Total execution time: 0.51 hours
 
 **By Phase:**
 
@@ -36,10 +36,10 @@ Progress: [█████████▓] 95%
 | 07-unread-indicators | 1 | 3min | 3min |
 | 08-system-messages | 1 | 2min | 2min |
 | 09-notifications | 1 | 3min | 3min |
-| 10-polish-edge-cases | 1 | 3min | 3min |
+| 10-polish-edge-cases | 2 | 5min | 2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (3min), 07-01 (3min), 08-01 (2min), 09-01 (3min), 10-01 (3min)
+- Last 5 plans: 07-01 (3min), 08-01 (2min), 09-01 (3min), 10-01 (3min), 10-02 (2min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - Offline banner placed between SheetHeader and BalanceChatMessages for visibility
 - Removed App.tsx Toaster, keeping main.tsx Toaster with richColors/RTL/closeButton config
 - items-end alignment on input container so send button stays at bottom when textarea grows
+- Cursor-based pagination (before timestamp) instead of offset-based -- avoids shifting results when new messages arrive
+- Last-message-ID ref for scroll control -- simple and reliable way to distinguish appended vs prepended messages
+- overflow-hidden on bubble div rather than overflow-wrap on container -- clips at bubble boundary without affecting scroll
 
 ### Pending Todos
 
@@ -113,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 10 Plan 1 execution
-Stopped at: Completed 10-01-PLAN.md (error handling, offline detection, multiline input)
-Resume file: .planning/phases/10-polish-edge-cases/10-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 10 Plan 2 execution (FINAL PLAN)
+Stopped at: ALL PHASES COMPLETE — Balance chat feature fully implemented
+Resume file: .planning/phases/10-polish-edge-cases/10-02-SUMMARY.md
