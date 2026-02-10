@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Chat UI Components** - Side panel Sheet with message display and send functionality
 - [x] **Phase 4: Real-time Message Delivery** - Supabase Realtime integration with channel management
 - [x] **Phase 5: Participant Permissions** - Role-based access control for chat visibility
-- [ ] **Phase 6: Read Tracking** - Mark messages as read with denormalized unread counters
+- [x] **Phase 6: Read Tracking** - Mark messages as read with denormalized unread counters
 - [ ] **Phase 7: Unread Indicators** - Badge display in balance table with filtering
 - [ ] **Phase 8: System Messages** - Auto-generated messages for auditor assignment and status changes
 - [ ] **Phase 9: Notifications** - Toast notifications and email on auditor assignment
@@ -108,7 +108,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Create read tracking table with trigger, RLS, service methods (markAsRead + getUnreadCounts), and UI integration
+- [x] 06-01-PLAN.md — Create read tracking table with trigger, RLS, service methods (markAsRead + getUnreadCounts), and UI integration
 
 ### Phase 7: Unread Indicators
 **Goal**: Users can see which balances have unread messages and filter the table to show only those with unreads
@@ -179,7 +179,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Chat UI Components | 1/1 | ✓ Complete | 2026-02-10 |
 | 4. Real-time Message Delivery | 1/1 | ✓ Complete | 2026-02-10 |
 | 5. Participant Permissions | 1/1 | ✓ Complete | 2026-02-10 |
-| 6. Read Tracking | 0/TBD | Not started | - |
+| 6. Read Tracking | 1/1 | ✓ Complete | 2026-02-10 |
 | 7. Unread Indicators | 0/TBD | Not started | - |
 | 8. System Messages | 0/TBD | Not started | - |
 | 9. Notifications | 0/TBD | Not started | - |
