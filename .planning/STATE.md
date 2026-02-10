@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 3 complete — ready for Phase 4 (Real-time Delivery)
+**Current focus:** Phase 4 complete — ready for Phase 5 (Typing Indicators)
 
 ## Current Position
 
-Phase: 3 of 10 (Chat UI Components)
+Phase: 4 of 10 (Real-time Message Delivery)
 Plan: 1 of 1 complete
-Status: Phase 3 verified and complete
-Last activity: 2026-02-10 — Completed 03-01-PLAN.md (Chat UI: Sheet panel, messages, input, table icon)
+Status: Phase 4 verified and complete
+Last activity: 2026-02-10 — Completed 04-01-PLAN.md (Realtime subscription + dedup + sender enrichment)
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: 4min
 - Total execution time: 0.2 hours
 
@@ -30,9 +30,10 @@ Progress: [███░░░░░░░] 30%
 | 01-database-foundation | 1 | 7min | 7min |
 | 02-chat-service-layer | 1 | 2min | 2min |
 | 03-chat-ui-components | 1 | 3min | 3min |
+| 04-real-time-message-delivery | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7min), 02-01 (2min), 03-01 (3min)
+- Last 5 plans: 01-01 (7min), 02-01 (2min), 03-01 (3min), 04-01 (2min)
 - Trend: Accelerating
 
 *Updated after each plan completion*
@@ -58,6 +59,9 @@ Recent decisions affecting current work:
 - Chat icon in existing quick-action column (not new column) — avoids table width expansion
 - useState for chat state (not Zustand store) — local single-instance UI, store can be added in Phase 4
 - Optimistic send with revert — perceived performance for message sending
+- Single-column server-side Realtime filter (tenant_id) with client-side balance_id filter — Supabase limitation
+- useRef for userMap (not useState) — lookup data not rendered state, avoids re-renders
+- Dual dedup strategy for optimistic + Realtime race — handles all timing edge cases
 
 ### Pending Todos
 
@@ -69,9 +73,9 @@ None yet.
 - Need to decide on unread counter storage location (annual_balance_sheets table vs separate chat_participants table)
 - Database trigger vs Supabase webhook for Edge Function invocation needs evaluation
 
-**Phase 4 (Real-time Delivery):**
-- Message deduplication window size needs validation (Set with 10,000 IDs) for long-running browser tabs
-- Need to establish per-entity channel naming pattern: `chat:${tenantId}:${balanceId}`
+**Phase 4 (Real-time Delivery):** RESOLVED
+- Dedup handled via ID-based check in state (prev.some), no window/Set needed
+- Channel pattern established: `balance-chat:${tenantId}:${balanceId}`
 
 **Phase 6 (Read Tracking):**
 - Unread count query performance needs load testing with 500+ messages per balance
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 3 Plan 1 execution
-Stopped at: Completed 03-01-PLAN.md (chat UI components)
-Resume file: .planning/phases/03-chat-ui-components/03-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 4 Plan 1 execution
+Stopped at: Completed 04-01-PLAN.md (real-time message delivery)
+Resume file: .planning/phases/04-real-time-message-delivery/04-01-SUMMARY.md
