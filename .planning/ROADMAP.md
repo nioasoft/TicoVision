@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Read Tracking** - Mark messages as read with denormalized unread counters
 - [x] **Phase 7: Unread Indicators** - Badge display in balance table with filtering
 - [x] **Phase 8: System Messages** - Auto-generated messages for auditor assignment and status changes
-- [ ] **Phase 9: Notifications** - Toast notifications and email on auditor assignment
+- [x] **Phase 9: Notifications** - Toast notifications and email on auditor assignment
 - [ ] **Phase 10: Polish & Edge Cases** - Loading states, empty states, error handling
 
 ## Phase Details
@@ -150,7 +150,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md — Toast notifications for new chat messages + email on first auditor assignment
+- [x] 09-01-PLAN.md — Toast notifications for new chat messages + email on first auditor assignment
 
 ### Phase 10: Polish & Edge Cases
 **Goal**: All edge cases, error states, and loading scenarios are handled gracefully with Hebrew RTL UI
@@ -182,5 +182,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Read Tracking | 1/1 | ✓ Complete | 2026-02-10 |
 | 7. Unread Indicators | 1/1 | ✓ Complete | 2026-02-10 |
 | 8. System Messages | 1/1 | ✓ Complete | 2026-02-10 |
-| 9. Notifications | 0/TBD | Not started | - |
+| 9. Notifications | 1/1 | ✓ Complete | 2026-02-10 |
 | 10. Polish & Edge Cases | 0/TBD | Not started | - |
