@@ -119,10 +119,10 @@ Plans:
   2. User can click a filter toggle to show only balances with unread messages
   3. Unread badge count updates in real-time when new messages arrive (without page refresh)
   4. Badge displays "99+" when unread count exceeds 99 to maintain visual consistency
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 07-01: TBD during planning
+- [ ] 07-01-PLAN.md — Store extension + Realtime subscription + unread badge on chat icon + hasUnread filter toggle
 
 ### Phase 8: System Messages
 **Goal**: Key events automatically generate system messages in the chat timeline
