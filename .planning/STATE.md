@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 4 complete — ready for Phase 5 (Typing Indicators)
+**Current focus:** Phase 5 complete — ready for Phase 6 (Read Tracking)
 
 ## Current Position
 
-Phase: 4 of 10 (Real-time Message Delivery)
+Phase: 5 of 10 (Participant Permissions)
 Plan: 1 of 1 complete
-Status: Phase 4 verified and complete
-Last activity: 2026-02-10 — Completed 04-01-PLAN.md (Realtime subscription + dedup + sender enrichment)
+Status: Phase 5 verified and complete
+Last activity: 2026-02-10 — Completed 05-01-PLAN.md (Role-aware RLS + canAccessBalanceChat UI gating)
 
-Progress: [████░░░░░░] 40%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 4min
-- Total execution time: 0.2 hours
+- Total plans completed: 5
+- Average duration: 3min
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [████░░░░░░] 40%
 | 02-chat-service-layer | 1 | 2min | 2min |
 | 03-chat-ui-components | 1 | 3min | 3min |
 | 04-real-time-message-delivery | 1 | 2min | 2min |
+| 05-participant-permissions | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7min), 02-01 (2min), 03-01 (3min), 04-01 (2min)
-- Trend: Accelerating
+- Last 5 plans: 01-01 (7min), 02-01 (2min), 03-01 (3min), 04-01 (2min), 05-01 (3min)
+- Trend: Stable
 
 *Updated after each plan completion*
 
@@ -62,6 +63,8 @@ Recent decisions affecting current work:
 - Single-column server-side Realtime filter (tenant_id) with client-side balance_id filter — Supabase limitation
 - useRef for userMap (not useState) — lookup data not rendered state, avoids re-renders
 - Dual dedup strategy for optimistic + Realtime race — handles all timing edge cases
+- No service-layer checkChatAccess method — RLS is the security boundary, UI helper is sufficient for UX gating
+- canAccessBalanceChat is a pure function (role + userId + auditor_id comparison) — no async/DB calls needed
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 4 Plan 1 execution
-Stopped at: Completed 04-01-PLAN.md (real-time message delivery)
-Resume file: .planning/phases/04-real-time-message-delivery/04-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 5 Plan 1 execution
+Stopped at: Completed 05-01-PLAN.md (participant permissions)
+Resume file: .planning/phases/05-participant-permissions/05-01-SUMMARY.md
