@@ -147,10 +147,10 @@ Plans:
   2. Toast shows sender name, balance identifier, and message preview
   3. When a balance is assigned to an auditor for the first time, that auditor receives an email via SendGrid
   4. Email contains balance details (client name, tax ID) and a link to open the balance page with chat
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 09-01: TBD during planning
+- [ ] 09-01-PLAN.md — Toast notifications for new chat messages + email on first auditor assignment
 
 ### Phase 10: Polish & Edge Cases
 **Goal**: All edge cases, error states, and loading scenarios are handled gracefully with Hebrew RTL UI
