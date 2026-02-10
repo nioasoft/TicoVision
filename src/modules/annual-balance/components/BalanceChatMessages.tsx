@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { BalanceChatMessageWithSender } from '../types/balance-chat.types';
 
@@ -74,6 +74,27 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
         const msgDate = formatDate(msg.created_at);
         const showDateSeparator = msgDate !== lastDate;
         lastDate = msgDate;
+
+        // System messages: centered pill with info icon
+        if (msg.message_type === 'system') {
+          return (
+            <div key={msg.id}>
+              {showDateSeparator && (
+                <div className="flex items-center justify-center my-3">
+                  <span className="text-xs text-muted-foreground bg-gray-100 px-3 py-1 rounded-full">
+                    {msgDate}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-center my-2">
+                <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 border border-border/50 px-3 py-1.5 rounded-full max-w-[85%]">
+                  <Info className="h-3 w-3 shrink-0" />
+                  <span className="text-center">{msg.content}</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
 
         return (
           <div key={msg.id}>
