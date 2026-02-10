@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: Unread Indicators** - Badge display in balance table with filtering
 - [x] **Phase 8: System Messages** - Auto-generated messages for auditor assignment and status changes
 - [x] **Phase 9: Notifications** - Toast notifications and email on auditor assignment
-- [ ] **Phase 10: Polish & Edge Cases** - Loading states, empty states, error handling
+- [x] **Phase 10: Polish & Edge Cases** - Loading states, empty states, error handling
 
 ## Phase Details
 
@@ -165,8 +165,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Error handling with retry, offline indicator, multiline Textarea input, duplicate Toaster fix
-- [ ] 10-02-PLAN.md — Message limit increase to 100 with load-earlier pagination, RTL timestamp alignment, long text overflow guard
+- [x] 10-01-PLAN.md — Error handling with retry, offline indicator, multiline Textarea input, duplicate Toaster fix
+- [x] 10-02-PLAN.md — Message limit increase to 100 with load-earlier pagination, RTL timestamp alignment, long text overflow guard
 
 ## Progress
 
@@ -184,4 +184,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Unread Indicators | 1/1 | ✓ Complete | 2026-02-10 |
 | 8. System Messages | 1/1 | ✓ Complete | 2026-02-10 |
 | 9. Notifications | 1/1 | ✓ Complete | 2026-02-10 |
-| 10. Polish & Edge Cases | 0/2 | Not started | - |
+| 10. Polish & Edge Cases | 2/2 | ✓ Complete | 2026-02-10 |
