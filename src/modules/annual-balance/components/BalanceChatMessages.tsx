@@ -5,9 +5,12 @@
  * - Date separators (today/yesterday/DD.MM.YYYY)
  * - Own vs other message styling (RTL-aware alignment)
  * - Sender name display for non-own messages
- * - Auto-scroll to newest message
+ * - Auto-scroll to newest message (skips scroll when loading earlier)
+ * - "Load earlier messages" button for 100+ message pagination
  * - Loading spinner and empty state (Hebrew)
  * - Error state with retry button when fetch fails
+ * - RTL-correct timestamp alignment (text-end)
+ * - Overflow-safe bubbles for long unbroken text
  */
 
 import { useEffect, useRef } from 'react';
@@ -22,6 +25,8 @@ interface BalanceChatMessagesProps {
   currentUserId: string;
   error?: string | null;
   onRetry?: () => void;
+  hasMore?: boolean;
+  onLoadEarlier?: () => void;
 }
 
 /** Format time as HH:MM in Hebrew locale */
@@ -48,11 +53,20 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
   currentUserId,
   error,
   onRetry,
+  hasMore,
+  onLoadEarlier,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastMsgIdRef = useRef<string | null>(null);
 
+  // Auto-scroll only when a NEW message is appended (last message ID changes).
+  // Prepending older messages (load earlier) keeps the same last ID, so no scroll.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const currentLastId = messages.length > 0 ? messages[messages.length - 1].id : null;
+    if (currentLastId && currentLastId !== lastMsgIdRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    lastMsgIdRef.current = currentLastId;
   }, [messages]);
 
   if (loading) {
@@ -90,6 +104,13 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
 
   return (
     <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      {hasMore && onLoadEarlier && (
+        <div className="flex justify-center py-2">
+          <Button variant="ghost" size="sm" onClick={onLoadEarlier} className="text-xs text-muted-foreground">
+            טען הודעות קודמות
+          </Button>
+        </div>
+      )}
       {messages.map((msg) => {
         const isOwn = msg.user_id === currentUserId;
         const msgDate = formatDate(msg.created_at);
@@ -129,7 +150,7 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
             <div className={cn('flex', isOwn ? 'justify-start' : 'justify-end')}>
               <div
                 className={cn(
-                  'max-w-[75%] rounded-lg px-3 py-2 text-sm',
+                  'max-w-[75%] rounded-lg px-3 py-2 text-sm overflow-hidden',
                   isOwn
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-gray-100 text-gray-900'
@@ -142,7 +163,7 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
                 )}
                 <p className="whitespace-pre-wrap break-words">{msg.content}</p>
                 <p className={cn(
-                  'text-[10px] mt-1',
+                  'text-[10px] mt-1 text-end',
                   isOwn ? 'opacity-70' : 'text-muted-foreground'
                 )}>
                   {formatTime(msg.created_at)}
