@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 6 complete — ready for Phase 7 (Unread Badges)
+**Current focus:** Phase 7 complete — ready for Phase 8 (System Messages)
 
 ## Current Position
 
-Phase: 6 of 10 (Read Tracking)
+Phase: 7 of 10 (Unread Indicators)
 Plan: 1 of 1 complete
-Status: Phase 6 verified and complete
-Last activity: 2026-02-10 — Completed 06-01-PLAN.md (Denormalized unread counter with trigger + upsert markAsRead)
+Status: Phase 7 verified and complete
+Last activity: 2026-02-10 — Completed 07-01-PLAN.md (Unread badges, filter toggle, Realtime subscription)
 
-Progress: [██████░░░░] 60%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 3min
-- Total execution time: 0.3 hours
+- Total execution time: 0.35 hours
 
 **By Phase:**
 
@@ -33,9 +33,10 @@ Progress: [██████░░░░] 60%
 | 04-real-time-message-delivery | 1 | 2min | 2min |
 | 05-participant-permissions | 1 | 3min | 3min |
 | 06-read-tracking | 1 | 3min | 3min |
+| 07-unread-indicators | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2min), 03-01 (3min), 04-01 (2min), 05-01 (3min), 06-01 (3min)
+- Last 5 plans: 03-01 (3min), 04-01 (2min), 05-01 (3min), 06-01 (3min), 07-01 (3min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - Trigger only updates existing tracking rows (no pre-population) — users self-register by opening chat
 - markAsRead called after messages load (fire-and-forget, no await) — minimizes race condition window without blocking UI
 - Denormalized unread_count with trigger increment + upsert reset — O(1) badge lookup, no COUNT queries
+- hasUnread is client-side-only filter (not sent to server getAll) — filters already-fetched cases via useMemo
+- Realtime subscription on balance_chat_read_tracking UPDATE events for live badge updates — tenant-scoped channel
+- Badge uses -end-1 logical property for correct RTL positioning
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 6 Plan 1 execution
-Stopped at: Completed 06-01-PLAN.md (read tracking)
-Resume file: .planning/phases/06-read-tracking/06-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 7 Plan 1 execution
+Stopped at: Completed 07-01-PLAN.md (unread indicators)
+Resume file: .planning/phases/07-unread-indicators/07-01-SUMMARY.md
