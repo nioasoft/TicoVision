@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 9 complete — ready for Phase 10 (Polish)
+**Current focus:** Phase 10 in progress — Error handling & input polish done, accessibility remaining
 
 ## Current Position
 
-Phase: 9 of 10 (Notifications)
-Plan: 1 of 1 complete
-Status: Phase 9 verified and complete
-Last activity: 2026-02-10 — Completed 09-01-PLAN.md (Toast + email notifications)
+Phase: 10 of 10 (Polish & Edge Cases)
+Plan: 1 of 2 complete
+Status: Plan 10-01 complete, Plan 10-02 remaining
+Last activity: 2026-02-10 — Completed 10-01-PLAN.md (Error handling, offline detection, multiline input)
 
-Progress: [█████████░] 90%
+Progress: [█████████▓] 95%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 10
 - Average duration: 3min
-- Total execution time: 0.43 hours
+- Total execution time: 0.48 hours
 
 **By Phase:**
 
@@ -36,9 +36,10 @@ Progress: [█████████░] 90%
 | 07-unread-indicators | 1 | 3min | 3min |
 | 08-system-messages | 1 | 2min | 2min |
 | 09-notifications | 1 | 3min | 3min |
+| 10-polish-edge-cases | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (3min), 06-01 (3min), 07-01 (3min), 08-01 (2min), 09-01 (3min)
+- Last 5 plans: 06-01 (3min), 07-01 (3min), 08-01 (2min), 09-01 (3min), 10-01 (3min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -83,6 +84,10 @@ Recent decisions affecting current work:
 - Tenant users fetched once on mount via get_users_for_tenant RPC for sender name enrichment in toasts
 - Email uses existing send-letter edge function with simpleMode: true -- no new edge function needed
 - isFirstAssignment computed before UPDATE query to correctly detect first vs re-assignment
+- Extracted fetchMessages as useCallback for stable retry reference (not inline in useEffect)
+- Offline banner placed between SheetHeader and BalanceChatMessages for visibility
+- Removed App.tsx Toaster, keeping main.tsx Toaster with richColors/RTL/closeButton config
+- items-end alignment on input container so send button stays at bottom when textarea grows
 
 ### Pending Todos
 
@@ -108,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 9 Plan 1 execution
-Stopped at: Completed 09-01-PLAN.md (toast + email notifications)
-Resume file: .planning/phases/09-notifications/09-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 10 Plan 1 execution
+Stopped at: Completed 10-01-PLAN.md (error handling, offline detection, multiline input)
+Resume file: .planning/phases/10-polish-edge-cases/10-01-SUMMARY.md
