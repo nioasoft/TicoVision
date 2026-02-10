@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Participant Permissions** - Role-based access control for chat visibility
 - [x] **Phase 6: Read Tracking** - Mark messages as read with denormalized unread counters
 - [x] **Phase 7: Unread Indicators** - Badge display in balance table with filtering
-- [ ] **Phase 8: System Messages** - Auto-generated messages for auditor assignment and status changes
+- [x] **Phase 8: System Messages** - Auto-generated messages for auditor assignment and status changes
 - [ ] **Phase 9: Notifications** - Toast notifications and email on auditor assignment
 - [ ] **Phase 10: Polish & Edge Cases** - Loading states, empty states, error handling
 
@@ -136,7 +136,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md — Add sendSystemMessage service method, wire into 4 annualBalanceService events, and render system messages as centered pills in chat UI
+- [x] 08-01-PLAN.md — Add sendSystemMessage service method, wire into 4 annualBalanceService events, and render system messages as centered pills in chat UI
 
 ### Phase 9: Notifications
 **Goal**: Users receive toast notifications for new messages and email notification on first auditor assignment
@@ -181,6 +181,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Participant Permissions | 1/1 | ✓ Complete | 2026-02-10 |
 | 6. Read Tracking | 1/1 | ✓ Complete | 2026-02-10 |
 | 7. Unread Indicators | 1/1 | ✓ Complete | 2026-02-10 |
-| 8. System Messages | 0/TBD | Not started | - |
+| 8. System Messages | 1/1 | ✓ Complete | 2026-02-10 |
 | 9. Notifications | 0/TBD | Not started | - |
 | 10. Polish & Edge Cases | 0/TBD | Not started | - |
