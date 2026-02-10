@@ -7,10 +7,12 @@
  * - Sender name display for non-own messages
  * - Auto-scroll to newest message
  * - Loading spinner and empty state (Hebrew)
+ * - Error state with retry button when fetch fails
  */
 
 import { useEffect, useRef } from 'react';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2, Info, AlertCircle, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { BalanceChatMessageWithSender } from '../types/balance-chat.types';
 
@@ -18,6 +20,8 @@ interface BalanceChatMessagesProps {
   messages: BalanceChatMessageWithSender[];
   loading: boolean;
   currentUserId: string;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 /** Format time as HH:MM in Hebrew locale */
@@ -42,6 +46,8 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
   messages,
   loading,
   currentUserId,
+  error,
+  onRetry,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +59,21 @@ export const BalanceChatMessages: React.FC<BalanceChatMessagesProps> = ({
     return (
       <div className="flex-1 flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        {onRetry && (
+          <Button variant="outline" size="sm" onClick={onRetry} className="gap-1.5">
+            <RotateCcw className="h-3.5 w-3.5" />
+            נסה שוב
+          </Button>
+        )}
       </div>
     );
   }

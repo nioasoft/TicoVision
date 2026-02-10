@@ -5,7 +5,6 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { RoleBasedRoute } from '@/components/auth/RoleBasedRoute';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Toaster } from '@/components/ui/sonner';
 import { Loader2 } from 'lucide-react';
 
 // Lazy load all pages for better performance
@@ -102,7 +101,6 @@ function App() {
       <div dir="rtl" className="min-h-screen">
         <Router>
           <AuthProvider>
-            <Toaster position="top-center" />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* Public routes */}
