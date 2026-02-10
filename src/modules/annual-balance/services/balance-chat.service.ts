@@ -27,18 +27,24 @@ class BalanceChatService extends BaseService {
    * Messages are ordered oldest-first for natural chat flow (top-to-bottom).
    * Only returns non-deleted messages.
    *
+   * Supports cursor-based pagination via the `before` parameter:
+   * pass the created_at timestamp of the oldest loaded message to
+   * fetch the next batch of older messages.
+   *
    * @param balanceId - The annual balance sheet ID to fetch messages for
-   * @param limit - Maximum number of messages to return (default: 50)
+   * @param limit - Maximum number of messages to return (default: 100)
+   * @param before - ISO timestamp cursor; only messages older than this are returned
    * @returns Enriched messages with sender_name and sender_email
    */
   async getMessages(
     balanceId: string,
-    limit: number = 50
+    limit: number = 100,
+    before?: string
   ): Promise<ServiceResponse<BalanceChatMessageWithSender[]>> {
     try {
       const tenantId = await this.getTenantId();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('balance_chat_messages')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -46,6 +52,12 @@ class BalanceChatService extends BaseService {
         .eq('is_deleted', false)
         .order('created_at', { ascending: true })
         .limit(limit);
+
+      if (before) {
+        query = query.lt('created_at', before);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

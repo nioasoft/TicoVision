@@ -51,6 +51,7 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [hasMore, setHasMore] = useState(false);
   const userMapRef = useRef<Map<string, { name: string; email: string }>>(new Map());
   const pendingOptimisticRef = useRef<Set<string>>(new Set());
 
@@ -77,6 +78,7 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
       setError('שגיאה בטעינת ההודעות');
     } else {
       setMessages(result.data ?? []);
+      setHasMore((result.data ?? []).length >= 100);
 
       // Build user map for Realtime message enrichment
       const map = new Map<string, { name: string; email: string }>();
@@ -106,6 +108,30 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
     if (!open || !balanceCase?.id) return;
     fetchMessages();
   }, [open, balanceCase?.id, fetchMessages]);
+
+  // Load earlier messages (cursor-based pagination)
+  const handleLoadEarlier = useCallback(async () => {
+    if (!balanceCase?.id || messages.length === 0) return;
+
+    const oldestTimestamp = messages[0].created_at;
+    const result = await balanceChatService.getMessages(
+      balanceCase.id,
+      100,
+      oldestTimestamp
+    );
+
+    if (result.error) {
+      toast.error('שגיאה בטעינת הודעות קודמות');
+      return;
+    }
+
+    if (result.data && result.data.length > 0) {
+      setMessages(prev => [...result.data!, ...prev]);
+      setHasMore(result.data.length >= 100);
+    } else {
+      setHasMore(false);
+    }
+  }, [balanceCase?.id, messages]);
 
   // Optimistic send handler
   const handleSend = useCallback(async (content: string) => {
@@ -248,6 +274,8 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
           currentUserId={user?.id || ''}
           error={error}
           onRetry={fetchMessages}
+          hasMore={hasMore}
+          onLoadEarlier={handleLoadEarlier}
         />
 
         <BalanceChatInput
