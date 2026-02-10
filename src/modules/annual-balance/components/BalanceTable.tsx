@@ -49,6 +49,7 @@ interface BalanceTableProps {
   onChatClick: (row: AnnualBalanceSheetWithClient) => void;
   userRole: string;
   userId: string;
+  unreadCounts: Record<string, number>;
 }
 
 /** Quick action label for a given status - auditor confirmation aware */
@@ -171,6 +172,7 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
   onChatClick,
   userRole,
   userId,
+  unreadCounts,
 }) => {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
@@ -290,14 +292,21 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                 <TableCell className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
                     {canAccessBalanceChat(userRole, userId, { auditor_id: row.auditor_id }) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => onChatClick(row)}
-                      >
-                        <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                      </Button>
+                      <div className="relative">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => onChatClick(row)}
+                        >
+                          <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        {(unreadCounts[row.id] ?? 0) > 0 && (
+                          <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-medium px-0.5 pointer-events-none">
+                            {unreadCounts[row.id] > 99 ? '99+' : unreadCounts[row.id]}
+                          </span>
+                        )}
+                      </div>
                     )}
                     {row.advance_rate_alert && (
                       <Tooltip>

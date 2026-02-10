@@ -11,6 +11,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { RefreshCw, CalendarPlus, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
 import { BalanceKPICards } from '../components/BalanceKPICards';
 import { BalanceFilters } from '../components/BalanceFilters';
@@ -39,8 +40,12 @@ export default function AnnualBalancePage() {
     filters,
     pagination,
     activeTab,
+    unreadCounts,
     fetchCases,
     fetchDashboardStats,
+    fetchUnreadCounts,
+    updateUnreadCount,
+    clearUnreadCount,
     setFilters,
     resetFilters,
     setPagination,
@@ -66,7 +71,38 @@ export default function AnnualBalancePage() {
   useEffect(() => {
     fetchCases();
     fetchDashboardStats();
-  }, [fetchCases, fetchDashboardStats]);
+    fetchUnreadCounts();
+  }, [fetchCases, fetchDashboardStats, fetchUnreadCounts]);
+
+  // Realtime subscription for unread count updates
+  useEffect(() => {
+    const tenantId = user?.user_metadata?.tenant_id;
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel(`unread-tracking:${tenantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'balance_chat_read_tracking',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            balance_id: string;
+            unread_count: number;
+          };
+          updateUnreadCount(row.balance_id, row.unread_count);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.user_metadata?.tenant_id, updateUnreadCount]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -108,7 +144,8 @@ export default function AnnualBalancePage() {
   const handleChatClick = useCallback((row: AnnualBalanceSheetWithClient) => {
     setChatBalanceCase(row);
     setChatOpen(true);
-  }, []);
+    clearUnreadCount(row.id);
+  }, [clearUnreadCount]);
 
   const handleOpenYearSuccess = useCallback(() => {
     refreshData();
@@ -142,6 +179,12 @@ export default function AnnualBalancePage() {
   }, []);
 
   const canOpenYear = hasBalancePermission(userRole, 'open_year');
+
+  // Client-side filter for hasUnread
+  const filteredCases = useMemo(() => {
+    if (!filters.hasUnread) return cases;
+    return cases.filter((c) => (unreadCounts[c.id] ?? 0) > 0);
+  }, [cases, filters.hasUnread, unreadCounts]);
 
   // Compute completion percentage
   const completionPct = useMemo(() => {
@@ -262,7 +305,7 @@ export default function AnnualBalancePage() {
 
               {/* Table (renders inside the card) */}
               <BalanceTable
-                cases={cases}
+                cases={filteredCases}
                 loading={loading}
                 pagination={pagination}
                 onPageChange={(page) => setPagination({ page })}
@@ -272,6 +315,7 @@ export default function AnnualBalancePage() {
                 onChatClick={handleChatClick}
                 userRole={userRole}
                 userId={user?.id || ''}
+                unreadCounts={unreadCounts}
               />
             </TabsContent>
 

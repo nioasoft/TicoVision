@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FilterX, Search, X } from 'lucide-react';
+import { FilterX, MessageCircle, Search, X } from 'lucide-react';
 import { BALANCE_STATUS_CONFIG, BALANCE_STATUSES } from '../types/annual-balance.types';
 import type { BalanceFilters as BalanceFiltersType, AuditorSummary } from '../types/annual-balance.types';
 
@@ -58,7 +58,8 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
     filters.status ||
     filters.auditor_id ||
     filters.showInactive ||
-    filters.hasTaxCoding !== undefined;
+    filters.hasTaxCoding !== undefined ||
+    filters.hasUnread;
 
   // Generate year options: current year down to 5 years ago
   const currentYear = new Date().getFullYear();
@@ -167,6 +168,17 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
           <SelectItem value="no">ללא קידוד מס</SelectItem>
         </SelectContent>
       </Select>
+
+      {/* Unread Messages Filter */}
+      <Button
+        variant={filters.hasUnread ? "default" : "outline"}
+        size="sm"
+        className="h-9 text-sm gap-1.5 rounded-lg"
+        onClick={() => onFiltersChange({ hasUnread: filters.hasUnread ? undefined : true })}
+      >
+        <MessageCircle className="h-3.5 w-3.5" />
+        הודעות שלא נקראו
+      </Button>
 
       {/* Show Inactive Toggle */}
       <div className="flex items-center gap-1.5">
