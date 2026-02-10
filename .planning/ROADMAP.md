@@ -162,10 +162,11 @@ Plans:
   3. Long messages wrap correctly in RTL layout without breaking UI
   4. Chat performance remains smooth with 200+ messages in a single balance (scroll virtualization if needed)
   5. All Hebrew text is right-aligned and timestamps are positioned correctly in RTL context
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 10-01: TBD during planning
+- [ ] 10-01-PLAN.md — Error handling with retry, offline indicator, multiline Textarea input, duplicate Toaster fix
+- [ ] 10-02-PLAN.md — Message limit increase to 100 with load-earlier pagination, RTL timestamp alignment, long text overflow guard
 
 ## Progress
 
@@ -183,4 +184,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Unread Indicators | 1/1 | ✓ Complete | 2026-02-10 |
 | 8. System Messages | 1/1 | ✓ Complete | 2026-02-10 |
 | 9. Notifications | 1/1 | ✓ Complete | 2026-02-10 |
-| 10. Polish & Edge Cases | 0/TBD | Not started | - |
+| 10. Polish & Edge Cases | 0/2 | Not started | - |
