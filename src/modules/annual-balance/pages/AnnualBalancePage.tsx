@@ -3,12 +3,13 @@
  * Composes KPI cards, filters, data table, auditor summary, and workflow dialogs
  */
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { RefreshCw, CalendarPlus, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -25,7 +26,8 @@ import { UpdateAdvancesDialog } from '../components/UpdateAdvancesDialog';
 import { ConfirmAssignmentDialog } from '../components/ConfirmAssignmentDialog';
 import { BalanceDetailDialog } from '../components/BalanceDetailDialog';
 import { BalanceChatSheet } from '../components/BalanceChatSheet';
-import { hasBalancePermission } from '../types/annual-balance.types';
+import { ChatNotificationToast } from '../components/ChatNotificationToast';
+import { hasBalancePermission, canAccessBalanceChat } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 export default function AnnualBalancePage() {
@@ -68,6 +70,13 @@ export default function AnnualBalancePage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatBalanceCase, setChatBalanceCase] = useState<AnnualBalanceSheetWithClient | null>(null);
 
+  // Refs for toast notification subscription (avoid stale closures)
+  const casesRef = useRef(cases);
+  casesRef.current = cases;
+  const chatStateRef = useRef({ open: chatOpen, balanceId: chatBalanceCase?.id });
+  chatStateRef.current = { open: chatOpen, balanceId: chatBalanceCase?.id };
+  const tenantUsersRef = useRef<Map<string, string>>(new Map());
+
   useEffect(() => {
     fetchCases();
     fetchDashboardStats();
@@ -103,6 +112,91 @@ export default function AnnualBalancePage() {
       supabase.removeChannel(channel);
     };
   }, [user?.user_metadata?.tenant_id, updateUnreadCount]);
+
+  // Fetch tenant users once on mount for sender name resolution in toast notifications
+  useEffect(() => {
+    const fetchTenantUsers = async () => {
+      const { data } = await supabase.rpc('get_users_for_tenant');
+      if (data) {
+        const map = new Map<string, string>();
+        for (const u of data) {
+          map.set(u.user_id, u.full_name || u.email);
+        }
+        tenantUsersRef.current = map;
+      }
+    };
+    fetchTenantUsers();
+  }, []);
+
+  // Global Realtime subscription for chat toast notifications
+  useEffect(() => {
+    const tenantId = user?.user_metadata?.tenant_id;
+    if (!tenantId || !user) return;
+
+    const channel = supabase
+      .channel(`chat-notifications:${tenantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'balance_chat_messages',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const msg = payload.new as {
+            id: string;
+            balance_id: string;
+            user_id: string;
+            content: string;
+            message_type: string;
+            tenant_id: string;
+          };
+
+          // Skip own messages
+          if (msg.user_id === user.id) return;
+          // Skip system messages
+          if (msg.message_type === 'system') return;
+          // Skip if chat is already open for this balance
+          if (chatStateRef.current.open && chatStateRef.current.balanceId === msg.balance_id) return;
+
+          // Find balance case in current data
+          const balanceCase = casesRef.current.find((c) => c.id === msg.balance_id);
+          if (!balanceCase) return;
+
+          // Check access
+          if (!canAccessBalanceChat(userRole, user.id, { auditor_id: balanceCase.auditor_id })) return;
+
+          // Resolve sender name
+          const senderName = tenantUsersRef.current.get(msg.user_id) || 'משתמש';
+          const clientName = balanceCase.client?.company_name || '';
+          const preview = msg.content.length > 60 ? msg.content.slice(0, 60) + '...' : msg.content;
+
+          toast.custom(
+            (id) => (
+              <ChatNotificationToast
+                senderName={senderName}
+                clientName={clientName}
+                preview={preview}
+                onDismiss={() => toast.dismiss(id)}
+                onClick={() => {
+                  setChatBalanceCase(balanceCase);
+                  setChatOpen(true);
+                  clearUnreadCount(balanceCase.id);
+                  toast.dismiss(id);
+                }}
+              />
+            ),
+            { duration: 8000 }
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.user_metadata?.tenant_id, user?.id, userRole, clearUnreadCount]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
