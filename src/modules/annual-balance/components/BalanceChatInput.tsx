@@ -1,16 +1,16 @@
 /**
- * BalanceChatInput - Text input with send button for balance chat
+ * BalanceChatInput - Auto-expanding Textarea with send button for balance chat
  *
  * Provides a message composition area with:
- * - Text input with Hebrew placeholder
+ * - Auto-expanding Textarea (1 row to ~4 rows) with Hebrew placeholder
  * - Send button with loading state
  * - Enter-to-send (Shift+Enter for newline)
  * - Disabled state while sending or when chat is unavailable
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Send, Loader2 } from 'lucide-react';
 
 interface BalanceChatInputProps {
@@ -24,6 +24,15 @@ export const BalanceChatInput: React.FC<BalanceChatInputProps> = ({
 }) => {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea height based on content
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [text]);
 
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
@@ -49,14 +58,16 @@ export const BalanceChatInput: React.FC<BalanceChatInputProps> = ({
   );
 
   return (
-    <div className="flex items-center gap-2 p-3 border-t">
-      <Input
+    <div className="flex items-end gap-2 p-3 border-t">
+      <Textarea
+        ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="כתוב הודעה..."
-        className="rtl:text-right"
+        className="rtl:text-right min-h-[38px] max-h-[120px] resize-none py-2 text-sm"
         disabled={sending || disabled}
+        rows={1}
       />
       <Button
         size="icon"
