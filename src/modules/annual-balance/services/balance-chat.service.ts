@@ -221,6 +221,44 @@ class BalanceChatService extends BaseService {
       return { data: null, error: this.handleError(error as Error) };
     }
   }
+
+  /**
+   * Subscribe to new chat messages in real-time via Supabase Realtime.
+   *
+   * Creates a postgres_changes subscription on the balance_chat_messages table
+   * filtered by tenant_id server-side. The balance_id filter is applied
+   * client-side because Supabase Realtime only supports single-column
+   * server-side filters.
+   *
+   * @param tenantId - The tenant ID for server-side channel filtering
+   * @param balanceId - The balance sheet ID for client-side message filtering
+   * @param onMessage - Callback invoked with each new non-deleted message
+   * @returns The RealtimeChannel object — clean up via `supabase.removeChannel(channel)`
+   */
+  subscribeToBalanceChat(
+    tenantId: string,
+    balanceId: string,
+    onMessage: (message: BalanceChatMessageRow) => void
+  ) {
+    return supabase
+      .channel(`balance-chat:${tenantId}:${balanceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'balance_chat_messages',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as BalanceChatMessageRow;
+          if (newMsg.balance_id === balanceId && !newMsg.is_deleted) {
+            onMessage(newMsg);
+          }
+        }
+      )
+      .subscribe();
+  }
 }
 
 /** Singleton instance for balance chat operations */
