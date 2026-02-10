@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 7 complete — ready for Phase 8 (System Messages)
+**Current focus:** Phase 8 complete — ready for Phase 9 (Notifications)
 
 ## Current Position
 
-Phase: 7 of 10 (Unread Indicators)
+Phase: 8 of 10 (System Messages)
 Plan: 1 of 1 complete
-Status: Phase 7 verified and complete
-Last activity: 2026-02-10 — Completed 07-01-PLAN.md (Unread badges, filter toggle, Realtime subscription)
+Status: Phase 8 verified and complete
+Last activity: 2026-02-10 — Completed 08-01-PLAN.md (System messages in balance chat)
 
-Progress: [███████░░░] 70%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 3min
-- Total execution time: 0.35 hours
+- Total execution time: 0.38 hours
 
 **By Phase:**
 
@@ -34,9 +34,10 @@ Progress: [███████░░░] 70%
 | 05-participant-permissions | 1 | 3min | 3min |
 | 06-read-tracking | 1 | 3min | 3min |
 | 07-unread-indicators | 1 | 3min | 3min |
+| 08-system-messages | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min), 04-01 (2min), 05-01 (3min), 06-01 (3min), 07-01 (3min)
+- Last 5 plans: 04-01 (2min), 05-01 (3min), 06-01 (3min), 07-01 (3min), 08-01 (2min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - hasUnread is client-side-only filter (not sent to server getAll) — filters already-fetched cases via useMemo
 - Realtime subscription on balance_chat_read_tracking UPDATE events for live badge updates — tenant-scoped channel
 - Badge uses -end-1 logical property for correct RTL positioning
+- Fire-and-forget pattern for system messages — non-blocking, errors logged but never propagated to parent operations
+- Async IIFE in assignAuditor for auditor name lookup — keeps name resolution non-blocking
+- System messages use acting user's user_id for RLS compliance but don't display sender name in UI
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 7 Plan 1 execution
-Stopped at: Completed 07-01-PLAN.md (unread indicators)
-Resume file: .planning/phases/07-unread-indicators/07-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 8 Plan 1 execution
+Stopped at: Completed 08-01-PLAN.md (system messages)
+Resume file: .planning/phases/08-system-messages/08-01-SUMMARY.md
