@@ -143,7 +143,7 @@ class BalanceChatService extends BaseService {
         ...(data as BalanceChatMessageRow),
         sender_email: user.email ?? '',
         sender_name:
-          (user.user_metadata?.full_name as string) || user.email ?? '',
+          (user.user_metadata?.full_name as string) || (user.email ?? ''),
       };
 
       await this.logAction('send_balance_chat_message', balanceId, {
