@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-09)
 
 **Core value:** Auditors and accountants can communicate about specific balance cases in real-time without leaving the annual-balance page
-**Current focus:** Phase 5 complete — ready for Phase 6 (Read Tracking)
+**Current focus:** Phase 6 complete — ready for Phase 7 (Unread Badges)
 
 ## Current Position
 
-Phase: 5 of 10 (Participant Permissions)
+Phase: 6 of 10 (Read Tracking)
 Plan: 1 of 1 complete
-Status: Phase 5 verified and complete
-Last activity: 2026-02-10 — Completed 05-01-PLAN.md (Role-aware RLS + canAccessBalanceChat UI gating)
+Status: Phase 6 verified and complete
+Last activity: 2026-02-10 — Completed 06-01-PLAN.md (Denormalized unread counter with trigger + upsert markAsRead)
 
-Progress: [█████░░░░░] 50%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: 3min
 - Total execution time: 0.3 hours
 
@@ -32,9 +32,10 @@ Progress: [█████░░░░░] 50%
 | 03-chat-ui-components | 1 | 3min | 3min |
 | 04-real-time-message-delivery | 1 | 2min | 2min |
 | 05-participant-permissions | 1 | 3min | 3min |
+| 06-read-tracking | 1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (7min), 02-01 (2min), 03-01 (3min), 04-01 (2min), 05-01 (3min)
+- Last 5 plans: 02-01 (2min), 03-01 (3min), 04-01 (2min), 05-01 (3min), 06-01 (3min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -65,6 +66,10 @@ Recent decisions affecting current work:
 - Dual dedup strategy for optimistic + Realtime race — handles all timing edge cases
 - No service-layer checkChatAccess method — RLS is the security boundary, UI helper is sufficient for UX gating
 - canAccessBalanceChat is a pure function (role + userId + auditor_id comparison) — no async/DB calls needed
+- Separate balance_chat_read_tracking table (not JSONB on annual_balance_sheets) — clean separation of chat concerns from balance domain
+- Trigger only updates existing tracking rows (no pre-population) — users self-register by opening chat
+- markAsRead called after messages load (fire-and-forget, no await) — minimizes race condition window without blocking UI
+- Denormalized unread_count with trigger increment + upsert reset — O(1) badge lookup, no COUNT queries
 
 ### Pending Todos
 
@@ -72,16 +77,17 @@ None yet.
 
 ### Blockers/Concerns
 
-**Phase 1 (Database Foundation):**
-- Need to decide on unread counter storage location (annual_balance_sheets table vs separate chat_participants table)
-- Database trigger vs Supabase webhook for Edge Function invocation needs evaluation
+**Phase 1 (Database Foundation):** RESOLVED
+- Unread counter stored in separate `balance_chat_read_tracking` table (not annual_balance_sheets columns)
+- Database trigger chosen for unread increment (SECURITY DEFINER, atomic, handles concurrent sends)
 
 **Phase 4 (Real-time Delivery):** RESOLVED
 - Dedup handled via ID-based check in state (prev.some), no window/Set needed
 - Channel pattern established: `balance-chat:${tenantId}:${balanceId}`
 
-**Phase 6 (Read Tracking):**
-- Unread count query performance needs load testing with 500+ messages per balance
+**Phase 6 (Read Tracking):** RESOLVED
+- Partial index `idx_bcrt_user_unread` on `(tenant_id, user_id) WHERE unread_count > 0` handles badge queries efficiently
+- At current scale (35 users, 1335 balances), trigger UPDATE hits at most 34 rows per message send
 
 **Phase 9 (Notifications):**
 - Email template design for Hebrew RTL context needed
@@ -89,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-10 — Phase 5 Plan 1 execution
-Stopped at: Completed 05-01-PLAN.md (participant permissions)
-Resume file: .planning/phases/05-participant-permissions/05-01-SUMMARY.md
+Last session: 2026-02-10 — Phase 6 Plan 1 execution
+Stopped at: Completed 06-01-PLAN.md (read tracking)
+Resume file: .planning/phases/06-read-tracking/06-01-SUMMARY.md
