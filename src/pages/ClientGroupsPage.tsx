@@ -48,6 +48,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Combobox } from '@/components/ui/combobox';
 import { ISRAELI_CITIES_SORTED } from '@/data/israeli-cities';
 
+// Helper function to clean address data
+const cleanAddressData = (address?: { street?: string; city?: string; postal_code?: string }) => {
+  if (!address) return null;
+
+  const cleanedAddress: { street?: string; city?: string; postal_code?: string } = {};
+
+  if (address.street?.trim()) cleanedAddress.street = address.street.trim();
+  if (address.city?.trim()) cleanedAddress.city = address.city.trim();
+  if (address.postal_code?.trim()) cleanedAddress.postal_code = address.postal_code.trim();
+
+  // If all fields are empty, return null
+  if (Object.keys(cleanedAddress).length === 0) return null;
+
+  return cleanedAddress;
+};
+
 export default function ClientGroupsPage() {
   const [groups, setGroups] = useState<ClientGroup[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -211,8 +227,14 @@ export default function ClientGroupsPage() {
       return;
     }
 
+    // Clean address data before sending
+    const cleanedData = {
+      ...formData,
+      address: cleanAddressData(formData.address),
+    };
+
     // Create the group
-    const response = await clientService.createGroup(formData);
+    const response = await clientService.createGroup(cleanedData);
     if (response.error || !response.data) {
       toast({
         title: 'שגיאה ביצירת קבוצה',
@@ -240,12 +262,15 @@ export default function ClientGroupsPage() {
 
     // Get primary owner name from contacts (managed by ContactsManager)
     const primaryContact = groupContacts.find(c => c.is_primary);
-    const groupData = {
+
+    // Clean address data before sending
+    const cleanedData = {
       ...formData,
       primary_owner: primaryContact?.full_name || '',
+      address: cleanAddressData(formData.address),
     };
 
-    const response = await clientService.updateGroup(selectedGroup.id, groupData);
+    const response = await clientService.updateGroup(selectedGroup.id, cleanedData);
 
     if (response.error) {
       toast({
