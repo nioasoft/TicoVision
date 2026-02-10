@@ -35,7 +35,7 @@ import { ChevronRight, ChevronLeft, FileSearch, ExternalLink, AlertTriangle, Mes
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { getNextStatus, hasBalancePermission, BALANCE_STATUS_CONFIG } from '../types/annual-balance.types';
+import { getNextStatus, hasBalancePermission, canAccessBalanceChat, BALANCE_STATUS_CONFIG } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 interface BalanceTableProps {
@@ -48,6 +48,7 @@ interface BalanceTableProps {
   onQuickAction: (row: AnnualBalanceSheetWithClient, action: string) => void;
   onChatClick: (row: AnnualBalanceSheetWithClient) => void;
   userRole: string;
+  userId: string;
 }
 
 /** Quick action label for a given status - auditor confirmation aware */
@@ -169,6 +170,7 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
   onQuickAction,
   onChatClick,
   userRole,
+  userId,
 }) => {
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
@@ -287,14 +289,16 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                 {/* Quick action (visible on row hover) - LEFTMOST */}
                 <TableCell className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => onChatClick(row)}
-                    >
-                      <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    {canAccessBalanceChat(userRole, userId, { auditor_id: row.auditor_id }) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => onChatClick(row)}
+                      >
+                        <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
                     {row.advance_rate_alert && (
                       <Tooltip>
                         <TooltipTrigger asChild>

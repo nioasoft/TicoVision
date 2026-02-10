@@ -28,7 +28,7 @@ import { hasBalancePermission } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 export default function AnnualBalancePage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const userRole = role || '';
 
   const {
@@ -271,6 +271,7 @@ export default function AnnualBalancePage() {
                 onQuickAction={handleQuickAction}
                 onChatClick={handleChatClick}
                 userRole={userRole}
+                userId={user?.id || ''}
               />
             </TabsContent>
 

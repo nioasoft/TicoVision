@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { balanceChatService } from '../services/balance-chat.service';
 import type { BalanceChatMessageRow, BalanceChatMessageWithSender } from '../types/balance-chat.types';
 import type { AnnualBalanceSheetWithClient } from '../types/annual-balance.types';
+import { canAccessBalanceChat } from '../types/annual-balance.types';
 import { BalanceChatMessages } from './BalanceChatMessages';
 import { BalanceChatInput } from './BalanceChatInput';
 
@@ -41,10 +42,11 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
   onOpenChange,
   balanceCase,
 }) => {
-  const { user, tenantId } = useAuth();
+  const { user, tenantId, role } = useAuth();
   const [messages, setMessages] = useState<BalanceChatMessageWithSender[]>([]);
   const [loading, setLoading] = useState(false);
   const userMapRef = useRef<Map<string, { name: string; email: string }>>(new Map());
+  const pendingOptimisticRef = useRef<Set<string>>(new Set());
 
   // Fetch messages when sheet opens for a balance case
   useEffect(() => {
@@ -107,6 +109,10 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
       sender_email: user.email || '',
     };
 
+    // Track this send so Realtime callback skips it
+    const fingerprint = `${user.id}:${content}`;
+    pendingOptimisticRef.current.add(fingerprint);
+
     // Immediately add to UI
     setMessages(prev => [...prev, optimisticMsg]);
 
@@ -115,10 +121,12 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
 
     if (result.error) {
       // Revert: remove optimistic message
+      pendingOptimisticRef.current.delete(fingerprint);
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       toast.error('שגיאה בשליחת ההודעה');
     } else if (result.data) {
       // Replace optimistic message and remove any Realtime duplicate
+      pendingOptimisticRef.current.delete(fingerprint);
       setMessages(prev => {
         const withoutDupes = prev.filter(m => m.id !== optimisticMsg.id && m.id !== result.data!.id);
         return [...withoutDupes, result.data!];
@@ -128,8 +136,14 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
 
   // Handle incoming Realtime messages with dedup and sender enrichment
   const handleRealtimeMessage = useCallback((rawMsg: BalanceChatMessageRow) => {
+    // Skip if this is our own message that we already show optimistically
+    const fingerprint = `${rawMsg.user_id}:${rawMsg.content}`;
+    if (pendingOptimisticRef.current.has(fingerprint)) {
+      return;
+    }
+
     setMessages(prev => {
-      // Dedup: skip if message ID already exists (from optimistic send replacement or reconnection)
+      // Dedup: skip if message ID already exists (from reconnection)
       if (prev.some(m => m.id === rawMsg.id)) {
         return prev;
       }
@@ -160,6 +174,28 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
       supabase.removeChannel(channel);
     };
   }, [open, balanceCase?.id, tenantId, handleRealtimeMessage]);
+
+  const hasAccess = balanceCase
+    ? canAccessBalanceChat(role || '', user?.id || '', { auditor_id: balanceCase.auditor_id })
+    : false;
+
+  if (!hasAccess && open) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="left" className="w-[400px] sm:max-w-[420px] p-0 flex flex-col" dir="rtl">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="text-right">שיחה</SheetTitle>
+            <SheetDescription className="text-right">
+              {balanceCase?.client?.company_name || ''}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 flex items-center justify-center p-6 text-center">
+            <p className="text-muted-foreground">אין לך הרשאה לצפות בשיחה זו</p>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -234,6 +234,8 @@ export const BALANCE_PERMISSIONS: Record<string, BalanceUserRole[]> = {
   confirm_assignment: ['admin', 'accountant'],
   open_year: ['admin'],
   revert_status: ['admin'],
+  view_chat: ['admin', 'accountant', 'bookkeeper'],
+  send_chat: ['admin', 'accountant', 'bookkeeper'],
 };
 
 /**
@@ -242,4 +244,20 @@ export const BALANCE_PERMISSIONS: Record<string, BalanceUserRole[]> = {
 export function hasBalancePermission(role: string, action: keyof typeof BALANCE_PERMISSIONS): boolean {
   const allowedRoles = BALANCE_PERMISSIONS[action];
   return allowedRoles?.includes(role as BalanceUserRole) ?? false;
+}
+
+/**
+ * Check if a user can access the balance chat.
+ * Admin/accountant: always allowed for any balance in their tenant.
+ * Bookkeeper: only if they are the assigned auditor for the balance.
+ * All other roles: no access.
+ */
+export function canAccessBalanceChat(
+  role: string,
+  userId: string,
+  balanceCase: { auditor_id: string | null }
+): boolean {
+  if (role === 'admin' || role === 'accountant') return true;
+  if (role === 'bookkeeper' && balanceCase.auditor_id === userId) return true;
+  return false;
 }
