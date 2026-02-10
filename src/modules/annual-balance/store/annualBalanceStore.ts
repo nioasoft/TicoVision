@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { annualBalanceService } from '../services/annual-balance.service';
+import { balanceChatService } from '../services/balance-chat.service';
 import type {
   AnnualBalanceSheetWithClient,
   BalanceDashboardStats,
@@ -26,9 +27,15 @@ interface AnnualBalanceState {
   // Active tab
   activeTab: 'all' | 'by-auditor';
 
+  // Unread counts: balance_id -> count (only non-zero entries)
+  unreadCounts: Record<string, number>;
+
   // Actions
   fetchCases: () => Promise<void>;
   fetchDashboardStats: () => Promise<void>;
+  fetchUnreadCounts: () => Promise<void>;
+  updateUnreadCount: (balanceId: string, count: number) => void;
+  clearUnreadCount: (balanceId: string) => void;
   setFilters: (filters: Partial<BalanceFilters>) => void;
   resetFilters: () => void;
   setPagination: (pagination: Partial<{ page: number; pageSize: number }>) => void;
@@ -56,6 +63,7 @@ export const useAnnualBalanceStore = create<AnnualBalanceState>((set, get) => ({
   filters: DEFAULT_FILTERS,
   pagination: { page: 1, pageSize: 20, total: 0 },
   activeTab: 'all',
+  unreadCounts: {},
 
   // Fetch cases with current filters and pagination
   fetchCases: async () => {
@@ -103,6 +111,36 @@ export const useAnnualBalanceStore = create<AnnualBalanceState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
     }
+  },
+
+  // Fetch unread counts for all balances the current user is tracking
+  fetchUnreadCounts: async () => {
+    const result = await balanceChatService.getUnreadCounts();
+    if (result.data) {
+      set({ unreadCounts: result.data });
+    }
+  },
+
+  // Update a single balance's unread count (from Realtime)
+  updateUnreadCount: (balanceId: string, count: number) => {
+    set((state) => {
+      const updated = { ...state.unreadCounts };
+      if (count > 0) {
+        updated[balanceId] = count;
+      } else {
+        delete updated[balanceId];
+      }
+      return { unreadCounts: updated };
+    });
+  },
+
+  // Clear unread count for a balance (optimistic on chat open)
+  clearUnreadCount: (balanceId: string) => {
+    set((state) => {
+      const updated = { ...state.unreadCounts };
+      delete updated[balanceId];
+      return { unreadCounts: updated };
+    });
   },
 
   // Set filters and refresh

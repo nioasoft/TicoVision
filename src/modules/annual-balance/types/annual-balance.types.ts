@@ -218,6 +218,7 @@ export interface BalanceFilters {
   search?: string;
   showInactive?: boolean;
   hasTaxCoding?: boolean;
+  hasUnread?: boolean;
 }
 
 // ============================================================================
