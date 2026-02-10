@@ -497,7 +497,7 @@ class AnnualBalanceService extends BaseService {
       // Get current record
       const { data: current, error: fetchError } = await supabase
         .from('annual_balance_sheets')
-        .select('status')
+        .select('status, auditor_id, client_id, year')
         .eq('id', id)
         .eq('tenant_id', tenantId)
         .single();
@@ -505,6 +505,7 @@ class AnnualBalanceService extends BaseService {
       if (fetchError) throw fetchError;
 
       const currentStatus = current.status as BalanceStatus;
+      const isFirstAssignment = !current.auditor_id;
 
       // Build update - auto-set assignment timestamp, advance status if materials_received
       const updateData: Record<string, unknown> = {
@@ -538,7 +539,7 @@ class AnnualBalanceService extends BaseService {
         });
       }
 
-      // System message in balance chat (fire-and-forget)
+      // System message + email notification (fire-and-forget)
       // Wrap lookup + send in async IIFE so the await for auditor name
       // does NOT block the parent operation (preserves fire-and-forget principle)
       void (async () => {
@@ -547,9 +548,47 @@ class AnnualBalanceService extends BaseService {
             p_user_id: auditorId,
           });
           const auditorDisplayName = auditorInfo?.[0]?.full_name || auditorInfo?.[0]?.email || '';
+          const auditorEmail = auditorInfo?.[0]?.email || '';
+
+          // System message in balance chat (existing)
           balanceChatService.sendSystemMessage(id, `מאזן שויך למבקר ${auditorDisplayName}`);
+
+          // Email notification on FIRST assignment only
+          if (isFirstAssignment && auditorEmail) {
+            const { data: clientInfo } = await supabase
+              .from('clients')
+              .select('company_name, tax_id')
+              .eq('id', current.client_id)
+              .single();
+
+            const clientName = clientInfo?.company_name || '';
+            const taxId = clientInfo?.tax_id || '';
+            const year = current.year;
+            const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ticovision.vercel.app';
+
+            await supabase.functions.invoke('send-letter', {
+              body: {
+                simpleMode: true,
+                recipientEmails: [auditorEmail],
+                recipientName: auditorDisplayName,
+                subject: `תיק מאזן שנתי חדש שויך אליך - ${clientName}`,
+                customText: [
+                  `שלום ${auditorDisplayName},`,
+                  '',
+                  'תיק מאזן שנתי חדש שויך אליך:',
+                  '',
+                  `לקוח: ${clientName}`,
+                  `ח.פ./ע.מ.: ${taxId}`,
+                  `שנת מס: ${year}`,
+                  '',
+                  `לצפייה בתיק: ${appUrl}/annual-balance`,
+                ].join('\n'),
+              },
+            });
+            console.log(`[assignAuditor] Email sent to ${auditorEmail} for balance ${id}`);
+          }
         } catch {
-          // Non-critical — silently ignore
+          // Non-critical — silently ignore system message and email failures
         }
       })();
 
