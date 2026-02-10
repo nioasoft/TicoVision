@@ -6,12 +6,14 @@
  *
  * Features:
  * - Fetches messages when opened for a specific balance case
- * - Optimistic message sending (immediate UI update, revert on error)
+ * - Real-time message delivery via Supabase Realtime subscription
+ * - Optimistic message sending with dedup against Realtime race
+ * - Sender enrichment for incoming Realtime messages via userMap
  * - Loading and empty states
  * - Hebrew RTL layout throughout
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -20,9 +22,10 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { balanceChatService } from '../services/balance-chat.service';
-import type { BalanceChatMessageWithSender } from '../types/balance-chat.types';
+import type { BalanceChatMessageRow, BalanceChatMessageWithSender } from '../types/balance-chat.types';
 import type { AnnualBalanceSheetWithClient } from '../types/annual-balance.types';
 import { BalanceChatMessages } from './BalanceChatMessages';
 import { BalanceChatInput } from './BalanceChatInput';
@@ -38,9 +41,10 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
   onOpenChange,
   balanceCase,
 }) => {
-  const { user } = useAuth();
+  const { user, tenantId } = useAuth();
   const [messages, setMessages] = useState<BalanceChatMessageWithSender[]>([]);
   const [loading, setLoading] = useState(false);
+  const userMapRef = useRef<Map<string, { name: string; email: string }>>(new Map());
 
   // Fetch messages when sheet opens for a balance case
   useEffect(() => {
@@ -58,6 +62,21 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
         toast.error('שגיאה בטעינת ההודעות');
       } else {
         setMessages(result.data ?? []);
+
+        // Build user map for Realtime message enrichment
+        const map = new Map<string, { name: string; email: string }>();
+        for (const msg of result.data ?? []) {
+          if (!map.has(msg.user_id)) {
+            map.set(msg.user_id, { name: msg.sender_name, email: msg.sender_email });
+          }
+        }
+        if (user) {
+          map.set(user.id, {
+            name: (user.user_metadata?.full_name as string) || user.email || '',
+            email: user.email || '',
+          });
+        }
+        userMapRef.current = map;
       }
       setLoading(false);
     };
@@ -67,7 +86,7 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [open, balanceCase?.id]);
+  }, [open, balanceCase?.id, user]);
 
   // Optimistic send handler
   const handleSend = useCallback(async (content: string) => {
@@ -99,10 +118,48 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       toast.error('שגיאה בשליחת ההודעה');
     } else if (result.data) {
-      // Replace optimistic with real server data
-      setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? result.data! : m));
+      // Replace optimistic message and remove any Realtime duplicate
+      setMessages(prev => {
+        const withoutDupes = prev.filter(m => m.id !== optimisticMsg.id && m.id !== result.data!.id);
+        return [...withoutDupes, result.data!];
+      });
     }
   }, [balanceCase, user]);
+
+  // Handle incoming Realtime messages with dedup and sender enrichment
+  const handleRealtimeMessage = useCallback((rawMsg: BalanceChatMessageRow) => {
+    setMessages(prev => {
+      // Dedup: skip if message ID already exists (from optimistic send replacement or reconnection)
+      if (prev.some(m => m.id === rawMsg.id)) {
+        return prev;
+      }
+
+      // Enrich with sender info from userMap
+      const sender = userMapRef.current.get(rawMsg.user_id);
+      const enriched: BalanceChatMessageWithSender = {
+        ...rawMsg,
+        sender_name: sender?.name ?? 'משתמש',
+        sender_email: sender?.email ?? '',
+      };
+
+      return [...prev, enriched];
+    });
+  }, []);
+
+  // Realtime subscription: subscribe when sheet opens, clean up when it closes
+  useEffect(() => {
+    if (!open || !balanceCase?.id || !tenantId) return;
+
+    const channel = balanceChatService.subscribeToBalanceChat(
+      tenantId,
+      balanceCase.id,
+      handleRealtimeMessage
+    );
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [open, balanceCase?.id, tenantId, handleRealtimeMessage]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
