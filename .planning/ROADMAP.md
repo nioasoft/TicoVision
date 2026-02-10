@@ -105,10 +105,10 @@ Plans:
   2. Unread count for each user per balance is stored in a denormalized column (not calculated via COUNT queries)
   3. Unread counter increments via database trigger when new message is inserted
   4. Unread counter resets to zero when user opens chat panel
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 06-01: TBD during planning
+- [ ] 06-01-PLAN.md — Create read tracking table with trigger, RLS, service methods (markAsRead + getUnreadCounts), and UI integration
 
 ### Phase 7: Unread Indicators
 **Goal**: Users can see which balances have unread messages and filter the table to show only those with unreads
