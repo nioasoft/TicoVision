@@ -259,6 +259,82 @@ class BalanceChatService extends BaseService {
       )
       .subscribe();
   }
+
+  /**
+   * Mark all messages as read for the current user in a specific balance chat.
+   * Uses upsert (ON CONFLICT UPDATE) to either create a tracking row (first visit)
+   * or reset unread_count to 0 (subsequent visits).
+   *
+   * Called when BalanceChatSheet opens for a balance.
+   *
+   * @param balanceId - The balance sheet ID to mark as read
+   * @returns null on success, error on failure
+   */
+  async markAsRead(balanceId: string): Promise<ServiceResponse<null>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const { error } = await supabase
+        .from('balance_chat_read_tracking')
+        .upsert(
+          {
+            tenant_id: tenantId,
+            balance_id: balanceId,
+            user_id: user.id,
+            unread_count: 0,
+            last_read_at: new Date().toISOString(),
+          },
+          { onConflict: 'tenant_id,balance_id,user_id' }
+        );
+
+      if (error) throw error;
+      return { data: null, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
+   * Get unread message counts for all balances the current user is tracking.
+   * Returns a map of balance_id -> unread_count for balances with count > 0.
+   *
+   * Designed for Phase 7 badge display in the balance table.
+   * Single query, O(1) per badge lookup via the returned map.
+   *
+   * @returns Record mapping balance_id to unread count (only non-zero entries)
+   */
+  async getUnreadCounts(): Promise<ServiceResponse<Record<string, number>>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return { data: {}, error: null };
+
+      const { data, error } = await supabase
+        .from('balance_chat_read_tracking')
+        .select('balance_id, unread_count')
+        .eq('tenant_id', tenantId)
+        .eq('user_id', user.id)
+        .gt('unread_count', 0);
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      for (const row of data ?? []) {
+        counts[row.balance_id] = row.unread_count;
+      }
+      return { data: counts, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
 }
 
 /** Singleton instance for balance chat operations */

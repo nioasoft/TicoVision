@@ -81,6 +81,11 @@ export const BalanceChatSheet: React.FC<BalanceChatSheetProps> = ({
         userMapRef.current = map;
       }
       setLoading(false);
+
+      // Mark as read AFTER messages are loaded (minimizes race condition window)
+      if (!cancelled) {
+        balanceChatService.markAsRead(balanceCase.id);
+      }
     };
 
     fetchMessages();
