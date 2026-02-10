@@ -49,25 +49,25 @@ export default function ClientProfilePage() {
   }, [client, refresh]);
 
   const handleAddContact = useCallback(async (clientId: string, contactData: CreateClientContactDto) => {
-    const result = await clientService.addClientContact(clientId, contactData);
+    const result = await clientService.addContact(clientId, contactData);
     if (!result.error) refresh();
     return !result.error;
   }, [refresh]);
 
-  const handleUpdateContact = useCallback(async (clientId: string, contactId: string, data: Partial<CreateClientContactDto>) => {
-    const result = await clientService.updateClientContact(clientId, contactId, data);
+  const handleUpdateContact = useCallback(async (clientId: string, assignmentId: string, data: Partial<CreateClientContactDto>) => {
+    const result = await clientService.updateContact(assignmentId, data);
     if (!result.error) refresh();
     return !result.error;
   }, [refresh]);
 
-  const handleDeleteContact = useCallback(async (clientId: string, contactId: string) => {
-    const result = await clientService.deleteClientContact(clientId, contactId);
+  const handleDeleteContact = useCallback(async (clientId: string, assignmentId: string) => {
+    const result = await clientService.deleteContact(assignmentId);
     if (!result.error) refresh();
     return !result.error;
   }, [refresh]);
 
   const handleSetPrimaryContact = useCallback(async (clientId: string, contactId: string) => {
-    const result = await clientService.setPrimaryContact(clientId, contactId);
+    const result = await clientService.setPrimaryContact(contactId);
     if (!result.error) refresh();
     return !result.error;
   }, [refresh]);
