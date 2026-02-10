@@ -91,10 +91,10 @@ Plans:
   2. Accountants (Chali, Ornit roles) can view and send messages for all balances in their tenant
   3. Admin (Tiko role) can view and send messages for all balances in their tenant
   4. Users attempting to access chats they don't have permission for see an appropriate error message
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 05-01: TBD during planning
+- [ ] 05-01-PLAN.md — Role-aware RLS migration + canAccessBalanceChat helper + UI permission gating
 
 ### Phase 6: Read Tracking
 **Goal**: Messages are marked as read when user opens the chat, with denormalized counters for performance
