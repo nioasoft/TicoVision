@@ -18,7 +18,8 @@ import type {
   BalanceFilters,
   AuditorSummary,
 } from '../types/annual-balance.types';
-import { BALANCE_STATUSES, isValidTransition } from '../types/annual-balance.types';
+import { BALANCE_STATUSES, BALANCE_STATUS_CONFIG, isValidTransition } from '../types/annual-balance.types';
+import { balanceChatService } from './balance-chat.service';
 
 const CLIENT_SELECT = 'id, company_name, company_name_hebrew, tax_id, client_type, tax_coding';
 
@@ -431,6 +432,14 @@ class AnnualBalanceService extends BaseService {
         console.error('Failed to log status history:', historyError);
       }
 
+      // System message in balance chat (fire-and-forget)
+      const fromLabel = BALANCE_STATUS_CONFIG[currentStatus].label;
+      const toLabel = BALANCE_STATUS_CONFIG[newStatus].label;
+      const systemContent = isRevert
+        ? `סטטוס הוחזר: ${fromLabel} → ${toLabel}`
+        : `סטטוס שונה: ${fromLabel} → ${toLabel}`;
+      balanceChatService.sendSystemMessage(id, systemContent);
+
       await this.logAction('update_balance_status', id, {
         from_status: currentStatus,
         to_status: newStatus,
@@ -464,6 +473,9 @@ class AnnualBalanceService extends BaseService {
         received_at: receivedAt,
         backup_link: backupLink,
       });
+
+      // System message in balance chat (fire-and-forget)
+      balanceChatService.sendSystemMessage(balanceSheetId, 'חומרים התקבלו');
 
       return { data: undefined, error: null };
     } catch (error) {
@@ -525,6 +537,21 @@ class AnnualBalanceService extends BaseService {
           note: `שויך למבקר`,
         });
       }
+
+      // System message in balance chat (fire-and-forget)
+      // Wrap lookup + send in async IIFE so the await for auditor name
+      // does NOT block the parent operation (preserves fire-and-forget principle)
+      void (async () => {
+        try {
+          const { data: auditorInfo } = await supabase.rpc('get_user_with_auth', {
+            p_user_id: auditorId,
+          });
+          const auditorDisplayName = auditorInfo?.[0]?.full_name || auditorInfo?.[0]?.email || '';
+          balanceChatService.sendSystemMessage(id, `מאזן שויך למבקר ${auditorDisplayName}`);
+        } catch {
+          // Non-critical — silently ignore
+        }
+      })();
 
       await this.logAction('assign_auditor', id, {
         auditor_id: auditorId,
@@ -777,6 +804,9 @@ class AnnualBalanceService extends BaseService {
         changed_by: user?.id ?? '',
         note: 'מבקר אישר קבלת תיק',
       });
+
+      // System message in balance chat (fire-and-forget)
+      balanceChatService.sendSystemMessage(id, 'מבקר אישר קבלת תיק');
 
       await this.logAction('confirm_assignment', id);
 

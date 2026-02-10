@@ -195,6 +195,49 @@ class BalanceChatService extends BaseService {
   }
 
   /**
+   * Insert a system-generated message into the balance chat.
+   * Used for auditor assignment notifications, status change records,
+   * and auditor confirmation events.
+   * Non-critical: errors are logged but do not propagate to caller.
+   *
+   * @param balanceId - The balance sheet ID
+   * @param content - Hebrew message text describing the event
+   * @returns null on success, error on failure
+   */
+  async sendSystemMessage(
+    balanceId: string,
+    content: string
+  ): Promise<ServiceResponse<null>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return { data: null, error: new Error('User not authenticated') };
+      }
+
+      const { error } = await supabase
+        .from('balance_chat_messages')
+        .insert({
+          tenant_id: tenantId,
+          balance_id: balanceId,
+          user_id: user.id,
+          content,
+          message_type: 'system',
+        });
+
+      if (error) throw error;
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Failed to send system message:', error);
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
    * Get the count of active (non-deleted) messages for a balance sheet.
    * Uses head:true for an efficient count-only query (no row data transferred).
    *
