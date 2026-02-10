@@ -133,10 +133,10 @@ Plans:
   2. When balance status changes, a system message records the change with user and timestamp
   3. System messages are visually distinct from user messages (different background or icon)
   4. System messages cannot be deleted or edited by users
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 08-01: TBD during planning
+- [ ] 08-01-PLAN.md — Add sendSystemMessage service method, wire into 4 annualBalanceService events, and render system messages as centered pills in chat UI
 
 ### Phase 9: Notifications
 **Goal**: Users receive toast notifications for new messages and email notification on first auditor assignment
