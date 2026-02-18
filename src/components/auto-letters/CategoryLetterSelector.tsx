@@ -28,6 +28,7 @@ interface CategoryLetterSelectorProps {
   selectedLetterTypeId: string | null;
   onSelectionChange: (category: AutoLetterCategory, letterTypeId: string) => void;
   disabled?: boolean;
+  visibleCategories?: AutoLetterCategory[];
 }
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -48,8 +49,12 @@ export function CategoryLetterSelector({
   selectedLetterTypeId,
   onSelectionChange,
   disabled = false,
+  visibleCategories,
 }: CategoryLetterSelectorProps) {
-  const enabledCategories = getEnabledCategories();
+  const allEnabled = getEnabledCategories();
+  const enabledCategories = visibleCategories
+    ? allEnabled.filter(cat => visibleCategories.includes(cat.id))
+    : allEnabled;
 
   // Track which category is expanded - start with all closed
   const [expandedCategory, setExpandedCategory] = useState<AutoLetterCategory | null>(null);

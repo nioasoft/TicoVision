@@ -125,6 +125,21 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
   },
 ];
 
+/** Maps category ID to its permission key for access control */
+export const CATEGORY_PERMISSION_MAP: Record<AutoLetterCategory, string> = {
+  company_onboarding: 'documents:auto-letters:company_onboarding',
+  setting_dates: 'documents:auto-letters:setting_dates',
+  missing_documents: 'documents:auto-letters:missing_documents',
+  reminder_letters: 'documents:auto-letters:reminder_letters',
+  bank_approvals: 'documents:auto-letters:bank_approvals',
+  mortgage_approvals: 'documents:auto-letters:mortgage_approvals',
+  tax_notices: 'documents:auto-letters:tax_notices',
+  company_registrar: 'documents:auto-letters:company_registrar',
+  audit_completion: 'documents:auto-letters:audit_completion',
+  tax_advances: 'documents:auto-letters:tax_advances',
+  protocols: 'documents:auto-letters:protocols',
+} as const;
+
 // ============================================================================
 // TEMPLATE TYPE DEFINITIONS
 // ============================================================================

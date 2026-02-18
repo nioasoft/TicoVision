@@ -9,7 +9,7 @@
  * - אישורים שנתיים (Annual Approvals) - Future
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -36,10 +36,13 @@ import { fileUploadService } from '@/services/file-upload.service';
 import { clientService } from '@/services';
 import { groupFeeService, type ClientGroup } from '@/services/group-fee.service';
 import { TenantContactService, type TenantContact } from '@/services/tenant-contact.service';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   createInitialAutoLetterFormState,
   getLetterTypeById,
   getTemplateType,
+  AUTO_LETTER_CATEGORIES,
+  CATEGORY_PERMISSION_MAP,
   validateCutoffDate,
   validateMeetingReminder,
   validateGeneralDeadline,
@@ -77,8 +80,30 @@ import type { Client } from '@/services/client.service';
 const templateService = new TemplateService();
 
 export function AutoLettersPage() {
+  // Permissions
+  const { isMenuVisible } = usePermissions();
+
+  // Compute which categories the current user can see
+  const visibleCategories = useMemo(() =>
+    AUTO_LETTER_CATEGORIES
+      .filter(cat => cat.enabled && isMenuVisible(CATEGORY_PERMISSION_MAP[cat.id]))
+      .map(cat => cat.id),
+    [isMenuVisible]
+  );
+
   // Form state
   const [formState, setFormState] = useState<AutoLetterFormState>(createInitialAutoLetterFormState());
+
+  // Guard: if selected category is not visible, reset to first visible
+  useEffect(() => {
+    if (visibleCategories.length > 0 && !visibleCategories.includes(formState.selectedCategory)) {
+      setFormState(prev => ({
+        ...prev,
+        selectedCategory: visibleCategories[0],
+        selectedLetterTypeId: null,
+      }));
+    }
+  }, [visibleCategories, formState.selectedCategory]);
 
   // Client/Group/Contact data
   const [clients, setClients] = useState<Client[]>([]);
@@ -1087,6 +1112,7 @@ export function AutoLettersPage() {
             selectedLetterTypeId={formState.selectedLetterTypeId}
             onSelectionChange={handleSelectionChange}
             disabled={generating}
+            visibleCategories={visibleCategories}
           />
         </div>
 

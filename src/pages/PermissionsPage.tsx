@@ -73,6 +73,21 @@ const PERMISSION_GROUPS = [
     permissions: ['capital-declaration', 'capital-declaration:create', 'capital-declaration:manage'],
   },
   {
+    key: 'documents',
+    label: 'מכתבים ואישורים',
+    permissions: [
+      'documents', 'documents:foreign-workers', 'documents:tzlul-approvals',
+      'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
+      'documents:tax-advances', 'documents:auto-letters',
+      'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates',
+      'documents:auto-letters:missing_documents', 'documents:auto-letters:reminder_letters',
+      'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
+      'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar',
+      'documents:auto-letters:audit_completion', 'documents:auto-letters:tax_advances',
+      'documents:auto-letters:protocols', 'documents:follow-ups',
+    ],
+  },
+  {
     key: 'other',
     label: 'נוסף',
     permissions: ['foreign-workers', 'files', 'users', 'settings'],

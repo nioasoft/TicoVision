@@ -74,6 +74,18 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'documents:commitment-letters', route: '/documents/commitment-letters', label: 'מכתבי התחייבות', parent: 'documents' },
   { menu: 'documents:tax-advances', route: '/tax-advances-2026', label: 'מקדמות מ"ה שוטפות 2026', parent: 'documents' },
   { menu: 'documents:auto-letters', route: '/auto-letters', label: 'מכתבים אוטומטיים', parent: 'documents' },
+  // Auto-Letters Category Permissions
+  { menu: 'documents:auto-letters:company_onboarding', route: '/auto-letters', label: 'קליטת חברה', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:setting_dates', route: '/auto-letters', label: 'קביעת מועדים', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:missing_documents', route: '/auto-letters', label: 'מסמכים חסרים', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:reminder_letters', route: '/auto-letters', label: 'מכתבי זירוז', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:bank_approvals', route: '/auto-letters', label: 'אישורי הכנסות', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:mortgage_approvals', route: '/auto-letters', label: 'אישורי משכנתא', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:tax_notices', route: '/auto-letters', label: 'הודעות מס', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:company_registrar', route: '/auto-letters', label: 'רשם החברות', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:audit_completion', route: '/auto-letters', label: 'סיום ביקורת דוחות', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:tax_advances', route: '/auto-letters', label: 'מקדמות מ"ה', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:protocols', route: '/auto-letters', label: 'פרוטוקולים', parent: 'documents:auto-letters' },
   { menu: 'documents:follow-ups', route: '/follow-ups', label: 'פניות/זירוז/דחיפה', parent: 'documents' },
   // Legacy route for backward compatibility
   { menu: 'foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים (ישן)' },
@@ -102,6 +114,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // Documents System
     'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
     'documents:tax-advances', 'documents:auto-letters', 'documents:follow-ups',
+    // Auto-Letters Categories
+    'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates', 'documents:auto-letters:missing_documents',
+    'documents:auto-letters:reminder_letters', 'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
+    'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar', 'documents:auto-letters:audit_completion',
+    'documents:auto-letters:tax_advances', 'documents:auto-letters:protocols',
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
@@ -114,6 +131,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // Documents System
     'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals',
     'documents:auto-letters',
+    // Auto-Letters Categories
+    'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates', 'documents:auto-letters:missing_documents',
+    'documents:auto-letters:reminder_letters', 'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
+    'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar', 'documents:auto-letters:audit_completion',
+    'documents:auto-letters:tax_advances', 'documents:auto-letters:protocols',
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
