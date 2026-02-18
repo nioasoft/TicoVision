@@ -61,7 +61,12 @@ export function FileUploadZone({
     onDrop,
     accept: {
       'image/jpeg': ['.jpg', '.jpeg'],
-      'application/pdf': ['.pdf']
+      'image/png': ['.png'],
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
     },
     maxSize: MAX_FILE_SIZE,
     multiple,
@@ -104,7 +109,7 @@ export function FileUploadZone({
             </p>
 
             <p className="text-xs text-gray-500">
-              JPG, PDF בלבד - עד 1MB
+              JPG, PNG, PDF, Word, Excel - עד 15MB
             </p>
           </div>
         </div>

@@ -3,7 +3,15 @@
  * Types for file upload system - client documents, business certificates, etc.
  */
 
-export type FileType = 'image/jpeg' | 'image/jpg' | 'application/pdf';
+export type FileType =
+  | 'image/jpeg'
+  | 'image/jpg'
+  | 'image/png'
+  | 'application/pdf'
+  | 'application/msword'
+  | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  | 'application/vnd.ms-excel'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 export type UploadContext = 'client_form' | 'fee_calculation' | 'bookkeeping';
 
@@ -80,7 +88,12 @@ export interface FileVersionInfo {
 export const ALLOWED_FILE_TYPES: FileType[] = [
   'image/jpeg',
   'image/jpg',
-  'application/pdf'
+  'image/png',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ];
 
 export const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
@@ -88,7 +101,12 @@ export const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB in bytes
 export const FILE_TYPE_LABELS: Record<FileType, string> = {
   'image/jpeg': 'תמונה (JPG)',
   'image/jpg': 'תמונה (JPG)',
-  'application/pdf': 'מסמך PDF'
+  'image/png': 'תמונה (PNG)',
+  'application/pdf': 'מסמך PDF',
+  'application/msword': 'מסמך Word',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'מסמך Word',
+  'application/vnd.ms-excel': 'גיליון Excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'גיליון Excel',
 };
 
 export const UPLOAD_CONTEXT_LABELS: Record<UploadContext, string> = {
@@ -105,7 +123,7 @@ export function validateFile(file: File): FileValidation {
   if (!ALLOWED_FILE_TYPES.includes(file.type as FileType)) {
     return {
       valid: false,
-      error: `סוג קובץ לא נתמך. יש להעלות רק JPG או PDF`
+      error: `סוג קובץ לא נתמך. יש להעלות JPG, PNG, PDF, Word או Excel`
     };
   }
 
@@ -114,7 +132,7 @@ export function validateFile(file: File): FileValidation {
     const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
     return {
       valid: false,
-      error: `הקובץ גדול מדי (${sizeMB}MB). גודל מקסימלי: 1MB`
+      error: `הקובץ גדול מדי (${sizeMB}MB). גודל מקסימלי: 15MB`
     };
   }
 

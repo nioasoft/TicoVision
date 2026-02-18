@@ -4,7 +4,7 @@
  */
 
 import { useEffect } from 'react';
-import { X, Loader2, Download } from 'lucide-react';
+import { X, Loader2, Download, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,10 @@ export function FilePreview({ file, open, onClose }: FilePreviewProps) {
 
   const isImage = file.file_type.startsWith('image/');
   const isPDF = file.file_type === 'application/pdf';
+  const isOfficeDoc = file.file_type.includes('msword') ||
+    file.file_type.includes('wordprocessingml') ||
+    file.file_type.includes('ms-excel') ||
+    file.file_type.includes('spreadsheetml');
 
   const handleDownload = () => {
     if (previewUrl) {
@@ -110,6 +114,15 @@ export function FilePreview({ file, open, onClose }: FilePreviewProps) {
                   title={file.file_name}
                   className="w-full h-[calc(90vh-200px)] rounded-lg border"
                 />
+              )}
+
+              {isOfficeDoc && (
+                <div className="flex flex-col items-center justify-center p-12 text-center gap-4">
+                  <FileText className="h-16 w-16 text-gray-400" />
+                  <p className="text-sm text-gray-500">
+                    לא ניתן להציג תצוגה מקדימה לקובץ זה. ניתן להוריד אותו.
+                  </p>
+                </div>
               )}
             </>
           )}
