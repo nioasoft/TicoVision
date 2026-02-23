@@ -4,7 +4,7 @@
  * This file contains all type definitions for the 5 foreign workers documents:
  * 1. Accountant Turnover Report (דוח מחזורים רו"ח)
  * 2. Israeli Workers Report (דוח עובדים ישראליים)
- * 3. Living Business 2025 (עסק חי 2025)
+ * 3. Living Business (עסק חי)
  * 4. Turnover/Costs Approval (אישור מחזור/עלויות)
  * 5. Salary Report (דוח שכר)
  */
@@ -71,12 +71,15 @@ export interface IsraeliWorkersVariables extends ForeignWorkerSharedData {
 }
 
 // ============================================================================
-// DOCUMENT #3: Living Business 2025 (עסק חי 2025)
+// DOCUMENT #3: Living Business (עסק חי)
 // ============================================================================
 
 export interface LivingBusinessVariables extends ForeignWorkerSharedData {
   /** Number of foreign expert workers the company will employ */
   foreign_experts_count: number;
+
+  /** Certificate year - the document will display "{certificate_year - 1} – {certificate_year}" */
+  certificate_year: number;
 }
 
 // ============================================================================
@@ -282,7 +285,7 @@ export const FOREIGN_WORKER_TABS: ForeignWorkerTab[] = [
   },
   {
     index: 2,
-    label: 'עסק חי 2025',
+    label: 'עסק חי',
     description: 'אישור עסק חי למשרד הפנים',
     templateType: 'foreign_worker_living_business',
   },
@@ -338,7 +341,9 @@ export function validateLivingBusiness(data: Partial<LivingBusinessVariables>): 
   return (
     validateSharedData(data) &&
     typeof data.foreign_experts_count === 'number' &&
-    data.foreign_experts_count > 0
+    data.foreign_experts_count > 0 &&
+    typeof data.certificate_year === 'number' &&
+    data.certificate_year >= 2025
   );
 }
 

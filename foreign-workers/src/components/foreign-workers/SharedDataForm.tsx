@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import type { Client } from '@/types/client.types';
@@ -32,6 +32,11 @@ export function SharedDataForm({
     value.document_date ? new Date(value.document_date) : undefined
   );
 
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   // Load clients on mount
   useEffect(() => {
     loadClients();
@@ -42,8 +47,8 @@ export function SharedDataForm({
     if (selectedClientId) {
       const client = clients.find((c) => c.id === selectedClientId);
       if (client) {
-        onChange({
-          ...value,
+        onChangeRef.current({
+          ...valueRef.current,
           company_name: client.company_name,
           tax_id: client.tax_id
         });

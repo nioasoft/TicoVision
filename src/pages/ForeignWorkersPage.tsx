@@ -104,7 +104,7 @@ function ForeignWorkersPageContent({
     documentData: {
       accountantTurnover: {},
       israeliWorkers: {},
-      livingBusiness: {},
+      livingBusiness: { certificate_year: new Date().getFullYear() },
       turnoverApproval: {},
       salaryReport: {}
     }

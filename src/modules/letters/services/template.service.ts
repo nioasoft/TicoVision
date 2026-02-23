@@ -18,6 +18,7 @@ import type {
   ForeignWorkerVariables,
   AccountantTurnoverVariables,
   IsraeliWorkersVariables,
+  LivingBusinessVariables,
   TurnoverApprovalVariables,
   SalaryReportVariables,
   MonthlyTurnover,
@@ -61,7 +62,7 @@ import { parseTextToHTML as parseMarkdownToHTML, replaceVariables as replaceVars
 const FOREIGN_WORKER_LABELS: Record<ForeignWorkerTemplateType, string> = {
   'foreign_worker_accountant_turnover': 'דוח מחזורים רו"ח',
   'foreign_worker_israeli_workers': 'דוח עובדים ישראליים',
-  'foreign_worker_living_business': 'עסק חי 2025',
+  'foreign_worker_living_business': 'עסק חי',
   'foreign_worker_turnover_approval': 'אישור מחזור/עלויות',
   'foreign_worker_salary_report': 'דוח שכר'
 };
@@ -1948,7 +1949,9 @@ export class TemplateService extends BaseService {
           generated_content_html: fullHtml,
           generated_content_text: plainText,
           payment_link: null, // No payment links for informational documents
-          subject: FOREIGN_WORKER_LABELS[templateType], // Email subject from label
+          subject: templateType === 'foreign_worker_living_business'
+            ? `עסק חי ${processedVariables.certificate_year}`
+            : FOREIGN_WORKER_LABELS[templateType],
           created_at: new Date().toISOString(),
           created_by: (await supabase.auth.getUser()).data.user?.id,
           created_by_name: (await supabase.auth.getUser()).data.user?.user_metadata?.full_name || (await supabase.auth.getUser()).data.user?.email
@@ -2081,8 +2084,13 @@ export class TemplateService extends BaseService {
           : '';
         break;
 
-      // living_business doesn't need dynamic content
-      case 'foreign_worker_living_business':
+      case 'foreign_worker_living_business': {
+        const livingVars = variables as LivingBusinessVariables;
+        const certYear = livingVars.certificate_year || new Date().getFullYear();
+        processed.certificate_year = certYear;
+        processed.previous_year = certYear - 1;
+        break;
+      }
       default:
         break;
     }

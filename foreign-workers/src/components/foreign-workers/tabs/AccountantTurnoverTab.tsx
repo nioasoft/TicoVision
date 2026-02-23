@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { AccountantTurnoverVariables, MonthlyTurnover } from '@/types/foreign-workers.types';
 
 interface AccountantTurnoverTabProps {
@@ -22,10 +22,15 @@ export function AccountantTurnoverTab({ value, onChange, disabled }: AccountantT
     value.monthly_turnover || []
   );
 
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   useEffect(() => {
     if (monthlyTurnover.length > 0) {
-      onChange({
-        ...value,
+      onChangeRef.current({
+        ...valueRef.current,
         monthly_turnover: monthlyTurnover
       });
     }

@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Calendar } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { SalaryReportVariables, WorkerData } from '@/types/foreign-workers.types';
 
 interface SalaryReportTabProps {
@@ -15,10 +15,15 @@ interface SalaryReportTabProps {
 export function SalaryReportTab({ value, onChange, disabled }: SalaryReportTabProps) {
   const [workersData, setWorkersData] = useState<WorkerData[]>(value.workers_data || []);
 
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   useEffect(() => {
     if (workersData.length > 0) {
-      onChange({
-        ...value,
+      onChangeRef.current({
+        ...valueRef.current,
         workers_data: workersData
       });
     }

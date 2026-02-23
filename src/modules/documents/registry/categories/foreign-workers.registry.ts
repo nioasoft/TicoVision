@@ -84,7 +84,7 @@ export const foreignWorkersTypes: DocumentType[] = [
   {
     id: 'foreign-workers:living-business',
     categoryId: 'foreign-workers',
-    name: 'עסק חי 2025',
+    name: 'עסק חי',
     nameEnglish: 'Living Business',
     description: 'הצהרה על עסק פעיל עם מומחים זרים',
     templatePath: 'foreign-workers/living-business.html',
@@ -95,6 +95,12 @@ export const foreignWorkersTypes: DocumentType[] = [
     variablesSchema: {
       shared: ['company_name', 'tax_id', 'document_date'],
       specific: [
+        {
+          key: 'certificate_year',
+          label: 'שנת אישור',
+          type: 'number',
+          required: true,
+        },
         {
           key: 'foreign_experts_count',
           label: 'מספר מומחים זרים',

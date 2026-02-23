@@ -1,9 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Calculator } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { IsraeliWorkersVariables, MonthlyWorkers } from '@/types/foreign-workers.types';
 
 interface IsraeliWorkersTabProps {
@@ -23,6 +22,11 @@ export function IsraeliWorkersTab({ value, onChange, disabled }: IsraeliWorkersT
   );
   const [averageWorkers, setAverageWorkers] = useState<number>(value.average_workers || 0);
 
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   useEffect(() => {
     // Calculate average automatically
     if (israeliWorkers.length > 0) {
@@ -30,8 +34,8 @@ export function IsraeliWorkersTab({ value, onChange, disabled }: IsraeliWorkersT
       const avg = Math.round((total / israeliWorkers.length) * 10) / 10; // Round to 1 decimal
       setAverageWorkers(avg);
 
-      onChange({
-        ...value,
+      onChangeRef.current({
+        ...valueRef.current,
         israeli_workers: israeliWorkers,
         average_workers: avg
       });
