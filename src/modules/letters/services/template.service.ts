@@ -4154,7 +4154,7 @@ export class TemplateService extends BaseService {
           processed.subjects_section = `
 <tr>
     <td style="padding-top: 15px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: בקשה להחזר מס בגין</span><br/><span style="opacity: 0;">הנדון: </span><span>${clientName}</span><br/><span style="opacity: 0;">הנדון: </span><span>ח.פ. ${clientId} לשנת המס ${taxYear}</span></div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: בקשה להחזר מס בגין</span><br/><span style="opacity: 0;">הנדון: </span><span>${clientName} ח.פ. ${clientId} לשנת המס ${taxYear}</span></div>
     </td>
 </tr>`;
         }
