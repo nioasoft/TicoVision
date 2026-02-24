@@ -24,6 +24,7 @@ import type {
   VatFileOpenedVariables,
   AccountantAppointmentVariables,
   TaxAdvancesRateNotificationVariables,
+  TaxRefundVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -71,6 +72,9 @@ import { AccountantAppointmentForm } from './forms/protocols';
 
 // Tax Advances forms
 import { TaxAdvancesRateNotificationForm } from './forms/tax-advances';
+
+// Tax Refund forms
+import { TaxRefundForm } from './forms/tax-refund';
 
 interface FormRendererProps {
   category: AutoLetterCategory;
@@ -136,6 +140,9 @@ export function FormRenderer({
 
     case 'tax_advances':
       return renderTaxAdvancesForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+
+    case 'tax_refund':
+      return renderTaxRefundForm(letterTypeId, value, onChange, disabled, companyName, companyId);
 
     default:
       return null;
@@ -534,7 +541,6 @@ function renderTaxAdvancesForm(
   onChange: (data: Record<string, unknown>) => void,
   disabled?: boolean,
   companyName?: string,
-  _companyId?: string
 ) {
   switch (letterTypeId) {
     case 'rate_notification':
@@ -556,4 +562,24 @@ function renderTaxAdvancesForm(
         </Card>
       );
   }
+}
+
+function renderTaxRefundForm(
+  _letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string
+) {
+  // All 3 tax refund types share the same form
+  return (
+    <TaxRefundForm
+      value={value as Partial<TaxRefundVariables>}
+      onChange={(data) => onChange(data as Record<string, unknown>)}
+      disabled={disabled}
+      companyName={companyName}
+      companyId={companyId}
+    />
+  );
 }

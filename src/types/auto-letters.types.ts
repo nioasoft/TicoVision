@@ -15,7 +15,7 @@ import type {
   PriceQuoteVariables,
   PreviousAccountantRequestVariables,
 } from './company-onboarding.types';
-import { VAT_REGISTRATION_DEFAULT_SUBJECT, PRICE_QUOTE_DEFAULT_SUBJECT, PREVIOUS_ACCOUNTANT_REQUEST_DEFAULT_SUBJECT } from './company-onboarding.types';
+import { VAT_REGISTRATION_DEFAULT_SUBJECT, PRICE_QUOTE_DEFAULT_SUBJECT } from './company-onboarding.types';
 
 // ============================================================================
 // CATEGORY DEFINITIONS
@@ -33,14 +33,15 @@ export type AutoLetterCategory =
   | 'company_registrar'    // רשם החברות
   | 'audit_completion'     // סיום ביקורת דוחות כספיים
   | 'tax_advances'         // מקדמות מ"ה
-  | 'protocols';           // פרוטוקולים
+  | 'protocols'            // פרוטוקולים
+  | 'tax_refund';          // החזרי מס
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
   id: AutoLetterCategory;
   label: string;
   description: string;
-  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck' | 'Banknote' | 'FileSignature';
+  icon: 'Building2' | 'Calendar' | 'FileSearch' | 'FileCheck' | 'Bell' | 'Landmark' | 'Home' | 'Receipt' | 'ClipboardCheck' | 'Banknote' | 'FileSignature' | 'ReceiptText';
   enabled: boolean;
 }
 
@@ -123,6 +124,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     icon: 'FileSignature',
     enabled: true,
   },
+  {
+    id: 'tax_refund',
+    label: 'החזרי מס',
+    description: 'פניות לפקיד שומה בבקשה להחזר מס',
+    icon: 'ReceiptText',
+    enabled: true,
+  },
 ];
 
 /** Maps category ID to its permission key for access control */
@@ -138,6 +146,7 @@ export const CATEGORY_PERMISSION_MAP: Record<AutoLetterCategory, string> = {
   audit_completion: 'documents:auto-letters:audit_completion',
   tax_advances: 'documents:auto-letters:tax_advances',
   protocols: 'documents:auto-letters:protocols',
+  tax_refund: 'documents:auto-letters:tax_refund',
 } as const;
 
 // ============================================================================
@@ -176,7 +185,11 @@ export type AutoLetterTemplateType =
   // Tax Advances (מקדמות מ"ה)
   | 'tax_advances_rate_notification'
   // Protocols (פרוטוקולים)
-  | 'protocols_accountant_appointment';  // פרוטוקול מינוי רואה חשבון
+  | 'protocols_accountant_appointment'  // פרוטוקול מינוי רואה חשבון
+  // Tax Refund (החזרי מס)
+  | 'tax_refund_first_request'          // פנייה ראשונה להחזר מס
+  | 'tax_refund_second_request'         // פנייה שנייה להחזר מס
+  | 'tax_refund_third_request';         // פנייה שלישית להחזר מס
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -367,6 +380,29 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'פרוטוקול מאסיפת בעלי מניות למינוי רואה חשבון חדש',
       templateType: 'protocols_accountant_appointment',
       icon: 'FileSignature',
+    },
+  ],
+  tax_refund: [
+    {
+      id: 'first_request',
+      label: 'פנייה ראשונה - לפני 90 יום',
+      description: 'פנייה ראשונה מנומסת לפקיד שומה בבקשה לזרז החזר מס (30 יום לפני חלוף 90 יום)',
+      templateType: 'tax_refund_first_request',
+      icon: 'FileText',
+    },
+    {
+      id: 'second_request',
+      label: 'פנייה שנייה - דחופה (נקודות)',
+      description: 'פנייה שנייה דחופה לפקיד שומה בפורמט נקודות לאחר חלוף 90 יום',
+      templateType: 'tax_refund_second_request',
+      icon: 'AlertTriangle',
+    },
+    {
+      id: 'third_request',
+      label: 'פנייה שלישית - דחופה (פסקאות)',
+      description: 'פנייה שלישית דחופה לפקיד שומה בפורמט פסקאות לאחר חלוף 90 יום',
+      templateType: 'tax_refund_third_request',
+      icon: 'AlertOctagon',
     },
   ],
 };
@@ -707,6 +743,24 @@ export interface AccountantAppointmentVariables extends AutoLetterSharedData {
 }
 
 // ============================================================================
+// TAX REFUND VARIABLES (החזרי מס)
+// ============================================================================
+
+/** Variables for Tax Refund letters (all 3 types share the same variables) */
+export interface TaxRefundVariables extends AutoLetterSharedData {
+  /** שנת המס */
+  tax_year: number;
+  /** סכום ההחזר */
+  refund_amount: number;
+  /** תאריך הגשת הדוח (YYYY-MM-DD) */
+  filing_date: string;
+  /** שם פקיד השומה / משרד השומה */
+  tax_office_name: string;
+  /** כתובת משרד השומה */
+  tax_office_address: string;
+}
+
+// ============================================================================
 // DEFAULT VALUES
 // ============================================================================
 
@@ -735,6 +789,10 @@ export const DEFAULT_SUBJECTS = {
   tax_advances_rate_notification: 'הודעה על שיעור מקדמות מס',
   // Protocols (פרוטוקולים)
   protocols_accountant_appointment: 'פרוטוקול מאסיפת בעלי המניות',
+  // Tax Refund (החזרי מס)
+  tax_refund_first_request: 'בקשה להחזר מס',
+  tax_refund_second_request: 'בקשה דחופה להחזר מס',
+  tax_refund_third_request: 'בקשה דחופה להחזר מס',
 } as const;
 
 // ============================================================================
@@ -806,6 +864,13 @@ export interface ReminderLettersDocumentData {
   bookkeeperBalanceReminder: Partial<BookkeeperBalanceReminderVariables>;
 }
 
+/** Document data for Tax Refund letters */
+export interface TaxRefundDocumentData {
+  firstRequest: Partial<TaxRefundVariables>;
+  secondRequest: Partial<TaxRefundVariables>;
+  thirdRequest: Partial<TaxRefundVariables>;
+}
+
 /** Adhoc contact (not saved in system) */
 export interface AdhocContact {
   name: string;
@@ -853,6 +918,7 @@ export interface AutoLetterFormState {
     audit_completion: AuditCompletionDocumentData;
     tax_advances: TaxAdvancesDocumentData;
     protocols: ProtocolsDocumentData;
+    tax_refund: TaxRefundDocumentData;
   };
 }
 
@@ -1052,6 +1118,29 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           attendees: [{ name: '', is_chairman: true }],
           previous_firm: '',
           new_firm: "פרנקו ושות' - רואי חשבון",
+        },
+      },
+      tax_refund: {
+        firstRequest: {
+          tax_year: new Date().getFullYear() - 1,
+          refund_amount: undefined,
+          filing_date: '',
+          tax_office_name: '',
+          tax_office_address: '',
+        },
+        secondRequest: {
+          tax_year: new Date().getFullYear() - 1,
+          refund_amount: undefined,
+          filing_date: '',
+          tax_office_name: '',
+          tax_office_address: '',
+        },
+        thirdRequest: {
+          tax_year: new Date().getFullYear() - 1,
+          refund_amount: undefined,
+          filing_date: '',
+          tax_office_name: '',
+          tax_office_address: '',
         },
       },
     },
@@ -1443,5 +1532,23 @@ export function validateAccountantAppointment(data: Partial<AccountantAppointmen
     data.attendees.length > 0 &&
     data.attendees.every(a => a.name?.trim()) &&
     data.previous_firm?.trim()
+  );
+}
+
+// ============================================================================
+// TAX REFUND VALIDATION
+// ============================================================================
+
+/** Validate Tax Refund letter (all 3 types share the same validation) */
+export function validateTaxRefund(data: Partial<TaxRefundVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.tax_year && data.tax_year > 2000 &&
+    data.refund_amount !== undefined &&
+    data.refund_amount > 0 &&
+    data.filing_date &&
+    data.tax_office_name?.trim() &&
+    data.tax_office_address?.trim()
   );
 }

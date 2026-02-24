@@ -62,6 +62,7 @@ import {
   validateAccountantAppointment,
   validateVatFileOpened,
   validateTaxAdvancesRateNotification,
+  validateTaxRefund,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -358,6 +359,17 @@ export function AutoLettersPage() {
       }
     }
 
+    if (selectedCategory === 'tax_refund') {
+      switch (selectedLetterTypeId) {
+        case 'first_request':
+          return formState.documentData.tax_refund.firstRequest;
+        case 'second_request':
+          return formState.documentData.tax_refund.secondRequest;
+        case 'third_request':
+          return formState.documentData.tax_refund.thirdRequest;
+      }
+    }
+
     return {};
   };
 
@@ -486,6 +498,10 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'rate_notification') {
         return validateTaxAdvancesRateNotification(mergedData);
       }
+    }
+
+    if (selectedCategory === 'tax_refund') {
+      return validateTaxRefund(mergedData);
     }
 
     return false;
@@ -1070,6 +1086,47 @@ export function AutoLettersPage() {
             },
           },
         }));
+      }
+    }
+
+    if (selectedCategory === 'tax_refund') {
+      switch (selectedLetterTypeId) {
+        case 'first_request':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              tax_refund: {
+                ...prev.documentData.tax_refund,
+                firstRequest: data,
+              },
+            },
+          }));
+          break;
+        case 'second_request':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              tax_refund: {
+                ...prev.documentData.tax_refund,
+                secondRequest: data,
+              },
+            },
+          }));
+          break;
+        case 'third_request':
+          setFormState(prev => ({
+            ...prev,
+            documentData: {
+              ...prev.documentData,
+              tax_refund: {
+                ...prev.documentData.tax_refund,
+                thirdRequest: data,
+              },
+            },
+          }));
+          break;
       }
     }
   };

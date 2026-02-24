@@ -3570,7 +3570,11 @@ export class TemplateService extends BaseService {
       // Protocols
       'protocols_accountant_appointment': 'bodies/protocols/accountant-appointment.html',
       // Tax Advances
-      'tax_advances_rate_notification': 'bodies/tax-advances/rate-notification.html'
+      'tax_advances_rate_notification': 'bodies/tax-advances/rate-notification.html',
+      // Tax Refund
+      'tax_refund_first_request': 'bodies/tax-refund/first-request.html',
+      'tax_refund_second_request': 'bodies/tax-refund/second-request.html',
+      'tax_refund_third_request': 'bodies/tax-refund/third-request.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3603,7 +3607,11 @@ export class TemplateService extends BaseService {
       // Protocols
       'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות',
       // Tax Advances
-      'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס'
+      'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס',
+      // Tax Refund
+      'tax_refund_first_request': 'בקשה להחזר מס',
+      'tax_refund_second_request': 'בקשה דחופה להחזר מס',
+      'tax_refund_third_request': 'בקשה דחופה להחזר מס'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3641,7 +3649,11 @@ export class TemplateService extends BaseService {
       // Protocols
       'protocols_accountant_appointment': 'פרוטוקול מאסיפת בעלי המניות',
       // Tax Advances
-      'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס'
+      'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס',
+      // Tax Refund
+      'tax_refund_first_request': 'בקשה להחזר מס',
+      'tax_refund_second_request': 'בקשה דחופה להחזר מס',
+      'tax_refund_third_request': 'בקשה דחופה להחזר מס'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -4108,6 +4120,41 @@ export class TemplateService extends BaseService {
         <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.8; color: #09090b; text-align: right;">
             <strong>2.</strong> מבדיקה שערכנו עולה כי שיעור זה מוצדק.
         </div>
+    </td>
+</tr>`;
+        }
+        break;
+
+      case 'tax_refund_first_request':
+      case 'tax_refund_second_request':
+      case 'tax_refund_third_request':
+        // Format refund_amount to Israeli currency
+        if (processed.refund_amount !== undefined && typeof processed.refund_amount === 'number') {
+          processed.refund_amount_formatted = new Intl.NumberFormat('he-IL', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(processed.refund_amount as number) + ' ₪';
+        } else {
+          processed.refund_amount_formatted = '';
+        }
+        // Format filing_date to Israeli format
+        if (processed.filing_date && typeof processed.filing_date === 'string') {
+          processed.filing_date_formatted = this.formatIsraeliDate(new Date(processed.filing_date as string));
+        }
+        // Addressee swap: header shows tax office, body shows client
+        processed.client_name = processed.company_name;
+        processed.client_id = processed.company_id;
+        processed.company_name = processed.tax_office_name || '';
+        processed.group_name = processed.tax_office_address || '';
+        // Build subjects_section with client name, ח.פ., and tax year
+        {
+          const clientName = processed.client_name || '';
+          const clientId = processed.client_id || '';
+          const taxYear = processed.tax_year || '';
+          processed.subjects_section = `
+<tr>
+    <td style="padding-top: 15px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: בקשה להחזר מס בגין</span><br/><span style="opacity: 0;">הנדון: </span><span>${clientName}</span><br/><span style="opacity: 0;">הנדון: </span><span>ח.פ. ${clientId} לשנת המס ${taxYear}</span></div>
     </td>
 </tr>`;
         }
