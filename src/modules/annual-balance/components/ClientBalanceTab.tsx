@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Loader2, ExternalLink } from 'lucide-react';
-import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
+import { formatIsraeliDate, formatILSInteger } from '@/lib/formatters';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { hasBalancePermission } from '../types/annual-balance.types';
@@ -137,7 +137,7 @@ export function ClientBalanceTab({
               <TableHead className="w-16">שנה</TableHead>
               <TableHead className="w-28">סטטוס</TableHead>
               <TableHead className="w-28">הגעת חומר</TableHead>
-              <TableHead className="w-28">תאריך שיוך</TableHead>
+              <TableHead className="w-28">שויך ל</TableHead>
               <TableHead className="w-28">שידור דוח</TableHead>
               <TableHead className="w-24">מקדמות</TableHead>
               <TableHead className="w-20">פעולות</TableHead>
@@ -156,9 +156,20 @@ export function ClientBalanceTab({
                     : '-'}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {record.meeting_date
-                    ? formatIsraeliDateTime(record.meeting_date)
-                    : '-'}
+                  {record.auditor_id ? (
+                    <div>
+                      <span className="text-sm text-muted-foreground block">
+                        {(record as Record<string, unknown>).auditor_name as string || '-'}
+                      </span>
+                      {record.meeting_date && (
+                        <span className="text-[10px] text-muted-foreground/60 block">
+                          {formatIsraeliDate(record.meeting_date)}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    '-'
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {record.report_transmitted_at

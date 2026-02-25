@@ -11,13 +11,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, ArrowLeft, ArrowRight, AlertTriangle } from 'lucide-react';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { annualBalanceService } from '../services/annual-balance.service';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
-import { BALANCE_STATUSES, getNextStatus } from '../types/annual-balance.types';
+import { BALANCE_STATUSES, BALANCE_STATUS_CONFIG, getNextStatus } from '../types/annual-balance.types';
 import { updateStatusSchema } from '../types/validation';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
@@ -37,20 +44,40 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
   isAdmin = false,
 }) => {
   const [note, setNote] = useState('');
+  const [selectedJumpStatus, setSelectedJumpStatus] = useState<BalanceStatus | ''>('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanceWarning, setShowAdvanceWarning] = useState(false);
   const { refreshData, optimisticUpdateStatus } = useAnnualBalanceStore();
 
+  // Admin jump mode: admin opened dialog with a pre-selected target (from BalanceTable dropdown)
+  const isJumpMode = isAdmin && !!targetStatus;
+
   const nextStatus = targetStatus || (balanceCase ? getNextStatus(balanceCase.status) : null);
 
+  // Effective target: in jump mode allow changing via dropdown, otherwise use computed nextStatus
+  const effectiveTarget = isJumpMode
+    ? (selectedJumpStatus || nextStatus)
+    : nextStatus;
+
   // Detect revert mode: target status is before current status
-  const isRevert = balanceCase && nextStatus
-    ? BALANCE_STATUSES.indexOf(nextStatus) < BALANCE_STATUSES.indexOf(balanceCase.status)
+  const isRevert = balanceCase && effectiveTarget
+    ? BALANCE_STATUSES.indexOf(effectiveTarget) < BALANCE_STATUSES.indexOf(balanceCase.status)
     : false;
 
+  // Available statuses for jump mode (exclude current + office_approved)
+  const jumpStatuses = balanceCase
+    ? BALANCE_STATUSES.filter((s) => s !== balanceCase.status && s !== 'office_approved')
+    : [];
+
   const handleSubmit = async () => {
-    if (!balanceCase || !nextStatus) return;
+    if (!balanceCase || !effectiveTarget) return;
+
+    // In jump mode, always require a note for accountability
+    if (isJumpMode && !note.trim()) {
+      setError('יש להזין הערה בעת קפיצה לשלב');
+      return;
+    }
 
     // Require note for reverts (accountability)
     if (isRevert && !note.trim()) {
@@ -58,21 +85,21 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
       return;
     }
 
-    // Guard: block in_progress if auditor not confirmed
-    if (nextStatus === 'in_progress' && !balanceCase.auditor_confirmed) {
+    // Guard: block in_progress if auditor not confirmed (skip for admin)
+    if (effectiveTarget === 'in_progress' && !balanceCase.auditor_confirmed && !isAdmin) {
       setError('יש לאשר קבלת תיק לפני תחילת עבודה');
       return;
     }
 
     // Guard: warn when advancing to report_transmitted with advance rate alert
-    if (nextStatus === 'report_transmitted' && balanceCase.advance_rate_alert && !showAdvanceWarning) {
+    if (effectiveTarget === 'report_transmitted' && balanceCase.advance_rate_alert && !showAdvanceWarning) {
       setShowAdvanceWarning(true);
       return;
     }
 
     // Zod validation
     const validation = updateStatusSchema.safeParse({
-      targetStatus: nextStatus,
+      targetStatus: effectiveTarget,
       note: note || undefined,
     });
     if (!validation.success) {
@@ -85,13 +112,14 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
 
     try {
       // Optimistic update - show result immediately
-      optimisticUpdateStatus(balanceCase.id, nextStatus);
+      optimisticUpdateStatus(balanceCase.id, effectiveTarget);
       onOpenChange(false);
       setNote('');
+      setSelectedJumpStatus('');
 
       const result = await annualBalanceService.updateStatus(
         balanceCase.id,
-        nextStatus,
+        effectiveTarget,
         note || undefined,
         isAdmin
       );
@@ -115,19 +143,20 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
   const handleClose = () => {
     onOpenChange(false);
     setNote('');
+    setSelectedJumpStatus('');
     setError(null);
     setShowAdvanceWarning(false);
   };
 
-  if (!balanceCase || !nextStatus) return null;
+  if (!balanceCase || !effectiveTarget) return null;
+
+  const dialogTitle = isJumpMode ? 'קפיצה לשלב' : isRevert ? 'החזרת סטטוס' : 'עדכון סטטוס';
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-right">
-            {isRevert ? 'החזרת סטטוס' : 'עדכון סטטוס'}
-          </DialogTitle>
+          <DialogTitle className="text-right">{dialogTitle}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -135,8 +164,30 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
             {balanceCase.client?.company_name} ({balanceCase.client?.tax_id})
           </div>
 
+          {/* Jump mode: status selector */}
+          {isJumpMode && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">שלב יעד:</label>
+              <Select
+                value={effectiveTarget}
+                onValueChange={(v) => setSelectedJumpStatus(v as BalanceStatus)}
+              >
+                <SelectTrigger className="rtl:text-right">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent dir="rtl">
+                  {jumpStatuses.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {BALANCE_STATUS_CONFIG[s].label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Revert warning banner */}
-          {isRevert && (
+          {isRevert && !isJumpMode && (
             <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -156,18 +207,24 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
             ) : (
               <ArrowLeft className="h-4 w-4 text-muted-foreground" />
             )}
-            <BalanceStatusBadge status={nextStatus} />
+            <BalanceStatusBadge status={effectiveTarget} />
           </div>
 
-          {/* Note - required for revert, optional for forward */}
+          {/* Note - required for jump mode and reverts, optional for forward */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              {isRevert ? 'הערה (חובה):' : 'הערה (אופציונלי):'}
+              {isJumpMode || isRevert ? 'הערה (חובה):' : 'הערה (אופציונלי):'}
             </label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={isRevert ? 'נא לציין סיבת ההחזרה...' : 'הוסף הערה...'}
+              placeholder={
+                isJumpMode
+                  ? 'נא לציין סיבה לקפיצת שלב...'
+                  : isRevert
+                    ? 'נא לציין סיבת ההחזרה...'
+                    : 'הוסף הערה...'
+              }
               className="rtl:text-right resize-none"
               rows={3}
             />
@@ -201,7 +258,13 @@ export const UpdateStatusDialog: React.FC<UpdateStatusDialogProps> = ({
             variant={isRevert ? 'destructive' : 'default'}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-            {showAdvanceWarning ? 'המשך בכל זאת' : isRevert ? 'החזר סטטוס' : 'עדכן סטטוס'}
+            {showAdvanceWarning
+              ? 'המשך בכל זאת'
+              : isJumpMode
+                ? 'קפוץ לשלב'
+                : isRevert
+                  ? 'החזר סטטוס'
+                  : 'עדכן סטטוס'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -25,17 +25,23 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ChevronRight, ChevronLeft, FileSearch, ExternalLink, AlertTriangle, MessageCircle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, FileSearch, ExternalLink, AlertTriangle, MessageCircle, ChevronsUpDown } from 'lucide-react';
 import { BalanceStatusBadge } from './BalanceStatusBadge';
 import { formatIsraeliDate, formatIsraeliDateTime, formatILSInteger } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { getNextStatus, hasBalancePermission, canAccessBalanceChat, BALANCE_STATUS_CONFIG } from '../types/annual-balance.types';
+import { getNextStatus, hasBalancePermission, canAccessBalanceChat, BALANCE_STATUS_CONFIG, BALANCE_STATUSES } from '../types/annual-balance.types';
 import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annual-balance.types';
 
 interface BalanceTableProps {
@@ -47,9 +53,11 @@ interface BalanceTableProps {
   onRowClick: (row: AnnualBalanceSheetWithClient) => void;
   onQuickAction: (row: AnnualBalanceSheetWithClient, action: string) => void;
   onChatClick: (row: AnnualBalanceSheetWithClient) => void;
+  onJumpToStatus?: (row: AnnualBalanceSheetWithClient, targetStatus: BalanceStatus) => void;
   userRole: string;
   userId: string;
   unreadCounts: Record<string, number>;
+  isSuperAdmin?: boolean;
 }
 
 /** Quick action label for a given status - auditor confirmation aware */
@@ -170,10 +178,13 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
   onRowClick,
   onQuickAction,
   onChatClick,
+  onJumpToStatus,
   userRole,
   userId,
   unreadCounts,
+  isSuperAdmin = false,
 }) => {
+  const canJumpStatus = userRole === 'admin' || isSuperAdmin;
   const totalPages = Math.ceil(pagination.total / pagination.pageSize);
 
   // Loading skeleton - matches column order
@@ -332,6 +343,33 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                       </Button>
                     ) : (
                       <span className="text-sm text-muted-foreground/40">--</span>
+                    )}
+                    {canJumpStatus && onJumpToStatus && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" dir="rtl" className="min-w-[160px]">
+                          {BALANCE_STATUSES
+                            .filter((s) => s !== row.status && s !== 'office_approved')
+                            .map((s) => (
+                              <DropdownMenuItem
+                                key={s}
+                                onClick={() => onJumpToStatus(row, s)}
+                                className="text-xs"
+                              >
+                                <span className={cn('inline-block w-2 h-2 rounded-full me-2', BALANCE_STATUS_CONFIG[s].bgColor)} />
+                                {BALANCE_STATUS_CONFIG[s].label}
+                              </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 </TableCell>

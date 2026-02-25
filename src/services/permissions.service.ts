@@ -140,6 +140,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
     'protocols',
+    'annual-balance',
   ],
   bookkeeper: [
     'clients', 'clients:list', 'clients:create', 'clients:edit',
@@ -147,6 +148,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'documents', 'documents:foreign-workers', 'documents:commitment-letters',
     'foreign-workers', // Legacy
     'files',
+    'annual-balance',
   ],
   client: [
     'clients', 'clients:list',

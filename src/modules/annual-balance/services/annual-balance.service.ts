@@ -197,6 +197,7 @@ class AnnualBalanceService extends BaseService {
 
   /**
    * Get all balance sheets for a specific client (all years)
+   * Enriches records with auditor_name using the same pattern as getAll()
    */
   async getByClientId(clientId: string): Promise<ServiceResponse<AnnualBalanceSheet[]>> {
     try {
@@ -211,7 +212,34 @@ class AnnualBalanceService extends BaseService {
 
       if (error) throw error;
 
-      return { data: data as AnnualBalanceSheet[], error: null };
+      const rows = (data ?? []) as AnnualBalanceSheet[];
+
+      // Enrich with auditor names
+      const uniqueAuditorIds = [...new Set(rows.map((r) => r.auditor_id).filter(Boolean))] as string[];
+      const auditorMap = new Map<string, string>();
+
+      for (const auditorId of uniqueAuditorIds) {
+        try {
+          const { data: authUser } = await supabase.rpc('get_user_with_auth', {
+            p_user_id: auditorId,
+          });
+          if (authUser && authUser.length > 0) {
+            const fullName = authUser[0].full_name || '';
+            auditorMap.set(auditorId, fullName || authUser[0].email);
+          }
+        } catch {
+          // Skip - no enrichment for this auditor
+        }
+      }
+
+      const enrichedRows = rows.map((row) => {
+        if (row.auditor_id && auditorMap.has(row.auditor_id)) {
+          return { ...row, auditor_name: auditorMap.get(row.auditor_id) };
+        }
+        return row;
+      });
+
+      return { data: enrichedRows as AnnualBalanceSheet[], error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
@@ -312,8 +340,8 @@ class AnnualBalanceService extends BaseService {
 
       const currentStatus = current.status as BalanceStatus;
 
-      // Guard: cannot start work without auditor confirmation
-      if (newStatus === 'in_progress' && !current.auditor_confirmed) {
+      // Guard: cannot start work without auditor confirmation (skip for admin override)
+      if (newStatus === 'in_progress' && !current.auditor_confirmed && !isAdmin) {
         return {
           data: null,
           error: new Error('יש לאשר קבלת תיק לפני תחילת עבודה'),

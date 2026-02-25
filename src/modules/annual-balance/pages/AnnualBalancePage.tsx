@@ -12,6 +12,7 @@ import { RefreshCw, CalendarPlus, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { supabase } from '@/lib/supabase';
 import { useAnnualBalanceStore } from '../store/annualBalanceStore';
 import { BalanceKPICards } from '../components/BalanceKPICards';
@@ -32,6 +33,7 @@ import type { AnnualBalanceSheetWithClient, BalanceStatus } from '../types/annua
 
 export default function AnnualBalancePage() {
   const { role, user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const userRole = role || '';
 
   const {
@@ -235,6 +237,12 @@ export default function AnnualBalancePage() {
     }
   }, []);
 
+  const handleJumpToStatus = useCallback((row: AnnualBalanceSheetWithClient, targetStatus: BalanceStatus) => {
+    setSelectedCase(row);
+    setRevertTargetStatus(targetStatus);
+    setUpdateStatusOpen(true);
+  }, []);
+
   const handleChatClick = useCallback((row: AnnualBalanceSheetWithClient) => {
     setChatBalanceCase(row);
     setChatOpen(true);
@@ -407,9 +415,11 @@ export default function AnnualBalancePage() {
                 onRowClick={handleRowClick}
                 onQuickAction={handleQuickAction}
                 onChatClick={handleChatClick}
+                onJumpToStatus={handleJumpToStatus}
                 userRole={userRole}
                 userId={user?.id || ''}
                 unreadCounts={unreadCounts}
+                isSuperAdmin={isSuperAdmin}
               />
             </TabsContent>
 
@@ -450,7 +460,7 @@ export default function AnnualBalancePage() {
           }}
           balanceCase={selectedCase}
           targetStatus={revertTargetStatus}
-          isAdmin={userRole === 'admin'}
+          isAdmin={userRole === 'admin' || isSuperAdmin}
         />
 
         <UpdateAdvancesDialog
