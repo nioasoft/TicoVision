@@ -21,7 +21,6 @@ export function TaxRefundForm({ value, onChange, disabled, companyName, companyI
   const isValid = !!(
     companyName?.trim() &&
     value.tax_office_name?.trim() &&
-    value.tax_office_address?.trim() &&
     value.tax_year && value.tax_year > 2000 &&
     value.refund_amount !== undefined &&
     value.refund_amount > 0 &&
@@ -68,10 +67,10 @@ export function TaxRefundForm({ value, onChange, disabled, companyName, companyI
             </p>
           </div>
 
-          {/* Tax Office Address - כתובת משרד השומה */}
+          {/* Tax Office Address - לידי */}
           <div className="space-y-2">
             <Label htmlFor="tax-office-address" className="text-right block">
-              כתובת משרד השומה
+              לידי:
             </Label>
             <Input
               id="tax-office-address"
@@ -131,7 +130,22 @@ export function TaxRefundForm({ value, onChange, disabled, companyName, companyI
               id="filing-date"
               type="date"
               value={value.filing_date || ''}
-              onChange={(e) => onChange({ ...value, filing_date: e.target.value })}
+              onChange={(e) => {
+                const filingDate = e.target.value;
+                let daysSince: number | undefined;
+                if (filingDate) {
+                  const diff = Date.now() - new Date(filingDate).getTime();
+                  daysSince = Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
+                }
+                const over90 = daysSince !== undefined && daysSince > 90;
+                onChange({
+                  ...value,
+                  filing_date: filingDate,
+                  days_since_filing: daysSince,
+                  is_urgent: over90,
+                  show_strong_text: over90,
+                });
+              }}
               disabled={disabled}
               className="text-left w-48"
               dir="ltr"
@@ -141,59 +155,33 @@ export function TaxRefundForm({ value, onChange, disabled, companyName, companyI
             </p>
           </div>
 
-          {/* Days Since Filing - כמות ימים שחלפו */}
-          <div className="space-y-2">
-            <Label htmlFor="days-since-filing" className="text-right block">
-              כמות ימים שחלפו מאז הגשת הדוח
-            </Label>
-            <Input
-              id="days-since-filing"
-              type="number"
-              min="1"
-              value={value.days_since_filing || ''}
-              onChange={(e) => onChange({ ...value, days_since_filing: parseInt(e.target.value, 10) || undefined })}
-              disabled={disabled}
-              className="text-left w-32"
-              dir="ltr"
-            />
-            <p className="text-xs text-gray-500 text-right">
-              מספר הימים שיופיע במכתב (לדוגמה: 30, 90, 120)
-            </p>
-          </div>
-
-          {/* Urgent Banner Toggle - הודעה דחופה */}
-          <div className="flex items-center gap-3 rtl:flex-row-reverse justify-end">
-            <Label htmlFor="is-urgent" className="text-right cursor-pointer">
-              הודעה דחופה
-            </Label>
-            <Checkbox
-              id="is-urgent"
-              checked={value.is_urgent || false}
-              onCheckedChange={(checked) => onChange({ ...value, is_urgent: checked === true })}
-              disabled={disabled}
-            />
-          </div>
-          {value.is_urgent && (
-            <p className="text-xs text-red-600 text-right">
-              יוצג באנר אדום &quot;הודעה דחופה&quot; בראש המכתב
-            </p>
+          {/* Days Since Filing - כמות ימים שחלפו (auto-calculated) */}
+          {value.days_since_filing && (
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+              <p className="text-sm text-gray-700 text-right">
+                <strong>ימים שחלפו מהגשת הדוח:</strong> {value.days_since_filing} ימים
+              </p>
+            </div>
           )}
 
-          {/* Strong Text Toggle - טקסט מחמיר */}
+          {/* Over 90 days Toggle - עבר 90 יום (auto + manual) */}
           <div className="flex items-center gap-3 rtl:flex-row-reverse justify-end">
             <Label htmlFor="show-strong-text" className="text-right cursor-pointer">
-              טקסט מחמיר
+              עבר 90 יום
             </Label>
             <Checkbox
               id="show-strong-text"
               checked={value.show_strong_text || false}
-              onCheckedChange={(checked) => onChange({ ...value, show_strong_text: checked === true })}
+              onCheckedChange={(checked) => {
+                const on = checked === true;
+                onChange({ ...value, show_strong_text: on, is_urgent: on });
+              }}
               disabled={disabled}
             />
           </div>
           {value.show_strong_text && (
-            <p className="text-xs text-orange-600 text-right">
-              מוסיף: &quot;ולמרות פניות חוזרות ונשנות...&quot; + &quot;נבקשכם בתוקף...ללא דיחוי נוסף&quot;
+            <p className="text-xs text-red-600 text-right">
+              הודעה דחופה + טקסט מחמיר + הדגשות באדום
             </p>
           )}
 

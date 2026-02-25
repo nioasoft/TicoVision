@@ -3413,7 +3413,7 @@ export class TemplateService extends BaseService {
       fullHtml = this.processMustacheSections(fullHtml, processedVariables);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section', 'days_text', 'strong_text_section', 'urgent_banner_section', 'closing_text'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section', 'days_text', 'strong_text_section', 'urgent_banner_section', 'closing_text', 'group_name'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -4136,11 +4136,10 @@ export class TemplateService extends BaseService {
         // Addressee swap: header shows tax office, body shows client
         processed.client_name = processed.company_name;
         processed.client_id = processed.company_id;
+        processed.company_name = processed.tax_office_name || '';
         {
-          const officeName = processed.tax_office_name || '';
-          const officeAddress = processed.tax_office_address || '';
-          processed.company_name = officeAddress ? `${officeName}, ${officeAddress}` : officeName;
-          processed.group_name = '';
+          const addressee = processed.tax_office_address || '';
+          processed.group_name = addressee ? `<span style="font-size: 16px; font-weight: 400;">לידי: ${addressee}</span>` : '';
         }
         // Days text - dynamic based on days_since_filing
         {
@@ -4180,8 +4179,8 @@ export class TemplateService extends BaseService {
           const taxYear = processed.tax_year || '';
           processed.subjects_section = `
 <tr>
-    <td style="padding-top: 15px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: ${clientName} ח.פ. ${clientId}:</span><br/><span style="opacity: 0;">הנדון: </span><span>בקשה להחזר מס בגין שנת ${taxYear}</span></div>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 14px;"><span>הנדון: ${clientName} ח.פ. ${clientId}:</span><br/><span style="opacity: 0;">הנדון: </span><span>בקשה להחזר מס בגין שנת ${taxYear}</span></div>
     </td>
 </tr>`;
         }
