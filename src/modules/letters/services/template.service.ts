@@ -3413,7 +3413,7 @@ export class TemplateService extends BaseService {
       fullHtml = this.processMustacheSections(fullHtml, processedVariables);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section', 'days_text', 'strong_text_section', 'urgent_banner_section', 'closing_text'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3572,9 +3572,7 @@ export class TemplateService extends BaseService {
       // Tax Advances
       'tax_advances_rate_notification': 'bodies/tax-advances/rate-notification.html',
       // Tax Refund
-      'tax_refund_first_request': 'bodies/tax-refund/first-request.html',
-      'tax_refund_second_request': 'bodies/tax-refund/second-request.html',
-      'tax_refund_third_request': 'bodies/tax-refund/third-request.html'
+      'tax_refund_request': 'bodies/tax-refund/request.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3609,9 +3607,7 @@ export class TemplateService extends BaseService {
       // Tax Advances
       'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס',
       // Tax Refund
-      'tax_refund_first_request': 'בקשה להחזר מס',
-      'tax_refund_second_request': 'בקשה דחופה להחזר מס',
-      'tax_refund_third_request': 'בקשה דחופה להחזר מס'
+      'tax_refund_request': 'בקשה להחזר מס'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3651,9 +3647,7 @@ export class TemplateService extends BaseService {
       // Tax Advances
       'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס',
       // Tax Refund
-      'tax_refund_first_request': 'בקשה להחזר מס',
-      'tax_refund_second_request': 'בקשה דחופה להחזר מס',
-      'tax_refund_third_request': 'בקשה דחופה להחזר מס'
+      'tax_refund_request': 'בקשה להחזר מס'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -4125,9 +4119,7 @@ export class TemplateService extends BaseService {
         }
         break;
 
-      case 'tax_refund_first_request':
-      case 'tax_refund_second_request':
-      case 'tax_refund_third_request':
+      case 'tax_refund_request':
         // Format refund_amount to Israeli currency
         if (processed.refund_amount !== undefined && typeof processed.refund_amount === 'number') {
           processed.refund_amount_formatted = new Intl.NumberFormat('he-IL', {
@@ -4144,8 +4136,43 @@ export class TemplateService extends BaseService {
         // Addressee swap: header shows tax office, body shows client
         processed.client_name = processed.company_name;
         processed.client_id = processed.company_id;
-        processed.company_name = processed.tax_office_name || '';
-        processed.group_name = processed.tax_office_address || '';
+        {
+          const officeName = processed.tax_office_name || '';
+          const officeAddress = processed.tax_office_address || '';
+          processed.company_name = officeAddress ? `${officeName}, ${officeAddress}` : officeName;
+          processed.group_name = '';
+        }
+        // Days text - dynamic based on days_since_filing
+        {
+          const days = processed.days_since_filing || 30;
+          const daysContent = `נכון למועד איגרת זו חלפו ${days} יום (כאמור בסעיף 159א' לפקודת מס הכנסה) מיום הגשת הדוח.`;
+          processed.days_text = processed.show_strong_text
+            ? `<strong style="color: #991b1b;">${daysContent}</strong>`
+            : daysContent;
+        }
+        // Urgent banner (conditional)
+        if (processed.is_urgent) {
+          processed.urgent_banner_section = `
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: center; padding: 8px 0; border: 2px solid #dc2626; border-radius: 4px; background-color: #fef2f2;">
+            הודעה דחופה
+        </div>
+    </td>
+</tr>`;
+        } else {
+          processed.urgent_banner_section = '';
+        }
+        // Strong text section (conditional) + closing text
+        if (processed.show_strong_text) {
+          processed.strong_text_section = `<li style="margin-bottom: 6px;">
+                    ולמרות פניות חוזרות ונשנות טרם התקבל ההחזר.
+                </li>`;
+          processed.closing_text = '<u>ולאחר שמיצינו את כל הפניות מצידנו, נבקשכם בתוקף לזרז את החזר המס המגיע לחברה ולהעבירו ללא דיחוי נוסף.</u>';
+        } else {
+          processed.strong_text_section = '';
+          processed.closing_text = '<u>נבקשכם לזרז את החזר המס המגיע לחברה ולהעבירו בהקדם האפשרי.</u>';
+        }
         // Build subjects_section with client name, ח.פ., and tax year
         {
           const clientName = processed.client_name || '';
@@ -4154,7 +4181,7 @@ export class TemplateService extends BaseService {
           processed.subjects_section = `
 <tr>
     <td style="padding-top: 15px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: בקשה להחזר מס בגין</span><br/><span style="opacity: 0;">הנדון: </span><span>${clientName} ח.פ. ${clientId} לשנת המס ${taxYear}</span></div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;"><span>הנדון: ${clientName} ח.פ. ${clientId}:</span><br/><span style="opacity: 0;">הנדון: </span><span>בקשה להחזר מס בגין שנת ${taxYear}</span></div>
     </td>
 </tr>`;
         }

@@ -572,7 +572,7 @@ function renderTaxRefundForm(
   companyName?: string,
   companyId?: string
 ) {
-  // All 3 tax refund types share the same form
+  // Unified tax refund form
   return (
     <TaxRefundForm
       value={value as Partial<TaxRefundVariables>}

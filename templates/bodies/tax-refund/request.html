@@ -1,16 +1,10 @@
-<!-- Letter Body: Tax Refund - Second Request (פנייה שנייה - דחופה, נקודות) -->
-<!-- Template Type: tax_refund_second_request -->
-<!-- Variables: {{client_name}}, {{client_id}}, {{tax_year}}, {{refund_amount_formatted}}, {{filing_date_formatted}} -->
+<!-- Letter Body: Tax Refund - Unified Request (פנייה לפקיד שומה - החזר מס) -->
+<!-- Template Type: tax_refund_request -->
+<!-- Variables: {{client_name}}, {{client_id}}, {{tax_year}}, {{refund_amount_formatted}}, {{filing_date_formatted}}, {{days_text}}, {{urgent_banner_section}}, {{strong_text_section}}, {{closing_text}} -->
 <!-- Header uses: {{company_name}} (tax_office_name), {{group_name}} (tax_office_address) -->
 
-<!-- BODY: Urgent Banner -->
-<tr>
-    <td style="padding-top: 10px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: center; padding: 8px 0; border: 2px solid #dc2626; border-radius: 4px; background-color: #fef2f2;">
-            הודעה דחופה
-        </div>
-    </td>
-</tr>
+<!-- BODY: Urgent Banner (conditional) -->
+{{urgent_banner_section}}
 
 <!-- BODY: Subject Line (הנדון) -->
 {{subjects_section}}
@@ -33,22 +27,23 @@
                     החברה הגישה לכם את דוחותיה המבוקרים לשנת המס {{tax_year}} בתאריך {{filing_date_formatted}}.
                 </li>
                 <li style="margin-bottom: 6px;">
-                    מדוחות אלו עולה כי החברה שילמה ביתר מקדמות מס שוטפות שגזרו החזר מס של {{refund_amount_formatted}}.
+                    מדוחות אלו עולה כי החברה שילמה ביתר מקדמות מס שוטפות בשנה נשוא הדוח שבנדון בסה״כ של <strong style="color: #991b1b;">{{refund_amount_formatted}}</strong>.
                 </li>
                 <li style="margin-bottom: 6px;">
-                    נכון למועד איגרת זו חלפו 90 יום (כאמור בסעיף 159א' לפקודת מס הכנסה) מיום הגשת הדוח.
+                    {{days_text}}
                 </li>
                 <li style="margin-bottom: 6px;">
-                    מצב החשבון במחשבכם לא מצביע על נימוק כלשהו למניעת החזר המס לחברה.
+                    מצב החשבון במחשבכם לא מצביע על נימוק כלשהו למניעת / עיכוב החזר המס לחברה.
                 </li>
                 <li style="margin-bottom: 6px;">
-                    שבימים כאלה שענף המסעדות נמצא במצוקה ידועה הרי שאין טעם להקשות על מי שזכאי לקבל את כספו.
+                    זאת ועוד, רשות המיסים, בחוזר מקצועי פנימי שפורסם, נוקטת בעמדה של זירוז החזרי המס לנישומים שממילא רובם, בשנים האחרונות, ומטבע המציאות הגיאו פוליטית הקשה סובלים מקשיי תזרים.
                 </li>
                 <li style="margin-bottom: 6px;">
-                    יתרה מכך, ככל שיימשך העיכוב בהחזר המס, נגרם נזק לאוצר המדינה עם ריבית גבוהה על החזר מס שיש לבצעו כבר עתה.
+                    יתרה מכך, ככל שיימשך העיכוב בהחזר המס, ייגרם נזק לאוצר המדינה, באשר ההחזר ישא ריבית והפרשי הצמדה.
                 </li>
+                {{strong_text_section}}
                 <li style="margin-bottom: 6px;">
-                    לאור האמור לעיל, נבקשכם לזרז את החזר המס המגיע לחברה ולהעבירו בהקדם האפשרי.
+                    לאור האמור לעיל, {{closing_text}}
                 </li>
             </ul>
         </div>

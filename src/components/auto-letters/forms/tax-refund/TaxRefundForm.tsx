@@ -1,11 +1,12 @@
 /**
- * TaxRefundForm - Form for Tax Refund letters (all 3 types)
- * טופס פניות לפקיד שומה בבקשה להחזר מס
+ * TaxRefundForm - Unified form for Tax Refund letters
+ * טופס פנייה לפקיד שומה בבקשה להחזר מס
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { TaxRefundVariables } from '@/types/auto-letters.types';
 
 interface TaxRefundFormProps {
@@ -24,7 +25,9 @@ export function TaxRefundForm({ value, onChange, disabled, companyName, companyI
     value.tax_year && value.tax_year > 2000 &&
     value.refund_amount !== undefined &&
     value.refund_amount > 0 &&
-    value.filing_date
+    value.filing_date &&
+    value.days_since_filing !== undefined &&
+    value.days_since_filing > 0
   );
 
   return (
@@ -137,6 +140,62 @@ export function TaxRefundForm({ value, onChange, disabled, companyName, companyI
               תאריך בו הוגשו הדוחות המבוקרים לפקיד השומה
             </p>
           </div>
+
+          {/* Days Since Filing - כמות ימים שחלפו */}
+          <div className="space-y-2">
+            <Label htmlFor="days-since-filing" className="text-right block">
+              כמות ימים שחלפו מאז הגשת הדוח
+            </Label>
+            <Input
+              id="days-since-filing"
+              type="number"
+              min="1"
+              value={value.days_since_filing || ''}
+              onChange={(e) => onChange({ ...value, days_since_filing: parseInt(e.target.value, 10) || undefined })}
+              disabled={disabled}
+              className="text-left w-32"
+              dir="ltr"
+            />
+            <p className="text-xs text-gray-500 text-right">
+              מספר הימים שיופיע במכתב (לדוגמה: 30, 90, 120)
+            </p>
+          </div>
+
+          {/* Urgent Banner Toggle - הודעה דחופה */}
+          <div className="flex items-center gap-3 rtl:flex-row-reverse justify-end">
+            <Label htmlFor="is-urgent" className="text-right cursor-pointer">
+              הודעה דחופה
+            </Label>
+            <Checkbox
+              id="is-urgent"
+              checked={value.is_urgent || false}
+              onCheckedChange={(checked) => onChange({ ...value, is_urgent: checked === true })}
+              disabled={disabled}
+            />
+          </div>
+          {value.is_urgent && (
+            <p className="text-xs text-red-600 text-right">
+              יוצג באנר אדום &quot;הודעה דחופה&quot; בראש המכתב
+            </p>
+          )}
+
+          {/* Strong Text Toggle - טקסט מחמיר */}
+          <div className="flex items-center gap-3 rtl:flex-row-reverse justify-end">
+            <Label htmlFor="show-strong-text" className="text-right cursor-pointer">
+              טקסט מחמיר
+            </Label>
+            <Checkbox
+              id="show-strong-text"
+              checked={value.show_strong_text || false}
+              onCheckedChange={(checked) => onChange({ ...value, show_strong_text: checked === true })}
+              disabled={disabled}
+            />
+          </div>
+          {value.show_strong_text && (
+            <p className="text-xs text-orange-600 text-right">
+              מוסיף: &quot;ולמרות פניות חוזרות ונשנות...&quot; + &quot;נבקשכם בתוקף...ללא דיחוי נוסף&quot;
+            </p>
+          )}
 
           {/* Validation */}
           {!isValid && (

@@ -187,9 +187,7 @@ export type AutoLetterTemplateType =
   // Protocols (פרוטוקולים)
   | 'protocols_accountant_appointment'  // פרוטוקול מינוי רואה חשבון
   // Tax Refund (החזרי מס)
-  | 'tax_refund_first_request'          // פנייה ראשונה להחזר מס
-  | 'tax_refund_second_request'         // פנייה שנייה להחזר מס
-  | 'tax_refund_third_request';         // פנייה שלישית להחזר מס
+  | 'tax_refund_request';              // פנייה לפקיד שומה - החזר מס
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -384,25 +382,11 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
   ],
   tax_refund: [
     {
-      id: 'first_request',
-      label: 'פנייה ראשונה - לפני 90 יום',
-      description: 'פנייה ראשונה מנומסת לפקיד שומה בבקשה לזרז החזר מס (30 יום לפני חלוף 90 יום)',
-      templateType: 'tax_refund_first_request',
+      id: 'request',
+      label: 'פנייה לפקיד שומה - החזר מס',
+      description: 'פנייה לפקיד שומה בבקשה להחזר מס - עם אפשרויות דחיפות וטקסט מחמיר',
+      templateType: 'tax_refund_request',
       icon: 'FileText',
-    },
-    {
-      id: 'second_request',
-      label: 'פנייה שנייה - דחופה (נקודות)',
-      description: 'פנייה שנייה דחופה לפקיד שומה בפורמט נקודות לאחר חלוף 90 יום',
-      templateType: 'tax_refund_second_request',
-      icon: 'AlertTriangle',
-    },
-    {
-      id: 'third_request',
-      label: 'פנייה שלישית - דחופה (פסקאות)',
-      description: 'פנייה שלישית דחופה לפקיד שומה בפורמט פסקאות לאחר חלוף 90 יום',
-      templateType: 'tax_refund_third_request',
-      icon: 'AlertOctagon',
     },
   ],
 };
@@ -746,7 +730,7 @@ export interface AccountantAppointmentVariables extends AutoLetterSharedData {
 // TAX REFUND VARIABLES (החזרי מס)
 // ============================================================================
 
-/** Variables for Tax Refund letters (all 3 types share the same variables) */
+/** Variables for Tax Refund letter */
 export interface TaxRefundVariables extends AutoLetterSharedData {
   /** שנת המס */
   tax_year: number;
@@ -758,6 +742,12 @@ export interface TaxRefundVariables extends AutoLetterSharedData {
   tax_office_name: string;
   /** כתובת משרד השומה */
   tax_office_address: string;
+  /** כמות ימים שחלפו מאז הגשת הדוח */
+  days_since_filing: number;
+  /** הצגת באנר "הודעה דחופה" */
+  is_urgent: boolean;
+  /** טקסט מחמיר - מוסיף "ולמרות פניות חוזרות..." + "נבקשכם בתוקף" */
+  show_strong_text: boolean;
 }
 
 // ============================================================================
@@ -790,9 +780,7 @@ export const DEFAULT_SUBJECTS = {
   // Protocols (פרוטוקולים)
   protocols_accountant_appointment: 'פרוטוקול מאסיפת בעלי המניות',
   // Tax Refund (החזרי מס)
-  tax_refund_first_request: 'בקשה להחזר מס',
-  tax_refund_second_request: 'בקשה דחופה להחזר מס',
-  tax_refund_third_request: 'בקשה דחופה להחזר מס',
+  tax_refund_request: 'בקשה להחזר מס',
 } as const;
 
 // ============================================================================
@@ -866,9 +854,7 @@ export interface ReminderLettersDocumentData {
 
 /** Document data for Tax Refund letters */
 export interface TaxRefundDocumentData {
-  firstRequest: Partial<TaxRefundVariables>;
-  secondRequest: Partial<TaxRefundVariables>;
-  thirdRequest: Partial<TaxRefundVariables>;
+  request: Partial<TaxRefundVariables>;
 }
 
 /** Adhoc contact (not saved in system) */
@@ -1121,26 +1107,15 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
         },
       },
       tax_refund: {
-        firstRequest: {
+        request: {
           tax_year: new Date().getFullYear() - 1,
           refund_amount: undefined,
           filing_date: '',
           tax_office_name: '',
           tax_office_address: '',
-        },
-        secondRequest: {
-          tax_year: new Date().getFullYear() - 1,
-          refund_amount: undefined,
-          filing_date: '',
-          tax_office_name: '',
-          tax_office_address: '',
-        },
-        thirdRequest: {
-          tax_year: new Date().getFullYear() - 1,
-          refund_amount: undefined,
-          filing_date: '',
-          tax_office_name: '',
-          tax_office_address: '',
+          days_since_filing: 30,
+          is_urgent: false,
+          show_strong_text: false,
         },
       },
     },
@@ -1539,7 +1514,7 @@ export function validateAccountantAppointment(data: Partial<AccountantAppointmen
 // TAX REFUND VALIDATION
 // ============================================================================
 
-/** Validate Tax Refund letter (all 3 types share the same validation) */
+/** Validate Tax Refund letter */
 export function validateTaxRefund(data: Partial<TaxRefundVariables>): boolean {
   return !!(
     data.document_date &&
@@ -1549,6 +1524,8 @@ export function validateTaxRefund(data: Partial<TaxRefundVariables>): boolean {
     data.refund_amount > 0 &&
     data.filing_date &&
     data.tax_office_name?.trim() &&
-    data.tax_office_address?.trim()
+    data.tax_office_address?.trim() &&
+    data.days_since_filing !== undefined &&
+    data.days_since_filing > 0
   );
 }
