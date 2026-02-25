@@ -4139,7 +4139,7 @@ export class TemplateService extends BaseService {
         processed.company_name = processed.tax_office_name || '';
         {
           const addressee = processed.tax_office_address || '';
-          processed.group_name = addressee ? `<span style="font-size: 16px; font-weight: 400;">לידי: ${addressee}</span>` : '';
+          processed.group_name = addressee ? `<span style="font-size: 16px; font-weight: 400;">לידי: ${addressee} מס הכנסה מחלקת דוחות שנתיים בירורים על דוח שהוגש</span>` : '';
         }
         // Days text - dynamic based on days_since_filing
         {
@@ -4153,8 +4153,8 @@ export class TemplateService extends BaseService {
         if (processed.is_urgent) {
           processed.urgent_banner_section = `
 <tr>
-    <td style="padding-top: 10px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: center; padding: 8px 0; border: 2px solid #dc2626; border-radius: 4px; background-color: #fef2f2;">
+    <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: center; padding: 4px 0; border: 2px solid #dc2626; border-radius: 4px; background-color: #fef2f2;">
             הודעה דחופה
         </div>
     </td>
@@ -4164,10 +4164,10 @@ export class TemplateService extends BaseService {
         }
         // Strong text section (conditional) + closing text
         if (processed.show_strong_text) {
-          processed.strong_text_section = `<li style="margin-bottom: 6px;">
+          processed.strong_text_section = `<li style="margin-bottom: 1px;">
                     ולמרות פניות חוזרות ונשנות טרם התקבל ההחזר.
                 </li>`;
-          processed.closing_text = '<u>ולאחר שמיצינו את כל הפניות מצידנו, נבקשכם בתוקף לזרז את החזר המס המגיע לחברה ולהעבירו ללא דיחוי נוסף.</u>';
+          processed.closing_text = '<strong><u>ולאחר שמיצינו את כל הפניות מצידנו, נבקשכם בתוקף לזרז את החזר המס המגיע לחברה ולהעבירו ללא דיחוי נוסף.</u></strong>';
         } else {
           processed.strong_text_section = '';
           processed.closing_text = '<u>נבקשכם לזרז את החזר המס המגיע לחברה ולהעבירו בהקדם האפשרי.</u>';
@@ -4179,8 +4179,8 @@ export class TemplateService extends BaseService {
           const taxYear = processed.tax_year || '';
           processed.subjects_section = `
 <tr>
-    <td style="padding-top: 10px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 14px;"><span>הנדון: ${clientName} ח.פ. ${clientId}:</span><br/><span style="opacity: 0;">הנדון: </span><span>בקשה להחזר מס בגין שנת ${taxYear}</span></div>
+    <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.15; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 8px;"><span>הנדון: ${clientName} ח.פ. ${clientId}:</span><br/><span style="opacity: 0;">הנדון: </span><span>בקשה להחזר מס בגין שנת ${taxYear}</span></div>
     </td>
 </tr>`;
         }
