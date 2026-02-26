@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logger';
 import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle, Search, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,10 +92,7 @@ export default function ClientGroupsPage() {
       postal_code: '',
     },
   });
-  const [groupNameExists, setGroupNameExists] = useState(false);
-  const [isCheckingGroupName, setIsCheckingGroupName] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const groupNameCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { role } = useAuth();
   const isAdmin = role === 'admin';
@@ -126,46 +123,7 @@ export default function ClientGroupsPage() {
     loadGroups();
   }, []);
 
-  // Check for duplicate group name (debounced)
-  useEffect(() => {
-    // Only check when adding (not editing) and when dialog is open
-    if (!isAddDialogOpen) {
-      setGroupNameExists(false);
-      return;
-    }
-
-    // Clear previous timeout
-    if (groupNameCheckTimeoutRef.current) {
-      clearTimeout(groupNameCheckTimeoutRef.current);
-    }
-
-    // Need at least 2 characters
-    if (formData.group_name_hebrew.trim().length < 2) {
-      setGroupNameExists(false);
-      setIsCheckingGroupName(false);
-      return;
-    }
-
-    // Debounced check
-    setIsCheckingGroupName(true);
-    groupNameCheckTimeoutRef.current = setTimeout(async () => {
-      try {
-        const exists = await clientService.checkGroupNameExists(formData.group_name_hebrew.trim());
-        setGroupNameExists(exists);
-      } catch (error) {
-        logger.error('Error checking group name existence:', error);
-        setGroupNameExists(false);
-      } finally {
-        setIsCheckingGroupName(false);
-      }
-    }, 500);
-
-    return () => {
-      if (groupNameCheckTimeoutRef.current) {
-        clearTimeout(groupNameCheckTimeoutRef.current);
-      }
-    };
-  }, [formData.group_name_hebrew, isAddDialogOpen]);
+  // Group name duplicate check removed - no restrictions on group creation
 
   const loadGroups = async () => {
     setLoading(true);
@@ -217,16 +175,6 @@ export default function ClientGroupsPage() {
   };
 
   const handleAddGroup = async () => {
-    // Check for duplicate group name before submitting
-    if (groupNameExists) {
-      toast({
-        title: 'שם קבוצה תפוס',
-        description: 'קבוצה עם שם זה כבר קיימת במערכת. יש לבחור שם אחר.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     // Clean address data before sending
     const cleanedData = {
       ...formData,
@@ -795,22 +743,7 @@ export default function ClientGroupsPage() {
                 value={formData.group_name_hebrew}
                 onChange={(e) => setFormData({ ...formData, group_name_hebrew: e.target.value })}
                 dir="rtl"
-                required
-                className={groupNameExists ? 'border-red-500' : ''}
               />
-              {groupNameExists && (
-                <Alert variant="destructive" className="mt-2 py-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="rtl:text-right mr-2">
-                    קבוצה עם שם זה כבר קיימת במערכת
-                  </AlertDescription>
-                </Alert>
-              )}
-              {isCheckingGroupName && (
-                <p className="text-xs text-gray-500 mt-1 rtl:text-right">
-                  בודק...
-                </p>
-              )}
             </div>
 
             {/* Address Section */}

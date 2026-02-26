@@ -85,6 +85,7 @@ export function ContactsManager({
     email_preference: 'all',
     is_primary: false,
     notes: '',
+    role_at_client: '',
   });
 
   // Autocomplete state for Add dialog
@@ -157,6 +158,7 @@ export function ContactsManager({
       email_preference: 'all',
       is_primary: false,
       notes: '',
+      role_at_client: '',
     });
     setSearchQuery('');
     setSearchContacts([]);
@@ -165,22 +167,6 @@ export function ContactsManager({
   };
 
   const handleAdd = async () => {
-    // Validation
-    const errors: string[] = [];
-    if (!formData.full_name?.trim()) errors.push('שם מלא');
-    if (!formData.contact_type) errors.push('סוג איש קשר');
-    if (!formData.email?.trim()) errors.push('אימייל');
-    if (!formData.phone?.trim()) errors.push('טלפון');
-
-    if (errors.length > 0) {
-      toast({
-        title: 'שדות חובה חסרים',
-        description: errors.join(', '),
-        variant: 'destructive',
-      });
-      return;
-    }
-
     try {
       await onAdd(formData);
       setIsAddDialogOpen(false);
@@ -200,22 +186,6 @@ export function ContactsManager({
 
   const handleEdit = async () => {
     if (!selectedContact) return;
-
-    // Validation
-    const errors: string[] = [];
-    if (!formData.full_name?.trim()) errors.push('שם מלא');
-    if (!formData.contact_type) errors.push('סוג איש קשר');
-    if (!formData.email?.trim()) errors.push('אימייל');
-    if (!formData.phone?.trim()) errors.push('טלפון');
-
-    if (errors.length > 0) {
-      toast({
-        title: 'שדות חובה חסרים',
-        description: errors.join(', '),
-        variant: 'destructive',
-      });
-      return;
-    }
 
     try {
       // For groups, use assignment_id if available, otherwise use contact id
@@ -401,11 +371,11 @@ export function ContactsManager({
             <DialogDescription className="rtl:text-right">הזן את פרטי איש הקשר החדש</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Row 1: Contact Type, Name with Autocomplete, Email, Phone, Phone Secondary */}
-            <div className="grid grid-cols-5 gap-3">
+            {/* Row 1: Contact Type, Name with Autocomplete, Email, Phone, Phone Secondary, Role at Client */}
+            <div className="grid grid-cols-6 gap-3">
               <div>
                 <Label htmlFor="add_contact_type" className="text-right block mb-2">
-                  סוג איש קשר *
+                  סוג איש קשר
                 </Label>
                 <Select
                   value={formData.contact_type}
@@ -427,7 +397,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="add_full_name" className="text-right block mb-2">
-                  שם מלא *
+                  שם מלא
                   {selectedFromList && (
                     <span className="mr-2 text-sm text-green-600 font-normal">
                       <Check className="inline h-3 w-3 ml-1" />
@@ -445,7 +415,6 @@ export function ContactsManager({
                         setAutocompleteOpen(true);
                       }
                     }}
-                    required
                     dir="rtl"
                     className="rtl:text-right"
                   />
@@ -492,7 +461,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="add_email" className="text-right block mb-2">
-                  אימייל *
+                  אימייל
                 </Label>
                 <Input
                   id="add_email"
@@ -501,13 +470,12 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  required
                   dir="ltr"
                 />
               </div>
               <div>
                 <Label htmlFor="add_phone" className="text-right block mb-2">
-                  טלפון נייד *
+                  טלפון נייד
                 </Label>
                 <Input
                   id="add_phone"
@@ -516,7 +484,6 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  required
                   dir="ltr"
                 />
               </div>
@@ -532,6 +499,20 @@ export function ContactsManager({
                     setFormData({ ...formData, phone_secondary: e.target.value })
                   }
                   dir="ltr"
+                />
+              </div>
+              <div>
+                <Label htmlFor="add_role_at_client" className="text-right block mb-2">
+                  תפקיד אצל הלקוח
+                </Label>
+                <Input
+                  id="add_role_at_client"
+                  value={formData.role_at_client || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role_at_client: e.target.value })
+                  }
+                  dir="rtl"
+                  placeholder="למשל: סמנכ״לית כספים"
                 />
               </div>
             </div>
@@ -622,11 +603,11 @@ export function ContactsManager({
             <DialogDescription className="rtl:text-right">עדכן את פרטי איש הקשר</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* Row 1: Contact Type, Name, Email, Phone, Phone Secondary */}
-            <div className="grid grid-cols-5 gap-3">
+            {/* Row 1: Contact Type, Name, Email, Phone, Phone Secondary, Role at Client */}
+            <div className="grid grid-cols-6 gap-3">
               <div>
                 <Label htmlFor="edit_contact_type" className="text-right block mb-2">
-                  סוג איש קשר *
+                  סוג איש קשר
                 </Label>
                 <Select
                   value={formData.contact_type}
@@ -648,7 +629,7 @@ export function ContactsManager({
               </div>
               <div>
                 <Label htmlFor="edit_full_name" className="text-right block mb-2">
-                  שם מלא *
+                  שם מלא
                 </Label>
                 <Input
                   id="edit_full_name"
@@ -656,14 +637,13 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, full_name: e.target.value })
                   }
-                  required
                   dir="rtl"
                   className="rtl:text-right"
                 />
               </div>
               <div>
                 <Label htmlFor="edit_email" className="text-right block mb-2">
-                  אימייל *
+                  אימייל
                 </Label>
                 <Input
                   id="edit_email"
@@ -672,13 +652,12 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  required
                   dir="ltr"
                 />
               </div>
               <div>
                 <Label htmlFor="edit_phone" className="text-right block mb-2">
-                  טלפון נייד *
+                  טלפון נייד
                 </Label>
                 <Input
                   id="edit_phone"
@@ -687,7 +666,6 @@ export function ContactsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
-                  required
                   dir="ltr"
                 />
               </div>
@@ -703,6 +681,20 @@ export function ContactsManager({
                     setFormData({ ...formData, phone_secondary: e.target.value })
                   }
                   dir="ltr"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_role_at_client" className="text-right block mb-2">
+                  תפקיד אצל הלקוח
+                </Label>
+                <Input
+                  id="edit_role_at_client"
+                  value={formData.role_at_client || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, role_at_client: e.target.value })
+                  }
+                  dir="rtl"
+                  placeholder="למשל: סמנכ״לית כספים"
                 />
               </div>
             </div>

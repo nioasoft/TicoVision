@@ -283,38 +283,26 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       }
     }, [hasUnsavedChanges, onClose]);
 
-    // Validate form before submission
+    // Validate form before submission - format checks only (no required fields)
     const validateForm = useCallback((): { valid: boolean; errors: string[] } => {
       const errors: string[] = [];
 
-      // Required fields validation
-      if (!formData.tax_id?.trim()) errors.push('מספר מזהה');
-      if (!formData.company_name?.trim()) errors.push('שם החברה');
-      if (!formData.contact_name?.trim()) errors.push('שם איש קשר');
-      if (!formData.contact_email?.trim()) errors.push('אימייל איש קשר');
-      if (!formData.contact_phone?.trim()) errors.push('טלפון איש קשר');
-
-      // Accountant validation - OPTIONAL in add mode
-      // Can be added later via contacts management
-      // (No validation needed - fields are optional)
-
-      // Check for duplicate tax_id (only in add mode)
-      if (mode === 'add' && taxIdExists) {
+      // Check for duplicate tax_id (only in add mode, only if tax_id provided)
+      if (mode === 'add' && formData.tax_id?.trim() && taxIdExists) {
         errors.push('לקוח עם מספר עוסק זה כבר קיים במערכת');
       }
 
-      // Format validation - strip formatting before checking
-      if (formData.tax_id) {
+      // Format validation - only if tax_id is provided
+      if (formData.tax_id?.trim()) {
         const plainTaxId = stripTaxIdFormatting(formData.tax_id);
         if (!/^\d{9}$/.test(plainTaxId)) {
           errors.push('מספר מזהה חייב להכיל 9 ספרות בדיוק');
         }
       }
 
-
-      // Email format validation
+      // Email format validation - only if email is provided
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (formData.contact_email && !emailRegex.test(formData.contact_email)) {
+      if (formData.contact_email?.trim() && !emailRegex.test(formData.contact_email)) {
         errors.push('אימייל איש קשר לא תקין');
       }
 
@@ -533,8 +521,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   }}
                   onKeyDown={handleKeyDown}
                   maxLength={11}
-
-                  required
                   dir="ltr"
                   className={taxIdExists ? 'border-red-500' : ''}
                 />
@@ -562,7 +548,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   value={formData.company_name}
                   onChange={(e) => handleFormChange('company_name', e.target.value)}
                   onKeyDown={handleKeyDown}
-                  required
                   dir="rtl"
                 />
               </div>
@@ -688,7 +673,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     handleFormChange('contact_phone_secondary', formatted);
                   }}
                   contactType="owner"
-                  required={true}
+                  required={false}
                   namePlaceholder="שם מלא"
                   emailPlaceholder="דוא״ל"
                   phonePlaceholder=""

@@ -75,6 +75,7 @@ export interface CreateClientContactDto {
   is_primary?: boolean;
   is_active?: boolean;
   notes?: string;
+  role_at_client?: string | null;
 }
 
 export interface UpdateClientContactDto extends Partial<CreateClientContactDto> {}
@@ -224,53 +225,23 @@ export class ClientService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Validate Israeli tax ID (9 digits)
-      if (!this.validateTaxId(data.tax_id)) {
-        return {
-          data: null,
-          error: new Error('Invalid Israeli tax ID. Must be 9 digits.')
-        };
-      }
+      // Validate tax_id format only if provided
+      if (data.tax_id?.trim()) {
+        if (!this.validateTaxId(data.tax_id)) {
+          return {
+            data: null,
+            error: new Error('מספר מזהה חייב להכיל 9 ספרות בדיוק')
+          };
+        }
 
-      // Check for duplicate tax_id
-      const taxIdExists = await this.checkTaxIdExists(data.tax_id);
-      if (taxIdExists) {
-        return {
-          data: null,
-          error: new Error('לקוח עם מספר עוסק זה כבר קיים במערכת')
-        };
-      }
-
-      // Validate required fields (accountant is optional - can be added later)
-      const requiredFields: Array<{ key: keyof CreateClientDto | string; label: string }> = [
-        { key: 'company_name', label: 'שם החברה' },
-        // commercial_name is OPTIONAL - removed from required fields
-        { key: 'contact_name', label: 'שם איש קשר' },
-        { key: 'contact_email', label: 'אימייל איש קשר' },
-        { key: 'contact_phone', label: 'טלפון איש קשר' },
-        // Accountant fields are OPTIONAL - can be added later via contacts management
-      ];
-
-      const missingFields = requiredFields.filter(({ key }) => {
-        const value = data[key as keyof CreateClientDto];
-        return !value || (typeof value === 'string' && !value.trim());
-      });
-
-      if (missingFields.length > 0) {
-        return {
-          data: null,
-          error: new Error(
-            `שדות חובה חסרים: ${missingFields.map(f => f.label).join(', ')}`
-          ),
-        };
-      }
-
-      // Validate address fields
-      if (!data.address?.street?.trim() || !data.address?.city?.trim()) {
-        return {
-          data: null,
-          error: new Error('שדות כתובת חובה: רחוב ועיר'),
-        };
+        // Check for duplicate tax_id only if provided
+        const taxIdExists = await this.checkTaxIdExists(data.tax_id);
+        if (taxIdExists) {
+          return {
+            data: null,
+            error: new Error('לקוח עם מספר עוסק זה כבר קיים במערכת')
+          };
+        }
       }
 
       // Set default payment_role based on group_id
@@ -943,46 +914,33 @@ export class ClientService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      // Validate tax ID format only (9 digits, no Luhn)
-      if (!this.validateTaxIdAdhoc(data.tax_id)) {
-        return {
-          data: null,
-          error: new Error('ח.פ חייב להכיל 9 ספרות')
-        };
-      }
+      // Validate tax_id format only if provided
+      if (data.tax_id?.trim()) {
+        if (!this.validateTaxIdAdhoc(data.tax_id)) {
+          return {
+            data: null,
+            error: new Error('ח.פ חייב להכיל 9 ספרות')
+          };
+        }
 
-      // Check for duplicate tax_id
-      const taxIdExists = await this.checkTaxIdExists(data.tax_id);
-      if (taxIdExists) {
-        return {
-          data: null,
-          error: new Error('לקוח עם מספר עוסק זה כבר קיים במערכת')
-        };
-      }
-
-      // Validate required fields for adhoc
-      if (!data.company_name?.trim()) {
-        return {
-          data: null,
-          error: new Error('שם החברה הוא שדה חובה')
-        };
-      }
-
-      if (!data.contact_email?.trim()) {
-        return {
-          data: null,
-          error: new Error('אימייל הוא שדה חובה')
-        };
+        // Check for duplicate tax_id only if provided
+        const taxIdExists = await this.checkTaxIdExists(data.tax_id);
+        if (taxIdExists) {
+          return {
+            data: null,
+            error: new Error('לקוח עם מספר עוסק זה כבר קיים במערכת')
+          };
+        }
       }
 
       // Create adhoc client with minimal data and placeholder values
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
-          company_name: data.company_name.trim(),
-          tax_id: data.tax_id.trim(),
-          contact_email: data.contact_email.trim(),
-          contact_name: data.contact_name?.trim() || data.company_name.trim(),
+          company_name: data.company_name?.trim() || null,
+          tax_id: data.tax_id?.trim() || null,
+          contact_email: data.contact_email?.trim() || null,
+          contact_name: data.contact_name?.trim() || data.company_name?.trim() || null,
           status: 'adhoc',
           client_type: 'company',
           company_status: 'active',
@@ -1006,14 +964,14 @@ export class ClientService extends BaseService {
         return { data: null, error: this.handleError(error) };
       }
 
-      // Auto-create primary contact using shared contacts system
-      if (client) {
+      // Auto-create primary contact using shared contacts system (only if we have at least a name or email)
+      if (client && (data.contact_name?.trim() || data.contact_email?.trim())) {
         try {
-          const contactName = data.contact_name?.trim() || data.company_name.trim();
+          const contactName = data.contact_name?.trim() || data.company_name?.trim() || 'איש קשר';
           const owner = await TenantContactService.createOrGet({
             full_name: contactName,
-            email: data.contact_email.trim(),
-            phone: data.contact_phone.trim(),
+            email: data.contact_email?.trim() || null,
+            phone: data.contact_phone?.trim() || null,
             contact_type: 'owner',
             job_title: 'איש קשר',
           });
@@ -1059,15 +1017,6 @@ export class ClientService extends BaseService {
   }): Promise<ServiceResponse<ClientGroup>> {
     try {
       const tenantId = await this.getTenantId();
-
-      // Check for duplicate group name
-      const groupNameExists = await this.checkGroupNameExists(data.group_name_hebrew);
-      if (groupNameExists) {
-        return {
-          data: null,
-          error: new Error('קבוצה עם שם זה כבר קיימת במערכת')
-        };
-      }
 
       const { data: group, error } = await supabase
         .from('client_groups')
@@ -1362,6 +1311,7 @@ export class ClientService extends BaseService {
         is_primary: data.is_primary ?? false,
         email_preference: data.email_preference ?? 'all',
         notes: data.notes || null,
+        role_at_client: data.role_at_client || null,
       });
 
       if (!assignment) {
