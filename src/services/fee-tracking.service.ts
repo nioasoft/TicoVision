@@ -11,7 +11,7 @@ import type {
   FeeTrackingRow,
   FeeTrackingKPIs,
   FeeTrackingData,
-  PaymentStatus,
+  FeeTrackingPaymentStatus,
   FeeTrackingFilters,
   FeeTrackingEnhancedRow,
 } from '@/types/fee-tracking.types';
@@ -47,17 +47,17 @@ class FeeTrackingService extends BaseService {
       const clients: FeeTrackingRow[] = (rawData || []).map((row: any) => {
         // Determine effective payment_status
         // If client belongs to a group with group_fee_calculation, use group status
-        let effectivePaymentStatus: PaymentStatus = row.payment_status as PaymentStatus;
+        let effectiveFeeTrackingPaymentStatus: FeeTrackingPaymentStatus = row.payment_status as FeeTrackingPaymentStatus;
 
         if (row.group_calculation_id) {
           // Client is in a group with group fee calculation - use group status
           const groupStatus = row.group_calculation_status;
           if (groupStatus === 'paid') {
-            effectivePaymentStatus = 'paid';
+            effectiveFeeTrackingPaymentStatus = 'paid';
           } else if (groupStatus === 'sent') {
-            effectivePaymentStatus = row.group_letter_sent_at ? 'pending' : 'not_sent';
+            effectiveFeeTrackingPaymentStatus = row.group_letter_sent_at ? 'pending' : 'not_sent';
           } else if (groupStatus === 'draft') {
-            effectivePaymentStatus = 'not_sent';
+            effectiveFeeTrackingPaymentStatus = 'not_sent';
           }
         }
 
@@ -76,7 +76,7 @@ class FeeTrackingService extends BaseService {
         has_letter: row.has_letter,
         letter_id: row.letter_id,
         letter_sent_at: row.letter_sent_at ? new Date(row.letter_sent_at) : undefined,
-        payment_status: effectivePaymentStatus,
+        payment_status: effectiveFeeTrackingPaymentStatus,
         payment_amount: row.payment_amount,
         payment_date: row.payment_date ? new Date(row.payment_date) : undefined,
         payment_method_selected: row.payment_method_selected || null,

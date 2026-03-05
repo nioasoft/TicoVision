@@ -196,6 +196,19 @@ serve(async (req) => {
     // Remove footer (entire footer section)
     html = html.replace(/<!--\s*FOOTER START\s*-->[\s\S]*?<!--\s*FOOTER END\s*-->/g, '');
 
+    // Strip inner HTML document wrapper for clean PDF rendering.
+    // generated_content_html is an email-ready document with nested outer tables.
+    // For PDF we need just the content rows in a flat table — the deep nesting
+    // prevents Chromium from splitting the body <td> across pages.
+    html = html.replace(
+      /<!DOCTYPE[^>]*>[\s\S]*?<table\s+width="800"[^>]*>/i,
+      '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+    );
+    html = html.replace(
+      /<\/table>\s*<\/td>\s*<\/tr>\s*<\/table>\s*<\/body>\s*<\/html>\s*$/i,
+      '</table>'
+    );
+
     // 5. Wrap HTML in full document with proper layout for header/footer
     // Different @page margins for standalone templates
     const pageMargins = isStandaloneTemplate
@@ -249,6 +262,12 @@ serve(async (req) => {
 
           /* Allow table rows to break across pages for proper content flow */
           tr {
+            break-inside: auto;
+            page-break-inside: auto;
+          }
+
+          /* Allow table cells to break across pages (critical for outer wrapper td) */
+          td {
             break-inside: auto;
             page-break-inside: auto;
           }

@@ -139,6 +139,9 @@ export const CollectionDashboard: React.FC = () => {
       case 'all':
         // No additional filters needed
         break;
+      case 'calculated_not_sent':
+        setFilters({ status: 'calculated_not_sent' });
+        break;
       case 'pending':
         setFilters({ status: 'pending' });
         break;

@@ -7,9 +7,10 @@ import type { FeeStatus } from '@/services/fee.service';
 import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
 
 /**
- * Payment status - derived from fee calculation status and letter status
+ * Fee tracking payment status - derived from fee calculation status and letter status.
+ * Different from collection.types.ts PaymentStatus which mirrors the DB fee_status values.
  */
-export type PaymentStatus =
+export type FeeTrackingPaymentStatus =
   | 'not_calculated'  // Client has no fee calculation for this year
   | 'not_sent'        // Has calculation but no letter sent
   | 'pending'         // Letter sent, waiting for payment
@@ -41,7 +42,7 @@ export interface FeeTrackingRow {
   letter_sent_at?: Date;
 
   // Payment status (derived)
-  payment_status: PaymentStatus;
+  payment_status: FeeTrackingPaymentStatus;
   payment_amount?: number;
   payment_date?: Date;
 

@@ -1955,7 +1955,7 @@ export type Database = {
           client_type: string | null
           collection_responsibility: string | null
           commercial_name: string | null
-          company_name: string
+          company_name: string | null
           company_name_hebrew: string | null
           company_status: string | null
           company_subtype: string | null
@@ -1990,7 +1990,7 @@ export type Database = {
           status: string
           tags: string[] | null
           tax_coding: string | null
-          tax_id: string
+          tax_id: string | null
           tenant_id: string
           type: Database["public"]["Enums"]["client_type"] | null
           updated_at: string | null
@@ -2009,7 +2009,7 @@ export type Database = {
           client_type?: string | null
           collection_responsibility?: string | null
           commercial_name?: string | null
-          company_name: string
+          company_name?: string | null
           company_name_hebrew?: string | null
           company_status?: string | null
           company_subtype?: string | null
@@ -2044,7 +2044,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           tax_coding?: string | null
-          tax_id: string
+          tax_id?: string | null
           tenant_id: string
           type?: Database["public"]["Enums"]["client_type"] | null
           updated_at?: string | null
@@ -2063,7 +2063,7 @@ export type Database = {
           client_type?: string | null
           collection_responsibility?: string | null
           commercial_name?: string | null
-          company_name?: string
+          company_name?: string | null
           company_name_hebrew?: string | null
           company_status?: string | null
           company_subtype?: string | null
@@ -2098,7 +2098,7 @@ export type Database = {
           status?: string
           tags?: string[] | null
           tax_coding?: string | null
-          tax_id?: string
+          tax_id?: string | null
           tenant_id?: string
           type?: Database["public"]["Enums"]["client_type"] | null
           updated_at?: string | null
@@ -5894,6 +5894,7 @@ export type Database = {
       get_dashboard_summary: {
         Args: { p_tax_year: number; p_tenant_id: string }
         Returns: {
+          amount_calculated_not_sent: number
           amount_collected: number
           amount_pending: number
           audit_before_vat: number
@@ -5902,6 +5903,7 @@ export type Database = {
           billing_with_vat: number
           bookkeeping_before_vat: number
           bookkeeping_with_vat: number
+          clients_calculated_not_sent_count: number
           clients_paid_count: number
           clients_pending_count: number
           clients_sent_count: number
@@ -6381,7 +6383,13 @@ export type Database = {
         | "board_member"
         | "legal_counsel"
         | "other"
-      fee_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
+      fee_status:
+        | "draft"
+        | "sent"
+        | "paid"
+        | "overdue"
+        | "cancelled"
+        | "partial_paid"
       file_category:
         | "company_registry"
         | "financial_report"
@@ -6401,6 +6409,13 @@ export type Database = {
         | "partially_paid"
         | "paid"
         | "disputed"
+      letter_status:
+        | "draft"
+        | "saved"
+        | "sent_email"
+        | "sent_whatsapp"
+        | "sent_print"
+        | "cancelled"
       letter_template_type:
         | "external_index_only"
         | "external_real_change"
@@ -6576,7 +6591,14 @@ export const Constants = {
         "legal_counsel",
         "other",
       ],
-      fee_status: ["draft", "sent", "paid", "overdue", "cancelled"],
+      fee_status: [
+        "draft",
+        "sent",
+        "paid",
+        "overdue",
+        "cancelled",
+        "partial_paid",
+      ],
       file_category: [
         "company_registry",
         "financial_report",
@@ -6597,6 +6619,14 @@ export const Constants = {
         "partially_paid",
         "paid",
         "disputed",
+      ],
+      letter_status: [
+        "draft",
+        "saved",
+        "sent_email",
+        "sent_whatsapp",
+        "sent_print",
+        "cancelled",
       ],
       letter_template_type: [
         "external_index_only",

@@ -207,8 +207,10 @@ class DashboardService extends BaseService {
       // Calculate statistics
       let clients_paid_count = 0;
       let clients_pending_count = 0;
+      let clients_calculated_not_sent_count = 0;
       let amount_collected = 0;
       let amount_pending = 0;
+      let amount_calculated_not_sent = 0;
 
       if (data) {
         for (const row of data) {
@@ -221,6 +223,9 @@ class DashboardService extends BaseService {
           } else if (['sent', 'overdue', 'partial_paid'].includes(row.status)) {
             clients_pending_count++;
             amount_pending += totalAmount;
+          } else if (row.status === 'draft') {
+            clients_calculated_not_sent_count++;
+            amount_calculated_not_sent += totalAmount;
           }
         }
       }
@@ -233,8 +238,10 @@ class DashboardService extends BaseService {
       const stats: PaymentStats = {
         clients_paid_count,
         clients_pending_count,
+        clients_calculated_not_sent_count,
         amount_collected,
         amount_pending,
+        amount_calculated_not_sent,
         collection_rate_percent,
       };
 
@@ -287,8 +294,10 @@ class DashboardService extends BaseService {
         payment_stats: {
           clients_paid_count: data.clients_paid_count || 0,
           clients_pending_count: data.clients_pending_count || 0,
+          clients_calculated_not_sent_count: data.clients_calculated_not_sent_count || 0,
           amount_collected: data.amount_collected || 0,
           amount_pending: data.amount_pending || 0,
+          amount_calculated_not_sent: data.amount_calculated_not_sent || 0,
           collection_rate_percent:
             (data.amount_collected || 0) + (data.amount_pending || 0) > 0
               ? ((data.amount_collected || 0) /

@@ -150,7 +150,8 @@ class CollectionService extends BaseService {
       const collection_rate = total_expected > 0 ? (total_received / total_expected) * 100 : 0;
 
       // Calculate client counts (now correctly counting unique clients)
-      const clients_sent = rows?.length || 0;
+      const clients_calculated_not_sent = rows?.filter((row) => row.payment_status === 'draft').length || 0;
+      const clients_sent = (rows?.length || 0) - clients_calculated_not_sent;
       const clients_paid = rows?.filter((row) => row.payment_status === 'paid').length || 0;
       const clients_partial_paid = rows?.filter((row) => row.payment_status === 'partial_paid').length || 0;
       const clients_pending = clients_sent - clients_paid - clients_partial_paid;
@@ -168,6 +169,7 @@ class CollectionService extends BaseService {
         clients_paid,
         clients_partial_paid,
         clients_pending,
+        clients_calculated_not_sent,
         clients_not_selected,
         alerts_unopened: alertsResult.unopened,
         alerts_no_selection: alertsResult.no_selection,
@@ -971,9 +973,12 @@ class CollectionService extends BaseService {
     // Status filter
     if (filters.status && filters.status !== 'all') {
       switch (filters.status) {
+        case 'calculated_not_sent':
+          q = q.eq('payment_status', 'draft');
+          break;
         case 'pending':
-          // All non-paid statuses
-          q = q.neq('payment_status', 'paid');
+          // All non-paid statuses (exclude draft)
+          q = q.neq('payment_status', 'paid').neq('payment_status', 'draft');
           break;
         case 'sent_not_opened':
           q = q.is('letter_opened_at', null);

@@ -40,8 +40,10 @@ export interface LetterStats {
 export interface PaymentStats {
   clients_paid_count: number;
   clients_pending_count: number;
+  clients_calculated_not_sent_count: number;
   amount_collected: number;
   amount_pending: number;
+  amount_calculated_not_sent: number;
   collection_rate_percent: number;
 }
 

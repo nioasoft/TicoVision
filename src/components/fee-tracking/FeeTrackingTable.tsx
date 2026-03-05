@@ -38,7 +38,7 @@ import {
   Users,
   Send,
 } from 'lucide-react';
-import type { FeeTrackingRow, FeeTrackingEnhancedRow, PaymentStatus } from '@/types/fee-tracking.types';
+import type { FeeTrackingRow, FeeTrackingEnhancedRow, FeeTrackingPaymentStatus } from '@/types/fee-tracking.types';
 import { formatILS } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
@@ -71,7 +71,7 @@ interface FeeTrackingTableProps {
 /**
  * Status badge component
  */
-const StatusBadge: React.FC<{ status: PaymentStatus }> = ({ status }) => {
+const StatusBadge: React.FC<{ status: FeeTrackingPaymentStatus }> = ({ status }) => {
   switch (status) {
     case 'not_calculated':
       return (
@@ -279,7 +279,7 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
     groupId: string;
     groupName: string;
     members: FeeTrackingRow[];
-    aggregateStatus: PaymentStatus;
+    aggregateStatus: FeeTrackingPaymentStatus;
     // Group fee calculation data
     groupCalculationId?: string | null;
     groupAuditBeforeVat?: number | null;
@@ -322,7 +322,7 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
 
       // Determine status for the group
       // Priority: Use group fee calculation status if exists, otherwise aggregate from members
-      let aggregateStatus: PaymentStatus = 'not_calculated';
+      let aggregateStatus: FeeTrackingPaymentStatus = 'not_calculated';
 
       if (firstMember?.group_calculation_id) {
         // Group has its own fee calculation - use that status

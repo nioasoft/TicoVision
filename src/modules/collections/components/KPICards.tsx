@@ -14,7 +14,8 @@ import {
   Clock,
   MailX,
   MousePointerClick,
-  MessageSquareWarning
+  MessageSquareWarning,
+  Calculator,
 } from 'lucide-react';
 import type { CollectionKPIs } from '@/types/collection.types';
 import { formatILSInteger, formatPercentage, formatNumber } from '@/lib/formatters';
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils';
 
 export type KPICardFilter =
   | 'all'
+  | 'calculated_not_sent'
   | 'pending'
   | 'partial_paid'
   | 'paid'
@@ -168,14 +170,22 @@ export const KPICards: React.FC<KPICardsProps> = ({
       </Card>
 
       {/* Row 2: Filter Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-1.5" dir="rtl">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-1.5" dir="rtl">
         <FilterCard
           title="הכל"
-          count={kpis.clients_sent}
+          count={kpis.clients_sent + kpis.clients_calculated_not_sent}
           icon={FileText}
           color="blue"
           isSelected={selectedCard === 'all'}
           onClick={() => onCardClick?.('all')}
+        />
+        <FilterCard
+          title="חושב, לא נשלח"
+          count={kpis.clients_calculated_not_sent}
+          icon={Calculator}
+          color="purple"
+          isSelected={selectedCard === 'calculated_not_sent'}
+          onClick={() => onCardClick?.('calculated_not_sent')}
         />
         <FilterCard
           title="שולם"

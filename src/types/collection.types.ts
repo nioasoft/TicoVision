@@ -238,6 +238,7 @@ export interface CollectionKPIs {
   clients_paid: number;
   clients_partial_paid: number;  // Clients who paid partially
   clients_pending: number;
+  clients_calculated_not_sent: number;  // Clients with calculation but no letter sent (draft)
   clients_not_selected: number;  // Clients who haven't selected a payment method
 
   // Alerts
@@ -348,6 +349,7 @@ export interface CollectionFilters {
   // Payment status filter
   status?:
     | 'all'
+    | 'calculated_not_sent'  // Draft - calculated but no letter sent
     | 'pending'  // All non-paid statuses
     | 'sent_not_opened'
     | 'opened_not_selected'
