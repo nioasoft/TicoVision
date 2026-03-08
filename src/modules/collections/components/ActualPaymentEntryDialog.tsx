@@ -29,10 +29,11 @@ import { PaymentMethodBadge } from '@/components/payments/PaymentMethodBadge';
 import { FileAttachmentList } from '@/components/payments/FileAttachmentList';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-import { actualPaymentService } from '@/services/actual-payment.service';
+import { actualPaymentService, type RecordPaymentData } from '@/services/actual-payment.service';
 import { installmentService } from '@/services/installment.service';
+import { DeviationConfirmationDialog } from './DeviationConfirmationDialog';
 import type { PaymentMethod, AlertLevel } from '@/types/payment.types';
-import { PAYMENT_METHOD_LABELS, PAYMENT_DISCOUNTS } from '@/types/payment.types';
+import { PAYMENT_METHOD_LABELS, PAYMENT_DISCOUNTS, DEVIATION_AUTO_APPROVE_THRESHOLD_ILS } from '@/types/payment.types';
 import { formatILS } from '@/lib/formatters';
 import { calculateBeforeVAT } from '@/lib/payment-utils';
 
@@ -149,32 +150,37 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
     return 'critical';
   }, [deviation]);
 
-  // Handle submit
-  const handleSubmit = async () => {
+  // Deviation confirmation state
+  const [showDeviationConfirm, setShowDeviationConfirm] = useState(false);
+  const [pendingPaymentData, setPendingPaymentData] = useState<RecordPaymentData | null>(null);
+
+  // Build payment data object
+  const buildPaymentData = (): RecordPaymentData => {
+    const finalAmount = typeof amountPaid === 'number' ? amountPaid : 0;
+    return {
+      clientId: props.clientId,
+      feeCalculationId: props.feeCalculationId,
+      amountPaid: finalAmount,
+      paymentDate,
+      paymentMethod,
+      paymentReference,
+      numInstallments: hasInstallments ? numInstallments : undefined,
+      attachmentIds,
+      notes,
+      appliedDiscountPercent: effectiveDiscount,
+    };
+  };
+
+  // Execute the actual payment recording
+  const executePayment = async (paymentData: RecordPaymentData) => {
     setIsSubmitting(true);
     try {
-      const finalAmount = typeof amountPaid === 'number' ? amountPaid : 0;
-      const paymentData = {
-        clientId: props.clientId,
-        feeCalculationId: props.feeCalculationId,
-        amountPaid: finalAmount,
-        paymentDate,
-        paymentMethod,
-        paymentReference,
-        numInstallments: hasInstallments ? numInstallments : undefined,
-        attachmentIds,
-        notes,
-        appliedDiscountPercent: effectiveDiscount, // Pass the effective discount (may be manual override)
-      };
-
       if (hasInstallments && numInstallments > 0) {
-        // Create installments
         const installments = installmentService.generateInstallmentSchedule(
           numInstallments,
-          finalAmount,
-          paymentDate
+          paymentData.amountPaid,
+          paymentData.paymentDate
         );
-
         await actualPaymentService.recordPaymentWithInstallments(paymentData, installments);
       } else {
         await actualPaymentService.recordPayment(paymentData);
@@ -190,6 +196,47 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle submit - check deviation before saving
+  const handleSubmit = async () => {
+    const paymentData = buildPaymentData();
+    const deviationAbs = Math.abs(calculatedExpectedAmount - paymentData.amountPaid);
+
+    if (deviationAbs <= DEVIATION_AUTO_APPROVE_THRESHOLD_ILS) {
+      // Small or no deviation - auto-approve as final
+      if (deviationAbs > 0) {
+        paymentData.deviationApproval = { type: 'auto_approved' };
+      }
+      await executePayment(paymentData);
+    } else {
+      // Significant deviation - show confirmation dialog
+      setPendingPaymentData(paymentData);
+      setShowDeviationConfirm(true);
+    }
+  };
+
+  // Handle "approve as final" from deviation dialog
+  const handleApproveAsFinal = async () => {
+    if (!pendingPaymentData) return;
+    const paymentData = {
+      ...pendingPaymentData,
+      deviationApproval: { type: 'manually_approved_final' as const },
+    };
+    setShowDeviationConfirm(false);
+    await executePayment(paymentData);
+  };
+
+  // Handle "record as partial" from deviation dialog
+  const handleRecordAsPartial = async () => {
+    if (!pendingPaymentData) return;
+    const paymentData = {
+      ...pendingPaymentData,
+      treatAsPartial: true,
+      deviationApproval: { type: 'partial_payment' as const },
+    };
+    setShowDeviationConfirm(false);
+    await executePayment(paymentData);
   };
 
   const handleFileUpload = async (files: File[]) => {
@@ -510,6 +557,18 @@ export function ActualPaymentEntryDialog(props: ActualPaymentEntryDialogProps) {
       open={showExitConfirm}
       onClose={cancelExit}
       onConfirm={() => confirmExit(() => props.onOpenChange(false))}
+    />
+
+    <DeviationConfirmationDialog
+      open={showDeviationConfirm}
+      onOpenChange={setShowDeviationConfirm}
+      deviationAmount={pendingPaymentData ? calculatedExpectedAmount - pendingPaymentData.amountPaid : 0}
+      expectedAmount={calculatedExpectedAmount}
+      actualAmount={pendingPaymentData?.amountPaid ?? 0}
+      isOverpayment={pendingPaymentData ? pendingPaymentData.amountPaid > calculatedExpectedAmount : false}
+      loading={isSubmitting}
+      onApproveAsFinal={handleApproveAsFinal}
+      onRecordAsPartial={handleRecordAsPartial}
     />
     </>
   );

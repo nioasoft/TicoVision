@@ -351,6 +351,101 @@ class CollectionService extends BaseService {
   }
 
   /**
+   * Convert a partial payment to final payment
+   * Closes out the remaining balance and marks as fully paid with manual approval
+   *
+   * @param feeId - Fee calculation ID
+   * @param approvalNotes - Notes explaining why the partial is being closed as final
+   * @returns Success status
+   */
+  async convertPartialToFinal(
+    feeId: string,
+    approvalNotes: string
+  ): Promise<ServiceResponse<boolean>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Get current fee calculation
+      const { data: fee, error: feeError } = await supabase
+        .from('fee_calculations')
+        .select('status, total_amount, partial_payment_amount, actual_payment_id, client_id, amount_after_selected_discount')
+        .eq('id', feeId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (feeError) throw feeError;
+
+      if (fee.status !== 'partial_paid') {
+        return { data: false, error: new Error('ניתן להמיר רק תשלום חלקי לתשלום סופי') };
+      }
+
+      // If there's already an actual_payments record, update its deviation as reviewed
+      if (fee.actual_payment_id) {
+        const { actualPaymentService } = await import('./actual-payment.service');
+        await actualPaymentService.reviewDeviation(
+          fee.actual_payment_id,
+          `מאושר ידנית כתשלום סופי: ${approvalNotes}`
+        );
+      } else {
+        // No actual_payments record yet - create one for the accumulated partial amount
+        const { actualPaymentService } = await import('./actual-payment.service');
+        const partialAmount = Number(fee.partial_payment_amount) || 0;
+
+        const result = await actualPaymentService.recordPayment({
+          clientId: fee.client_id,
+          feeCalculationId: feeId,
+          amountPaid: partialAmount,
+          paymentDate: new Date(),
+          paymentMethod: 'bank_transfer',
+          notes: `סגירת יתרה - מאושר ידנית: ${approvalNotes}`,
+          deviationApproval: {
+            type: 'manually_approved_final',
+            notes: `מאושר ידנית כתשלום סופי: ${approvalNotes}`,
+          },
+        });
+
+        if (result.error) {
+          return { data: false, error: result.error };
+        }
+
+        // recordPayment already sets status to 'paid', so we're done
+        await this.logAction('convert_partial_to_final', feeId, {
+          partial_amount: partialAmount,
+          approval_notes: approvalNotes,
+          approved_by: user?.id,
+        });
+
+        return { data: true, error: null };
+      }
+
+      // Update fee_calculations status to paid
+      const { error: updateError } = await supabase
+        .from('fee_calculations')
+        .update({
+          status: 'paid',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', feeId)
+        .eq('tenant_id', tenantId);
+
+      if (updateError) throw updateError;
+
+      // Log action
+      await this.logAction('convert_partial_to_final', feeId, {
+        partial_amount: fee.partial_payment_amount,
+        total_amount: fee.total_amount,
+        approval_notes: approvalNotes,
+        approved_by: user?.id,
+      });
+
+      return { data: true, error: null };
+    } catch (error) {
+      return { data: false, error: this.handleError(error as Error) };
+    }
+  }
+
+  /**
    * Get list of overdue clients
    *
    * @returns List of overdue clients

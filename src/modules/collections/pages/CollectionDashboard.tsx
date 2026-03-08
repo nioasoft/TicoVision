@@ -16,6 +16,7 @@ import { SendReminderDialog } from '../components/SendReminderDialog';
 import { SendWhatsAppDialog } from '../components/SendWhatsAppDialog';
 import { HistoryDialog } from '../components/HistoryDialog';
 import { PromisePaymentDialog } from '../components/PromisePaymentDialog';
+import { ConvertToFinalPaymentDialog } from '../components/ConvertToFinalPaymentDialog';
 import { useCollectionStore } from '../store/collectionStore';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Receipt, Plus } from 'lucide-react';
@@ -72,6 +73,10 @@ export const CollectionDashboard: React.FC = () => {
     open: boolean;
     row: CollectionRow | null;
   }>({ open: false, row: null });
+  const [convertToFinalDialog, setConvertToFinalDialog] = useState<{
+    open: boolean;
+    row: CollectionRow | null;
+  }>({ open: false, row: null });
 
   // KPI Card selection state
   const [selectedCard, setSelectedCard] = useState<KPICardFilter>('all');
@@ -122,6 +127,10 @@ export const CollectionDashboard: React.FC = () => {
 
   const handleSendWhatsApp = (row: CollectionRow) => {
     setWhatsAppDialog({ open: true, row });
+  };
+
+  const handleConvertToFinal = (row: CollectionRow) => {
+    setConvertToFinalDialog({ open: true, row });
   };
 
   const handleDialogSuccess = async () => {
@@ -276,6 +285,7 @@ export const CollectionDashboard: React.FC = () => {
         onLogInteraction={handleLogInteraction}
         onViewHistory={handleViewHistory}
         onRecordPromise={handleRecordPromise}
+        onConvertToFinal={handleConvertToFinal}
       />
       {paymentEntryDialog.row && (
         <ActualPaymentEntryDialog
@@ -327,6 +337,12 @@ export const CollectionDashboard: React.FC = () => {
         open={whatsAppDialog.open}
         onOpenChange={(open) => setWhatsAppDialog({ open, row: null })}
         row={whatsAppDialog.row}
+        onSuccess={handleDialogSuccess}
+      />
+      <ConvertToFinalPaymentDialog
+        open={convertToFinalDialog.open}
+        onOpenChange={(open) => setConvertToFinalDialog({ open, row: null })}
+        row={convertToFinalDialog.row}
         onSuccess={handleDialogSuccess}
       />
     </div>

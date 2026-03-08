@@ -25,7 +25,7 @@ import {
   Calendar,
   MessageCircle,
   Phone,
-  Building2,
+  LockKeyhole,
 } from 'lucide-react';
 import type { CollectionRow } from '@/types/collection.types';
 import { formatILS, formatIsraeliDate, getStatusLabel, getStatusVariant } from '@/lib/formatters';
@@ -46,6 +46,7 @@ interface ClientActionsDialogProps {
   onLogInteraction: (row: CollectionRow) => void;
   onViewHistory: (row: CollectionRow) => void;
   onRecordPromise: (row: CollectionRow) => void;
+  onConvertToFinal?: (row: CollectionRow) => void;
 }
 
 interface ActionButtonProps {
@@ -85,6 +86,7 @@ export const ClientActionsDialog: React.FC<ClientActionsDialogProps> = ({
   onLogInteraction,
   onViewHistory,
   onRecordPromise,
+  onConvertToFinal,
 }) => {
   const [activeTab, setActiveTab] = useState('files');
   const [paymentDetails, setPaymentDetails] = useState<ActualPaymentDetails | null>(null);
@@ -215,6 +217,17 @@ export const ClientActionsDialog: React.FC<ClientActionsDialogProps> = ({
               onClick={() => handleAction(onRecordPromise)}
             />
           </div>
+          {/* Convert partial to final - only for partial_paid status */}
+          {row.payment_status === 'partial_paid' && onConvertToFinal && (
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 rtl:flex-row-reverse border-green-300 text-green-700 hover:bg-green-50"
+              onClick={() => handleAction(onConvertToFinal)}
+            >
+              <LockKeyhole className="h-4 w-4" />
+              <span>סגירת יתרה - אישור כתשלום סופי</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             className="w-full flex items-center justify-center gap-2 rtl:flex-row-reverse"
@@ -366,6 +379,27 @@ export const ClientActionsDialog: React.FC<ClientActionsDialogProps> = ({
                         {paymentDetails.deviation.alertMessage && (
                           <div className="text-sm text-gray-500 rtl:text-right ltr:text-left">
                             {paymentDetails.deviation.alertMessage}
+                          </div>
+                        )}
+
+                        {/* Reviewed/approved status */}
+                        {paymentDetails.deviation.reviewed && (
+                          <div className="p-3 bg-green-50 rounded-lg border border-green-200 mt-2">
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                              {paymentDetails.deviation.review_notes?.includes('אושר אוטומטית')
+                                ? 'אושר אוטומטית'
+                                : 'מאושר ידנית'}
+                            </Badge>
+                            {paymentDetails.deviation.review_notes && (
+                              <p className="text-sm text-gray-600 mt-1 rtl:text-right ltr:text-left">
+                                {paymentDetails.deviation.review_notes}
+                              </p>
+                            )}
+                            {paymentDetails.deviation.reviewed_at && (
+                              <p className="text-xs text-gray-400 mt-1 rtl:text-right ltr:text-left">
+                                {formatIsraeliDate(paymentDetails.deviation.reviewed_at as unknown as string)}
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>

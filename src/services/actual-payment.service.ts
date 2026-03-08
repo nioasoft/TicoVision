@@ -15,8 +15,7 @@ import type {
   PaymentDeviation,
   PaymentInstallment,
   PaymentMethod,
-  AlertLevel,
-  VAT_RATE,
+  DeviationApprovalType,
 } from '@/types/payment.types';
 import type { ClientAttachment } from '@/types/file-attachment.types';
 
@@ -47,6 +46,15 @@ export interface RecordPaymentData {
 
   // Notes
   notes?: string;
+
+  // Deviation approval - how the deviation should be handled
+  deviationApproval?: {
+    type: DeviationApprovalType;
+    notes?: string;
+  };
+
+  // If true, record as partial payment instead of full payment
+  treatAsPartial?: boolean;
 }
 
 /**
@@ -179,34 +187,59 @@ class ActualPaymentService extends BaseService {
         }
 
         if (deviationCalc?.success) {
+          // Build deviation insert data, including review fields if approval provided
+          const deviationInsert: Record<string, unknown> = {
+            tenant_id: tenantId,
+            client_id: data.clientId,
+            fee_calculation_id: data.feeCalculationId,
+            actual_payment_id: payment.id,
+            expected_discount_percent: deviationCalc.expected_discount_percent,
+            expected_amount: deviationCalc.expected_amount,
+            actual_amount: deviationCalc.actual_amount,
+            deviation_amount: deviationCalc.deviation_amount,
+            deviation_percent: deviationCalc.deviation_percent,
+            alert_level: deviationCalc.alert_level,
+            alert_message: deviationCalc.alert_message,
+          };
+
+          // If deviation approval provided, mark as reviewed immediately
+          if (data.deviationApproval) {
+            deviationInsert.reviewed = true;
+            deviationInsert.reviewed_by = user?.id;
+            deviationInsert.reviewed_at = new Date().toISOString();
+
+            const approvalNotes = data.deviationApproval.type === 'auto_approved'
+              ? 'אושר אוטומטית - סטייה מתחת ל-₪10'
+              : data.deviationApproval.type === 'manually_approved_final'
+              ? data.deviationApproval.notes || 'מאושר ידנית כתשלום סופי'
+              : data.deviationApproval.notes || 'תשלום חלקי';
+            deviationInsert.review_notes = approvalNotes;
+          }
+
           await supabase
             .from('payment_deviations')
-            .insert({
-              tenant_id: tenantId,
-              client_id: data.clientId,
-              fee_calculation_id: data.feeCalculationId,
-              actual_payment_id: payment.id,
-              expected_discount_percent: deviationCalc.expected_discount_percent,
-              expected_amount: deviationCalc.expected_amount,
-              actual_amount: deviationCalc.actual_amount,
-              deviation_amount: deviationCalc.deviation_amount,
-              deviation_percent: deviationCalc.deviation_percent,
-              alert_level: deviationCalc.alert_level,
-              alert_message: deviationCalc.alert_message,
-            });
+            .insert(deviationInsert);
         }
 
         // 4a. Update fee_calculation
+        // If treatAsPartial, set as partial_paid with partial_payment_amount
+        const feeStatus = data.treatAsPartial ? 'partial_paid' : 'paid';
+        const feeUpdate: Record<string, unknown> = {
+          actual_payment_id: payment.id,
+          has_deviation: deviationCalc?.alert_level !== 'info',
+          deviation_alert_level: deviationCalc?.alert_level,
+          status: feeStatus,
+          payment_date: data.paymentDate.toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        if (data.treatAsPartial) {
+          feeUpdate.partial_payment_amount = data.amountPaid;
+        }
+
         await supabase
           .from('fee_calculations')
-          .update({
-            actual_payment_id: payment.id,
-            has_deviation: deviationCalc?.alert_level !== 'info',
-            deviation_alert_level: deviationCalc?.alert_level,
-            status: 'paid',
-            payment_date: data.paymentDate.toISOString(),
-            updated_at: new Date().toISOString(),
-          })
+          .update(feeUpdate)
           .eq('id', data.feeCalculationId)
           .eq('tenant_id', tenantId);
 
@@ -633,6 +666,43 @@ class ActualPaymentService extends BaseService {
       vat,
       withVat,
     };
+  }
+
+  /**
+   * Review/approve a payment deviation
+   * Updates the payment_deviations record with reviewed status and notes
+   *
+   * @param paymentId - Actual payment ID
+   * @param notes - Review notes (e.g., "מאושר ידנית כתשלום סופי")
+   * @returns Success status
+   */
+  async reviewDeviation(
+    paymentId: string,
+    notes: string
+  ): Promise<ServiceResponse<void>> {
+    try {
+      const tenantId = await this.getTenantId();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { error } = await supabase
+        .from('payment_deviations')
+        .update({
+          reviewed: true,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+          review_notes: notes,
+        })
+        .eq('actual_payment_id', paymentId)
+        .eq('tenant_id', tenantId);
+
+      if (error) throw error;
+
+      await this.logAction('review_deviation', paymentId, { notes });
+
+      return { data: undefined, error: null };
+    } catch (error) {
+      return { data: undefined, error: this.handleError(error as Error) };
+    }
   }
 
   /**

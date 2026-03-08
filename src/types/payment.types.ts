@@ -133,6 +133,17 @@ export interface FileAttachmentListProps {
 }
 
 /**
+ * Deviation approval types for tracking how a payment deviation was handled
+ */
+export type DeviationApprovalType = 'auto_approved' | 'manually_approved_final' | 'partial_payment';
+
+/**
+ * Auto-approve threshold in ILS - deviations below this amount
+ * are automatically approved as final payment without user confirmation
+ */
+export const DEVIATION_AUTO_APPROVE_THRESHOLD_ILS = 10;
+
+/**
  * Payment discount percentages by method
  */
 export const PAYMENT_DISCOUNTS: Record<PaymentMethod, number> = {
