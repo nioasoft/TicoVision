@@ -63,6 +63,11 @@ export default function ClientsPage() {
     // Accountant names
     accountantNames,
 
+    // Balance status per year
+    balanceStatusByYear,
+    taxYear,
+    previousTaxYear,
+
     // Search & Filters
     searchQuery,
     filters,
@@ -223,6 +228,9 @@ export default function ClientsPage() {
         clients={clients}
         loading={loading}
         clientStatusMap={clientStatusMap}
+        balanceStatusByYear={balanceStatusByYear}
+        taxYear={taxYear}
+        previousTaxYear={previousTaxYear}
         sortField={sortField}
         sortOrder={sortOrder}
         onSortChange={toggleSort}

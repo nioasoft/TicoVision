@@ -102,7 +102,7 @@ const DEFAULT_FILTERS: ClientFilters = {
   clientType: 'all',
   companySubtype: 'all',
   groupId: 'all',
-  status: 'all',
+  status: 'active',
   balanceStatus: 'all',
   tab: 'all',
   accountantName: 'all',
@@ -135,10 +135,15 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [accountantNames, setAccountantNames] = useState<string[]>([]);
+  // Balance year data: which clients have balance records + their status per year
+  const currentYear = new Date().getFullYear();
+  const taxYear = currentYear - 1;
+  const previousTaxYear = currentYear - 2;
   const [balanceClientIds, setBalanceClientIds] = useState<{ year2024: Set<string>; year2025: Set<string> }>({
     year2024: new Set(),
     year2025: new Set(),
   });
+  const [balanceStatusByYear, setBalanceStatusByYear] = useState<Record<string, { [year: number]: string }>>({});
 
   // Debounce search query to reduce API calls
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -273,10 +278,14 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
   // Load balance year data (which clients have annual_balance_sheets for 2024/2025)
   const loadBalanceYearData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('annual_balance_sheets')
-        .select('client_id, year')
-        .in('year', [2024, 2025]);
+      // Fetch each year separately to avoid Supabase default 1000-row limit
+      const [res1, res2] = await Promise.all([
+        supabase.from('annual_balance_sheets').select('client_id, year, status').eq('year', previousTaxYear),
+        supabase.from('annual_balance_sheets').select('client_id, year, status').eq('year', taxYear),
+      ]);
+
+      const error = res1.error || res2.error;
+      const data = [...(res1.data || []), ...(res2.data || [])];
 
       if (error) {
         logger.error('Error loading balance year data:', error);
@@ -285,15 +294,19 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
 
       const year2024 = new Set<string>();
       const year2025 = new Set<string>();
+      const statusMap: Record<string, { [year: number]: string }> = {};
       for (const row of data || []) {
-        if (row.year === 2024) year2024.add(row.client_id);
-        if (row.year === 2025) year2025.add(row.client_id);
+        if (row.year === previousTaxYear) year2024.add(row.client_id);
+        if (row.year === taxYear) year2025.add(row.client_id);
+        if (!statusMap[row.client_id]) statusMap[row.client_id] = {};
+        statusMap[row.client_id][row.year] = row.status;
       }
       setBalanceClientIds({ year2024, year2025 });
+      setBalanceStatusByYear(statusMap);
     } catch (error) {
       logger.error('Error loading balance year data:', error);
     }
-  }, []);
+  }, [previousTaxYear, taxYear]);
 
   // Load distinct accountant names for filter dropdown
   const loadAccountantNames = useCallback(async () => {
@@ -750,6 +763,11 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
 
     // Accountant names for filter dropdown
     accountantNames,
+
+    // Balance status per year per client
+    balanceStatusByYear,
+    taxYear,
+    previousTaxYear,
 
     // Search & Filters
     searchQuery,

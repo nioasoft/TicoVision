@@ -108,7 +108,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           <SelectContent>
             <SelectItem value="all">כל הסטטוסים</SelectItem>
             <SelectItem value="active">פעילה</SelectItem>
-            <SelectItem value="inactive">לא פעילה</SelectItem>
+            <SelectItem value="inactive">רדומה</SelectItem>
           </SelectContent>
         </Select>
       </div>

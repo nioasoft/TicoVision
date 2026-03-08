@@ -22,7 +22,14 @@ export const ClientOverviewTab: React.FC<ClientOverviewTabProps> = ({
   contacts,
   balanceSheets,
 }) => {
-  const currentYearBalance = balanceSheets.find((b) => b.year === new Date().getFullYear() - 1);
+  // Always show 2 years: current tax year and previous
+  const currentYear = new Date().getFullYear();
+  const taxYear = currentYear - 1; // e.g. 2025 when we're in 2026
+  const previousTaxYear = currentYear - 2; // e.g. 2024
+  const balanceByYear = [previousTaxYear, taxYear].map((year) => ({
+    year,
+    balance: balanceSheets.find((b) => b.year === year) || null,
+  }));
   const hasAdvanceAlert = balanceSheets.some((b) => b.advance_rate_alert);
 
   return (
@@ -63,24 +70,19 @@ export const ClientOverviewTab: React.FC<ClientOverviewTabProps> = ({
       {(client.client_type === 'company' || client.client_type === 'partnership') && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">מאזן שנתי</CardTitle>
+            <CardTitle className="text-sm font-medium">מאזנים שנתיים</CardTitle>
           </CardHeader>
-          <CardContent>
-            {currentYearBalance ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">שנת {currentYearBalance.year}</span>
-                  <BalanceStatusBadge status={currentYearBalance.status} />
-                </div>
-                {currentYearBalance.meeting_date && (
-                  <div className="text-sm text-muted-foreground">
-                    תאריך שיוך: {formatIsraeliDate(currentYearBalance.meeting_date)}
-                  </div>
+          <CardContent className="space-y-3">
+            {balanceByYear.map(({ year, balance }) => (
+              <div key={year} className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">מאזן {year}</span>
+                {balance ? (
+                  <BalanceStatusBadge status={balance.status} />
+                ) : (
+                  <span className="text-xs text-muted-foreground">לא קיים</span>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">אין מאזן לשנה הנוכחית</p>
-            )}
+            ))}
           </CardContent>
         </Card>
       )}

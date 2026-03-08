@@ -59,6 +59,15 @@ export const ClientProfileHeader: React.FC<ClientProfileHeaderProps> = ({ client
           <Badge variant={STATUS_VARIANT[client.status] || 'secondary'}>
             {STATUS_LABELS[client.status] || client.status}
           </Badge>
+          <Badge
+            variant="outline"
+            className={client.company_status === 'inactive'
+              ? 'border-orange-300 bg-orange-50 text-orange-700'
+              : 'border-green-300 bg-green-50 text-green-700'
+            }
+          >
+            {client.company_status === 'inactive' ? 'חברה רדומה' : 'חברה פעילה'}
+          </Badge>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

@@ -36,6 +36,9 @@ interface ClientsTableProps {
   clients: Client[];
   loading: boolean;
   clientStatusMap?: Record<string, ClientStatusSummary>;
+  balanceStatusByYear?: Record<string, { [year: number]: string }>;
+  taxYear?: number;
+  previousTaxYear?: number;
   sortField?: string;
   sortOrder?: 'asc' | 'desc';
   onSortChange?: (field: string) => void;
@@ -50,6 +53,8 @@ interface ClientRowProps {
   canEdit: boolean;
   canDelete: boolean;
   statusInfo?: ClientStatusSummary;
+  balancePrevYear?: string | null;
+  balanceCurrYear?: string | null;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
   onView?: (client: Client) => void;
@@ -57,35 +62,18 @@ interface ClientRowProps {
 }
 
 // Memoized row component to prevent unnecessary re-renders
+const BalanceCell: React.FC<{ status?: string | null }> = ({ status }) => {
+  const config = status ? BALANCE_STATUS_LABELS[status] : null;
+  if (!config) return <span className="text-gray-400 text-[10px]">-</span>;
+  return (
+    <span className={`text-[10px] leading-tight font-medium ${config.className} px-1 py-0.5 rounded inline-block max-w-[70px] text-center`}>
+      {config.label}
+    </span>
+  );
+};
+
 const ClientRow = React.memo<ClientRowProps>(
-  ({ client, canEdit, canDelete, statusInfo, onEdit, onDelete, onView, onGroupFilter }) => {
-    const getStatusBadge = (status: string) => {
-      if (status === 'adhoc') {
-        return (
-          <Badge className="bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-100">
-            חד-פעמי
-          </Badge>
-        );
-      }
-
-      const styles: Record<string, string> = {
-        active: 'bg-[#96ECAA] text-green-800 border-transparent hover:bg-[#96ECAA]',
-        inactive: 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-100',
-        pending: 'bg-yellow-100 text-yellow-700 border-yellow-200 hover:bg-yellow-100',
-      };
-      const labels: Record<string, string> = {
-        active: 'פעיל',
-        inactive: 'לא פעיל',
-        pending: 'ממתין',
-      };
-      return (
-        <Badge className={`${styles[status] || styles.active} border`}>
-          {labels[status] || status}
-        </Badge>
-      );
-    };
-
-    const balanceConfig = statusInfo?.balance_status ? BALANCE_STATUS_LABELS[statusInfo.balance_status] : null;
+  ({ client, canEdit, canDelete, statusInfo, balancePrevYear, balanceCurrYear, onEdit, onDelete, onView, onGroupFilter }) => {
 
     return (
       <TableRow className="border-b border-gray-200 hover:bg-gray-50/50">
@@ -191,24 +179,20 @@ const ClientRow = React.memo<ClientRowProps>(
             </TooltipProvider>
           ) : null}
         </TableCell>
-        {/* Status */}
-        <TableCell className="border-r border-gray-200">{getStatusBadge(client.status)}</TableCell>
         {/* Fee Status */}
         <TableCell className="border-r border-gray-200">
           <FeeStatusIndicator status={statusInfo?.fee_status || null} />
         </TableCell>
-        {/* Balance */}
+        {/* Balance Previous Year */}
         <TableCell className="border-r border-gray-200">
-          {balanceConfig ? (
-            <Badge className={`text-xs border ${balanceConfig.className}`}>
-              {balanceConfig.label}
-            </Badge>
-          ) : (
-            <span className="text-gray-400">-</span>
-          )}
+          <BalanceCell status={balancePrevYear} />
+        </TableCell>
+        {/* Balance Current Year */}
+        <TableCell className="border-r border-gray-200">
+          <BalanceCell status={balanceCurrYear} />
         </TableCell>
         {/* Actions */}
-        <TableCell>
+        <TableCell className="border-r border-gray-200">
           <div className="flex items-center gap-1">
             <TooltipProvider>
               <Tooltip>
@@ -260,6 +244,9 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   clients,
   loading,
   clientStatusMap = {},
+  balanceStatusByYear = {},
+  taxYear,
+  previousTaxYear,
   sortField,
   sortOrder,
   onSortChange,
@@ -299,10 +286,10 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
             <TableHead className="font-semibold text-gray-900 border-r border-gray-200">טלפון</TableHead>
             <TableHead className="font-semibold text-gray-900 border-r border-gray-200">אימייל</TableHead>
             <TableHead className="font-semibold text-gray-900 w-12 border-r border-gray-200">Drive</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">סטטוס</TableHead>
             <TableHead className="font-semibold text-gray-900 border-r border-gray-200">שכ&quot;ט</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">מאזן</TableHead>
-            <TableHead className="font-semibold text-gray-900">פעולות</TableHead>
+            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">מאזן {previousTaxYear ? String(previousTaxYear).slice(2) : ''}</TableHead>
+            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">מאזן {taxYear ? String(taxYear).slice(2) : ''}</TableHead>
+            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -326,6 +313,8 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
                 canEdit={canEdit}
                 canDelete={canDelete}
                 statusInfo={clientStatusMap[client.id]}
+                balancePrevYear={previousTaxYear ? balanceStatusByYear[client.id]?.[previousTaxYear] : null}
+                balanceCurrYear={taxYear ? balanceStatusByYear[client.id]?.[taxYear] : null}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onView={onView}
