@@ -88,7 +88,7 @@
                             <td style="width: 20px; vertical-align: top; padding-top: 4px;">
                                 <img src="https://ticovision.vercel.app/brand/bullet-star.png" width="9" height="9" alt="•" style="display: block; border: 0;">
                             </td>
-                            <td style="padding-bottom: 12px;">
+                            <td style="padding-bottom: 12px;" class="check-dates-description">
                                 תאריכי ההמחאות הינם לחמישי לכל חודש, החל מיום 5.1.2025 ועד ליום 5.8.2025.
                             </td>
                         </tr>
@@ -260,6 +260,7 @@
         const companyName = urlParams.get('company_name') || 'לקוח';
         const groupName = urlParams.get('group_name') || '';
         const numChecks = parseInt(urlParams.get('num_checks')) || 8; // Dynamic: 8 or 12
+        const taxYear = parseInt(urlParams.get('tax_year')) || new Date().getFullYear(); // From fee calculation
 
         // Set current date in Israeli format (DD.MM.YYYY)
         const today = new Date();
@@ -322,6 +323,13 @@
                 calculationElement.innerHTML = `<strong>סכום כולל לתשלום: ₪${formattedTotalAmount}</strong> (${numChecks} המחאות × ₪${formattedCheckAmount})`;
             }
 
+            // Update dates description text
+            const datesDescriptionElement = document.querySelector('.check-dates-description');
+            if (datesDescriptionElement) {
+                const endMonth = numChecks;
+                datesDescriptionElement.textContent = `תאריכי ההמחאות הינם לחמישי לכל חודש, החל מיום 5.1.${taxYear} ועד ליום 5.${endMonth}.${taxYear}.`;
+            }
+
             // REBUILD TABLE DYNAMICALLY based on numChecks
             rebuildCheckTable();
         });
@@ -346,9 +354,6 @@
             }
 
             // Generate new rows for numChecks
-            const currentYear = new Date().getFullYear();
-            const taxYear = currentYear + 1; // 2026 for 2025
-
             for (let i = 1; i <= numChecks; i++) {
                 const month = i;
                 const date = `5.${month}.${taxYear}`;

@@ -1,26 +1,25 @@
 /**
- * ClientProfilePage - Unified client profile at /clients/:id
- * Aggregates all client data in a tabbed layout
+ * ClientProfilePage - Single scrollable client profile
+ * Shows all client data in organized card sections (no tabs)
  */
 
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientProfile } from '../hooks/useClientProfile';
-import { ClientProfileHeader } from '../components/ClientProfileHeader';
-import { ClientOverviewTab } from '../components/ClientOverviewTab';
-import { ClientFilesTab } from '../components/ClientFilesTab';
-import { ClientBalanceTab } from '@/modules/annual-balance/components/ClientBalanceTab';
-import { ContactsManager } from '@/components/ContactsManager';
-import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
+import { ClientProfileHero } from '../components/ClientProfileHero';
+import { FinancialSummaryStrip } from '../components/FinancialSummaryStrip';
+import { FeeHistoryCard } from '../components/FeeHistoryCard';
+import { LettersCard } from '../components/LettersCard';
+import { ActivityTimeline } from '../components/ActivityTimeline';
+import { ContactInfoCard } from '../components/ContactInfoCard';
+import { ClientDetailsCard } from '../components/ClientDetailsCard';
+import { DocumentsSummaryCard } from '../components/DocumentsSummaryCard';
 import { MarkMaterialsDialog } from '@/modules/annual-balance/components/MarkMaterialsDialog';
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 import { clientService } from '@/services';
-import type { AnnualBalanceSheetWithClient } from '@/modules/annual-balance/types/annual-balance.types';
 import type { CreateClientDto, CreateClientContactDto, CreateClientPhoneDto } from '@/services';
 
 export default function ClientProfilePage() {
@@ -29,10 +28,21 @@ export default function ClientProfilePage() {
   const { role } = useAuth();
   const userRole = role || '';
 
-  const { client, contacts, phones, balanceSheets, loading, error, refresh } = useClientProfile(id);
+  const {
+    client,
+    contacts,
+    phones,
+    balanceSheets,
+    feeCalculations,
+    actualPayments,
+    letters,
+    interactions,
+    loading,
+    error,
+    refresh,
+  } = useClientProfile(id);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [markMaterialsCase, setMarkMaterialsCase] = useState<AnnualBalanceSheetWithClient | null>(null);
   const [markMaterialsOpen, setMarkMaterialsOpen] = useState(false);
 
   const handleEdit = useCallback(() => {
@@ -116,92 +126,35 @@ export default function ClientProfilePage() {
     );
   }
 
-  const showBalanceTab = client.client_type === 'company' || client.client_type === 'partnership';
-
   return (
-    <div className="space-y-4" dir="rtl">
-      {/* Header Card */}
-      <Card className="rounded-xl border bg-card shadow-sm">
-        <CardContent className="p-6">
-          <ClientProfileHeader client={client} onEdit={handleEdit} />
-        </CardContent>
-      </Card>
+    <div className="space-y-4 pb-8" dir="rtl">
+      {/* Section 1: Hero Header */}
+      <ClientProfileHero client={client} contacts={contacts} onEdit={handleEdit} />
 
-      {/* Tabbed Content */}
-      <Card className="rounded-xl border bg-card shadow-sm overflow-hidden">
-        <Tabs defaultValue="overview" dir="rtl">
-          <div className="border-b px-4 py-2.5">
-            <TabsList className="bg-muted/50">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                סקירה
-              </TabsTrigger>
-              <TabsTrigger value="contacts" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                אנשי קשר
-              </TabsTrigger>
-              {showBalanceTab && (
-                <TabsTrigger value="balance" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                  מאזנים
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="files" className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
-                מסמכים
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      {/* Section 2: Financial KPI Strip */}
+      <FinancialSummaryStrip
+        feeCalculations={feeCalculations}
+        actualPayments={actualPayments}
+        balanceSheets={balanceSheets}
+        clientType={client.client_type}
+      />
 
-          <TabsContent value="overview" className="p-4 m-0">
-            <ClientOverviewTab
-              client={client}
-              contacts={contacts}
-              balanceSheets={balanceSheets}
-            />
-          </TabsContent>
+      {/* Section 3: Two-column detail grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Main column */}
+        <div className="lg:col-span-2 space-y-4">
+          <FeeHistoryCard feeCalculations={feeCalculations} />
+          <LettersCard letters={letters} />
+          <ActivityTimeline interactions={interactions} />
+        </div>
 
-          <TabsContent value="contacts" className="p-4 m-0">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium mb-3">אנשי קשר</h3>
-                <ContactsManager
-                  contacts={contacts}
-                  onAdd={(data) => handleAddContact(client.id, data)}
-                  onUpdate={(contactId, data) => handleUpdateContact(client.id, contactId, data)}
-                  onDelete={(contactId) => handleDeleteContact(client.id, contactId)}
-                  onSetPrimary={(contactId) => handleSetPrimaryContact(client.id, contactId)}
-                />
-              </div>
-              <div>
-                <h3 className="text-sm font-medium mb-3">מספרי טלפון</h3>
-                <PhoneNumbersManager
-                  phones={phones}
-                  onAdd={(data) => handleAddPhone(client.id, data)}
-                  onUpdate={handleUpdatePhone}
-                  onDelete={handleDeletePhone}
-                  onSetPrimary={handleSetPrimaryPhone}
-                />
-              </div>
-            </div>
-          </TabsContent>
-
-          {showBalanceTab && (
-            <TabsContent value="balance" className="p-4 m-0">
-              <ClientBalanceTab
-                clientId={client.id}
-                clientName={client.company_name}
-                clientTaxId={client.tax_id}
-                userRole={userRole}
-                onMarkMaterials={(balanceCase) => {
-                  setMarkMaterialsCase(balanceCase);
-                  setMarkMaterialsOpen(true);
-                }}
-              />
-            </TabsContent>
-          )}
-
-          <TabsContent value="files" className="p-4 m-0">
-            <ClientFilesTab clientId={client.id} />
-          </TabsContent>
-        </Tabs>
-      </Card>
+        {/* Side column */}
+        <div className="space-y-4">
+          <ContactInfoCard client={client} contacts={contacts} phones={phones} />
+          <ClientDetailsCard client={client} />
+          <DocumentsSummaryCard clientId={client.id} />
+        </div>
+      </div>
 
       {/* Edit Dialog */}
       <ClientFormDialog
@@ -233,7 +186,7 @@ export default function ClientProfilePage() {
       <MarkMaterialsDialog
         open={markMaterialsOpen}
         onOpenChange={setMarkMaterialsOpen}
-        balanceCase={markMaterialsCase}
+        balanceCase={null}
         userRole={userRole}
       />
     </div>

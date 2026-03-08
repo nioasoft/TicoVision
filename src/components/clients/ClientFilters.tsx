@@ -69,7 +69,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="שם, ת.ז או איש קשר..."
-            className="pr-8 h-8 text-xs !bg-white border border-gray-300 rounded-md"
+            className="pr-8 h-8 text-xs !bg-white border !border-blue-400 rounded-md"
             dir="rtl"
           />
         </div>

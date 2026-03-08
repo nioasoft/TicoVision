@@ -371,13 +371,118 @@ export function MainLayout() {
                 const badgeCount = item.showBadge ? pendingCount :
                   item.menuKey === 'annual-balance' ? unassignedBalanceCount : 0;
 
+                // Filter submenu items by role
+                const visibleSubmenu = item.submenu?.filter(sub => {
+                  if (isSuperAdmin) return true;
+                  if (!sub.allowedRoles) return true;
+                  return role ? sub.allowedRoles.includes(role) : false;
+                });
+
+                // Items with submenu - render collapsible section
+                if (visibleSubmenu && visibleSubmenu.length > 0) {
+                  const isSubmenuOpen = openSubmenu === item.name;
+
+                  // Collapsed sidebar - show icon with tooltip listing sub-items
+                  if (sidebarCollapsed) {
+                    return (
+                      <li key={item.name}>
+                        <TooltipProvider delayDuration={0}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => {
+                                  setSidebarCollapsed(false);
+                                  setOpenSubmenu(item.name);
+                                }}
+                                className={cn(
+                                  "relative w-full flex items-center justify-center rounded-lg transition-colors p-2.5",
+                                  isActive
+                                    ? "bg-white text-[#395BF7]"
+                                    : "text-white hover:bg-white/10"
+                                )}
+                              >
+                                <item.icon className="h-5 w-5 flex-shrink-0" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="p-0">
+                              <div className="py-1">
+                                <p className="px-3 py-1.5 font-medium text-sm border-b">{item.name}</p>
+                                {visibleSubmenu.map((sub) => (
+                                  <NavLink
+                                    key={sub.href}
+                                    to={sub.href}
+                                    className={({ isActive: subActive }) => cn(
+                                      "block px-3 py-1.5 text-sm transition-colors",
+                                      subActive ? "bg-accent font-medium" : "hover:bg-accent"
+                                    )}
+                                    onClick={() => setSidebarOpen(false)}
+                                  >
+                                    {sub.name}
+                                  </NavLink>
+                                ))}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </li>
+                    );
+                  }
+
+                  // Expanded sidebar - show collapsible submenu
+                  return (
+                    <li key={item.name}>
+                      <Collapsible open={isSubmenuOpen} onOpenChange={(open) => setOpenSubmenu(open ? item.name : null)}>
+                        <CollapsibleTrigger asChild>
+                          <button
+                            className={cn(
+                              "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                              isActive
+                                ? "bg-white/20 text-white"
+                                : "text-white hover:bg-white/10"
+                            )}
+                          >
+                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            <span className="text-sm font-medium truncate flex-1 text-right">{item.name}</span>
+                            {isSubmenuOpen ? (
+                              <ChevronUp className="h-4 w-4 flex-shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                            )}
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <ul className="mt-0.5 ms-4 border-s border-white/20 space-y-0.5">
+                            {visibleSubmenu.map((sub) => (
+                              <li key={sub.href}>
+                                <NavLink
+                                  to={sub.href}
+                                  className={({ isActive: subActive }) => cn(
+                                    "block ps-4 pe-3 py-1.5 text-sm rounded-lg transition-colors",
+                                    subActive
+                                      ? "bg-white text-[#395BF7] font-medium"
+                                      : "text-white/80 hover:text-white hover:bg-white/10"
+                                  )}
+                                  onClick={() => setSidebarOpen(false)}
+                                >
+                                  {sub.name}
+                                </NavLink>
+                              </li>
+                            ))}
+                          </ul>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </li>
+                  );
+                }
+
+                // Simple items without submenu
                 return (
                   <li key={item.href || item.name}>
                     <TooltipProvider delayDuration={0}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <NavLink
-                            to={item.href || (item.submenu?.[0]?.href ?? '#')}
+                            to={item.href || '#'}
                             className={cn(
                               "relative flex items-center rounded-lg transition-colors",
                               sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",

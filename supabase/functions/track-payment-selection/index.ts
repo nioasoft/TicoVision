@@ -135,6 +135,8 @@ serve(async (req) => {
     const method = url.searchParams.get('method') as PaymentMethod;
     const clientId = url.searchParams.get('client_id');
     const amountFromUrl = url.searchParams.get('amount');
+    const taxYear = url.searchParams.get('tax_year');
+    const numChecksParam = url.searchParams.get('num_checks');
 
     // Determine if this is a billing letter payment or fee payment
     const isBillingLetterPayment = method === 'cc_billing' || !!billingLetterId;
@@ -441,7 +443,7 @@ serve(async (req) => {
         break;
 
       case 'checks':
-        redirectUrl = `${APP_URL}/check-details.html?fee_id=${feeId}&client_id=${clientId}&num_checks=8&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(displayName)}&group_name=${encodeURIComponent(groupName)}`;
+        redirectUrl = `${APP_URL}/check-details.html?fee_id=${feeId}&client_id=${clientId}&num_checks=${numChecksParam || '8'}&amount=${amountAfterDiscount}&company_name=${encodeURIComponent(displayName)}&group_name=${encodeURIComponent(groupName)}&tax_year=${taxYear || ''}`;
         break;
 
       default:

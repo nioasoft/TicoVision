@@ -14,10 +14,10 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { FilterX } from 'lucide-react';
+import { FilterX, Search, X } from 'lucide-react';
 import type { TrackingFilter, FeeTrackingKPIs } from '@/types/fee-tracking.types';
 import type { PaymentMethod } from '@/types/payment.types';
-import { cn } from '@/lib/utils';
+
 
 interface FeeTrackingFiltersProps {
   // Filter values
@@ -63,6 +63,26 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
 
   return (
     <div className="flex flex-wrap items-center gap-2" dir="rtl">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+        <Input
+          placeholder="חיפוש לקוח..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-8 w-[180px] text-xs pr-8 pl-7 !border-blue-400 bg-white rtl:text-right"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => onSearchChange('')}
+            className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            type="button"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
       {/* Status Filter */}
       <Select value={statusFilter} onValueChange={(v) => onStatusChange(v as TrackingFilter)}>
         <SelectTrigger className="h-8 w-auto min-w-[150px] text-xs border-gray-200 bg-white">
@@ -109,14 +129,6 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
           <SelectItem value="checks">צ'קים</SelectItem>
         </SelectContent>
       </Select>
-
-      {/* Search Input */}
-      <Input
-
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="h-8 w-auto min-w-[200px] max-w-[300px] text-xs border-gray-200 bg-white"
-      />
 
       {/* Reset Button (conditional) */}
       {hasActiveFilters && (

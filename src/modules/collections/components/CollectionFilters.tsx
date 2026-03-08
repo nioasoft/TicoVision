@@ -65,7 +65,7 @@ export const CollectionFilters: React.FC<CollectionFiltersProps> = ({
 
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="h-8 w-[180px] text-xs pr-8 pl-7 border-gray-200 bg-white rtl:text-right"
+          className="h-8 w-[180px] text-xs pr-8 pl-7 !border-blue-400 bg-white rtl:text-right"
         />
         {searchValue && (
           <button
