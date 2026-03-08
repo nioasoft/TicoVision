@@ -324,12 +324,12 @@ export function MainLayout() {
         sidebarOpen ? "translate-x-0" : "translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          {/* Navigation - Icons only when collapsed */}
-          <nav className="flex-1 overflow-y-auto py-4">
-            <ul className="space-y-1">
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-3 px-2">
+            <ul className={cn("space-y-0.5", !sidebarCollapsed && "space-y-0.5")}>
               {/* Super Admin Link */}
               {isSuperAdmin && (
-                <li className="border-b border-white/20 pb-2 mb-2">
+                <li className="mb-2 pb-2 border-b border-white/20">
                   <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -337,7 +337,8 @@ export function MainLayout() {
                           to="/super-admin"
                           className={({ isActive }) =>
                             cn(
-                              "flex items-center justify-center mx-2 p-3 rounded-lg transition-colors",
+                              "flex items-center rounded-lg transition-colors",
+                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
                               isActive
                                 ? "bg-white text-[#395BF7]"
                                 : "text-white hover:bg-white/10"
@@ -345,7 +346,8 @@ export function MainLayout() {
                           }
                           onClick={() => setSidebarOpen(false)}
                         >
-                          <Shield className="h-5 w-5" />
+                          <Shield className="h-5 w-5 flex-shrink-0" />
+                          {!sidebarCollapsed && <span className="text-sm font-medium">ניהול ראשי</span>}
                         </NavLink>
                       </TooltipTrigger>
                       {sidebarCollapsed && (
@@ -370,23 +372,30 @@ export function MainLayout() {
                   item.menuKey === 'annual-balance' ? unassignedBalanceCount : 0;
 
                 return (
-                  <li key={item.href || item.name} className="border-b border-white/20 last:border-b-0">
+                  <li key={item.href || item.name}>
                     <TooltipProvider delayDuration={0}>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <NavLink
                             to={item.href || (item.submenu?.[0]?.href ?? '#')}
                             className={cn(
-                              "relative flex items-center justify-center mx-2 p-3 rounded-lg transition-colors",
+                              "relative flex items-center rounded-lg transition-colors",
+                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
                               isActive
                                 ? "bg-white text-[#395BF7]"
                                 : "text-white hover:bg-white/10"
                             )}
                             onClick={() => setSidebarOpen(false)}
                           >
-                            <item.icon className="h-5 w-5" />
+                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            {!sidebarCollapsed && (
+                              <span className="text-sm font-medium truncate flex-1">{item.name}</span>
+                            )}
                             {hasBadge && badgeCount > 0 && (
-                              <span className="absolute -top-1 -left-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                              <span className={cn(
+                                "bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-1",
+                                sidebarCollapsed && "absolute -top-1 -left-1"
+                              )}>
                                 {badgeCount}
                               </span>
                             )}
@@ -405,16 +414,38 @@ export function MainLayout() {
             </ul>
           </nav>
 
-          {/* User avatar at bottom */}
-          <div className="border-t border-white/20 p-3">
+          {/* Bottom section: Toggle + Logout */}
+          <div className="border-t border-white/20 px-2 py-3 space-y-1">
+            {/* Toggle collapse/expand - desktop only */}
+            <button
+              onClick={() => setSidebarCollapsed(prev => !prev)}
+              className={cn(
+                "hidden lg:flex w-full items-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors",
+                sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
+              )}
+            >
+              {sidebarCollapsed
+                ? <ChevronLeft className="h-5 w-5" />
+                : <>
+                    <ChevronRight className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-sm font-medium">כווץ תפריט</span>
+                  </>
+              }
+            </button>
+
+            {/* Logout */}
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center justify-center p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+                    className={cn(
+                      "w-full flex items-center rounded-lg text-white hover:bg-white/10 transition-colors",
+                      sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2"
+                    )}
                   >
-                    <LogOut className="h-5 w-5" />
+                    <LogOut className="h-5 w-5 flex-shrink-0" />
+                    {!sidebarCollapsed && <span className="text-sm font-medium">התנתק</span>}
                   </button>
                 </TooltipTrigger>
                 {sidebarCollapsed && (

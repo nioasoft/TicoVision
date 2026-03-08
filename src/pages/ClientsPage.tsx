@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -12,18 +12,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useClients } from '@/hooks/useClients';
+import { useClients, type WorkflowTab } from '@/hooks/useClients';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ClientFilters } from '@/components/clients/ClientFilters';
-import { BulkActionsBar } from '@/components/clients/BulkActionsBar';
 import { ClientsTable } from '@/components/clients/ClientsTable';
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
+import { cn } from '@/lib/utils';
 import type { Client } from '@/services';
+
+const WORKFLOW_TABS: { value: WorkflowTab; label: string }[] = [
+  { value: 'all', label: 'הכל' },
+  { value: 'balance_24', label: 'מאזן 24' },
+  { value: 'balance_25', label: 'מאזן 25' },
+  { value: 'fee_paid', label: 'שכ"ט שולם סופי' },
+  { value: 'fee_partial', label: 'שכ"ט שולם חלקי' },
+  { value: 'fee_unpaid', label: 'שכ"ט לא שולם' },
+  { value: 'fee_exempt', label: 'לא משלם' },
+];
 
 export default function ClientsPage() {
   const { role } = useAuth();
-  const isAdmin = role === 'admin';
   const { isMenuVisible } = usePermissions();
   const canCreateClient = isMenuVisible('clients:create');
   const navigate = useNavigate();
@@ -36,14 +45,23 @@ export default function ClientsPage() {
   const {
     // State
     clients,
-    selectedClients,
     loading,
     currentPage,
     totalPages,
 
-    // Client type counts
-    clientTypeCounts,
-    totalClientCount,
+    // Status map
+    clientStatusMap,
+
+    // Tab counts
+    tabCounts,
+
+    // Sorting
+    sortField,
+    sortOrder,
+    toggleSort,
+
+    // Accountant names
+    accountantNames,
 
     // Search & Filters
     searchQuery,
@@ -57,14 +75,7 @@ export default function ClientsPage() {
     updateClient,
     deleteClient,
 
-    // Bulk Operations
-    bulkUpdateStatus,
-
-    // Selection & Pagination
-    toggleClientSelection,
-    toggleSelectAll,
-    clearSelection,
-    setCurrentPage,
+    // Pagination
     nextPage,
     previousPage,
 
@@ -82,7 +93,6 @@ export default function ClientsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
   // Handlers
   const handleOpenAddDialog = () => {
@@ -138,35 +148,23 @@ export default function ClientsPage() {
     }
   };
 
-  const handleBulkActivate = () => bulkUpdateStatus('active');
-  const handleBulkDeactivate = () => bulkUpdateStatus('inactive');
-
   const handleGroupFilter = (groupId: string) => {
     setFilters({ groupId });
   };
 
-  const handleOpenBulkDeleteDialog = () => {
-    if (selectedClients.length > 0) {
-      setIsBulkDeleteDialogOpen(true);
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header Section - Similar to Figma */}
+    <div className="space-y-4">
+      {/* Header Section */}
       <div className="space-y-2">
-        {/* Subtitle with icon */}
         <div className="flex items-center gap-2 text-gray-600">
           <Users className="h-5 w-5" />
           <span>לקוחות</span>
         </div>
 
-        {/* Main Title and Action Buttons Row */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <h1 className="text-4xl lg:text-5xl font-bold text-black">ניהול לקוחות</h1>
 
           <div className="flex items-center gap-3 flex-row-reverse rtl:flex-row">
-            {/* Add Client Button - First (on the left in RTL) */}
             {canCreateClient && (
               <Button
                 variant="outline"
@@ -177,50 +175,57 @@ export default function ClientsPage() {
                 הוסף לקוח חדש
               </Button>
             )}
-
-            {/* Delete Clients Button */}
-            {isAdmin && (
-              <Button
-                variant="outline"
-                onClick={handleOpenBulkDeleteDialog}
-                disabled={selectedClients.length === 0}
-                className="border-black text-black hover:bg-gray-100 rounded-full disabled:opacity-50"
-              >
-                <Trash2 className="ml-2 h-4 w-4" />
-                מחיקת לקוחות
-              </Button>
-            )}
           </div>
         </div>
+      </div>
+
+      {/* Workflow Tabs */}
+      <div className="bg-gray-100 rounded-lg p-1.5 flex flex-wrap gap-1">
+        {WORKFLOW_TABS.map((tab) => {
+          const count = tabCounts[tab.value];
+          const isActive = filters.tab === tab.value;
+
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setFilters({ tab: tab.value })}
+              className={cn(
+                'px-5 py-2.5 rounded-md text-sm font-medium transition-all',
+                isActive
+                  ? 'bg-[#395BF7] text-white shadow-sm'
+                  : 'bg-transparent text-gray-600 hover:bg-white hover:shadow-sm'
+              )}
+            >
+              {tab.label}
+              <span className={cn(
+                'mr-1.5 text-xs',
+                isActive ? 'text-white/80' : 'text-gray-400'
+              )}>
+                ({count})
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search and Filters */}
       <ClientFilters
         searchQuery={searchQuery}
         filters={filters}
+        accountantNames={accountantNames}
         onSearchChange={setSearchQuery}
         onFilterChange={setFilters}
         onReset={resetFilters}
       />
 
-      {/* Bulk Actions - Admin only (now minimal, main actions in header) */}
-      {isAdmin && selectedClients.length > 0 && (
-        <BulkActionsBar
-          selectedCount={selectedClients.length}
-          onActivate={handleBulkActivate}
-          onDeactivate={handleBulkDeactivate}
-          onClearSelection={clearSelection}
-        />
-      )}
-
       {/* Clients Table */}
       <ClientsTable
         clients={clients}
-        selectedClients={selectedClients}
         loading={loading}
-        isAdmin={isAdmin}
-        onSelectAll={toggleSelectAll}
-        onToggleSelect={toggleClientSelection}
+        clientStatusMap={clientStatusMap}
+        sortField={sortField}
+        sortOrder={sortOrder}
+        onSortChange={toggleSort}
         onEdit={handleOpenEditDialog}
         onDelete={handleOpenDeleteDialog}
         onView={handleViewClient}
@@ -285,30 +290,6 @@ export default function ClientsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Bulk Delete Confirmation Dialog */}
-      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="rtl:text-right ltr:text-left">האם אתה בטוח?</AlertDialogTitle>
-            <AlertDialogDescription className="rtl:text-right ltr:text-left">
-              פעולה זו תמחק {selectedClients.length} לקוחות לצמיתות. לא ניתן לבטל
-              פעולה זו.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="rtl:space-x-reverse ltr:space-x-2">
-            <AlertDialogCancel onClick={() => setIsBulkDeleteDialogOpen(false)}>ביטול</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                // TODO: Implement bulk delete
-                setIsBulkDeleteDialogOpen(false);
-                clearSelection();
-              }}
-            >
-              מחק {selectedClients.length} לקוחות
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

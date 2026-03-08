@@ -10,7 +10,10 @@ import {
   type UpdateClientDto,
   type ClientContact,
   type CreateClientContactDto,
+  type ClientStatusSummary,
 } from '@/services';
+
+export type WorkflowTab = 'all' | 'balance_24' | 'balance_25' | 'fee_paid' | 'fee_partial' | 'fee_unpaid' | 'fee_exempt';
 
 export interface ClientFilters {
   companyStatus: string;
@@ -18,6 +21,20 @@ export interface ClientFilters {
   companySubtype: string;
   groupId: string;
   status: string; // Client status: all, active, inactive, pending, adhoc
+  balanceStatus: string; // Balance status filter
+  tab: WorkflowTab; // Workflow tab
+  accountantName: string; // Accountant name filter
+  internalExternal: string; // Internal/external bookkeeping filter
+}
+
+export interface TabCounts {
+  all: number;
+  balance_24: number;
+  balance_25: number;
+  fee_paid: number;
+  fee_partial: number;
+  fee_unpaid: number;
+  fee_exempt: number;
 }
 
 export interface UseClientsReturn {
@@ -32,6 +49,20 @@ export interface UseClientsReturn {
   // Client type counts for filter cards
   clientTypeCounts: Record<string, number>;
   totalClientCount: number;
+
+  // Status map
+  clientStatusMap: Record<string, ClientStatusSummary>;
+
+  // Tab counts
+  tabCounts: TabCounts;
+
+  // Sorting
+  sortField: string;
+  sortOrder: 'asc' | 'desc';
+  toggleSort: (field: string) => void;
+
+  // Accountant names for filter dropdown
+  accountantNames: string[];
 
   // Search & Filters
   searchQuery: string;
@@ -71,15 +102,16 @@ const DEFAULT_FILTERS: ClientFilters = {
   clientType: 'all',
   companySubtype: 'all',
   groupId: 'all',
-  status: 'all', // Default: show all client statuses
+  status: 'all',
+  balanceStatus: 'all',
+  tab: 'all',
+  accountantName: 'all',
+  internalExternal: 'all',
 };
 
 const PAGE_SIZE = 20;
 
 export interface UseClientsOptions {
-  /**
-   * Exclude freelancers from the list (used on the Companies page)
-   */
   excludeFreelancers?: boolean;
 }
 
@@ -98,6 +130,15 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
   const [clientContacts, setClientContacts] = useState<ClientContact[]>([]);
   const [clientTypeCounts, setClientTypeCounts] = useState<Record<string, number>>({});
   const [totalClientCount, setTotalClientCount] = useState(0);
+  const [clientStatusMap, setClientStatusMap] = useState<Record<string, ClientStatusSummary>>({});
+  const [allClientsForCounts, setAllClientsForCounts] = useState<Client[]>([]);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [accountantNames, setAccountantNames] = useState<string[]>([]);
+  const [balanceClientIds, setBalanceClientIds] = useState<{ year2024: Set<string>; year2025: Set<string> }>({
+    year2024: new Set(),
+    year2025: new Set(),
+  });
 
   // Debounce search query to reduce API calls
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -107,6 +148,37 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     () => Math.ceil(totalClients / PAGE_SIZE),
     [totalClients]
   );
+
+  // Compute tab counts from allClientsForCounts + clientStatusMap + balanceClientIds
+  const tabCounts = useMemo<TabCounts>(() => {
+    const counts: TabCounts = {
+      all: allClientsForCounts.length,
+      balance_24: 0,
+      balance_25: 0,
+      fee_paid: 0,
+      fee_partial: 0,
+      fee_unpaid: 0,
+      fee_exempt: 0,
+    };
+
+    for (const client of allClientsForCounts) {
+      if (balanceClientIds.year2024.has(client.id)) counts.balance_24++;
+      if (balanceClientIds.year2025.has(client.id)) counts.balance_25++;
+
+      if (!client.pays_fees) {
+        counts.fee_exempt++;
+      } else {
+        const statusInfo = clientStatusMap[client.id];
+        if (statusInfo?.fee_status) {
+          if (statusInfo.fee_status === 'paid') counts.fee_paid++;
+          else if (statusInfo.fee_status === 'partial_paid') counts.fee_partial++;
+          else if (['draft', 'sent', 'overdue'].includes(statusInfo.fee_status)) counts.fee_unpaid++;
+        }
+      }
+    }
+
+    return counts;
+  }, [allClientsForCounts, clientStatusMap, balanceClientIds]);
 
   // Load client type counts for filter cards
   const loadClientTypeCounts = useCallback(async () => {
@@ -148,15 +220,123 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     }
   }, [filters.companyStatus, excludeFreelancers]);
 
+  // Load all clients for tab counting (applies non-tab filters for dynamic counts)
+  const loadAllClientsForCounts = useCallback(async () => {
+    try {
+      let query = supabase
+        .from('clients')
+        .select('id, status, pays_fees');
+
+      if (excludeFreelancers) {
+        query = query.neq('client_type', 'freelancer');
+      }
+
+      // Apply all non-tab filters so counts reflect the current filter state
+      if (filters.companyStatus !== 'all') query = query.eq('company_status', filters.companyStatus);
+      if (filters.clientType !== 'all') query = query.eq('client_type', filters.clientType);
+      if (filters.companySubtype !== 'all') query = query.eq('company_subtype', filters.companySubtype);
+      if (filters.groupId === 'none') query = query.is('group_id', null);
+      else if (filters.groupId !== 'all') query = query.eq('group_id', filters.groupId);
+      if (filters.status !== 'all') query = query.eq('status', filters.status);
+      if (filters.accountantName !== 'all') query = query.eq('accountant_name', filters.accountantName);
+      if (filters.internalExternal !== 'all') query = query.eq('internal_external', filters.internalExternal);
+
+      // Apply search filter for counts too
+      if (debouncedSearchQuery) {
+        query = query.or(`company_name.ilike.%${debouncedSearchQuery}%,tax_id.ilike.%${debouncedSearchQuery}%,contact_name.ilike.%${debouncedSearchQuery}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) {
+        logger.error('Error loading clients for counts:', error);
+        return;
+      }
+
+      setAllClientsForCounts((data || []) as Client[]);
+    } catch (error) {
+      logger.error('Error loading clients for counts:', error);
+    }
+  }, [excludeFreelancers, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, filters.accountantName, filters.internalExternal, debouncedSearchQuery]);
+
+  // Load status summary for all clients
+  const loadClientStatusSummary = useCallback(async () => {
+    const response = await clientService.getClientsStatusSummary();
+    if (response.data) {
+      const map: Record<string, ClientStatusSummary> = {};
+      for (const item of response.data) {
+        map[item.client_id] = item;
+      }
+      setClientStatusMap(map);
+    }
+  }, []);
+
+  // Load balance year data (which clients have annual_balance_sheets for 2024/2025)
+  const loadBalanceYearData = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('annual_balance_sheets')
+        .select('client_id, year')
+        .in('year', [2024, 2025]);
+
+      if (error) {
+        logger.error('Error loading balance year data:', error);
+        return;
+      }
+
+      const year2024 = new Set<string>();
+      const year2025 = new Set<string>();
+      for (const row of data || []) {
+        if (row.year === 2024) year2024.add(row.client_id);
+        if (row.year === 2025) year2025.add(row.client_id);
+      }
+      setBalanceClientIds({ year2024, year2025 });
+    } catch (error) {
+      logger.error('Error loading balance year data:', error);
+    }
+  }, []);
+
+  // Load distinct accountant names for filter dropdown
+  const loadAccountantNames = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('accountant_name')
+        .not('accountant_name', 'is', null)
+        .neq('accountant_name', '');
+
+      if (error) {
+        logger.error('Error loading accountant names:', error);
+        return;
+      }
+
+      const names = [...new Set((data || []).map(r => r.accountant_name as string))].sort();
+      setAccountantNames(names);
+    } catch (error) {
+      logger.error('Error loading accountant names:', error);
+    }
+  }, []);
+
   // Refetch counts when companyStatus changes
   useEffect(() => {
     loadClientTypeCounts();
   }, [loadClientTypeCounts]);
 
-  // Load clients whenever search/filters/page changes
+  // Load status summary, balance year data, and accountant names on mount
+  useEffect(() => {
+    loadClientStatusSummary();
+    loadBalanceYearData();
+    loadAccountantNames();
+  }, [loadClientStatusSummary, loadBalanceYearData, loadAccountantNames]);
+
+  // Reload counts when non-tab filters change
+  useEffect(() => {
+    loadAllClientsForCounts();
+  }, [loadAllClientsForCounts]);
+
+  // Load clients whenever search/filters/page/sort changes
   useEffect(() => {
     loadClients();
-  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, currentPage]);
+  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, filters.tab, filters.balanceStatus, filters.accountantName, filters.internalExternal, currentPage, sortField, sortOrder]);
 
   // Load clients
   const loadClients = useCallback(async () => {
@@ -167,8 +347,10 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
       if (debouncedSearchQuery) {
         response = await clientService.search(debouncedSearchQuery);
         if (response.data) {
-          setClients(response.data);
-          setTotalClients(response.data.length);
+          let filtered = response.data;
+          filtered = applyClientSideFilters(filtered);
+          setClients(filtered);
+          setTotalClients(filtered.length);
         }
       } else {
         // Build filters object with all active filters
@@ -179,21 +361,43 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
         if (filters.groupId === 'none') apiFilters.group_id = 'null';
         else if (filters.groupId !== 'all') apiFilters.group_id = filters.groupId;
         if (filters.status !== 'all') apiFilters.status = filters.status;
+        if (filters.accountantName !== 'all') apiFilters.accountant_name = filters.accountantName;
+        if (filters.internalExternal !== 'all') apiFilters.internal_external = filters.internalExternal;
 
         // Exclude freelancers if requested (used on Companies page)
         if (excludeFreelancers) apiFilters.client_type_neq = 'freelancer';
 
-        response = await clientService.list(
-          { page: currentPage, pageSize: PAGE_SIZE, sortBy: 'created_at', sortOrder: 'desc' },
-          Object.keys(apiFilters).length > 0 ? apiFilters : undefined
-        );
-        if (response.data) {
-          setClients(response.data.clients);
-          setTotalClients(response.data.total);
+        // For tab filters that need client-side filtering (fee/balance status),
+        // we need to load more data and filter client-side
+        const needsClientSideFilter = ['balance_24', 'balance_25', 'fee_unpaid', 'fee_paid', 'fee_partial', 'fee_exempt'].includes(filters.tab) || filters.balanceStatus !== 'all';
+
+        if (needsClientSideFilter) {
+          // Load all matching clients (no pagination) for client-side filtering
+          response = await clientService.list(
+            { page: 1, pageSize: 1000, sortBy: sortField, sortOrder },
+            Object.keys(apiFilters).length > 0 ? apiFilters : undefined
+          );
+          if (response.data) {
+            let filtered = response.data.clients;
+            filtered = applyClientSideFilters(filtered);
+            // Manual pagination
+            const start = (currentPage - 1) * PAGE_SIZE;
+            setTotalClients(filtered.length);
+            setClients(filtered.slice(start, start + PAGE_SIZE));
+          }
+        } else {
+          response = await clientService.list(
+            { page: currentPage, pageSize: PAGE_SIZE, sortBy: sortField, sortOrder },
+            Object.keys(apiFilters).length > 0 ? apiFilters : undefined
+          );
+          if (response.data) {
+            setClients(response.data.clients);
+            setTotalClients(response.data.total);
+          }
         }
       }
 
-      if (response.error) {
+      if (response?.error) {
         toast({
           title: 'שגיאה בטעינת לקוחות',
           description: response.error.message || 'לא הצלחנו לטעון את רשימת הלקוחות',
@@ -210,7 +414,46 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchQuery, filters, currentPage, toast, excludeFreelancers]);
+  }, [debouncedSearchQuery, filters, currentPage, toast, excludeFreelancers, clientStatusMap, sortField, sortOrder, balanceClientIds]);
+
+  // Apply client-side filters (tab-based fee/balance status, balance status dropdown)
+  const applyClientSideFilters = useCallback((clientsList: Client[]): Client[] => {
+    let filtered = clientsList;
+
+    // Tab-based filters
+    if (filters.tab === 'balance_24') {
+      filtered = filtered.filter(c => balanceClientIds.year2024.has(c.id));
+    } else if (filters.tab === 'balance_25') {
+      filtered = filtered.filter(c => balanceClientIds.year2025.has(c.id));
+    } else if (filters.tab === 'fee_paid') {
+      filtered = filtered.filter(c => {
+        const s = clientStatusMap[c.id];
+        return s?.fee_status === 'paid';
+      });
+    } else if (filters.tab === 'fee_partial') {
+      filtered = filtered.filter(c => {
+        const s = clientStatusMap[c.id];
+        return s?.fee_status === 'partial_paid';
+      });
+    } else if (filters.tab === 'fee_unpaid') {
+      filtered = filtered.filter(c => {
+        const s = clientStatusMap[c.id];
+        return s?.fee_status && ['draft', 'sent', 'overdue'].includes(s.fee_status);
+      });
+    } else if (filters.tab === 'fee_exempt') {
+      filtered = filtered.filter(c => !c.pays_fees);
+    }
+
+    // Balance status dropdown filter
+    if (filters.balanceStatus !== 'all') {
+      filtered = filtered.filter(c => {
+        const s = clientStatusMap[c.id];
+        return s?.balance_status === filters.balanceStatus;
+      });
+    }
+
+    return filtered;
+  }, [filters.tab, filters.balanceStatus, clientStatusMap, balanceClientIds]);
 
   // Create client
   const createClient = useCallback(async (data: CreateClientDto): Promise<{ success: boolean; clientId?: string }> => {
@@ -444,6 +687,19 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     setSelectedClients([]);
   }, []);
 
+  // Sort toggle
+  const toggleSort = useCallback((field: string) => {
+    setSortField(prev => {
+      if (prev === field) {
+        setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+        return prev;
+      }
+      setSortOrder('asc');
+      return field;
+    });
+    setCurrentPageState(1);
+  }, []);
+
   // Filters management
   const setFilters = useCallback((newFilters: Partial<ClientFilters>) => {
     setFiltersState((prev) => ({ ...prev, ...newFilters }));
@@ -480,6 +736,20 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     // Client type counts
     clientTypeCounts,
     totalClientCount,
+
+    // Status map
+    clientStatusMap,
+
+    // Tab counts
+    tabCounts,
+
+    // Sorting
+    sortField,
+    sortOrder,
+    toggleSort,
+
+    // Accountant names for filter dropdown
+    accountantNames,
 
     // Search & Filters
     searchQuery,

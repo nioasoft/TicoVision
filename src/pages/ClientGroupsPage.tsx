@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, ExternalLink, FileImage, AlertCircle, Search, FolderOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, AlertCircle, Search, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -83,7 +82,6 @@ export default function ClientGroupsPage() {
     combined_billing: true,
     combined_letters: true,
     company_structure_link: '',
-    canva_link: '',
     google_drive_link: '',
     notes: '',
     address: {
@@ -270,7 +268,6 @@ export default function ClientGroupsPage() {
       combined_billing: true,
       combined_letters: true,
       company_structure_link: '',
-      canva_link: '',
       google_drive_link: '',
       notes: '',
       address: {
@@ -294,7 +291,6 @@ export default function ClientGroupsPage() {
       combined_billing: group.combined_billing,
       combined_letters: group.combined_letters,
       company_structure_link: group.company_structure_link || '',
-      canva_link: group.canva_link || '',
       google_drive_link: group.google_drive_link || '',
       notes: group.notes || '',
       address: group.address || { street: '', city: '', postal_code: '' },
@@ -597,17 +593,6 @@ export default function ClientGroupsPage() {
                               <span className="mr-1">מצגת החזקות</span>
                             </Button>
                           )}
-                          {group.canva_link && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.open(group.canva_link, '_blank')}
-                              title="Canva"
-                            >
-                              <FileImage className="h-4 w-4 text-purple-500" />
-                              <span className="mr-1">Canva</span>
-                            </Button>
-                          )}
                           {group.google_drive_link && (
                             <Button
                               size="sm"
@@ -802,16 +787,6 @@ export default function ClientGroupsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="canva_link">לינק ל-Canva</Label>
-                <Input
-                  id="canva_link"
-                  type="url"
-                  value={formData.canva_link}
-                  onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
-                  dir="ltr"
-                />
-              </div>
-              <div>
                 <Label htmlFor="google_drive_link">לינק ל-Google Drive</Label>
                 <Input
                   id="google_drive_link"
@@ -913,16 +888,6 @@ export default function ClientGroupsPage() {
                   type="url"
                   value={formData.company_structure_link}
                   onChange={(e) => setFormData({ ...formData, company_structure_link: e.target.value })}
-                  dir="ltr"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_canva_link">לינק ל-Canva</Label>
-                <Input
-                  id="edit_canva_link"
-                  type="url"
-                  value={formData.canva_link}
-                  onChange={(e) => setFormData({ ...formData, canva_link: e.target.value })}
                   dir="ltr"
                 />
               </div>

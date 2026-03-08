@@ -216,6 +216,13 @@ export interface ClientsListResponse {
   pageSize: number;
 }
 
+export interface ClientStatusSummary {
+  client_id: string;
+  balance_status: string | null;
+  fee_status: string | null;
+  fee_calculation_id: string | null;
+}
+
 export class ClientService extends BaseService {
   constructor() {
     super('clients');
@@ -2115,6 +2122,28 @@ export class ClientService extends BaseService {
       }
 
       return { data: clients || [], error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+  /**
+   * Get status summary (balance + fee) for all clients in one batch query
+   */
+  async getClientsStatusSummary(year?: number): Promise<ServiceResponse<ClientStatusSummary[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      const { data, error } = await supabase
+        .rpc('get_clients_status_summary', {
+          p_tenant_id: tenantId,
+          ...(year ? { p_year: year } : {}),
+        });
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      return { data: data || [], error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }

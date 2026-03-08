@@ -21,7 +21,8 @@ export type {
   CreateClientPhoneDto,
   UpdateClientPhoneDto,
   PaymentRole,
-  ClientGroup
+  ClientGroup,
+  ClientStatusSummary
 } from './client.service';
 export type { User, CreateUserData, UpdateUserData } from './user.service';
 export type {

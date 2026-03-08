@@ -4,7 +4,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Pencil, FolderOpen, Palette } from 'lucide-react';
+import { ArrowRight, Pencil, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatIsraeliTaxId } from '@/lib/validators';
 import { Form1214Indicator } from './Form1214Indicator';
@@ -80,16 +80,6 @@ export const ClientProfileHeader: React.FC<ClientProfileHeaderProps> = ({ client
           >
             <FolderOpen className="h-4 w-4 ml-1.5 text-green-600" />
             Drive
-          </Button>
-        )}
-        {client.canva_link && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open(client.canva_link, '_blank')}
-          >
-            <Palette className="h-4 w-4 ml-1.5 text-purple-600" />
-            Canva
           </Button>
         )}
         <Button size="sm" onClick={onEdit}>

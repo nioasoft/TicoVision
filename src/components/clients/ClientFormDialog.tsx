@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, FolderOpen, Palette } from 'lucide-react';
+import { AlertCircle, FolderOpen } from 'lucide-react';
 import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
 import { SignatureUpload } from '@/components/SignatureUpload';
 import { ContactsManager } from '@/components/ContactsManager';
@@ -111,7 +111,6 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   collection_responsibility: 'tiko',
   notes: '',
   google_drive_link: '',
-  canva_link: '',
   client_type: 'company',
   company_status: 'active',
   company_subtype: undefined,
@@ -187,7 +186,6 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           collection_responsibility: client.collection_responsibility || 'tiko',
           notes: client.notes || '',
           google_drive_link: client.google_drive_link || '',
-          canva_link: client.canva_link || '',
           client_type: client.client_type || 'company',
           company_status: client.company_status || 'active',
           company_subtype: client.company_subtype || undefined,
@@ -452,30 +450,17 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
             </DialogHeader>
 
             {/* External Links Buttons - Edit mode only, when links exist */}
-            {mode === 'edit' && (client?.google_drive_link || client?.canva_link) && (
+            {mode === 'edit' && client?.google_drive_link && (
               <div className="mb-2 flex gap-2">
-                {client?.google_drive_link && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(client.google_drive_link, '_blank')}
-                    className="gap-2"
-                  >
-                    <FolderOpen className="h-4 w-4 text-green-600" />
-                    Google Drive
-                  </Button>
-                )}
-                {client?.canva_link && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(client.canva_link, '_blank')}
-                    className="gap-2"
-                  >
-                    <Palette className="h-4 w-4 text-purple-600" />
-                    Canva
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(client.google_drive_link, '_blank')}
+                  className="gap-2"
+                >
+                  <FolderOpen className="h-4 w-4 text-green-600" />
+                  Google Drive
+                </Button>
               </div>
             )}
 
@@ -1102,32 +1087,18 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 />
               </div>
 
-              {/* Row 10: External Links - Google Drive and Canva */}
-              <div className="col-span-3 grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="google_drive_link" className="text-right block mb-2">
-                    לינק ל-Google Drive
-                  </Label>
-                  <Input
-                    id="google_drive_link"
-                    type="url"
-                    value={formData.google_drive_link || ''}
-                    onChange={(e) => handleFormChange('google_drive_link', e.target.value)}
-                    dir="ltr"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="canva_link" className="text-right block mb-2">
-                    לינק ל-Canva
-                  </Label>
-                  <Input
-                    id="canva_link"
-                    type="url"
-                    value={formData.canva_link || ''}
-                    onChange={(e) => handleFormChange('canva_link', e.target.value)}
-                    dir="ltr"
-                  />
-                </div>
+              {/* Row 10: External Links - Google Drive */}
+              <div className="col-span-3">
+                <Label htmlFor="google_drive_link" className="text-right block mb-2">
+                  לינק ל-Google Drive
+                </Label>
+                <Input
+                  id="google_drive_link"
+                  type="url"
+                  value={formData.google_drive_link || ''}
+                  onChange={(e) => handleFormChange('google_drive_link', e.target.value)}
+                  dir="ltr"
+                />
               </div>
 
               {/* Company Stamp - Edit mode only */}
