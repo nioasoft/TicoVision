@@ -8,6 +8,7 @@ export function LettersPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">ניהול מכתבים</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Message in a Bottle</p>
           <p className="text-gray-500 mt-1">11 תבניות מכתבים זמינות</p>
         </div>
         <Button>

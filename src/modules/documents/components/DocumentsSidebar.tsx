@@ -108,8 +108,12 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
 
   return (
     <div className={cn("flex flex-col h-full bg-slate-50/50 border-l", className)} dir="rtl">
-      {/* Search Header */}
-      <div className="p-4">
+      {/* Title & Search Header */}
+      <div className="p-4 space-y-3">
+        <div>
+          <h1 className="text-lg font-bold text-right">מרכז המסמכים</h1>
+          <p className="text-xs text-muted-foreground/60 italic">Keep On Rockin' in the Archive</p>
+        </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input

@@ -305,6 +305,7 @@ export const TodaysWorklistPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div className="rtl:text-right">
           <h1 className="text-3xl font-bold rtl:text-right">משימות להיום</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Working for the Weekend</p>
           <p className="text-gray-500 rtl:text-right">
             {totalTasks > 0 ? (
               <>

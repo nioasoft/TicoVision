@@ -306,6 +306,7 @@ export default function AnnualBalancePage() {
                 <h1 className="text-2xl font-bold tracking-tight">
                   מאזנים שנתיים {filters.year}
                 </h1>
+                <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Balance of Power</p>
                 <p className="text-sm text-muted-foreground">
                   {dashboardStats ? `${dashboardStats.totalCases} תיקים` : 'טוען...'}
                 </p>

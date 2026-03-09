@@ -1504,6 +1504,7 @@ export function FeesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 rtl:text-right ltr:text-left">חישוב שכר טרחה לשנת מס {formData.year}</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Money for Nothing</p>
           <p className="text-gray-500 mt-1 rtl:text-right ltr:text-left">חישוב שכר טרחה שנתי עם התאמות מדד ותוספות</p>
         </div>
         <div className="flex gap-2">

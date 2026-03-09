@@ -45,6 +45,7 @@ export default function FilesManagerPage() {
           <FolderOpen className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold text-left">מנהל קבצים ומסמכים</h1>
         </div>
+        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Every Record Tells a Story</p>
         <p className="text-gray-600 text-right">
           ניהול וארגון מסמכים ללקוחות וקבוצות לפי קטגוריות
         </p>

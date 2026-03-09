@@ -508,6 +508,7 @@ export function FeeTrackingPage() {
       <div className="flex justify-between items-center">
         <div className="rtl:text-right ltr:text-left">
           <h1 className="text-3xl font-bold rtl:text-right ltr:text-left">מעקב שכר טרחה</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Every Breath You Take</p>
           <p className="text-gray-500 rtl:text-right ltr:text-left">
             מעקב מלא אחר חישובים, מכתבים ותשלומים לכל הלקוחות
           </p>

@@ -13,6 +13,7 @@ export default function UnderConstructionPage() {
           <h1 className="text-2xl font-bold text-gray-800 mb-3">
             פיתוח בבנייה
           </h1>
+          <p className="text-sm text-muted-foreground/60 mb-2 italic">Under Pressure — Coming Soon</p>
           <p className="text-gray-500">
             העמוד בפיתוח, יהיה זמין בקרוב
           </p>

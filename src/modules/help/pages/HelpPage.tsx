@@ -83,6 +83,7 @@ export const HelpPage: React.FC = () => {
           </div>
           <h1 className="text-3xl font-bold">עזרה והדרכה</h1>
         </div>
+        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">With a Little Help from My Friends</p>
         <p className="text-gray-500">
           מדריכים מפורטים וטיפים לשימוש במערכת TicoVision CRM
         </p>

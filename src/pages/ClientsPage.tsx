@@ -168,6 +168,7 @@ export default function ClientsPage() {
 
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <h1 className="text-4xl lg:text-5xl font-bold text-black">ניהול לקוחות</h1>
+          <p className="text-sm text-muted-foreground/60 mt-1 italic">Come Together — Right Now</p>
 
           <div className="flex items-center gap-3 flex-row-reverse rtl:flex-row">
             {canCreateClient && (

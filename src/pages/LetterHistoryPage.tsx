@@ -552,6 +552,7 @@ export function LetterHistoryPage() {
         <h1 className="text-3xl font-bold tracking-tight rtl:text-right ltr:text-left">
           היסטוריית מכתבים
         </h1>
+        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Yesterday — All My Troubles Seemed So Far Away</p>
         <p className="text-muted-foreground rtl:text-right ltr:text-left">
           צפייה ושליחה מחדש של מכתבים שנשלחו וטיוטות
         </p>

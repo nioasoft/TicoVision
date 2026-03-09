@@ -101,6 +101,7 @@ export function SettingsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">הגדרות מערכת</h1>
+        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Turn It Up to Eleven</p>
         <p className="text-gray-500 mt-1">הגדרות כלליות ואינטגרציות</p>
       </div>
 

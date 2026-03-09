@@ -72,6 +72,7 @@ export const BroadcastPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">רשימות תפוצה</h1>
+              <p className="text-sm text-muted-foreground/60 mt-0.5 italic">We Will Rock You — Spread the Word</p>
               <p className="text-muted-foreground">
                 ניהול רשימות תפוצה לשליחת מכתבים לקבוצות לקוחות
               </p>

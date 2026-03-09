@@ -104,6 +104,7 @@ export default function FreelancersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold rtl:text-right">עצמאים</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Free Bird</p>
           <p className="text-muted-foreground rtl:text-right">ניהול עצמאים ובעלי הכנסה פסיבית</p>
         </div>
         {canCreateFreelancer && (

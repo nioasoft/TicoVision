@@ -218,7 +218,10 @@ export function UsersPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">ניהול משתמשים</h1>
+        <div>
+          <h1 className="text-3xl font-bold">ניהול משתמשים</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Heroes — Just for One Day</p>
+        </div>
         <Button onClick={handleOpenAddDialog}>
           <UserPlus className="ml-2 h-4 w-4" />
           הוסף משתמש

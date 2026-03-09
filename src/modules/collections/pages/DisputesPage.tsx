@@ -85,6 +85,7 @@ export const DisputesPage: React.FC = () => {
       <div className="flex justify-between items-center rtl:flex-row-reverse">
         <div>
           <h1 className="text-3xl font-bold rtl:text-right ltr:text-left">ניהול מחלוקות תשלום</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Should I Stay or Should I Pay</p>
           <p className="text-gray-500 rtl:text-right ltr:text-left">
             לקוחות שטוענים שכבר שילמו
           </p>

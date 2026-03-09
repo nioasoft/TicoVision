@@ -234,6 +234,7 @@ export const CollectionReportsPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div className="rtl:text-right">
           <h1 className="text-3xl font-bold rtl:text-right">דוחות גביה</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">The Final Countdown</p>
           <p className="text-gray-500 rtl:text-right">צפייה וייצוא דוחות גביה</p>
         </div>
         <div className="flex gap-2 rtl:flex-row-reverse">

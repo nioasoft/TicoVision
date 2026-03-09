@@ -181,6 +181,7 @@ export const CollectionDashboard: React.FC = () => {
       <div className="flex justify-between items-center">
         <div className="rtl:text-right ltr:text-left">
           <h1 className="text-3xl font-bold rtl:text-right ltr:text-left">מערכת ניהול גביה</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Money Money Money — Must Be Funny</p>
           <p className="text-gray-500 rtl:text-right ltr:text-left">
             מעקב אחר מכתבי שכר טרחה ותשלומים
           </p>

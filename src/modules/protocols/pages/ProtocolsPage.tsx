@@ -202,6 +202,7 @@ export function ProtocolsPage() {
           <h1 className="text-3xl font-semibold">פרוטוקולים</h1>
           <ScrollText className="h-7 w-7 text-primary" />
         </div>
+        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Rock the Minutes</p>
         <p className="text-sm text-gray-600 rtl:text-right">
           ניהול פרוטוקולים של פגישות עם לקוחות וקבוצות
         </p>

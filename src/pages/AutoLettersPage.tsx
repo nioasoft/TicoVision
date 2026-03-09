@@ -1120,10 +1120,11 @@ export function AutoLettersPage() {
   return (
     <div className="container mx-auto p-4 max-w-7xl" dir="rtl">
       {/* Page Header - Compact */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-1">
         <FileStack className="h-6 w-6 text-blue-600" />
         <h1 className="text-2xl font-bold text-right">מכתבים אוטומטיים</h1>
       </div>
+      <p className="text-sm text-muted-foreground/60 mb-4 italic">Write On</p>
 
       {/* 2-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">

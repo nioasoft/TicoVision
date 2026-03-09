@@ -261,6 +261,7 @@ export function TicketDashboard() {
             <div className="flex items-center gap-2">
               <Ticket className="h-5 w-5 text-primary" />
               <h1 className="text-lg font-semibold">פניות</h1>
+              <span className="text-xs text-muted-foreground/60 italic hidden sm:inline">Ticket to Ride</span>
             </div>
 
             {/* Inline Stats */}

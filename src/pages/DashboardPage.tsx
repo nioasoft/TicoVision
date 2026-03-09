@@ -114,6 +114,7 @@ export function DashboardPage() {
           <h1 className="text-3xl font-bold text-gray-900 rtl:text-right ltr:text-left">
             לוח בקרה
           </h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">The Big Picture — Paint It Black</p>
           <p className="text-gray-500 mt-1 rtl:text-right ltr:text-left">
             סקירה כללית של המערכת
           </p>

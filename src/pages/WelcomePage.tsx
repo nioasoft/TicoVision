@@ -48,10 +48,10 @@ export function WelcomePage() {
                     'משתמש';
 
   const quickActions = [
-    { icon: Users, label: 'לקוחות', path: '/clients', color: 'from-blue-500 to-cyan-500' },
-    { icon: FileText, label: 'מכתבים', path: '/letters', color: 'from-purple-500 to-pink-500' },
-    { icon: BarChart3, label: 'דשבורד', path: '/dashboard', color: 'from-orange-500 to-red-500' },
-    { icon: TrendingUp, label: 'גבייה', path: '/collections', color: 'from-green-500 to-emerald-500' },
+    { icon: Users, label: 'לקוחות', sub: 'Come Together', path: '/clients', color: 'from-blue-500 to-cyan-500' },
+    { icon: FileText, label: 'מכתבים', sub: 'Message in a Bottle', path: '/letters', color: 'from-purple-500 to-pink-500' },
+    { icon: BarChart3, label: 'דשבורד', sub: 'Paint It Black', path: '/dashboard', color: 'from-orange-500 to-red-500' },
+    { icon: TrendingUp, label: 'גבייה', sub: 'Money Money Money', path: '/collections', color: 'from-green-500 to-emerald-500' },
   ];
 
   return (
@@ -77,7 +77,7 @@ export function WelcomePage() {
       <div className={`relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
         {/* Logo with glow effect */}
-        <div className="relative mb-8 group">
+        <div className="relative mb-5 group">
           <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-blue-500/30 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150" />
           <img
             src="/brand/tico_logo_transparent.png"
@@ -87,11 +87,11 @@ export function WelcomePage() {
         </div>
 
         {/* Vision text */}
-        <div className="text-center mb-12 space-y-4">
+        <div className="text-center mb-8 space-y-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-4">
             <Sparkles className="w-4 h-4 text-blue-500" />
             <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              מערכת ניהול חכמה למשרדי רואי חשבון
+              Light My Fire — Let's Rock
             </span>
           </div>
 
@@ -102,52 +102,57 @@ export function WelcomePage() {
           </h1>
 
           <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            ברוכים הבאים ל
-            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mx-2">
-              Tico Vision
+            "I Can't Get No{' '}
+            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              Satisfaction
             </span>
-            <br />
-            העתיד של ניהול משרדי רואי חשבון מתחיל כאן
+            {' '}— Until I Open{' '}
+            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+              Tico Vision
+            </span>"
           </p>
         </div>
 
         {/* Feature highlights */}
-        <div className="flex flex-wrap justify-center gap-6 mb-12">
+        <div className="flex flex-wrap justify-center gap-6 mb-8">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="p-1.5 rounded-full bg-green-500/10">
               <Shield className="w-4 h-4 text-green-500" />
             </div>
-            <span>אבטחה מתקדמת</span>
+            <span>Sympathy for the Admin</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="p-1.5 rounded-full bg-blue-500/10">
               <Zap className="w-4 h-4 text-blue-500" />
             </div>
-            <span>ביצועים מהירים</span>
+            <span>Born to be Organized</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <div className="p-1.5 rounded-full bg-purple-500/10">
               <Sparkles className="w-4 h-4 text-purple-500" />
             </div>
-            <span>חוויה חכמה</span>
+            <span>Stairway to Dashboard</span>
           </div>
         </div>
 
         {/* Quick actions grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 w-full max-w-3xl">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 w-full max-w-3xl">
           {quickActions.map((action, index) => (
             <button
               key={action.path}
               onClick={() => navigate(action.path)}
-              className={`group relative p-6 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105 hover:shadow-xl`}
+              className={`group relative p-5 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105 hover:shadow-xl`}
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-              <div className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-lg`}>
+              <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-lg`}>
                 <action.icon className="w-6 h-6 text-white" />
               </div>
               <span className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 {action.label}
+              </span>
+              <span className="block text-xs text-muted-foreground/60 mt-1">
+                {action.sub}
               </span>
             </button>
           ))}
@@ -157,18 +162,18 @@ export function WelcomePage() {
         <Button
           size="lg"
           onClick={() => navigate('/clients')}
-          className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 px-8 py-6 text-lg rounded-xl"
+          className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 px-8 py-4 text-lg rounded-xl"
         >
           <span className="relative z-10 flex items-center gap-2">
-            בואו נתחיל
+            Let's Rock
             <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </Button>
 
         {/* Bottom tagline */}
-        <p className="mt-12 text-sm text-muted-foreground/60">
-          מופעל על ידי טכנולוגיה מתקדמת • עיצוב לעתיד
+        <p className="mt-8 text-sm text-muted-foreground/60">
+          The Show Must Go On — Powered by Tico Vision
         </p>
       </div>
     </div>

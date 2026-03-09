@@ -67,6 +67,7 @@ export default function ContactsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-right">ניהול אנשי קשר</h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Call Me — Anytime</p>
           <p className="text-muted-foreground text-right">
             {totalContacts} אנשי קשר במערכת
           </p>
