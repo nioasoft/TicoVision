@@ -32,7 +32,9 @@ import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generati
 import { groupFeeService, type ClientGroup, type GroupMemberClient } from '@/services/group-fee.service';
 import { GroupMembersList } from '@/components/fees/GroupMembersList';
 import { PdfFilingDialog } from './PdfFilingDialog';
+import { BroadcastLetterDialog } from './BroadcastLetterDialog';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
+import { useAuth } from '@/contexts/AuthContext';
 
 const templateService = new TemplateService();
 const pdfService = new PDFGenerationService();
@@ -303,6 +305,11 @@ interface UniversalLetterBuilderProps {
 }
 
 export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderProps) {
+  const { role } = useAuth();
+
+  // State - Broadcast dialog
+  const [showBroadcastDialog, setShowBroadcastDialog] = useState(false);
+
   // State - Client selection
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
@@ -3189,6 +3196,19 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                     </>
                   )}
                 </Button>
+
+                {/* Distribution List Broadcast Button - Admin Only */}
+                {role === 'admin' && (
+                  <Button
+                    onClick={() => setShowBroadcastDialog(true)}
+                    disabled={!letterContent.trim() || !emailSubject.trim()}
+                    variant="outline"
+                    className="w-full border-orange-300 bg-orange-50 hover:bg-orange-100 text-orange-700"
+                  >
+                    <Users className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                    הפצה לרשימת תפוצה
+                  </Button>
+                )}
               </div>
 
               {/* COLUMN 3 (LEFT in RTL): WhatsApp */}
@@ -3403,6 +3423,25 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           }}
         />
       )}
+
+      {/* Broadcast Letter Dialog */}
+      <BroadcastLetterDialog
+        open={showBroadcastDialog}
+        onOpenChange={setShowBroadcastDialog}
+        letterContent={letterContent}
+        originalBodyContent={originalBodyContent}
+        hasUserEditedContent={hasUserEditedContent}
+        emailSubject={emailSubject}
+        subjectLines={subjectLines}
+        customHeaderLines={customHeaderLines}
+        includesPayment={includesPayment}
+        amount={amount}
+        showCommercialName={showCommercialName}
+        commercialName={commercialName}
+        showAddress={showAddress}
+        addressLine={addressLine}
+        calculateDiscounts={calculateDiscounts}
+      />
 
       {/* Save Options Dialog - overwrite or create copy */}
       <Dialog open={showSaveOptionsDialog} onOpenChange={setShowSaveOptionsDialog}>

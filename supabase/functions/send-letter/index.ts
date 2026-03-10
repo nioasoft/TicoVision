@@ -38,6 +38,8 @@ interface SendLetterRequest {
   // Simple mode - for transactional emails without letter template
   subject?: string; // Email subject line (used in simpleMode)
   simpleMode?: boolean; // Skip letter template, send plain formatted email
+  // Broadcast mode - for distribution list sending (individual personalizations for privacy)
+  broadcastMode?: boolean;
   // Common fields
   clientId?: string;
   feeCalculationId?: string;
@@ -1011,7 +1013,8 @@ function replacePaymentUrlsWithShortLinks(
 async function sendEmail(
   recipientEmails: string[],
   subject: string,
-  htmlContent: string
+  htmlContent: string,
+  broadcastMode = false
 ): Promise<void> {
   if (!htmlContent || htmlContent.trim() === '') {
     throw new Error('HTML content is empty. Cannot send email.');
@@ -1040,13 +1043,21 @@ async function sendEmail(
     fetchImageBase64(`${baseUrl}/brand/tico_signature.png`)
   ]);
 
+  // In broadcast mode, create individual personalizations so recipients don't see each other's emails
+  // SendGrid allows max 1000 personalizations per API call
+  const BATCH_SIZE = 900;
+  const emailBatches: string[][] = broadcastMode && recipientEmails.length > BATCH_SIZE
+    ? Array.from({ length: Math.ceil(recipientEmails.length / BATCH_SIZE) }, (_, i) =>
+        recipientEmails.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE))
+    : [recipientEmails];
+
+  for (const batch of emailBatches) {
+    const personalizations = broadcastMode
+      ? batch.map(email => ({ to: [{ email }], subject }))
+      : [{ to: batch.map(email => ({ email })), subject }];
+
   const emailData = {
-    personalizations: [
-      {
-        to: recipientEmails.map(email => ({ email })),
-        subject: subject
-      }
-    ],
+    personalizations,
     from: {
       email: emailSettings.sender_email,
       name: emailSettings.sender_name
@@ -1148,6 +1159,7 @@ async function sendEmail(
     const errorText = await response.text();
     throw new Error(`SendGrid error: ${response.status} - ${errorText}`);
   }
+  } // end batch loop
 }
 
 /**
@@ -1179,6 +1191,7 @@ serve(async (req) => {
       isHtml,
       subject: requestSubject, // Email subject (used in simpleMode)
       simpleMode, // Skip letter template for transactional emails
+      broadcastMode, // Individual personalizations for distribution list privacy
       clientId,
       feeCalculationId,
       groupCalculationId,
@@ -1393,10 +1406,10 @@ serve(async (req) => {
     }
 
     // Send email
-    await sendEmail(recipientEmails, subject, letterHtml);
+    await sendEmail(recipientEmails, subject, letterHtml, broadcastMode);
 
-    // Log to database if client ID provided
-    if (clientId && SUPABASE_URL && SUPABASE_ANON_KEY) {
+    // Log to database if client ID provided (or broadcast mode)
+    if ((clientId || broadcastMode) && SUPABASE_URL && SUPABASE_ANON_KEY) {
       const authHeader = req.headers.get('Authorization');
 
       if (!authHeader) {
@@ -1447,10 +1460,10 @@ serve(async (req) => {
 
         const { data: insertedLetter, error: insertError } = await supabase.from('generated_letters').insert({
           tenant_id: tenantId,
-          client_id: clientId,
+          client_id: clientId || null,
           template_id: null,  // NULL for both custom and template mode letters
-          fee_calculation_id: feeCalculationId,
-          template_type: isCustomMode ? 'custom' : templateType,
+          fee_calculation_id: feeCalculationId || null,
+          template_type: broadcastMode ? 'broadcast' : (isCustomMode ? 'custom' : templateType),
           subject: subject,
           variables_used: variables || {},
           generated_content_html: letterHtml,
