@@ -547,13 +547,13 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
     }
     const styleStr = styles.length > 0 ? `; ${styles.join('; ')}` : '';
 
-    // LTR table: content cell first (left), label cell second (right)
-    const contentCell = `<td style="vertical-align: top; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; color: #395BF7; font-weight: 700; text-align: right; letter-spacing: -0.3px${styleStr}">${line.content || ''}</td>`;
+    // RTL table: label (right, fixed width) + content (left, fills remaining)
     const labelCell = isFirstLine
-      ? `<td style="white-space: nowrap; vertical-align: top; padding-right: 8px; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td>`
-      : `<td></td>`;
+      ? `<td width="70" style="white-space: nowrap; vertical-align: top; text-align: right; padding-left: 8px; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td>`
+      : `<td width="70"></td>`;
+    const contentCell = `<td style="vertical-align: top; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; color: #395BF7; font-weight: 700; text-align: right; letter-spacing: -0.3px${styleStr}">${line.content || ''}</td>`;
 
-    return `<tr>${contentCell}${labelCell}</tr>`;
+    return `<tr>${labelCell}${contentCell}</tr>`;
   }).join('');
 
   // Return complete subject lines section with borders
@@ -562,8 +562,8 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
     <td style="padding-top: 20px;">
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
-        <!-- Subject line - table layout: content (left, right-aligned) + label (right, nowrap) -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="ltr" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${rowsHtml}</table>
+        <!-- Subject line - RTL table with fixed-width label column -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${rowsHtml}</table>
     </td>
 </tr>`;
 
