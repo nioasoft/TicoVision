@@ -3318,34 +3318,28 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
                         <div className="space-y-2">
                           {/* שורה ראשונה עם Label "הנדון:" */}
                           {isFirstLine && (
-                            <div className="flex flex-col gap-1 flex-1">
-                              <div className="flex items-center gap-2">
-                                <Label className="font-bold text-blue-600 text-lg whitespace-nowrap">
-                                  הנדון:
-                                </Label>
-                                <Input
-                                  value={line.content}
-                                  onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
-                                  dir="rtl"
-                                  className="flex-1 text-right"
-                                  maxLength={60}
-                                />
-                              </div>
-                              <span className="text-xs text-gray-400 text-left">{line.content.length}/60</span>
+                            <div className="flex items-center gap-2 flex-1">
+                              <Label className="font-bold text-blue-600 text-lg whitespace-nowrap">
+                                הנדון:
+                              </Label>
+                              <Input
+                                value={line.content}
+                                onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
+                                dir="rtl"
+                                className="flex-1 text-right"
+                              />
                             </div>
                           )}
 
                           {/* שורות נוספות - ללא Label */}
                           {!isFirstLine && (
-                            <div className="flex flex-col gap-1 flex-1">
+                            <div className="flex-1">
                               <Input
                                 value={line.content}
                                 onChange={(e) => handleUpdateSubjectLineContent(line.id, e.target.value)}
                                 dir="rtl"
                                 className="text-right mr-14"
-                                maxLength={60}
                               />
-                              <span className="text-xs text-gray-400 text-left">{line.content.length}/60</span>
                             </div>
                           )}
 
