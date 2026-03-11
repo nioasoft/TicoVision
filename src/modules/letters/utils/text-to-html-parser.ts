@@ -153,10 +153,10 @@ function buildBullet(content: string, isLast: boolean = false): string {
   const styledContent = parseInlineStyles(content);
 
   return `            <tr>
-                <td width="${bullet.columnWidth}" style="vertical-align: middle;">
+                <td width="${bullet.columnWidth}" style="vertical-align: top; padding-top: 4px;">
                     <img src="${bullet.iconSrc}" width="${bullet.iconWidth}" height="${bullet.iconHeight}" alt="•" style="display: block; border: 0;">
                 </td>
-                <td style="font-family: ${fonts.family}; font-size: ${bullet.fontSize}; line-height: ${bullet.lineHeight}; color: ${bullet.color}; text-align: right; vertical-align: middle;${paddingStyle}">
+                <td style="font-family: ${fonts.family}; font-size: ${bullet.fontSize}; line-height: ${bullet.lineHeight}; color: ${bullet.color}; text-align: right;${paddingStyle}">
                     ${styledContent}
                 </td>
             </tr>`;
