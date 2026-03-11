@@ -234,13 +234,16 @@ interface TiptapEditorProps {
   onChange: (html: string) => void;
   minHeight?: string;
   className?: string;
+  /** CSS top offset for sticky toolbar (e.g. "65px" to clear a sticky header) */
+  stickyTop?: string;
 }
 
 export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   value,
   onChange,
   minHeight = '300px',
-  className
+  className,
+  stickyTop,
 }) => {
   // Memoize extensions to prevent duplicate extension warning in React Strict Mode
   const extensions = useMemo(() => [
@@ -464,7 +467,10 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
   return (
     <div className={cn('border rounded-lg', className)} dir="rtl">
       {/* Toolbar - sticky for long letters */}
-      <div className="sticky top-0 z-10 border-b bg-muted/50 p-2 flex items-center gap-1 flex-wrap rtl:flex-row-reverse">
+      <div
+        className="sticky z-20 border-b bg-muted p-2 flex items-center gap-1 flex-wrap rtl:flex-row-reverse"
+        style={{ top: stickyTop ?? '0px' }}
+      >
         {/* Text formatting */}
         <div className="flex items-center gap-1 rtl:flex-row-reverse">
           <Button
