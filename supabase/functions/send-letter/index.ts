@@ -563,7 +563,7 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
         <!-- Subject line - table layout: content (left, right-aligned) + label (right, nowrap) -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${rowsHtml}</table>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="ltr" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${rowsHtml}</table>
     </td>
 </tr>`;
 
