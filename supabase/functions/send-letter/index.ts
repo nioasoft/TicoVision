@@ -576,7 +576,7 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
         <!-- Content rows -->
         ${contentRowsHtml}
         <!-- Bottom border below subject -->
-        <div style="border-bottom: 1px solid #000000; margin-top: 5px;"></div>
+        <div style="border-bottom: 1px solid #000000; margin-top: 8px;"></div>
     </td>
 </tr>`;
 
