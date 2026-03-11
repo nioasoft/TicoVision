@@ -1614,12 +1614,11 @@ export class TemplateService extends BaseService {
     const firstLineColor = getColorHex(firstLine.formatting?.color);
     const firstLineBold = firstLine.formatting?.bold ? 'font-weight: 700;' : '';
 
-    // Build table rows - each subject line is a <tr> with two columns: label + content
-    const rowsHtml = sortedLines.map((line, index) => {
-      const isFirstLine = index === 0;
+    // Build content rows - each subject line is its own <tr>
+    const contentRowsHtml = sortedLines.map((line) => {
       const color = getColorHex(line.formatting?.color);
 
-      // Build inline styles for content cell
+      // Build inline styles
       const styles: string[] = [`color: ${color}`];
       if (line.formatting?.bold) {
         styles.push('font-weight: 700');
@@ -1629,23 +1628,19 @@ export class TemplateService extends BaseService {
       }
       const styleStr = styles.join('; ');
 
-      // RTL table: label (right, fixed width) + content (left, fills remaining)
-      const labelCell = isFirstLine
-        ? `<td width="55" style="white-space: nowrap; vertical-align: top; text-align: right; padding-left: 8px; font-family: ${fontFamily}; font-size: 20px; line-height: 1.4; color: ${firstLineColor}; ${firstLineBold}">הנדון:</td>`
-        : `<td width="55"></td>`;
-      const contentCell = `<td style="vertical-align: top; font-family: ${fontFamily}; font-size: 20px; line-height: 1.4; text-align: right; letter-spacing: -0.3px; ${styleStr}">${line.content || ''}</td>`;
-
-      return `<tr>${labelCell}${contentCell}</tr>`;
+      return `<tr><td style="vertical-align: top; font-family: ${fontFamily}; font-size: 24px; line-height: 1.4; text-align: right; letter-spacing: -0.3px; ${styleStr}">${line.content || ''}</td></tr>`;
     }).join('');
 
-    // Return complete subject lines section with borders
+    // Return complete subject lines section: "הנדון:" on its own line, content below
     return `<!-- Subject Lines (הנדון) -->
 <tr>
     <td style="padding-top: 10px;">
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
-        <!-- Subject line - RTL table with fixed-width label column -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 10px; margin-bottom: 10px;">${rowsHtml}</table>
+        <!-- Label row -->
+        <div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.4; font-weight: 700; color: ${firstLineColor}; text-align: right; margin-bottom: 4px;">הנדון:</div>
+        <!-- Content rows -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 10px; margin-bottom: 10px;">${contentRowsHtml}</table>
     </td>
 </tr>`;
   }
@@ -3093,19 +3088,10 @@ export class TemplateService extends BaseService {
     if (templateType === 'company_onboarding_previous_accountant') {
       const subjects = (variables as { subjects?: string[] }).subjects;
       if (Array.isArray(subjects) && subjects.length > 0) {
-        if (subjects.length === 1) {
-          processed.subjects_section = `הנדון: ${subjects[0]}`;
-        } else {
-          // First subject with "הנדון:" prefix
-          const firstLine = `הנדון: ${subjects[0]}`;
-          // Subsequent subjects indented to align (using padding-right in RTL)
-          const otherLines = subjects.slice(1).map(subject =>
-            `<div style="padding-right: 65px;">${subject}</div>`
-          ).join('');
-          processed.subjects_section = firstLine + otherLines;
-        }
+        const contentLines = subjects.join('<br>');
+        processed.subjects_section = `הנדון:<br>${contentLines}`;
       } else {
-        processed.subjects_section = 'הנדון: ';
+        processed.subjects_section = 'הנדון:';
       }
     }
 
@@ -4000,17 +3986,10 @@ export class TemplateService extends BaseService {
         // Build subjects section from subjects array (multiple company names)
         if (Array.isArray(processed.subjects)) {
           const subjectsArray = processed.subjects as string[];
-          if (subjectsArray.length === 1) {
-            // Single subject line
-            processed.subjects_section = `הנדון: ${subjectsArray[0]}`;
-          } else {
-            // Multiple subjects - each on its own line
-            processed.subjects_section = subjectsArray
-              .map((subject, index) => `הנדון ${index + 1}: ${subject}`)
-              .join('<br>');
-          }
+          const contentLines = subjectsArray.join('<br>');
+          processed.subjects_section = `הנדון:<br>${contentLines}`;
         } else {
-          processed.subjects_section = 'הנדון: ';
+          processed.subjects_section = 'הנדון:';
         }
         break;
 
@@ -4029,7 +4008,7 @@ export class TemplateService extends BaseService {
         // Line 2: company name (indented, no "הנדון:" prefix)
         const taxYear = processed.tax_year || '';
         const companyName = processed.company_name || '';
-        processed.subjects_section = `הנדון: הודעה על יתרת מס שנותרה לתשלום בגין שנת המס ${taxYear}<div style="padding-right: 55px;">${companyName}</div>`;
+        processed.subjects_section = `הנדון:<br>הודעה על יתרת מס שנותרה לתשלום בגין שנת המס ${taxYear}<br>${companyName}`;
         break;
 
       case 'company_registrar_annual_fee':
@@ -4044,7 +4023,7 @@ export class TemplateService extends BaseService {
         }
         // Build subject section with fee year only (no company name)
         const feeYear = processed.fee_year || '';
-        processed.subjects_section = `הנדון: חיוב אגרה שנתית לרשם החברות לשנת ${feeYear}`;
+        processed.subjects_section = `הנדון:<br>חיוב אגרה שנתית לרשם החברות לשנת ${feeYear}`;
         break;
 
       case 'audit_completion_general':
@@ -4181,9 +4160,10 @@ export class TemplateService extends BaseService {
           processed.subjects_section = `
 <tr>
     <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; margin-bottom: 4px;">הנדון:</div>
         <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 8px;">
-            <tr><td width="70" style="white-space: nowrap; vertical-align: top; text-align: right; padding-left: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">${clientName} ח.פ. ${clientId}:</td></tr>
-            <tr><td width="70"></td><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">בקשה להחזר מס בגין שנת ${taxYear}</td></tr>
+            <tr><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">${clientName} ח.פ. ${clientId}:</td></tr>
+            <tr><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">בקשה להחזר מס בגין שנת ${taxYear}</td></tr>
         </table>
     </td>
 </tr>`;

@@ -533,11 +533,9 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
 
   const fontFamily = "'David Libre', 'Heebo', 'Assistant', sans-serif";
 
-  // Build table rows - each subject line is a <tr> with two columns: label + content
-  const rowsHtml = sortedLines.map((line: any, index: number) => {
-    const isFirstLine = index === 0;
-
-    // Build inline styles for content cell
+  // Build content rows - each subject line is its own <tr>
+  const contentRowsHtml = sortedLines.map((line: any) => {
+    // Build inline styles
     const styles: string[] = [];
     if (line.formatting?.bold) {
       styles.push('font-weight: 700');
@@ -547,23 +545,19 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
     }
     const styleStr = styles.length > 0 ? `; ${styles.join('; ')}` : '';
 
-    // RTL table: label (right, fixed width) + content (left, fills remaining)
-    const labelCell = isFirstLine
-      ? `<td width="70" style="white-space: nowrap; vertical-align: top; text-align: right; padding-left: 8px; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td>`
-      : `<td width="70"></td>`;
-    const contentCell = `<td style="vertical-align: top; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; color: #395BF7; font-weight: 700; text-align: right; letter-spacing: -0.3px${styleStr}">${line.content || ''}</td>`;
-
-    return `<tr>${labelCell}${contentCell}</tr>`;
+    return `<tr><td style="vertical-align: top; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; color: #395BF7; font-weight: 700; text-align: right; letter-spacing: -0.3px${styleStr}">${line.content || ''}</td></tr>`;
   }).join('');
 
-  // Return complete subject lines section with borders
+  // Return complete subject lines section: "הנדון:" on its own line, content below
   const result = `<!-- Subject Lines (הנדון) -->
 <tr>
     <td style="padding-top: 20px;">
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
-        <!-- Subject line - RTL table with fixed-width label column -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${rowsHtml}</table>
+        <!-- Label row -->
+        <div style="font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; margin-bottom: 4px;">הנדון:</div>
+        <!-- Content rows -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${contentRowsHtml}</table>
     </td>
 </tr>`;
 
