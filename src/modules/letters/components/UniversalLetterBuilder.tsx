@@ -3,7 +3,7 @@
  * Build custom letters from plain text with Markdown-like syntax
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,9 +32,13 @@ import { PDFGenerationService } from '@/modules/letters-v2/services/pdf-generati
 import { groupFeeService, type ClientGroup, type GroupMemberClient } from '@/services/group-fee.service';
 import { GroupMembersList } from '@/components/fees/GroupMembersList';
 import { PdfFilingDialog } from './PdfFilingDialog';
-import { BroadcastLetterDialog } from './BroadcastLetterDialog';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Lazy-load BroadcastLetterDialog to avoid circular dependency in production build
+const BroadcastLetterDialog = lazy(() =>
+  import('./BroadcastLetterDialog').then(m => ({ default: m.BroadcastLetterDialog }))
+);
 
 const templateService = new TemplateService();
 const pdfService = new PDFGenerationService();
@@ -3425,23 +3429,27 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       )}
 
       {/* Broadcast Letter Dialog */}
-      <BroadcastLetterDialog
-        open={showBroadcastDialog}
-        onOpenChange={setShowBroadcastDialog}
-        letterContent={letterContent}
-        originalBodyContent={originalBodyContent}
-        hasUserEditedContent={hasUserEditedContent}
-        emailSubject={emailSubject}
-        subjectLines={subjectLines}
-        customHeaderLines={customHeaderLines}
-        includesPayment={includesPayment}
-        amount={amount}
-        showCommercialName={showCommercialName}
-        commercialName={commercialName}
-        showAddress={showAddress}
-        addressLine={addressLine}
-        calculateDiscounts={calculateDiscounts}
-      />
+      {showBroadcastDialog && (
+        <Suspense fallback={null}>
+          <BroadcastLetterDialog
+            open={showBroadcastDialog}
+            onOpenChange={setShowBroadcastDialog}
+            letterContent={letterContent}
+            originalBodyContent={originalBodyContent}
+            hasUserEditedContent={hasUserEditedContent}
+            emailSubject={emailSubject}
+            subjectLines={subjectLines}
+            customHeaderLines={customHeaderLines}
+            includesPayment={includesPayment}
+            amount={amount}
+            showCommercialName={showCommercialName}
+            commercialName={commercialName}
+            showAddress={showAddress}
+            addressLine={addressLine}
+            calculateDiscounts={calculateDiscounts}
+          />
+        </Suspense>
+      )}
 
       {/* Save Options Dialog - overwrite or create copy */}
       <Dialog open={showSaveOptionsDialog} onOpenChange={setShowSaveOptionsDialog}>
