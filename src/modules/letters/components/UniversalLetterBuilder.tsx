@@ -448,7 +448,7 @@ function BroadcastLetterDialog({
       const { error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails: uniqueEmails,
-          recipientName: '',
+          recipientName: 'לקוחותי היקרים',
           customText: content,
           variables,
           includesPayment,
