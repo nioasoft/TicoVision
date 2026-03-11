@@ -825,7 +825,7 @@ async function getEmailSettings(): Promise<{
   const defaults = {
     sender_email: 'tico@franco.co.il',
     sender_name: 'תיקו פרנקו - משרד רואי חשבון',
-    reply_to_email: 'sigal@franco.co.il'
+    reply_to_email: 'tico@franco.co.il'
   };
 
   try {
