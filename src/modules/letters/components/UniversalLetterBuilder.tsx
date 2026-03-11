@@ -435,7 +435,7 @@ function BroadcastLetterDialog({
 
     try {
       const variables: Record<string, string | number> = {
-        company_name: '',
+        company_name: 'לקוחותי היקרים',
         commercial_name: showCommercialName ? commercialName : '',
         recipientMode: 'broadcast',
         subject: emailSubject,
@@ -448,7 +448,7 @@ function BroadcastLetterDialog({
       const { error } = await supabase.functions.invoke('send-letter', {
         body: {
           recipientEmails: uniqueEmails,
-          recipientName: 'לקוחותי היקרים',
+          recipientName: '',
           customText: content,
           variables,
           includesPayment,
