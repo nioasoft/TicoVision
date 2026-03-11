@@ -531,45 +531,38 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
   // Sort by order
   const sortedLines = [...subjectLines].sort((a: any, b: any) => a.order - b.order);
 
-  const linesHtml = sortedLines.map((line: any, index: number) => {
+  const fontFamily = "'David Libre', 'Heebo', 'Assistant', sans-serif";
+
+  // Build table rows - each subject line is a <tr> with two columns: label + content
+  const rowsHtml = sortedLines.map((line: any, index: number) => {
     const isFirstLine = index === 0;
 
-    // Build inline styles for each line
+    // Build inline styles for content cell
     const styles: string[] = [];
-
     if (line.formatting?.bold) {
       styles.push('font-weight: 700');
     }
-
     if (line.formatting?.underline) {
       styles.push('text-decoration: underline');
     }
+    const styleStr = styles.length > 0 ? `; ${styles.join('; ')}` : '';
 
-    const styleStr = styles.length > 0 ? ` style="${styles.join('; ')};"` : '';
+    const labelCell = isFirstLine
+      ? `<td style="white-space: nowrap; vertical-align: top; padding-left: 8px; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td>`
+      : `<td></td>`;
+    const contentCell = `<td style="vertical-align: top; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; color: #395BF7; font-weight: 700; text-align: right; letter-spacing: -0.3px${styleStr}">${line.content || ''}</td>`;
 
-    // שורה ראשונה: "הנדון: {טקסט}" (עם styling אם יש!)
-    if (isFirstLine) {
-      return styleStr
-        ? `הנדון: <span${styleStr}>${line.content || ''}</span>`
-        : `הנדון: ${line.content || ''}`;
-    }
-
-    // שורות נוספות: <br/> + רווח invisible + טקסט (עם styling אם יש!)
-    return styleStr
-      ? `<br/><span style="opacity: 0;">הנדון: </span><span${styleStr}>${line.content || ''}</span>`
-      : `<br/><span style="opacity: 0;">הנדון: </span>${line.content || ''}`;
-  }).join(''); // NO NEWLINES - join with empty string for Puppeteer compatibility
+    return `<tr>${labelCell}${contentCell}</tr>`;
+  }).join('');
 
   // Return complete subject lines section with borders
-  // מבנה זהה ל-annual-fee.html (שורות 8-15)
-  // CRITICAL: linesHtml must be on same line as <div> for Puppeteer PDF rendering
   const result = `<!-- Subject Lines (הנדון) -->
 <tr>
     <td style="padding-top: 20px;">
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
-        <!-- Subject line -->
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.2; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 20px;">${linesHtml}</div>
+        <!-- Subject line - table layout for proper text wrapping -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${rowsHtml}</table>
     </td>
 </tr>`;
 

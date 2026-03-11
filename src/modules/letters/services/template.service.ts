@@ -4180,7 +4180,10 @@ export class TemplateService extends BaseService {
           processed.subjects_section = `
 <tr>
     <td style="padding-top: 6px;">
-        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.15; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 8px;"><span>הנדון: ${clientName} ח.פ. ${clientId}:</span><br/><span style="opacity: 0;">הנדון: </span><span>בקשה להחזר מס בגין שנת ${taxYear}</span></div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 8px;">
+            <tr><td style="white-space: nowrap; vertical-align: top; padding-left: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">${clientName} ח.פ. ${clientId}:</td></tr>
+            <tr><td></td><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">בקשה להחזר מס בגין שנת ${taxYear}</td></tr>
+        </table>
     </td>
 </tr>`;
         }
