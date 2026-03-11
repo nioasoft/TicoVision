@@ -19,15 +19,15 @@
 <tr>
     <td style="padding-top: 20px;">
         <!-- Subject line(s) - table layout for proper text wrapping -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">
             <tr>
-                <td style="white-space: nowrap; vertical-align: top; padding-left: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td>
                 <td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">הודעת חיוב - {{billing_subject}}</td>
+                <td style="white-space: nowrap; vertical-align: top; padding-right: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td>
             </tr>
             {{#additional_subject}}
             <tr>
-                <td></td>
                 <td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">{{additional_subject}}</td>
+                <td></td>
             </tr>
             {{/additional_subject}}
         </table>

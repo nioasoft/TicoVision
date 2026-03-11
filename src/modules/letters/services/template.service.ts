@@ -1629,12 +1629,14 @@ export class TemplateService extends BaseService {
       }
       const styleStr = styles.join('; ');
 
-      const labelCell = isFirstLine
-        ? `<td style="white-space: nowrap; vertical-align: top; padding-left: 8px; font-family: ${fontFamily}; font-size: 20px; line-height: 1.4; color: ${firstLineColor}; ${firstLineBold}">הנדון:</td>`
-        : `<td></td>`;
+      // LTR table: content cell first (left), label cell second (right)
+      // Content text-align:right pushes text toward the label
       const contentCell = `<td style="vertical-align: top; font-family: ${fontFamily}; font-size: 20px; line-height: 1.4; text-align: right; letter-spacing: -0.3px; ${styleStr}">${line.content || ''}</td>`;
+      const labelCell = isFirstLine
+        ? `<td style="white-space: nowrap; vertical-align: top; padding-right: 8px; font-family: ${fontFamily}; font-size: 20px; line-height: 1.4; color: ${firstLineColor}; ${firstLineBold}">הנדון:</td>`
+        : `<td></td>`;
 
-      return `<tr>${labelCell}${contentCell}</tr>`;
+      return `<tr>${contentCell}${labelCell}</tr>`;
     }).join('');
 
     // Return complete subject lines section with borders
@@ -1643,8 +1645,8 @@ export class TemplateService extends BaseService {
     <td style="padding-top: 10px;">
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
-        <!-- Subject line - table layout for proper text wrapping -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 10px; margin-bottom: 10px;">${rowsHtml}</table>
+        <!-- Subject line - table layout: content (left, right-aligned) + label (right, nowrap) -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom: 1px solid #000000; padding-bottom: 10px; margin-bottom: 10px;">${rowsHtml}</table>
     </td>
 </tr>`;
   }
@@ -4180,9 +4182,9 @@ export class TemplateService extends BaseService {
           processed.subjects_section = `
 <tr>
     <td style="padding-top: 6px;">
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 8px;">
-            <tr><td style="white-space: nowrap; vertical-align: top; padding-left: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">${clientName} ח.פ. ${clientId}:</td></tr>
-            <tr><td></td><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">בקשה להחזר מס בגין שנת ${taxYear}</td></tr>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom: 1px solid #000000; padding-bottom: 8px;">
+            <tr><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">${clientName} ח.פ. ${clientId}:</td><td style="white-space: nowrap; vertical-align: top; padding-right: 8px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7;">הנדון:</td></tr>
+            <tr><td style="vertical-align: top; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px;">בקשה להחזר מס בגין שנת ${taxYear}</td><td></td></tr>
         </table>
     </td>
 </tr>`;
