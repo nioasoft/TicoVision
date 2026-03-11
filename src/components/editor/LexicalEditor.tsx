@@ -102,6 +102,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { LinkDialog } from './LinkDialog';
 
 // Theme configuration for Lexical
 const theme = {
@@ -342,6 +343,8 @@ function Toolbar() {
   const [isSubscript, setIsSubscript] = useState(false);
   const [isSuperscript, setIsSuperscript] = useState(false);
   const [isLink, setIsLink] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkInitialText, setLinkInitialText] = useState('');
   const [blockType, setBlockType] = useState('paragraph');
   const [fontSize, setFontSize] = useState('16px');
   const [lineHeight, setLineHeight] = useState('1.5');
@@ -461,13 +464,31 @@ function Toolbar() {
 
   const insertLink = () => {
     if (!isLink) {
-      const url = prompt('הכנס כתובת URL:');
-      if (url) {
-        editor.dispatchCommand(TOGGLE_LINK_COMMAND, url);
-      }
+      // Get selected text for the dialog
+      editor.getEditorState().read(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection)) {
+          setLinkInitialText(selection.getTextContent());
+        }
+      });
+      setLinkDialogOpen(true);
     } else {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
+  };
+
+  const handleLinkConfirm = (data: { url: string; text: string; style: 'link' | 'button' }) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const selectedText = selection.getTextContent();
+        // If user changed the display text or there was no selection, insert new text
+        if (data.text !== selectedText && data.text !== data.url) {
+          selection.insertRawText(data.text);
+        }
+      }
+    });
+    editor.dispatchCommand(TOGGLE_LINK_COMMAND, data.url);
   };
 
   const clearFormatting = () => {
@@ -936,6 +957,15 @@ function Toolbar() {
       <ToolbarButton onClick={insertLink} active={isLink} title={isLink ? 'הסר קישור' : 'הוסף קישור'}>
         {isLink ? <Unlink className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
       </ToolbarButton>
+
+      {/* Link Dialog */}
+      <LinkDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        onConfirm={handleLinkConfirm}
+        initialText={linkInitialText}
+        mode="link"
+      />
 
       {/* Insert Dropdown - Expanded */}
       <DropdownMenu dir="rtl">
