@@ -266,10 +266,22 @@ export function BroadcastLetterDialog({
 
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
     const errors: string[] = [];
+    const sentEmails = new Set<string>(); // Track sent emails to avoid duplicates
 
     for (const client of clients) {
-      const clientEmails = client.contacts.map(c => c.email);
+      // Deduplicate: skip emails already sent to another client
+      const clientEmails = client.contacts
+        .map(c => c.email)
+        .filter(email => !sentEmails.has(email));
+
+      if (clientEmails.length === 0) {
+        // All emails for this client were already sent to other clients
+        skipped++;
+        setProgress(prev => ({ ...prev, current: prev.current + 1 }));
+        continue;
+      }
       const clientName = client.company_name_hebrew || client.company_name;
 
       try {
@@ -303,6 +315,8 @@ export function BroadcastLetterDialog({
 
         if (error) throw error;
         sent++;
+        // Mark these emails as sent to avoid duplicates for next clients
+        clientEmails.forEach(email => sentEmails.add(email));
       } catch (error) {
         failed++;
         errors.push(`${clientName}: ${error instanceof Error ? error.message : String(error)}`);
@@ -312,7 +326,14 @@ export function BroadcastLetterDialog({
       setProgress(prev => ({ ...prev, current: prev.current + 1 }));
     }
 
-    setSendResult({ total: clients.length, sent, failed, errors });
+    setSendResult({
+      total: clients.length,
+      sent,
+      failed,
+      errors: skipped > 0
+        ? [`${skipped} לקוחות דולגו (מיילים כפולים)`, ...errors]
+        : errors,
+    });
 
     if (failed === 0) {
       toast.success(`הופץ בהצלחה ל-${sent} לקוחות`);

@@ -42,44 +42,41 @@ class BroadcastService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
-      const { data, error } = await supabase
+      // Query 1: Get all active clients
+      const { data: clients, error: clientsError } = await supabase
         .from('clients')
-        .select(`
-          id,
-          company_name,
-          company_name_hebrew,
-          tax_id
-        `)
+        .select('id, company_name, company_name_hebrew, tax_id')
         .eq('tenant_id', tenantId)
         .eq('status', 'active')
         .order('company_name', { ascending: true });
 
-      if (error) throw this.handleError(error);
+      if (clientsError) throw this.handleError(clientsError);
 
-      // Get contact counts for each client
-      const clientsWithCounts = await Promise.all(
-        (data || []).map(async (client) => {
-          const { count: contactCount } = await supabase
-            .from('client_contact_assignments')
-            .select('*', { count: 'exact', head: true })
-            .eq('client_id', client.id);
+      // Query 2: Get all contact assignments with email info in one query
+      // (RLS filters by tenant through client relationship)
+      const { data: assignments, error: assignError } = await supabase
+        .from('client_contact_assignments')
+        .select('client_id, email_preference');
 
-          const { count: emailCount } = await supabase
-            .from('client_contact_assignments')
-            .select('*', { count: 'exact', head: true })
-            .eq('client_id', client.id)
-            .neq('email_preference', 'none');
+      if (assignError) throw this.handleError(assignError);
 
-          return {
-            client_id: client.id,
-            company_name: client.company_name,
-            company_name_hebrew: client.company_name_hebrew,
-            tax_id: client.tax_id,
-            contact_count: contactCount || 0,
-            email_count: emailCount || 0,
-          };
-        })
-      );
+      // Count contacts and emails per client in JS (instead of N+1 queries)
+      const counts = new Map<string, { total: number; withEmail: number }>();
+      for (const a of (assignments || [])) {
+        const entry = counts.get(a.client_id) || { total: 0, withEmail: 0 };
+        entry.total++;
+        if (a.email_preference !== 'none') entry.withEmail++;
+        counts.set(a.client_id, entry);
+      }
+
+      const clientsWithCounts = (clients || []).map(client => ({
+        client_id: client.id,
+        company_name: client.company_name,
+        company_name_hebrew: client.company_name_hebrew,
+        tax_id: client.tax_id,
+        contact_count: counts.get(client.id)?.total || 0,
+        email_count: counts.get(client.id)?.withEmail || 0,
+      }));
 
       return { data: clientsWithCounts, error: null };
     } catch (error) {
