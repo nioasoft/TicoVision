@@ -89,12 +89,17 @@ export const createColoredBullet = (color: BulletColor) => {
     },
 
     renderHTML({ HTMLAttributes }) {
+      // Extract lineHeight set by the LineHeight extension (or use default)
+      const styleStr = typeof HTMLAttributes.style === 'string' ? HTMLAttributes.style : '';
+      const lhMatch = styleStr.match(/line-height:\s*([^;]+)/);
+      const lineHeight = lhMatch ? lhMatch[1].trim() : '1.5';
+
       return [
         'div',
         mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
           'data-type': config.dataType,
           class: config.className,
-          style: 'margin-bottom: 20px;',
+          style: 'margin-bottom: 4px;',
         }),
         [
           'table',
@@ -109,7 +114,7 @@ export const createColoredBullet = (color: BulletColor) => {
                 'td',
                 {
                   style:
-                    'width: 20px; vertical-align: top; padding-top: 4px; padding-left: 8px;',
+                    'width: 20px; vertical-align: middle; padding-left: 8px;',
                 },
                 [
                   'img',
@@ -126,7 +131,7 @@ export const createColoredBullet = (color: BulletColor) => {
                 'td',
                 {
                   style:
-                    'font-family: "David Libre", "Heebo", "Assistant", sans-serif; font-size: 16px; line-height: 1.5; text-align: right; vertical-align: top;',
+                    `font-family: "David Libre", "Heebo", "Assistant", sans-serif; font-size: 16px; line-height: ${lineHeight}; text-align: right; vertical-align: middle;`,
                 },
                 0, // This is where the content goes
               ],

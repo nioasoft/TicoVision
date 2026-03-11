@@ -37,7 +37,7 @@ const DESIGN_TOKENS = {
     fontWeight: '400',
     color: '#09090b',
     lineHeight: '1.2',
-    paddingBottom: '20px',
+    paddingBottom: '4px',
     iconSrc: 'cid:bullet_star_blue',
     iconWidth: '11',
     iconHeight: '11',
@@ -153,10 +153,10 @@ function buildBullet(content: string, isLast: boolean = false): string {
   const styledContent = parseInlineStyles(content);
 
   return `            <tr>
-                <td width="${bullet.columnWidth}" style="vertical-align: top; padding-top: 4px;">
+                <td width="${bullet.columnWidth}" style="vertical-align: middle;">
                     <img src="${bullet.iconSrc}" width="${bullet.iconWidth}" height="${bullet.iconHeight}" alt="•" style="display: block; border: 0;">
                 </td>
-                <td style="font-family: ${fonts.family}; font-size: ${bullet.fontSize}; line-height: ${bullet.lineHeight}; color: ${bullet.color}; text-align: right;${paddingStyle}">
+                <td style="font-family: ${fonts.family}; font-size: ${bullet.fontSize}; line-height: ${bullet.lineHeight}; color: ${bullet.color}; text-align: right; vertical-align: middle;${paddingStyle}">
                     ${styledContent}
                 </td>
             </tr>`;

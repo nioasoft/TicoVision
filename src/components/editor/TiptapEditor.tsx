@@ -271,7 +271,9 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
     Color,
     TextStyle,
     FontSize, // Custom font size extension
-    LineHeight, // Line spacing extension
+    LineHeight.configure({
+      types: ['paragraph', 'heading', 'blueBullet', 'darkRedBullet', 'blackBullet'],
+    }),
     StyledDivider, // Colored dividers
     ColorBlock, // Background color blocks
     Highlight.configure({
@@ -595,7 +597,13 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
         <div className="flex items-center gap-1 rtl:flex-row-reverse">
           <select
             className="h-8 px-2 text-sm border rounded bg-background hover:bg-accent cursor-pointer"
-            value={editor.getAttributes('paragraph').lineHeight || '1.2'}
+            value={
+              editor.getAttributes('paragraph').lineHeight ||
+              editor.getAttributes('blueBullet').lineHeight ||
+              editor.getAttributes('darkRedBullet').lineHeight ||
+              editor.getAttributes('blackBullet').lineHeight ||
+              '1.2'
+            }
             onChange={(e) => {
               const height = e.target.value;
               editor.chain().focus().setLineHeight(height).run();
@@ -909,8 +917,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               editor.chain().focus().setImage({
                 src: '/brand/tico_signature.png',
                 alt: 'חתימת תיקו',
-                width: '88',
-                height: '39',
+                width: '132',
+                height: '78',
               }).run();
             }}
             title="הוסף חתימת תיקו"

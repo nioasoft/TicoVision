@@ -1614,7 +1614,7 @@ export class TemplateService extends BaseService {
     const firstLineColor = getColorHex(firstLine.formatting?.color);
     const firstLineBold = firstLine.formatting?.bold ? 'font-weight: 700;' : '';
 
-    // Build content rows - each subject line is its own <tr>
+    // Build content rows - each subject line is its own div
     const contentRowsHtml = sortedLines.map((line) => {
       const color = getColorHex(line.formatting?.color);
 
@@ -1628,7 +1628,7 @@ export class TemplateService extends BaseService {
       }
       const styleStr = styles.join('; ');
 
-      return `<tr><td style="vertical-align: top; font-family: ${fontFamily}; font-size: 24px; line-height: 1.4; text-align: right; letter-spacing: -0.3px; ${styleStr}">${line.content || ''}</td></tr>`;
+      return `<div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.15; text-align: right; letter-spacing: -0.3px; ${styleStr}">${line.content || ''}</div>`;
     }).join('');
 
     // Return complete subject lines section: "הנדון:" on its own line, content below
@@ -1640,7 +1640,9 @@ export class TemplateService extends BaseService {
         <!-- Label row -->
         <div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.4; font-weight: 700; color: ${firstLineColor}; text-align: right; margin-bottom: 4px;">הנדון:</div>
         <!-- Content rows -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 10px; margin-bottom: 10px;">${contentRowsHtml}</table>
+        ${contentRowsHtml}
+        <!-- Bottom border below subject -->
+        <div style="border-bottom: 1px solid #000000; margin-top: 10px;"></div>
     </td>
 </tr>`;
   }

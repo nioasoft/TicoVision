@@ -542,7 +542,7 @@ input[type="number"] {
 .ProseMirror .blue-bullet-item,
 .ProseMirror .darkred-bullet-item,
 .ProseMirror .black-bullet-item {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .ProseMirror .blue-bullet-item table,
@@ -559,7 +559,7 @@ input[type="number"] {
 .ProseMirror .black-bullet-item table td {
   border: none !important;
   padding: 0 !important;
-  vertical-align: top !important;
+  vertical-align: middle !important;
 }
 
 .ProseMirror .blue-bullet-item img,
@@ -568,7 +568,11 @@ input[type="number"] {
   display: block !important;
   width: 11px !important;
   height: 11px !important;
-  margin-top: 4px;
+}
+
+.select-text [data-type$="-bullet"],
+.letter-body-content [data-type$="-bullet"] {
+  margin-bottom: 4px !important;
 }
 
 .select-text table:has(img[alt="•"]),
@@ -581,13 +585,12 @@ input[type="number"] {
 .letter-body-content table:has(img[alt="•"]) td {
   border: none !important;
   padding: 2px 8px 2px 0 !important;
-  vertical-align: top !important;
+  vertical-align: middle !important;
 }
 
 .select-text table td:first-child:has(img[alt="•"]),
 .letter-body-content table td:first-child:has(img[alt="•"]) {
   width: 20px !important;
-  padding-top: 4px !important;
   padding-right: 8px !important;
 }
 
