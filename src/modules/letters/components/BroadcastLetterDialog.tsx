@@ -38,10 +38,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Send, Users, Mail, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { distributionListService } from '@/modules/broadcast/services/distribution-list.service';
-import { broadcastService } from '@/modules/broadcast/services/broadcast.service';
 import type { DistributionList, RecipientSummary } from '@/modules/broadcast/types/broadcast.types';
 import type { CustomHeaderLine, SubjectLine } from '@/modules/letters/types/letter.types';
+
+// Dynamic imports to avoid circular dependency in production build
+const getDistributionListService = () =>
+  import('@/modules/broadcast/services/distribution-list.service').then(m => m.distributionListService);
+const getBroadcastService = () =>
+  import('@/modules/broadcast/services/broadcast.service').then(m => m.broadcastService);
 
 interface BroadcastLetterDialogProps {
   open: boolean;
@@ -127,7 +131,8 @@ export function BroadcastLetterDialog({
   const loadLists = async () => {
     setIsLoadingLists(true);
     try {
-      const { data, error } = await distributionListService.getListsWithCounts();
+      const svc = await getDistributionListService();
+      const { data, error } = await svc.getListsWithCounts();
       if (error) throw error;
       setLists(data || []);
     } catch (error) {
@@ -141,7 +146,8 @@ export function BroadcastLetterDialog({
   const loadRecipients = useCallback(async () => {
     setIsLoadingRecipients(true);
     try {
-      const { data, error } = await broadcastService.resolveRecipients(
+      const svc = await getBroadcastService();
+      const { data, error } = await svc.resolveRecipients(
         selectedListType,
         selectedListType === 'custom' ? selectedListId : undefined
       );
