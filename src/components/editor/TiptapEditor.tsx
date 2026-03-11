@@ -917,8 +917,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               editor.chain().focus().setImage({
                 src: '/brand/tico_signature.png',
                 alt: 'חתימת תיקו',
-                width: '132',
-                height: '78',
+                width: '228',
+                height: '177',
               }).run();
             }}
             title="הוסף חתימת תיקו"

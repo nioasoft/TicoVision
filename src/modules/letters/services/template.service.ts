@@ -879,7 +879,11 @@ export class TemplateService extends BaseService {
       'cid:franco_logo': '/brand/franco-logo-hires.png',
       'cid:franco_logo_new': '/brand/Tico_franco_co.png',
       'cid:tagline': '/brand/tagline.png',
-      'cid:tico_signature': '/brand/tico_signature.png'
+      'cid:tico_signature': '/brand/tico_signature.png',
+      'cid:icon_star': '/brand/icon-star.png',
+      'cid:icon_building': '/brand/icon-building.png',
+      'cid:icon_phone': '/brand/icon-phone.png',
+      'cid:icon_email': '/brand/icon-email.png'
     };
 
     let result = html;
@@ -1638,11 +1642,11 @@ export class TemplateService extends BaseService {
         <!-- Top border above subject -->
         <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
         <!-- Label row -->
-        <div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.4; font-weight: 700; color: ${firstLineColor}; text-align: right; margin-bottom: 4px;">הנדון:</div>
+        <div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.15; font-weight: 700; color: ${firstLineColor}; text-align: right; margin-bottom: 0;">הנדון:</div>
         <!-- Content rows -->
         ${contentRowsHtml}
         <!-- Bottom border below subject -->
-        <div style="border-bottom: 1px solid #000000; margin-top: 10px;"></div>
+        <div style="border-bottom: 1px solid #000000; margin-top: 4px;"></div>
     </td>
 </tr>`;
   }
@@ -1664,7 +1668,7 @@ export class TemplateService extends BaseService {
         // Separator line - thin black line (1px solid) in table row
         return `
 <tr>
-    <td style="padding: 0;">
+    <td colspan="2" style="padding: 0;">
         <div style="border-top: 1px solid #000000; margin: 3px 0;"></div>
     </td>
 </tr>`;
@@ -1707,7 +1711,7 @@ export class TemplateService extends BaseService {
 
       return `
 <tr>
-    <td style="padding: 1px 0; text-align: right;">
+    <td colspan="2" style="padding: 1px 0; text-align: right;">
         <div style="${styles.join('; ')}">${line.content || ''}</div>
     </td>
 </tr>`;

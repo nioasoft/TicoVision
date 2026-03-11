@@ -364,6 +364,10 @@ function parseTextToHTML(plainText: string, isHtml: boolean = false): string {
     let html = plainText; // Use as-is - fonts are already correct from Tiptap
     html = replaceAllBulletsWithCID(html); // Replace Base64 images with CID
     html = replaceHrWithDiv(html); // Replace <hr> tags with styled divs
+    // Replace local image paths with CID references for email compatibility
+    html = html.replace(/src="\/brand\/tico_signature\.png"/gi, 'src="cid:tico_signature"');
+    html = html.replace(/src="\/brand\/Tico_franco_co\.png"/gi, 'src="cid:franco_logo_new"');
+    html = html.replace(/src="\/brand\/Tico_logo_png_new\.png"/gi, 'src="cid:tico_logo_new"');
     return html;
   }
 
@@ -466,7 +470,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
       // Separator line - thin black line (1px solid) in table row
       return `
 <tr>
-    <td style="padding: 0;">
+    <td colspan="2" style="padding: 0;">
         <div style="border-top: 1px solid #000000; margin: 3px 0;"></div>
     </td>
 </tr>`;
@@ -505,7 +509,7 @@ function generateCustomHeaderLinesHtml(lines: CustomHeaderLine[]): string {
 
       return `
 <tr>
-    <td style="padding: 2px 0; text-align: right;">
+    <td colspan="2" style="padding: 2px 0; text-align: right;">
         <div style="${styles.join('; ')}">${content}</div>
     </td>
 </tr>`;
@@ -533,31 +537,46 @@ function buildSubjectLinesHTML(subjectLines: any[]): string {
 
   const fontFamily = "'David Libre', 'Heebo', 'Assistant', sans-serif";
 
-  // Build content rows - each subject line is its own <tr>
+  // Get first line color for the label
+  const getColorHex = (color: string | undefined): string => {
+    switch (color) {
+      case 'red': return '#FF0000';
+      case 'black': return '#000000';
+      case 'blue':
+      default: return '#395BF7';
+    }
+  };
+  const firstLine = sortedLines[0];
+  const firstLineColor = getColorHex(firstLine?.formatting?.color);
+
+  // Build content rows - each subject line is its own div (matching template.service.ts)
   const contentRowsHtml = sortedLines.map((line: any) => {
-    // Build inline styles
-    const styles: string[] = [];
+    const color = getColorHex(line.formatting?.color);
+    const styles: string[] = [`color: ${color}`];
     if (line.formatting?.bold) {
       styles.push('font-weight: 700');
     }
     if (line.formatting?.underline) {
       styles.push('text-decoration: underline');
     }
-    const styleStr = styles.length > 0 ? `; ${styles.join('; ')}` : '';
+    const styleStr = styles.join('; ');
 
-    return `<tr><td style="vertical-align: top; font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; color: #395BF7; font-weight: 700; text-align: right; letter-spacing: -0.3px${styleStr}">${line.content || ''}</td></tr>`;
+    return `<div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.15; text-align: right; letter-spacing: -0.3px; ${styleStr}">${line.content || ''}</div>`;
   }).join('');
 
   // Return complete subject lines section: "הנדון:" on its own line, content below
+  // MUST match template.service.ts generateSubjectLinesHtml() exactly!
   const result = `<!-- Subject Lines (הנדון) -->
 <tr>
-    <td style="padding-top: 20px;">
+    <td style="padding-top: 10px;">
         <!-- Top border above subject -->
-        <div style="border-top: 1px solid #000000; margin-bottom: 20px;"></div>
+        <div style="border-top: 1px solid #000000; margin-bottom: 10px;"></div>
         <!-- Label row -->
-        <div style="font-family: ${fontFamily}; font-size: 26px; line-height: 1.4; font-weight: 700; color: #395BF7; text-align: right; margin-bottom: 4px;">הנדון:</div>
+        <div style="font-family: ${fontFamily}; font-size: 24px; line-height: 1.15; font-weight: 700; color: ${firstLineColor}; text-align: right; margin-bottom: 0;">הנדון:</div>
         <!-- Content rows -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl" style="border-bottom: 1px solid #000000; padding-bottom: 20px; margin-bottom: 20px;">${contentRowsHtml}</table>
+        ${contentRowsHtml}
+        <!-- Bottom border below subject -->
+        <div style="border-bottom: 1px solid #000000; margin-top: 4px;"></div>
     </td>
 </tr>`;
 
@@ -605,7 +624,7 @@ async function buildCustomLetterHtml(
                     ${header}
                     ${subjectLinesHtml || ''}
                     <tr>
-                        <td style="padding: 20px 0; text-align: right;">
+                        <td style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.2; text-align: right; direction: rtl; padding: 20px 0;">
                             ${parsedBodyHtml}
                         </td>
                     </tr>
@@ -1019,7 +1038,7 @@ async function sendEmail(
   // Fetch images as base64 from deployed app
   // These images are served from the Vercel deployment's public folder
   const baseUrl = Deno.env.get('APP_URL') || 'https://ticovision.vercel.app';
-  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue, bulletStarDarkRed, ticoSignature] = await Promise.all([
+  const [ticoLogoOld, ticoLogoNew, francoLogoOld, francoLogoNew, tagline, bulletStar, bulletStarBlue, bulletStarDarkRed, ticoSignature, iconStar, iconBuilding, iconPhone, iconEmail] = await Promise.all([
     fetchImageBase64(`${baseUrl}/brand/tico_logo_240.png`),
     fetchImageBase64(`${baseUrl}/brand/Tico_logo_png_new.png`),
     fetchImageBase64(`${baseUrl}/brand/franco-logo-hires.png`),
@@ -1028,7 +1047,11 @@ async function sendEmail(
     fetchImageBase64(`${baseUrl}/brand/bullet-star.png`),
     fetchImageBase64(`${baseUrl}/brand/Bullet_star_blue.png`),
     fetchImageBase64(`${baseUrl}/brand/Bullet_star_darkred.png`),
-    fetchImageBase64(`${baseUrl}/brand/tico_signature.png`)
+    fetchImageBase64(`${baseUrl}/brand/tico_signature.png`),
+    fetchImageBase64(`${baseUrl}/brand/icon-star.png`),
+    fetchImageBase64(`${baseUrl}/brand/icon-building.png`),
+    fetchImageBase64(`${baseUrl}/brand/icon-phone.png`),
+    fetchImageBase64(`${baseUrl}/brand/icon-email.png`)
   ]);
 
   // In broadcast mode, create individual personalizations so recipients don't see each other's emails
@@ -1123,6 +1146,34 @@ async function sendEmail(
         type: 'image/png',
         disposition: 'inline',
         content_id: 'tico_signature'
+      },
+      {
+        content: iconStar,
+        filename: 'icon-star.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'icon_star'
+      },
+      {
+        content: iconBuilding,
+        filename: 'icon-building.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'icon_building'
+      },
+      {
+        content: iconPhone,
+        filename: 'icon-phone.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'icon_phone'
+      },
+      {
+        content: iconEmail,
+        filename: 'icon-email.png',
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: 'icon_email'
       }
     ],
     // Disable SendGrid click tracking - we use our own short links for tracking

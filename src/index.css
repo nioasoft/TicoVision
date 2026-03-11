@@ -620,6 +620,11 @@ input[type="number"] {
   margin: 0;
 }
 
+.select-text .letter-body-content > :first-child,
+.letter-body-content > :first-child {
+  margin-top: 0 !important;
+}
+
 .paged-preview-container .pagedjs_pages {
   display: flex;
   flex-direction: column;

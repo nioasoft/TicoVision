@@ -202,7 +202,7 @@ export function parseTextToHTML(plainText: string, isHtml: boolean = false): str
   if (isHtml) {
     return `<!-- Tiptap Content -->
     <tr>
-      <td class="letter-body-content" style="padding: 10px 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.2; color: #09090b;">
+      <td class="letter-body-content" style="padding: 0 0 10px 0; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 16px; line-height: 1.2; color: #09090b;">
         ${plainText}
       </td>
     </tr>`;
