@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { TiptapEditor } from '@/components/editor/TiptapEditor';
+import { LexicalEditor } from '@/components/editor/LexicalEditor';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -166,7 +166,7 @@ const getContactTypeLabel = (contactType: string): string => {
  * <table><tr><td><img bullet></td><td>content</td></tr></table>
  *
  * This function converts them to simple paragraphs with bullet markers
- * that Tiptap can properly edit.
+ * that the editor can properly handle.
  */
 const convertBulletTablesToHtml = (html: string): string => {
   let result = html;
@@ -1581,7 +1581,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       // Send via Edge Function - it will parse, build, send, and save
       // Use same logic as preview - originalBodyContent preserves styled bullets from saved letters
-      // letterContent has bullets stripped by convertBulletTablesToHtml for Tiptap editing
+      // letterContent has bullets stripped by convertBulletTablesToHtml for editor
       const contentForEmail = (originalBodyContent && !hasUserEditedContent)
         ? originalBodyContent
         : letterContent;
@@ -2277,12 +2277,12 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         // Store ORIGINAL content for preview/PDF (keeps styled bullets with blue stars)
         setOriginalBodyContent(content);
 
-        // Convert table-based bullets to clean HTML for Tiptap editing
-        // Old letters use tables for bullet styling - these show as ugly tables in Tiptap
-        // After conversion, bullets appear as regular text that Tiptap can edit
+        // Convert table-based bullets to clean HTML for editor
+        // Old letters use tables for bullet styling - these show as ugly tables in raw form
+        // After conversion, bullets appear as regular text that the editor can work with
         const convertedContent = convertBulletTablesToHtml(content);
-                
-        setLetterContent(convertedContent); // ✅ Clean content for Tiptap!
+
+        setLetterContent(convertedContent);
       } else if (letter.generated_content_html) {
         // Fallback for old letters created before migration 101
         setLetterContent(letter.generated_content_html);
@@ -2679,16 +2679,16 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
       {/* Main Builder Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-right">בונה מכתבים אוניברסלי</CardTitle>
-          <CardDescription className="text-right">
-            כתוב מכתב בטקסט פשוט עם סימוני Markdown והמערכת תעצב אותו אוטומטית
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold text-right">בונה מכתבים אוניברסלי</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground/60 mt-0.5 italic text-right">
+            Message in a Bottle
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Step 1: Three-Column Layout - Client vs Group vs Manual */}
           <div className="space-y-4">
-            <Label className="text-right rtl:text-right block text-base font-semibold">
+            <Label className="text-right rtl:text-right block text-lg font-semibold">
               1. בחר לקוח, קבוצה או הזן נמען אחר
             </Label>
 
@@ -3155,7 +3155,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             {/* Custom Header Lines - Step 2 */}
             <div className="mt-4 p-3 sm:p-4 border rounded-lg bg-gray-50">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                <Label className="text-right rtl:text-right block text-base font-semibold">
+                <Label className="text-right rtl:text-right block text-lg font-semibold">
                   2. שורות נוספות מתחת לשם הנמען
                 </Label>
                 <div className="flex flex-wrap gap-2">
@@ -3264,7 +3264,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             {/* Subject Lines Section (הנדון) - Step 3 */}
             <div className="mt-4 p-3 sm:p-4 border rounded-lg bg-blue-50">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                <Label className="text-right rtl:text-right block text-base font-semibold">
+                <Label className="text-right rtl:text-right block text-lg font-semibold">
                   3. שורות הנדון
                 </Label>
                 <Button
@@ -3402,10 +3402,11 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             </div>
           </div>
 
-          {/* Step 4: Letter Content with TiptapEditor */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-right rtl:text-right block text-base font-semibold">
+          {/* Step 4: Letter Content with LexicalEditor */}
+          {/* Break out of CardContent padding for full-width editor */}
+          <div className="-mx-6 px-2 space-y-2">
+            <div className="flex items-center justify-between px-4">
+              <Label className="text-right rtl:text-right block text-lg font-semibold">
                 4. כתוב את תוכן המכתב
               </Label>
 
@@ -3451,7 +3452,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               </div>
             </div>
 
-            <TiptapEditor
+            <LexicalEditor
               value={letterContent}
               onChange={(content) => {
                 setLetterContent(content);
@@ -3463,12 +3464,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
               }}
               minHeight="400px"
               stickyTop="65px"
+              pageView
             />
           </div>
 
           {/* Step 5: Actions Grid */}
           <div className="space-y-4">
-            <Label className="text-right rtl:text-right block text-base font-semibold">
+            <Label className="text-right rtl:text-right block text-lg font-semibold">
               5. פעולות
             </Label>
 

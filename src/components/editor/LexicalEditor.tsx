@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
@@ -9,20 +9,25 @@ import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { $generateHtmlFromNodes } from '@lexical/html';
+import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html';
 import {
   $getSelection,
   $isRangeSelection,
+  $getRoot,
+  $createParagraphNode,
+  $createTextNode,
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   UNDO_COMMAND,
   REDO_COMMAND,
-  $createParagraphNode,
-  $createTextNode,
   INDENT_CONTENT_COMMAND,
   OUTDENT_CONTENT_COMMAND,
+  PASTE_COMMAND,
+  COMMAND_PRIORITY_HIGH,
+  KEY_DOWN_COMMAND,
+  DecoratorNode,
 } from 'lexical';
-import type { EditorState, LexicalEditor as LexicalEditorType, RangeSelection } from 'lexical';
+import type { EditorState, LexicalEditor as LexicalEditorType, RangeSelection, NodeKey, SerializedLexicalNode, Spread, DOMConversionMap, DOMExportOutput, LexicalNode } from 'lexical';
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
@@ -31,9 +36,16 @@ import {
 } from '@lexical/list';
 import { LinkNode, $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { HeadingNode, $createHeadingNode, $isHeadingNode, QuoteNode } from '@lexical/rich-text';
-import { TableNode, TableRowNode, TableCellNode } from '@lexical/table';
-import { $setBlocksType } from '@lexical/selection';
-import { mergeRegister } from '@lexical/utils';
+import {
+  TableNode,
+  TableRowNode,
+  TableCellNode,
+  $isTableNode,
+  $isTableCellNode,
+  $isTableRowNode,
+} from '@lexical/table';
+import { $setBlocksType, $patchStyleText, $getSelectionStyleValueForProperty } from '@lexical/selection';
+import { mergeRegister, $getNearestNodeOfType } from '@lexical/utils';
 import {
   Bold,
   Italic,
@@ -71,12 +83,14 @@ import {
   FileText,
   ArrowRight,
   ArrowLeft,
-  Check,
-  X,
+  ArrowUp,
+  ArrowDown,
   Star,
-  Circle,
-  MoreHorizontal,
-  Grip,
+  Table as TableIcon,
+  Plus,
+  Trash2,
+  Palette,
+  Stamp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -135,7 +149,331 @@ const theme = {
   },
   link: 'text-blue-600 underline cursor-pointer',
   code: 'font-mono bg-gray-100 p-2 rounded block my-2 text-sm overflow-x-auto',
+  table: 'border-collapse w-full my-2',
+  tableRow: '',
+  tableCell: 'border border-gray-300 p-2 min-w-[60px] text-right align-top',
+  tableCellHeader: 'border border-gray-300 p-2 min-w-[60px] text-right align-top bg-gray-100 font-bold',
 };
+
+// ========== Image Node ==========
+type SerializedImageNode = Spread<
+  {
+    src: string;
+    altText: string;
+    width: number | null;
+    height: number | null;
+  },
+  SerializedLexicalNode
+>;
+
+class ImageNode extends DecoratorNode<React.JSX.Element> {
+  __src: string;
+  __altText: string;
+  __width: number | null;
+  __height: number | null;
+
+  static getType(): string {
+    return 'image';
+  }
+
+  static clone(node: ImageNode): ImageNode {
+    return new ImageNode(node.__src, node.__altText, node.__width, node.__height, node.__key);
+  }
+
+  static importJSON(serializedNode: SerializedImageNode): ImageNode {
+    return $createImageNode({
+      src: serializedNode.src,
+      altText: serializedNode.altText,
+      width: serializedNode.width ?? undefined,
+      height: serializedNode.height ?? undefined,
+    });
+  }
+
+  static importDOM(): DOMConversionMap | null {
+    return {
+      img: () => ({
+        conversion: (domNode: HTMLElement) => {
+          const img = domNode as HTMLImageElement;
+          return {
+            node: $createImageNode({
+              src: img.src,
+              altText: img.alt || '',
+              width: img.width || undefined,
+              height: img.height || undefined,
+            }),
+          };
+        },
+        priority: 0,
+      }),
+    };
+  }
+
+  constructor(src: string, altText: string, width?: number | null, height?: number | null, key?: NodeKey) {
+    super(key);
+    this.__src = src;
+    this.__altText = altText;
+    this.__width = width ?? null;
+    this.__height = height ?? null;
+  }
+
+  exportJSON(): SerializedImageNode {
+    return {
+      type: 'image',
+      version: 1,
+      src: this.__src,
+      altText: this.__altText,
+      width: this.__width,
+      height: this.__height,
+    };
+  }
+
+  exportDOM(): DOMExportOutput {
+    const img = document.createElement('img');
+    img.setAttribute('src', this.__src);
+    img.setAttribute('alt', this.__altText);
+    if (this.__width) img.setAttribute('width', String(this.__width));
+    if (this.__height) img.setAttribute('height', String(this.__height));
+    img.style.display = 'block';
+    img.style.marginRight = '0';
+    img.style.marginLeft = 'auto';
+    return { element: img };
+  }
+
+  createDOM(): HTMLElement {
+    const span = document.createElement('span');
+    span.style.display = 'block';
+    return span;
+  }
+
+  updateDOM(): false {
+    return false;
+  }
+
+  decorate(): React.JSX.Element {
+    return (
+      <img
+        src={this.__src}
+        alt={this.__altText}
+        width={this.__width ?? undefined}
+        height={this.__height ?? undefined}
+        style={{ display: 'block', marginRight: '0', marginLeft: 'auto', maxWidth: '100%' }}
+      />
+    );
+  }
+}
+
+function $createImageNode({ src, altText, width, height }: { src: string; altText: string; width?: number; height?: number }): ImageNode {
+  return new ImageNode(src, altText, width ?? null, height ?? null);
+}
+
+// ========== Plugins ==========
+
+// Clean Paste Plugin - strips font-family/font-size from pasted HTML
+function CleanPastePlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    // Handle Ctrl+Shift+V for plain text paste
+    const removeKeyDown = editor.registerCommand(
+      KEY_DOWN_COMMAND,
+      (event: KeyboardEvent) => {
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'v') {
+          event.preventDefault();
+          navigator.clipboard.readText().then(text => {
+            editor.update(() => {
+              const selection = $getSelection();
+              if ($isRangeSelection(selection)) {
+                selection.insertRawText(text);
+              }
+            });
+          }).catch(err => {
+            console.error('Failed to read clipboard:', err);
+          });
+          return true;
+        }
+        return false;
+      },
+      COMMAND_PRIORITY_HIGH
+    );
+
+    // Clean pasted HTML
+    const removePaste = editor.registerCommand(
+      PASTE_COMMAND,
+      (event: ClipboardEvent) => {
+        const clipboardData = event.clipboardData;
+        if (!clipboardData) return false;
+
+        const htmlData = clipboardData.getData('text/html');
+        if (!htmlData) return false; // Let default handler deal with plain text
+
+        event.preventDefault();
+
+        // Clean the HTML
+        const doc = new DOMParser().parseFromString(htmlData, 'text/html');
+
+        // Remove Word/Google Docs specific elements
+        doc.querySelectorAll('style, meta, link, script').forEach(el => el.remove());
+
+        // Clean inline styles - keep only basic formatting
+        doc.querySelectorAll('[style]').forEach(el => {
+          const style = el.getAttribute('style') || '';
+          const keepStyles = style.match(/(font-weight|font-style|text-decoration):[^;]+/g);
+          if (keepStyles) {
+            el.setAttribute('style', keepStyles.join(';'));
+          } else {
+            el.removeAttribute('style');
+          }
+        });
+
+        // Remove font-family and font-size from all elements
+        doc.querySelectorAll('*').forEach(el => {
+          if (el instanceof HTMLElement) {
+            el.style.fontFamily = '';
+            el.style.fontSize = '';
+          }
+        });
+
+        const cleanedHtml = doc.body.innerHTML;
+        if (!cleanedHtml.trim()) return false;
+
+        // Parse cleaned HTML into Lexical nodes
+        const parser = new DOMParser();
+        const dom = parser.parseFromString(cleanedHtml, 'text/html');
+
+        editor.update(() => {
+          const nodes = $generateNodesFromDOM(editor, dom);
+          const selection = $getSelection();
+          if ($isRangeSelection(selection)) {
+            selection.insertNodes(nodes);
+          }
+        });
+
+        return true;
+      },
+      COMMAND_PRIORITY_HIGH
+    );
+
+    return () => {
+      removeKeyDown();
+      removePaste();
+    };
+  }, [editor]);
+
+  return null;
+}
+
+/**
+ * Preprocess TipTap-specific HTML to standard HTML that Lexical can parse.
+ * Handles colored bullets (table-based), styled dividers, and color blocks.
+ */
+function preprocessTipTapHtml(html: string): string {
+  let result = html;
+
+  // 1. Convert TipTap colored bullets: <div data-type="blue-bullet"><table>...<td>content</td></table></div>
+  //    → <p><span style="color: #COLOR; font-size: 12px;">◆ </span>content</p>
+  const bulletColorMap: Record<string, string> = {
+    'blue-bullet': '#395BF7',
+    'darkred-bullet': '#BB0B0B',
+    'black-bullet': '#000000',
+  };
+
+  for (const [dataType, color] of Object.entries(bulletColorMap)) {
+    const bulletRegex = new RegExp(
+      `<div[^>]*data-type="${dataType}"[^>]*>[\\s\\S]*?<td[^>]*>[\\s\\S]*?<img[^>]*>[\\s\\S]*?</td>[\\s\\S]*?<td[^>]*>([\\s\\S]*?)</td>[\\s\\S]*?</div>`,
+      'gi'
+    );
+    result = result.replace(bulletRegex, (_match, content) => {
+      const cleanContent = content.trim();
+      return `<p><span style="color: ${color}; font-size: 12px;">◆ </span>${cleanContent}</p>`;
+    });
+
+    // Fallback: simpler bullet divs without table structure (already converted by convertBulletTablesToHtml)
+    const simpleBulletRegex = new RegExp(
+      `<div[^>]*data-type="${dataType}"[^>]*>([\\s\\S]*?)</div>`,
+      'gi'
+    );
+    result = result.replace(simpleBulletRegex, (_match, content) => {
+      const cleanContent = content.trim();
+      // Skip if already converted (contains ◆)
+      if (cleanContent.includes('◆')) return `<p>${cleanContent}</p>`;
+      return `<p><span style="color: ${color}; font-size: 12px;">◆ </span>${cleanContent}</p>`;
+    });
+  }
+
+  // 2. Convert TipTap styled dividers: <div data-styled-divider style="border-top: 2px solid #000;">
+  //    → <p style="text-align: center;"><span style="color: #000; ...">──────</span></p>
+  result = result.replace(
+    /<div[^>]*data-styled-divider[^>]*(?:style="([^"]*)")?[^>]*>(?:<\/div>)?/gi,
+    (_match, style) => {
+      let color = '#000000';
+      let thickness = '2px';
+      if (style) {
+        const colorMatch = style.match(/border(?:-top)?-color:\s*([^;]+)/i) || style.match(/solid\s+([#\w]+)/i);
+        if (colorMatch) color = colorMatch[1].trim();
+        const thickMatch = style.match(/border(?:-top)?-width:\s*([^;]+)/i) || style.match(/border-top:\s*(\d+px)/i);
+        if (thickMatch) thickness = thickMatch[1].trim();
+      }
+      const fontSize = thickness === '4px' ? '16px' : thickness === '1px' ? '8px' : '12px';
+      const line = '─'.repeat(60);
+      return `<p style="text-align: center;"><span style="color: ${color}; font-size: ${fontSize}; letter-spacing: -0.1em;">${line}</span></p>`;
+    }
+  );
+
+  // 3. Convert TipTap color blocks: <div data-color-block style="background-color: #EEEDD8; ...">content</div>
+  //    → preserve as-is but wrapped in a standard div (Lexical will parse inner content)
+  //    Since Lexical doesn't have a color block node, convert children to paragraphs with inline bg style
+  result = result.replace(
+    /<div[^>]*data-color-block[^>]*(?:style="([^"]*)")?[^>]*>([\s\S]*?)<\/div>/gi,
+    (_match, style, content) => {
+      let bgColor = '#EEEDD8';
+      if (style) {
+        const bgMatch = style.match(/background-color:\s*([^;]+)/i);
+        if (bgMatch) bgColor = bgMatch[1].trim();
+      }
+      // Wrap content paragraphs with background color
+      const innerHtml = content.trim();
+      // If content already has <p> tags, add bg style to each
+      if (innerHtml.includes('<p')) {
+        return innerHtml.replace(
+          /<p([^>]*)>/gi,
+          (_m: string, attrs: string) => {
+            if (attrs.includes('style=')) {
+              return `<p${attrs.replace(/style="/, `style="background-color: ${bgColor}; padding: 8px 16px; `)}>`;
+            }
+            return `<p${attrs} style="background-color: ${bgColor}; padding: 8px 16px;">`;
+          }
+        );
+      }
+      // Otherwise wrap in a single paragraph
+      return `<p style="background-color: ${bgColor}; padding: 8px 16px;">${innerHtml}</p>`;
+    }
+  );
+
+  return result;
+}
+
+// Initial Value Plugin - sets editor content from HTML value prop
+function InitialValuePlugin({ value, hasSetInitial }: { value?: string; hasSetInitial: React.MutableRefObject<boolean> }) {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    if (value && !hasSetInitial.current) {
+      hasSetInitial.current = true;
+      editor.update(() => {
+        // Preprocess TipTap-specific HTML before Lexical parses it
+        const processedHtml = preprocessTipTapHtml(value);
+        const parser = new DOMParser();
+        const dom = parser.parseFromString(processedHtml, 'text/html');
+        const nodes = $generateNodesFromDOM(editor, dom);
+        const root = $getRoot();
+        root.clear();
+        root.append(...nodes);
+      });
+    }
+  }, [editor, value, hasSetInitial]);
+
+  return null;
+}
 
 // Error handler
 function onError(error: Error) {
@@ -190,23 +528,8 @@ const COLORED_BULLETS = [
   { color: '#000000', label: 'שחור' },
 ];
 
-// Horizontal Rules Configuration
-const HORIZONTAL_RULES = {
-  solid: {
-    thin: { label: 'דק', height: '1px', style: 'solid' },
-    normal: { label: 'רגיל', height: '2px', style: 'solid' },
-    thick: { label: 'עבה', height: '4px', style: 'solid' },
-  },
-  dashed: {
-    normal: { label: 'מקווקו', height: '2px', style: 'dashed' },
-  },
-  dotted: {
-    normal: { label: 'מנוקד', height: '2px', style: 'dotted' },
-  },
-  double: {
-    normal: { label: 'כפול', height: '4px', style: 'double' },
-  },
-};
+// Horizontal Rules Configuration (used as reference for HR style/thickness options)
+// Solid: thin=1px, normal=2px, thick=4px | Dashed: 2px | Dotted: 2px | Double: 4px
 
 const HR_COLORS = [
   { value: '#000000', label: 'שחור' },
@@ -276,10 +599,29 @@ const BORDER_STYLES = [
   { label: 'מסגרת צבעונית ירוקה', style: '3px solid #10b981', padding: '12px' },
 ];
 
+// Color Block options (matches TipTap)
+const COLOR_BLOCK_OPTIONS = [
+  { value: '#EEEDD8', label: "בז'" },
+  { value: '#f0f0f0', label: 'אפור בהיר' },
+  { value: '#DBEAFE', label: 'כחול בהיר' },
+  { value: '#FEF3C7', label: 'צהוב בהיר' },
+];
+
+// Table cell background colors (matches TipTap)
+const TABLE_CELL_COLORS = [
+  { value: '#f3f4f6', label: 'אפור בהיר' },
+  { value: '#dbeafe', label: 'כחול בהיר' },
+  { value: '#dcfce7', label: 'ירוק בהיר' },
+  { value: '#fee2e2', label: 'אדום בהיר' },
+  { value: '#fef9c3', label: 'צהוב בהיר' },
+  { value: '#EEEDD8', label: "בז'" },
+  { value: '#FFEDD5', label: 'כתום בהיר' },
+  { value: '#EDE9FE', label: 'סגול בהיר' },
+  { value: '#CCFBF1', label: 'טורקיז' },
+];
+
 // Helper function to get selected node
 function getSelectedNode(selection: RangeSelection) {
-  const anchor = selection.anchor;
-  const focus = selection.focus;
   const anchorNode = selection.anchor.getNode();
   const focusNode = selection.focus.getNode();
   if (anchorNode === focusNode) {
@@ -334,7 +676,7 @@ function ToolbarSeparator() {
 }
 
 // Main Toolbar component
-function Toolbar() {
+function Toolbar({ stickyTop }: { stickyTop?: string }) {
   const [editor] = useLexicalComposerContext();
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
@@ -379,19 +721,12 @@ function Toolbar() {
         setBlockType('paragraph');
       }
 
-      // Get styles
-      const style = selection.style || '';
-      const fontSizeMatch = style.match(/font-size:\s*(\d+px)/);
-      setFontSize(fontSizeMatch ? fontSizeMatch[1] : '16px');
-
-      const lineHeightMatch = style.match(/line-height:\s*([\d.]+)/);
-      setLineHeight(lineHeightMatch ? lineHeightMatch[1] : '1.5');
-
-      const colorMatch = style.match(/(?:^|;)\s*color:\s*([^;]+)/);
-      setTextColor(colorMatch ? colorMatch[1].trim() : '#000000');
-
-      const bgMatch = style.match(/background-color:\s*([^;]+)/);
-      setBgColor(bgMatch ? bgMatch[1].trim() : null);
+      // Get styles using proper Lexical API
+      setFontSize($getSelectionStyleValueForProperty(selection, 'font-size', '16px'));
+      setLineHeight($getSelectionStyleValueForProperty(selection, 'line-height', '1.5'));
+      setTextColor($getSelectionStyleValueForProperty(selection, 'color', '#000000'));
+      const currentBg = $getSelectionStyleValueForProperty(selection, 'background-color', '');
+      setBgColor(currentBg || null);
     }
   }, []);
 
@@ -421,12 +756,7 @@ function Toolbar() {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
-        const currentStyle = selection.style || '';
-        // Remove existing property
-        const cleanedStyle = currentStyle.replace(new RegExp(`${styleProperty}:[^;]+;?\\s*`, 'g'), '');
-        // Add new value
-        const newStyle = cleanedStyle + `${styleProperty}: ${value};`;
-        selection.setStyle(newStyle.trim());
+        $patchStyleText(selection, { [styleProperty]: value });
       }
     });
   };
@@ -450,13 +780,7 @@ function Toolbar() {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
-        const currentStyle = selection.style || '';
-        const cleanedStyle = currentStyle.replace(/background-color:[^;]+;?\s*/g, '');
-        if (color) {
-          selection.setStyle(cleanedStyle + `background-color: ${color};`);
-        } else {
-          selection.setStyle(cleanedStyle);
-        }
+        $patchStyleText(selection, { 'background-color': color || '' });
       }
     });
     setBgColor(color);
@@ -495,26 +819,20 @@ function Toolbar() {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
+        // Clear inline text formatting (bold, italic, underline, etc.)
         selection.setStyle('');
         selection.setFormat(0);
-      }
-    });
-  };
 
-  const insertHorizontalRule = (color: string, borderStyle: string = 'solid', height: string = '2px') => {
-    editor.update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        const hr = $createParagraphNode();
-        const textNode = $createTextNode('\u200B'); // Zero-width space
-        hr.append(textNode);
-        hr.setFormat('center');
-        // We'll use a div with border for the HR effect
-        const hrDiv = $createParagraphNode();
-        const hrText = $createTextNode('');
-        hrText.setStyle(`display: block; border-bottom: ${height} ${borderStyle} ${color}; width: 100%; margin: 8px 0;`);
-        hrDiv.append(hrText);
-        selection.insertNodes([hrDiv]);
+        // Clear inline styles on all selected text nodes
+        const nodes = selection.getNodes();
+        nodes.forEach(node => {
+          if (node.getType() === 'text' && 'setStyle' in node) {
+            (node as { setStyle: (style: string) => void }).setStyle('');
+          }
+        });
+
+        // Reset block type to paragraph (clear headings)
+        $setBlocksType(selection, () => $createParagraphNode());
       }
     });
   };
@@ -635,7 +953,50 @@ function Toolbar() {
   const insertColoredBullet = (color: string) => {
     editor.update(() => {
       const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
+      if (!$isRangeSelection(selection)) return;
+
+      // Collect all top-level block nodes in the selection
+      const nodes = selection.getNodes();
+      const blockNodes = new Set<LexicalNode>();
+      nodes.forEach(node => {
+        let blockNode: LexicalNode = node;
+        while (blockNode.getParent() && blockNode.getParent()?.getType() !== 'root') {
+          blockNode = blockNode.getParent()!;
+        }
+        // Only process element nodes (paragraphs, headings) - not root itself
+        if (blockNode.getType() !== 'root') {
+          blockNodes.add(blockNode);
+        }
+      });
+
+      if (blockNodes.size > 1 || (blockNodes.size === 1 && !selection.isCollapsed())) {
+        // Multi-line selection OR full single-line selection: prepend bullet to each paragraph
+        blockNodes.forEach(blockNode => {
+          // Check if already has a colored bullet at the start
+          const firstChild = 'getFirstChild' in blockNode
+            ? (blockNode as { getFirstChild: () => LexicalNode | null }).getFirstChild()
+            : null;
+          if (firstChild && firstChild.getType() === 'text') {
+            const textContent = firstChild.getTextContent();
+            if (textContent.startsWith('◆ ')) {
+              // Already has a bullet - update its color
+              (firstChild as { setStyle: (style: string) => void }).setStyle(`color: ${color}; font-size: 12px;`);
+              return;
+            }
+          }
+
+          // Insert bullet diamond at the beginning of the block
+          const diamondNode = $createTextNode('◆ ');
+          diamondNode.setStyle(`color: ${color}; font-size: 12px;`);
+
+          if (firstChild) {
+            firstChild.insertBefore(diamondNode);
+          } else if ('append' in blockNode) {
+            (blockNode as { append: (...nodes: LexicalNode[]) => void }).append(diamondNode);
+          }
+        });
+      } else {
+        // Cursor only (collapsed selection): insert a new bullet line
         const bulletParagraph = $createParagraphNode();
         const diamondNode = $createTextNode('◆ ');
         diamondNode.setStyle(`color: ${color}; font-size: 12px;`);
@@ -646,6 +1007,350 @@ function Toolbar() {
         textNode.select();
       }
     });
+  };
+
+  // Insert table
+  const insertTable = (rows: number, cols: number) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      const tableNode = new TableNode();
+      // Header row
+      const headerRow = new TableRowNode();
+      for (let j = 0; j < cols; j++) {
+        const cell = new TableCellNode(1); // 1 = header
+        cell.append($createParagraphNode());
+        headerRow.append(cell);
+      }
+      tableNode.append(headerRow);
+
+      // Data rows
+      for (let i = 1; i < rows; i++) {
+        const row = new TableRowNode();
+        for (let j = 0; j < cols; j++) {
+          const cell = new TableCellNode(0); // 0 = normal
+          cell.append($createParagraphNode());
+          row.append(cell);
+        }
+        tableNode.append(row);
+      }
+
+      // Get the top-level block containing the cursor and insert table after it
+      const anchorNode = selection.anchor.getNode();
+      let topLevelNode = anchorNode;
+      while (topLevelNode.getParent() && topLevelNode.getParent()?.getType() !== 'root') {
+        topLevelNode = topLevelNode.getParent()!;
+      }
+      topLevelNode.insertAfter(tableNode);
+      // Add a paragraph after table for continued typing
+      const afterParagraph = $createParagraphNode();
+      tableNode.insertAfter(afterParagraph);
+    });
+  };
+
+  // Table row/column operations
+  const tableAddRowAfter = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (!rowNode || !$isTableRowNode(rowNode)) return;
+      const tableNode = rowNode.getParent();
+      if (!tableNode || !$isTableNode(tableNode)) return;
+      const colCount = rowNode.getChildrenSize();
+      const newRow = new TableRowNode();
+      for (let i = 0; i < colCount; i++) {
+        const cell = new TableCellNode(0);
+        cell.append($createParagraphNode());
+        newRow.append(cell);
+      }
+      rowNode.insertAfter(newRow);
+    });
+  };
+
+  const tableAddRowBefore = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (!rowNode || !$isTableRowNode(rowNode)) return;
+      const colCount = rowNode.getChildrenSize();
+      const newRow = new TableRowNode();
+      for (let i = 0; i < colCount; i++) {
+        const cell = new TableCellNode(0);
+        cell.append($createParagraphNode());
+        newRow.append(cell);
+      }
+      rowNode.insertBefore(newRow);
+    });
+  };
+
+  const tableDeleteRow = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (rowNode && $isTableRowNode(rowNode)) {
+        rowNode.remove();
+      }
+    });
+  };
+
+  const tableAddColumnAfter = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (!rowNode || !$isTableRowNode(rowNode)) return;
+      const tableNode = rowNode.getParent();
+      if (!tableNode || !$isTableNode(tableNode)) return;
+      const cellIndex = rowNode.getChildren().indexOf(cellNode);
+      const rows = tableNode.getChildren();
+      rows.forEach(row => {
+        if ($isTableRowNode(row)) {
+          const cells = row.getChildren();
+          const targetCell = cells[cellIndex];
+          if (targetCell) {
+            const isHeader = $isTableCellNode(targetCell) && targetCell.getHeaderStyles() !== 0;
+            const newCell = new TableCellNode(isHeader ? 1 : 0);
+            newCell.append($createParagraphNode());
+            targetCell.insertAfter(newCell);
+          }
+        }
+      });
+    });
+  };
+
+  const tableAddColumnBefore = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (!rowNode || !$isTableRowNode(rowNode)) return;
+      const tableNode = rowNode.getParent();
+      if (!tableNode || !$isTableNode(tableNode)) return;
+      const cellIndex = rowNode.getChildren().indexOf(cellNode);
+      const rows = tableNode.getChildren();
+      rows.forEach(row => {
+        if ($isTableRowNode(row)) {
+          const cells = row.getChildren();
+          const targetCell = cells[cellIndex];
+          if (targetCell) {
+            const isHeader = $isTableCellNode(targetCell) && targetCell.getHeaderStyles() !== 0;
+            const newCell = new TableCellNode(isHeader ? 1 : 0);
+            newCell.append($createParagraphNode());
+            targetCell.insertBefore(newCell);
+          }
+        }
+      });
+    });
+  };
+
+  const tableDeleteColumn = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (!rowNode || !$isTableRowNode(rowNode)) return;
+      const tableNode = rowNode.getParent();
+      if (!tableNode || !$isTableNode(tableNode)) return;
+      const cellIndex = rowNode.getChildren().indexOf(cellNode);
+      const rows = tableNode.getChildren();
+      rows.forEach(row => {
+        if ($isTableRowNode(row)) {
+          const cells = row.getChildren();
+          if (cells[cellIndex]) {
+            cells[cellIndex].remove();
+          }
+        }
+      });
+    });
+  };
+
+  const tableDeleteTable = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const rowNode = cellNode.getParent();
+      if (!rowNode) return;
+      const tableNode = rowNode.getParent();
+      if (tableNode && $isTableNode(tableNode)) {
+        tableNode.remove();
+      }
+    });
+  };
+
+  const tableCellSetBgColor = (color: string | null) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const node = selection.anchor.getNode();
+      const cellNode = $getNearestNodeOfType(node, TableCellNode);
+      if (!cellNode) return;
+      const dom = editor.getElementByKey(cellNode.getKey());
+      if (dom) {
+        (dom as HTMLElement).style.backgroundColor = color || '';
+      }
+    });
+  };
+
+  // Insert Image
+  const insertImage = (src: string, alt: string, width?: number, height?: number) => {
+    editor.update(() => {
+      const imageNode = $createImageNode({ src, altText: alt, width, height });
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        selection.insertNodes([imageNode]);
+      } else {
+        $getRoot().append(imageNode);
+      }
+    });
+  };
+
+  // Add period at end of each line in selection
+  const addPeriodToLines = () => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+      const nodes = selection.getNodes();
+      const processedParents = new Set<string>();
+
+      nodes.forEach(node => {
+        // Get the top-level block element
+        let blockNode = node;
+        while (blockNode.getParent() && blockNode.getParent()?.getType() !== 'root') {
+          blockNode = blockNode.getParent()!;
+        }
+        const key = blockNode.getKey();
+        if (processedParents.has(key)) return;
+        processedParents.add(key);
+
+        const text = blockNode.getTextContent().trimEnd();
+        if (!text) return;
+        const lastChar = text.slice(-1);
+        if ('.?!:'.includes(lastChar)) return;
+
+        // Find the last text node in this block
+        const children = blockNode.getChildren ? (blockNode as { getChildren: () => LexicalNode[] }).getChildren() : [];
+        const findLastTextNode = (nodes: LexicalNode[]): LexicalNode | null => {
+          for (let i = nodes.length - 1; i >= 0; i--) {
+            const child = nodes[i];
+            if (child.getType() === 'text') return child;
+            if ('getChildren' in child) {
+              const found = findLastTextNode((child as { getChildren: () => LexicalNode[] }).getChildren());
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        const lastTextNode = findLastTextNode(children);
+        if (lastTextNode && 'setTextContent' in lastTextNode && 'getTextContent' in lastTextNode) {
+          const textContent = (lastTextNode as { getTextContent: () => string }).getTextContent();
+          (lastTextNode as { setTextContent: (text: string) => void }).setTextContent(textContent + '.');
+        }
+      });
+    });
+  };
+
+  // Color block - apply background color to selected paragraphs
+  const applyColorBlock = (color: string | null) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      // Collect all top-level block nodes in the selection
+      const nodes = selection.getNodes();
+      const blockNodes = new Set<LexicalNode>();
+      nodes.forEach(node => {
+        let blockNode: LexicalNode = node;
+        while (blockNode.getParent() && blockNode.getParent()?.getType() !== 'root') {
+          blockNode = blockNode.getParent()!;
+        }
+        if (blockNode.getType() !== 'root') {
+          blockNodes.add(blockNode);
+        }
+      });
+
+      blockNodes.forEach(blockNode => {
+        const dom = editor.getElementByKey(blockNode.getKey());
+        if (dom) {
+          if (color) {
+            (dom as HTMLElement).style.backgroundColor = color;
+            (dom as HTMLElement).style.padding = '8px 12px';
+            (dom as HTMLElement).style.borderRadius = '4px';
+          } else {
+            (dom as HTMLElement).style.backgroundColor = '';
+            (dom as HTMLElement).style.padding = '';
+            (dom as HTMLElement).style.borderRadius = '';
+          }
+        }
+      });
+    });
+  };
+
+  // Button link dialog
+  const [buttonLinkDialogOpen, setButtonLinkDialogOpen] = useState(false);
+  const [buttonLinkInitialText, setButtonLinkInitialText] = useState('');
+
+  const openButtonLinkDialog = () => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        setButtonLinkInitialText(selection.getTextContent());
+      }
+    });
+    setButtonLinkDialogOpen(true);
+  };
+
+  const handleButtonLinkConfirm = (data: { url: string; text: string; style: 'link' | 'button'; buttonColor?: string }) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const isOutline = data.buttonColor === 'outline';
+        const bgColor = isOutline ? 'transparent' : data.buttonColor;
+        const textColor = isOutline ? '#395BF7' : '#ffffff';
+        const border = isOutline ? 'border: 2px solid #395BF7;' : '';
+
+        // Create a styled link node that looks like a button
+        const textNode = $createTextNode(data.text || 'לחץ כאן');
+        textNode.setStyle(`
+          display: inline-block;
+          background-color: ${bgColor};
+          color: ${textColor};
+          ${border}
+          padding: 10px 24px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 500;
+        `.trim());
+        selection.insertNodes([textNode]);
+      }
+    });
+    // Apply link to the inserted text
+    editor.dispatchCommand(TOGGLE_LINK_COMMAND, data.url);
   };
 
   const getBlockTypeLabel = () => {
@@ -661,7 +1366,9 @@ function Toolbar() {
   };
 
   return (
-    <div className="sticky top-0 z-10 border-b bg-muted/50 p-1.5 flex items-center gap-0.5 flex-wrap rtl:flex-row-reverse">
+    <div className="sticky z-10 border-b bg-background p-1.5" style={{ top: stickyTop ?? '0px' }}>
+      {/* Row 1: Text formatting, colors */}
+      <div className="flex items-center gap-1 flex-wrap">
       {/* Block Type Dropdown */}
       <DropdownMenu dir="rtl">
         <DropdownMenuTrigger asChild>
@@ -736,7 +1443,7 @@ function Toolbar() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[100px]">
           {LINE_HEIGHTS.map(({ value, label }) => (
-            <DropdownMenuItem key={value} onClick={() => applyLineHeight(value)}>
+            <DropdownMenuItem key={value} onClick={() => applyLineHeight(value)} className={lineHeight === value ? 'bg-accent' : ''}>
               {label}
             </DropdownMenuItem>
           ))}
@@ -893,7 +1600,9 @@ function Toolbar() {
         </PopoverContent>
       </Popover>
 
-      <ToolbarSeparator />
+      </div>
+      {/* Row 2: Alignment, lists, links, tables, inserts, undo/redo */}
+      <div className="flex items-center gap-1 flex-wrap mt-1 pt-1 border-t border-border/40">
 
       {/* Text Alignment */}
       <div className="flex items-center gap-0.5">
@@ -958,6 +1667,11 @@ function Toolbar() {
         {isLink ? <Unlink className="h-4 w-4" /> : <LinkIcon className="h-4 w-4" />}
       </ToolbarButton>
 
+      {/* Button Link */}
+      <ToolbarButton onClick={openButtonLinkDialog} title="הוסף כפתור עם קישור">
+        <Square className="h-4 w-4" />
+      </ToolbarButton>
+
       {/* Link Dialog */}
       <LinkDialog
         open={linkDialogOpen}
@@ -966,6 +1680,130 @@ function Toolbar() {
         initialText={linkInitialText}
         mode="link"
       />
+
+      {/* Button Link Dialog */}
+      <LinkDialog
+        open={buttonLinkDialogOpen}
+        onOpenChange={setButtonLinkDialogOpen}
+        onConfirm={handleButtonLinkConfirm}
+        initialText={buttonLinkInitialText}
+        mode="button"
+      />
+
+      <ToolbarSeparator />
+
+      {/* Table Menu */}
+      <DropdownMenu dir="rtl">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="טבלה">
+            <TableIcon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56 max-h-[400px] overflow-y-auto">
+          <DropdownMenuItem onClick={() => insertTable(3, 3)}>
+            <Plus className="h-4 w-4 ml-2" />
+            הוסף טבלה (3x3)
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem onClick={tableAddColumnBefore}>
+            <ArrowRight className="h-4 w-4 ml-2" />
+            הוסף עמודה מימין
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={tableAddColumnAfter}>
+            <ArrowLeft className="h-4 w-4 ml-2" />
+            הוסף עמודה משמאל
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={tableDeleteColumn} className="text-red-600">
+            <Trash2 className="h-4 w-4 ml-2" />
+            מחק עמודה
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem onClick={tableAddRowBefore}>
+            <ArrowUp className="h-4 w-4 ml-2" />
+            הוסף שורה מעל
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={tableAddRowAfter}>
+            <ArrowDown className="h-4 w-4 ml-2" />
+            הוסף שורה מתחת
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={tableDeleteRow} className="text-red-600">
+            <Trash2 className="h-4 w-4 ml-2" />
+            מחק שורה
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Cell Background Color */}
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Palette className="h-4 w-4 ml-2" />
+              צבע רקע לתא
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => tableCellSetBgColor(null)}>
+                  <span className="w-4 h-4 rounded border border-gray-300 ml-2 flex items-center justify-center text-[10px]">✕</span>
+                  ללא צבע
+                </DropdownMenuItem>
+                {TABLE_CELL_COLORS.map(({ value, label }) => (
+                  <DropdownMenuItem key={value} onClick={() => tableCellSetBgColor(value)}>
+                    <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: value }} />
+                    {label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem onClick={tableDeleteTable} className="text-red-600">
+            <Trash2 className="h-4 w-4 ml-2" />
+            מחק טבלה
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ToolbarSeparator />
+
+      {/* Color Block */}
+      <DropdownMenu dir="rtl">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="בלוק צבעוני">
+            <Square className="h-4 w-4 fill-current opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[140px]">
+          {COLOR_BLOCK_OPTIONS.map(({ value, label }) => (
+            <DropdownMenuItem key={value} onClick={() => applyColorBlock(value)}>
+              <div className="w-4 h-4 rounded border ml-2" style={{ backgroundColor: value }} />
+              {label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => applyColorBlock(null)}>
+            <span className="w-4 h-4 rounded border border-gray-300 ml-2 flex items-center justify-center text-[10px]">✕</span>
+            הסר בלוק
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Tico Stamp */}
+      <ToolbarButton
+        onClick={() => insertImage('/brand/tico_signature.png', 'חתימת תיקו', 228, 177)}
+        title="הוסף חתימת תיקו"
+      >
+        <Stamp className="h-4 w-4" />
+      </ToolbarButton>
+
+      {/* Add Period */}
+      <ToolbarButton onClick={addPeriodToLines} title="הוסף נקודה בסוף כל שורה">
+        <span className="text-base font-bold leading-none">.</span>
+      </ToolbarButton>
 
       {/* Insert Dropdown - Expanded */}
       <DropdownMenu dir="rtl">
@@ -1167,14 +2005,17 @@ function Toolbar() {
         <RemoveFormatting className="h-4 w-4" />
       </ToolbarButton>
 
+      <ToolbarSeparator />
+
       {/* Undo/Redo */}
-      <div className="flex items-center gap-0.5 mr-auto">
+      <div className="flex items-center gap-0.5">
         <ToolbarButton onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)} title="ביטול (Ctrl+Z)">
           <Undo className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)} title="ביצוע מחדש (Ctrl+Y)">
           <Redo className="h-4 w-4" />
         </ToolbarButton>
+      </div>
       </div>
     </div>
   );
@@ -1185,14 +2026,23 @@ interface LexicalEditorProps {
   onChange?: (html: string) => void;
   minHeight?: string;
   className?: string;
+  /** CSS top offset for sticky toolbar (e.g. "65px" to clear a sticky header) */
+  stickyTop?: string;
+  /** Show editor as A4 page with margins matching PDF output */
+  pageView?: boolean;
 }
 
 // Named export for the component
 const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
+  value,
   onChange,
   minHeight = '300px',
   className,
+  stickyTop,
+  pageView = false,
 }) => {
+  const hasSetInitial = useRef(false);
+
   const initialConfig = {
     namespace: 'TicoVisionEditor',
     theme,
@@ -1206,6 +2056,7 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
       TableNode,
       TableRowNode,
       TableCellNode,
+      ImageNode,
     ],
   };
 
@@ -1221,9 +2072,39 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <div className={cn('border rounded-lg overflow-hidden', className)} dir="rtl">
-        <Toolbar />
-        <div className="relative">
+      <style>{`
+        [data-lexical-editor="true"] table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 8px 0;
+          table-layout: auto;
+        }
+        [data-lexical-editor="true"] table th,
+        [data-lexical-editor="true"] table td {
+          border: 1px solid #d1d5db;
+          padding: 8px;
+          min-width: 60px;
+          text-align: right;
+          vertical-align: top;
+        }
+        [data-lexical-editor="true"] table th {
+          background-color: #f3f4f6;
+          font-weight: bold;
+        }
+        [data-lexical-editor="true"] table td:hover,
+        [data-lexical-editor="true"] table th:hover {
+          background-color: #f9fafb;
+        }
+      `}</style>
+      <div className={cn('border rounded-lg', className)} dir="rtl">
+        <Toolbar stickyTop={stickyTop} />
+        <div
+          className={cn(
+            'relative',
+            pageView && 'bg-gray-200 overflow-auto py-6 px-4'
+          )}
+          style={pageView ? { minHeight: '600px' } : undefined}
+        >
           <RichTextPlugin
             contentEditable={
               <ContentEditable
@@ -1232,9 +2113,18 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
                   'rtl:text-right ltr:text-left',
                   "font-['David_Libre','Heebo','Assistant',sans-serif]",
                   'text-base leading-[1.5]',
-                  'p-4'
+                  pageView
+                    ? 'bg-white mx-auto shadow-[0_1px_3px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)]'
+                    : 'p-4'
                 )}
-                style={{ minHeight }}
+                style={pageView ? {
+                  width: 'min(900px, calc(100% - 48px))',  // Responsive: fills space, caps at 900px
+                  minHeight: '1272px',   // Proportionally scaled A4 height (900/794 * 1123)
+                  paddingTop: '28px',    // Content area (header is in the template, not editor)
+                  paddingBottom: '68px',  // ~15mm bottom margin (scaled)
+                  paddingLeft: '38px',   // ~9mm (scaled)
+                  paddingRight: '38px',  // ~9mm (scaled)
+                } : { minHeight }}
               />
             }
 
@@ -1245,6 +2135,8 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
         <ListPlugin />
         <LinkPlugin />
         <TablePlugin />
+        <CleanPastePlugin />
+        <InitialValuePlugin value={value} hasSetInitial={hasSetInitial} />
         <OnChangePlugin onChange={handleChange} />
       </div>
     </LexicalComposer>
