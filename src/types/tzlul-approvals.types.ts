@@ -1,7 +1,7 @@
 /**
  * Tzlul Approvals Documents - TypeScript Types
  *
- * This file contains all type definitions for the 7 Tzlul company approval documents:
+ * This file contains all type definitions for the 10 Tzlul company approval documents:
  * 1. Violation Correction Letter (מכתב תיקון הפרות)
  * 2. Summer Bonus Opinion (חוות דעת מענק קיץ)
  * 3. Excellence Bonus Opinion (חוות דעת מענק מצויינות)
@@ -9,6 +9,9 @@
  * 5. Transferred Amounts Approval (אישור העברת סכומים)
  * 6. Going Concern Approval (הוכחת עמידת המשתתף בתנאי סעיף 2.1.8/2.2.8)
  * 7. Health Benefits Opinion (חוות דעת הבראה/מחלה/ותק)
+ * 8. Salary Payment Confirmation (אישור רו"ח בדבר תשלום השכר)
+ * 9. Management & General Costs Opinion (חוות דעת הנהלה וכלליות ותקורה)
+ * 10. Finance Costs Opinion (חוות דעת עלויות מימון)
  */
 
 // ============================================================================
@@ -204,6 +207,24 @@ export interface SalaryPaymentConfirmationVariables extends TzlulSharedData {
 }
 
 // ============================================================================
+// DOCUMENT #9: Management & General Costs Opinion (חוות דעת הנהלה וכלליות ותקורה)
+// ============================================================================
+
+export interface ManagementGeneralCostsVariables extends TzlulSharedData {
+  // No additional fields - company name is hardcoded as Tsalul
+  // Only uses document_date from TzlulSharedData
+}
+
+// ============================================================================
+// DOCUMENT #10: Finance Costs Opinion (חוות דעת עלויות מימון)
+// ============================================================================
+
+export interface FinanceCostsVariables extends TzlulSharedData {
+  // No additional fields - company name is hardcoded as Tsalul
+  // Only uses document_date from TzlulSharedData
+}
+
+// ============================================================================
 // TEMPLATE TYPE DEFINITIONS (for generated_letters table)
 // ============================================================================
 
@@ -215,7 +236,9 @@ export type TzlulTemplateType =
   | 'tzlul_transferred_amounts'     // Document #5
   | 'tzlul_going_concern'           // Document #6
   | 'tzlul_health_benefits'         // Document #7
-  | 'tzlul_salary_payment_confirmation';  // Document #8
+  | 'tzlul_salary_payment_confirmation'   // Document #8
+  | 'tzlul_management_general_costs'      // Document #9
+  | 'tzlul_finance_costs';                // Document #10
 
 /** Union type of all possible Tzlul document variables */
 export type TzlulVariables =
@@ -226,7 +249,9 @@ export type TzlulVariables =
   | TransferredAmountsVariables
   | GoingConcernVariables
   | HealthBenefitsVariables
-  | SalaryPaymentConfirmationVariables;
+  | SalaryPaymentConfirmationVariables
+  | ManagementGeneralCostsVariables
+  | FinanceCostsVariables;
 
 // ============================================================================
 // UI FORM STATE (for managing form data)
@@ -249,6 +274,8 @@ export interface TzlulFormState {
     goingConcern: Partial<GoingConcernVariables>;
     healthBenefits: Partial<HealthBenefitsVariables>;
     salaryPaymentConfirmation: Partial<SalaryPaymentConfirmationVariables>;
+    managementGeneralCosts: Partial<ManagementGeneralCostsVariables>;
+    financeCosts: Partial<FinanceCostsVariables>;
   };
 }
 
@@ -320,6 +347,18 @@ export const TZLUL_LETTER_TYPES: TzlulLetterType[] = [
     label: 'אישור רו"ח בדבר תשלום השכר',
     description: 'אישור רו"ח בדבר תשלום השכר לעובדי החברה',
     templateType: 'tzlul_salary_payment_confirmation',
+  },
+  {
+    index: 8,
+    label: 'חוות דעת הנהלה וכלליות ותקורה',
+    description: 'חוות דעת רו"ח בדבר עלויות הנהלה וכלליות ותקורה',
+    templateType: 'tzlul_management_general_costs',
+  },
+  {
+    index: 9,
+    label: 'חוות דעת עלויות מימון',
+    description: 'חוות דעת רו"ח בדבר עלויות מימון',
+    templateType: 'tzlul_finance_costs',
   },
 ];
 
@@ -428,6 +467,16 @@ export function validateSalaryPaymentConfirmation(data: Partial<SalaryPaymentCon
   );
 }
 
+/** Validate management & general costs document data */
+export function validateManagementGeneralCosts(data: Partial<ManagementGeneralCostsVariables>): data is ManagementGeneralCostsVariables {
+  return validateTzlulSharedData(data);
+}
+
+/** Validate finance costs document data */
+export function validateFinanceCosts(data: Partial<FinanceCostsVariables>): data is FinanceCostsVariables {
+  return validateTzlulSharedData(data);
+}
+
 // ============================================================================
 // DEFAULT VALUES
 // ============================================================================
@@ -486,6 +535,8 @@ export function createInitialTzlulFormState(): TzlulFormState {
         period_start: '',
         period_end: '',
       },
+      managementGeneralCosts: {},
+      financeCosts: {},
     },
   };
 }

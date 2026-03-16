@@ -26,6 +26,8 @@ import { TransferredAmountsForm } from '@/components/tzlul-approvals/forms/Trans
 import { GoingConcernForm } from '@/components/tzlul-approvals/forms/GoingConcernForm';
 import { HealthBenefitsForm } from '@/components/tzlul-approvals/forms/HealthBenefitsForm';
 import { SalaryPaymentConfirmationForm } from '@/components/tzlul-approvals/forms/SalaryPaymentConfirmationForm';
+import { ManagementGeneralCostsForm } from '@/components/tzlul-approvals/forms/ManagementGeneralCostsForm';
+import { FinanceCostsForm } from '@/components/tzlul-approvals/forms/FinanceCostsForm';
 import { SignatureIdentificationTab } from '@/components/tzlul-approvals/SignatureIdentificationTab';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
@@ -46,6 +48,8 @@ import {
   validateGoingConcern,
   validateHealthBenefits,
   validateSalaryPaymentConfirmation,
+  validateManagementGeneralCosts,
+  validateFinanceCosts,
   type TzlulFormState,
   type TzlulVariables,
 } from '@/types/tzlul-approvals.types';
@@ -182,6 +186,10 @@ export function TzlulApprovalsPage() {
         return validateHealthBenefits(mergedData);
       case 'tzlul_salary_payment_confirmation':
         return validateSalaryPaymentConfirmation(mergedData);
+      case 'tzlul_management_general_costs':
+        return validateManagementGeneralCosts(mergedData);
+      case 'tzlul_finance_costs':
+        return validateFinanceCosts(mergedData);
       default:
         return false;
     }
@@ -206,6 +214,10 @@ export function TzlulApprovalsPage() {
         return formState.documentData.healthBenefits;
       case 7:
         return formState.documentData.salaryPaymentConfirmation;
+      case 8:
+        return formState.documentData.managementGeneralCosts;
+      case 9:
+        return formState.documentData.financeCosts;
       default:
         return {};
     }
@@ -537,6 +549,38 @@ export function TzlulApprovalsPage() {
                 documentData: {
                   ...formState.documentData,
                   salaryPaymentConfirmation: data,
+                },
+              })
+            }
+            disabled={generating}
+          />
+        );
+      case 8:
+        return (
+          <ManagementGeneralCostsForm
+            value={formState.documentData.managementGeneralCosts}
+            onChange={(data) =>
+              setFormState({
+                ...formState,
+                documentData: {
+                  ...formState.documentData,
+                  managementGeneralCosts: data,
+                },
+              })
+            }
+            disabled={generating}
+          />
+        );
+      case 9:
+        return (
+          <FinanceCostsForm
+            value={formState.documentData.financeCosts}
+            onChange={(data) =>
+              setFormState({
+                ...formState,
+                documentData: {
+                  ...formState.documentData,
+                  financeCosts: data,
                 },
               })
             }

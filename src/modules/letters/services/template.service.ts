@@ -75,7 +75,9 @@ const TZLUL_LABELS: Record<TzlulTemplateType, string> = {
   'tzlul_transferred_amounts': 'אישור העברת סכומים',
   'tzlul_going_concern': 'הוכחת עמידה בתנאי עסק חי',
   'tzlul_health_benefits': 'חוות דעת הבראה/מחלה/ותק',
-  'tzlul_salary_payment_confirmation': 'אישור רו"ח בדבר תשלום השכר'
+  'tzlul_salary_payment_confirmation': 'אישור רו"ח בדבר תשלום השכר',
+  'tzlul_management_general_costs': 'חוות דעת הנהלה וכלליות ותקורה',
+  'tzlul_finance_costs': 'חוות דעת עלויות מימון'
 };
 
 export class TemplateService extends BaseService {
@@ -2479,7 +2481,9 @@ export class TemplateService extends BaseService {
       'tzlul_transferred_amounts': 'transferred-amounts.html',
       'tzlul_going_concern': 'going-concern.html',
       'tzlul_health_benefits': 'health-benefits.html',
-      'tzlul_salary_payment_confirmation': 'salary-payment-confirmation.html'
+      'tzlul_salary_payment_confirmation': 'salary-payment-confirmation.html',
+      'tzlul_management_general_costs': 'management-general-costs.html',
+      'tzlul_finance_costs': 'finance-costs.html'
     };
 
     return bodyMap[templateType];
@@ -2637,6 +2641,12 @@ export class TemplateService extends BaseService {
         // local_authority, tender_number, period_start, period_end are all simple strings
         break;
       }
+
+      case 'tzlul_management_general_costs':
+      case 'tzlul_finance_costs': {
+        // No special processing needed - only uses document_date (already processed above)
+        break;
+      }
     }
 
     return processed;
@@ -2688,6 +2698,10 @@ export class TemplateService extends BaseService {
 
       case 'tzlul_salary_payment_confirmation':
         return `<b>לכבוד</b><br/><b>החברה למשק וכלכלה של השלטון המקומי בע"מ</b><br/><b>היחידה לאכיפת זכויות עובדים</b><br/>בפקס מס': 03-5010922<br/>טל' לאישור 03-5046070<br/><br/><b>א.ג.נ,</b>`;
+
+      case 'tzlul_management_general_costs':
+      case 'tzlul_finance_costs':
+        return `<b>לכבוד</b><br/>חברת צלול ניקיון ואחזקה בע"מ<br/>ח.פ. 514327642<br/><br/><b>א.ג.נ,</b>`;
 
       default:
         return `<b>לכבוד</b><br/><br/><b>א.ג.נ,</b>`;
