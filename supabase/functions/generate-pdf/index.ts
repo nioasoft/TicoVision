@@ -162,6 +162,11 @@ serve(async (req) => {
     const baseUrl = supabaseUrl.replace('/rest/v1', '');
     const bucket = 'letter-assets-v2';
 
+    // Normalize absolute URLs from Vercel/localhost back to relative /brand/ paths
+    // This prevents broken URLs when the regex replacement matches a substring of an absolute URL
+    // e.g. "https://ticovision.vercel.app/brand/tico_signature.png" → "/brand/tico_signature.png"
+    html = html.replace(/https?:\/\/[^"'\s]*?(\/brand\/[^"'\s]+)/g, '$1');
+
     const cidToUrlMap: Record<string, string> = {
       'cid:tico_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_logo_png_new.png`,
       'cid:franco_logo_new': `${baseUrl}/storage/v1/object/public/${bucket}/Tico_franco_co.png`,
@@ -171,7 +176,7 @@ serve(async (req) => {
       'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
       'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
       'cid:tico_signature': `${baseUrl}/storage/v1/object/public/${bucket}/tico_signature.png`,
-      // Also map relative paths used by TiptapEditor toolbar
+      // Also map relative paths used by editor toolbar
       '/brand/tico_signature.png': `${baseUrl}/storage/v1/object/public/${bucket}/tico_signature.png`,
     };
 

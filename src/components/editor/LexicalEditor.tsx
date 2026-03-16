@@ -196,10 +196,10 @@ class ImageNode extends DecoratorNode<React.JSX.Element> {
           const img = domNode as HTMLImageElement;
           return {
             node: $createImageNode({
-              src: img.src,
+              src: img.getAttribute('src') || img.src,
               altText: img.alt || '',
-              width: img.width || undefined,
-              height: img.height || undefined,
+              width: Number(img.getAttribute('width')) || img.width || undefined,
+              height: Number(img.getAttribute('height')) || img.height || undefined,
             }),
           };
         },
