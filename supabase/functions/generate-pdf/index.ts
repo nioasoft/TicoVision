@@ -285,10 +285,32 @@ serve(async (req) => {
             widows: 3;
           }
 
-          /* List items stay together */
+          /* =================================
+             ORDERED & UNORDERED LISTS
+             Lexical exports Tailwind classes (list-decimal etc.)
+             which don't work in PDF — use explicit CSS instead.
+             Also handles RTL hanging indent so wrapped lines
+             align under the text, not under the number/bullet.
+             ================================= */
+          ol, ul {
+            margin: 0;
+            padding: 0;
+            padding-right: 1.5em;  /* RTL indent */
+            direction: rtl;
+          }
+          ol {
+            list-style-type: decimal;
+            list-style-position: outside;
+          }
+          ul {
+            list-style-type: disc;
+            list-style-position: outside;
+          }
           li {
             break-inside: avoid;
             page-break-inside: avoid;
+            margin-bottom: 4px;
+            padding-right: 0.3em;  /* small gap between number/bullet and text */
           }
 
           /* =================================

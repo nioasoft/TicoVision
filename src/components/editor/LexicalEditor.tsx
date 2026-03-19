@@ -143,8 +143,8 @@ const theme = {
   },
   list: {
     nested: { listitem: 'list-none' },
-    ol: 'list-decimal list-inside mr-4',
-    ul: 'list-disc list-inside mr-4',
+    ol: 'list-decimal list-outside pr-6',
+    ul: 'list-disc list-outside pr-6',
     listitem: 'mb-1',
   },
   link: 'text-blue-600 underline cursor-pointer',

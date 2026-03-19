@@ -605,6 +605,26 @@ export class TemplateService extends BaseService {
             background-color: #f3f4f6 !important; /* Light gray for headers */
             font-weight: bold !important;
         }
+
+        /* Ordered & unordered lists - hanging indent for wrapped lines */
+        .letter-body-content ol,
+        .letter-body-content ul {
+            margin: 0 !important;
+            padding: 0 !important;
+            padding-right: 1.5em !important;
+            list-style-position: outside !important;
+            direction: rtl !important;
+        }
+        .letter-body-content ol {
+            list-style-type: decimal !important;
+        }
+        .letter-body-content ul {
+            list-style-type: disc !important;
+        }
+        .letter-body-content li {
+            margin-bottom: 4px !important;
+            padding-right: 0.3em !important;
+        }
     </style>
 </head>
 <body style="margin: 0; padding: 0; direction: rtl; background-color: #ffffff; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif;">
