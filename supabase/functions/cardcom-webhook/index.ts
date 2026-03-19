@@ -199,6 +199,46 @@ serve(async (req) => {
       transactionId,
     });
 
+    // ── Shaagat HaAri fee payment ──────────────────────────────────────────────
+    // Check if this LowProfileId belongs to a shaagat eligibility check fee.
+    // These are stored directly on shaagat_eligibility_checks.payment_link.
+    const { data: shaagatCheck } = await supabase
+      .from('shaagat_eligibility_checks')
+      .select('id, tenant_id, client_id')
+      .eq('payment_link', lowProfileId)
+      .maybeSingle();
+
+    if (shaagatCheck && paymentSuccessful) {
+      const { error: shaagatUpdateError } = await supabase
+        .from('shaagat_eligibility_checks')
+        .update({
+          payment_status: 'PAID',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', shaagatCheck.id);
+
+      if (shaagatUpdateError) {
+        console.error('Error updating shaagat eligibility payment status:', shaagatUpdateError);
+      } else {
+        console.log(`✅ Shaagat eligibility check marked PAID: ${shaagatCheck.id}`);
+      }
+
+      // Log the shaagat payment event
+      await supabase.from('webhook_logs').insert({
+        source: 'cardcom',
+        event_type: 'shaagat_fee_payment_success',
+        payload: { shaagat_eligibility_check_id: shaagatCheck.id, ...webhookData },
+        processed_at: new Date().toISOString(),
+        response_sent: '-1',
+      }).then(() => {/* fire-and-forget */});
+
+      return new Response('-1', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+    // ── End shaagat branch ─────────────────────────────────────────────────────
+
     // Find transaction by LowProfileId (from payment link creation)
     const { data: existingTransaction, error: findError } = await supabase
       .from('payment_transactions')
