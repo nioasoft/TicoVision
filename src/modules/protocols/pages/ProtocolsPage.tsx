@@ -28,11 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ScrollText, User, Users, Plus, FileText, FilePlus } from 'lucide-react';
+import { ScrollText, User, UsersRound, Plus, FileText, FilePlus } from 'lucide-react';
 import { ProtocolList } from '../components/ProtocolList';
 import { ProtocolBuilder } from '../components/ProtocolBuilder';
 import { ProtocolPreview } from '../components/ProtocolPreview';
+import { RecentProtocols } from '../components/RecentProtocols';
+import type { ProtocolWithNames } from '../components/RecentProtocols';
 import { protocolService } from '../services/protocol.service';
+import { clientService } from '@/services/client.service';
 import type { Client, ClientGroup } from '@/services/client.service';
 import type { Protocol, ProtocolWithRelations } from '../types/protocol.types';
 
@@ -194,6 +197,27 @@ export function ProtocolsPage() {
     setSelectedProtocol(null);
   };
 
+  // Handle clicking a recent protocol — auto-select client/group
+  const handleRecentProtocolClick = async (protocol: ProtocolWithNames) => {
+    if (protocol.client_id) {
+      const { data } = await clientService.getById(protocol.client_id);
+      if (data) {
+        setMode('client');
+        setSelectedGroup(null);
+        setSelectedClient(data);
+      }
+    } else if (protocol.group_id) {
+      const { data } = await clientService.getGroupById(protocol.group_id);
+      if (data) {
+        setMode('group');
+        setSelectedClient(null);
+        setSelectedGroup(data);
+      }
+    }
+    setViewMode('list');
+    setSelectedProtocol(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -234,16 +258,16 @@ export function ProtocolsPage() {
           <TabsList className="flex w-full gap-2 bg-transparent p-0 h-auto">
             <TabsTrigger
               value="client"
-              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border bg-white py-2 text-xs text-gray-700 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
+              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 text-xs data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 data-[state=active]:border-blue-300 data-[state=active]:font-semibold"
             >
               <User className="h-4 w-4" />
               לפי לקוח
             </TabsTrigger>
             <TabsTrigger
               value="group"
-              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border bg-white py-2 text-xs text-gray-700 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900"
+              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border border-violet-100 bg-violet-50 text-violet-600 hover:bg-violet-100 py-2 text-xs data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 data-[state=active]:border-violet-300 data-[state=active]:font-semibold"
             >
-              <Users className="h-4 w-4" />
+              <UsersRound className="h-4 w-4" />
               לפי קבוצה
             </TabsTrigger>
           </TabsList>
@@ -282,6 +306,11 @@ export function ProtocolsPage() {
           </p>
         )}
       </div>
+
+      {/* Recent Protocols - shown when no client/group selected */}
+      {!isSelected && (
+        <RecentProtocols onSelectProtocol={handleRecentProtocolClick} />
+      )}
 
       {/* Main Content */}
       {isSelected &&
