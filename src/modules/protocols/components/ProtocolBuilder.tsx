@@ -26,10 +26,9 @@ import {
   RESPONSIBILITY_TYPES,
   CONTENT_SECTION_TYPES,
   getContentSectionTypeInfo,
-  type SaveStatusInfo,
 } from '../types/protocol.types';
 import {
-  Save,
+  Lock,
   ArrowRight,
   CalendarDays,
   FileText,
@@ -87,6 +86,7 @@ export function ProtocolBuilder({
   const [savedToFileManager, setSavedToFileManager] = useState(false);
   const [savedProtocolId, setSavedProtocolId] = useState<string | null>(protocol?.id || null);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
   const [employees, setEmployees] = useState<User[]>([]);
   const [formState, setFormState] = useState<ProtocolFormState>({
     meeting_date: format(new Date(), 'yyyy-MM-dd'),
@@ -196,10 +196,11 @@ export function ProtocolBuilder({
     setFormState((prev) => ({ ...prev, content_sections }));
   };
 
-  // Save the protocol
-  const handleSave = async () => {
+  // Save and lock the protocol
+  const handleSaveAndLock = async () => {
     setSaving(true);
     try {
+      // First save the current form state
       const { data, error } = await protocolService.saveProtocolForm(
         savedProtocolId,
         clientId,
@@ -209,6 +210,17 @@ export function ProtocolBuilder({
 
       if (error) {
         console.error('Failed to save protocol:', error);
+        toast({
+          title: 'שגיאה',
+          description: 'שמירת הפרוטוקול נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const protocolId = data?.id || savedProtocolId;
+      if (!protocolId) {
+        console.error('No protocol ID after save');
         return;
       }
 
@@ -217,12 +229,38 @@ export function ProtocolBuilder({
         setSavedProtocolId(data.id);
       }
 
+      // Then lock it
+      const { error: lockError } = await protocolService.lockProtocol(protocolId);
+      if (lockError) {
+        console.error('Failed to lock protocol:', lockError);
+        toast({
+          title: 'שגיאה',
+          description: 'נעילת הפרוטוקול נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Reset auto-save status since we just saved
       resetStatus();
+
+      toast({
+        title: 'הפרוטוקול נשמר ונעול',
+        description: 'לעריכה יש לשכפל את הפרוטוקול',
+      });
 
       onSave();
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Handle back button - check for unsaved changes
+  const handleBack = () => {
+    if (saveStatus.status === 'dirty' || saveStatus.status === 'saving') {
+      setUnsavedDialogOpen(true);
+    } else {
+      onCancel();
     }
   };
 
@@ -258,6 +296,21 @@ export function ProtocolBuilder({
 
       // Update saved protocol ID for future saves
       setSavedProtocolId(savedProtocol.id);
+
+      // Lock the protocol
+      const { error: lockError } = await protocolService.lockProtocol(savedProtocol.id);
+      if (lockError) {
+        console.error('Failed to lock protocol:', lockError);
+        toast({
+          title: 'שגיאה',
+          description: 'נעילת הפרוטוקול נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Reset auto-save status
+      resetStatus();
 
       // Then generate PDF
       const { data: pdfData, error: pdfError } = await protocolService.generateProtocolPdf(savedProtocol.id);
@@ -340,35 +393,6 @@ export function ProtocolBuilder({
     setPdfDialogOpen(false);
   };
 
-  // Save from preview and close
-  const handleSaveFromPreview = async () => {
-    setSaving(true);
-    try {
-      const { data: savedProtocol, error } = await protocolService.saveProtocolForm(
-        savedProtocolId,
-        clientId,
-        groupId,
-        formState
-      );
-
-      if (error || !savedProtocol) {
-        console.error('Failed to save protocol:', error);
-        toast({
-          title: 'שגיאה',
-          description: 'שמירת הפרוטוקול נכשלה',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setSavedProtocolId(savedProtocol.id);
-      setPreviewOpen(false);
-      onSave();
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // Group decisions by responsibility type for preview (decisions with multiple types appear in multiple groups)
   const groupedDecisions = RESPONSIBILITY_TYPES.map((typeInfo) => ({
     ...typeInfo,
@@ -391,7 +415,7 @@ export function ProtocolBuilder({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={onCancel}
+                onClick={handleBack}
               >
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -413,12 +437,12 @@ export function ProtocolBuilder({
             {/* Left side - Action buttons */}
             <div className="flex items-center gap-2">
               <Button
-                onClick={handleSave}
+                onClick={handleSaveAndLock}
                 disabled={saving}
                 className="flex items-center gap-2"
               >
-                <Save className="h-4 w-4" />
-                {saving ? 'שומר...' : 'שמירה'}
+                <Lock className="h-4 w-4" />
+                {saving ? 'שומר...' : 'שמור ונעל'}
               </Button>
               <Button
                 onClick={handlePreview}
@@ -663,12 +687,12 @@ export function ProtocolBuilder({
             </Button>
             <Button
               variant="outline"
-              onClick={handleSaveFromPreview}
+              onClick={() => { setPreviewOpen(false); handleSaveAndLock(); }}
               disabled={saving}
               className="flex items-center gap-2 flex-row-reverse"
             >
-              <Save className="h-4 w-4" />
-              {saving ? 'שומר...' : 'שמירה'}
+              <Lock className="h-4 w-4" />
+              {saving ? 'שומר...' : 'שמור ונעל'}
             </Button>
             <Button variant="ghost" onClick={() => setPreviewOpen(false)}>
               חזרה לעריכה
@@ -735,6 +759,43 @@ export function ProtocolBuilder({
             </Button>
             <Button variant="ghost" onClick={handleClosePdfDialog}>
               חזרה לעריכה
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unsaved Changes Dialog */}
+      <Dialog open={unsavedDialogOpen} onOpenChange={setUnsavedDialogOpen}>
+        <DialogContent className="text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">יש שינויים שלא נשמרו</DialogTitle>
+            <DialogDescription className="text-right">
+              יש שינויים שעדיין לא נשמרו. מה ברצונך לעשות?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 rtl:flex-row-reverse">
+            <Button
+              onClick={() => {
+                setUnsavedDialogOpen(false);
+                handleSaveAndLock();
+              }}
+              disabled={saving}
+              className="flex items-center gap-2"
+            >
+              <Lock className="h-4 w-4" />
+              שמור ונעל
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUnsavedDialogOpen(false);
+                onCancel();
+              }}
+            >
+              צא בלי לשמור
+            </Button>
+            <Button variant="ghost" onClick={() => setUnsavedDialogOpen(false)}>
+              ביטול
             </Button>
           </DialogFooter>
         </DialogContent>

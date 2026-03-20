@@ -37,9 +37,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   MoreHorizontal,
   Pencil,
+  Eye,
   Copy,
   Trash2,
   FileEdit,
+  Lock,
   ScrollText,
   FileDown,
   Mail,
@@ -134,10 +136,17 @@ export function ProtocolList({
                 )}
               </TableCell>
               <TableCell className="rtl:text-right">
-                <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                  <FileEdit className="h-3 w-3" />
-                  טיוטה
-                </Badge>
+                {protocol.status === 'locked' ? (
+                  <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                    <Lock className="h-3 w-3" />
+                    נעול
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                    <FileEdit className="h-3 w-3" />
+                    טיוטה
+                  </Badge>
+                )}
               </TableCell>
               <TableCell className="rtl:text-right text-gray-500">
                 {format(new Date(protocol.created_at), 'dd/MM/yyyy', { locale: he })}
@@ -150,27 +159,42 @@ export function ProtocolList({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" dir="rtl">
-                    <DropdownMenuItem onClick={() => onEdit(protocol.id)}>
-                      <Pencil className="h-4 w-4 ml-2" />
-                      עריכה
-                    </DropdownMenuItem>
-                    {onGeneratePdf && (
-                      <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
-                        <FileDown className="h-4 w-4 ml-2" />
-                        ייצוא PDF
-                      </DropdownMenuItem>
+                    {protocol.status === 'locked' ? (
+                      <>
+                        <DropdownMenuItem onClick={() => onView(protocol.id)}>
+                          <Eye className="h-4 w-4 ml-2" />
+                          צפייה
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
+                          <Copy className="h-4 w-4 ml-2" />
+                          שכפול לעריכה
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <>
+                        <DropdownMenuItem onClick={() => onEdit(protocol.id)}>
+                          <Pencil className="h-4 w-4 ml-2" />
+                          עריכה
+                        </DropdownMenuItem>
+                        {onGeneratePdf && (
+                          <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
+                            <FileDown className="h-4 w-4 ml-2" />
+                            ייצוא PDF
+                          </DropdownMenuItem>
+                        )}
+                        {onSendEmail && (
+                          <DropdownMenuItem onClick={() => onSendEmail(protocol.id)}>
+                            <Mail className="h-4 w-4 ml-2" />
+                            שלח במייל
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
+                          <Copy className="h-4 w-4 ml-2" />
+                          שכפול
+                        </DropdownMenuItem>
+                      </>
                     )}
-                    {onSendEmail && (
-                      <DropdownMenuItem onClick={() => onSendEmail(protocol.id)}>
-                        <Mail className="h-4 w-4 ml-2" />
-                        שלח במייל
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
-                      <Copy className="h-4 w-4 ml-2" />
-                      שכפול
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => handleDeleteClick(protocol)}
