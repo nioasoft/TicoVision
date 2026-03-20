@@ -30,29 +30,49 @@ interface RecentProtocolsProps {
   onSelectProtocol: (protocol: ProtocolWithNames) => void;
 }
 
+const PAGE_SIZE = 50;
+
 export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
   const [protocols, setProtocols] = useState<ProtocolWithNames[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const fetchPage = async (pageNum: number, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    try {
+      const { data, error } = await protocolService.getProtocols({ page: pageNum, pageSize: PAGE_SIZE });
+      if (error) {
+        console.error('Failed to fetch recent protocols:', error);
+        return;
+      }
+      if (data) {
+        const fetched = data.protocols as ProtocolWithNames[];
+        setProtocols((prev) => append ? [...prev, ...fetched] : fetched);
+        setTotal(data.total);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRecent = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await protocolService.getProtocols({ pageSize: 10 });
-        if (error) {
-          console.error('Failed to fetch recent protocols:', error);
-          return;
-        }
-        if (data) {
-          setProtocols(data.protocols as ProtocolWithNames[]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRecent();
+    fetchPage(1);
   }, []);
+
+  const hasMore = protocols.length < total;
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPage(nextPage, true);
+  };
 
   const getDisplayName = (protocol: ProtocolWithNames): string => {
     if (protocol.client) {
@@ -109,9 +129,9 @@ export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
       <div className="flex items-center gap-2 px-4 py-3 border-b">
         <Clock className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-sm font-semibold">פרוטוקולים אחרונים</h3>
-        <span className="text-xs text-muted-foreground">({protocols.length})</span>
+        <span className="text-xs text-muted-foreground">({total})</span>
       </div>
-      <div className="divide-y">
+      <div className="divide-y max-h-[600px] overflow-y-auto">
         {protocols.map((protocol) => (
           <button
             key={protocol.id}
@@ -142,6 +162,18 @@ export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
             </Badge>
           </button>
         ))}
+        {hasMore && (
+          <div className="px-4 py-3 text-center">
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium disabled:text-gray-400"
+            >
+              {loadingMore ? 'טוען...' : `טען עוד (${protocols.length} מתוך ${total})`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
