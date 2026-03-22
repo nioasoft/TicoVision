@@ -91,6 +91,7 @@ import {
   Trash2,
   Palette,
   Stamp,
+  PaintBucket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -813,6 +814,50 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
       }
     });
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, data.url);
+  };
+
+  // Format Painter state
+  interface CopiedStyle {
+    format: number; // bitmask for bold, italic, underline, etc.
+    styles: Record<string, string>; // CSS properties
+  }
+  const [copiedStyle, setCopiedStyle] = useState<CopiedStyle | null>(null);
+
+  const copyStyle = () => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const format = selection.format;
+        const styles: Record<string, string> = {};
+
+        // Read all CSS style properties from selection
+        const styleProps = ['font-size', 'line-height', 'color', 'background-color', 'text-transform', 'letter-spacing'];
+        for (const prop of styleProps) {
+          const val = $getSelectionStyleValueForProperty(selection, prop, '');
+          if (val) {
+            styles[prop] = val;
+          }
+        }
+
+        setCopiedStyle({ format, styles });
+      }
+    });
+  };
+
+  const pasteStyle = () => {
+    if (!copiedStyle) return;
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        // Apply text format (bold, italic, underline, etc.)
+        selection.setFormat(copiedStyle.format);
+
+        // Apply CSS styles
+        if (Object.keys(copiedStyle.styles).length > 0) {
+          $patchStyleText(selection, copiedStyle.styles);
+        }
+      }
+    });
   };
 
   const clearFormatting = () => {
@@ -1997,6 +2042,27 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ToolbarSeparator />
+
+      {/* Format Painter */}
+      <div className="flex items-center gap-0.5">
+        <ToolbarButton
+          onClick={copyStyle}
+          title="העתק עיצוב"
+          className={copiedStyle ? 'bg-blue-100 text-blue-700' : ''}
+        >
+          <Paintbrush className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={pasteStyle}
+          title="הדבק עיצוב"
+          disabled={!copiedStyle}
+          className={!copiedStyle ? 'opacity-40' : ''}
+        >
+          <PaintBucket className="h-4 w-4" />
+        </ToolbarButton>
+      </div>
 
       <ToolbarSeparator />
 
