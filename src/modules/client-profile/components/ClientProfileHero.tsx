@@ -109,6 +109,17 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
             >
               {client.company_status === 'inactive' ? 'חברה רדומה' : 'חברה פעילה'}
             </Badge>
+            {client.google_drive_link && (
+              <a
+                href={client.google_drive_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-0.5 text-sm font-medium text-blue-700 border border-blue-300 hover:bg-blue-100 transition-colors cursor-pointer"
+              >
+                <FolderOpen className="h-4 w-4 text-blue-600" />
+                Google Drive
+              </a>
+            )}
           </div>
 
           {/* Row 2: Tax ID + type + group */}
@@ -184,16 +195,6 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
 
         {/* Left side - actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {client.google_drive_link && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(client.google_drive_link, '_blank')}
-            >
-              <FolderOpen className="h-4 w-4 ms-1.5 text-green-600" />
-              Drive
-            </Button>
-          )}
           <Button variant="outline" size="sm" onClick={onEdit}>
             <Pencil className="h-4 w-4 ms-1.5" />
             עריכה
