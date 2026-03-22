@@ -317,6 +317,15 @@ function App() {
                       } />
                     </Route>
 
+                    {/* Protocol Management System - admin and accountant */}
+                    <Route element={<RoleBasedRoute allowedRoles={['admin', 'accountant']} />}>
+                      <Route path="/protocols" element={
+                        <ErrorBoundary>
+                          <ProtocolsPage />
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+
                     {/* Admin-only routes */}
                     <Route element={<RoleBasedRoute allowedRoles={['admin']} />}>
                       <Route path="/dashboard" element={
@@ -404,13 +413,6 @@ function App() {
                       <Route path="/broadcast" element={
                         <ErrorBoundary>
                           <BroadcastPage />
-                        </ErrorBoundary>
-                      } />
-
-                      {/* Protocol Management System */}
-                      <Route path="/protocols" element={
-                        <ErrorBoundary>
-                          <ProtocolsPage />
                         </ErrorBoundary>
                       } />
 
