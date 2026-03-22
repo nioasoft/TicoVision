@@ -39,6 +39,7 @@ import { PhoneNumbersManager } from '@/components/PhoneNumbersManager';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import { FileDisplayWidget } from '@/components/files/FileDisplayWidget';
 import { ClientSelector } from '@/components/ClientSelector';
+import { Combobox } from '@/components/ui/combobox';
 import { ClientBalanceTab } from '@/modules/annual-balance/components/ClientBalanceTab';
 import { MarkMaterialsDialog } from '@/modules/annual-balance/components/MarkMaterialsDialog';
 import type { AnnualBalanceSheetWithClient } from '@/modules/annual-balance/types/annual-balance.types';
@@ -678,7 +679,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <Label htmlFor="group_id" className="text-right block mb-2">
                   קבוצה
                 </Label>
-                <Select
+                <Combobox
                   value={formData.group_id || 'NO_GROUP'}
                   onValueChange={(value) => {
                     handleFormChange('group_id', value === 'NO_GROUP' ? null : value);
@@ -689,19 +690,15 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       handleFormChange('payment_role', 'independent');
                     }
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[300px] overflow-y-auto">
-                    <SelectItem value="NO_GROUP">ללא קבוצה</SelectItem>
-                    {groups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.group_name_hebrew}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={[
+                    { value: 'NO_GROUP', label: 'ללא קבוצה' },
+                    ...groups.map((group) => ({
+                      value: group.id,
+                      label: group.group_name_hebrew,
+                    })),
+                  ]}
+                  emptyText="לא נמצאו קבוצות"
+                />
               </div>
 
               {/* Payment Role - conditional if group selected */}
@@ -890,28 +887,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <div></div>
               )}
 
-              {/* Row 6: Folder Responsibility, Status, Checkboxes (5 cols in one row) */}
-              <div className="col-span-3 grid grid-cols-5 gap-4">
-                <div>
-                  <Label htmlFor="collection_responsibility" className="text-right block mb-2">
-                    אחריות/אמא לתיק
-                  </Label>
-                  <Select
-                    value={formData.collection_responsibility}
-                    onValueChange={(value: 'tiko' | 'shani') =>
-                      handleFormChange('collection_responsibility', value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tiko">תיקו</SelectItem>
-                      <SelectItem value="shani">שני</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
+              {/* Row 6: Status, Checkboxes (4 cols in one row) */}
+              <div className="col-span-3 grid grid-cols-4 gap-4">
                 <div>
                   <Label htmlFor="status" className="text-right block mb-2">
                     סטטוס
