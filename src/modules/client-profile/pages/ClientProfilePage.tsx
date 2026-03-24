@@ -51,7 +51,12 @@ export default function ClientProfilePage() {
 
   const handleEditSubmit = useCallback(async (data: CreateClientDto) => {
     if (!client) return false;
-    const result = await clientService.update(client.id, data);
+    // Don't send tax_id if unchanged (avoids re-validation of old tax IDs that fail Luhn)
+    const updateData = { ...data };
+    if (updateData.tax_id === client.tax_id) {
+      delete updateData.tax_id;
+    }
+    const result = await clientService.update(client.id, updateData);
     if (result.error) return false;
     setEditDialogOpen(false);
     refresh();

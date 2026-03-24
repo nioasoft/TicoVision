@@ -190,6 +190,7 @@ export interface CreateClientDto {
   is_retainer?: boolean; // NEW: לקוח ריטיינר - מקבל מכתבי E1/E2
   group_id?: string;
   payment_role?: PaymentRole; // NEW: תפקיד תשלום בקבוצה
+  payer_client_id?: string | null; // לקוח שמשלם עבור לקוח זה
   shareholders?: string[];
   collection_responsibility?: CollectionResponsibility;
   // Additional fields
