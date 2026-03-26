@@ -82,7 +82,7 @@ export function LetterHistoryPage() {
   // ⭐ NEW: View mode and sorting
   type ViewMode = 'flat' | 'by_client' | 'by_date';
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
-  const [sortField, setSortField] = useState<'created_at' | 'subject' | 'client_name'>('created_at');
+  const [sortField, setSortField] = useState<'updated_at' | 'created_at' | 'subject' | 'client_name'>('updated_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Pagination
@@ -495,26 +495,26 @@ export function LetterHistoryPage() {
     const grouped = new Map<string, LetterHistoryItem[]>();
 
     letters.forEach(letter => {
-      const createdDate = new Date(letter.created_at);
+      const displayDate = new Date(letter.updated_at || letter.created_at);
       let dateKey: string;
       let dateLabel: string;
 
-      if (isToday(createdDate)) {
+      if (isToday(displayDate)) {
         dateKey = 'today';
         dateLabel = 'היום';
-      } else if (isYesterday(createdDate)) {
+      } else if (isYesterday(displayDate)) {
         dateKey = 'yesterday';
         dateLabel = 'אתמול';
-      } else if (isThisWeek(createdDate)) {
+      } else if (isThisWeek(displayDate)) {
         dateKey = 'this-week';
         dateLabel = 'השבוע';
-      } else if (isThisMonth(createdDate)) {
+      } else if (isThisMonth(displayDate)) {
         dateKey = 'this-month';
         dateLabel = 'החודש';
       } else {
-        const monthKey = format(createdDate, 'yyyy-MM');
+        const monthKey = format(displayDate, 'yyyy-MM');
         dateKey = monthKey;
-        dateLabel = format(createdDate, 'MMMM yyyy', { locale: he });
+        dateLabel = format(displayDate, 'MMMM yyyy', { locale: he });
       }
 
       if (!grouped.has(dateKey)) {
@@ -530,7 +530,7 @@ export function LetterHistoryPage() {
         key,
         label: order.includes(key)
           ? (key === 'today' ? 'היום' : key === 'yesterday' ? 'אתמול' : key === 'this-week' ? 'השבוע' : 'החודש')
-          : format(new Date(letters[0].created_at), 'MMMM yyyy', { locale: he }),
+          : format(new Date(letters[0].updated_at || letters[0].created_at), 'MMMM yyyy', { locale: he }),
         letters,
         count: letters.length
       }))
@@ -870,6 +870,7 @@ export function LetterHistoryPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rtl:text-right">
+                  <SelectItem value="updated_at">עדכון אחרון</SelectItem>
                   <SelectItem value="created_at">תאריך יצירה</SelectItem>
                   <SelectItem value="subject">נושא</SelectItem>
                   <SelectItem value="client_name">שם לקוח</SelectItem>

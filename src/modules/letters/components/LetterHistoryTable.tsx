@@ -186,7 +186,7 @@ export function LetterHistoryTable({
             <TableHead className="rtl:text-right ltr:text-left">סוג מכתב</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">לקוח</TableHead>
             <TableHead className="rtl:text-right ltr:text-left">קבוצה</TableHead>
-            <TableHead className="rtl:text-right ltr:text-left">תאריך</TableHead>
+            <TableHead className="rtl:text-right ltr:text-left">עדכון אחרון</TableHead>
             <TableHead className="rtl:text-right ltr:text-left w-[80px]">גרסה</TableHead>
           </TableRow>
         </TableHeader>
@@ -354,24 +354,30 @@ export function LetterHistoryTable({
                 )}
               </TableCell>
 
-              {/* Date */}
+              {/* Date - show updated_at (most recent activity) */}
               <TableCell className="rtl:text-right ltr:text-left">
-                <div className="text-sm">
-                  {letter.sent_at
-                    ? formatIsraeliDate(new Date(letter.sent_at))
-                    : formatIsraeliDate(new Date(letter.created_at))}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {letter.sent_at
-                    ? new Date(letter.sent_at).toLocaleTimeString('he-IL', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : new Date(letter.created_at).toLocaleTimeString('he-IL', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                </div>
+                {(() => {
+                  const displayDate = new Date(letter.updated_at || letter.sent_at || letter.created_at);
+                  const wasEdited = letter.updated_at && letter.updated_at !== letter.created_at;
+                  return (
+                    <>
+                      <div className="text-sm">
+                        {formatIsraeliDate(displayDate)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {displayDate.toLocaleTimeString('he-IL', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                        {wasEdited && (
+                          <span className="text-blue-500 ms-1" title={`נוצר: ${formatIsraeliDate(new Date(letter.created_at))}`}>
+                            (נערך)
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </TableCell>
 
               {/* Version */}
