@@ -31,7 +31,6 @@ import {
   ListFilter,
   Scale,
   MessageCircle,
-  Search,
   Contact,
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -48,7 +47,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Input } from '@/components/ui/input';
 import { registrationService } from '@/services/registration.service';
 import TenantSwitcher from '@/components/TenantSwitcher';
 import { authService } from '@/services/auth.service';
@@ -586,20 +584,6 @@ export function MainLayout() {
                   className="h-8 w-auto"
                 />
                 <span className="text-gray-500 hidden sm:inline">מערכת ניהול משרד רואי חשבון</span>
-              </div>
-            </div>
-
-            {/* Center - Search */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  type="search"
-                  placeholder="חיפוש"
-                  className="pl-10"
-                  style={{ borderRadius: '9999px', backgroundColor: 'white', borderColor: '#d1d5db' }}
-                  dir="rtl"
-                />
               </div>
             </div>
 
