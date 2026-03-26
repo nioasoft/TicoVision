@@ -16,6 +16,7 @@ import {
   $getRoot,
   $createParagraphNode,
   $createTextNode,
+  $isTextNode,
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   UNDO_COMMAND,
@@ -453,6 +454,159 @@ function preprocessTipTapHtml(html: string): string {
   return result;
 }
 
+/**
+ * Inline styles that Lexical's $generateNodesFromDOM does NOT import from
+ * <span style="..."> elements. We preserve them after import by walking
+ * the DOM and the Lexical tree in parallel.
+ */
+const PRESERVED_STYLE_PROPS = ['color', 'background-color', 'font-size', 'line-height', 'letter-spacing', 'text-transform'];
+
+/**
+ * Extract inline style properties we care about from a DOM element.
+ * Returns a style string like "color: #BB0B0B; font-size: 18px" or empty string.
+ */
+function extractPreservedStyles(el: HTMLElement): string {
+  const parts: string[] = [];
+  for (const prop of PRESERVED_STYLE_PROPS) {
+    const val = el.style.getPropertyValue(prop);
+    if (val) {
+      parts.push(`${prop}: ${val}`);
+    }
+  }
+  return parts.join('; ');
+}
+
+/**
+ * Pre-process HTML before Lexical import: bake inline styles from <span>
+ * ancestor elements into data-attributes on leaf text wrappers, so we can
+ * recover them after $generateNodesFromDOM (which ignores inline styles).
+ *
+ * Strategy: walk all <span> elements with relevant inline styles and add a
+ * `data-lexical-style` attribute. After import, walk TextNodes and apply styles.
+ */
+function markStyledSpans(dom: Document): void {
+  dom.querySelectorAll('span[style]').forEach(el => {
+    if (el instanceof HTMLElement) {
+      const styles = extractPreservedStyles(el);
+      if (styles) {
+        el.setAttribute('data-lexical-style', styles);
+      }
+    }
+  });
+  // Also handle <p> and <div> with background-color (color blocks)
+  dom.querySelectorAll('p[style], div[style]').forEach(el => {
+    if (el instanceof HTMLElement) {
+      const bg = el.style.getPropertyValue('background-color');
+      if (bg) {
+        el.setAttribute('data-lexical-block-style', `background-color: ${bg}`);
+      }
+    }
+  });
+}
+
+/**
+ * After Lexical import, walk the root tree and apply inline styles that
+ * $generateNodesFromDOM dropped. Uses a parallel DOM walk to match TextNodes
+ * with their original styled spans.
+ */
+function $applyStylesFromDOM(root: ReturnType<typeof $getRoot>, dom: Document): void {
+  // Collect all text content with styles from the DOM
+  const styledRanges: Array<{ text: string; style: string }> = [];
+
+  function walkDOM(node: Node, inheritedStyle: string) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      let currentStyle = inheritedStyle;
+
+      // Check for our marker attribute
+      const spanStyle = el.getAttribute('data-lexical-style');
+      if (spanStyle) {
+        // Merge with inherited (span style takes precedence)
+        const inheritedParts = inheritedStyle ? inheritedStyle.split('; ').filter(Boolean) : [];
+        const spanParts = spanStyle.split('; ').filter(Boolean);
+        const merged = new Map<string, string>();
+        for (const part of inheritedParts) {
+          const [k, v] = part.split(': ');
+          if (k && v) merged.set(k.trim(), v.trim());
+        }
+        for (const part of spanParts) {
+          const [k, v] = part.split(': ');
+          if (k && v) merged.set(k.trim(), v.trim());
+        }
+        currentStyle = Array.from(merged.entries()).map(([k, v]) => `${k}: ${v}`).join('; ');
+      }
+
+      for (const child of Array.from(el.childNodes)) {
+        walkDOM(child, currentStyle);
+      }
+    } else if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+      const text = node.textContent;
+      if (text.trim() && inheritedStyle) {
+        styledRanges.push({ text, style: inheritedStyle });
+      }
+    }
+  }
+
+  walkDOM(dom.body, '');
+
+  if (styledRanges.length === 0) return;
+
+  // Build a map from text content to style for quick lookup
+  // Use a position-based approach: consume styled ranges as we walk TextNodes
+  let rangeIdx = 0;
+  let rangeOffset = 0;
+
+  // Walk all text nodes in the Lexical tree
+  function walkLexical(node: LexicalNode) {
+    if ($isTextNode(node)) {
+      const textContent = node.getTextContent();
+      if (!textContent || rangeIdx >= styledRanges.length) return;
+
+      // Try to match this TextNode against the current styled range
+      const currentRange = styledRanges[rangeIdx];
+      const remainingRangeText = currentRange.text.slice(rangeOffset);
+
+      if (remainingRangeText.startsWith(textContent) || textContent.startsWith(remainingRangeText)) {
+        // Match found - apply the style if node doesn't already have one
+        const existingStyle = node.getStyle();
+        if (!existingStyle && currentRange.style) {
+          node.setStyle(currentRange.style);
+        }
+
+        // Advance position
+        rangeOffset += textContent.length;
+        if (rangeOffset >= currentRange.text.length) {
+          rangeIdx++;
+          rangeOffset = 0;
+        }
+      } else {
+        // No match - try to find this text in upcoming ranges
+        for (let i = rangeIdx; i < styledRanges.length; i++) {
+          const range = styledRanges[i];
+          if (range.text.includes(textContent)) {
+            if (!node.getStyle() && range.style) {
+              node.setStyle(range.style);
+            }
+            rangeIdx = i;
+            rangeOffset = range.text.indexOf(textContent) + textContent.length;
+            if (rangeOffset >= range.text.length) {
+              rangeIdx++;
+              rangeOffset = 0;
+            }
+            break;
+          }
+        }
+      }
+    } else if ('getChildren' in node && typeof node.getChildren === 'function') {
+      for (const child of (node as { getChildren: () => LexicalNode[] }).getChildren()) {
+        walkLexical(child);
+      }
+    }
+  }
+
+  walkLexical(root);
+}
+
 // Initial Value Plugin - sets editor content from HTML value prop
 function InitialValuePlugin({ value, hasSetInitial }: { value?: string; hasSetInitial: React.MutableRefObject<boolean> }) {
   const [editor] = useLexicalComposerContext();
@@ -465,10 +619,17 @@ function InitialValuePlugin({ value, hasSetInitial }: { value?: string; hasSetIn
         const processedHtml = preprocessTipTapHtml(value);
         const parser = new DOMParser();
         const dom = parser.parseFromString(processedHtml, 'text/html');
+
+        // Mark styled spans before import so we can recover styles after
+        markStyledSpans(dom);
+
         const nodes = $generateNodesFromDOM(editor, dom);
         const root = $getRoot();
         root.clear();
         root.append(...nodes);
+
+        // Recover inline styles that $generateNodesFromDOM dropped
+        $applyStylesFromDOM(root, dom);
       });
     }
   }, [editor, value, hasSetInitial]);
