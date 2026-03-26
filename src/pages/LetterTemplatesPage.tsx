@@ -109,7 +109,7 @@ export function LetterTemplatesPage() {
   const editLetterId = (location.state as { editLetterId?: string } | null)?.editLetterId || null;
 
   return (
-    <div dir="rtl" className="flex flex-col h-[calc(100vh-80px)]">
+    <div dir="rtl" className="-m-6 flex flex-col min-h-[calc(100vh-80px)]">
       {/* Docs-style top bar */}
       <DocumentTopBar
         letterName={letterName}
@@ -129,7 +129,7 @@ export function LetterTemplatesPage() {
       />
 
       {/* Editor content */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 px-6 py-4">
         <UniversalLetterBuilder
           ref={builderRef}
           editLetterId={editLetterId}

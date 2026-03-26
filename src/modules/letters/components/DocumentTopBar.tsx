@@ -156,7 +156,7 @@ export function DocumentTopBar({
   return (
     <div
       dir="rtl"
-      className="sticky top-0 z-40 flex h-[52px] items-center gap-3 border-b border-gray-200 bg-white px-4 py-2"
+      className="flex h-[52px] items-center gap-3 border-b border-gray-200 bg-white px-4 py-2 flex-shrink-0"
     >
       {/* Back button */}
       <Button
