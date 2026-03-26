@@ -17,6 +17,7 @@ import {
   $createParagraphNode,
   $createTextNode,
   $isTextNode,
+  ParagraphNode,
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   UNDO_COMMAND,
@@ -28,7 +29,7 @@ import {
   KEY_DOWN_COMMAND,
   DecoratorNode,
 } from 'lexical';
-import type { EditorState, LexicalEditor as LexicalEditorType, RangeSelection, NodeKey, SerializedLexicalNode, Spread, DOMConversionMap, DOMExportOutput, LexicalNode } from 'lexical';
+import type { EditorState, LexicalEditor as LexicalEditorType, RangeSelection, NodeKey, SerializedLexicalNode, Spread, DOMConversionMap, DOMExportOutput, LexicalNode, ElementFormatType, EditorConfig } from 'lexical';
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
@@ -156,6 +157,128 @@ const theme = {
   tableCell: 'border border-gray-300 p-2 min-w-[60px] text-right align-top',
   tableCellHeader: 'border border-gray-300 p-2 min-w-[60px] text-right align-top bg-gray-100 font-bold',
 };
+
+// ========== Styled Paragraph Node ==========
+// Extends ParagraphNode to support block-level inline styles (background-color, padding, etc.)
+// This is needed because Lexical's built-in ParagraphNode only preserves text-align.
+
+const BLOCK_STYLE_PROPS = ['background-color', 'padding', 'border-radius', 'margin'];
+
+function extractBlockStyles(el: HTMLElement): string {
+  const parts: string[] = [];
+  for (const prop of BLOCK_STYLE_PROPS) {
+    const val = el.style.getPropertyValue(prop);
+    if (val) parts.push(`${prop}: ${val}`);
+  }
+  return parts.join('; ');
+}
+
+type SerializedStyledParagraphNode = Spread<{ blockStyle: string }, ReturnType<ParagraphNode['exportJSON']>>;
+
+class StyledParagraphNode extends ParagraphNode {
+  __blockStyle: string;
+
+  static getType(): string {
+    return 'styled-paragraph';
+  }
+
+  static clone(node: StyledParagraphNode): StyledParagraphNode {
+    const clone = new StyledParagraphNode(node.__blockStyle, node.__key);
+    return clone;
+  }
+
+  constructor(blockStyle?: string, key?: NodeKey) {
+    super(key);
+    this.__blockStyle = blockStyle || '';
+  }
+
+  setBlockStyle(style: string): this {
+    const self = this.getWritable() as StyledParagraphNode;
+    self.__blockStyle = style;
+    return self as this;
+  }
+
+  getBlockStyle(): string {
+    return this.__blockStyle;
+  }
+
+  createDOM(config: EditorConfig): HTMLElement {
+    const dom = super.createDOM(config);
+    if (this.__blockStyle) {
+      dom.style.cssText += (dom.style.cssText ? '; ' : '') + this.__blockStyle;
+    }
+    return dom;
+  }
+
+  updateDOM(prevNode: StyledParagraphNode, dom: HTMLElement, config: EditorConfig): boolean {
+    const parentUpdated = super.updateDOM(prevNode, dom, config);
+    if (prevNode.__blockStyle !== this.__blockStyle) {
+      // Re-apply: clear existing block styles then set new ones
+      for (const prop of BLOCK_STYLE_PROPS) {
+        dom.style.removeProperty(prop);
+      }
+      if (this.__blockStyle) {
+        for (const part of this.__blockStyle.split('; ')) {
+          const colonIdx = part.indexOf(': ');
+          if (colonIdx > 0) {
+            dom.style.setProperty(part.slice(0, colonIdx).trim(), part.slice(colonIdx + 2).trim());
+          }
+        }
+      }
+      return true;
+    }
+    return parentUpdated;
+  }
+
+  exportDOM(editor: LexicalEditorType): DOMExportOutput {
+    const result = super.exportDOM(editor);
+    if (result.element && this.__blockStyle && result.element instanceof HTMLElement) {
+      result.element.style.cssText += (result.element.style.cssText ? '; ' : '') + this.__blockStyle;
+    }
+    return result;
+  }
+
+  static importDOM(): DOMConversionMap | null {
+    return {
+      p: () => ({
+        conversion: (element: HTMLElement) => {
+          const blockStyle = extractBlockStyles(element);
+          const node = new StyledParagraphNode(blockStyle);
+          // Preserve text alignment from element
+          if (element.style.textAlign) {
+            node.setFormat(element.style.textAlign as ElementFormatType);
+          }
+          return { node };
+        },
+        priority: 1, // Override default ParagraphNode handler (priority 0)
+      }),
+    };
+  }
+
+  exportJSON(): SerializedStyledParagraphNode {
+    return {
+      ...super.exportJSON(),
+      type: 'styled-paragraph',
+      blockStyle: this.__blockStyle,
+    };
+  }
+
+  static importJSON(json: SerializedStyledParagraphNode): StyledParagraphNode {
+    const node = new StyledParagraphNode(json.blockStyle);
+    node.setFormat(json.format);
+    node.setIndent(json.indent);
+    node.setDirection(json.direction);
+    return node;
+  }
+}
+
+function $createStyledParagraphNode(blockStyle?: string): StyledParagraphNode {
+  return new StyledParagraphNode(blockStyle);
+}
+
+function $isStyledParagraphNode(node: LexicalNode | null | undefined): node is StyledParagraphNode {
+  return node instanceof StyledParagraphNode;
+}
 
 // ========== Image Node ==========
 type SerializedImageNode = Spread<
@@ -1439,16 +1562,26 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
       });
 
       blockNodes.forEach(blockNode => {
-        const dom = editor.getElementByKey(blockNode.getKey());
-        if (dom) {
+        // Use StyledParagraphNode's setBlockStyle for proper persistence
+        if ($isStyledParagraphNode(blockNode)) {
           if (color) {
-            (dom as HTMLElement).style.backgroundColor = color;
-            (dom as HTMLElement).style.padding = '8px 12px';
-            (dom as HTMLElement).style.borderRadius = '4px';
+            blockNode.setBlockStyle(`background-color: ${color}; padding: 8px 12px; border-radius: 4px`);
           } else {
-            (dom as HTMLElement).style.backgroundColor = '';
-            (dom as HTMLElement).style.padding = '';
-            (dom as HTMLElement).style.borderRadius = '';
+            blockNode.setBlockStyle('');
+          }
+        } else {
+          // Fallback for non-paragraph blocks (headings, etc.) - apply via DOM
+          const dom = editor.getElementByKey(blockNode.getKey());
+          if (dom) {
+            if (color) {
+              (dom as HTMLElement).style.backgroundColor = color;
+              (dom as HTMLElement).style.padding = '8px 12px';
+              (dom as HTMLElement).style.borderRadius = '4px';
+            } else {
+              (dom as HTMLElement).style.backgroundColor = '';
+              (dom as HTMLElement).style.padding = '';
+              (dom as HTMLElement).style.borderRadius = '';
+            }
           }
         }
       });
@@ -2213,6 +2346,11 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
     theme,
     onError,
     nodes: [
+      StyledParagraphNode,
+      {
+        replace: ParagraphNode,
+        with: () => new StyledParagraphNode(),
+      },
       HeadingNode,
       QuoteNode,
       ListNode,
