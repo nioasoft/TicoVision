@@ -30,6 +30,7 @@ import {
   Trash2,
   CheckSquare,
   X,
+  FilePlus,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { letterHistoryService } from '@/services/letter-history.service';
@@ -48,6 +49,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, Filter, List, Users, Calendar as CalendarListIcon, ArrowUpDown } from 'lucide-react';
+import { formatIsraeliDate } from '@/lib/formatters';
 import { format, isToday, isYesterday, isThisWeek, isThisMonth, startOfDay } from 'date-fns';
 import { he } from 'date-fns/locale';
 
@@ -107,6 +109,9 @@ export function LetterHistoryPage() {
     opened: 0,
   });
 
+  // Recent letters for "Google Docs home" cards
+  const [recentLetters, setRecentLetters] = useState<LetterHistoryItem[]>([]);
+
   /**
    * Load data on mount and when filters change
    */
@@ -114,6 +119,13 @@ export function LetterHistoryPage() {
     loadData();
     loadStatistics();
   }, [activeTab, searchQuery, templateFilter, dateFilter, showOnlyFeeLetters, selectedClientId, selectedGroupId, selectedStatuses, dateFrom, dateTo, currentPage, sortField, sortDirection]);
+
+  /**
+   * Load recent letters on mount (for "Google Docs home" cards)
+   */
+  useEffect(() => {
+    loadRecentLetters();
+  }, []);
 
   /**
    * Load groups for group filter
@@ -232,6 +244,22 @@ export function LetterHistoryPage() {
       }
     } catch (error) {
       console.error('Error loading statistics:', error);
+    }
+  };
+
+  /**
+   * Load recent 5 letters for the "Recent Documents" section
+   */
+  const loadRecentLetters = async () => {
+    try {
+      const { data } = await letterHistoryService.getAllLetters(
+        {},
+        { page: 1, pageSize: 5 },
+        { field: 'updated_at', direction: 'desc' }
+      );
+      if (data) setRecentLetters(data);
+    } catch (error) {
+      console.error('Error loading recent letters:', error);
     }
   };
 
@@ -548,15 +576,53 @@ export function LetterHistoryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight rtl:text-right ltr:text-left">
-          היסטוריית מכתבים
-        </h1>
-        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Yesterday — All My Troubles Seemed So Far Away</p>
-        <p className="text-muted-foreground rtl:text-right ltr:text-left">
-          צפייה ושליחה מחדש של מכתבים שנשלחו וטיוטות
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight rtl:text-right ltr:text-left">
+            היסטוריית מכתבים
+          </h1>
+          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Yesterday — All My Troubles Seemed So Far Away</p>
+          <p className="text-muted-foreground rtl:text-right ltr:text-left">
+            צפייה ושליחה מחדש של מכתבים שנשלחו וטיוטות
+          </p>
+        </div>
+        <Button
+          onClick={() => navigate('/letter-templates')}
+          className="gap-2"
+        >
+          <FilePlus className="h-4 w-4" />
+          מכתב חדש
+        </Button>
       </div>
+
+      {/* Recent Documents - Cards */}
+      {!loading && recentLetters.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">מסמכים אחרונים</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {recentLetters.map(letter => (
+              <button
+                key={letter.id}
+                onClick={() => navigate('/letter-templates', { state: { editLetterId: letter.id } })}
+                className="group text-right p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all bg-white"
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate">
+                    {letter.subject || 'ללא שם'}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {letter.client_company || letter.client_name || 'כללי'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatIsraeliDate(letter.updated_at || letter.created_at)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">

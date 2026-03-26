@@ -3,7 +3,7 @@
  * Build custom letters from plain text with Markdown-like syntax
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -843,11 +843,43 @@ function BroadcastLetterDialog({
 
 // ── UniversalLetterBuilder ──────────────────────────────────────────────────
 
-interface UniversalLetterBuilderProps {
-  editLetterId?: string | null;
+/** Imperative handle exposed to parent via ref */
+export interface LetterBuilderHandle {
+  save: () => Promise<void>;
+  saveAsCopy: () => Promise<void>;
+  preview: () => void;
+  generatePDF: () => void;
+  resetForNew: () => void;
+  loadLetter: (letterId: string) => void;
+  getState: () => {
+    letterName: string;
+    savedLetterId: string | null;
+    isDirty: boolean;
+    isSaving: boolean;
+    editMode: boolean;
+  };
 }
 
-export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderProps) {
+/** State payload emitted via onStateChange */
+export interface LetterBuilderState {
+  letterName: string;
+  savedLetterId: string | null;
+  isDirty: boolean;
+  isSaving: boolean;
+  editMode: boolean;
+  lastSavedAt: Date | null;
+}
+
+interface UniversalLetterBuilderProps {
+  editLetterId?: string | null;
+  /** Ref for imperative access from parent (DocumentTopBar) */
+  builderRef?: React.RefObject<LetterBuilderHandle | null>;
+  /** Called whenever key builder state changes */
+  onStateChange?: (state: LetterBuilderState) => void;
+}
+
+export const UniversalLetterBuilder = forwardRef<LetterBuilderHandle, UniversalLetterBuilderProps>(
+  function UniversalLetterBuilder({ editLetterId, builderRef, onStateChange }, ref) {
   const { role } = useAuth();
 
   // State - Broadcast dialog
@@ -903,6 +935,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [lastSentLetterId, setLastSentLetterId] = useState<string | null>(null);
   const [savedLetterId, setSavedLetterId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // State - Recipients
@@ -1001,6 +1034,58 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const markDirty = useCallback(() => {
     if (!isDirty) setIsDirty(true);
   }, [isDirty]);
+
+  // ── Imperative handle for parent (DocumentTopBar) integration ─────────
+  const effectiveRef = builderRef ?? ref;
+  useImperativeHandle(effectiveRef, () => ({
+    save: () => handleSaveLetter(),
+    saveAsCopy: () => performSave(true),
+    preview: () => handlePreview(),
+    generatePDF: () => handleGeneratePDF(),
+    resetForNew: () => {
+      setLetterContent('');
+      setLetterName('');
+      setSavedLetterId(null);
+      setEditMode(false);
+      setEditingLetterId(null);
+      setIsDirty(false);
+      setLastSavedAt(null);
+      setSelectedClient(null);
+      setSubjectLines([{
+        id: 'subject-default',
+        content: '',
+        formatting: { bold: true, underline: false, color: 'blue' },
+        order: 0,
+      }]);
+      setCustomHeaderLines([]);
+      setEmailSubject('');
+      setIncludesPayment(false);
+      setOriginalBodyContent(null);
+      setHasUserEditedContent(false);
+      setUserEditedEmailSubject(false);
+      draft.clearDraft();
+    },
+    loadLetter: (letterId: string) => loadLetterForEdit(letterId),
+    getState: () => ({
+      letterName,
+      savedLetterId,
+      isDirty,
+      isSaving,
+      editMode,
+    }),
+  }));
+
+  // Notify parent of state changes
+  useEffect(() => {
+    onStateChange?.({
+      letterName,
+      savedLetterId,
+      isDirty,
+      isSaving,
+      editMode,
+      lastSavedAt,
+    });
+  }, [letterName, savedLetterId, isDirty, isSaving, editMode, lastSavedAt, onStateChange]);
 
   /**
    * Load saved templates on mount
@@ -1480,6 +1565,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         }
 
         setIsDirty(false); // ✅ Reset dirty state
+        setLastSavedAt(new Date()); // ✅ Track save timestamp
         draft.clearDraft(); // ✅ Clear local draft on successful save
         toast.success('המכתב עודכן בהצלחה');
       } else {
@@ -1507,6 +1593,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
         setSavedLetterId(result.data.id);
         setIsDirty(false); // ✅ Reset dirty state
+        setLastSavedAt(new Date()); // ✅ Track save timestamp
         draft.clearDraft(); // ✅ Clear local draft on successful save
         toast.success(createNewCopy ? 'נוצר העתק חדש בהצלחה' : 'המכתב נשמר בהיסטוריית מכתבים');
       }
@@ -4058,4 +4145,5 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
       />
     </div>
   );
-}
+  }
+);
