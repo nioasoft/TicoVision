@@ -3,7 +3,7 @@
  * Form for creating and editing meeting protocols
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useBeforeUnload } from '@/hooks/useBeforeUnload';
+import { useLocalDraft } from '@/hooks/useLocalDraft';
+import { DraftRecoveryBanner } from '@/components/ui/draft-recovery-banner';
 import {
   RESPONSIBILITY_TYPES,
   CONTENT_SECTION_TYPES,
@@ -65,6 +68,7 @@ interface ProtocolBuilderProps {
   recipientName: string;
   onSave: () => void;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 export function ProtocolBuilder({
@@ -74,6 +78,7 @@ export function ProtocolBuilder({
   recipientName,
   onSave,
   onCancel,
+  onDirtyChange,
 }: ProtocolBuilderProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -107,6 +112,50 @@ export function ProtocolBuilder({
       setSavedProtocolId(newId);
     },
   });
+
+  // Data loss prevention: warn on browser close/refresh
+  useBeforeUnload(saveStatus.status === 'dirty' || saveStatus.status === 'saving');
+
+  // Notify parent about dirty state
+  useEffect(() => {
+    onDirtyChange?.(saveStatus.status === 'dirty' || saveStatus.status === 'saving');
+  }, [saveStatus.status, onDirtyChange]);
+
+  // Local draft auto-save to localStorage
+  const draftState = useMemo(() => ({
+    meeting_date: formState.meeting_date,
+    title: formState.title,
+    attendees: formState.attendees,
+    decisions: formState.decisions,
+    content_sections: formState.content_sections,
+  }), [formState.meeting_date, formState.title, formState.attendees, formState.decisions, formState.content_sections]);
+
+  const draft = useLocalDraft({
+    key: `protocol:${savedProtocolId || 'new'}`,
+    data: draftState,
+    enabled: true,
+  });
+
+  // Restore draft handler
+  const handleRestoreDraft = useCallback(() => {
+    const restored = draft.restoreDraft();
+    if (restored) {
+      setFormState({
+        meeting_date: restored.meeting_date,
+        title: restored.title,
+        attendees: restored.attendees,
+        decisions: restored.decisions,
+        content_sections: restored.content_sections,
+      });
+    }
+  }, [draft]);
+
+  // Clear draft on successful save
+  useEffect(() => {
+    if (saveStatus.status === 'saved') {
+      draft.clearDraft();
+    }
+  }, [saveStatus.status, draft]);
 
   // Load employees for displaying assigned employee names
   useEffect(() => {
@@ -469,6 +518,15 @@ export function ProtocolBuilder({
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
+          {/* Draft Recovery Banner */}
+          {draft.hasDraft && draft.draftTimestamp && (
+            <DraftRecoveryBanner
+              savedAt={draft.draftTimestamp}
+              onRestore={handleRestoreDraft}
+              onDiscard={draft.dismissDraft}
+            />
+          )}
+
           {/* Header Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row justify-end" dir="ltr">

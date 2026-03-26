@@ -31,6 +31,7 @@ import {
   formatIsraeliTaxId,
   stripTaxIdFormatting,
 } from '@/lib/validators';
+import { useBeforeUnload } from '@/hooks/useBeforeUnload';
 
 interface FreelancerFormDialogProps {
   open: boolean;
@@ -78,6 +79,7 @@ export function FreelancerFormDialog({
   const mode = freelancer ? 'edit' : 'add';
   const [formData, setFormData] = useState<FreelancerFormData>(INITIAL_FORM_DATA);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  useBeforeUnload(hasUnsavedChanges);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxIdExists, setTaxIdExists] = useState(false);

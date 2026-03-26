@@ -3,7 +3,7 @@
  * Build custom letters from plain text with Markdown-like syntax
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,10 @@ import { GroupMembersList } from '@/components/fees/GroupMembersList';
 import { PdfFilingDialog } from './PdfFilingDialog';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useLocalDraft } from '@/hooks/useLocalDraft';
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
+import { DraftRecoveryBanner } from '@/components/ui/draft-recovery-banner';
 import type { DistributionList, RecipientSummary } from '@/modules/broadcast/types/broadcast.types';
 import type { CustomHeaderLine, SubjectLine } from '@/modules/letters/types/letter.types';
 
@@ -963,17 +967,35 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
   const [isDirty, setIsDirty] = useState(false);
   const [showSaveOptionsDialog, setShowSaveOptionsDialog] = useState(false);
 
-  // Browser tab close warning
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
+  // Unsaved changes guard (replaces manual beforeunload listener)
+  const guard = useUnsavedChangesGuard({ isDirty });
+
+  // Local draft auto-save for data loss prevention
+  const draftState = useMemo(() => ({
+    letterContent,
+    letterName,
+    subjectLines,
+    emailSubject,
+    customHeaderLines,
+  }), [letterContent, letterName, subjectLines, emailSubject, customHeaderLines]);
+
+  const draft = useLocalDraft({
+    key: editLetterId ? `letter:${editLetterId}` : 'letter:new',
+    data: draftState,
+    enabled: isDirty,
+  });
+
+  const handleRestoreDraft = useCallback(() => {
+    const restored = draft.restoreDraft();
+    if (restored) {
+      if (restored.letterContent !== undefined) setLetterContent(restored.letterContent);
+      if (restored.letterName !== undefined) setLetterName(restored.letterName);
+      if (restored.subjectLines !== undefined) setSubjectLines(restored.subjectLines);
+      if (restored.emailSubject !== undefined) setEmailSubject(restored.emailSubject);
+      if (restored.customHeaderLines !== undefined) setCustomHeaderLines(restored.customHeaderLines);
+      setIsDirty(true);
+    }
+  }, [draft]);
 
   // Helper to mark dirty state
   const markDirty = useCallback(() => {
@@ -1458,6 +1480,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
         }
 
         setIsDirty(false); // ✅ Reset dirty state
+        draft.clearDraft(); // ✅ Clear local draft on successful save
         toast.success('המכתב עודכן בהצלחה');
       } else {
         // INSERT new letter (first save or creating copy)
@@ -1484,6 +1507,7 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
 
         setSavedLetterId(result.data.id);
         setIsDirty(false); // ✅ Reset dirty state
+        draft.clearDraft(); // ✅ Clear local draft on successful save
         toast.success(createNewCopy ? 'נוצר העתק חדש בהצלחה' : 'המכתב נשמר בהיסטוריית מכתבים');
       }
 
@@ -2675,6 +2699,15 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
             {parentLetterId && ' שמירה תיצור גרסה חדשה (version) ותשמור את המקור.'}
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Draft Recovery Banner */}
+      {draft.hasDraft && draft.draftTimestamp && (
+        <DraftRecoveryBanner
+          savedAt={draft.draftTimestamp}
+          onRestore={handleRestoreDraft}
+          onDiscard={draft.dismissDraft}
+        />
       )}
 
       {/* Main Builder Card */}
@@ -4016,6 +4049,13 @@ export function UniversalLetterBuilder({ editLetterId }: UniversalLetterBuilderP
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Unsaved Changes Navigation Guard */}
+      <UnsavedChangesDialog
+        open={guard.showDialog}
+        onStay={guard.cancelLeave}
+        onLeave={guard.confirmLeave}
+      />
     </div>
   );
 }

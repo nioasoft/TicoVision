@@ -55,6 +55,7 @@ import type {
   UpdateAssignmentDto,
 } from '@/types/tenant-contact.types';
 import type { ContactType } from '@/services/client.service';
+import { useBeforeUnload } from '@/hooks/useBeforeUnload';
 
 const EMAIL_PREFERENCE_LABELS: Record<string, string> = {
   all: 'כל המיילים',
@@ -115,6 +116,7 @@ export function ContactFormDialog({
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  useBeforeUnload(hasUnsavedChanges);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState<string | null>(null);
 

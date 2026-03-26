@@ -7,6 +7,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -55,6 +57,12 @@ export function ProtocolsPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedImportProtocolId, setSelectedImportProtocolId] = useState<string | null>(null);
   const [importingProtocol, setImportingProtocol] = useState(false);
+
+  // Data loss prevention: track builder dirty state
+  const [isBuilderDirty, setIsBuilderDirty] = useState(false);
+  const guard = useUnsavedChangesGuard({
+    isDirty: isBuilderDirty && viewMode === 'builder',
+  });
 
   const isSelected = mode === 'client' ? !!selectedClient : !!selectedGroup;
 
@@ -345,6 +353,7 @@ export function ProtocolsPage() {
             recipientName={getSelectedName()}
             onSave={handleSaveProtocol}
             onCancel={handleCancelBuilder}
+            onDirtyChange={setIsBuilderDirty}
           />
         ) : (
           <ProtocolPreview
@@ -415,6 +424,13 @@ export function ProtocolsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unsaved Changes Dialog (route navigation guard) */}
+      <UnsavedChangesDialog
+        open={guard.showDialog}
+        onStay={guard.cancelLeave}
+        onLeave={guard.confirmLeave}
+      />
     </div>
   );
 }

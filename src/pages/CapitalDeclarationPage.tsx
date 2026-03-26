@@ -10,7 +10,7 @@
  * - Copy portal link for client
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -31,6 +31,10 @@ import {
   Link,
   Calendar,
 } from 'lucide-react';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { useLocalDraft } from '@/hooks/useLocalDraft';
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
+import { DraftRecoveryBanner } from '@/components/ui/draft-recovery-banner';
 import { ContactAutocompleteInput } from '@/components/ContactAutocompleteInput';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { Combobox } from '@/components/ui/combobox';
@@ -87,6 +91,96 @@ export function CapitalDeclarationPage() {
 
   // Available tax years
   const taxYears = getAvailableTaxYears();
+
+  // --- Data Loss Prevention ---
+  const [isDirty, setIsDirty] = useState(false);
+
+  const guard = useUnsavedChangesGuard({ isDirty });
+
+  const draftState = useMemo(() => ({
+    contact_name: formState.contact_name,
+    contact_email: formState.contact_email,
+    contact_phone: formState.contact_phone,
+    contact_phone_secondary: formState.contact_phone_secondary,
+    tax_year: formState.tax_year,
+    declaration_date: formState.declaration_date,
+    subject: formState.subject,
+    notes: formState.notes,
+    recipient_mode: formState.recipient_mode,
+    recipient_name: formState.recipient_name,
+    recipient_email: formState.recipient_email,
+    recipient_phone: formState.recipient_phone,
+    recipient_phone_secondary: formState.recipient_phone_secondary,
+    recipientMode,
+  }), [
+    formState.contact_name, formState.contact_email,
+    formState.contact_phone, formState.contact_phone_secondary,
+    formState.tax_year, formState.declaration_date,
+    formState.subject, formState.notes,
+    formState.recipient_mode, formState.recipient_name,
+    formState.recipient_email, formState.recipient_phone,
+    formState.recipient_phone_secondary,
+    recipientMode,
+  ]);
+
+  const draft = useLocalDraft({
+    key: 'capital-declaration:new',
+    data: draftState,
+    enabled: isDirty,
+  });
+
+  const handleRestoreDraft = useCallback(() => {
+    const restored = draft.restoreDraft();
+    if (restored) {
+      setFormState(prev => ({
+        ...prev,
+        contact_name: restored.contact_name,
+        contact_email: restored.contact_email,
+        contact_phone: restored.contact_phone,
+        contact_phone_secondary: restored.contact_phone_secondary,
+        tax_year: restored.tax_year,
+        declaration_date: restored.declaration_date,
+        subject: restored.subject,
+        notes: restored.notes,
+        recipient_mode: restored.recipient_mode,
+        recipient_name: restored.recipient_name,
+        recipient_email: restored.recipient_email,
+        recipient_phone: restored.recipient_phone,
+        recipient_phone_secondary: restored.recipient_phone_secondary,
+      }));
+      if (restored.recipientMode) {
+        setRecipientMode(restored.recipientMode);
+      }
+      setIsDirty(true);
+    }
+  }, [draft]);
+
+  // Mark form as dirty on any user-editable field change
+  useEffect(() => {
+    const initial = createInitialDeclarationForm();
+    const changed =
+      formState.contact_name !== initial.contact_name ||
+      formState.contact_email !== initial.contact_email ||
+      formState.contact_phone !== initial.contact_phone ||
+      formState.contact_phone_secondary !== initial.contact_phone_secondary ||
+      formState.subject !== initial.subject ||
+      formState.notes !== initial.notes ||
+      formState.recipient_mode !== initial.recipient_mode ||
+      formState.recipient_name !== initial.recipient_name ||
+      formState.recipient_email !== initial.recipient_email ||
+      formState.recipient_phone !== initial.recipient_phone ||
+      formState.recipient_phone_secondary !== initial.recipient_phone_secondary ||
+      recipientMode !== 'none';
+    setIsDirty(changed);
+  }, [
+    formState.contact_name, formState.contact_email,
+    formState.contact_phone, formState.contact_phone_secondary,
+    formState.subject, formState.notes,
+    formState.recipient_mode, formState.recipient_name,
+    formState.recipient_email, formState.recipient_phone,
+    formState.recipient_phone_secondary,
+    recipientMode,
+  ]);
 
   // Load clients on mount
   useEffect(() => {
@@ -314,6 +408,8 @@ export function CapitalDeclarationPage() {
       await capitalDeclarationService.updateStatus(declaration.id, 'sent');
 
       toast.success('הצהרת הון נוצרה בהצלחה!');
+      draft.clearDraft();
+      setIsDirty(false);
     } catch (error) {
       console.error('Error creating declaration:', error);
       toast.error('שגיאה ביצירת הצהרת הון');
@@ -360,6 +456,15 @@ export function CapitalDeclarationPage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Draft Recovery Banner */}
+          {draft.hasDraft && draft.draftTimestamp && (
+            <DraftRecoveryBanner
+              savedAt={draft.draftTimestamp}
+              onRestore={handleRestoreDraft}
+              onDiscard={draft.dismissDraft}
+            />
+          )}
+
           {/* Contact Input Section */}
           <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
             <Label className="text-lg font-semibold">פרטי נמען</Label>
@@ -661,6 +766,12 @@ export function CapitalDeclarationPage() {
           />
         </DialogContent>
       </Dialog>
+
+      <UnsavedChangesDialog
+        open={guard.showDialog}
+        onStay={guard.cancelLeave}
+        onLeave={guard.confirmLeave}
+      />
 
     </div>
   );

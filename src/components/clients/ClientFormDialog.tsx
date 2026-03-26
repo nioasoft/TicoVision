@@ -67,6 +67,7 @@ import {
 import { PdfImportButton } from './PdfImportButton';
 import type { ExtractedCompanyData } from '@/services/company-extraction.service';
 import { fileUploadService } from '@/services/file-upload.service';
+import { useBeforeUnload } from '@/hooks/useBeforeUnload';
 
 interface ClientFormDialogProps {
   open: boolean;
@@ -147,6 +148,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
   }) => {
     const [formData, setFormData] = useState<CreateClientDto>(INITIAL_FORM_DATA);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    useBeforeUnload(hasUnsavedChanges);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [groups, setGroups] = useState<ClientGroup[]>([]); // NEW: רשימת קבוצות
