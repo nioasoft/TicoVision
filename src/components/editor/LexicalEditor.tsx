@@ -607,7 +607,21 @@ function extractPreservedStyles(el: HTMLElement): string {
  * construction - each callback receives the exact TextNode corresponding to the
  * DOM span's child, so no position-based matching is needed.
  */
-const htmlImportConfig: Record<string, (node: HTMLElement) => { conversion: (node: HTMLElement) => { node: null; forChild: (lexicalNode: LexicalNode) => LexicalNode }; priority: number } | null> = {
+const htmlImportConfig: Record<string, (node: HTMLElement) => { conversion: (node: HTMLElement) => { node: LexicalNode | null; forChild?: (lexicalNode: LexicalNode) => LexicalNode }; priority: number } | null> = {
+  // Handle <p> elements: preserve block-level styles (background-color, padding, etc.)
+  p: () => {
+    return {
+      conversion: (element: HTMLElement) => {
+        const blockStyle = extractBlockStyles(element);
+        const node = $createStyledParagraphNode(blockStyle);
+        if (element.style.textAlign) {
+          node.setFormat(element.style.textAlign as ElementFormatType);
+        }
+        return { node };
+      },
+      priority: 2, // Override both default ParagraphNode (0) and StyledParagraphNode.importDOM (1)
+    };
+  },
   span: (domNode: HTMLElement) => {
     return {
       conversion: (spanElement: HTMLElement) => {
@@ -2370,6 +2384,39 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
     (editorState: EditorState, editor: LexicalEditorType) => {
       editorState.read(() => {
         const html = $generateHtmlFromNodes(editor, null);
+
+        // Enrich exported HTML with block-level styles from the actual DOM.
+        // Lexical's ParagraphNode.exportDOM/createDOM don't output __style,
+        // so we inject background-color/padding/border-radius from live DOM.
+        const root = $getRoot();
+        const children = root.getChildren();
+        if (children.length > 0) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
+          const htmlElements = doc.body.firstElementChild?.children;
+          if (htmlElements && htmlElements.length === children.length) {
+            let modified = false;
+            for (let i = 0; i < children.length; i++) {
+              const node = children[i];
+              const htmlEl = htmlElements[i] as HTMLElement;
+              const dom = editor.getElementByKey(node.getKey());
+              if (dom && htmlEl) {
+                const bg = dom.style.backgroundColor;
+                if (bg) {
+                  htmlEl.style.backgroundColor = bg;
+                  htmlEl.style.padding = dom.style.padding || '8px 12px';
+                  htmlEl.style.borderRadius = dom.style.borderRadius || '4px';
+                  modified = true;
+                }
+              }
+            }
+            if (modified) {
+              onChange?.(doc.body.firstElementChild?.innerHTML || html);
+              return;
+            }
+          }
+        }
+
         onChange?.(html);
       });
     },
