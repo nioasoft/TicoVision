@@ -37,7 +37,13 @@ const IMAGES_TO_UPLOAD = [
   'tico_logo_240.png',           // Smaller TICO logo variant
   'franco-logo-hires.png',       // High resolution Franco logo
   'pdf_footer.png',              // PDF footer image (full width A4)
-  'header_pdf.png'               // PDF header image (full width A4)
+  'header_pdf.png',              // PDF header image (full width A4)
+  'Bullet_star_darkred.png',     // Dark red star bullet
+  'tico_signature.png',          // Signature image
+  'icon-star.png',               // Footer icon: company name
+  'icon-building.png',           // Footer icon: address
+  'icon-phone.png',              // Footer icon: phone
+  'icon-email.png',              // Footer icon: email
 ];
 
 /**
