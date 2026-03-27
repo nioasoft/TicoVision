@@ -68,7 +68,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="שם, ת.ז או איש קשר..."
+            placeholder=""
             className="pr-8 h-8 text-xs !bg-white border !border-blue-400 rounded-md"
             dir="rtl"
           />

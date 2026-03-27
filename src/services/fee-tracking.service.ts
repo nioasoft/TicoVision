@@ -49,7 +49,7 @@ class FeeTrackingService extends BaseService {
         // If client belongs to a group with group_fee_calculation, use group status
         let effectiveFeeTrackingPaymentStatus: FeeTrackingPaymentStatus = row.payment_status as FeeTrackingPaymentStatus;
 
-        if (row.group_calculation_id) {
+        if (row.group_calculation_id && effectiveFeeTrackingPaymentStatus !== 'paid_by_other') {
           // Client is in a group with group fee calculation - use group status
           const groupStatus = row.group_calculation_status;
           if (groupStatus === 'paid') {
@@ -77,6 +77,7 @@ class FeeTrackingService extends BaseService {
         letter_id: row.letter_id,
         letter_sent_at: row.letter_sent_at ? new Date(row.letter_sent_at) : undefined,
         payment_status: effectiveFeeTrackingPaymentStatus,
+        non_paying_reason: row.non_paying_reason || null,
         payment_amount: row.payment_amount,
         payment_date: row.payment_date ? new Date(row.payment_date) : undefined,
         payment_method_selected: row.payment_method_selected || null,
@@ -148,6 +149,10 @@ class FeeTrackingService extends BaseService {
 
     const paid = clients.filter((c) => c.payment_status === 'paid').length;
 
+    const paid_by_other = clients.filter(
+      (c) => c.payment_status === 'paid_by_other'
+    ).length;
+
     // Completion percentage (how many completed the full process)
     const completion_percentage =
       total_clients > 0 ? (paid / total_clients) * 100 : 0;
@@ -159,6 +164,7 @@ class FeeTrackingService extends BaseService {
       sent_not_paid,
       partial_paid,
       paid,
+      paid_by_other,
       completion_percentage,
     };
   }

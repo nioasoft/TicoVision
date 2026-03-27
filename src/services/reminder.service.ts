@@ -502,6 +502,46 @@ class ReminderService extends BaseService {
       return { data: false, error: this.handleError(error as Error) };
     }
   }
+  /**
+   * Send batch reminders via Edge Function
+   * Re-sends the original fee letter to pending clients
+   */
+  async sendBatchReminders(
+    taxYear: number,
+    clientIds?: string[],
+    dryRun = false
+  ): Promise<ServiceResponse<{
+    total_pending: number;
+    sent: number;
+    failed: number;
+    skipped_no_letter: number;
+    skipped_no_email: number;
+    skipped_already_reminded: number;
+    errors: string[];
+    details: Array<{ tax_id: string; company_name: string; status: string; emails?: string[] }>;
+  }>> {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-batch-reminders', {
+        body: {
+          tax_year: taxYear,
+          client_ids: clientIds,
+          dry_run: dryRun,
+        },
+      });
+
+      if (error) {
+        return { data: null, error: this.handleError(error) };
+      }
+
+      if (!data?.success) {
+        return { data: null, error: new Error(data?.error ?? 'Unknown error') };
+      }
+
+      return { data: data.data, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
 }
 
 export const reminderService = new ReminderService();

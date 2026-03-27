@@ -43,6 +43,7 @@ export interface FeeTrackingRow {
 
   // Payment status (derived)
   payment_status: FeeTrackingPaymentStatus;
+  non_paying_reason?: 'member_in_group' | 'paid_by_other' | 'marked_no_pay' | null;
   payment_amount?: number;
   payment_date?: Date;
 
@@ -79,11 +80,12 @@ export interface FeeTrackingKPIs {
   total_clients: number;
 
   // Breakdown by status
-  not_calculated: number;       // ❌ לא חושב
-  calculated_not_sent: number;  // ⚠️ חושב ולא נשלח
-  sent_not_paid: number;        // ⏳ נשלח ולא שולם (pending only)
-  partial_paid: number;         // 💰 שולם חלקית
-  paid: number;                 // ✅ שולם
+  not_calculated: number;       // לא חושב
+  calculated_not_sent: number;  // חושב ולא נשלח
+  sent_not_paid: number;        // נשלח ולא שולם (pending only)
+  partial_paid: number;         // שולם חלקית
+  paid: number;                 // שולם
+  paid_by_other: number;        // לא משלם - משולם ע"י אחר
 
   // Completion percentage (how many clients completed the full process)
   completion_percentage: number; // (paid / total_clients) * 100

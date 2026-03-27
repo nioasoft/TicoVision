@@ -19,8 +19,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, Mail, X } from 'lucide-react';
+import { RefreshCw, Mail, X, Bell } from 'lucide-react';
 import { feeTrackingService } from '@/services/fee-tracking.service';
+import { reminderService } from '@/services/reminder.service';
 import type {
   FeeTrackingRow,
   FeeTrackingKPIs,
@@ -97,6 +98,9 @@ export function FeeTrackingPage() {
     results: { sent: [], skipped: [] },
   });
 
+  // Batch reminder state
+  const [sendingReminders, setSendingReminders] = useState(false);
+
   // Current client in batch queue
   const currentBatchClient = batchState.isActive && batchState.currentIndex < batchState.queue.length
     ? batchState.queue[batchState.currentIndex]
@@ -106,8 +110,8 @@ export function FeeTrackingPage() {
   const currentYear = new Date().getFullYear();
   const availableYears = [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
 
-  // Members count
-  const membersCount = clients.filter(c => c.payment_role === 'member').length;
+  // Members count - use KPI data for accuracy
+  const membersCount = kpis?.paid_by_other ?? 0;
 
   // Load data on mount and when year changes
   useEffect(() => {
@@ -414,6 +418,48 @@ export function FeeTrackingPage() {
     });
     setLetterDialogOpen(true);
   }, [selectedClients, clients, toast]);
+
+  /**
+   * Send batch reminders to selected (or all pending) clients
+   */
+  const startBatchReminders = useCallback(async () => {
+    const clientIds = selectedClients.size > 0
+      ? Array.from(selectedClients)
+      : undefined;
+
+    const count = clientIds?.length ?? kpis?.sent_not_paid ?? 0;
+    const confirmed = window.confirm(
+      clientIds
+        ? `לשלוח תזכורת ל-${count} לקוחות נבחרים?`
+        : `לשלוח תזכורת לכל ${count} הלקוחות הממתינים לתשלום?`
+    );
+    if (!confirmed) return;
+
+    setSendingReminders(true);
+    try {
+      const result = await reminderService.sendBatchReminders(selectedYear, clientIds);
+
+      if (result.error) {
+        toast({
+          title: 'שגיאה בשליחת תזכורות',
+          description: result.error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const data = result.data;
+      toast({
+        title: 'תזכורות נשלחו',
+        description: `נשלחו: ${data?.sent ?? 0} | נכשלו: ${data?.failed ?? 0} | ללא מכתב: ${data?.skipped_no_letter ?? 0} | ללא מייל: ${data?.skipped_no_email ?? 0}`,
+      });
+
+      setSelectedClients(new Set());
+      loadTrackingData();
+    } finally {
+      setSendingReminders(false);
+    }
+  }, [selectedClients, selectedYear, kpis, toast]);
 
   /**
    * Handle successful email sent (callback from dialog)
@@ -753,6 +799,10 @@ export function FeeTrackingPage() {
           <Button onClick={startBatchSend}>
             <Mail className="h-4 w-4 ml-2" />
             שלח מכתבים ({selectedClients.size})
+          </Button>
+          <Button onClick={startBatchReminders} disabled={sendingReminders} variant="outline">
+            <Bell className="h-4 w-4 ml-2" />
+            {sendingReminders ? 'שולח...' : `שלח תזכורת (${selectedClients.size})`}
           </Button>
         </div>
       )}

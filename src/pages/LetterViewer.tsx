@@ -12,8 +12,33 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Loader2 } from 'lucide-react';
 
-// Print styles for clean printing
+// Mobile-responsive styles for letter HTML content + print styles
 const printStyles = `
+  /* Mobile: force letter HTML tables/images to fit screen */
+  @media (max-width: 640px) {
+    .letter-content table {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .letter-content td {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    .letter-content img {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+    .letter-content [width] {
+      width: auto !important;
+      max-width: 100% !important;
+    }
+    .letter-content [style*="width"] {
+      max-width: 100% !important;
+    }
+  }
+
   @media print {
     /* Remove background colors */
     body {
@@ -240,11 +265,11 @@ export default function LetterViewer() {
   return (
     <>
       <style>{printStyles}</style>
-      <div className="min-h-screen bg-gray-100 py-8">
-        <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden">
+      <div className="min-h-screen bg-gray-100 py-2 sm:py-8">
+        <div className="max-w-4xl mx-auto bg-white shadow-xl sm:rounded-lg overflow-hidden">
         {/* Letter Content */}
         <div
-          className="p-8"
+          className="letter-content p-3 sm:p-8 overflow-x-auto"
           dir="rtl"
           dangerouslySetInnerHTML={{ __html: letter.generated_content_html ? convertHtmlForDisplay(letter.generated_content_html) : '' }}
         />

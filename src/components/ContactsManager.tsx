@@ -372,7 +372,7 @@ export function ContactsManager({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {/* Row 1: Contact Type, Name with Autocomplete, Email, Phone, Phone Secondary, Role at Client */}
-            <div className="grid grid-cols-6 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="add_contact_type" className="text-right block mb-2">
                   סוג איש קשר
@@ -473,6 +473,8 @@ export function ContactsManager({
                   dir="ltr"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="add_phone" className="text-right block mb-2">
                   טלפון נייד
@@ -604,7 +606,7 @@ export function ContactsManager({
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {/* Row 1: Contact Type, Name, Email, Phone, Phone Secondary, Role at Client */}
-            <div className="grid grid-cols-6 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="edit_contact_type" className="text-right block mb-2">
                   סוג איש קשר
@@ -655,6 +657,8 @@ export function ContactsManager({
                   dir="ltr"
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="edit_phone" className="text-right block mb-2">
                   טלפון נייד

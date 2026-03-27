@@ -721,17 +721,25 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                   <TableCell className="font-medium py-2.5 px-3 text-sm border-l border-slate-100">
                     <div className="flex items-center gap-2">
                       <span className="rtl:text-right">{client.client_name_hebrew || client.client_name}</span>
-                      {client.payment_role === 'member' && (
+                      {client.payment_status === 'paid_by_other' && client.non_paying_reason && (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Badge variant="outline" className="text-xs px-1.5 py-0.5 gap-1 bg-purple-50 text-purple-700 border-purple-200 cursor-help">
                                 <UserCheck className="h-3 w-3" />
-                                לא משלם
+                                {client.non_paying_reason === 'member_in_group' ? 'חלק מקבוצה'
+                                  : client.non_paying_reason === 'paid_by_other' ? 'משולם ע"י אחר'
+                                  : 'לא משלם'}
                               </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>{client.payer_client_name ? `משולם ע"י: ${client.payer_client_name}` : 'לא הוגדר משלם'}</p>
+                              <p>
+                                {client.non_paying_reason === 'member_in_group' && client.group_name
+                                  ? `חלק מ: ${client.group_name}`
+                                  : client.payer_client_name
+                                  ? `משולם ע"י: ${client.payer_client_name}`
+                                  : 'סומן כלא משלם'}
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>

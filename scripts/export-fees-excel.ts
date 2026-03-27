@@ -68,86 +68,62 @@ const THIN_BORDER: Partial<ExcelJS.Borders> = {
 };
 
 async function main() {
-  console.log(`Fetching paying clients for ${TAX_YEAR}...`);
+  console.log(`Fetching fee tracking data for ${TAX_YEAR} (via RPC)...`);
 
-  // Fetch active paying clients
-  const { data: clients, error: clientsError } = await supabase
-    .from('clients')
-    .select('id, tax_id, company_name, payment_role')
-    .eq('tenant_id', TIKO_TENANT_ID)
-    .in('payment_role', ['independent', 'primary_payer'])
-    .eq('status', 'active')
-    .order('company_name');
+  // Use the same RPC as the UI for consistent numbers
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_fee_tracking_data', {
+    p_tenant_id: TIKO_TENANT_ID,
+    p_tax_year: TAX_YEAR,
+  });
 
-  if (clientsError) {
-    console.error('Failed to fetch clients:', clientsError.message);
+  if (rpcError) {
+    console.error('Failed to fetch tracking data:', rpcError.message);
     process.exit(1);
   }
 
-  // Fetch ALL fee_calculations for the year (to know who has one and who's paid)
-  const { data: allFees, error: feesError } = await supabase
-    .from('fee_calculations')
-    .select('id, client_id, total_amount, calculated_with_vat, final_amount, status')
-    .eq('tenant_id', TIKO_TENANT_ID)
-    .eq('year', TAX_YEAR);
-
-  if (feesError) {
-    console.error('Failed to fetch fee calculations:', feesError.message);
-    process.exit(1);
-  }
-
-  const feeByClientId = new Map(
-    (allFees ?? []).map((f) => [f.client_id, f])
-  );
-
-  // Split into three groups
-  const withoutFee: typeof clients = [];
-  const withFee: typeof clients = [];
-  let alreadyPaid = 0;
-
-  for (const client of clients ?? []) {
-    const fee = feeByClientId.get(client.id);
-    if (fee?.status === 'paid') {
-      alreadyPaid++;
-      continue; // Skip already paid
+  // Apply same group_calculation override as the UI service layer
+  const rows = (rpcData ?? []).map((row: Record<string, unknown>) => {
+    let paymentStatus = row.payment_status as string;
+    if (row.group_calculation_id && paymentStatus !== 'paid_by_other') {
+      const groupStatus = row.group_calculation_status as string;
+      if (groupStatus === 'paid') paymentStatus = 'paid';
+      else if (groupStatus === 'sent') paymentStatus = row.group_letter_sent_at ? 'pending' : 'not_sent';
+      else if (groupStatus === 'draft') paymentStatus = 'not_sent';
     }
-    if (fee) {
-      withFee.push(client);
-    } else {
-      withoutFee.push(client);
-    }
-  }
+    return { ...row, payment_status: paymentStatus };
+  });
 
-  // Fetch unpaid group fee calculations
-  const { data: groupFees, error: groupFeesError } = await supabase
+  // Split by status
+  const withoutFee = rows.filter((r) => r.payment_status === 'not_calculated');
+  const withFeeNotSent = rows.filter((r) => r.payment_status === 'not_sent');
+  const withFeePending = rows.filter((r) => r.payment_status === 'pending');
+  const partialPaid = rows.filter((r) => r.payment_status === 'partial_paid');
+  const paid = rows.filter((r) => r.payment_status === 'paid');
+  const paidByOther = rows.filter((r) => r.payment_status === 'paid_by_other');
+
+  // Unpaid = not_sent + pending + partial_paid (have calculation, not fully paid)
+  const withFeeUnpaid = [...withFeeNotSent, ...withFeePending, ...partialPaid];
+
+  // Fetch group fee calculations for the group section
+  const { data: groupFees } = await supabase
     .from('group_fee_calculations')
     .select('id, group_id, total_final_amount_with_vat, status')
     .eq('tenant_id', TIKO_TENANT_ID)
     .eq('year', TAX_YEAR)
     .not('status', 'eq', 'paid');
 
-  if (groupFeesError) {
-    console.error('Failed to fetch group fees:', groupFeesError.message);
-    process.exit(1);
-  }
-
-  // Fetch group names
-  const { data: groups, error: groupsError } = await supabase
+  const { data: groups } = await supabase
     .from('client_groups')
     .select('id, group_name_hebrew')
     .eq('tenant_id', TIKO_TENANT_ID);
 
-  if (groupsError) {
-    console.error('Failed to fetch groups:', groupsError.message);
-    process.exit(1);
-  }
-
   const groupNameMap = new Map(groups?.map((g) => [g.id, g.group_name_hebrew]) ?? []);
 
-  console.log(`Found ${clients?.length ?? 0} paying clients:`);
-  console.log(`  - ${withoutFee.length} without fee calculation`);
-  console.log(`  - ${withFee.length} with fee calculation (unpaid)`);
-  console.log(`  - ${alreadyPaid} already paid (excluded)`);
+  console.log(`Total: ${rows.length} clients`);
+  console.log(`  - ${withoutFee.length} not calculated (לא חושב)`);
+  console.log(`  - ${withFeeUnpaid.length} with calculation, unpaid`);
+  console.log(`  - ${paid.length} paid (excluded)`);
+  console.log(`  - ${paidByOther.length} paid by other (excluded)`);
   console.log(`  - ${groupFees?.length ?? 0} group fee calculations (unpaid)`);
 
   // Create workbook
@@ -183,10 +159,10 @@ async function main() {
   headerRow.height = 24;
 
   // Add "without fee" section
-  for (const client of withoutFee) {
+  for (const r of withoutFee) {
     const row = sheet.addRow({
-      tax_id: client.tax_id ?? '',
-      company_name: client.company_name ?? '',
+      tax_id: r.tax_id ?? '',
+      company_name: r.client_name ?? '',
       type: 'ללא חישוב',
       existing_amount: '',
       existing_status: '',
@@ -197,16 +173,16 @@ async function main() {
     styleDataRow(row);
   }
 
-  // Add "with fee" section
-  for (const client of withFee) {
-    const fee = feeByClientId.get(client.id);
-    const amount = fee?.calculated_with_vat ?? fee?.total_amount ?? fee?.final_amount ?? '';
+  // Add "with fee unpaid" section
+  for (const r of withFeeUnpaid) {
+    const amount = r.calculation_amount ?? r.payment_amount ?? '';
+    const status = r.calculation_status as string ?? '';
     const row = sheet.addRow({
-      tax_id: client.tax_id ?? '',
-      company_name: client.company_name ?? '',
+      tax_id: r.tax_id ?? '',
+      company_name: r.client_name ?? '',
       type: 'יש חישוב',
       existing_amount: amount,
-      existing_status: fee?.status ? (STATUS_HEBREW[fee.status] ?? fee.status) : '',
+      existing_status: STATUS_HEBREW[status] ?? status,
       amount_paid: null,
       payment_date: null,
       payment_method: null,
