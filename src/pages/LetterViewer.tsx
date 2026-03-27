@@ -170,6 +170,14 @@ export default function LetterViewer() {
       result = result.replace(new RegExp(cid, 'g'), url);
     }
 
+    // Mobile: replace fixed pixel widths on tables with max-width for responsiveness
+    // width="800" → width="100%" style="max-width:800px"
+    result = result.replace(/(<table[^>]*?)width\s*=\s*"(\d{3,})"([^>]*?>)/gi,
+      (match, before, width, after) => `${before}width="100%" style="max-width:${width}px"${after}`);
+    // style="width: 800px" → style="width:100%;max-width:800px"
+    result = result.replace(/style\s*=\s*"([^"]*?)width\s*:\s*(\d{3,})px([^"]*?)"/gi,
+      (match, before, width, after) => `style="${before}width:100%;max-width:${width}px${after}"`);
+
     return result;
   };
 
