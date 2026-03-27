@@ -270,45 +270,44 @@ export default function LetterViewer() {
     );
   }
 
-  // Prepare letter HTML for iframe - inject mobile viewport + responsive overrides
-  const getIframeHtml = (): string => {
-    if (!letter.generated_content_html) return '';
+  // Extract body content + styles from the full HTML document
+  const getLetterContent = (): { styles: string; body: string } => {
+    if (!letter.generated_content_html) return { styles: '', body: '' };
     let html = convertHtmlForDisplay(letter.generated_content_html);
 
-    // Inject mobile-responsive CSS before </head>
-    const mobileCSS = `
-      <style>
-        @media (max-width: 640px) {
-          body { padding: 0 !important; margin: 0 !important; }
-          table[width] { width: 100% !important; max-width: 100% !important; }
-          td { max-width: 100% !important; }
-          img { max-width: 100% !important; height: auto !important; }
-        }
-      </style>
-    `;
-    if (html.includes('</head>')) {
-      html = html.replace('</head>', `${mobileCSS}</head>`);
-    }
+    // Extract <style> blocks
+    const styleMatches = html.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || [];
+    const styles = styleMatches.join('\n');
 
-    // Ensure viewport meta exists
-    if (!html.includes('viewport')) {
-      html = html.replace('<head>', '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">');
-    }
+    // Extract body content
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    const body = bodyMatch ? bodyMatch[1] : html;
 
-    return html;
+    return { styles, body };
   };
+
+  const { styles: letterStyles, body: letterBody } = getLetterContent();
 
   return (
     <>
       <style>{printStyles}</style>
-      <div className="min-h-screen bg-gray-100">
-        {/* Letter rendered in iframe for proper full-HTML rendering */}
-        <iframe
-          srcDoc={getIframeHtml()}
-          title={letter.subject || 'מכתב'}
-          className="w-full min-h-screen border-0"
-          style={{ height: '100vh' }}
-        />
+      <style>{letterStyles}</style>
+      <style>{`
+        .letter-content table[width] { max-width: 100% !important; }
+        .letter-content img { max-width: 100% !important; height: auto !important; }
+        @media (max-width: 640px) {
+          .letter-content table[width] { width: 100% !important; }
+          .letter-content td[width] { width: auto !important; }
+        }
+      `}</style>
+      <div className="min-h-screen bg-gray-100 py-2 sm:py-8">
+        <div className="max-w-4xl mx-auto bg-white shadow-xl sm:rounded-lg overflow-hidden">
+          <div
+            className="letter-content p-3 sm:p-8 overflow-x-auto"
+            dir="rtl"
+            dangerouslySetInnerHTML={{ __html: letterBody }}
+          />
+        </div>
       </div>
     </>
   );
