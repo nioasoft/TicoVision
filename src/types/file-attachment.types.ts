@@ -192,7 +192,7 @@ export function generateUniqueFilename(originalName: string): string {
 }
 
 // ===================================
-// File Categories (11 Fixed Categories)
+// File Categories (14 Categories, 3 Groups)
 // ===================================
 
 export type FileCategory =
@@ -206,70 +206,136 @@ export type FileCategory =
   | 'foreign_worker_docs'       // אישורי עובדים זרים
   | 'protocols'                 // פרוטוקולים
   | 'agreements'                // הסכמים
-  | 'letters';                  // מכתבים / תכתובות
+  | 'letters'                   // מכתבים / תכתובות
+  | 'tax_withholding_exemption' // פטור מניכוי מס במקור
+  | 'tax_account_status'        // מצב חשבון מס הכנסה
+  | 'shaagat_haari_grant';      // מתווה מענק שאגת הארי
+
+// ===================================
+// Category Groups
+// ===================================
+
+export type FileCategoryGroup = 'tax_financial' | 'company_legal' | 'operations_other';
+
+export interface CategoryGroupConfig {
+  key: FileCategoryGroup;
+  label: string;
+  order: number;
+}
+
+export const FILE_CATEGORY_GROUPS: Record<FileCategoryGroup, CategoryGroupConfig> = {
+  tax_financial: {
+    key: 'tax_financial',
+    label: 'מסמכי מס וכספים',
+    order: 1,
+  },
+  company_legal: {
+    key: 'company_legal',
+    label: 'מסמכי חברה ומשפט',
+    order: 2,
+  },
+  operations_other: {
+    key: 'operations_other',
+    label: 'תפעול ושונות',
+    order: 3,
+  },
+};
 
 export interface CategoryConfig {
   key: FileCategory;
   label: string;
   description: string;
   icon?: string;
+  group: FileCategoryGroup;
 }
 
 export const FILE_CATEGORIES: Record<FileCategory, CategoryConfig> = {
-  company_registry: {
-    key: 'company_registry',
-    label: 'רשם החברות',
-    description: '',
-  },
+  // --- מסמכי מס וכספים ---
   financial_report: {
     key: 'financial_report',
     label: 'דו"ח כספי מבוקר אחרון',
     description: '',
+    group: 'tax_financial',
   },
   bookkeeping_card: {
     key: 'bookkeeping_card',
     label: 'כרטיסי הנהח"ש אצלנו',
     description: '',
+    group: 'tax_financial',
   },
   quote_invoice: {
     key: 'quote_invoice',
     label: 'הצעות מחיר / תעודות חיוב',
     description: '',
+    group: 'tax_financial',
   },
   payment_proof_2026: {
     key: 'payment_proof_2026',
     label: 'אסמכתאות תשלום 2026',
     description: '',
+    group: 'tax_financial',
+  },
+  tax_withholding_exemption: {
+    key: 'tax_withholding_exemption',
+    label: 'פטור מניכוי מס במקור',
+    description: '',
+    group: 'tax_financial',
+  },
+  tax_account_status: {
+    key: 'tax_account_status',
+    label: 'מצב חשבון מס הכנסה',
+    description: '',
+    group: 'tax_financial',
+  },
+  // --- מסמכי חברה ומשפט ---
+  company_registry: {
+    key: 'company_registry',
+    label: 'רשם החברות',
+    description: '',
+    group: 'company_legal',
   },
   holdings_presentation: {
     key: 'holdings_presentation',
     label: 'מצגת החזקות',
     description: '',
-  },
-  general: {
-    key: 'general',
-    label: 'כללי',
-    description: '',
-  },
-  foreign_worker_docs: {
-    key: 'foreign_worker_docs',
-    label: 'אישורי עובדים זרים',
-    description: '',
+    group: 'company_legal',
   },
   protocols: {
     key: 'protocols',
     label: 'פרוטוקולים',
     description: '',
+    group: 'company_legal',
   },
   agreements: {
     key: 'agreements',
     label: 'הסכמים',
     description: '',
+    group: 'company_legal',
   },
+  // --- תפעול ושונות ---
   letters: {
     key: 'letters',
     label: 'מכתבים / תכתובות',
     description: 'מכתבי שכר טרחה ותכתובות עם לקוחות',
+    group: 'operations_other',
+  },
+  foreign_worker_docs: {
+    key: 'foreign_worker_docs',
+    label: 'אישורי עובדים זרים',
+    description: '',
+    group: 'operations_other',
+  },
+  shaagat_haari_grant: {
+    key: 'shaagat_haari_grant',
+    label: 'מתווה מענק שאגת הארי',
+    description: '',
+    group: 'operations_other',
+  },
+  general: {
+    key: 'general',
+    label: 'כללי',
+    description: '',
+    group: 'operations_other',
   },
 };
 
@@ -283,4 +349,12 @@ export const getCategoryDescription = (category: FileCategory): string => {
 
 export const getAllCategories = (): CategoryConfig[] => {
   return Object.values(FILE_CATEGORIES);
+};
+
+export const getCategoriesByGroup = (): { group: CategoryGroupConfig; categories: CategoryConfig[] }[] => {
+  const groups = Object.values(FILE_CATEGORY_GROUPS).sort((a, b) => a.order - b.order);
+  return groups.map(group => ({
+    group,
+    categories: Object.values(FILE_CATEGORIES).filter(cat => cat.group === group.key),
+  }));
 };

@@ -1,5 +1,5 @@
 /**
- * DocumentsSummaryCard - All 10 file categories with counts + recent files + link to file manager
+ * DocumentsSummaryCard - All 14 file categories with counts + recent files + link to file manager
  */
 
 import { useState, useEffect } from 'react';
@@ -15,16 +15,23 @@ interface DocumentsSummaryCardProps {
 }
 
 const FILE_CATEGORIES = [
-  { key: 'company_registry', label: 'רשם החברות', dot: 'bg-blue-400' },
+  // מסמכי מס וכספים
   { key: 'financial_report', label: 'דו"ח כספי מבוקר אחרון', dot: 'bg-green-400' },
   { key: 'bookkeeping_card', label: 'כרטיסי הנהח"ש אצלנו', dot: 'bg-purple-400' },
   { key: 'quote_invoice', label: 'הצעות מחיר / תעודות חיוב', dot: 'bg-amber-400' },
   { key: 'payment_proof_2026', label: 'אסמכתאות תשלום 2026', dot: 'bg-emerald-400' },
+  { key: 'tax_withholding_exemption', label: 'פטור מניכוי מס במקור', dot: 'bg-lime-400' },
+  { key: 'tax_account_status', label: 'מצב חשבון מס הכנסה', dot: 'bg-yellow-400' },
+  // מסמכי חברה ומשפט
+  { key: 'company_registry', label: 'רשם החברות', dot: 'bg-blue-400' },
   { key: 'holdings_presentation', label: 'מצגת החזקות', dot: 'bg-rose-400' },
-  { key: 'general', label: 'כללי', dot: 'bg-gray-400' },
-  { key: 'foreign_worker_docs', label: 'אישורי עובדים זרים', dot: 'bg-cyan-400' },
   { key: 'protocols', label: 'פרוטוקולים', dot: 'bg-indigo-400' },
   { key: 'agreements', label: 'הסכמים', dot: 'bg-orange-400' },
+  // תפעול ושונות
+  { key: 'letters', label: 'מכתבים / תכתובות', dot: 'bg-teal-400' },
+  { key: 'foreign_worker_docs', label: 'אישורי עובדים זרים', dot: 'bg-cyan-400' },
+  { key: 'shaagat_haari_grant', label: 'מתווה מענק שאגת הארי', dot: 'bg-pink-400' },
+  { key: 'general', label: 'כללי', dot: 'bg-gray-400' },
 ] as const;
 
 interface RecentFile {

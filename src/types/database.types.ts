@@ -5869,6 +5869,15 @@ export type Database = {
           total_clients: number
         }[]
       }
+      get_clients_status_summary: {
+        Args: { p_tenant_id: string; p_year?: number }
+        Returns: {
+          balance_status: string
+          client_id: string
+          fee_calculation_id: string
+          fee_status: string
+        }[]
+      }
       get_collection_statistics: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -5974,7 +5983,7 @@ export type Database = {
           calculation_status: string
           client_id: string
           client_name: string
-          client_name_hebrew: string
+          company_name_hebrew: string
           group_audit_before_vat: number
           group_audit_with_vat: number
           group_bookkeeping_before_vat: number
@@ -5989,6 +5998,7 @@ export type Database = {
           has_letter: boolean
           letter_id: string
           letter_sent_at: string
+          non_paying_reason: string
           payer_client_id: string
           payer_client_name: string
           payment_amount: number
@@ -6402,6 +6412,9 @@ export type Database = {
         | "protocols"
         | "agreements"
         | "letters"
+        | "tax_withholding_exemption"
+        | "tax_account_status"
+        | "shaagat_haari_grant"
       group_fee_status:
         | "draft"
         | "calculated"
@@ -6611,6 +6624,9 @@ export const Constants = {
         "protocols",
         "agreements",
         "letters",
+        "tax_withholding_exemption",
+        "tax_account_status",
+        "shaagat_haari_grant",
       ],
       group_fee_status: [
         "draft",

@@ -1223,7 +1223,10 @@ export class FileUploadService extends BaseService {
         foreign_worker_docs: 0,
         protocols: 0,
         agreements: 0,
-        letters: 0
+        letters: 0,
+        tax_withholding_exemption: 0,
+        tax_account_status: 0,
+        shaagat_haari_grant: 0,
       };
 
       // Count files per category

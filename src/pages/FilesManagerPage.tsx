@@ -13,7 +13,7 @@ import { FileCategorySection } from '@/components/files/FileCategorySection';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FolderOpen, FileText, User, Users } from 'lucide-react';
-import { getAllCategories } from '@/types/file-attachment.types';
+import { getCategoriesByGroup } from '@/types/file-attachment.types';
 import { cn } from '@/lib/utils';
 import type { Client, ClientGroup } from '@/services/client.service';
 import type { FileCategory } from '@/types/file-attachment.types';
@@ -22,8 +22,8 @@ export default function FilesManagerPage() {
   const [mode, setMode] = useState<'client' | 'group'>('client');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<FileCategory>('company_registry');
-  const categories = getAllCategories();
+  const [selectedCategory, setSelectedCategory] = useState<FileCategory>('financial_report');
+  const groupedCategories = getCategoriesByGroup();
 
   const isSelected = mode === 'client' ? !!selectedClient : !!selectedGroup;
   
@@ -115,9 +115,9 @@ export default function FilesManagerPage() {
               מסמכים - {getSelectedName()}
             </CardTitle>
             <CardDescription className="rtl:text-right">
-              {mode === 'group' 
+              {mode === 'group'
                 ? 'העלאת קבצים לכל לקוחות הקבוצה'
-                : `קבצים מאורגנים לפי ${categories.length} קטגוריות`
+                : 'קבצים מאורגנים לפי קטגוריות'
               }
             </CardDescription>
           </CardHeader>
@@ -125,21 +125,30 @@ export default function FilesManagerPage() {
             <div className="flex gap-6" dir="rtl">
               {/* Sidebar - קטגוריות מימין */}
               <div className="w-64 flex-shrink-0">
-                <nav className="space-y-1 sticky top-4">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.key}
-                      onClick={() => setSelectedCategory(cat.key as FileCategory)}
-                      className={cn(
-                        "w-full text-right px-4 py-3 rounded-lg transition-colors flex items-center gap-2 bg-yellow-100 text-blue-900",
-                        selectedCategory === cat.key
-                          ? "border-2 border-blue-900 font-bold"
-                          : "hover:bg-yellow-200 border-2 border-transparent"
-                      )}
-                    >
-                      <FileText className="h-4 w-4 flex-shrink-0 text-red-500" />
-                      <span className="truncate">{cat.label}</span>
-                    </button>
+                <nav className="space-y-4 sticky top-4 max-h-[calc(100vh-12rem)] overflow-y-auto">
+                  {groupedCategories.map(({ group, categories: cats }) => (
+                    <div key={group.key}>
+                      <h4 className="text-xs font-semibold text-gray-500 px-2 pb-1 mb-1 border-b border-gray-200">
+                        {group.label}
+                      </h4>
+                      <div className="space-y-1">
+                        {cats.map((cat) => (
+                          <button
+                            key={cat.key}
+                            onClick={() => setSelectedCategory(cat.key)}
+                            className={cn(
+                              "w-full text-right px-4 py-2.5 rounded-lg transition-colors flex items-center gap-2 bg-yellow-100 text-blue-900 text-sm",
+                              selectedCategory === cat.key
+                                ? "border-2 border-blue-900 font-bold"
+                                : "hover:bg-yellow-200 border-2 border-transparent"
+                            )}
+                          >
+                            <FileText className="h-4 w-4 flex-shrink-0 text-red-500" />
+                            <span className="truncate">{cat.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </nav>
               </div>
