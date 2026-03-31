@@ -6,7 +6,8 @@
  * Layout: Sidebar (categories on right) + Content (files on left)
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ClientSelector } from '@/components/ClientSelector';
 import { GroupSelector } from '@/components/GroupSelector';
 import { FileCategorySection } from '@/components/files/FileCategorySection';
@@ -15,15 +16,32 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FolderOpen, FileText, User, Users } from 'lucide-react';
 import { getCategoriesByGroup } from '@/types/file-attachment.types';
 import { cn } from '@/lib/utils';
-import type { Client, ClientGroup } from '@/services/client.service';
+import { ClientService, type Client, type ClientGroup } from '@/services/client.service';
 import type { FileCategory } from '@/types/file-attachment.types';
 
+const clientService = new ClientService();
+
 export default function FilesManagerPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [mode, setMode] = useState<'client' | 'group'>('client');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<FileCategory>('financial_report');
   const groupedCategories = getCategoriesByGroup();
+
+  // Auto-select client from URL ?clientId=xxx
+  useEffect(() => {
+    const clientId = searchParams.get('clientId');
+    if (clientId && !selectedClient) {
+      clientService.getById(clientId).then(({ data }) => {
+        if (data) {
+          setSelectedClient(data);
+          // Clean up the URL param
+          setSearchParams({}, { replace: true });
+        }
+      });
+    }
+  }, [searchParams]);
 
   const isSelected = mode === 'client' ? !!selectedClient : !!selectedGroup;
   

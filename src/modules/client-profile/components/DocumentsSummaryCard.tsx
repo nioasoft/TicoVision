@@ -105,7 +105,7 @@ export function DocumentsSummaryCard({ clientId }: DocumentsSummaryCardProps) {
             variant="ghost"
             size="sm"
             className="h-7 text-xs gap-1"
-            onClick={() => navigate('/files')}
+            onClick={() => navigate(`/files?clientId=${clientId}`)}
           >
             מנהל קבצים
             <ExternalLink className="h-3 w-3" />
