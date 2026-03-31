@@ -43,15 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [restrictedRoute, setRestrictedRoute] = useState<string | null>(null);
 
   // Helper to check and set restricted user status
-  const checkRestrictedUser = async (userId: string) => {
+  const checkRestrictedUser = async (userId: string, userTenantId?: string) => {
     try {
-      const { data: tenantAccess } = await supabase
+      const query = supabase
         .from('user_tenant_access')
         .select('role, permissions')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .eq('is_primary', true)
-        .single();
+        .eq('is_primary', true);
+
+      if (userTenantId) {
+        query.eq('tenant_id', userTenantId);
+      }
+
+      const { data: tenantAccess } = await query.limit(1).maybeSingle();
 
       if (tenantAccess?.role === 'restricted' && tenantAccess?.permissions) {
         const permissions = tenantAccess.permissions as { restricted_route?: string };
@@ -89,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenantId(session?.user?.user_metadata?.tenant_id ?? null);
         // Check if user is restricted - await before setting loading to false
         if (session?.user?.id) {
-          await checkRestrictedUser(session.user.id);
+          await checkRestrictedUser(session.user.id, session.user.user_metadata?.tenant_id);
         }
       }
       setLoading(false);
@@ -124,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Check restricted user status on auth changes
       if (session?.user?.id) {
-        checkRestrictedUser(session.user.id);
+        checkRestrictedUser(session.user.id, session.user.user_metadata?.tenant_id);
       }
     });
 

@@ -82,14 +82,20 @@ export class AuthService {
         .eq('is_active', true)
         .maybeSingle(); // Returns null if no row found (not super admin)
 
-      // Get tenant access
-      const { data: tenantAccess } = await supabase
+      // Get tenant access (use tenant_id from metadata to handle multi-tenant users)
+      const userTenantId = user.user_metadata?.tenant_id;
+      const tenantQuery = supabase
         .from('user_tenant_access')
         .select('tenant_id, role')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .eq('is_primary', true)
-        .single();
+        .eq('is_primary', true);
+
+      if (userTenantId) {
+        tenantQuery.eq('tenant_id', userTenantId);
+      }
+
+      const { data: tenantAccess } = await tenantQuery.limit(1).maybeSingle();
 
       const authUser: AuthUser = {
         ...user,
