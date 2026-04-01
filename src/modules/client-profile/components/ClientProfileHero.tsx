@@ -4,7 +4,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Pencil, FolderOpen, UserCircle } from 'lucide-react';
+import { ArrowRight, Pencil, UserCircle } from 'lucide-react';
+import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { useNavigate } from 'react-router-dom';
 import { formatIsraeliTaxId } from '@/lib/validators';
 import { Form1214Indicator } from './Form1214Indicator';
@@ -114,9 +115,9 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
                 href={client.google_drive_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-0.5 text-sm font-medium text-blue-700 border border-blue-300 hover:bg-blue-100 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-0.5 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer"
               >
-                <FolderOpen className="h-4 w-4 text-blue-600" />
+                <GoogleDriveIcon className="h-4 w-4" />
                 Google Drive
               </a>
             )}

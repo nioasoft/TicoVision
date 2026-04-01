@@ -1,5 +1,6 @@
 import React from 'react';
-import { Edit, Trash2, MessageCircle, Mail, FolderOpen, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Edit, Trash2, MessageCircle, Mail, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -169,7 +170,7 @@ const ClientRow = React.memo<ClientRowProps>(
                     rel="noopener noreferrer"
                     className="text-green-600 hover:text-green-700 transition-colors"
                   >
-                    <FolderOpen className="h-4 w-4" />
+                    <GoogleDriveIcon className="h-4 w-4" />
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>

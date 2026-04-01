@@ -31,7 +31,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, FolderOpen } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { UnsavedChangesIndicator } from '@/components/ui/unsaved-changes-indicator';
 import { SignatureUpload } from '@/components/SignatureUpload';
 import { ContactsManager } from '@/components/ContactsManager';
@@ -461,7 +462,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   onClick={() => window.open(client.google_drive_link, '_blank')}
                   className="gap-2"
                 >
-                  <FolderOpen className="h-4 w-4 text-green-600" />
+                  <GoogleDriveIcon className="h-4 w-4" />
                   Google Drive
                 </Button>
               </div>

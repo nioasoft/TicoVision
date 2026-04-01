@@ -1,17 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, ChevronDown, ChevronUp, Building2, AlertCircle, Search, FolderOpen } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Building2, AlertCircle, Search } from 'lucide-react';
+import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +30,6 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { clientService, type ClientGroup, type Client } from '@/services';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AddClientsToGroupDialog } from '@/components/groups/AddClientsToGroupDialog';
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
 import { useClients } from '@/hooks/useClients';
@@ -64,8 +57,9 @@ const cleanAddressData = (address?: { street?: string; city?: string; postal_cod
 };
 
 export default function ClientGroupsPage() {
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<ClientGroup[]>([]);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups] = useState<Set<string>>(new Set());
   const [groupClients, setGroupClients] = useState<Map<string, Client[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -118,8 +112,21 @@ export default function ClientGroupsPage() {
   } = useClients();
 
   useEffect(() => {
-    loadGroups();
+    loadGroups().then(() => {
+      // Load client counts for all groups
+    });
   }, []);
+
+  // Load clients for all groups after groups are loaded
+  useEffect(() => {
+    if (groups.length > 0) {
+      groups.forEach((g) => {
+        if (!groupClients.has(g.id)) {
+          loadGroupClients(g.id);
+        }
+      });
+    }
+  }, [groups]);
 
   // Group name duplicate check removed - no restrictions on group creation
 
@@ -154,22 +161,6 @@ export default function ClientGroupsPage() {
     if (response.data) {
       setGroupClients(prev => new Map(prev).set(groupId, response.data));
     }
-  };
-
-  const toggleGroupExpansion = (groupId: string) => {
-    setExpandedGroups(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(groupId)) {
-        newSet.delete(groupId);
-      } else {
-        newSet.add(groupId);
-        // Load clients for this group if not already loaded
-        if (!groupClients.has(groupId)) {
-          loadGroupClients(groupId);
-        }
-      }
-      return newSet;
-    });
   };
 
   const handleAddGroup = async () => {
@@ -304,11 +295,6 @@ export default function ClientGroupsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const openAddClientsDialog = (group: ClientGroup) => {
-    setSelectedGroupForAdding(group);
-    setIsAddClientsDialogOpen(true);
-  };
-
   const handleAddClientsSuccess = () => {
     setIsAddClientsDialogOpen(false);
     // Refresh the clients for this group
@@ -316,11 +302,6 @@ export default function ClientGroupsPage() {
       loadGroupClients(selectedGroupForAdding.id);
     }
     setSelectedGroupForAdding(null);
-  };
-
-  const handleEditClient = (client: Client) => {
-    setSelectedClientForEdit(client);
-    setIsEditClientDialogOpen(true);
   };
 
   // Group Contacts Handlers
@@ -491,10 +472,6 @@ export default function ClientGroupsPage() {
           <h1 className="text-3xl font-bold">ניהול קבוצות לקוחות</h1>
           <p className="text-sm text-muted-foreground/60 mt-0.5 italic">The Band — Stronger Together</p>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="ml-2 h-4 w-4" />
-          הוסף קבוצה חדשה
-        </Button>
       </div>
 
       {/* Search */}
@@ -552,162 +529,100 @@ export default function ClientGroupsPage() {
           <div className="divide-y">
             {filteredGroups.map((group) => {
               const clients = groupClients.get(group.id) || [];
-              const isExpanded = expandedGroups.has(group.id);
-              
+
               return (
-                <Collapsible
+                <div
                   key={group.id}
-                  open={isExpanded}
-                  onOpenChange={() => toggleGroupExpansion(group.id)}
+                  className="p-4 hover:bg-muted/30 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/client-groups/${group.id}`)}
                 >
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="p-0 h-auto">
-                          <div className="flex items-center gap-2">
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                            <Users className="h-4 w-4" />
-                            <div className="text-right">
-                              <div className="font-medium">{group.group_name_hebrew}</div>
-                            </div>
-                          </div>
-                        </Button>
-                      </CollapsibleTrigger>
-                      
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm text-muted-foreground">
-                          בעל שליטה: {group.primary_owner}
-                        </div>
-
-                        {/* Link buttons */}
-                        <div className="flex gap-1">
-                          {group.company_structure_link && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.open(group.company_structure_link, '_blank')}
-                              title="מצגת החזקות"
-                            >
-                              <Building2 className="h-4 w-4 text-blue-500" />
-                              <span className="mr-1">מצגת החזקות</span>
-                            </Button>
-                          )}
-                          {group.google_drive_link && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.open(group.google_drive_link, '_blank')}
-                              title="Google Drive"
-                            >
-                              <FolderOpen className="h-4 w-4 text-green-600" />
-                              <span className="mr-1">Drive</span>
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Action buttons */}
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => openEditDialog(group)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {isAdmin && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openDeleteDialog(group)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
-                          )}
-                        </div>
+                  <div className="flex items-start justify-between">
+                    {/* Right side: name + details */}
+                    <div className="flex-1 min-w-0">
+                      {/* Row 1: Group name + member count */}
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="font-medium text-base">{group.group_name_hebrew}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {clients.length} חברות
+                        </Badge>
                       </div>
-                    </div>
-                    
-                    <CollapsibleContent className="mt-4">
-                      {group.secondary_owners && group.secondary_owners.length > 0 && (
-                        <div className="mb-2 text-sm">
-                          <span className="font-medium">בעלי מניות נוספים: </span>
-                          {group.secondary_owners.join(', ')}
-                        </div>
-                      )}
-                      
-                      {group.notes && (
-                        <div className="mb-2 text-sm text-muted-foreground">
-                          הערות: {group.notes}
-                        </div>
-                      )}
-                      
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="text-sm font-medium">
-                            חברות בקבוצה ({clients.length})
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => openAddClientsDialog(group)}
+
+                      {/* Row 2: Owner + badges + Drive */}
+                      <div className="flex items-center gap-3 flex-wrap text-sm text-muted-foreground mt-1.5 ps-6">
+                        {group.primary_owner && (
+                          <span>בעל שליטה: <span className="font-medium text-foreground">{group.primary_owner}</span></span>
+                        )}
+                        {group.secondary_owners && group.secondary_owners.length > 0 && (
+                          <span className="text-xs">+{group.secondary_owners.length} בעלי מניות</span>
+                        )}
+                        {group.combined_billing && (
+                          <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                            חיוב מאוחד
+                          </Badge>
+                        )}
+                        {group.combined_letters && (
+                          <Badge variant="outline" className="text-xs bg-sky-50 text-sky-700 border-sky-200">
+                            מכתבים מאוחדים
+                          </Badge>
+                        )}
+                        {group.google_drive_link && (
+                          <a
+                            href={group.google_drive_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-sm text-blue-700 hover:text-blue-900 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Plus className="ml-2 h-4 w-4" />
-                            הוסף לקוחות לקבוצה
-                          </Button>
-                        </div>
-                        {clients.length > 0 ? (
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>שם החברה</TableHead>
-                                <TableHead>ת.ז / ח.פ</TableHead>
-                                <TableHead>סטטוס</TableHead>
-                                <TableHead>סוג</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {clients.map((client) => (
-                                <TableRow
-                                  key={client.id}
-                                  className="cursor-pointer hover:bg-gray-50 transition-colors"
-                                  onClick={() => handleEditClient(client)}
-                                >
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="h-4 w-4" />
-                                      {client.company_name}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell>{client.tax_id}</TableCell>
-                                  <TableCell>
-                                    <Badge variant={
-                                      client.status === 'active' ? 'default' :
-                                      client.status === 'inactive' ? 'secondary' : 'destructive'
-                                    }>
-                                      {client.status === 'active' ? 'פעיל' :
-                                       client.status === 'inactive' ? 'לא פעיל' : 'ממתין'}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {client.client_type === 'company' ? 'חברה' :
-                                     client.client_type === 'freelancer' ? 'עצמאי' : 'שכיר בעל שליטה'}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        ) : (
-                          <div className="text-sm text-muted-foreground">
-                            אין חברות משויכות לקבוצה זו
-                          </div>
+                            <GoogleDriveIcon className="h-4 w-4" />
+                            Drive
+                          </a>
+                        )}
+                        {group.company_structure_link && (
+                          <a
+                            href={group.company_structure_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Building2 className="h-3.5 w-3.5" />
+                            מצגת
+                          </a>
                         )}
                       </div>
-                    </CollapsibleContent>
+
+                      {/* Row 3: Notes (if any) */}
+                      {group.notes && (
+                        <div className="mt-1 ps-6 text-xs text-muted-foreground truncate max-w-xl">
+                          {group.notes}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Left side: action buttons */}
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openEditDialog(group)}
+                        title="עריכה"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openDeleteDialog(group)}
+                          title="מחיקה"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </Collapsible>
+                </div>
               );
             })}
           </div>
@@ -933,17 +848,31 @@ export default function ClientGroupsPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsEditDialogOpen(false);
-              setSelectedGroup(null);
-              resetForm();
-            }}>
-              ביטול
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                setSelectedGroup(null);
+                resetForm();
+                setIsAddDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 ms-1.5" />
+              קבוצה חדשה
             </Button>
-            <Button onClick={handleUpdateGroup}>
-              עדכן קבוצה
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => {
+                setIsEditDialogOpen(false);
+                setSelectedGroup(null);
+                resetForm();
+              }}>
+                ביטול
+              </Button>
+              <Button onClick={handleUpdateGroup}>
+                עדכן קבוצה
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

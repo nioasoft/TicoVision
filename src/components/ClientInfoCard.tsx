@@ -1,4 +1,5 @@
-import { Building2, Users, Briefcase, Link2, FolderOpen } from 'lucide-react';
+import { Building2, Users, Briefcase, Link2 } from 'lucide-react';
+import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,7 +59,7 @@ export function ClientInfoCard({ client, relatedCompanies = [] }: ClientInfoCard
               onClick={() => window.open(client.google_drive_link, '_blank')}
               className="gap-2"
             >
-              <FolderOpen className="h-4 w-4 text-green-600" />
+              <GoogleDriveIcon className="h-4 w-4" />
               Google Drive
             </Button>
           </div>

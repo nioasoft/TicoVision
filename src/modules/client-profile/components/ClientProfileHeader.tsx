@@ -4,7 +4,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Pencil, FolderOpen } from 'lucide-react';
+import { ArrowRight, Pencil } from 'lucide-react';
+import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { useNavigate } from 'react-router-dom';
 import { formatIsraeliTaxId } from '@/lib/validators';
 import { Form1214Indicator } from './Form1214Indicator';
@@ -87,7 +88,7 @@ export const ClientProfileHeader: React.FC<ClientProfileHeaderProps> = ({ client
             size="sm"
             onClick={() => window.open(client.google_drive_link, '_blank')}
           >
-            <FolderOpen className="h-4 w-4 ml-1.5 text-green-600" />
+            <GoogleDriveIcon className="h-4 w-4 ml-1.5" />
             Drive
           </Button>
         )}
