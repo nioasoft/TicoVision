@@ -11,29 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, User, UsersRound, ScrollText, FileEdit, Lock } from 'lucide-react';
 import { protocolService } from '../services/protocol.service';
-import type { Protocol } from '../types/protocol.types';
-
-/** Protocol with joined client/group names as returned by getProtocols query */
-export interface ProtocolWithNames extends Protocol {
-  client?: {
-    id: string;
-    company_name: string;
-    company_name_hebrew: string | null;
-  } | null;
-  group?: {
-    id: string;
-    group_name_hebrew: string | null;
-  } | null;
-}
+import type { ProtocolWithRecipient } from '../types/protocol.types';
 
 interface RecentProtocolsProps {
-  onSelectProtocol: (protocol: ProtocolWithNames) => void;
+  onSelectProtocol: (protocol: ProtocolWithRecipient) => void;
 }
 
 const PAGE_SIZE = 50;
 
 export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
-  const [protocols, setProtocols] = useState<ProtocolWithNames[]>([]);
+  const [protocols, setProtocols] = useState<ProtocolWithRecipient[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
@@ -52,8 +39,7 @@ export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
         return;
       }
       if (data) {
-        const fetched = data.protocols as ProtocolWithNames[];
-        setProtocols((prev) => append ? [...prev, ...fetched] : fetched);
+        setProtocols((prev) => append ? [...prev, ...data.protocols] : data.protocols);
         setTotal(data.total);
       }
     } finally {
@@ -74,7 +60,7 @@ export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
     fetchPage(nextPage, true);
   };
 
-  const getDisplayName = (protocol: ProtocolWithNames): string => {
+  const getDisplayName = (protocol: ProtocolWithRecipient): string => {
     if (protocol.client) {
       return protocol.client.company_name_hebrew || protocol.client.company_name;
     }
@@ -84,7 +70,7 @@ export function RecentProtocols({ onSelectProtocol }: RecentProtocolsProps) {
     return '';
   };
 
-  const isGroupProtocol = (protocol: ProtocolWithNames): boolean => {
+  const isGroupProtocol = (protocol: ProtocolWithRecipient): boolean => {
     return !!protocol.group_id;
   };
 

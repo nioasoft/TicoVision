@@ -2,18 +2,13 @@
  * ProtocolsPage
  * Main page for managing meeting protocols with clients or client groups
  * Access: admin, accountant
- *
- * Layout: Client/Group selector at top, then protocol list or builder below
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
-import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { ClientSelector } from '@/components/ClientSelector';
 import { GroupSelector } from '@/components/GroupSelector';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -30,43 +25,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ScrollText, User, UsersRound, Plus, FileText, FilePlus } from 'lucide-react';
-import { ProtocolList } from '../components/ProtocolList';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UnsavedChangesDialog } from '@/components/ui/unsaved-changes-dialog';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import { cn } from '@/lib/utils';
+import { clientService, type Client, type ClientGroup } from '@/services/client.service';
+import {
+  ArrowRight,
+  Clock3,
+  FilePlus,
+  FileText,
+  History,
+  Plus,
+  ScrollText,
+  Sparkles,
+  User,
+  UsersRound,
+} from 'lucide-react';
 import { ProtocolBuilder } from '../components/ProtocolBuilder';
+import { ProtocolList } from '../components/ProtocolList';
 import { ProtocolPreview } from '../components/ProtocolPreview';
-import { RecentProtocols } from '../components/RecentProtocols';
-import type { ProtocolWithNames } from '../components/RecentProtocols';
 import { protocolService } from '../services/protocol.service';
-import { clientService } from '@/services/client.service';
-import type { Client, ClientGroup } from '@/services/client.service';
-import type { Protocol, ProtocolWithRelations } from '../types/protocol.types';
+import type { ProtocolWithRecipient, ProtocolWithRelations } from '../types/protocol.types';
 
 type ViewMode = 'list' | 'builder' | 'preview';
+type EntryMode = 'home' | 'new' | 'history';
+type SelectionMode = 'client' | 'group';
+
+const PROTOCOLS_PAGE_SIZE = 100;
 
 export function ProtocolsPage() {
-  const [mode, setMode] = useState<'client' | 'group'>('client');
+  const [entryMode, setEntryMode] = useState<EntryMode>('home');
+  const [mode, setMode] = useState<SelectionMode>('client');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<ClientGroup | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedProtocol, setSelectedProtocol] = useState<ProtocolWithRelations | null>(null);
-  const [protocols, setProtocols] = useState<Protocol[]>([]);
+  const [protocols, setProtocols] = useState<ProtocolWithRecipient[]>([]);
+  const [historyProtocols, setHistoryProtocols] = useState<ProtocolWithRecipient[]>([]);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [total, setTotal] = useState(0);
+  const [historyTotal, setHistoryTotal] = useState(0);
 
-  // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedImportProtocolId, setSelectedImportProtocolId] = useState<string | null>(null);
   const [importingProtocol, setImportingProtocol] = useState(false);
 
-  // Data loss prevention: track builder dirty state
   const [isBuilderDirty, setIsBuilderDirty] = useState(false);
+  const [showInternalNavigationDialog, setShowInternalNavigationDialog] = useState(false);
+  const [pendingInternalAction, setPendingInternalAction] = useState<(() => void) | null>(null);
+
   const guard = useUnsavedChangesGuard({
     isDirty: isBuilderDirty && viewMode === 'builder',
   });
 
   const isSelected = mode === 'client' ? !!selectedClient : !!selectedGroup;
 
-  const getSelectedName = () => {
+  const getSelectedName = useCallback(() => {
     if (mode === 'client' && selectedClient) {
       return selectedClient.company_name_hebrew || selectedClient.company_name;
     }
@@ -74,58 +90,288 @@ export function ProtocolsPage() {
       return selectedGroup.group_name_hebrew;
     }
     return '';
-  };
+  }, [mode, selectedClient, selectedGroup]);
 
-  // Fetch protocols when client/group changes
-  const fetchProtocols = useCallback(async () => {
-    if (!isSelected) return;
+  const fetchAllProtocols = useCallback(async (params: {
+    clientId?: string;
+    groupId?: string;
+    status?: 'draft' | 'locked';
+  }): Promise<{ protocols: ProtocolWithRecipient[]; total: number }> => {
+    const allProtocols: ProtocolWithRecipient[] = [];
+    let totalCount = 0;
+    let page = 1;
 
-    setLoading(true);
-    try {
+    while (true) {
       const { data, error } = await protocolService.getProtocols({
-        clientId: selectedClient?.id,
-        groupId: selectedGroup?.id,
+        ...params,
+        page,
+        pageSize: PROTOCOLS_PAGE_SIZE,
       });
 
       if (error) {
-        console.error('Failed to fetch protocols:', error);
-        return;
+        throw error;
       }
 
-      if (data) {
-        setProtocols(data.protocols);
-        setTotal(data.total);
+      if (!data) {
+        break;
       }
+
+      allProtocols.push(...data.protocols);
+      totalCount = data.total;
+
+      if (allProtocols.length >= totalCount || data.protocols.length === 0) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return { protocols: allProtocols, total: totalCount };
+  }, []);
+
+  const fetchProtocols = useCallback(async () => {
+    if (!isSelected) {
+      setProtocols([]);
+      setTotal(0);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await fetchAllProtocols({
+        clientId: selectedClient?.id,
+        groupId: selectedGroup?.id,
+      });
+      setProtocols(data.protocols);
+      setTotal(data.total);
+    } catch (error) {
+      console.error('Failed to fetch protocols:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedClient?.id, selectedGroup?.id, isSelected]);
+  }, [fetchAllProtocols, isSelected, selectedClient?.id, selectedGroup?.id]);
+
+  const fetchHistoryProtocols = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const data = await fetchAllProtocols({});
+      setHistoryProtocols(data.protocols);
+      setHistoryTotal(data.total);
+    } catch (error) {
+      console.error('Failed to fetch protocol history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [fetchAllProtocols]);
 
   useEffect(() => {
-    fetchProtocols();
+    void fetchProtocols();
   }, [fetchProtocols]);
 
-  // Handle creating a new protocol
-  const handleNewProtocol = () => {
-    if (protocols.length > 0) {
-      // Has previous protocols - show import dialog
-      setSelectedImportProtocolId(null);
-      setImportDialogOpen(true);
-    } else {
-      // No previous protocols - go directly to builder
-      startNewProtocol();
+  useEffect(() => {
+    if (entryMode === 'history' && viewMode === 'list') {
+      void fetchHistoryProtocols();
     }
-  };
+  }, [entryMode, viewMode, fetchHistoryProtocols]);
 
-  // Start a new protocol from scratch
-  const startNewProtocol = () => {
+  const closeDetailView = useCallback(() => {
+    setViewMode('list');
+    setSelectedProtocol(null);
+    setImportDialogOpen(false);
+  }, []);
+
+  const requestInternalNavigation = useCallback((action: () => void) => {
+    if (isBuilderDirty && viewMode === 'builder') {
+      setPendingInternalAction(() => action);
+      setShowInternalNavigationDialog(true);
+      return;
+    }
+
+    action();
+  }, [isBuilderDirty, viewMode]);
+
+  const handleInternalNavigationLeave = useCallback(() => {
+    setShowInternalNavigationDialog(false);
+    const action = pendingInternalAction;
+    setPendingInternalAction(null);
+    action?.();
+  }, [pendingInternalAction]);
+
+  const handleInternalNavigationStay = useCallback(() => {
+    setShowInternalNavigationDialog(false);
+    setPendingInternalAction(null);
+  }, []);
+
+  const handleEntryModeChange = useCallback((nextMode: Exclude<EntryMode, 'home'>) => {
+    requestInternalNavigation(() => {
+      setEntryMode(nextMode);
+      closeDetailView();
+    });
+  }, [closeDetailView, requestInternalNavigation]);
+
+  const handleGoHome = useCallback(() => {
+    requestInternalNavigation(() => {
+      setEntryMode('home');
+      closeDetailView();
+    });
+  }, [closeDetailView, requestInternalNavigation]);
+
+  const loadProtocolById = useCallback(async (protocolId: string) => {
+    const { data, error } = await protocolService.getProtocolById(protocolId);
+    if (error || !data) {
+      console.error('Failed to fetch protocol:', error);
+      return null;
+    }
+    return data;
+  }, []);
+
+  const ensureProtocolRecipientSelection = useCallback(async (protocol: ProtocolWithRecipient) => {
+    if (protocol.client_id) {
+      if (selectedClient?.id === protocol.client_id) {
+        setMode('client');
+        setSelectedGroup(null);
+        return true;
+      }
+
+      const { data, error } = await clientService.getById(protocol.client_id);
+      if (error || !data) {
+        console.error('Failed to fetch client for protocol:', error);
+        return false;
+      }
+
+      setMode('client');
+      setSelectedGroup(null);
+      setSelectedClient(data);
+      return true;
+    }
+
+    if (protocol.group_id) {
+      if (selectedGroup?.id === protocol.group_id) {
+        setMode('group');
+        setSelectedClient(null);
+        return true;
+      }
+
+      const { data, error } = await clientService.getGroupById(protocol.group_id);
+      if (error || !data) {
+        console.error('Failed to fetch group for protocol:', error);
+        return false;
+      }
+
+      setMode('group');
+      setSelectedClient(null);
+      setSelectedGroup(data);
+      return true;
+    }
+
+    return false;
+  }, [selectedClient?.id, selectedGroup?.id]);
+
+  const startNewProtocol = useCallback(() => {
+    setEntryMode('new');
     setSelectedProtocol(null);
     setImportDialogOpen(false);
     setViewMode('builder');
-  };
+  }, []);
 
-  // Import data from a selected protocol
-  const importFromSelected = async () => {
+  const handleNewProtocol = useCallback(() => {
+    if (protocols.length > 0) {
+      setSelectedImportProtocolId(null);
+      setImportDialogOpen(true);
+      return;
+    }
+
+    startNewProtocol();
+  }, [protocols.length, startNewProtocol]);
+
+  const handleEditProtocol = useCallback(async (protocolId: string) => {
+    const protocol = await loadProtocolById(protocolId);
+    if (!protocol) return;
+
+    setEntryMode('new');
+    setSelectedProtocol(protocol);
+    setViewMode('builder');
+  }, [loadProtocolById]);
+
+  const handleViewProtocol = useCallback(async (protocolId: string) => {
+    const protocol = await loadProtocolById(protocolId);
+    if (!protocol) return;
+
+    setEntryMode('new');
+    setSelectedProtocol(protocol);
+    setViewMode('preview');
+  }, [loadProtocolById]);
+
+  const handleEditProtocolFromHistory = useCallback(async (protocolId: string) => {
+    const protocol = await loadProtocolById(protocolId);
+    if (!protocol) return;
+
+    const recipientSelected = await ensureProtocolRecipientSelection(protocol);
+    if (!recipientSelected) return;
+
+    setEntryMode('history');
+    setSelectedProtocol(protocol);
+    setViewMode('builder');
+  }, [ensureProtocolRecipientSelection, loadProtocolById]);
+
+  const handleViewProtocolFromHistory = useCallback(async (protocolId: string) => {
+    const protocol = await loadProtocolById(protocolId);
+    if (!protocol) return;
+
+    const recipientSelected = await ensureProtocolRecipientSelection(protocol);
+    if (!recipientSelected) return;
+
+    setEntryMode('history');
+    setSelectedProtocol(protocol);
+    setViewMode('preview');
+  }, [ensureProtocolRecipientSelection, loadProtocolById]);
+
+  const handleDuplicateProtocol = useCallback(async (protocolId: string) => {
+    const { data, error } = await protocolService.duplicateProtocol(protocolId);
+    if (error || !data) {
+      console.error('Failed to duplicate protocol:', error);
+      return;
+    }
+
+    await fetchProtocols();
+    await handleEditProtocol(data.id);
+  }, [fetchProtocols, handleEditProtocol]);
+
+  const handleDuplicateProtocolFromHistory = useCallback(async (protocolId: string) => {
+    const { data, error } = await protocolService.duplicateProtocol(protocolId);
+    if (error || !data) {
+      console.error('Failed to duplicate protocol:', error);
+      return;
+    }
+
+    await fetchHistoryProtocols();
+    await handleEditProtocolFromHistory(data.id);
+  }, [fetchHistoryProtocols, handleEditProtocolFromHistory]);
+
+  const handleDeleteProtocol = useCallback(async (protocolId: string) => {
+    const { error } = await protocolService.deleteProtocol(protocolId);
+    if (error) {
+      console.error('Failed to delete protocol:', error);
+      return;
+    }
+
+    await fetchProtocols();
+  }, [fetchProtocols]);
+
+  const handleDeleteProtocolFromHistory = useCallback(async (protocolId: string) => {
+    const { error } = await protocolService.deleteProtocol(protocolId);
+    if (error) {
+      console.error('Failed to delete protocol:', error);
+      return;
+    }
+
+    await Promise.all([
+      fetchHistoryProtocols(),
+      fetchProtocols(),
+    ]);
+  }, [fetchHistoryProtocols, fetchProtocols]);
+
+  const importFromSelected = useCallback(async () => {
     if (!selectedImportProtocolId) {
       startNewProtocol();
       return;
@@ -139,232 +385,326 @@ export function ProtocolsPage() {
         startNewProtocol();
         return;
       }
-      // Refresh list and open the imported protocol
+
       await fetchProtocols();
       setImportDialogOpen(false);
-      handleEditProtocol(data.id);
+      await handleEditProtocol(data.id);
     } finally {
       setImportingProtocol(false);
     }
-  };
+  }, [fetchProtocols, handleEditProtocol, selectedImportProtocolId, startNewProtocol]);
 
-  // Handle editing an existing protocol
-  const handleEditProtocol = async (protocolId: string) => {
-    const { data, error } = await protocolService.getProtocolById(protocolId);
-    if (error || !data) {
-      console.error('Failed to fetch protocol:', error);
-      return;
+  const handleSaveProtocol = useCallback(async () => {
+    if (entryMode === 'history') {
+      await Promise.all([
+        fetchHistoryProtocols(),
+        fetchProtocols(),
+      ]);
+    } else {
+      await fetchProtocols();
     }
-    setSelectedProtocol(data);
-    setViewMode('builder');
-  };
 
-  // Handle viewing a locked protocol
-  const handleViewProtocol = async (protocolId: string) => {
-    const { data, error } = await protocolService.getProtocolById(protocolId);
-    if (error || !data) {
-      console.error('Failed to fetch protocol:', error);
-      return;
-    }
-    setSelectedProtocol(data);
-    setViewMode('preview');
-  };
+    closeDetailView();
+  }, [closeDetailView, entryMode, fetchHistoryProtocols, fetchProtocols]);
 
-  // Handle duplicating a protocol
-  const handleDuplicateProtocol = async (protocolId: string) => {
-    const { data, error } = await protocolService.duplicateProtocol(protocolId);
-    if (error || !data) {
-      console.error('Failed to duplicate protocol:', error);
-      return;
-    }
-    // Refresh list and open the duplicated protocol
-    await fetchProtocols();
-    handleEditProtocol(data.id);
-  };
+  const handleCancelBuilder = useCallback(() => {
+    closeDetailView();
+  }, [closeDetailView]);
 
-  // Handle deleting a protocol
-  const handleDeleteProtocol = async (protocolId: string) => {
-    const { error } = await protocolService.deleteProtocol(protocolId);
-    if (error) {
-      console.error('Failed to delete protocol:', error);
-      return;
-    }
-    await fetchProtocols();
-  };
+  const handleBackToList = useCallback(() => {
+    closeDetailView();
+  }, [closeDetailView]);
 
-  // Handle saving from builder
-  const handleSaveProtocol = async () => {
-    await fetchProtocols();
-    setViewMode('list');
-    setSelectedProtocol(null);
-  };
+  const actionCards = [
+    {
+      key: 'new' as const,
+      title: 'פרוטוקול חדש',
+      description: 'בחירת לקוח או קבוצה, פתיחת טיוטה חדשה או שכפול מפרוטוקול קודם.',
+      icon: Sparkles,
+      iconClassName: 'bg-blue-100 text-blue-700',
+      activeClassName: 'border-blue-300 bg-blue-50 shadow-blue-100/80',
+      inactiveClassName: 'border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50',
+    },
+    {
+      key: 'history' as const,
+      title: 'היסטוריית פרוטוקולים',
+      description: 'צפייה בכל הפרוטוקולים של כל הלקוחות והקבוצות ממקום אחד.',
+      icon: History,
+      iconClassName: 'bg-amber-100 text-amber-700',
+      activeClassName: 'border-amber-300 bg-amber-50 shadow-amber-100/80',
+      inactiveClassName: 'border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/50',
+    },
+  ];
 
-  // Handle cancel from builder
-  const handleCancelBuilder = () => {
-    setViewMode('list');
-    setSelectedProtocol(null);
-  };
-
-  // Handle clicking a recent protocol — auto-select client/group
-  const handleRecentProtocolClick = async (protocol: ProtocolWithNames) => {
-    if (protocol.client_id) {
-      const { data } = await clientService.getById(protocol.client_id);
-      if (data) {
-        setMode('client');
-        setSelectedGroup(null);
-        setSelectedClient(data);
-      }
-    } else if (protocol.group_id) {
-      const { data } = await clientService.getGroupById(protocol.group_id);
-      if (data) {
-        setMode('group');
-        setSelectedClient(null);
-        setSelectedGroup(data);
-      }
-    }
-    setViewMode('list');
-    setSelectedProtocol(null);
-  };
+  const showNewList = entryMode === 'new' && viewMode === 'list';
+  const showHistoryList = entryMode === 'history' && viewMode === 'list';
+  const showBuilder = viewMode === 'builder' && isSelected;
+  const showPreview = viewMode === 'preview' && !!selectedProtocol;
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="text-right">
-        <div className="flex items-center gap-3 mb-2">
+    <div className="space-y-6" dir="rtl">
+      <div className="rtl:text-right ltr:text-left">
+        <div className="mb-2 flex items-center justify-start gap-3">
           <h1 className="text-3xl font-semibold">פרוטוקולים</h1>
           <ScrollText className="h-7 w-7 text-primary" />
         </div>
-        <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Rock the Minutes</p>
+        <p className="mt-0.5 text-sm italic text-muted-foreground/60">Rock the Minutes</p>
         <p className="text-sm text-gray-600 rtl:text-right">
           ניהול פרוטוקולים של פגישות עם לקוחות וקבוצות
         </p>
       </div>
 
-      {/* Selection Mode */}
-      <div className="rounded-md border bg-white px-3 py-2">
-        <div className="flex items-start justify-between gap-4">
+      <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100/70 p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="text-right">
-            <p className="text-xs font-semibold">בחירת יעד</p>
-            <p className="text-[11px] text-gray-500">בחר לקוח או קבוצה כדי להתחיל לעבוד</p>
+            <p className="text-sm font-semibold text-slate-900">מה תרצה לעשות?</p>
+            <p className="mt-1 text-sm text-slate-500">
+              אפשר להתחיל פרוטוקול חדש או לפתוח את כל ההיסטוריה של הפרוטוקולים.
+            </p>
           </div>
-          {isSelected && (
-            <div className="text-[11px] text-gray-500 rtl:text-right ltr:text-left">{getSelectedName()}</div>
+
+          {entryMode !== 'home' && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleGoHome}
+              className="flex items-center gap-2 self-start rounded-full px-4 rtl:flex-row-reverse lg:self-auto"
+            >
+              <ArrowRight className="h-4 w-4" />
+              חזרה למסך הבית
+            </Button>
           )}
         </div>
-        <Tabs
-          value={mode}
-          onValueChange={(v) => {
-            setMode(v as 'client' | 'group');
-            if (v === 'client') setSelectedGroup(null);
-            else setSelectedClient(null);
-            setViewMode('list');
-            setSelectedProtocol(null);
-          }}
-          dir="rtl"
-          className="w-full mt-2"
-        >
-          <TabsList className="flex w-full gap-2 bg-transparent p-0 h-auto">
-            <TabsTrigger
-              value="client"
-              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 text-xs data-[state=active]:bg-blue-100 data-[state=active]:text-blue-800 data-[state=active]:border-blue-300 data-[state=active]:font-semibold"
-            >
-              <User className="h-4 w-4" />
-              לפי לקוח
-            </TabsTrigger>
-            <TabsTrigger
-              value="group"
-              className="flex-1 flex items-center justify-center gap-2 flex-row-reverse rounded-md border border-violet-100 bg-violet-50 text-violet-600 hover:bg-violet-100 py-2 text-xs data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 data-[state=active]:border-violet-300 data-[state=active]:font-semibold"
-            >
-              <UsersRound className="h-4 w-4" />
-              לפי קבוצה
-            </TabsTrigger>
-          </TabsList>
 
-          <TabsContent value="client" className="mt-2">
-            <div className="rounded-md border bg-gray-50/60 px-2 py-2">
-              <ClientSelector
-                value={selectedClient?.id || null}
-                onChange={(client) => {
-                  setSelectedClient(client);
-                  setViewMode('list');
-                  setSelectedProtocol(null);
-                }}
-                label="בחר לקוח"
-              />
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {actionCards.map((card) => {
+            const Icon = card.icon;
+            const isActive = entryMode === card.key;
+
+            return (
+              <button
+                key={card.key}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => handleEntryModeChange(card.key)}
+                className={cn(
+                  'rounded-2xl border p-4 text-right shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  isActive ? card.activeClassName : card.inactiveClassName,
+                )}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-base font-semibold text-slate-900">{card.title}</p>
+                      {isActive && (
+                        <span className="rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                          פעיל
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-500">{card.description}</p>
+                  </div>
+                  <div className={cn('rounded-2xl p-3 shadow-sm', card.iconClassName)}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {entryMode === 'home' && (
+        <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-12 text-center">
+          <div className="mx-auto flex max-w-xl flex-col items-center gap-3">
+            <div className="rounded-full bg-white p-4 shadow-sm">
+              <ScrollText className="h-8 w-8 text-slate-500" />
             </div>
-          </TabsContent>
-
-          <TabsContent value="group" className="mt-2">
-            <div className="rounded-md border bg-gray-50/60 px-2 py-2">
-              <GroupSelector
-                value={selectedGroup?.id || null}
-                onChange={(group) => {
-                  setSelectedGroup(group);
-                  setViewMode('list');
-                  setSelectedProtocol(null);
-                }}
-                label="בחר קבוצה"
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
-        {!isSelected && (
-          <p className="text-[11px] text-gray-500 mt-2 rtl:text-right">
-            בחר {mode === 'client' ? 'לקוח' : 'קבוצה'} מהרשימה כדי לראות פרוטוקולים קיימים או ליצור חדש.
-          </p>
-        )}
-      </div>
-
-      {/* Recent Protocols - shown when no client/group selected */}
-      {!isSelected && (
-        <RecentProtocols onSelectProtocol={handleRecentProtocolClick} />
+            <h2 className="text-xl font-semibold text-slate-900">בחירת פעולה לפני כניסה לעבודה</h2>
+            <p className="text-sm leading-6 text-slate-500">
+              לחץ על <strong>פרוטוקול חדש</strong> כדי לבחור לקוח או קבוצה, או על
+              {' '}
+              <strong>היסטוריית פרוטוקולים</strong>
+              {' '}
+              כדי לראות את כל הפרוטוקולים הקיימים.
+            </p>
+          </div>
+        </section>
       )}
 
-      {/* Main Content */}
-      {isSelected &&
-        (viewMode === 'list' ? (
-          <div className="rounded-md border bg-white">
-            <div className="flex items-center justify-between gap-4 px-4 py-3 border-b">
-              <div className="text-right">
-                <h2 className="text-lg font-semibold">פרוטוקולים - {getSelectedName()}</h2>
-                <p className="text-xs text-gray-500 mt-1">{total} פרוטוקולים</p>
-              </div>
-              <Button onClick={handleNewProtocol} className="flex items-center gap-2 flex-row-reverse">
-                <Plus className="h-4 w-4" />
-                פרוטוקול חדש
-              </Button>
+      {entryMode === 'new' && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="text-right">
+              <p className="text-sm font-semibold text-slate-900">פתיחת פרוטוקול חדש</p>
+              <p className="mt-1 text-sm text-slate-500">
+                בחר לקוח או קבוצה כדי לראות פרוטוקולים קיימים, ליצור חדש או להעתיק מפרוטוקול קודם.
+              </p>
             </div>
-            <div className="p-4">
-              <ProtocolList
-                protocols={protocols}
-                loading={loading}
-                onEdit={handleEditProtocol}
-                onView={handleViewProtocol}
-                onDuplicate={handleDuplicateProtocol}
-                onDelete={handleDeleteProtocol}
-              />
+            {isSelected && (
+              <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-600">
+                {getSelectedName()}
+              </div>
+            )}
+          </div>
+
+          <Tabs
+            value={mode}
+            onValueChange={(value) => {
+              setMode(value as SelectionMode);
+              if (value === 'client') {
+                setSelectedGroup(null);
+              } else {
+                setSelectedClient(null);
+              }
+              closeDetailView();
+            }}
+            dir="rtl"
+            className="mt-4 w-full"
+          >
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-2 bg-transparent p-0">
+              <TabsTrigger
+                value="client"
+                className="flex items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 py-3 text-sm text-blue-700 data-[state=active]:border-blue-300 data-[state=active]:bg-blue-100 data-[state=active]:font-semibold data-[state=active]:text-blue-900"
+              >
+                <User className="h-4 w-4" />
+                לפי לקוח
+              </TabsTrigger>
+              <TabsTrigger
+                value="group"
+                className="flex items-center justify-center gap-2 rounded-xl border border-violet-100 bg-violet-50 py-3 text-sm text-violet-700 data-[state=active]:border-violet-300 data-[state=active]:bg-violet-100 data-[state=active]:font-semibold data-[state=active]:text-violet-900"
+              >
+                <UsersRound className="h-4 w-4" />
+                לפי קבוצה
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="client" className="mt-3">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/40 px-3 py-3">
+                <ClientSelector
+                  value={selectedClient?.id || null}
+                  onChange={(client) => {
+                    setSelectedClient(client);
+                    closeDetailView();
+                  }}
+                  label="בחר לקוח"
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="group" className="mt-3">
+              <div className="rounded-2xl border border-violet-100 bg-violet-50/40 px-3 py-3">
+                <GroupSelector
+                  value={selectedGroup?.id || null}
+                  onChange={(group) => {
+                    setSelectedGroup(group);
+                    closeDetailView();
+                  }}
+                  label="בחר קבוצה"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {!isSelected && viewMode === 'list' && (
+            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center">
+              <div className="mx-auto flex max-w-md flex-col items-center gap-3">
+                <div className="rounded-full bg-white p-3 shadow-sm">
+                  <Clock3 className="h-6 w-6 text-slate-500" />
+                </div>
+                <h2 className="text-lg font-semibold text-slate-900">בחר יעד כדי להתחיל</h2>
+                <p className="text-sm leading-6 text-slate-500">
+                  בחר {mode === 'client' ? 'לקוח' : 'קבוצה'} מהרשימה כדי לראות את הפרוטוקולים הקיימים
+                  ולפתוח פרוטוקול חדש.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {showNewList && isSelected && (
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center justify-between gap-4 border-b px-4 py-4">
+            <div className="text-right">
+              <h2 className="text-lg font-semibold text-slate-900">פרוטוקולים של {getSelectedName()}</h2>
+              <p className="mt-1 text-xs text-slate-500">{total} פרוטוקולים</p>
+            </div>
+            <Button
+              onClick={handleNewProtocol}
+              disabled={loading}
+              className="flex items-center gap-2 rtl:flex-row-reverse"
+            >
+              <Plus className="h-4 w-4" />
+              פרוטוקול חדש
+            </Button>
+          </div>
+          <div className="p-4">
+            <ProtocolList
+              protocols={protocols}
+              loading={loading}
+              onEdit={handleEditProtocol}
+              onView={handleViewProtocol}
+              onDuplicate={handleDuplicateProtocol}
+              onDelete={handleDeleteProtocol}
+            />
+          </div>
+        </section>
+      )}
+
+      {showHistoryList && (
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b px-4 py-4">
+            <div className="text-right">
+              <h2 className="text-lg font-semibold text-slate-900">היסטוריית פרוטוקולים</h2>
+              <p className="mt-1 text-xs text-slate-500">
+                {historyTotal} פרוטוקולים מכל הלקוחות והקבוצות
+              </p>
             </div>
           </div>
-        ) : viewMode === 'builder' ? (
-          <ProtocolBuilder
-            protocol={selectedProtocol}
-            clientId={selectedClient?.id || null}
-            groupId={selectedGroup?.id || null}
-            recipientName={getSelectedName()}
-            onSave={handleSaveProtocol}
-            onCancel={handleCancelBuilder}
-            onDirtyChange={setIsBuilderDirty}
-          />
-        ) : (
-          <ProtocolPreview
-            protocol={selectedProtocol!}
-            onBack={() => setViewMode('list')}
-            onEdit={() => setViewMode('builder')}
-            onDuplicate={() => selectedProtocol && handleDuplicateProtocol(selectedProtocol.id)}
-          />
-        ))}
+          <div className="p-4">
+            <ProtocolList
+              protocols={historyProtocols}
+              loading={historyLoading}
+              showRecipientColumn
+              recipientColumnTitle="שם לקוח / קבוצה"
+              showInlineQuickActions
+              emptyTitle="אין פרוטוקולים בהיסטוריה"
+              emptyDescription="כאן תופיע היסטוריית כל הפרוטוקולים ברגע שייווצרו פרוטוקולים חדשים."
+              onEdit={handleEditProtocolFromHistory}
+              onView={handleViewProtocolFromHistory}
+              onDuplicate={handleDuplicateProtocolFromHistory}
+              onDelete={handleDeleteProtocolFromHistory}
+            />
+          </div>
+        </section>
+      )}
 
-      {/* Import Protocol Dialog */}
+      {showBuilder && (
+        <ProtocolBuilder
+          protocol={selectedProtocol}
+          clientId={selectedClient?.id || null}
+          groupId={selectedGroup?.id || null}
+          recipientName={getSelectedName()}
+          onSave={handleSaveProtocol}
+          onCancel={handleCancelBuilder}
+          onDirtyChange={setIsBuilderDirty}
+        />
+      )}
+
+      {showPreview && selectedProtocol && (
+        <ProtocolPreview
+          protocol={selectedProtocol}
+          onBack={handleBackToList}
+          onEdit={() => setViewMode('builder')}
+          onDuplicate={() => (
+            entryMode === 'history'
+              ? handleDuplicateProtocolFromHistory(selectedProtocol.id)
+              : handleDuplicateProtocol(selectedProtocol.id)
+          )}
+        />
+      )}
+
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent className="rtl:text-right" dir="rtl">
           <DialogHeader>
@@ -384,13 +724,13 @@ export function ProtocolsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {protocols.slice(0, 10).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      <div className="flex items-center gap-2 rtl:flex-row-reverse">
+                  {protocols.slice(0, 10).map((protocol) => (
+                    <SelectItem key={protocol.id} value={protocol.id}>
+                      <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-gray-400" />
                         <span>
-                          {format(new Date(p.meeting_date), 'dd/MM/yyyy', { locale: he })}
-                          {p.title ? ` - ${p.title}` : ''}
+                          {format(new Date(protocol.meeting_date), 'dd/MM/yyyy', { locale: he })}
+                          {protocol.title ? ` - ${protocol.title}` : ''}
                         </span>
                       </div>
                     </SelectItem>
@@ -425,7 +765,12 @@ export function ProtocolsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Unsaved Changes Dialog (route navigation guard) */}
+      <UnsavedChangesDialog
+        open={showInternalNavigationDialog}
+        onStay={handleInternalNavigationStay}
+        onLeave={handleInternalNavigationLeave}
+      />
+
       <UnsavedChangesDialog
         open={guard.showDialog}
         onStay={guard.cancelLeave}

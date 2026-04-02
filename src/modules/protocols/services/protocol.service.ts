@@ -14,6 +14,7 @@ import { userService } from '@/services/user.service';
 import type { ClientAttachment } from '@/types/file-attachment.types';
 import type {
   Protocol,
+  ProtocolWithRecipient,
   ProtocolWithRelations,
   CreateProtocolDto,
   UpdateProtocolDto,
@@ -75,7 +76,7 @@ export class ProtocolService extends BaseService {
     status?: 'draft' | 'locked';
     page?: number;
     pageSize?: number;
-  }): Promise<ServiceResponse<{ protocols: Protocol[]; total: number }>> {
+  }): Promise<ServiceResponse<{ protocols: ProtocolWithRecipient[]; total: number }>> {
     try {
       const tenantId = await this.getTenantId();
       const { clientId, groupId, status, page = 1, pageSize = 20 } = params;

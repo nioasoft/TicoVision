@@ -142,16 +142,23 @@ export interface Protocol {
   created_by: string | null;
 }
 
-export interface ProtocolWithRelations extends Protocol {
-  client?: {
-    id: string;
-    company_name: string;
-    company_name_hebrew: string | null;
-  } | null;
-  group?: {
-    id: string;
-    group_name_hebrew: string | null;
-  } | null;
+export interface ProtocolClientSummary {
+  id: string;
+  company_name: string;
+  company_name_hebrew: string | null;
+}
+
+export interface ProtocolGroupSummary {
+  id: string;
+  group_name_hebrew: string | null;
+}
+
+export interface ProtocolWithRecipient extends Protocol {
+  client?: ProtocolClientSummary | null;
+  group?: ProtocolGroupSummary | null;
+}
+
+export interface ProtocolWithRelations extends ProtocolWithRecipient {
   attendees: ProtocolAttendee[];
   decisions: ProtocolDecision[];
   content_sections: ProtocolContentSection[];

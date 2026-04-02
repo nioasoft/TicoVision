@@ -45,11 +45,13 @@ import {
   ScrollText,
   FileDown,
   Mail,
+  User,
+  UsersRound,
 } from 'lucide-react';
-import type { Protocol } from '../types/protocol.types';
+import type { ProtocolWithRecipient } from '../types/protocol.types';
 
 interface ProtocolListProps {
-  protocols: Protocol[];
+  protocols: ProtocolWithRecipient[];
   loading: boolean;
   onEdit: (protocolId: string) => void;
   onView: (protocolId: string) => void;
@@ -57,6 +59,11 @@ interface ProtocolListProps {
   onDelete: (protocolId: string) => void;
   onGeneratePdf?: (protocolId: string) => void;
   onSendEmail?: (protocolId: string) => void;
+  showRecipientColumn?: boolean;
+  recipientColumnTitle?: string;
+  showInlineQuickActions?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 export function ProtocolList({
@@ -68,11 +75,26 @@ export function ProtocolList({
   onDelete,
   onGeneratePdf,
   onSendEmail,
+  showRecipientColumn = false,
+  recipientColumnTitle = 'יעד',
+  showInlineQuickActions = false,
+  emptyTitle = 'אין פרוטוקולים',
+  emptyDescription = 'לחץ על "פרוטוקול חדש" כדי ליצור את הפרוטוקול הראשון',
 }: ProtocolListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [protocolToDelete, setProtocolToDelete] = useState<Protocol | null>(null);
+  const [protocolToDelete, setProtocolToDelete] = useState<ProtocolWithRecipient | null>(null);
 
-  const handleDeleteClick = (protocol: Protocol) => {
+  const getRecipientName = (protocol: ProtocolWithRecipient): string => {
+    if (protocol.client) {
+      return protocol.client.company_name_hebrew || protocol.client.company_name;
+    }
+    if (protocol.group) {
+      return protocol.group.group_name_hebrew || '';
+    }
+    return '';
+  };
+
+  const handleDeleteClick = (protocol: ProtocolWithRecipient) => {
     setProtocolToDelete(protocol);
     setDeleteDialogOpen(true);
   };
@@ -84,6 +106,8 @@ export function ProtocolList({
     setDeleteDialogOpen(false);
     setProtocolToDelete(null);
   };
+
+  const isLockedProtocol = (protocol: ProtocolWithRecipient) => protocol.status === 'locked';
 
   if (loading) {
     return (
@@ -106,8 +130,8 @@ export function ProtocolList({
     return (
       <div className="text-center py-12">
         <ScrollText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-700 mb-2">אין פרוטוקולים</h3>
-        <p className="text-gray-500">לחץ על &quot;פרוטוקול חדש&quot; כדי ליצור את הפרוטוקול הראשון</p>
+        <h3 className="text-lg font-medium text-gray-700 mb-2">{emptyTitle}</h3>
+        <p className="text-gray-500">{emptyDescription}</p>
       </div>
     );
   }
@@ -117,6 +141,9 @@ export function ProtocolList({
       <Table>
         <TableHeader>
           <TableRow>
+            {showRecipientColumn && (
+              <TableHead className="rtl:text-right">{recipientColumnTitle}</TableHead>
+            )}
             <TableHead className="rtl:text-right">תאריך פגישה</TableHead>
             <TableHead className="rtl:text-right">כותרת</TableHead>
             <TableHead className="rtl:text-right">סטטוס</TableHead>
@@ -127,6 +154,50 @@ export function ProtocolList({
         <TableBody>
           {protocols.map((protocol) => (
             <TableRow key={protocol.id}>
+              {showRecipientColumn && (
+                <TableCell className="rtl:text-right">
+                  <div className="inline-flex items-center gap-3 rtl:flex-row-reverse">
+                    {protocol.group_id ? (
+                      <UsersRound className="h-4 w-4 text-violet-600 shrink-0" />
+                    ) : (
+                      <User className="h-4 w-4 text-blue-600 shrink-0" />
+                    )}
+                    <span className="font-medium text-gray-700">
+                      {getRecipientName(protocol) || 'ללא יעד'}
+                    </span>
+                    {showInlineQuickActions && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title={isLockedProtocol(protocol) ? 'צפייה' : 'עריכה'}
+                          aria-label={isLockedProtocol(protocol) ? 'צפייה בפרוטוקול' : 'עריכת פרוטוקול'}
+                          className="h-8 w-8 text-slate-500 hover:text-slate-900"
+                          onClick={() => (isLockedProtocol(protocol) ? onView(protocol.id) : onEdit(protocol.id))}
+                        >
+                          {isLockedProtocol(protocol) ? (
+                            <Eye className="h-4 w-4" />
+                          ) : (
+                            <Pencil className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="שכפול לעריכה"
+                          aria-label="שכפול פרוטוקול לעריכה"
+                          className="h-8 w-8 text-slate-500 hover:text-slate-900"
+                          onClick={() => onDuplicate(protocol.id)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+              )}
               <TableCell className="rtl:text-right font-medium">
                 {format(new Date(protocol.meeting_date), 'dd/MM/yyyy', { locale: he })}
               </TableCell>
@@ -159,43 +230,47 @@ export function ProtocolList({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" dir="rtl">
-                    {protocol.status === 'locked' ? (
+                    {!showInlineQuickActions && (
                       <>
-                        <DropdownMenuItem onClick={() => onView(protocol.id)}>
-                          <Eye className="h-4 w-4 ml-2" />
-                          צפייה
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
-                          <Copy className="h-4 w-4 ml-2" />
-                          שכפול לעריכה
-                        </DropdownMenuItem>
-                      </>
-                    ) : (
-                      <>
-                        <DropdownMenuItem onClick={() => onEdit(protocol.id)}>
-                          <Pencil className="h-4 w-4 ml-2" />
-                          עריכה
-                        </DropdownMenuItem>
-                        {onGeneratePdf && (
-                          <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
-                            <FileDown className="h-4 w-4 ml-2" />
-                            ייצוא PDF
-                          </DropdownMenuItem>
-                        )}
-                        {onSendEmail && (
-                          <DropdownMenuItem onClick={() => onSendEmail(protocol.id)}>
-                            <Mail className="h-4 w-4 ml-2" />
-                            שלח במייל
-                          </DropdownMenuItem>
+                        {protocol.status === 'locked' ? (
+                          <>
+                            <DropdownMenuItem onClick={() => onView(protocol.id)}>
+                              <Eye className="h-4 w-4 ml-2" />
+                              צפייה
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
+                              <Copy className="h-4 w-4 ml-2" />
+                              שכפול לעריכה
+                            </DropdownMenuItem>
+                          </>
+                        ) : (
+                          <>
+                            <DropdownMenuItem onClick={() => onEdit(protocol.id)}>
+                              <Pencil className="h-4 w-4 ml-2" />
+                              עריכה
+                            </DropdownMenuItem>
+                            {onGeneratePdf && (
+                              <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
+                                <FileDown className="h-4 w-4 ml-2" />
+                                ייצוא PDF
+                              </DropdownMenuItem>
+                            )}
+                            {onSendEmail && (
+                              <DropdownMenuItem onClick={() => onSendEmail(protocol.id)}>
+                                <Mail className="h-4 w-4 ml-2" />
+                                שלח במייל
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
+                              <Copy className="h-4 w-4 ml-2" />
+                              שכפול
+                            </DropdownMenuItem>
+                          </>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
-                          <Copy className="h-4 w-4 ml-2" />
-                          שכפול
-                        </DropdownMenuItem>
                       </>
                     )}
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => handleDeleteClick(protocol)}
                       className="text-red-600 focus:text-red-600"
