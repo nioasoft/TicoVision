@@ -23,7 +23,18 @@ import type { BudgetByCategory } from '@/types/dashboard.types';
 export function DashboardPage() {
   // State management
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() + 1); // Default: next year (tax year)
+
+  // Get saved fiscal year from localStorage, fallback to current year
+  const getFiscalYearDefault = () => {
+    const saved = localStorage.getItem('dashboard_fiscal_year');
+    if (saved) {
+      const year = parseInt(saved, 10);
+      if (!isNaN(year) && year >= 2020 && year <= 2100) return year;
+    }
+    return new Date().getFullYear(); // Current year (2026)
+  };
+
+  const [selectedYear, setSelectedYear] = useState(getFiscalYearDefault());
   const [budgetBreakdown, setBudgetBreakdown] = useState<BudgetByCategory | null>(null);
   const [budgetPopupType, setBudgetPopupType] = useState<'standard' | 'actuals' | 'remaining' | null>(null);
   const [budgetClients, setBudgetClients] = useState<Array<{
@@ -47,6 +58,11 @@ export function DashboardPage() {
   // Load dashboard data when year changes
   useEffect(() => {
     loadDashboardData();
+  }, [selectedYear]);
+
+  // Save selected year to localStorage
+  useEffect(() => {
+    localStorage.setItem('dashboard_fiscal_year', selectedYear.toString());
   }, [selectedYear]);
 
   const loadDashboardData = async () => {
