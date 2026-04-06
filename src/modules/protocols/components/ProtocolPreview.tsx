@@ -273,6 +273,25 @@ export function ProtocolPreview({
           </div>
           {/* Left side - Actions */}
           <div className="flex items-center gap-2">
+            {/* Quick download if PDF already exists */}
+            {protocol.pdf_url && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = protocol.pdf_url!;
+                  link.download = `protocol-${recipientName}.pdf`;
+                  link.target = '_blank';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                הורד PDF
+              </Button>
+            )}
             {/* Primary action: Export PDF */}
             <Button
               onClick={handleGeneratePdf}
@@ -286,6 +305,15 @@ export function ProtocolPreview({
               )}
               {generatingPdf ? 'יוצר PDF...' : 'ייצוא PDF'}
             </Button>
+            {/* Print button - visible */}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePrint}
+              title="הדפסה"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
             {/* More actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -297,10 +325,6 @@ export function ProtocolPreview({
                 <DropdownMenuItem onClick={onDuplicate}>
                   <Copy className="h-4 w-4 ml-2" />
                   שכפול
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handlePrint}>
-                  <Printer className="h-4 w-4 ml-2" />
-                  הדפסה
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onEdit}>

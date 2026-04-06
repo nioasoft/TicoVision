@@ -379,11 +379,10 @@ serve(async (req) => {
     // Define PDF options based on template type
     const pdfOptions = isStandaloneTemplate
       ? {
-          // Standalone templates (protocols): No header/footer with logo, single page
+          // Standalone templates (protocols): No header/footer with logo
           format: 'A4',
           printBackground: true,
           displayHeaderFooter: false,
-          pageRanges: '1',  // Limit to first page only
           margin: {
             top: '15mm',
             right: '15mm',

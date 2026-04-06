@@ -238,6 +238,19 @@ export function ProtocolList({
                               <Eye className="h-4 w-4 ml-2" />
                               צפייה
                             </DropdownMenuItem>
+                            {onGeneratePdf && (
+                              <DropdownMenuItem onClick={() => onGeneratePdf(protocol.id)}>
+                                <FileDown className="h-4 w-4 ml-2" />
+                                ייצוא PDF
+                              </DropdownMenuItem>
+                            )}
+                            {onSendEmail && (
+                              <DropdownMenuItem onClick={() => onSendEmail(protocol.id)}>
+                                <Mail className="h-4 w-4 ml-2" />
+                                שלח במייל
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onDuplicate(protocol.id)}>
                               <Copy className="h-4 w-4 ml-2" />
                               שכפול לעריכה
