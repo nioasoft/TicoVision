@@ -585,15 +585,29 @@ class DashboardService extends BaseService {
 
       if (billingError) throw billingError;
 
-      // Get actual payments
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('actual_payments')
-        .select('amount_before_vat, amount_with_vat')
+      // Get actual payments linked to this tax year's fee_calculations
+      // (filter by fee year, not payment_date, to show true collection progress)
+      const { data: feeWithPayments, error: feePayError } = await supabase
+        .from('fee_calculations')
+        .select('actual_payment_id')
         .eq('tenant_id', tenantId)
-        .gte('payment_date', `${year}-01-01`)
-        .lte('payment_date', `${year}-12-31`);
+        .eq('year', year)
+        .not('actual_payment_id', 'is', null);
 
-      if (paymentsError) throw paymentsError;
+      if (feePayError) throw feePayError;
+
+      const paymentIds = feeWithPayments?.map(f => f.actual_payment_id).filter(Boolean) || [];
+
+      let paymentsData: Array<{ amount_before_vat: number; amount_with_vat: number }> | null = [];
+      if (paymentIds.length > 0) {
+        const { data: pd, error: paymentsError } = await supabase
+          .from('actual_payments')
+          .select('amount_before_vat, amount_with_vat')
+          .in('id', paymentIds);
+
+        if (paymentsError) throw paymentsError;
+        paymentsData = pd;
+      }
 
       // Calculate budget standard (fee_calculations + billing_letters)
       const feesBudget = {
@@ -669,17 +683,22 @@ class DashboardService extends BaseService {
     try {
       const tenantId = await this.getTenantId();
 
+      // Query from fee_calculations to avoid FK ambiguity (HTTP 300)
+      // and filter by tax year instead of payment_date
       const { data, error } = await supabase
-        .from('actual_payments')
+        .from('fee_calculations')
         .select(`
-          *,
-          clients (id, company_name),
-          fee_calculations (final_amount, amount_after_selected_discount)
+          client_id,
+          final_amount,
+          amount_after_selected_discount,
+          clients!inner (id, company_name),
+          actual_payments!fee_calculations_actual_payment_id_fkey (
+            id, amount_paid, amount_before_vat, amount_with_vat, payment_method
+          )
         `)
         .eq('tenant_id', tenantId)
-        .gte('payment_date', `${year}-01-01`)
-        .lte('payment_date', `${year}-12-31`)
-        .order('payment_method');
+        .eq('year', year)
+        .not('actual_payment_id', 'is', null);
 
       if (error) throw error;
 
@@ -698,8 +717,17 @@ class DashboardService extends BaseService {
         totalWithVat: number;
       }> = {};
 
-      data?.forEach((payment: Record<string, unknown>) => {
-        const method = payment.payment_method as string;
+      data?.forEach((row: Record<string, unknown>) => {
+        const payment = row.actual_payments as {
+          id: string;
+          amount_paid: number;
+          amount_before_vat: number;
+          amount_with_vat: number;
+          payment_method: string;
+        } | null;
+        if (!payment) return;
+
+        const method = payment.payment_method || 'unknown';
         if (!breakdown[method]) {
           breakdown[method] = {
             method,
@@ -710,22 +738,18 @@ class DashboardService extends BaseService {
           };
         }
 
-        const client = payment.clients as { id: string; company_name: string };
-        const feeCalc = payment.fee_calculations as {
-          final_amount?: number;
-          amount_after_selected_discount?: number;
-        };
+        const client = row.clients as { id: string; company_name: string };
 
         breakdown[method].count++;
         breakdown[method].clients.push({
           clientId: client.id,
           clientName: client.company_name,
-          originalAmount: feeCalc?.final_amount || 0,
-          expectedAmount: feeCalc?.amount_after_selected_discount || 0,
-          actualAmount: payment.amount_paid as number,
+          originalAmount: (row.final_amount as number) || 0,
+          expectedAmount: (row.amount_after_selected_discount as number) || 0,
+          actualAmount: payment.amount_paid || 0,
         });
-        breakdown[method].totalBeforeVat += (payment.amount_before_vat as number) || 0;
-        breakdown[method].totalWithVat += (payment.amount_with_vat as number) || 0;
+        breakdown[method].totalBeforeVat += payment.amount_before_vat || 0;
+        breakdown[method].totalWithVat += payment.amount_with_vat || 0;
       });
 
       await this.logAction('get_payment_method_breakdown_with_clients', undefined, { year });
