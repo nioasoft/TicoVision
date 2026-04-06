@@ -166,18 +166,17 @@ export default function ClientsPage() {
           <span>לקוחות</span>
         </div>
 
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="space-y-2">
           <h1 className="text-4xl lg:text-5xl font-bold text-black">ניהול לקוחות</h1>
-          <p className="text-sm text-muted-foreground/60 mt-1 italic">Come Together — Right Now</p>
-
-          <div className="flex items-center gap-3 flex-row-reverse rtl:flex-row">
+          <p className="text-sm text-muted-foreground/60 italic">Come Together — Right Now</p>
+          <div className="flex justify-start pt-2">
             {canCreateClient && (
               <Button
                 variant="outline"
                 onClick={handleOpenAddDialog}
-                className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full"
+                className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full shadow-md"
               >
-                <Plus className="ml-2 h-4 w-4" />
+                <Plus className="ml-2 h-5 w-5" />
                 הוסף לקוח חדש
               </Button>
             )}

@@ -467,10 +467,18 @@ export default function ClientGroupsPage() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">ניהול קבוצות לקוחות</h1>
-          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">The Band — Stronger Together</p>
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold">ניהול קבוצות לקוחות</h1>
+        <p className="text-sm text-muted-foreground/60 italic">The Band — Stronger Together</p>
+        <div className="flex justify-start pt-2">
+          <Button
+            variant="outline"
+            onClick={() => { resetForm(); setIsAddDialogOpen(true); }}
+            className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full shadow-md"
+          >
+            <Plus className="ml-2 h-5 w-5" />
+            הוסף קבוצה חדשה
+          </Button>
         </div>
       </div>
 
