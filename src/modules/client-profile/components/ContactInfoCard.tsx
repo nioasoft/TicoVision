@@ -24,8 +24,15 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
 };
 
 export function ContactInfoCard({ client, contacts, phones }: ContactInfoCardProps) {
-  const accountantContacts = contacts.filter((c) => c.contact_type === 'accountant_manager');
-  const otherContacts = contacts.filter((c) => c.contact_type !== 'accountant_manager');
+  const primaryOwnerContacts = contacts.filter(
+    (c) => c.is_primary || c.contact_type === 'owner'
+  );
+  const accountantContacts = contacts.filter(
+    (c) => c.contact_type === 'accountant_manager' && !c.is_primary
+  );
+  const otherContacts = contacts.filter(
+    (c) => !c.is_primary && c.contact_type !== 'owner' && c.contact_type !== 'accountant_manager'
+  );
 
   return (
     <Card className="rounded-xl">
@@ -36,27 +43,64 @@ export function ContactInfoCard({ client, contacts, phones }: ContactInfoCardPro
         </CardTitle>
       </CardHeader>
       <CardContent className="p-3 pt-0 space-y-3">
-        {/* Primary contact from client record */}
-        {client.contact_name && (
-          <div className="space-y-1.5">
-            <div className="text-xs font-medium text-muted-foreground">איש קשר ראשי</div>
-            <div className="text-sm font-medium">{client.contact_name}</div>
+        {/* Primary / Owner contacts - highlighted */}
+        {primaryOwnerContacts.length > 0 && (
+          <div className="bg-indigo-50 rounded-lg p-3 space-y-2 border border-indigo-100">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700">
+              <UserCircle className="h-3.5 w-3.5" />
+              איש קשר ראשי
+            </div>
+            {primaryOwnerContacts.map((contact) => (
+              <div key={contact.id} className="space-y-1">
+                <div className="text-sm font-medium text-indigo-900">{contact.full_name}</div>
+                {contact.email && (
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="flex items-center gap-1.5 text-sm text-indigo-600 hover:underline"
+                  >
+                    <Mail className="h-3 w-3" />
+                    {contact.email}
+                  </a>
+                )}
+                {contact.phone && (
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="flex items-center gap-1.5 text-sm text-indigo-700"
+                    dir="ltr"
+                  >
+                    <Phone className="h-3 w-3" />
+                    {contact.phone}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Primary contact fallback from client record (legacy clients) */}
+        {primaryOwnerContacts.length === 0 && client.contact_name && (
+          <div className="bg-indigo-50 rounded-lg p-3 space-y-1 border border-indigo-100">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-indigo-700">
+              <UserCircle className="h-3.5 w-3.5" />
+              איש קשר ראשי
+            </div>
+            <div className="text-sm font-medium text-indigo-900">{client.contact_name}</div>
             {client.contact_email && (
               <a
                 href={`mailto:${client.contact_email}`}
-                className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                className="flex items-center gap-1.5 text-sm text-indigo-600 hover:underline"
               >
-                <Mail className="h-3.5 w-3.5" />
+                <Mail className="h-3 w-3" />
                 {client.contact_email}
               </a>
             )}
             {client.contact_phone && (
               <a
                 href={`tel:${client.contact_phone}`}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                className="flex items-center gap-1.5 text-sm text-indigo-700"
                 dir="ltr"
               >
-                <Phone className="h-3.5 w-3.5" />
+                <Phone className="h-3 w-3" />
                 {client.contact_phone}
               </a>
             )}
@@ -127,33 +171,37 @@ export function ContactInfoCard({ client, contacts, phones }: ContactInfoCardPro
           </div>
         )}
 
-        {/* Other contacts */}
+        {/* Other contacts - with full email/phone details */}
         {otherContacts.length > 0 && (
           <div className="space-y-2">
             <div className="text-xs font-medium text-muted-foreground">אנשי קשר נוספים</div>
             {otherContacts.map((contact) => (
-              <div
-                key={contact.id}
-                className="flex items-center justify-between py-1.5 border-b last:border-0"
-              >
-                <div className="min-w-0">
-                  <div className="text-sm">{contact.full_name}</div>
-                  <Badge variant="outline" className="text-xs mt-0.5">
+              <div key={contact.id} className="py-1.5 border-b last:border-0 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{contact.full_name}</span>
+                  <Badge variant="outline" className="text-xs">
                     {CONTACT_TYPE_LABELS[contact.contact_type || ''] || contact.contact_type}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {contact.email && (
-                    <a href={`mailto:${contact.email}`} className="text-muted-foreground hover:text-foreground">
-                      <Mail className="h-3.5 w-3.5" />
-                    </a>
-                  )}
-                  {contact.phone && (
-                    <a href={`tel:${contact.phone}`} className="text-muted-foreground hover:text-foreground">
-                      <Phone className="h-3.5 w-3.5" />
-                    </a>
-                  )}
-                </div>
+                {contact.email && (
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+                  >
+                    <Mail className="h-3 w-3" />
+                    {contact.email}
+                  </a>
+                )}
+                {contact.phone && (
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+                    dir="ltr"
+                  >
+                    <Phone className="h-3 w-3" />
+                    {contact.phone}
+                  </a>
+                )}
               </div>
             ))}
           </div>
