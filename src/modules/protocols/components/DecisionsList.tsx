@@ -230,10 +230,10 @@ export function DecisionsList({ decisions, onChange }: DecisionsListProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-sm">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-left flex items-center gap-2">
-          <ListTodo className="h-5 w-5" />
+        <h3 className="text-lg font-semibold text-left flex items-center gap-2 text-slate-800">
+          <ListTodo className="h-5 w-5 text-red-600" />
           החלטות
         </h3>
         <Button

@@ -346,22 +346,7 @@ export function ProtocolBuilder({
       // Update saved protocol ID for future saves
       setSavedProtocolId(savedProtocol.id);
 
-      // Lock the protocol
-      const { error: lockError } = await protocolService.lockProtocol(savedProtocol.id);
-      if (lockError) {
-        console.error('Failed to lock protocol:', lockError);
-        toast({
-          title: 'שגיאה',
-          description: 'נעילת הפרוטוקול נכשלה',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Reset auto-save status
-      resetStatus();
-
-      // Then generate PDF
+      // Generate PDF without locking - user decides when to lock via "שמור ונעל"
       const { data: pdfData, error: pdfError } = await protocolService.generateProtocolPdf(savedProtocol.id);
       if (pdfError || !pdfData) {
         toast({
@@ -528,13 +513,13 @@ export function ProtocolBuilder({
           )}
 
           {/* Header Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row justify-end" dir="ltr">
-              <CalendarDays className="h-5 w-5" />
+          <div className="space-y-4 rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-sm">
+            <h3 className="text-lg font-semibold rtl:text-right ltr:text-left flex items-center gap-2 flex-row justify-end text-slate-800" dir="ltr">
+              <CalendarDays className="h-5 w-5 text-blue-600" />
               פרטי הפגישה
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="space-y-4">
+              <div className="space-y-2 w-48">
                 <Label htmlFor="meeting_date" className="text-right block">
                   תאריך פגישה
                 </Label>
@@ -555,7 +540,6 @@ export function ProtocolBuilder({
                   id="title"
                   value={formState.title}
                   onChange={(e) => handleFieldChange('title', e.target.value)}
-
                   className="text-right"
                   dir="rtl"
                 />
@@ -572,9 +556,9 @@ export function ProtocolBuilder({
           />
 
           {/* Content Sections */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-left flex items-center gap-2" dir="rtl">
-              <FileText className="h-5 w-5" />
+          <div className="space-y-4 rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-sm">
+            <h3 className="text-lg font-semibold text-left flex items-center gap-2 text-slate-800" dir="rtl">
+              <FileText className="h-5 w-5 text-amber-600" />
               תוכן נוסף
             </h3>
             <ContentSectionEditor
@@ -582,8 +566,6 @@ export function ProtocolBuilder({
               onChange={handleContentSectionsChange}
             />
           </div>
-
-          <Separator />
 
           {/* Decisions Section */}
           <DecisionsList

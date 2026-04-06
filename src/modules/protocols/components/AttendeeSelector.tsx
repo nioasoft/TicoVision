@@ -220,10 +220,10 @@ export function AttendeeSelector({
   const availableOptions = getAvailableOptions();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-xl border border-slate-300 bg-slate-50 p-4 shadow-sm">
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-left flex items-center gap-2">
-          <Users className="h-5 w-5" />
+        <h3 className="text-lg font-semibold text-left flex items-center gap-2 text-slate-800">
+          <Users className="h-5 w-5 text-green-600" />
           משתתפים
         </h3>
         <Button
