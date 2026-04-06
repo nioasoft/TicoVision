@@ -70,6 +70,9 @@ export interface SummerBonusVariables extends TzlulSharedData {
 
   /** Array of invoice numbers e.g., ["41190", "41191"] */
   invoice_numbers: string[];
+
+  /** Grant type name for the letter, defaults to "מענק קיץ" */
+  grant_type_name?: string;
 }
 
 // ============================================================================

@@ -2565,6 +2565,8 @@ export class TemplateService extends BaseService {
     switch (templateType) {
       case 'tzlul_summer_bonus': {
         const summerVars = variables as SummerBonusVariables;
+        // Set grant type name (default: מענק קיץ)
+        processed.grant_type_name = summerVars.grant_type_name || 'מענק קיץ';
         // Build invoice numbers text
         if (summerVars.invoice_numbers && summerVars.invoice_numbers.length > 0) {
           const invoiceTexts = summerVars.invoice_numbers.map((num, idx) =>

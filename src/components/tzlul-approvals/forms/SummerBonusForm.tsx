@@ -44,10 +44,26 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Grant Type Name */}
+          <div className="space-y-2">
+            <Label htmlFor="grant-type-name" className="text-right block">
+              סוג מענק
+            </Label>
+            <Input
+              id="grant-type-name"
+              type="text"
+              value={value.grant_type_name ?? 'מענק קיץ'}
+              onChange={(e) => onChange({ ...value, grant_type_name: e.target.value })}
+              disabled={disabled}
+              className="text-right rtl:text-right"
+              dir="rtl"
+            />
+          </div>
+
           {/* Month/Year */}
           <div className="space-y-2">
             <Label htmlFor="month-year" className="text-right block">
-              חודש/שנה 
+              חודש/שנה
             </Label>
             <Input
               id="month-year"
@@ -155,7 +171,7 @@ export function SummerBonusForm({ value, onChange, disabled }: SummerBonusFormPr
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <h4 className="font-medium text-blue-900 mb-2 text-right">תוכן המסמך:</h4>
             <p className="text-sm text-blue-800 text-right">
-              חוות דעת על תחשיב תשלומים והפרשות בגין מענק קיץ בחודש{' '}
+              חוות דעת על תחשיב תשלומים והפרשות בגין {value.grant_type_name || 'מענק קיץ'} בחודש{' '}
               <strong>{value.month_year || '_'}</strong> בסך{' '}
               <strong>{value.total_amount?.toLocaleString('he-IL') || '_'}</strong> ש"ח
             </p>
