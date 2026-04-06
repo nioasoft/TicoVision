@@ -158,8 +158,8 @@ export function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Default to collapsed state as per Figma design
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  // Default to expanded state for better readability
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [unassignedBalanceCount, setUnassignedBalanceCount] = useState(0);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
@@ -268,9 +268,9 @@ export function MainLayout() {
     });
   }, [isMenuVisible, isSuperAdmin, permissionsLoading]);
 
-  // Sidebar width - collapsed by default (icons only)
-  const sidebarWidth = sidebarCollapsed ? 'w-[70px]' : 'w-64';
-  const mainMargin = sidebarCollapsed ? 'lg:mr-[70px]' : 'lg:mr-64';
+  // Sidebar width
+  const sidebarWidth = sidebarCollapsed ? 'w-[70px]' : 'w-72';
+  const mainMargin = sidebarCollapsed ? 'lg:mr-[70px]' : 'lg:mr-72';
 
   // Restricted user layout
   if (isRestrictedUser) {
@@ -324,7 +324,7 @@ export function MainLayout() {
         <div className="flex flex-col h-full">
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-3 px-2">
-            <ul className={cn("space-y-0.5", !sidebarCollapsed && "space-y-0.5")}>
+            <ul className={cn("space-y-1", !sidebarCollapsed && "space-y-2")}>
               {/* Super Admin Link */}
               {isSuperAdmin && (
                 <li className="mb-2 pb-2 border-b border-white/20">
@@ -335,17 +335,19 @@ export function MainLayout() {
                           to="/super-admin"
                           className={({ isActive }) =>
                             cn(
-                              "flex items-center rounded-lg transition-colors",
-                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+                              "flex items-center rounded-xl transition-colors",
+                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3 border border-white/15 shadow-sm shadow-black/10 bg-white/10",
                               isActive
-                                ? "bg-white text-[#395BF7]"
-                                : "text-white hover:bg-white/10"
+                                ? "bg-white text-[#395BF7] !border-white"
+                                : "text-white hover:bg-white/15"
                             )
                           }
                           onClick={() => setSidebarOpen(false)}
                         >
-                          <Shield className="h-5 w-5 flex-shrink-0" />
-                          {!sidebarCollapsed && <span className="text-sm font-medium">ניהול ראשי</span>}
+                          <span className={cn("flex items-center justify-center flex-shrink-0", !sidebarCollapsed && "h-8 w-8 rounded-lg bg-white/15")}>
+                            <Shield className="h-5 w-5" />
+                          </span>
+                          {!sidebarCollapsed && <span className="text-base font-medium">ניהול ראשי</span>}
                         </NavLink>
                       </TooltipTrigger>
                       {sidebarCollapsed && (
@@ -393,13 +395,13 @@ export function MainLayout() {
                                   setOpenSubmenu(item.name);
                                 }}
                                 className={cn(
-                                  "relative w-full flex items-center justify-center rounded-lg transition-colors p-2.5",
+                                  "relative w-full flex items-center justify-center rounded-xl transition-colors p-2.5",
                                   isActive
                                     ? "bg-white text-[#395BF7]"
-                                    : "text-white hover:bg-white/10"
+                                    : "text-white hover:bg-white/15"
                                 )}
                               >
-                                <item.icon className="h-5 w-5 flex-shrink-0" />
+                                <item.icon className="h-6 w-6 flex-shrink-0" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="left" className="p-0">
@@ -433,14 +435,16 @@ export function MainLayout() {
                         <CollapsibleTrigger asChild>
                           <button
                             className={cn(
-                              "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                              "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors border border-white/15 shadow-sm shadow-black/10 bg-white/10",
                               isActive
-                                ? "bg-white/20 text-white"
-                                : "text-white hover:bg-white/10"
+                                ? "bg-white/25 text-white !border-white/30"
+                                : "text-white hover:bg-white/15"
                             )}
                           >
-                            <item.icon className="h-5 w-5 flex-shrink-0" />
-                            <span className="text-sm font-medium truncate flex-1 text-right">{item.name}</span>
+                            <span className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/15 flex-shrink-0">
+                              <item.icon className="h-5 w-5" />
+                            </span>
+                            <span className="text-base font-medium truncate flex-1 text-right">{item.name}</span>
                             {isSubmenuOpen ? (
                               <ChevronUp className="h-4 w-4 flex-shrink-0" />
                             ) : (
@@ -482,17 +486,19 @@ export function MainLayout() {
                           <NavLink
                             to={item.href || '#'}
                             className={cn(
-                              "relative flex items-center rounded-lg transition-colors",
-                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2",
+                              "relative flex items-center rounded-xl transition-colors",
+                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3 border border-white/15 shadow-sm shadow-black/10 bg-white/10",
                               isActive
-                                ? "bg-white text-[#395BF7]"
-                                : "text-white hover:bg-white/10"
+                                ? "bg-white text-[#395BF7] !border-white"
+                                : "text-white hover:bg-white/15"
                             )}
                             onClick={() => setSidebarOpen(false)}
                           >
-                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            <span className={cn("flex items-center justify-center flex-shrink-0", !sidebarCollapsed && "h-8 w-8 rounded-lg bg-white/15")}>
+                              <item.icon className={sidebarCollapsed ? "h-6 w-6" : "h-5 w-5"} />
+                            </span>
                             {!sidebarCollapsed && (
-                              <span className="text-sm font-medium truncate flex-1">{item.name}</span>
+                              <span className="text-base font-medium truncate flex-1">{item.name}</span>
                             )}
                             {hasBadge && badgeCount > 0 && (
                               <span className={cn(
@@ -615,7 +621,9 @@ export function MainLayout() {
 
         {/* Page content */}
         <main className="p-6">
-          <Outlet />
+          <div className="mx-auto max-w-7xl">
+            <Outlet />
+          </div>
         </main>
       </div>
 
