@@ -761,12 +761,45 @@ export class ProtocolService extends BaseService {
       `
       : '';
 
-    // Generate decisions HTML
-    const decisionsHtml = groupedDecisions.length > 0
+    // Helper to render a single decision item
+    const renderDecisionItem = (d: ProtocolDecision) => `
+      <li style="margin-bottom: 14px; line-height: 1.7;">
+        <span${getInlineStyle(d.style)}>${d.content}</span>
+        ${d.urgency === 'urgent' ? '<span style="color: #dc2626; font-weight: bold; margin-right: 8px;"> (דחוף)</span>' : ''}
+        ${d.assigned_employee_id && employeeNameMap[d.assigned_employee_id] ? `<span style="color: #2563eb; font-size: 16px; font-weight: bold;"> - אחראי: ${employeeNameMap[d.assigned_employee_id]}</span>` : ''}
+        ${d.assigned_other_name ? `<span style="color: #2563eb; font-size: 16px; font-weight: bold;"> - ${d.assigned_other_name}</span>` : ''}
+        ${d.audit_report_year ? `<span style="color: #6b7280; font-size: 14px;"> (דוח ${d.audit_report_year})</span>` : ''}
+      </li>
+    `;
+
+    // Collect all urgent decisions across all groups
+    const allUrgentDecisions = protocol.decisions.filter((d) => d.urgency === 'urgent');
+
+    // Generate urgent decisions HTML (appears FIRST, before announcements)
+    const urgentDecisionsHtml = allUrgentDecisions.length > 0
+      ? `
+        <div style="margin-bottom: 20px;">
+          <h2 style="font-size: 16px; margin-bottom: 10px; border-bottom: 2px solid #dc2626; padding-bottom: 5px; color: #991b1b;">החלטות דחופות</h2>
+          <div style="background: #fef2f2; border: 3px solid #f87171; border-radius: 8px; padding: 16px; margin-bottom: 18px;">
+            <ol style="margin: 0; padding-right: 20px;">
+              ${allUrgentDecisions.map(renderDecisionItem).join('')}
+            </ol>
+          </div>
+        </div>
+      `
+      : '';
+
+    // Generate regular decisions HTML (non-urgent only)
+    const regularGroupedDecisions = groupedDecisions.map((group) => ({
+      ...group,
+      decisions: group.decisions.filter((d) => d.urgency !== 'urgent'),
+    })).filter((g) => g.decisions.length > 0);
+
+    const regularDecisionsHtml = regularGroupedDecisions.length > 0
       ? `
         <div style="margin-bottom: 20px;">
           <h2 style="font-size: 16px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">החלטות</h2>
-          ${groupedDecisions.map((group) => {
+          ${regularGroupedDecisions.map((group) => {
             const bgColor = group.type === 'office' ? '#fef2f2' :
                            group.type === 'client' ? '#fefce8' :
                            group.type === 'bookkeeper' ? '#f0fdf4' : '#f9fafb';
@@ -774,18 +807,10 @@ export class ProtocolService extends BaseService {
                                group.type === 'client' ? '#fef08a' :
                                group.type === 'bookkeeper' ? '#bbf7d0' : '#e5e7eb';
             return `
-              <div style="background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+              <div style="background: ${bgColor}; border: 2px solid ${borderColor}; border-radius: 8px; padding: 12px; margin-bottom: 18px;">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">${group.label}</h3>
                 <ol style="margin: 0; padding-right: 20px;">
-                  ${group.decisions.map((d) => `
-                    <li style="margin-bottom: 8px;">
-                      <span${getInlineStyle(d.style)}>${d.content}</span>
-                      ${d.urgency === 'urgent' ? '<span style="color: #dc2626; font-weight: bold; margin-right: 8px;"> (דחוף)</span>' : ''}
-                      ${d.assigned_employee_id && employeeNameMap[d.assigned_employee_id] ? `<span style="color: #2563eb; font-size: 12px;"> - אחראי: ${employeeNameMap[d.assigned_employee_id]}</span>` : ''}
-                      ${d.assigned_other_name ? `<span style="color: #6b7280; font-size: 12px;"> - ${d.assigned_other_name}</span>` : ''}
-                      ${d.audit_report_year ? `<span style="color: #6b7280; font-size: 12px;"> (דוח ${d.audit_report_year})</span>` : ''}
-                    </li>
-                  `).join('')}
+                  ${group.decisions.map(renderDecisionItem).join('')}
                 </ol>
               </div>
             `;
@@ -804,11 +829,16 @@ export class ProtocolService extends BaseService {
             return `
               <div style="margin-bottom: 15px;">
                 <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">${sectionTypeInfo.labelPlural}</h3>
-                ${group.sections.map((s) => `
-                  <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
-                    <p style="margin: 0; white-space: pre-wrap;"${getInlineStyle(s.style)}>${s.content}</p>
+                ${group.sections.map((s) => {
+                  const isAnnouncement = group.type === 'announcement';
+                  const sectionBg = isAnnouncement ? '#eff6ff' : '#f9fafb';
+                  const sectionBorder = isAnnouncement ? '#bfdbfe' : '#e5e7eb';
+                  const sectionColor = isAnnouncement ? 'color: #991b1b;' : '';
+                  return `
+                  <div style="background: ${sectionBg}; border: 1px solid ${sectionBorder}; border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                    <p style="margin: 0; white-space: pre-wrap; ${sectionColor} line-height: 1.8;"${getInlineStyle(s.style)}>${s.content}</p>
                   </div>
-                `).join('')}
+                `;}).join('')}
               </div>
             `;
           }).join('')}
@@ -818,7 +848,7 @@ export class ProtocolService extends BaseService {
 
     // Full HTML document
     return `
-      <div dir="rtl" style="font-family: 'David Libre', 'Heebo', 'Assistant', serif; padding: 20px; max-width: 700px; margin: 0 auto;">
+      <div dir="rtl" style="font-family: 'David Libre', 'Heebo', 'Assistant', serif; padding: 20px; max-width: 700px; margin: 0 auto; line-height: 1.6;">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="font-size: 24px; margin-bottom: 10px;">פרוטוקול פגישה</h1>
@@ -832,8 +862,9 @@ export class ProtocolService extends BaseService {
         </div>
 
         ${attendeesHtml}
+        ${urgentDecisionsHtml}
         ${contentSectionsHtml}
-        ${decisionsHtml}
+        ${regularDecisionsHtml}
 
         <!-- Footer -->
         <div style="margin-top: 30px; text-align: center; font-size: 12px; color: #9ca3af;">

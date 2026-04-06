@@ -4,7 +4,7 @@
  * Access: admin, accountant
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { ClientSelector } from '@/components/ClientSelector';
@@ -440,21 +440,32 @@ export function ProtocolsPage() {
   const showHistoryList = entryMode === 'history' && viewMode === 'list';
   const showBuilder = viewMode === 'builder' && isSelected;
   const showPreview = viewMode === 'preview' && !!selectedProtocol;
+  const isDetailView = showBuilder || showPreview;
+
+  // Scroll to top when entering builder/preview
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isDetailView) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isDetailView]);
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="rtl:text-right ltr:text-left">
-        <div className="mb-2 flex items-center justify-start gap-3">
-          <h1 className="text-3xl font-semibold">פרוטוקולים</h1>
-          <ScrollText className="h-7 w-7 text-primary" />
+      {!isDetailView && (
+        <div className="rtl:text-right ltr:text-left">
+          <div className="mb-2 flex items-center justify-start gap-3">
+            <h1 className="text-3xl font-semibold">פרוטוקולים</h1>
+            <ScrollText className="h-7 w-7 text-primary" />
+          </div>
+          <p className="mt-0.5 text-sm italic text-muted-foreground/60">Rock the Minutes</p>
+          <p className="text-sm text-gray-600 rtl:text-right">
+            ניהול פרוטוקולים של פגישות עם לקוחות וקבוצות
+          </p>
         </div>
-        <p className="mt-0.5 text-sm italic text-muted-foreground/60">Rock the Minutes</p>
-        <p className="text-sm text-gray-600 rtl:text-right">
-          ניהול פרוטוקולים של פגישות עם לקוחות וקבוצות
-        </p>
-      </div>
+      )}
 
-      <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100/70 p-4 shadow-sm">
+      {!isDetailView && (<section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100/70 p-4 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="text-right">
             <p className="text-sm font-semibold text-slate-900">מה תרצה לעשות?</p>
@@ -512,9 +523,9 @@ export function ProtocolsPage() {
             );
           })}
         </div>
-      </section>
+      </section>)}
 
-      {entryMode === 'home' && (
+      {!isDetailView && entryMode === 'home' && (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-12 text-center">
           <div className="mx-auto flex max-w-xl flex-col items-center gap-3">
             <div className="rounded-full bg-white p-4 shadow-sm">
@@ -532,7 +543,7 @@ export function ProtocolsPage() {
         </section>
       )}
 
-      {entryMode === 'new' && (
+      {!isDetailView && entryMode === 'new' && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="text-right">
@@ -623,12 +634,12 @@ export function ProtocolsPage() {
         </section>
       )}
 
-      {showNewList && isSelected && (
+      {!isDetailView && showNewList && isSelected && (
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between gap-4 border-b px-4 py-4">
-            <div className="text-right">
+          <div className="border-b px-4 py-4 text-right">
+            <div className="flex items-center gap-3 mb-3">
               <h2 className="text-lg font-semibold text-slate-900">פרוטוקולים של {getSelectedName()}</h2>
-              <p className="mt-1 text-xs text-slate-500">{total} פרוטוקולים</p>
+              <span className="text-xs text-slate-500">{total} פרוטוקולים</span>
             </div>
             <Button
               onClick={handleNewProtocol}
@@ -652,7 +663,7 @@ export function ProtocolsPage() {
         </section>
       )}
 
-      {showHistoryList && (
+      {!isDetailView && showHistoryList && (
         <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b px-4 py-4">
             <div className="text-right">
@@ -681,28 +692,32 @@ export function ProtocolsPage() {
       )}
 
       {showBuilder && (
-        <ProtocolBuilder
-          protocol={selectedProtocol}
-          clientId={selectedClient?.id || null}
-          groupId={selectedGroup?.id || null}
-          recipientName={getSelectedName()}
-          onSave={handleSaveProtocol}
-          onCancel={handleCancelBuilder}
-          onDirtyChange={setIsBuilderDirty}
-        />
+        <div ref={detailRef}>
+          <ProtocolBuilder
+            protocol={selectedProtocol}
+            clientId={selectedClient?.id || null}
+            groupId={selectedGroup?.id || null}
+            recipientName={getSelectedName()}
+            onSave={handleSaveProtocol}
+            onCancel={handleCancelBuilder}
+            onDirtyChange={setIsBuilderDirty}
+          />
+        </div>
       )}
 
       {showPreview && selectedProtocol && (
-        <ProtocolPreview
-          protocol={selectedProtocol}
-          onBack={handleBackToList}
-          onEdit={() => setViewMode('builder')}
-          onDuplicate={() => (
-            entryMode === 'history'
-              ? handleDuplicateProtocolFromHistory(selectedProtocol.id)
-              : handleDuplicateProtocol(selectedProtocol.id)
-          )}
-        />
+        <div ref={detailRef}>
+          <ProtocolPreview
+            protocol={selectedProtocol}
+            onBack={handleBackToList}
+            onEdit={() => setViewMode('builder')}
+            onDuplicate={() => (
+              entryMode === 'history'
+                ? handleDuplicateProtocolFromHistory(selectedProtocol.id)
+                : handleDuplicateProtocol(selectedProtocol.id)
+            )}
+          />
+        </div>
       )}
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>

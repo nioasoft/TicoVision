@@ -153,7 +153,11 @@ export function ProtocolList({
         </TableHeader>
         <TableBody>
           {protocols.map((protocol) => (
-            <TableRow key={protocol.id}>
+            <TableRow
+              key={protocol.id}
+              className="cursor-pointer hover:bg-slate-50"
+              onClick={() => isLockedProtocol(protocol) ? onView(protocol.id) : onEdit(protocol.id)}
+            >
               {showRecipientColumn && (
                 <TableCell className="rtl:text-right">
                   <div className="inline-flex items-center gap-3 rtl:flex-row-reverse">
