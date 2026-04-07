@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BRAND_PRIMARY_HEX } from '@/lib/brand';
 
 /**
  * Payment Error Page
@@ -35,11 +37,11 @@ export default function PaymentErrorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" dir="rtl">
+    <div className="min-h-screen bg-slate-50" dir="rtl">
       <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Main Card - Matching Letter Design */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl">
 
           {/* Header - Matching Letter Template */}
           <div className="text-center px-8 pt-8 pb-0">
@@ -209,7 +211,7 @@ export default function PaymentErrorPage() {
             </div>
 
             {/* What to do */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 mb-8 text-right">
+            <div className="mb-8 rounded-lg border-2 border-primary/15 bg-primary/5 p-6 text-right">
               <div
                 className="mb-3"
                 style={{
@@ -266,59 +268,24 @@ export default function PaymentErrorPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center flex-wrap">
-              <button
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button
+                variant="brand"
+                size="pill"
+                className="h-11 px-8 text-base"
                 onClick={handleRetry}
-                style={{
-                  fontFamily: "'Heebo', 'Assistant', sans-serif",
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  background: '#395BF7',
-                  padding: '12px 32px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 6px rgba(57, 91, 247, 0.2)',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = '#2d4ad1';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = '#395BF7';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
               >
                 נסה שוב
-              </button>
+              </Button>
 
-              <button
+              <Button
+                variant="brandOutline"
+                size="pill"
+                className="h-11 px-8 text-base"
                 onClick={() => navigate('/')}
-                style={{
-                  fontFamily: "'Heebo', 'Assistant', sans-serif",
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#71717a',
-                  background: '#ffffff',
-                  padding: '12px 32px',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = '#395BF7';
-                  e.currentTarget.style.color = '#395BF7';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                  e.currentTarget.style.color = '#71717a';
-                }}
               >
                 חזרה לדף הבית
-              </button>
+              </Button>
             </div>
 
             {/* Contact Support */}
@@ -338,7 +305,7 @@ export default function PaymentErrorPage() {
                 style={{
                   fontFamily: "'Heebo', 'Assistant', sans-serif",
                   fontSize: '16px',
-                  color: '#395BF7',
+                  color: BRAND_PRIMARY_HEX,
                   fontWeight: 600,
                   textDecoration: 'underline',
                 }}
@@ -360,7 +327,7 @@ export default function PaymentErrorPage() {
                 style={{
                   fontFamily: "'Heebo', 'Assistant', sans-serif",
                   fontSize: '16px',
-                  color: '#395BF7',
+                  color: BRAND_PRIMARY_HEX,
                   fontWeight: 600,
                   textDecoration: 'underline',
                 }}
@@ -435,7 +402,7 @@ export default function PaymentErrorPage() {
                     fontFamily: "'David Libre', 'Heebo', 'Assistant', sans-serif",
                     fontSize: '16px',
                     lineHeight: 1.8,
-                    color: '#395BF7',
+                    color: BRAND_PRIMARY_HEX,
                   }}
                 >
                   📧 tico@franco.co.il

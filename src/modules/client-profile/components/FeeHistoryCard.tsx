@@ -12,13 +12,13 @@ interface FeeHistoryCardProps {
   feeCalculations: FeeCalculation[];
 }
 
-const FEE_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  draft: { label: 'טיוטה', className: 'bg-gray-100 text-gray-700' },
-  sent: { label: 'נשלח', className: 'bg-blue-100 text-blue-700' },
-  paid: { label: 'שולם', className: 'bg-green-100 text-green-700' },
-  partial_paid: { label: 'שולם חלקית', className: 'bg-amber-100 text-amber-700' },
-  overdue: { label: 'באיחור', className: 'bg-red-100 text-red-700' },
-  cancelled: { label: 'בוטל', className: 'bg-gray-100 text-gray-500' },
+const FEE_STATUS_CONFIG: Record<string, { label: string; variant: 'neutral' | 'brand' | 'success' | 'warning' | 'danger' }> = {
+  draft: { label: 'טיוטה', variant: 'neutral' },
+  sent: { label: 'נשלח', variant: 'brand' },
+  paid: { label: 'שולם', variant: 'success' },
+  partial_paid: { label: 'שולם חלקית', variant: 'warning' },
+  overdue: { label: 'באיחור', variant: 'danger' },
+  cancelled: { label: 'בוטל', variant: 'neutral' },
 };
 
 export function FeeHistoryCard({ feeCalculations }: FeeHistoryCardProps) {
@@ -49,7 +49,7 @@ export function FeeHistoryCard({ feeCalculations }: FeeHistoryCardProps) {
                 {feeCalculations.map((fee) => {
                   const statusConfig = FEE_STATUS_CONFIG[fee.status] || {
                     label: fee.status,
-                    className: '',
+                    variant: 'neutral' as const,
                   };
                   return (
                     <tr key={fee.id} className="border-b last:border-0 hover:bg-muted/30">
@@ -61,10 +61,7 @@ export function FeeHistoryCard({ feeCalculations }: FeeHistoryCardProps) {
                         {formatILS(fee.calculated_with_vat ?? fee.total_amount)}
                       </td>
                       <td className="py-2 pe-3">
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs ${statusConfig.className}`}
-                        >
+                        <Badge variant={statusConfig.variant} className="text-xs">
                           {statusConfig.label}
                         </Badge>
                       </td>

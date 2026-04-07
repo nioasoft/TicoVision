@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { BRAND_PRIMARY_HEX } from '@/lib/brand';
 
 interface LinkDialogProps {
   open: boolean;
@@ -21,11 +22,11 @@ interface LinkDialogProps {
 }
 
 const BUTTON_COLORS = [
-  { value: '#395BF7', label: 'כחול', bg: '#395BF7', text: 'white' },
+  { value: BRAND_PRIMARY_HEX, label: 'כחול', bg: BRAND_PRIMARY_HEX, text: 'white' },
   { value: '#16A34A', label: 'ירוק', bg: '#16A34A', text: 'white' },
   { value: '#DC2626', label: 'אדום', bg: '#DC2626', text: 'white' },
   { value: '#000000', label: 'שחור', bg: '#000000', text: 'white' },
-  { value: 'outline', label: 'מסגרת', bg: 'transparent', text: '#395BF7', border: '#395BF7' },
+  { value: 'outline', label: 'מסגרת', bg: 'transparent', text: BRAND_PRIMARY_HEX, border: BRAND_PRIMARY_HEX },
 ];
 
 export function LinkDialog({
@@ -38,14 +39,14 @@ export function LinkDialog({
 }: LinkDialogProps) {
   const [url, setUrl] = useState(initialUrl);
   const [text, setText] = useState(initialText);
-  const [buttonColor, setButtonColor] = useState('#395BF7');
+  const [buttonColor, setButtonColor] = useState(BRAND_PRIMARY_HEX);
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setUrl(initialUrl);
       setText(initialText);
-      setButtonColor('#395BF7');
+      setButtonColor(BRAND_PRIMARY_HEX);
     }
   }, [open, initialText, initialUrl]);
 
@@ -121,7 +122,7 @@ export function LinkDialog({
                       className={`
                         cursor-pointer px-3 py-1.5 rounded-md text-sm font-medium
                         transition-all border-2
-                        ${buttonColor === color.value ? 'ring-2 ring-offset-2 ring-blue-500' : ''}
+                        ${buttonColor === color.value ? 'ring-2 ring-offset-2 ring-primary' : ''}
                       `}
                       style={{
                         backgroundColor: color.bg,
@@ -145,8 +146,8 @@ export function LinkDialog({
                 <span
                   style={{
                     backgroundColor: buttonColor === 'outline' ? 'transparent' : buttonColor,
-                    color: buttonColor === 'outline' ? '#395BF7' : 'white',
-                    border: buttonColor === 'outline' ? '2px solid #395BF7' : 'none',
+                    color: buttonColor === 'outline' ? BRAND_PRIMARY_HEX : 'white',
+                    border: buttonColor === 'outline' ? `2px solid ${BRAND_PRIMARY_HEX}` : 'none',
                     padding: '10px 24px',
                     borderRadius: '8px',
                     textDecoration: 'none',
@@ -157,7 +158,7 @@ export function LinkDialog({
                   {text || 'לחץ כאן'}
                 </span>
               ) : (
-                <span style={{ color: '#395BF7', textDecoration: 'underline' }}>
+                <span style={{ color: BRAND_PRIMARY_HEX, textDecoration: 'underline' }}>
                   {text || url || 'טקסט הקישור'}
                 </span>
               )}

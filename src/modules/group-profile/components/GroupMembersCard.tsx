@@ -29,11 +29,11 @@ const STATUS_LABELS: Record<string, string> = {
   adhoc: 'מזדמן',
 };
 
-const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  inactive: 'bg-red-100 text-red-600',
-  pending: 'bg-yellow-100 text-yellow-700',
-  adhoc: 'bg-gray-100 text-gray-600',
+const STATUS_STYLES: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
+  active: 'success',
+  inactive: 'danger',
+  pending: 'warning',
+  adhoc: 'neutral',
 };
 
 const PAYMENT_ROLE_OPTIONS: { value: PaymentRole; label: string }[] = [
@@ -54,7 +54,7 @@ export function GroupMembersCard({ members, onAddClients, onPaymentRoleChange }:
   const navigate = useNavigate();
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-2xl">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -64,11 +64,11 @@ export function GroupMembersCard({ members, onAddClients, onPaymentRoleChange }:
           </CardTitle>
           {onAddClients && (
             <Button
-              variant="outline"
+              variant="brandOutline"
+              size="pill"
               onClick={onAddClients}
-              className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full shadow-md"
             >
-              <Plus className="ml-2 h-5 w-5" />
+              <Plus className="size-4" />
               הוסף חברות לקבוצה
             </Button>
           )}
@@ -109,8 +109,8 @@ export function GroupMembersCard({ members, onAddClients, onPaymentRoleChange }:
                     </td>
                     <td className="py-2 pe-3">
                       <Badge
-                        variant="secondary"
-                        className={`text-xs ${STATUS_STYLES[member.status] || ''}`}
+                        variant={STATUS_STYLES[member.status] || 'neutral'}
+                        className="text-xs"
                       >
                         {STATUS_LABELS[member.status] || member.status}
                       </Badge>
@@ -121,7 +121,7 @@ export function GroupMembersCard({ members, onAddClients, onPaymentRoleChange }:
                           value={member.payment_role || 'independent'}
                           onValueChange={(val) => onPaymentRoleChange(member.id, val as PaymentRole)}
                         >
-                          <SelectTrigger className="h-7 w-[130px] text-xs">
+                          <SelectTrigger className="h-9 w-[138px] text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent dir="rtl">
@@ -134,7 +134,7 @@ export function GroupMembersCard({ members, onAddClients, onPaymentRoleChange }:
                         </Select>
                       ) : (
                         member.payment_role && (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="brand" className="text-xs">
                             {PAYMENT_ROLE_OPTIONS.find(o => o.value === member.payment_role)?.label || member.payment_role}
                           </Badge>
                         )

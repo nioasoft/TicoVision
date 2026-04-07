@@ -57,14 +57,14 @@ const FilterCard: React.FC<{
   count: number;
   subtitle?: string;
   icon: React.ElementType;
-  color: 'blue' | 'green' | 'yellow' | 'orange' | 'red' | 'purple' | 'gray';
+  color: 'blue' | 'indigo' | 'yellow' | 'orange' | 'red' | 'purple' | 'gray';
   isSelected: boolean;
   onClick: () => void;
   isClickable?: boolean;
 }> = ({ title, count, subtitle, icon: Icon, color, isSelected, onClick, isClickable = true }) => {
   const colorClasses = {
     blue: { border: 'border-blue-200', bg: 'bg-blue-50', text: 'text-blue-700', icon: 'text-blue-600', ring: 'ring-blue-500' },
-    green: { border: 'border-green-200', bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-600', ring: 'ring-green-500' },
+    indigo: { border: 'border-indigo-200', bg: 'bg-indigo-50', text: 'text-indigo-700', icon: 'text-indigo-600', ring: 'ring-indigo-500' },
     yellow: { border: 'border-yellow-200', bg: 'bg-yellow-50', text: 'text-yellow-700', icon: 'text-yellow-600', ring: 'ring-yellow-500' },
     orange: { border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-700', icon: 'text-orange-600', ring: 'ring-orange-500' },
     red: { border: 'border-red-200', bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-600', ring: 'ring-red-500' },
@@ -166,8 +166,8 @@ export const FeeTrackingKPICards: React.FC<FeeTrackingKPICardsProps> = ({
                 label="התקבל"
                 value={formatILS(paidAmount)}
                 icon={Coins}
-                iconColor="text-green-600"
-                valueColor="text-green-700"
+                iconColor="text-primary"
+                valueColor="text-primary"
               />
             )}
             {pendingAmount > 0 && (
@@ -183,8 +183,8 @@ export const FeeTrackingKPICards: React.FC<FeeTrackingKPICardsProps> = ({
               label="אחוז השלמה"
               value={formatPercentage(kpis.completion_percentage)}
               icon={TrendingUp}
-              iconColor={kpis.completion_percentage >= 50 ? 'text-green-600' : 'text-orange-600'}
-              valueColor={kpis.completion_percentage >= 50 ? 'text-green-700' : 'text-orange-700'}
+              iconColor={kpis.completion_percentage >= 50 ? 'text-primary' : 'text-orange-600'}
+              valueColor={kpis.completion_percentage >= 50 ? 'text-primary' : 'text-orange-700'}
             />
           </div>
         </CardContent>
@@ -242,7 +242,7 @@ export const FeeTrackingKPICards: React.FC<FeeTrackingKPICardsProps> = ({
           count={kpis.paid}
           subtitle={`${formatPercentage(kpis.completion_percentage)} השלמה`}
           icon={CheckCircle2}
-          color="green"
+          color="indigo"
           isSelected={selectedCard === 'paid'}
           onClick={() => onCardClick?.('paid')}
         />

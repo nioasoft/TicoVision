@@ -103,7 +103,7 @@ const StatusBadge: React.FC<{ status: FeeTrackingPaymentStatus }> = ({ status })
       );
     case 'paid':
       return (
-        <Badge variant="secondary" className="gap-0.5 bg-green-100 text-green-800 text-[10px] py-0 px-1.5">
+        <Badge variant="brand" className="gap-0.5 text-[10px] py-0 px-1.5">
           <CheckCircle2 className="h-2.5 w-2.5" />
           שולם
         </Badge>
@@ -222,7 +222,7 @@ const ActionButtons: React.FC<{
 
     case 'paid':
       return (
-        <div className="text-green-600 flex items-center gap-1">
+        <div className="flex items-center gap-1 text-primary">
           <CheckCircle2 className="h-4 w-4" />
         </div>
       );
@@ -441,7 +441,7 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
             <TableHead colSpan={2} className="text-center py-2 px-3 font-semibold bg-blue-100/70 text-blue-800 border-l border-slate-100">
               שכר טרחה ראיית חשבון
             </TableHead>
-            <TableHead colSpan={2} className="text-center py-2 px-3 font-semibold bg-emerald-100/70 text-emerald-800 border-l border-slate-100">
+            <TableHead colSpan={2} className="border-l border-slate-100 bg-indigo-100/70 px-3 py-2 text-center font-semibold text-indigo-800">
               הנהלת חשבונות חודשי
             </TableHead>
             <TableHead rowSpan={2} className="rtl:text-right ltr:text-left py-2 px-3 align-bottom font-semibold text-slate-700 border-l border-slate-100">
@@ -459,10 +459,10 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
             <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs font-medium text-blue-700 bg-blue-50/80 border-l border-slate-100">
               כולל מע"מ
             </TableHead>
-            <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs font-medium text-emerald-700 bg-emerald-50/80 border-l border-slate-100">
+            <TableHead className="rtl:text-right ltr:text-left border-l border-slate-100 bg-indigo-50/80 px-3 py-1 text-xs font-medium text-indigo-700">
               לפני מע"מ
             </TableHead>
-            <TableHead className="rtl:text-right ltr:text-left py-1 px-3 text-xs font-medium text-emerald-700 bg-emerald-50/80 border-l border-slate-100">
+            <TableHead className="rtl:text-right ltr:text-left border-l border-slate-100 bg-indigo-50/80 px-3 py-1 text-xs font-medium text-indigo-700">
               כולל מע"מ
             </TableHead>
           </TableRow>
@@ -526,12 +526,12 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                         ? formatILS((item.groupAuditWithVat || 0) + (item.memberSumAuditWithVat || 0))
                         : '-'}
                     </TableCell>
-                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
+                    <TableCell className="border-l border-slate-100 bg-indigo-50/30 px-3 py-2.5 text-sm rtl:text-right">
                       {(item.groupBookkeepingBeforeVat || item.memberSumBookkeepingBeforeVat)
                         ? formatILS((item.groupBookkeepingBeforeVat || 0) + (item.memberSumBookkeepingBeforeVat || 0))
                         : '-'}
                     </TableCell>
-                    <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
+                    <TableCell className="border-l border-slate-100 bg-indigo-50/30 px-3 py-2.5 text-sm font-medium rtl:text-right">
                       {(item.groupBookkeepingWithVat || item.memberSumBookkeepingWithVat)
                         ? formatILS((item.groupBookkeepingWithVat || 0) + (item.memberSumBookkeepingWithVat || 0))
                         : '-'}
@@ -636,10 +636,10 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                           <TableCell className="py-2 px-3 text-sm rtl:text-right font-medium bg-blue-50/30 border-l border-slate-100">
                             {enhancedRow?.actual_with_vat ? formatILS(enhancedRow.actual_with_vat) : enhancedRow?.original_with_vat ? formatILS(enhancedRow.original_with_vat) : '-'}
                           </TableCell>
-                          <TableCell className="py-2 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
+                          <TableCell className="border-l border-slate-100 bg-indigo-50/30 px-3 py-2 text-sm rtl:text-right">
                             {enhancedRow?.bookkeeping_before_vat ? formatILS(enhancedRow.bookkeeping_before_vat) : '-'}
                           </TableCell>
-                          <TableCell className="py-2 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
+                          <TableCell className="border-l border-slate-100 bg-indigo-50/30 px-3 py-2 text-sm font-medium rtl:text-right">
                             {enhancedRow?.bookkeeping_with_vat ? formatILS(enhancedRow.bookkeeping_with_vat) : '-'}
                           </TableCell>
 
@@ -763,12 +763,12 @@ export const FeeTrackingTable: React.FC<FeeTrackingTableProps> = ({
                   </TableCell>
 
                   {/* Bookkeeping - Before VAT */}
-                  <TableCell className="py-2.5 px-3 text-sm rtl:text-right bg-emerald-50/30 border-l border-slate-100">
+                  <TableCell className="border-l border-slate-100 bg-indigo-50/30 px-3 py-2.5 text-sm rtl:text-right">
                     {enhancedRow?.bookkeeping_before_vat ? formatILS(enhancedRow.bookkeeping_before_vat) : '-'}
                   </TableCell>
 
                   {/* Bookkeeping - With VAT */}
-                  <TableCell className="py-2.5 px-3 text-sm rtl:text-right font-medium bg-emerald-50/30 border-l border-slate-100">
+                  <TableCell className="border-l border-slate-100 bg-indigo-50/30 px-3 py-2.5 text-sm font-medium rtl:text-right">
                     {enhancedRow?.bookkeeping_with_vat ? formatILS(enhancedRow.bookkeeping_with_vat) : '-'}
                   </TableCell>
 

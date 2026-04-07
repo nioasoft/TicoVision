@@ -16,8 +16,8 @@ interface GroupSummaryStripProps {
 
 const FEE_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft: { label: 'טיוטה', color: 'text-gray-500' },
-  sent: { label: 'נשלח', color: 'text-blue-600' },
-  paid: { label: 'שולם', color: 'text-green-600' },
+  sent: { label: 'נשלח', color: 'text-primary' },
+  paid: { label: 'שולם', color: 'text-primary' },
   partial_paid: { label: 'שולם חלקית', color: 'text-amber-600' },
   overdue: { label: 'באיחור', color: 'text-red-600' },
   cancelled: { label: 'בוטל', color: 'text-gray-400' },
@@ -78,7 +78,7 @@ export function GroupSummaryStrip({ feeCalculations, members }: GroupSummaryStri
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">שולם</span>
               <span
-                className={`text-sm tabular-nums ${amountPaid > 0 ? 'text-green-700 font-medium' : ''}`}
+                className={`text-sm tabular-nums ${amountPaid > 0 ? 'text-primary font-medium' : ''}`}
                 dir="ltr"
               >
                 {latestFee ? formatILS(amountPaid) : '—'}
@@ -88,7 +88,7 @@ export function GroupSummaryStrip({ feeCalculations, members }: GroupSummaryStri
               <span className="text-xs text-muted-foreground">יתרה</span>
               <span
                 className={`text-sm font-medium tabular-nums ${
-                  !latestFee ? '' : balance > 0 ? 'text-red-600' : balance === 0 ? 'text-green-600' : ''
+                  !latestFee ? '' : balance > 0 ? 'text-red-600' : balance === 0 ? 'text-primary' : ''
                 }`}
                 dir="ltr"
               >

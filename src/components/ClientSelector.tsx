@@ -156,12 +156,12 @@ export function ClientSelector({
       )}
 
       {isLoading ? (
-        <div className="flex items-center gap-2 p-3 border rounded-md bg-gray-50">
+        <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted/40 p-3">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm text-gray-600">טוען לקוחות...</span>
+          <span className="text-sm text-muted-foreground">טוען לקוחות...</span>
         </div>
       ) : error ? (
-        <div className="p-3 border border-red-200 rounded-md bg-red-50 text-red-600 text-sm text-right">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-right text-sm text-red-600">
           {error}
         </div>
       ) : (

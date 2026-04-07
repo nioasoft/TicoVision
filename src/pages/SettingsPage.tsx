@@ -99,10 +99,10 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">הגדרות מערכת</h1>
+      <div className="rounded-2xl border border-border/90 bg-card p-6 shadow-sm">
+        <h1 className="text-3xl font-bold text-foreground">הגדרות מערכת</h1>
         <p className="text-sm text-muted-foreground/60 mt-0.5 italic">Turn It Up to Eleven</p>
-        <p className="text-gray-500 mt-1">הגדרות כלליות ואינטגרציות</p>
+        <p className="mt-1 text-muted-foreground">הגדרות כלליות ואינטגרציות</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -123,7 +123,7 @@ export function SettingsPage() {
               <Label htmlFor="tax-id">מספר עוסק מורשה</Label>
               <Input id="tax-id" defaultValue="123456789" />
             </div>
-            <Button>שמור שינויים</Button>
+            <Button variant="brand">שמור שינויים</Button>
           </CardContent>
         </Card>
 
@@ -144,7 +144,7 @@ export function SettingsPage() {
               <Label htmlFor="api-key">מפתח API</Label>
               <Input id="api-key" type="password" />
             </div>
-            <Button variant="outline">בדוק חיבור</Button>
+            <Button variant="brandOutline">בדוק חיבור</Button>
           </CardContent>
         </Card>
 
@@ -201,7 +201,7 @@ export function SettingsPage() {
                   dir="ltr"
                 />
               </div>
-              <Button onClick={handleSaveEmailSettings} disabled={saving}>
+              <Button variant="brand" onClick={handleSaveEmailSettings} disabled={saving}>
                 {saving ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -229,15 +229,15 @@ export function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label>אימות דו-שלבי</Label>
-              <Button variant="outline" size="sm">הפעל</Button>
+              <Button variant="brandOutline" size="sm">הפעל</Button>
             </div>
             <div className="flex items-center justify-between">
               <Label>ניתוק אוטומטי</Label>
-              <Button variant="outline" size="sm">הגדר</Button>
+              <Button variant="brandOutline" size="sm">הגדר</Button>
             </div>
             <div className="flex items-center justify-between">
               <Label>יומן פעילות</Label>
-              <Button variant="outline" size="sm">צפה</Button>
+              <Button variant="brandOutline" size="sm">צפה</Button>
             </div>
           </CardContent>
         </Card>

@@ -71,31 +71,31 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-muted/30">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600">טוען דף תשלום מאובטח...</p>
+          <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">טוען דף תשלום מאובטח...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-purple-50" dir="rtl">
+    <div className="min-h-screen bg-muted/30" dir="rtl">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="border-b border-border/80 bg-background/95 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-800 rounded-lg flex items-center justify-center">
+              <div className="flex size-12 items-center justify-center rounded-xl border border-primary/15 bg-primary text-white shadow-sm">
                 <span className="text-white font-bold text-xl">T</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">TICO</h1>
-                <p className="text-sm text-gray-600">תשלום מאובטח</p>
+                <h1 className="text-2xl font-bold text-foreground">TICO</h1>
+                <p className="text-sm text-muted-foreground">תשלום מאובטח</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-green-600">
+            <div className="flex items-center gap-2 text-primary">
               <Shield className="h-5 w-5" />
               <span className="text-sm font-medium">חיבור מאובטח</span>
             </div>
@@ -108,47 +108,47 @@ export default function PaymentPage() {
         <div className="grid md:grid-cols-3 gap-6">
           {/* Payment Summary */}
           <div className="md:col-span-1">
-            <Card className="p-6 bg-white shadow-lg">
-              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-purple-600" />
+            <Card className="border-border/90 bg-card p-6 shadow-sm">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-foreground">
+                <CreditCard className="h-5 w-5 text-primary" />
                 סיכום תשלום
               </h2>
 
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600">פריט</p>
-                  <p className="text-base font-medium text-gray-900">{paymentDetails?.description}</p>
+                  <p className="text-sm text-muted-foreground">פריט</p>
+                  <p className="text-base font-medium text-foreground">{paymentDetails?.description}</p>
                 </div>
 
                 {paymentDetails?.clientName && (
                   <div>
-                    <p className="text-sm text-gray-600">לכבוד</p>
-                    <p className="text-base font-medium text-gray-900">{paymentDetails.clientName}</p>
+                    <p className="text-sm text-muted-foreground">לכבוד</p>
+                    <p className="text-base font-medium text-foreground">{paymentDetails.clientName}</p>
                   </div>
                 )}
 
-                <div className="border-t pt-4">
+                <div className="border-t border-border/80 pt-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-gray-900">סכום לתשלום</span>
-                    <span className="text-2xl font-bold text-purple-600">
+                    <span className="text-lg font-bold text-foreground">סכום לתשלום</span>
+                    <span className="text-2xl font-bold text-primary">
                       ₪{paymentDetails?.amount.toLocaleString('he-IL')}
                     </span>
                   </div>
                 </div>
 
                 {/* Security Features */}
-                <div className="border-t pt-4 space-y-2">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-2">אבטחת מידע</h3>
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                <div className="space-y-2 border-t border-border/80 pt-4">
+                  <h3 className="mb-2 text-sm font-semibold text-foreground">אבטחת מידע</h3>
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <CheckCircle className="mt-0.5 h-4 w-4 text-primary" />
                     <span>הצפנת SSL 256-bit</span>
                   </div>
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <CheckCircle className="mt-0.5 h-4 w-4 text-primary" />
                     <span>תקן PCI DSS Level 1</span>
                   </div>
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5" />
+                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <CheckCircle className="mt-0.5 h-4 w-4 text-primary" />
                     <span>מאובטח ע"י Cardcom</span>
                   </div>
                 </div>
@@ -158,8 +158,8 @@ export default function PaymentPage() {
 
           {/* Payment Form */}
           <div className="md:col-span-2">
-            <Card className="p-6 bg-white shadow-lg">
-              <h2 className="text-xl font-bold text-gray-900 mb-6 text-right">פרטי תשלום</h2>
+            <Card className="border-border/90 bg-card p-6 shadow-sm">
+              <h2 className="mb-6 text-right text-xl font-bold text-foreground">פרטי תשלום</h2>
 
               {/* Cardcom iFrame */}
               {iframeUrl ? (
@@ -175,10 +175,11 @@ export default function PaymentPage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-600">שגיאה בטעינת דף התשלום</p>
+                  <p className="text-muted-foreground">שגיאה בטעינת דף התשלום</p>
                   <Button
+                    variant="brand"
                     onClick={() => window.location.reload()}
-                    className="mt-4 bg-purple-600 hover:bg-purple-700"
+                    className="mt-4"
                   >
                     נסה שנית
                   </Button>
@@ -189,7 +190,7 @@ export default function PaymentPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-600">
+        <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>© 2025 TICO - מערכת CRM לרואי חשבון</p>
           <p className="mt-1 italic text-xs">DARE TO THINK · COMMIT TO DELIVER</p>
         </div>

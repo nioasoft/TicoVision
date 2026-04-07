@@ -18,6 +18,7 @@ import { BudgetBreakdownSection } from '@/components/BudgetBreakdownSection';
 import { BudgetWithActualsCard } from '@/components/dashboard/BudgetWithActualsCard';
 import { PaymentMethodBreakdownEnhanced } from '@/components/dashboard/PaymentMethodBreakdownEnhanced';
 import { ClientListPopup } from '@/components/dashboard/ClientListPopup';
+import { PageHeader } from '@/components/ui/page-header';
 import type { BudgetByCategory } from '@/types/dashboard.types';
 
 export function DashboardPage() {
@@ -124,29 +125,18 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
-      {/* Page Header with Year Selector */}
-      <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="text-right">
-            <div className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-              סקירה פיננסית
-            </div>
-            <h1 className="text-3xl font-bold text-slate-900 rtl:text-right ltr:text-left">
-              לוח בקרה
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-500 rtl:text-right ltr:text-left">
-              מבט על התקציב, הגבייה והתפלגות אמצעי התשלום לשנת המס הנבחרת.
-            </p>
-          </div>
-
-          {/* Tax Year Selector */}
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <span className="text-sm font-medium text-slate-700">שנת מס</span>
+      <PageHeader
+        eyebrow="סקירה פיננסית"
+        title="לוח בקרה"
+        description="מבט מרוכז על התקציב, הגבייה והתפלגות אמצעי התשלום לשנת המס הנבחרת."
+        actions={
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3">
+            <span className="text-sm font-medium text-muted-foreground">שנת מס</span>
             <Select
               value={selectedYear.toString()}
               onValueChange={(value) => setSelectedYear(parseInt(value))}
             >
-              <SelectTrigger className="w-[130px] border-slate-200 bg-white">
+              <SelectTrigger className="w-[130px] bg-background">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -158,8 +148,8 @@ export function DashboardPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Loading State */}
       {isLoading && (

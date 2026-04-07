@@ -173,6 +173,7 @@ import {
 import { LinkDialog } from './LinkDialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { BRAND_PRIMARY_HEX } from '@/lib/brand';
 import { BlueBullet, DarkRedBullet, BlackBullet } from './extensions/ColoredBullet';
 import { ColoredBulletButtons } from './ColoredBulletButtons';
 import { LineHeight } from './extensions/LineHeight';
@@ -445,8 +446,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
       // Styled button - all styles on one line for PDF compatibility
       const isOutline = data.buttonColor === 'outline';
       const bgColor = isOutline ? 'transparent' : data.buttonColor;
-      const textColor = isOutline ? '#395BF7' : '#ffffff';
-      const border = isOutline ? 'border: 2px solid #395BF7;' : '';
+      const textColor = isOutline ? BRAND_PRIMARY_HEX : '#ffffff';
+      const border = isOutline ? `border: 2px solid ${BRAND_PRIMARY_HEX};` : '';
 
       const buttonStyle = `display: inline-block; background-color: ${bgColor}; color: ${textColor}; ${border} padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;`;
 
@@ -889,8 +890,8 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>קו צבעוני</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#395BF7' }).run()}>
-                <div className="w-full h-[2px] ml-2" style={{ backgroundColor: '#395BF7' }} />
+              <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: BRAND_PRIMARY_HEX }).run()}>
+                <div className="w-full h-[2px] ml-2" style={{ backgroundColor: BRAND_PRIMARY_HEX }} />
                 כחול
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => editor.chain().focus().setStyledDivider({ thickness: '2px', color: '#DC2626' }).run()}>
@@ -999,11 +1000,11 @@ export const TiptapEditor: React.FC<TiptapEditorProps> = ({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => editor.chain().focus().setColor('#395BF7').run()}
+              onClick={() => editor.chain().focus().setColor(BRAND_PRIMARY_HEX).run()}
               title="כחול"
               className="w-6 h-6 p-0"
             >
-              <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: '#395BF7' }} />
+              <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: BRAND_PRIMARY_HEX }} />
             </Button>
             <Button
               type="button"

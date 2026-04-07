@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { logger } from '@/lib/logger';
-import { Plus, Edit, Trash2, Users, Building2, AlertCircle, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, Building2, AlertCircle } from 'lucide-react';
 import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,8 @@ import type { AssignedGroupContact, CreateTenantContactDto } from '@/types/tenan
 import { useAuth } from '@/contexts/AuthContext';
 import { Combobox } from '@/components/ui/combobox';
 import { ISRAELI_CITIES_SORTED } from '@/data/israeli-cities';
+import { PageHeader } from '@/components/ui/page-header';
+import { SearchField } from '@/components/ui/search-field';
 
 // Helper function to clean address data
 const cleanAddressData = (address?: { street?: string; city?: string; postal_code?: string }) => {
@@ -465,33 +467,35 @@ export default function ClientGroupsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">ניהול קבוצות לקוחות</h1>
-        <p className="text-sm text-muted-foreground/60 italic">The Band — Stronger Together</p>
-        <div className="flex justify-start pt-2">
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={
+          <>
+            <Users className="size-4" />
+            קבוצות לקוחות
+          </>
+        }
+        title="ניהול קבוצות לקוחות"
+        description="יצירה, חיפוש ועדכון של קבוצות חברות עם תצוגה אחידה וברורה יותר לכל המידע המרכזי."
+        actions={
           <Button
-            variant="outline"
+            variant="brandOutline"
+            size="pill"
             onClick={() => { resetForm(); setIsAddDialogOpen(true); }}
-            className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full shadow-md"
           >
-            <Plus className="ml-2 h-5 w-5" />
+            <Plus className="size-4" />
             הוסף קבוצה חדשה
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pr-10"
-        />
-      </div>
+      <SearchField
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="חיפוש לפי שם קבוצה, בעל שליטה או הערות"
+        wrapperClassName="rounded-2xl border border-border/90 bg-card p-4 shadow-sm"
+      />
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -508,7 +512,7 @@ export default function ClientGroupsPage() {
             <CardTitle className="text-sm text-muted-foreground">קבוצות עם חיוב מאוחד</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-primary">
               {groups.filter(g => g.combined_billing).length}
             </div>
           </CardContent>
@@ -518,7 +522,7 @@ export default function ClientGroupsPage() {
             <CardTitle className="text-sm text-muted-foreground">קבוצות עם מכתבים מאוחדים</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-primary">
               {groups.filter(g => g.combined_letters).length}
             </div>
           </CardContent>
@@ -526,7 +530,7 @@ export default function ClientGroupsPage() {
       </div>
 
       {/* Groups List */}
-      <div className="border rounded-lg">
+      <div className="overflow-hidden rounded-2xl border border-border/90 bg-card shadow-sm">
         {loading ? (
           <div className="p-8 text-center">טוען נתונים...</div>
         ) : filteredGroups.length === 0 ? (
@@ -541,7 +545,7 @@ export default function ClientGroupsPage() {
               return (
                 <div
                   key={group.id}
-                  className="p-4 hover:bg-muted/30 cursor-pointer transition-colors"
+                  className="cursor-pointer p-5 transition-colors hover:bg-muted/30"
                   onClick={() => navigate(`/client-groups/${group.id}`)}
                 >
                   <div className="flex items-start justify-between">
@@ -551,7 +555,7 @@ export default function ClientGroupsPage() {
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground shrink-0" />
                         <span className="font-medium text-base">{group.group_name_hebrew}</span>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="neutral" className="text-xs">
                           {clients.length} חברות
                         </Badge>
                       </div>
@@ -565,12 +569,12 @@ export default function ClientGroupsPage() {
                           <span className="text-xs">+{group.secondary_owners.length} בעלי מניות</span>
                         )}
                         {group.combined_billing && (
-                          <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <Badge variant="brand" className="text-xs">
                             חיוב מאוחד
                           </Badge>
                         )}
                         {group.combined_letters && (
-                          <Badge variant="outline" className="text-xs bg-sky-50 text-sky-700 border-sky-200">
+                          <Badge variant="info" className="text-xs">
                             מכתבים מאוחדים
                           </Badge>
                         )}
@@ -579,7 +583,7 @@ export default function ClientGroupsPage() {
                             href={group.google_drive_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-sm text-blue-700 hover:text-blue-900 hover:underline"
+                            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <GoogleDriveIcon className="h-4 w-4" />
@@ -591,7 +595,7 @@ export default function ClientGroupsPage() {
                             href={group.company_structure_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Building2 className="h-3.5 w-3.5" />
@@ -613,8 +617,10 @@ export default function ClientGroupsPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        aria-label="עריכת קבוצה"
                         onClick={() => openEditDialog(group)}
                         title="עריכה"
+                        className="hover:bg-primary/10 hover:text-primary"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -622,6 +628,7 @@ export default function ClientGroupsPage() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          aria-label="מחיקת קבוצה"
                           onClick={() => openDeleteDialog(group)}
                           title="מחיקה"
                         >
@@ -694,9 +701,9 @@ export default function ClientGroupsPage() {
               </div>
             </div>
 
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="rtl:text-right mr-2 text-blue-800">
+            <Alert className="border-primary/20 bg-primary/5">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <AlertDescription className="mr-2 rtl:text-right text-primary">
                 אנשי קשר ובעלי שליטה יתווספו בשלב הבא
               </AlertDescription>
             </Alert>
@@ -735,13 +742,13 @@ export default function ClientGroupsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
+            <Button variant="soft" onClick={() => {
               setIsAddDialogOpen(false);
               resetForm();
             }}>
               ביטול
             </Button>
-            <Button onClick={handleAddGroup}>
+            <Button variant="brand" onClick={handleAddGroup}>
               הוסף קבוצה
             </Button>
           </DialogFooter>
@@ -858,7 +865,7 @@ export default function ClientGroupsPage() {
           </div>
           <DialogFooter className="flex justify-between sm:justify-between">
             <Button
-              variant="outline"
+              variant="brandOutline"
               onClick={() => {
                 setIsEditDialogOpen(false);
                 setSelectedGroup(null);
@@ -870,14 +877,14 @@ export default function ClientGroupsPage() {
               קבוצה חדשה
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => {
+              <Button variant="soft" onClick={() => {
                 setIsEditDialogOpen(false);
                 setSelectedGroup(null);
                 resetForm();
               }}>
                 ביטול
               </Button>
-              <Button onClick={handleUpdateGroup}>
+              <Button variant="brand" onClick={handleUpdateGroup}>
                 עדכן קבוצה
               </Button>
             </div>

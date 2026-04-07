@@ -23,8 +23,8 @@ interface SaveStatusIndicatorProps {
  * Displays the current save status:
  * - idle: Shows "נשמר לאחרונה: HH:MM" (gray)
  * - dirty: Shows "יש שינויים שלא נשמרו" (yellow)
- * - saving: Shows "שומר..." with spinner (blue)
- * - saved: Shows "נשמר" with checkmark (green)
+ * - saving: Shows "שומר..." with spinner (primary)
+ * - saved: Shows "נשמר" with checkmark (primary)
  * - error: Shows error message with retry button (red)
  */
 export function SaveStatusIndicator({
@@ -41,7 +41,7 @@ export function SaveStatusIndicator({
       text: lastSaved
         ? `נשמר לאחרונה: ${format(lastSaved, 'HH:mm', { locale: he })}`
         : '',
-      className: 'text-gray-500',
+      className: 'text-muted-foreground',
     },
     dirty: {
       icon: <Clock className="h-3.5 w-3.5" />,
@@ -51,12 +51,12 @@ export function SaveStatusIndicator({
     saving: {
       icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
       text: 'שומר...',
-      className: 'text-blue-600',
+      className: 'text-primary',
     },
     saved: {
       icon: <Check className="h-3.5 w-3.5" />,
       text: 'נשמר',
-      className: 'text-green-600',
+      className: 'text-primary',
     },
     error: {
       icon: <AlertCircle className="h-3.5 w-3.5" />,
@@ -94,7 +94,7 @@ export function SaveStatusIndicator({
         </Button>
       )}
       {status === 'error' && error && (
-        <span className="text-xs text-red-500 mr-2" title={error.message}>
+        <span className="mr-2 text-xs text-red-500" title={error.message}>
           ({error.message.slice(0, 30)}...)
         </span>
       )}

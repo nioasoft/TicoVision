@@ -2,7 +2,6 @@ import { format } from 'date-fns';
 import { FileText, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { DocFile } from '../types';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 interface FileCardProps {
@@ -16,34 +15,34 @@ export function FileCard({ file, selected, onSelect, onDoubleClick }: FileCardPr
   return (
     <div 
       className={cn(
-        "group relative flex flex-col p-3 rounded-xl border transition-all cursor-pointer hover:shadow-md",
+        "group relative flex cursor-pointer flex-col rounded-xl border p-3 transition-all hover:shadow-md",
         selected 
-          ? "bg-blue-50/50 border-blue-200 ring-1 ring-blue-200 shadow-sm" 
-          : "bg-white border-slate-100 hover:border-blue-100"
+          ? "border-primary/20 bg-primary/5 ring-1 ring-primary/15 shadow-sm" 
+          : "border-slate-100 bg-white hover:border-primary/15"
       )}
       onClick={() => onSelect(file)}
       onDoubleClick={() => onDoubleClick(file)}
     >
       {/* Icon Area */}
-      <div className="aspect-[1/1.2] mb-3 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-center relative overflow-hidden">
+      <div className="relative mb-3 flex aspect-[1/1.2] items-center justify-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-           <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full bg-white/80 shadow-sm">
+           <Button variant="ghost" size="icon" aria-label="אפשרויות קובץ" className="h-6 w-6 rounded-full bg-white/80 shadow-sm">
              <MoreHorizontal className="h-3 w-3" />
            </Button>
         </div>
-        <FileText className="h-10 w-10 text-red-400 drop-shadow-sm" />
+        <FileText className="h-10 w-10 text-primary/70 drop-shadow-sm" />
         
         {/* Status Badge overlay */}
         <div className="absolute bottom-2 left-2">
             {file.status === 'draft' && <div className="h-2 w-2 rounded-full bg-orange-400" />}
-            {file.status.startsWith('sent') && <div className="h-2 w-2 rounded-full bg-green-500" />}
-            {file.status === 'saved' && <div className="h-2 w-2 rounded-full bg-blue-500" />}
+            {file.status.startsWith('sent') && <div className="h-2 w-2 rounded-full bg-primary" />}
+            {file.status === 'saved' && <div className="h-2 w-2 rounded-full bg-primary/70" />}
         </div>
       </div>
 
       {/* Content */}
       <div className="space-y-1 text-right">
-        <h4 className="text-sm font-medium leading-tight line-clamp-2 text-slate-700 group-hover:text-blue-700">
+        <h4 className="line-clamp-2 text-sm font-medium leading-tight text-slate-700 group-hover:text-primary">
           {file.title}
         </h4>
         <p className="text-xs text-slate-400">

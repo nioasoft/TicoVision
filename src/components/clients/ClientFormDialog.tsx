@@ -148,6 +148,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     userRole = '',
   }) => {
     const [formData, setFormData] = useState<CreateClientDto>(INITIAL_FORM_DATA);
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     useBeforeUnload(hasUnsavedChanges);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -311,18 +312,19 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       return { valid: errors.length === 0, errors };
     }, [formData, mode, taxIdExists]);
 
+    const sectionTitleClassName =
+      'border-b border-primary/15 pb-2 text-base font-semibold text-primary rtl:text-right';
+
     const handleSubmit = useCallback(async () => {
       // Validate form first
       const { valid, errors } = validateForm();
 
       if (!valid) {
-        // Show error alert with missing fields
-        alert(
-          `❌ לא ניתן לשמור - שדות חובה חסרים או לא תקינים:\n\n${errors.map(e => `• ${e}`).join('\n')}`
-        );
+        setValidationErrors(errors);
         return;
       }
 
+      setValidationErrors([]);
       setIsSubmitting(true);
       try {
         // Strip tax_id formatting before submitting
@@ -368,6 +370,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       value: CreateClientDto[K]
     ) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
+      setValidationErrors([]);
       setHasUnsavedChanges(true);
     }, []);
 
@@ -442,22 +445,36 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     return (
       <>
         <Dialog open={open} onOpenChange={handleClose}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto border-border/90 bg-slate-50/40" dir="rtl">
             <UnsavedChangesIndicator show={hasUnsavedChanges} />
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="rtl:text-right">
                 {mode === 'add' ? 'הוספת לקוח חדש' : 'עריכת פרטי לקוח'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="rtl:text-right">
                 {mode === 'add' ? 'הזן את פרטי הלקוח החדש' : 'עדכן את פרטי הלקוח'}
               </DialogDescription>
             </DialogHeader>
+
+            {validationErrors.length > 0 && (
+              <Alert variant="destructive" className="border-red-200 bg-red-50/80">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="mr-2 rtl:text-right">
+                  <div className="space-y-1">
+                    <p className="font-medium">לא ניתן לשמור עדיין:</p>
+                    {validationErrors.map((message) => (
+                      <p key={message}>• {message}</p>
+                    ))}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* External Links Buttons - Edit mode only, when links exist */}
             {mode === 'edit' && client?.google_drive_link && (
               <div className="mb-2 flex gap-2">
                 <Button
-                  variant="outline"
+                  variant="brandOutline"
                   size="sm"
                   onClick={() => window.open(client.google_drive_link, '_blank')}
                   className="gap-2"
@@ -468,20 +485,20 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-3 py-4">
+            <div className="grid grid-cols-3 gap-4 py-4">
               {/* PDF Import Section - Only in Add mode */}
               {mode === 'add' && (
-                <div className="col-span-3 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+                <div className="col-span-3 mb-2 flex items-center gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4">
                   <PdfImportButton
                     onDataExtracted={handlePdfDataExtracted}
                     disabled={isSubmitting}
                   />
                   <div className="flex-1">
-                    <p className="text-xs text-gray-500 rtl:text-right">
+                    <p className="text-xs text-muted-foreground rtl:text-right">
                       העלה PDF מרשם החברות - יישמר בתיקיית הלקוח לאחר יצירת הלקוח
                     </p>
                     {importedPdfFile && (
-                      <p className="text-xs text-green-600 font-medium rtl:text-right mt-1">
+                      <p className="mt-1 text-xs font-medium text-primary rtl:text-right">
                         ✓ קובץ נבחר: {importedPdfFile.name}
                       </p>
                     )}
@@ -491,7 +508,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Category Header: Company Details */}
               <div className="col-span-3 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                <h3 className={sectionTitleClassName}>
                   פרטי הרשומה
                 </h3>
               </div>
@@ -591,7 +608,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Category Header: Address Details */}
               <div className="col-span-3 mt-4 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                <h3 className={sectionTitleClassName}>
                   פרטי כתובת
                 </h3>
               </div>
@@ -638,7 +655,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Category Header: Primary Contact */}
               <div className="col-span-3 mt-4 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                <h3 className={sectionTitleClassName}>
                   איש קשר מהותי (בעל הבית)
                 </h3>
               </div>
@@ -672,7 +689,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Category Header: Additional Information */}
               <div className="col-span-3 mt-4 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                <h3 className={sectionTitleClassName}>
                   פרטים נוספים
                 </h3>
               </div>
@@ -753,7 +770,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Payer Client Selection - for clients paid by another client */}
               <div className="col-span-3 mt-4 mb-2">
-                <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                <h3 className={sectionTitleClassName}>
                   אחריות תשלום שכ"ט
                 </h3>
               </div>
@@ -891,7 +908,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               )}
 
               {/* Row 6: Status, Checkboxes (4 cols in one row) */}
-              <div className="col-span-3 grid grid-cols-4 gap-4">
+              <div className="col-span-3 grid grid-cols-4 gap-4 rounded-2xl border border-border/80 bg-white p-4">
                 <div>
                   <Label htmlFor="status" className="text-right block mb-2">
                     סטטוס
@@ -927,7 +944,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       משלם
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500 rtl:text-right mt-1">
+                  <p className="mt-1 text-xs text-muted-foreground rtl:text-right">
                     אם לא מסומן, לא יקבל מכתבי שכ"ט
                   </p>
                 </div>
@@ -945,7 +962,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       מכתבים כלליים
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500 rtl:text-right mt-1">
+                  <p className="mt-1 text-xs text-muted-foreground rtl:text-right">
                     האם להכליל ברשימות תפוצה?
                   </p>
                 </div>
@@ -963,7 +980,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       לקוח ריטיינר
                     </Label>
                   </div>
-                  <p className="text-xs text-gray-500 rtl:text-right mt-1">
+                  <p className="mt-1 text-xs text-muted-foreground rtl:text-right">
                     מכתבים מסוג E1/E2
                   </p>
                 </div>
@@ -971,8 +988,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
 
               {/* Group Letter Options - only show if client is in a group and receives_letters is true */}
               {formData.group_id && formData.receives_letters && (
-                <div className="col-span-3 pr-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <Label className="block mb-3 rtl:text-right font-medium text-blue-800">
+                <div className="col-span-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 pr-4">
+                  <Label className="mb-3 block font-medium text-primary rtl:text-right">
                     אופן קבלת מכתבים כלליים בקבוצה:
                   </Label>
                   <RadioGroup
@@ -993,10 +1010,10 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     <div className="flex items-start gap-3 rtl:flex-row-reverse">
                       <RadioGroupItem value="group_default" id="group_default" className="mt-1" />
                       <div className="flex-1 rtl:text-right">
-                        <Label htmlFor="group_default" className="cursor-pointer text-sm font-medium block">
+                        <Label htmlFor="group_default" className="block cursor-pointer text-sm font-medium">
                           עקוב אחרי הגדרות הקבוצה (ברירת מחדל)
                         </Label>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           אם הקבוצה מוגדרת לקבל מכתב משותף - יקבל כחלק מהקבוצה. אם לא - יקבל מכתב אישי.
                         </p>
                       </div>
@@ -1004,10 +1021,10 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                     <div className="flex items-start gap-3 rtl:flex-row-reverse">
                       <RadioGroupItem value="individual" id="individual" className="mt-1" />
                       <div className="flex-1 rtl:text-right">
-                        <Label htmlFor="individual" className="cursor-pointer text-sm font-medium block">
+                        <Label htmlFor="individual" className="block cursor-pointer text-sm font-medium">
                           תמיד מכתב אישי
                         </Label>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           לקוח זה תמיד יקבל מכתב אישי משלו, גם אם הקבוצה מקבלת מכתב משותף.
                         </p>
                       </div>
@@ -1021,7 +1038,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 <>
                   {/* Category Header: Accountant Manager */}
                   <div className="col-span-3 mt-4 mb-2">
-                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                    <h3 className={sectionTitleClassName}>
                       מנהלת חשבונות
                     </h3>
                   </div>
@@ -1029,27 +1046,27 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   <div className="col-span-3">
                     <ContactAutocompleteInput
                       label=""
-                    nameValue={formData.accountant_name}
-                    emailValue={formData.accountant_email}
-                    phoneValue={formData.accountant_phone}
-                    phoneSecondaryValue={formData.accountant_phone_secondary}
-                    onNameChange={(value) => handleFormChange('accountant_name', value)}
-                    onEmailChange={(value) => handleFormChange('accountant_email', value)}
-                    onPhoneChange={(value) => {
-                      const formatted = formatIsraeliPhone(value);
-                      handleFormChange('accountant_phone', formatted);
-                    }}
-                    onPhoneSecondaryChange={(value) => {
-                      const formatted = formatIsraeliLandline(value);
-                      handleFormChange('accountant_phone_secondary', formatted);
-                    }}
-                    contactType="accountant_manager"
-                    required={false}
-                    namePlaceholder="שם מנהלת חשבונות"
-                    emailPlaceholder="דוא״ל"
-                    phonePlaceholder=""
-                    phoneSecondaryPlaceholder=""
-                  />
+                      nameValue={formData.accountant_name}
+                      emailValue={formData.accountant_email}
+                      phoneValue={formData.accountant_phone}
+                      phoneSecondaryValue={formData.accountant_phone_secondary}
+                      onNameChange={(value) => handleFormChange('accountant_name', value)}
+                      onEmailChange={(value) => handleFormChange('accountant_email', value)}
+                      onPhoneChange={(value) => {
+                        const formatted = formatIsraeliPhone(value);
+                        handleFormChange('accountant_phone', formatted);
+                      }}
+                      onPhoneSecondaryChange={(value) => {
+                        const formatted = formatIsraeliLandline(value);
+                        handleFormChange('accountant_phone_secondary', formatted);
+                      }}
+                      contactType="accountant_manager"
+                      required={false}
+                      namePlaceholder="שם מנהלת חשבונות"
+                      emailPlaceholder="דוא״ל"
+                      phonePlaceholder=""
+                      phoneSecondaryPlaceholder=""
+                    />
                   </div>
                 </>
               )}
@@ -1109,7 +1126,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {mode === 'edit' && client && onAddContact && onUpdateContact && onDeleteContact && onSetPrimaryContact && (
                 <>
                   <div className="col-span-3 mt-4 mb-2">
-                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                    <h3 className={sectionTitleClassName}>
                       אנשי קשר נוספים
                     </h3>
                   </div>
@@ -1129,7 +1146,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {mode === 'edit' && client && onAddPhone && onUpdatePhone && onDeletePhone && onSetPrimaryPhone ? (
                 <>
                   <div className="col-span-3 mt-4 mb-2">
-                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                    <h3 className={sectionTitleClassName}>
                       מספרי טלפון
                     </h3>
                   </div>
@@ -1155,12 +1172,12 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {mode === 'edit' && client && (
                 <>
                   <div className="col-span-3 mt-4 mb-2">
-                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                    <h3 className={sectionTitleClassName}>
                       מסמכי רשם החברות
                     </h3>
                   </div>
                   <div className="col-span-3">
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="rounded-2xl border border-border/80 bg-white p-4">
                       <FileDisplayWidget
                         clientId={client.id}
                         category="company_registry"
@@ -1175,7 +1192,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               {mode === 'edit' && client && (client.client_type === 'company' || client.client_type === 'partnership') && (
                 <>
                   <div className="col-span-3 mt-4 mb-2">
-                    <h3 className="text-lg font-semibold text-blue-700 border-b-2 border-blue-200 pb-2 rtl:text-right">
+                    <h3 className={sectionTitleClassName}>
                       מאזנים שנתיים
                     </h3>
                   </div>
@@ -1195,11 +1212,11 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
               )}
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            <DialogFooter className="mt-2 border-t border-border/70 pt-4">
+              <Button variant="soft" onClick={handleClose} disabled={isSubmitting}>
                 ביטול
               </Button>
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
+              <Button variant="brand" onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? 'שומר...' : mode === 'add' ? 'הוסף לקוח' : 'עדכן לקוח'}
               </Button>
             </DialogFooter>

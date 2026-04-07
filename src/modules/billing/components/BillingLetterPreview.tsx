@@ -129,9 +129,9 @@ export function BillingLetterPreview() {
       },
       paid: {
         label: 'שולם',
-        bgColor: 'bg-emerald-50',
-        textColor: 'text-emerald-700',
-        borderColor: 'border-emerald-200',
+        bgColor: 'bg-primary/10',
+        textColor: 'text-primary',
+        borderColor: 'border-primary/20',
         icon: CheckCircle2
       },
       cancelled: {
@@ -196,7 +196,7 @@ export function BillingLetterPreview() {
         date: new Date(billingLetter.payment_date),
         label: 'שולם',
         icon: CheckCircle2,
-        color: 'text-emerald-500',
+        color: 'text-primary',
       });
     }
 
@@ -215,7 +215,7 @@ export function BillingLetterPreview() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="min-h-screen bg-slate-50">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
@@ -228,7 +228,7 @@ export function BillingLetterPreview() {
 
   if (error || !billingLetter) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="min-h-screen bg-slate-50">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
           <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
             <AlertCircle className="h-10 w-10 text-red-400" />
@@ -255,7 +255,7 @@ export function BillingLetterPreview() {
   const hasDiscount = billingLetter.bank_discount_percentage > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white" dir="rtl">
+    <div className="min-h-screen bg-slate-50" dir="rtl">
       {/* Navigation */}
       <div className="border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4">
@@ -275,7 +275,7 @@ export function BillingLetterPreview() {
         {/* Hero Section - Amount Focus */}
         <div className="relative mb-10">
           {/* Background decoration */}
-          <div className="absolute inset-0 bg-gradient-to-bl from-slate-100/50 via-transparent to-transparent rounded-3xl -z-10" />
+          <div className="absolute inset-0 rounded-3xl border border-slate-200/60 bg-white -z-10" />
 
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-8 p-8">
             {/* Left: Client & Status */}
@@ -319,14 +319,14 @@ export function BillingLetterPreview() {
                 {/* Final Amount */}
                 <div className={`p-8 rounded-2xl ${
                   billingLetter.status === 'paid'
-                    ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200'
-                    : 'bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200'
+                    ? 'border border-primary/20 bg-primary/5'
+                    : 'border border-slate-200 bg-slate-50'
                 }`}>
                   <div className="text-sm text-slate-500 mb-2">
                     {hasDiscount ? 'סכום לתשלום (אחרי הנחה)' : 'סכום לתשלום'}
                   </div>
                   <div className={`text-5xl font-bold tracking-tight ${
-                    billingLetter.status === 'paid' ? 'text-emerald-700' : 'text-slate-900'
+                    billingLetter.status === 'paid' ? 'text-primary' : 'text-slate-900'
                   }`}>
                     {formatILS(hasDiscount ? (billingLetter.amount_after_discount || 0) : billingLetter.total_amount)}
                   </div>
@@ -342,7 +342,7 @@ export function BillingLetterPreview() {
                       <span className="text-slate-500">מע"מ ({billingLetter.vat_rate}%)</span>
                     </div>
                     {hasDiscount && (
-                      <div className="flex justify-between text-sm text-emerald-600 flex-row-reverse">
+                      <div className="flex justify-between text-sm text-primary flex-row-reverse">
                         <span>-{formatILS(billingLetter.amount_before_vat * (billingLetter.bank_discount_percentage / 100))}</span>
                         <span>הנחה ({billingLetter.bank_discount_percentage}%)</span>
                       </div>
@@ -360,7 +360,7 @@ export function BillingLetterPreview() {
             <>
               <Button
                 onClick={() => setPreviewDialogOpen(true)}
-                className="bg-slate-900 hover:bg-slate-800"
+                variant="brand"
               >
                 <Send className="h-4 w-4 ml-2" />
                 שלח במייל
@@ -386,7 +386,7 @@ export function BillingLetterPreview() {
             <>
               <Button
                 onClick={handleMarkAsPaid}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                variant="brand"
               >
                 <CheckCircle2 className="h-4 w-4 ml-2" />
                 סמן כשולם
@@ -402,7 +402,7 @@ export function BillingLetterPreview() {
                 <Bell className="h-4 w-4 ml-2" />
                 שלח תזכורת
                 {billingLetter.reminder_count > 0 && (
-                  <Badge variant="secondary" className="mr-2 bg-amber-100 text-amber-700 text-xs">
+                    <Badge variant="warning" className="mr-2 text-xs">
                     {billingLetter.reminder_count}
                   </Badge>
                 )}
@@ -486,7 +486,7 @@ export function BillingLetterPreview() {
                     <label className="text-sm font-medium text-slate-500 block mb-2">
                       הערות פנימיות
                     </label>
-                    <div className="bg-amber-50/50 rounded-lg p-4 border border-amber-100">
+                    <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-4">
                       <p className="text-slate-600 whitespace-pre-wrap text-sm">
                         {billingLetter.notes}
                       </p>
@@ -529,7 +529,7 @@ export function BillingLetterPreview() {
 
                   {hasDiscount && (
                     <>
-                      <div className="flex justify-between items-center text-emerald-600 bg-emerald-50 -mx-6 px-6 py-3 flex-row-reverse">
+                      <div className="mx-[-24px] flex flex-row-reverse items-center justify-between bg-primary/5 px-6 py-3 text-primary">
                         <span className="font-medium">
                           -{formatILS(billingLetter.amount_before_vat * (billingLetter.bank_discount_percentage / 100))}
                         </span>
@@ -537,7 +537,7 @@ export function BillingLetterPreview() {
                       </div>
 
                       <div className="flex justify-between items-center pt-2 flex-row-reverse">
-                        <span className="text-2xl font-bold text-emerald-700">
+                        <span className="text-2xl font-bold text-primary">
                           {formatILS(billingLetter.amount_after_discount || 0)}
                         </span>
                         <span className="text-slate-700 font-medium">סכום לתשלום סופי</span>
@@ -642,7 +642,7 @@ export function BillingLetterPreview() {
 
                 {billingLetter.reminder_count > 0 && (
                   <div className="flex justify-between items-center flex-row-reverse">
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                    <Badge variant="warning">
                       {billingLetter.reminder_count} תזכורות
                     </Badge>
                     <span className="text-sm text-slate-500">תזכורות שנשלחו</span>

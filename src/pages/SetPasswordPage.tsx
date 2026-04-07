@@ -132,6 +132,8 @@ export function SetPasswordPage() {
     { met: password.length >= 8, text: 'לפחות 8 תווים' },
     { met: password === confirmPassword && password.length > 0, text: 'הסיסמאות תואמות' },
   ];
+  const requirementIconClassName = (met: boolean) => (met ? 'text-primary' : 'text-muted-foreground/40');
+  const requirementTextClassName = (met: boolean) => (met ? 'text-primary' : 'text-muted-foreground');
 
   // Show loader while checking session
   if (isCheckingSession) {
@@ -159,10 +161,10 @@ export function SetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100" dir="rtl">
       <div className="w-full max-w-md px-4">
-        <Card>
+        <Card className="border-border/90 bg-background/95 shadow-lg backdrop-blur">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border border-primary/15 bg-primary/10">
                 <Lock className="h-8 w-8 text-primary" />
               </div>
             </div>
@@ -191,7 +193,7 @@ export function SetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -217,7 +219,7 @@ export function SetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -229,15 +231,15 @@ export function SetPasswordPage() {
               </div>
 
               {/* Password Requirements */}
-              <div className="bg-slate-50 p-3 rounded-md space-y-2">
-                <p className="text-sm font-medium text-gray-700 text-right">דרישות סיסמה:</p>
+              <div className="space-y-2 rounded-xl border border-border/80 bg-muted/40 p-3">
+                <p className="text-right text-sm font-medium text-foreground">דרישות סיסמה:</p>
                 {passwordRequirements.map((req, index) => (
                   <div key={index} className="flex items-center gap-2 text-sm justify-end">
-                    <span className={req.met ? 'text-green-600' : 'text-gray-400'}>
+                    <span className={requirementTextClassName(req.met)}>
                       {req.text}
                     </span>
                     <CheckCircle
-                      className={`h-4 w-4 ${req.met ? 'text-green-600' : 'text-gray-300'}`}
+                      className={`h-4 w-4 ${requirementIconClassName(req.met)}`}
                     />
                   </div>
                 ))}
@@ -247,6 +249,7 @@ export function SetPasswordPage() {
             <CardFooter>
               <Button
                 type="submit"
+                variant="brand"
                 className="w-full"
                 disabled={isLoading || !password || !confirmPassword}
               >

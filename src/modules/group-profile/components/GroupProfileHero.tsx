@@ -19,7 +19,7 @@ export function GroupProfileHero({ group, memberCount, onEdit }: GroupProfileHer
   const navigate = useNavigate();
 
   return (
-    <div className="rounded-xl border border-t-4 border-t-indigo-500 bg-card shadow-sm p-4">
+    <div className="rounded-2xl border border-t-4 border-t-primary bg-card p-4 shadow-sm">
       <div className="flex items-start justify-between">
         {/* Right side - identity info */}
         <div className="space-y-2 flex-1">
@@ -34,7 +34,7 @@ export function GroupProfileHero({ group, memberCount, onEdit }: GroupProfileHer
               <ArrowRight className="h-4 w-4" />
             </Button>
             <h1 className="text-xl font-bold tracking-tight">{group.group_name_hebrew}</h1>
-            <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
+            <Badge variant="neutral" className="text-xs">
               {memberCount} חברים
             </Badge>
           </div>
@@ -52,12 +52,12 @@ export function GroupProfileHero({ group, memberCount, onEdit }: GroupProfileHer
           {/* Row 3: Badges */}
           <div className="flex items-center gap-2 flex-wrap">
             {group.combined_billing && (
-              <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+              <Badge variant="brand" className="text-xs">
                 חיוב מאוחד
               </Badge>
             )}
             {group.combined_letters && (
-              <Badge variant="outline" className="text-xs bg-sky-50 text-sky-700 border-sky-200">
+              <Badge variant="info" className="text-xs">
                 מכתבים מאוחדים
               </Badge>
             )}
@@ -66,7 +66,7 @@ export function GroupProfileHero({ group, memberCount, onEdit }: GroupProfileHer
                 href={group.google_drive_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-0.5 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-white px-3 py-0.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
                 <GoogleDriveIcon className="h-4 w-4" />
                 Google Drive
@@ -77,9 +77,9 @@ export function GroupProfileHero({ group, memberCount, onEdit }: GroupProfileHer
                 href={group.company_structure_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-0.5 text-sm font-medium text-purple-700 border border-purple-300 hover:bg-purple-100 transition-colors cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-0.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
               >
-                <Presentation className="h-4 w-4 text-purple-600" />
+                <Presentation className="h-4 w-4 text-primary" />
                 מצגת החזקות
               </a>
             )}
@@ -88,7 +88,7 @@ export function GroupProfileHero({ group, memberCount, onEdit }: GroupProfileHer
 
         {/* Left side - actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={onEdit}>
+          <Button variant="brandOutline" size="sm" onClick={onEdit}>
             <Pencil className="h-4 w-4 ms-1.5" />
             עריכה
           </Button>

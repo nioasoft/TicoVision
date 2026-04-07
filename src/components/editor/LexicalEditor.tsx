@@ -119,6 +119,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { BRAND_PRIMARY_HEX } from '@/lib/brand';
 import { LinkDialog } from './LinkDialog';
 
 // Theme configuration for Lexical
@@ -497,7 +498,7 @@ function preprocessTipTapHtml(html: string): string {
   // 1. Convert TipTap colored bullets: <div data-type="blue-bullet"><table>...<td>content</td></table></div>
   //    → <p><span style="color: #COLOR; font-size: 12px;">◆ </span>content</p>
   const bulletColorMap: Record<string, string> = {
-    'blue-bullet': '#395BF7',
+    'blue-bullet': BRAND_PRIMARY_HEX,
     'darkred-bullet': '#BB0B0B',
     'black-bullet': '#000000',
   };
@@ -741,7 +742,7 @@ const TEXT_COLORS = [
   { value: '#000000', label: 'שחור', className: 'bg-black' },
   { value: '#374151', label: 'אפור כהה', className: 'bg-gray-700' },
   { value: '#6B7280', label: 'אפור', className: 'bg-gray-500' },
-  { value: '#395BF7', label: 'כחול', className: 'bg-blue-500' },
+  { value: BRAND_PRIMARY_HEX, label: 'כחול', className: 'bg-blue-500' },
   { value: '#2563EB', label: 'כחול כהה', className: 'bg-blue-600' },
   { value: '#DC2626', label: 'אדום', className: 'bg-red-600' },
   { value: '#BB0B0B', label: 'אדום כהה', className: 'bg-red-800' },
@@ -760,7 +761,7 @@ const HIGHLIGHT_COLORS = [
 ];
 
 const COLORED_BULLETS = [
-  { color: '#395BF7', label: 'כחול' },
+  { color: BRAND_PRIMARY_HEX, label: 'כחול' },
   { color: '#BB0B0B', label: 'אדום כהה' },
   { color: '#000000', label: 'שחור' },
 ];
@@ -771,7 +772,7 @@ const COLORED_BULLETS = [
 const HR_COLORS = [
   { value: '#000000', label: 'שחור' },
   { value: '#6B7280', label: 'אפור' },
-  { value: '#395BF7', label: 'כחול' },
+  { value: BRAND_PRIMARY_HEX, label: 'כחול' },
   { value: '#DC2626', label: 'אדום' },
   { value: '#16A34A', label: 'ירוק' },
   { value: '#CA8A04', label: 'זהב' },
@@ -1622,8 +1623,8 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
       if ($isRangeSelection(selection)) {
         const isOutline = data.buttonColor === 'outline';
         const bgColor = isOutline ? 'transparent' : data.buttonColor;
-        const textColor = isOutline ? '#395BF7' : '#ffffff';
-        const border = isOutline ? 'border: 2px solid #395BF7;' : '';
+        const textColor = isOutline ? BRAND_PRIMARY_HEX : '#ffffff';
+        const border = isOutline ? `border: 2px solid ${BRAND_PRIMARY_HEX};` : '';
 
         // Create a styled link node that looks like a button
         const textNode = $createTextNode(data.text || 'לחץ כאן');

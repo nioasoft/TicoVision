@@ -22,15 +22,18 @@ import type { ClientStatusSummary } from '@/services/client.service';
 import { usePermissions } from '@/hooks/usePermissions';
 import { FeeStatusIndicator } from './FeeStatusIndicator';
 
-const BALANCE_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  waiting_for_materials: { label: 'ממתין לחומרים', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-  materials_received: { label: 'חומרים התקבלו', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-  assigned_to_auditor: { label: 'הועבר למבקר', className: 'bg-purple-100 text-purple-800 border-purple-200' },
-  in_progress: { label: 'בעבודה', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-  review: { label: 'בבדיקה', className: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-  revision_needed: { label: 'נדרש תיקון', className: 'bg-red-100 text-red-800 border-red-200' },
-  advances_updated: { label: 'מקדמות עודכנו', className: 'bg-green-100 text-green-800 border-green-200' },
-  completed: { label: 'הושלם', className: 'bg-green-100 text-green-800 border-green-200' },
+const BALANCE_STATUS_LABELS: Record<
+  string,
+  { label: string; variant: 'warning' | 'info' | 'neutral' | 'danger' | 'success' | 'brand' }
+> = {
+  waiting_for_materials: { label: 'ממתין לחומרים', variant: 'warning' },
+  materials_received: { label: 'חומרים התקבלו', variant: 'info' },
+  assigned_to_auditor: { label: 'הועבר למבקר', variant: 'neutral' },
+  in_progress: { label: 'בעבודה', variant: 'brand' },
+  review: { label: 'בבדיקה', variant: 'neutral' },
+  revision_needed: { label: 'נדרש תיקון', variant: 'danger' },
+  advances_updated: { label: 'מקדמות עודכנו', variant: 'success' },
+  completed: { label: 'הושלם', variant: 'success' },
 };
 
 interface ClientsTableProps {
@@ -67,9 +70,12 @@ const BalanceCell: React.FC<{ status?: string | null }> = ({ status }) => {
   const config = status ? BALANCE_STATUS_LABELS[status] : null;
   if (!config) return <span className="text-gray-400 text-[10px]">-</span>;
   return (
-    <span className={`text-[10px] leading-tight font-medium ${config.className} px-1 py-0.5 rounded inline-block max-w-[70px] text-center`}>
+    <Badge
+      variant={config.variant}
+      className="inline-flex max-w-[88px] justify-center px-2 py-1 text-[10px] leading-tight"
+    >
       {config.label}
-    </span>
+    </Badge>
   );
 };
 
@@ -77,27 +83,29 @@ const ClientRow = React.memo<ClientRowProps>(
   ({ client, canEdit, canDelete, statusInfo, balancePrevYear, balanceCurrYear, onEdit, onDelete, onView, onGroupFilter }) => {
 
     return (
-      <TableRow className="border-b border-gray-200 hover:bg-gray-50/50">
+      <TableRow className="hover:bg-muted/40">
         {/* Company Name */}
         <TableCell className="font-medium">
           <div
             onClick={() => (onView || onEdit)(client)}
-            className="cursor-pointer hover:text-[#395BF7] transition-colors"
+            className="cursor-pointer transition-colors hover:text-primary"
           >
             <div className="font-medium">{client.company_name}</div>
-            {client.company_name_hebrew && (
-              <div className="text-sm text-gray-500">{client.company_name_hebrew}</div>
+            {client.company_name_hebrew && client.company_name_hebrew !== client.company_name && (
+              <div className="text-sm text-muted-foreground">{client.company_name_hebrew}</div>
             )}
           </div>
         </TableCell>
         {/* Tax ID */}
-        <TableCell className="text-gray-600 border-r border-gray-200">{client.tax_id}</TableCell>
+        <TableCell className="border-r border-border text-muted-foreground tabular-nums" dir="ltr">
+          {client.tax_id}
+        </TableCell>
         {/* Group */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           {client.group ? (
             <Badge
-              variant="outline"
-              className="text-xs cursor-pointer hover:bg-gray-100 transition-colors border-[#CECECE] bg-transparent"
+              variant="brand"
+              className="cursor-pointer text-xs transition-colors hover:bg-primary/15"
               onClick={() => onGroupFilter?.(client.group_id!)}
             >
               {client.group.group_name_hebrew || client.group.group_name}
@@ -107,9 +115,9 @@ const ClientRow = React.memo<ClientRowProps>(
           )}
         </TableCell>
         {/* Contact Name */}
-        <TableCell className="text-gray-700 border-r border-gray-200">{client.contact_name || '-'}</TableCell>
+        <TableCell className="border-r border-border text-foreground/85">{client.contact_name || '-'}</TableCell>
         {/* Phone */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           {client.contact_phone ? (
             <TooltipProvider>
               <Tooltip>
@@ -118,10 +126,10 @@ const ClientRow = React.memo<ClientRowProps>(
                     href={`https://wa.me/972${client.contact_phone.replace(/^0/, '').replace(/-/g, '')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-700 hover:text-[#395BF7] inline-flex items-center gap-1"
+                    className="inline-flex items-center gap-1 text-foreground/85 hover:text-primary"
                     dir="ltr"
                   >
-                    <MessageCircle className="h-4 w-4 text-green-600" />
+                    <MessageCircle className="h-4 w-4 text-primary" />
                     {client.contact_phone}
                   </a>
                 </TooltipTrigger>
@@ -135,14 +143,14 @@ const ClientRow = React.memo<ClientRowProps>(
           )}
         </TableCell>
         {/* Email */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           {client.contact_email ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <a
                     href={`mailto:${client.contact_email}`}
-                    className="text-gray-700 hover:text-[#395BF7] inline-flex items-center gap-1 truncate max-w-[200px]"
+                    className="inline-flex max-w-[200px] items-center gap-1 truncate text-foreground/85 hover:text-primary"
                     dir="ltr"
                   >
                     <Mail className="h-4 w-4 flex-shrink-0" />
@@ -159,7 +167,7 @@ const ClientRow = React.memo<ClientRowProps>(
           )}
         </TableCell>
         {/* Drive */}
-        <TableCell className="w-12 border-r border-gray-200">
+        <TableCell className="w-12 border-r border-border">
           {client.google_drive_link ? (
             <TooltipProvider>
               <Tooltip>
@@ -168,7 +176,7 @@ const ClientRow = React.memo<ClientRowProps>(
                     href={client.google_drive_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-green-600 hover:text-green-700 transition-colors"
+                    className="text-muted-foreground transition-colors hover:text-primary"
                   >
                     <GoogleDriveIcon className="h-4 w-4" />
                   </a>
@@ -181,19 +189,19 @@ const ClientRow = React.memo<ClientRowProps>(
           ) : null}
         </TableCell>
         {/* Fee Status */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           <FeeStatusIndicator status={statusInfo?.fee_status || null} />
         </TableCell>
         {/* Balance Previous Year */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           <BalanceCell status={balancePrevYear} />
         </TableCell>
         {/* Balance Current Year */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           <BalanceCell status={balanceCurrYear} />
         </TableCell>
         {/* Actions */}
-        <TableCell className="border-r border-gray-200">
+        <TableCell className="border-r border-border">
           <div className="flex items-center gap-1">
             <TooltipProvider>
               <Tooltip>
@@ -201,7 +209,8 @@ const ClientRow = React.memo<ClientRowProps>(
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-500 hover:text-[#395BF7] hover:bg-[#395BF7]/10"
+                    aria-label={canEdit ? 'ערוך לקוח' : 'צפה בלקוח'}
+                    className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                     onClick={() => onEdit(client)}
                   >
                     <Edit className="h-4 w-4" />
@@ -220,7 +229,8 @@ const ClientRow = React.memo<ClientRowProps>(
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                      aria-label="מחק לקוח"
+                      className="h-8 w-8 text-muted-foreground hover:bg-red-50 hover:text-red-600"
                       onClick={() => onDelete(client)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -263,17 +273,17 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
   const getSortIcon = (field: string) => {
     if (sortField !== field) return <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />;
     return sortOrder === 'asc'
-      ? <ArrowUp className="h-3.5 w-3.5 text-[#395BF7]" />
-      : <ArrowDown className="h-3.5 w-3.5 text-[#395BF7]" />;
+      ? <ArrowUp className="h-3.5 w-3.5 text-primary" />
+      : <ArrowDown className="h-3.5 w-3.5 text-primary" />;
   };
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden border border-gray-200">
+    <div className="overflow-hidden rounded-2xl border border-border/90 bg-card shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="border-b border-[#CECECE] bg-white hover:bg-white">
+          <TableRow className="bg-muted/35 hover:bg-muted/35">
             <TableHead
-              className="font-semibold text-gray-900 cursor-pointer hover:bg-gray-50 select-none"
+              className="cursor-pointer select-none font-semibold text-foreground hover:bg-muted/60"
               onClick={() => onSortChange?.('company_name')}
             >
               <div className="flex items-center gap-1">
@@ -281,16 +291,16 @@ export const ClientsTable = React.memo<ClientsTableProps>(({
                 {getSortIcon('company_name')}
               </div>
             </TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">ח.ז/ח.פ</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">קבוצה</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">איש קשר</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">טלפון</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">אימייל</TableHead>
-            <TableHead className="font-semibold text-gray-900 w-12 border-r border-gray-200">Drive</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">שכ&quot;ט</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">מאזן {previousTaxYear ? String(previousTaxYear).slice(2) : ''}</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">מאזן {taxYear ? String(taxYear).slice(2) : ''}</TableHead>
-            <TableHead className="font-semibold text-gray-900 border-r border-gray-200">פעולות</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">ח.ז/ח.פ</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">קבוצה</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">איש קשר</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">טלפון</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">אימייל</TableHead>
+            <TableHead className="w-12 border-r border-border font-semibold text-foreground">Drive</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">שכ&quot;ט</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">מאזן {previousTaxYear ? String(previousTaxYear).slice(2) : ''}</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">מאזן {taxYear ? String(taxYear).slice(2) : ''}</TableHead>
+            <TableHead className="border-r border-border font-semibold text-foreground">פעולות</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

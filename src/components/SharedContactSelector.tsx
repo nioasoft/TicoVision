@@ -142,7 +142,7 @@ export function SharedContactSelector({
                       {contact.email && <span>{contact.email}</span>}
                       {contact.phone && <span>{contact.phone}</span>}
                       {contact.client_count > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-blue-600">
+                        <span className="flex items-center gap-1 text-xs text-primary">
                           <Users className="h-3 w-3" />
                           {contact.client_count} לקוחות
                         </span>

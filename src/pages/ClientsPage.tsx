@@ -18,6 +18,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ClientFilters } from '@/components/clients/ClientFilters';
 import { ClientsTable } from '@/components/clients/ClientsTable';
 import { ClientFormDialog } from '@/components/clients/ClientFormDialog';
+import { PageHeader } from '@/components/ui/page-header';
 import { cn } from '@/lib/utils';
 import type { Client } from '@/services';
 
@@ -159,33 +160,27 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header Section */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-gray-600">
-          <Users className="h-5 w-5" />
-          <span>לקוחות</span>
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-4xl lg:text-5xl font-bold text-black">ניהול לקוחות</h1>
-          <p className="text-sm text-muted-foreground/60 italic">Come Together — Right Now</p>
-          <div className="flex justify-start pt-2">
-            {canCreateClient && (
-              <Button
-                variant="outline"
-                onClick={handleOpenAddDialog}
-                className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full shadow-md"
-              >
-                <Plus className="ml-2 h-5 w-5" />
-                הוסף לקוח חדש
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow={
+          <>
+            <Users className="size-4" />
+            לקוחות
+          </>
+        }
+        title="ניהול לקוחות"
+        description="מסך העבודה הראשי לחיפוש, סינון וניהול חברות בודדות בצורה עקבית וברורה יותר."
+        actions={
+          canCreateClient ? (
+            <Button variant="brandOutline" size="pill" onClick={handleOpenAddDialog}>
+              <Plus className="size-4" />
+              הוסף לקוח חדש
+            </Button>
+          ) : null
+        }
+      />
 
       {/* Workflow Tabs */}
-      <div className="bg-gray-100 rounded-lg p-1.5 flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1 rounded-2xl border border-border/90 bg-muted/40 p-1.5 shadow-sm">
         {WORKFLOW_TABS.map((tab) => {
           const count = tabCounts[tab.value];
           const isActive = filters.tab === tab.value;
@@ -195,16 +190,16 @@ export default function ClientsPage() {
               key={tab.value}
               onClick={() => setFilters({ tab: tab.value })}
               className={cn(
-                'px-5 py-2.5 rounded-md text-sm font-medium transition-all',
+                'rounded-xl px-4 py-2.5 text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-[#395BF7] text-white shadow-sm'
-                  : 'bg-transparent text-gray-600 hover:bg-white hover:shadow-sm'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-transparent text-muted-foreground hover:bg-white hover:text-foreground hover:shadow-xs'
               )}
             >
               {tab.label}
               <span className={cn(
-                'mr-1.5 text-xs',
-                isActive ? 'text-white/80' : 'text-gray-400'
+                'mr-1.5 text-xs tabular-nums',
+                isActive ? 'text-white/80' : 'text-muted-foreground/80'
               )}>
                 ({count})
               </span>
@@ -261,6 +256,7 @@ export default function ClientsPage() {
         mode="add"
         client={null}
         contacts={[]}
+        phones={[]}
         onClose={handleCloseAddDialog}
         onSubmit={handleAddClient}
       />

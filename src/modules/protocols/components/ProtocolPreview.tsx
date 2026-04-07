@@ -258,6 +258,7 @@ export function ProtocolPreview({
             <Button
               variant="ghost"
               size="icon"
+              aria-label="חזרה לפרוטוקולים"
               onClick={onBack}
             >
               <ArrowRight className="h-4 w-4" />
@@ -294,6 +295,7 @@ export function ProtocolPreview({
             )}
             {/* Primary action: Export PDF */}
             <Button
+              variant="brand"
               onClick={handleGeneratePdf}
               disabled={generatingPdf}
               className="flex items-center gap-2"
@@ -309,6 +311,7 @@ export function ProtocolPreview({
             <Button
               variant="outline"
               size="icon"
+              aria-label="הדפסת פרוטוקול"
               onClick={handlePrint}
               title="הדפסה"
             >
@@ -317,7 +320,7 @@ export function ProtocolPreview({
             {/* More actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" aria-label="פעולות נוספות">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -345,21 +348,21 @@ export function ProtocolPreview({
 
       <CardContent className="space-y-6 print:space-y-4">
         {/* Meeting Details */}
-        <div className="bg-gray-50 rounded-lg p-4 print:bg-white print:border print:p-3">
+        <div className="rounded-lg border border-border/80 bg-muted/35 p-4 print:border print:bg-white print:p-3">
           <div className="flex items-center gap-2 mb-3">
-            <CalendarDays className="h-5 w-5 text-gray-600" />
+            <CalendarDays className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">פרטי הפגישה</h3>
           </div>
           <div className="grid grid-cols-2 gap-4 rtl:text-right">
             <div>
-              <p className="text-sm text-gray-500">תאריך פגישה</p>
+              <p className="text-sm text-muted-foreground">תאריך פגישה</p>
               <p className="font-medium">
                 {format(new Date(protocol.meeting_date), 'EEEE, dd בMMMM yyyy', { locale: he })}
               </p>
             </div>
             {protocol.title && (
               <div>
-                <p className="text-sm text-gray-500">כותרת</p>
+                <p className="text-sm text-muted-foreground">כותרת</p>
                 <p className="font-medium">{protocol.title}</p>
               </div>
             )}
@@ -370,11 +373,11 @@ export function ProtocolPreview({
         {protocol.attendees.length > 0 && (
           <>
             <Separator className="print:my-2" />
-            <div className="bg-blue-50/50 rounded-lg p-4 print:bg-white print:p-3">
+            <div className="rounded-lg border border-primary/10 bg-primary/5 p-4 print:bg-white print:p-3">
               <div className="flex items-center gap-2 mb-3" dir="rtl">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">משתתפים</h3>
-                <Badge variant="secondary">{protocol.attendees.length}</Badge>
+                <Badge variant="neutral">{protocol.attendees.length}</Badge>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:grid-cols-3">
                 {protocol.attendees.map((attendee) => (
@@ -389,7 +392,7 @@ export function ProtocolPreview({
                       <span className="font-medium text-sm">{attendee.display_name}</span>
                     </div>
                     {attendee.role_title && (
-                      <p className="text-xs text-gray-500 text-right">{attendee.role_title}</p>
+                      <p className="text-xs text-muted-foreground text-right">{attendee.role_title}</p>
                     )}
                   </div>
                 ))}
@@ -404,7 +407,7 @@ export function ProtocolPreview({
             <Separator className="print:my-2" />
             <div>
               <div className="flex items-center gap-2 rtl:flex-row-reverse mb-3">
-                <FileText className="h-5 w-5 text-gray-600" />
+                <FileText className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">תוכן נוסף</h3>
               </div>
               <div className="space-y-4 print:space-y-3">
@@ -421,7 +424,7 @@ export function ProtocolPreview({
                         {group.sections.map((section) => (
                           <div
                             key={section.id}
-                            className="bg-gray-50 rounded-lg p-4 border print:bg-white print:p-3"
+                            className="rounded-lg border border-border/80 bg-muted/35 p-4 print:bg-white print:p-3"
                           >
                             <p
                               className={cn('text-sm rtl:text-right whitespace-pre-wrap', getContentClasses(section.style))}
@@ -446,9 +449,9 @@ export function ProtocolPreview({
             <Separator className="print:my-2" />
             <div>
               <div className="flex items-center gap-2 rtl:flex-row-reverse mb-3">
-                <ListTodo className="h-5 w-5 text-gray-600" />
+                <ListTodo className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold">החלטות</h3>
-                <Badge variant="secondary">{protocol.decisions.length}</Badge>
+                <Badge variant="neutral">{protocol.decisions.length}</Badge>
               </div>
               <div className="space-y-4 print:space-y-3">
                 {groupedDecisions.map((group) => {
@@ -476,7 +479,7 @@ export function ProtocolPreview({
                             className="bg-white rounded-lg p-3 border print:p-2"
                           >
                             <div className="flex items-start gap-2 rtl:flex-row-reverse">
-                              <span className="font-medium text-gray-400 mt-0.5">
+                              <span className="mt-0.5 font-medium text-muted-foreground">
                                 {idx + 1}.
                               </span>
                               <div className="flex-1 rtl:text-right">
@@ -494,7 +497,7 @@ export function ProtocolPreview({
                                     </Badge>
                                   )}
                                   {decision.assigned_employee_id && (
-                                    <Badge variant="outline" className="text-xs text-blue-600">
+                                    <Badge variant="outline" className="text-xs text-primary">
                                       אחראי: {employeeMap[decision.assigned_employee_id] || 'עובד'}
                                     </Badge>
                                   )}
@@ -524,7 +527,7 @@ export function ProtocolPreview({
 
         {/* Footer */}
         <Separator className="print:my-2" />
-        <div className="flex items-center justify-between text-sm text-gray-500 rtl:flex-row-reverse print:text-xs">
+        <div className="flex items-center justify-between text-sm text-muted-foreground rtl:flex-row-reverse print:text-xs">
           <span>
             נוצר:{' '}
             {format(new Date(protocol.created_at), 'dd/MM/yyyy HH:mm', { locale: he })}
@@ -536,7 +539,7 @@ export function ProtocolPreview({
           <DialogContent className="text-right" dir="rtl">
             <DialogHeader>
               <DialogTitle className="text-right flex items-center gap-2">
-                <Check className="h-5 w-5 text-green-600" />
+                <Check className="h-5 w-5 text-primary" />
                 PDF נוצר בהצלחה
               </DialogTitle>
               <DialogDescription className="text-right">
@@ -545,7 +548,7 @@ export function ProtocolPreview({
             </DialogHeader>
             <div className="space-y-3 py-4">
               <Button
-                variant="outline"
+                variant="brandOutline"
                 className="w-full flex items-center justify-center gap-2"
                 onClick={handleDownloadPdf}
               >
@@ -553,7 +556,7 @@ export function ProtocolPreview({
                 הורד למחשב
               </Button>
               <Button
-                variant="outline"
+                variant="brandOutline"
                 className="w-full flex items-center justify-center gap-2"
                 onClick={handleSaveToFileManager}
                 disabled={savingToFileManager || savedToFileManager}
@@ -561,7 +564,7 @@ export function ProtocolPreview({
                 {savingToFileManager ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : savedToFileManager ? (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-primary" />
                 ) : (
                   <FolderPlus className="h-4 w-4" />
                 )}
@@ -572,7 +575,7 @@ export function ProtocolPreview({
                   : 'שמור למנהל קבצים'}
               </Button>
               <Button
-                variant="outline"
+                variant="brand"
                 className="w-full flex items-center justify-center gap-2"
                 onClick={() => {
                   setPdfDialogOpen(false);

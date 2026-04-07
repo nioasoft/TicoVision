@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BRAND_PRIMARY_HEX } from '@/lib/brand';
 
 /**
  * Payment Success Page
@@ -30,11 +32,11 @@ export default function PaymentSuccessPage() {
   }, [feeId, responseCode, internalDealNumber, terminalnumber, lowprofilecode]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" dir="rtl">
+    <div className="min-h-screen bg-slate-50" dir="rtl">
       <div className="max-w-4xl mx-auto px-4 py-8">
 
         {/* Main Card - Matching Letter Design */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-xl">
 
           {/* Header - Matching Letter Template */}
           <div className="text-center px-8 pt-8 pb-0">
@@ -126,7 +128,7 @@ export default function PaymentSuccessPage() {
                   style={{
                     fontFamily: "'Heebo', 'Assistant', sans-serif",
                     fontSize: '16px',
-                    color: '#395BF7',
+                    color: BRAND_PRIMARY_HEX,
                     fontWeight: 600,
                   }}
                 >
@@ -194,33 +196,15 @@ export default function PaymentSuccessPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 justify-center">
-              <button
+            <div className="flex justify-center gap-4">
+              <Button
+                variant="brand"
+                size="pill"
+                className="h-11 px-8 text-base"
                 onClick={() => navigate('/')}
-                style={{
-                  fontFamily: "'Heebo', 'Assistant', sans-serif",
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#ffffff',
-                  background: '#395BF7',
-                  padding: '12px 32px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 6px rgba(57, 91, 247, 0.2)',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = '#2d4ad1';
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = '#395BF7';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
               >
                 חזרה לדף הבית
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -289,7 +273,7 @@ export default function PaymentSuccessPage() {
                     fontFamily: "'David Libre', 'Heebo', 'Assistant', sans-serif",
                     fontSize: '16px',
                     lineHeight: 1.8,
-                    color: '#395BF7',
+                    color: BRAND_PRIMARY_HEX,
                   }}
                 >
                   📧 tico@franco.co.il

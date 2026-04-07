@@ -317,7 +317,7 @@ export function MainLayout() {
 
       {/* Sidebar - Blue, collapsed by default */}
       <aside className={cn(
-        "fixed top-0 right-0 z-50 h-full bg-[#395BF7] transform transition-all duration-200 ease-in-out lg:translate-x-0",
+        "fixed top-0 right-0 z-50 h-full bg-primary transform transition-all duration-200 ease-in-out lg:translate-x-0",
         sidebarWidth,
         sidebarOpen ? "translate-x-0" : "translate-x-full"
       )}>
@@ -338,7 +338,7 @@ export function MainLayout() {
                               "flex items-center rounded-xl transition-colors",
                               sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3",
                               isActive
-                                ? "bg-white text-[#395BF7] !border-white"
+                                ? "bg-white text-primary !border-white"
                                 : "text-white hover:bg-white/15"
                             )
                           }
@@ -397,7 +397,7 @@ export function MainLayout() {
                                 className={cn(
                                   "relative w-full flex items-center justify-center rounded-xl transition-colors p-2.5",
                                   isActive
-                                    ? "bg-white text-[#395BF7]"
+                                    ? "bg-white text-primary"
                                     : "text-white hover:bg-white/15"
                                 )}
                               >
@@ -435,7 +435,7 @@ export function MainLayout() {
                         <CollapsibleTrigger asChild>
                           <button
                             className={cn(
-                              "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors border border-white/15 shadow-sm shadow-black/10 bg-white/10",
+                              "w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-colors border border-white/15 bg-white/10",
                               isActive
                                 ? "bg-white/25 text-white !border-white/30"
                                 : "text-white hover:bg-white/15"
@@ -461,7 +461,7 @@ export function MainLayout() {
                                   className={({ isActive: subActive }) => cn(
                                     "block ps-4 pe-3 py-1.5 text-sm rounded-lg transition-colors",
                                     subActive
-                                      ? "bg-white text-[#395BF7] font-medium"
+                                      ? "bg-white text-primary font-medium"
                                       : "text-white/80 hover:text-white hover:bg-white/10"
                                   )}
                                   onClick={() => setSidebarOpen(false)}
@@ -487,9 +487,9 @@ export function MainLayout() {
                             to={item.href || '#'}
                             className={cn(
                               "relative flex items-center rounded-xl transition-colors",
-                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3 border border-white/15 shadow-sm shadow-black/10 bg-white/10",
+                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3 border border-white/15 bg-white/10",
                               isActive
-                                ? "bg-white text-[#395BF7] !border-white"
+                                ? "bg-white text-primary !border-white"
                                 : "text-white hover:bg-white/15"
                             )}
                             onClick={() => setSidebarOpen(false)}
@@ -612,7 +612,7 @@ export function MainLayout() {
                 </p>
                 <p className="text-xs text-gray-500">{getRoleDisplayName(role)}</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center text-white font-medium">
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-medium shadow-sm">
                 {(user?.user_metadata?.full_name || user?.email || 'U')[0].toUpperCase()}
               </div>
             </div>

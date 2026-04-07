@@ -1510,7 +1510,7 @@ export function FeesPage() {
         <div className="flex gap-2">
           <Button
             asChild
-            className="bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/50 animate-pulse"
+            className="bg-primary text-white shadow-lg shadow-primary/25 animate-pulse hover:bg-primary/90"
           >
             <a
               href="https://docs.google.com/spreadsheets/d/1t227SHdIgjx3X_Xtde5sHncYyu1l1Sib5JQYEbtJug4/edit?gid=586821568#gid=586821568"
@@ -1736,7 +1736,7 @@ export function FeesPage() {
                     {/* Row 1: Base amounts (before and after VAT) */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Card 1: Base Amount BEFORE VAT (input) */}
-                      <Card className="bg-green-50 border-green-200">
+                      <Card className="border-primary/15 bg-primary/5">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-3">
                             <Label htmlFor="previous_amount" className="text-sm font-medium rtl:text-right ltr:text-left">
@@ -1768,15 +1768,15 @@ export function FeesPage() {
                       </Card>
 
                       {/* Card 2: Base Amount AFTER VAT (auto-calculated) - NEW! */}
-                      <Card className="bg-green-50 border-green-200">
+                      <Card className="border-primary/15 bg-primary/5">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div className="rtl:text-right ltr:text-left">
                               <p className="text-sm font-medium text-gray-700">סכום בסיס (לפני הנחה, כולל מע"מ)</p>
                             </div>
-                            <FileText className="h-6 w-6 text-green-500" />
+                            <FileText className="h-6 w-6 text-primary" />
                           </div>
-                          <div className="text-2xl font-bold text-green-700">
+                          <div className="text-2xl font-bold text-primary">
                             {formatILS(formData.previous_year_amount_with_vat_before_discount || 0)}
                           </div>
                           <p className="text-xs text-gray-600 mt-2 rtl:text-right ltr:text-left">
@@ -1961,16 +1961,16 @@ export function FeesPage() {
 
               {/* Previous Year Data Indicator */}
               {previousYearDataSaved && formData.previous_year_amount_with_vat > 0 && (
-                <Card className="bg-green-50 border-green-200">
+                <Card className="border-primary/15 bg-primary/5">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between rtl:flex-row-reverse">
                       <div className="flex items-center gap-3 rtl:flex-row-reverse">
-                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
                         <div className="rtl:text-right ltr:text-left">
-                          <p className="font-semibold text-green-900">
+                          <p className="font-semibold text-primary">
                             נתוני שנת {formData.year - 1} נשמרו בהצלחה
                           </p>
-                          <p className="text-sm text-green-700">
+                          <p className="text-sm text-primary">
                             סכום כולל מע"מ: {formatILS(formData.previous_year_amount_with_vat)}
                           </p>
                         </div>
@@ -2465,11 +2465,11 @@ export function FeesPage() {
                         <p className="text-sm text-gray-500">
                           התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}
                         </p>
-                        <p className="text-lg font-semibold text-green-600">
+                        <p className="text-lg font-semibold text-primary">
                           {formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment_auto)}` : '₪0'}
                         </p>
                       </div>
-                      <TrendingUp className="h-8 w-8 text-green-500" />
+                      <TrendingUp className="h-8 w-8 text-primary" />
                     </div>
                   </CardContent>
                 </Card>
@@ -2482,14 +2482,14 @@ export function FeesPage() {
                         <div>
                           <p className="text-sm text-gray-500">התאמת מדד ידנית</p>
                           <p className={`text-lg font-semibold ${
-                            formData.index_manual_adjustment >= 0 ? 'text-green-600' : 'text-red-600'
+                            formData.index_manual_adjustment >= 0 ? 'text-primary' : 'text-red-600'
                           }`}>
                             {formData.index_manual_adjustment >= 0 ? '+' : ''}
                             {formatILS(formData.index_manual_adjustment)}
                           </p>
                         </div>
                         <TrendingUp className={`h-8 w-8 ${
-                          formData.index_manual_adjustment >= 0 ? 'text-green-500' : 'text-red-500'
+                          formData.index_manual_adjustment >= 0 ? 'text-primary' : 'text-red-500'
                         }`} />
                       </div>
                     </CardContent>
@@ -2501,11 +2501,11 @@ export function FeesPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-500">תוספת ריאלית</p>
-                        <p className="text-lg font-semibold text-green-600">
+                        <p className="text-lg font-semibold text-primary">
                           +{formatILS(calculationResults.real_adjustment)}
                         </p>
                       </div>
-                      <Plus className="h-8 w-8 text-green-500" />
+                      <Plus className="h-8 w-8 text-primary" />
                     </div>
                   </CardContent>
                 </Card>
@@ -2559,10 +2559,10 @@ export function FeesPage() {
                 </Card>
 
                 {/* NEW CARD: Required Amount Before Discount and VAT */}
-                <Card className="md:col-span-6 bg-green-50 border-2 border-green-300">
+                <Card className="md:col-span-6 border-2 border-primary/20 bg-primary/5">
                   <CardContent className="p-6">
                     <div className="text-center">
-                      <p className="text-2xl font-semibold text-green-800">
+                      <p className="text-2xl font-semibold text-primary">
                         הסכום הנדרש עבור שירותי ראיית חשבון לפני הנחה ולפני מע"מ לשנת המס {formData.year} הוא: {formatILS(calculationResults.adjusted_amount)}
                       </p>
                     </div>
@@ -2577,18 +2577,18 @@ export function FeesPage() {
                     <span>סכום בסיס לפני הנחה ולפני מע״מ:</span>
                     <span>{formatILS(formData.base_amount)}</span>
                   </div>
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-primary">
                     <span>+ התאמת מדד {formData.apply_inflation_index ? `(${formData.inflation_rate}%)` : '(לא מוחל)'}:</span>
                     <span>{formData.apply_inflation_index ? `+${formatILS(calculationResults.inflation_adjustment_auto)}` : '₪0'}</span>
                   </div>
                   {/* NEW LINE: Manual Index Adjustment - only if not zero */}
                   {formData.apply_inflation_index && formData.index_manual_adjustment !== 0 && (
-                    <div className={`flex justify-between ${formData.index_manual_adjustment >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`flex justify-between ${formData.index_manual_adjustment >= 0 ? 'text-primary' : 'text-red-600'}`}>
                       <span>+ התאמת מדד ידנית:</span>
                       <span>{formData.index_manual_adjustment >= 0 ? '+' : ''}{formatILS(formData.index_manual_adjustment)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-primary">
                     <span>+ תוספת ריאלית:</span>
                     <span>+{formatILS(calculationResults.real_adjustment)}</span>
                   </div>
@@ -2644,11 +2644,11 @@ export function FeesPage() {
                             <p className="text-sm text-gray-500">
                               התאמת מדד {formData.bookkeeping_apply_inflation_index ? `(${formData.bookkeeping_inflation_rate}%)` : '(לא מוחל)'}
                             </p>
-                            <p className="text-lg font-semibold text-green-600">
+                            <p className="text-lg font-semibold text-primary">
                               {formData.bookkeeping_apply_inflation_index ? `+${formatILS(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}
                             </p>
                           </div>
-                          <TrendingUp className="h-8 w-8 text-green-500" />
+                          <TrendingUp className="h-8 w-8 text-primary" />
                         </div>
                       </CardContent>
                     </Card>
@@ -2658,11 +2658,11 @@ export function FeesPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-500">תוספת ריאלית</p>
-                            <p className="text-lg font-semibold text-green-600">
+                            <p className="text-lg font-semibold text-primary">
                               +{formatILS(bookkeepingCalculationResults.real_adjustment)}
                             </p>
                           </div>
-                          <Plus className="h-8 w-8 text-green-500" />
+                          <Plus className="h-8 w-8 text-primary" />
                         </div>
                       </CardContent>
                     </Card>
@@ -2707,10 +2707,10 @@ export function FeesPage() {
                   </div>
 
                   {/* NEW CARD: Required Amount for Bookkeeping Services */}
-                  <Card className="md:col-span-6 bg-green-50 border-2 border-green-300 mt-4">
+                  <Card className="md:col-span-6 mt-4 border-2 border-primary/20 bg-primary/5">
                     <CardContent className="p-6">
                       <div className="text-center">
-                        <p className="text-2xl font-semibold text-green-800">
+                        <p className="text-2xl font-semibold text-primary">
                           הסכום הנדרש עבור שירותי הנהלת חשבונות לפני הנחה ולפני מע"מ לשנת המס {formData.year} הוא: {formatILS(bookkeepingCalculationResults.final_amount)}
                         </p>
                       </div>
@@ -2724,11 +2724,11 @@ export function FeesPage() {
                         <span>סכום בסיס:</span>
                         <span>{formatILS(formData.bookkeeping_base_amount)}</span>
                       </div>
-                      <div className="flex justify-between text-green-600">
+                      <div className="flex justify-between text-primary">
                         <span>+ התאמת מדד {formData.bookkeeping_apply_inflation_index ? `(${formData.bookkeeping_inflation_rate}%)` : '(לא מוחל)'}:</span>
                         <span>{formData.bookkeeping_apply_inflation_index ? `+${formatILS(bookkeepingCalculationResults.inflation_adjustment)}` : '₪0'}</span>
                       </div>
-                      <div className="flex justify-between text-green-600">
+                      <div className="flex justify-between text-primary">
                         <span>+ תוספת ריאלית:</span>
                         <span>+{formatILS(bookkeepingCalculationResults.real_adjustment)}</span>
                       </div>
@@ -2782,11 +2782,11 @@ export function FeesPage() {
                         <p className="text-sm text-gray-500">
                           התאמת מדד {formData.retainer_apply_inflation_index ? `(${formData.retainer_inflation_rate}%)` : '(לא מוחל)'}
                         </p>
-                        <p className="text-lg font-semibold text-green-600">
+                        <p className="text-lg font-semibold text-primary">
                           {formData.retainer_apply_inflation_index ? `+${formatILS(retainerCalculationResults.inflation_adjustment)}` : '₪0'}
                         </p>
                       </div>
-                      <TrendingUp className="h-8 w-8 text-green-500" />
+                      <TrendingUp className="h-8 w-8 text-primary" />
                     </div>
                   </CardContent>
                 </Card>
@@ -2798,12 +2798,12 @@ export function FeesPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-sm text-gray-500">תוספת מדד ידנית</p>
-                          <p className={`text-lg font-semibold ${retainerCalculationResults.index_manual_adjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className={`text-lg font-semibold ${retainerCalculationResults.index_manual_adjustment > 0 ? 'text-primary' : 'text-red-600'}`}>
                             {retainerCalculationResults.index_manual_adjustment > 0 ? '+' : ''}{formatILS(retainerCalculationResults.index_manual_adjustment)}
                           </p>
                         </div>
                         {retainerCalculationResults.index_manual_adjustment > 0 ? (
-                          <ArrowUp className="h-8 w-8 text-green-500" />
+                          <ArrowUp className="h-8 w-8 text-primary" />
                         ) : (
                           <ArrowDown className="h-8 w-8 text-red-500" />
                         )}
@@ -2817,11 +2817,11 @@ export function FeesPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-500">תוספת ריאלית</p>
-                        <p className="text-lg font-semibold text-green-600">
+                        <p className="text-lg font-semibold text-primary">
                           +{formatILS(retainerCalculationResults.real_adjustment)}
                         </p>
                       </div>
-                      <Plus className="h-8 w-8 text-green-500" />
+                      <Plus className="h-8 w-8 text-primary" />
                     </div>
                   </CardContent>
                 </Card>
@@ -2889,17 +2889,17 @@ export function FeesPage() {
                     <span>× 12 חודשים:</span>
                     <span>{formatILS(formData.retainer_monthly_amount * 12)}</span>
                   </div>
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-primary">
                     <span>+ התאמת מדד {formData.retainer_apply_inflation_index ? `(${formData.retainer_inflation_rate}%)` : '(לא מוחל)'}:</span>
                     <span>{formData.retainer_apply_inflation_index ? `+${formatILS(retainerCalculationResults.inflation_adjustment)}` : '₪0'}</span>
                   </div>
                   {retainerCalculationResults.index_manual_adjustment !== 0 && (
-                    <div className={`flex justify-between ${retainerCalculationResults.index_manual_adjustment > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`flex justify-between ${retainerCalculationResults.index_manual_adjustment > 0 ? 'text-primary' : 'text-red-600'}`}>
                       <span>{retainerCalculationResults.index_manual_adjustment > 0 ? '+' : '-'} תוספת מדד ידנית:</span>
                       <span>{retainerCalculationResults.index_manual_adjustment > 0 ? '+' : ''}{formatILS(retainerCalculationResults.index_manual_adjustment)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-primary">
                     <span>+ תוספת ריאלית:</span>
                     <span>+{formatILS(retainerCalculationResults.real_adjustment)}</span>
                   </div>
@@ -2958,7 +2958,7 @@ export function FeesPage() {
                         </p>
                       </div>
 
-                      <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                      <div className="rounded-lg border-2 border-primary/15 bg-primary/5 p-4">
                         <Label className="text-base font-semibold mb-2 block text-right">
                           מכתב שני - הנהלת חשבונות
                         </Label>
@@ -2979,7 +2979,7 @@ export function FeesPage() {
                               ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-xs text-green-700 mt-2 text-right">
+                        <p className="mt-2 text-right text-xs text-primary">
                           ברירת מחדל: <strong>{TEMPLATE_OPTIONS.find(t => t.value === autoSelectedLetters.secondaryTemplate)?.label}</strong>
                         </p>
                       </div>

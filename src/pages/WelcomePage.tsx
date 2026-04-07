@@ -20,14 +20,7 @@ import {
 export function WelcomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [isVisible, setIsVisible] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    // Trigger entrance animation
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     // Update time every minute
@@ -48,132 +41,93 @@ export function WelcomePage() {
                     'משתמש';
 
   const quickActions = [
-    { icon: Users, label: 'לקוחות', sub: 'Come Together', path: '/clients', color: 'from-blue-500 to-cyan-500' },
-    { icon: FileText, label: 'מכתבים', sub: 'Message in a Bottle', path: '/letters', color: 'from-purple-500 to-pink-500' },
-    { icon: BarChart3, label: 'דשבורד', sub: 'Paint It Black', path: '/dashboard', color: 'from-orange-500 to-red-500' },
-    { icon: TrendingUp, label: 'גבייה', sub: 'Money Money Money', path: '/collections', color: 'from-green-500 to-emerald-500' },
+    { icon: Users, label: 'לקוחות', sub: 'Come Together', path: '/clients', iconClassName: 'bg-primary/10 text-primary' },
+    { icon: FileText, label: 'מכתבים', sub: 'Message in a Bottle', path: '/letters', iconClassName: 'bg-primary/10 text-primary' },
+    { icon: BarChart3, label: 'דשבורד', sub: 'Paint It Black', path: '/dashboard', iconClassName: 'bg-amber-50 text-amber-700' },
+    { icon: TrendingUp, label: 'גבייה', sub: 'Money Money Money', path: '/collections', iconClassName: 'bg-primary/10 text-primary' },
   ];
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 dark:from-slate-950 dark:via-blue-950/30 dark:to-purple-950/20" />
-
-      {/* Floating orbs */}
-      <div className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-br from-pink-400/20 to-orange-400/20 rounded-full blur-3xl animate-pulse delay-1000" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-cyan-400/10 to-blue-400/10 rounded-full blur-3xl" />
-
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)`,
-          backgroundSize: '50px 50px'
-        }}
-      />
-
-      {/* Main content */}
-      <div className={`relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-
-        {/* Logo with glow effect */}
-        <div className="relative mb-5 group">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-blue-500/30 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-150" />
+    <div className="min-h-[calc(100vh-4rem)] bg-muted/30 px-4 py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-5xl flex-col items-center justify-center rounded-3xl border border-border/80 bg-background px-6 py-10 shadow-sm">
+        <div className="mb-5 flex justify-center">
           <img
             src="/brand/tico_logo_transparent.png"
             alt="Tico Vision"
-            className="h-32 md:h-40 relative z-10 drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+            className="h-28 md:h-36"
           />
         </div>
 
-        {/* Vision text */}
-        <div className="text-center mb-8 space-y-3">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-4">
-            <Sparkles className="w-4 h-4 text-blue-500" />
-            <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Light My Fire — Let's Rock
-            </span>
+        <div className="mb-8 space-y-3 text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-2 text-primary">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-sm font-medium">Light My Fire</span>
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-bold">
-            <span className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 dark:from-white dark:via-slate-200 dark:to-white bg-clip-text text-transparent">
-              {getGreeting()}, {firstName}
-            </span>
+          <h1 className="text-balance text-4xl font-bold text-foreground md:text-6xl">
+            {getGreeting()}, {firstName}
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            "I Can't Get No{' '}
-            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              Satisfaction
-            </span>
-            {' '}— Until I Open{' '}
-            <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-              Tico Vision
-            </span>"
+          <p className="mx-auto max-w-2xl text-pretty text-xl leading-relaxed text-muted-foreground md:text-2xl">
+            "I Can&apos;t Get No Satisfaction" until I open Tico Vision.
           </p>
         </div>
 
-        {/* Feature highlights */}
-        <div className="flex flex-wrap justify-center gap-6 mb-8">
+        <div className="mb-8 flex flex-wrap justify-center gap-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="p-1.5 rounded-full bg-green-500/10">
-              <Shield className="w-4 h-4 text-green-500" />
+            <div className="rounded-full bg-primary/10 p-1.5">
+              <Shield className="h-4 w-4 text-primary" />
             </div>
             <span>Sympathy for the Admin</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="p-1.5 rounded-full bg-blue-500/10">
-              <Zap className="w-4 h-4 text-blue-500" />
+            <div className="rounded-full bg-primary/10 p-1.5">
+              <Zap className="h-4 w-4 text-primary" />
             </div>
             <span>Born to be Organized</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <div className="p-1.5 rounded-full bg-purple-500/10">
-              <Sparkles className="w-4 h-4 text-purple-500" />
+            <div className="rounded-full bg-primary/10 p-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <span>Stairway to Dashboard</span>
           </div>
         </div>
 
-        {/* Quick actions grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 w-full max-w-3xl">
-          {quickActions.map((action, index) => (
+        <div className="mb-6 grid w-full max-w-3xl grid-cols-2 gap-3 md:grid-cols-4">
+          {quickActions.map((action) => (
             <button
               key={action.path}
               onClick={() => navigate(action.path)}
-              className={`group relative p-5 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-300 hover:scale-105 hover:shadow-xl`}
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="rounded-2xl border border-border/90 bg-card p-5 text-center shadow-sm transition-colors hover:border-primary/20 hover:bg-primary/5"
             >
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-              <div className={`w-12 h-12 mx-auto mb-2 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-lg`}>
-                <action.icon className="w-6 h-6 text-white" />
+              <div className={`mx-auto mb-2 flex size-12 items-center justify-center rounded-xl ${action.iconClassName}`}>
+                <action.icon className="h-6 w-6" />
               </div>
-              <span className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              <span className="block text-sm font-medium text-foreground">
                 {action.label}
               </span>
-              <span className="block text-xs text-muted-foreground/60 mt-1">
+              <span className="mt-1 block text-xs text-muted-foreground/80">
                 {action.sub}
               </span>
             </button>
           ))}
         </div>
 
-        {/* CTA Button */}
         <Button
+          variant="brand"
           size="lg"
           onClick={() => navigate('/clients')}
-          className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 px-8 py-4 text-lg rounded-xl"
+          className="px-8 py-4 text-lg"
         >
-          <span className="relative z-10 flex items-center gap-2">
-            Let's Rock
-            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+          <span className="flex items-center gap-2">
+            Let&apos;s Rock
+            <ArrowLeft className="h-5 w-5" />
           </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </Button>
 
-        {/* Bottom tagline */}
-        <p className="mt-8 text-sm text-muted-foreground/60">
-          The Show Must Go On — Powered by Tico Vision
+        <p className="mt-8 text-sm text-muted-foreground/70">
+          The Show Must Go On - Powered by Tico Vision
         </p>
       </div>
     </div>

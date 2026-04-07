@@ -58,15 +58,15 @@ const ACTIVITY_LEVEL_LABELS: Record<string, string> = {
 };
 
 const ACTIVITY_LEVEL_STYLES: Record<string, string> = {
-  minor: 'bg-gray-50 text-gray-600 border-gray-200',
-  significant: 'bg-teal-50 text-teal-700 border-teal-200',
+  minor: 'border-border bg-muted/50 text-muted-foreground',
+  significant: 'border-primary/20 bg-primary/10 text-primary',
 };
 
 const STATUS_BORDER_COLORS: Record<string, string> = {
-  active: 'border-t-green-500',
+  active: 'border-t-primary',
   inactive: 'border-t-red-500',
   pending: 'border-t-yellow-500',
-  adhoc: 'border-t-gray-400',
+  adhoc: 'border-t-border',
 };
 
 export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHeroProps) {
@@ -78,7 +78,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
 
   return (
     <div
-      className={`rounded-xl border border-t-4 bg-card shadow-sm p-4 ${STATUS_BORDER_COLORS[client.status] || 'border-t-gray-400'}`}
+      className={`rounded-2xl border border-t-4 bg-card p-4 shadow-sm ${STATUS_BORDER_COLORS[client.status] || 'border-t-border'}`}
     >
       <div className="flex items-start justify-between">
         {/* Right side - identity info */}
@@ -105,7 +105,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
               className={
                 client.company_status === 'inactive'
                   ? 'border-orange-300 bg-orange-50 text-orange-700'
-                  : 'border-green-300 bg-green-50 text-green-700'
+                  : 'border-primary/20 bg-primary/10 text-primary'
               }
             >
               {client.company_status === 'inactive' ? 'חברה רדומה' : 'חברה פעילה'}
@@ -115,7 +115,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
                 href={client.google_drive_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-0.5 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-white px-3 py-0.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
               >
                 <GoogleDriveIcon className="h-4 w-4" />
                 Google Drive
@@ -138,7 +138,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
           {/* Row 3: Accountant name */}
           {accountantContact && (
             <div className="flex items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700 border border-blue-200">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm text-primary">
                 <UserCircle className="h-4 w-4" />
                 <span className="font-medium">מנהל/ת חשבונות:</span>
                 <span>{accountantContact.full_name}</span>
@@ -149,25 +149,25 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
           {/* Row 4: Classification badges */}
           <div className="flex items-center gap-2 flex-wrap">
             {client.pays_fees ? (
-              <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200">
+              <Badge variant="brand" className="text-xs">
                 משלם שכ&quot;ט
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
+              <Badge variant="danger" className="text-xs">
                 לא משלם שכ&quot;ט
               </Badge>
             )}
             {client.receives_letters ? (
-              <Badge variant="outline" className="text-xs bg-sky-50 text-sky-700 border-sky-200">
+              <Badge variant="info" className="text-xs">
                 מקבל מכתבים
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
+              <Badge variant="danger" className="text-xs">
                 לא מקבל מכתבים
               </Badge>
             )}
             {client.is_retainer && (
-              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+              <Badge variant="neutral" className="text-xs">
                 ריטיינר
               </Badge>
             )}
@@ -177,7 +177,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
               </Badge>
             )}
             {client.company_subtype && (
-              <Badge variant="outline" className="text-xs bg-slate-50 text-slate-700 border-slate-200">
+              <Badge variant="neutral" className="text-xs">
                 {COMPANY_SUBTYPE_LABELS[client.company_subtype] || client.company_subtype}
               </Badge>
             )}
@@ -187,7 +187,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
               </Badge>
             )}
             {client.payment_role && client.payment_role !== 'independent' && (
-              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+              <Badge variant="warning" className="text-xs">
                 {PAYMENT_ROLE_LABELS[client.payment_role]}
               </Badge>
             )}
@@ -196,7 +196,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
 
         {/* Left side - actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={onEdit}>
+          <Button variant="brandOutline" size="sm" onClick={onEdit}>
             <Pencil className="h-4 w-4 ms-1.5" />
             עריכה
           </Button>

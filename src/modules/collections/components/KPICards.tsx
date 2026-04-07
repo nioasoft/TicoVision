@@ -63,13 +63,13 @@ const FilterCard: React.FC<{
   title: string;
   count: number;
   icon: React.ElementType;
-  color: 'blue' | 'green' | 'yellow' | 'orange' | 'red' | 'purple';
+  color: 'blue' | 'indigo' | 'yellow' | 'orange' | 'red' | 'purple';
   isSelected: boolean;
   onClick: () => void;
 }> = ({ title, count, icon: Icon, color, isSelected, onClick }) => {
   const colorClasses = {
     blue: { border: 'border-blue-200', bg: 'bg-blue-50', text: 'text-blue-700', icon: 'text-blue-600', ring: 'ring-blue-500' },
-    green: { border: 'border-green-200', bg: 'bg-green-50', text: 'text-green-700', icon: 'text-green-600', ring: 'ring-green-500' },
+    indigo: { border: 'border-indigo-200', bg: 'bg-indigo-50', text: 'text-indigo-700', icon: 'text-indigo-600', ring: 'ring-indigo-500' },
     yellow: { border: 'border-yellow-200', bg: 'bg-yellow-50', text: 'text-yellow-700', icon: 'text-yellow-600', ring: 'ring-yellow-500' },
     orange: { border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-700', icon: 'text-orange-600', ring: 'ring-orange-500' },
     red: { border: 'border-red-200', bg: 'bg-red-50', text: 'text-red-700', icon: 'text-red-600', ring: 'ring-red-500' },
@@ -148,8 +148,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
               label="התקבל"
               value={formatILSInteger(kpis.total_received)}
               icon={Coins}
-              iconColor="text-green-600"
-              valueColor="text-green-700"
+              iconColor="text-primary"
+              valueColor="text-primary"
             />
             <SummaryStat
               label="ממתין"
@@ -162,8 +162,8 @@ export const KPICards: React.FC<KPICardsProps> = ({
               label="אחוז גבייה"
               value={formatPercentage(kpis.collection_rate)}
               icon={TrendingUp}
-              iconColor={kpis.collection_rate >= 80 ? 'text-green-600' : 'text-orange-600'}
-              valueColor={kpis.collection_rate >= 80 ? 'text-green-700' : 'text-orange-700'}
+              iconColor={kpis.collection_rate >= 80 ? 'text-primary' : 'text-orange-600'}
+              valueColor={kpis.collection_rate >= 80 ? 'text-primary' : 'text-orange-700'}
             />
           </div>
         </CardContent>
@@ -191,7 +191,7 @@ export const KPICards: React.FC<KPICardsProps> = ({
           title="שולם"
           count={kpis.clients_paid}
           icon={CheckCircle2}
-          color="green"
+          color="indigo"
           isSelected={selectedCard === 'paid'}
           onClick={() => onCardClick?.('paid')}
         />

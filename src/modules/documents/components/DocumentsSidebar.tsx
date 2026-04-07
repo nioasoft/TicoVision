@@ -107,7 +107,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
   const totalClients = filteredClients.length;
 
   return (
-    <div className={cn("flex flex-col h-full bg-slate-50/50 border-l", className)} dir="rtl">
+    <div className={cn("flex h-full flex-col border-l bg-slate-50/50", className)} dir="rtl">
       {/* Title & Search Header */}
       <div className="p-4 space-y-3">
         <div>
@@ -137,7 +137,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                 variant={currentFolder.id === item.id ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-2 h-9 font-normal text-right",
-                  currentFolder.id === item.id && "bg-blue-100/50 text-blue-700 hover:bg-blue-100"
+                  currentFolder.id === item.id && "bg-primary/10 text-primary hover:bg-primary/15"
                 )}
                 onClick={() => onSelectFolder({ id: item.id, type: item.type as FolderType, name: item.name })}
               >
@@ -167,7 +167,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                     variant="ghost"
                     className={cn(
                       "w-full justify-start gap-2 h-8 text-sm font-normal px-2",
-                      currentFolder.id === group.id && "bg-blue-100/50 text-blue-700"
+                      currentFolder.id === group.id && "bg-primary/10 text-primary"
                     )}
                     onClick={() => onSelectFolder({
                       id: group.id,
@@ -178,7 +178,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                     <span className="truncate">{group.group_name_hebrew}</span>
                     <FolderOpen className={cn(
                       "h-4 w-4 shrink-0",
-                      currentFolder.id === group.id ? "text-blue-500 fill-blue-100" : "text-slate-400"
+                      currentFolder.id === group.id ? "fill-primary/15 text-primary" : "text-slate-400"
                     )} />
                   </Button>
                 ))}
@@ -196,7 +196,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
               <div key={group.label} className="space-y-0.5">
                 <button
                   onClick={() => toggleSection(`clients-${group.label}`)}
-                  className="flex items-center justify-between w-full px-2 py-1 text-xs font-medium text-slate-600 hover:text-foreground transition-colors text-right bg-slate-100/50 rounded"
+                  className="flex w-full items-center justify-between rounded bg-slate-100/50 px-2 py-1 text-right text-xs font-medium text-slate-600 transition-colors hover:text-foreground"
                 >
                   <span>{group.label} ({group.clients.length})</span>
                   {expandedSections[`clients-${group.label}`] !== false ? <ChevronDown className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
@@ -210,7 +210,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                         variant="ghost"
                         className={cn(
                           "w-full justify-start gap-2 h-8 text-sm font-normal px-2",
-                          currentFolder.id === client.id && "bg-blue-100/50 text-blue-700"
+                          currentFolder.id === client.id && "bg-primary/10 text-primary"
                         )}
                         onClick={() => onSelectFolder({
                           id: client.id,
@@ -221,7 +221,7 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
                         <span className="truncate">{client.company_name_hebrew || client.company_name}</span>
                         <Building2 className={cn(
                           "h-4 w-4 shrink-0",
-                          currentFolder.id === client.id ? "text-blue-500" : "text-slate-400"
+                          currentFolder.id === client.id ? "text-primary" : "text-slate-400"
                         )} />
                       </Button>
                     ))}

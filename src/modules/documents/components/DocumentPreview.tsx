@@ -45,13 +45,13 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'sent_email':
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">נשלח במייל</Badge>;
+        return <Badge variant="brand">נשלח במייל</Badge>;
       case 'sent_whatsapp':
-        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">נשלח בוואטסאפ</Badge>;
+        return <Badge variant="brand">נשלח בוואטסאפ</Badge>;
       case 'saved':
-        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">נשמר</Badge>;
+        return <Badge variant="info">נשמר</Badge>;
       default:
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">טיוטה</Badge>;
+        return <Badge variant="warning">טיוטה</Badge>;
     }
   };
 
@@ -60,8 +60,8 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
       {/* Header */}
       <div className="p-4 border-b bg-white/50 backdrop-blur-sm">
         <div className="flex items-start justify-between gap-4">
-          <div className="bg-red-50 p-3 rounded-lg border border-red-100">
-            <FileText className="h-6 w-6 text-red-500" />
+          <div className="rounded-lg border border-primary/15 bg-primary/5 p-3">
+            <FileText className="h-6 w-6 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm leading-tight break-words mb-1">
@@ -165,7 +165,7 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
                     {file.recipientEmails && file.recipientEmails.length > 0 ? (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {file.recipientEmails.map((email, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                          <Badge key={idx} variant="brand" className="text-xs">
                             <Mail className="h-3 w-3 ml-1" />
                             {email}
                           </Badge>
@@ -196,7 +196,7 @@ export function DocumentPreview({ file, onEdit, onDelete, onSend, onDownload }: 
            
            {/* Danger Zone */}
            <div className="pt-4">
-            <Button variant="ghost" className="w-full text-red-500 hover:text-red-600 hover:bg-red-50 gap-2" onClick={() => onDelete(file)}>
+            <Button variant="ghost" className="w-full gap-2 text-red-500 hover:bg-red-50 hover:text-red-600" onClick={() => onDelete(file)}>
               <Trash2 className="h-4 w-4" />
               מחק מסמך
             </Button>
