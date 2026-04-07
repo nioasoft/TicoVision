@@ -1,5 +1,8 @@
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { CreditCard, Landmark, ReceiptText, WalletCards } from 'lucide-react';
 import type { PaymentMethod } from '@/types/collection.types';
+import type { LucideIcon } from 'lucide-react';
 
 interface PaymentMethodBadgeProps {
   method: PaymentMethod | null;
@@ -8,47 +11,61 @@ interface PaymentMethodBadgeProps {
 
 interface PaymentMethodConfig {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   colorClass: string;
 }
 
 const paymentMethodConfig: Record<PaymentMethod, PaymentMethodConfig> = {
   bank_transfer: {
     label: 'העברה בנקאית',
-    icon: '🏦',
-    colorClass: 'bg-green-100 text-green-800 border-green-300 rtl:text-right ltr:text-left',
+    icon: Landmark,
+    colorClass: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   },
   cc_single: {
     label: 'אשראי - תשלום אחד',
-    icon: '💳',
-    colorClass: 'bg-blue-100 text-blue-800 border-blue-300 rtl:text-right ltr:text-left',
+    icon: CreditCard,
+    colorClass: 'border-blue-200 bg-blue-50 text-blue-800',
   },
   cc_installments: {
     label: 'אשראי - תשלומים',
-    icon: '💳',
-    colorClass: 'bg-purple-100 text-purple-800 border-purple-300 rtl:text-right ltr:text-left',
+    icon: WalletCards,
+    colorClass: 'border-violet-200 bg-violet-50 text-violet-800',
   },
   checks: {
     label: 'המחאות',
-    icon: '📝',
-    colorClass: 'bg-orange-100 text-orange-800 border-orange-300 rtl:text-right ltr:text-left',
+    icon: ReceiptText,
+    colorClass: 'border-amber-200 bg-amber-50 text-amber-800',
   },
 };
 
 export function PaymentMethodBadge({ method, className = '' }: PaymentMethodBadgeProps) {
   if (!method) {
     return (
-      <Badge variant="outline" className={`rtl:text-right ltr:text-left ${className}`}>
+      <Badge
+        variant="outline"
+        className={cn(
+          'gap-1.5 border-slate-200 bg-slate-50 text-slate-600 rtl:text-right ltr:text-left',
+          className
+        )}
+      >
         לא נבחר
       </Badge>
     );
   }
 
   const config = paymentMethodConfig[method];
+  const Icon = config.icon;
 
   return (
-    <Badge variant="outline" className={`${config.colorClass} ${className}`}>
-      <span className="mr-1">{config.icon}</span>
+    <Badge
+      variant="outline"
+      className={cn(
+        'gap-1.5 rounded-full px-2.5 py-1 rtl:text-right ltr:text-left',
+        config.colorClass,
+        className
+      )}
+    >
+      <Icon className="h-3.5 w-3.5" />
       {config.label}
     </Badge>
   );

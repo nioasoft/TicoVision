@@ -13,6 +13,7 @@ export function AmountDisplay({
   withVat,
   showVatOnly = false,
   size = 'md',
+  variant = 'inline',
   className,
 }: AmountDisplayProps) {
   // Calculate withVat if not provided
@@ -33,6 +34,25 @@ export function AmountDisplay({
           {formatILS(calculatedWithVat)}
         </span>
         <span className="text-gray-500 text-sm mr-1">(כולל מע"מ)</span>
+      </div>
+    );
+  }
+
+  if (variant === 'stacked') {
+    return (
+      <div className={cn('space-y-1 rtl:text-right ltr:text-left', className)}>
+        <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          לפני מע"מ
+        </div>
+        <div className={cn('font-semibold text-slate-950 tabular-nums', sizeClasses[size])}>
+          {formatILS(beforeVat)}
+        </div>
+        <div className="text-xs text-slate-500">
+          כולל מע"מ:{' '}
+          <span className="font-medium text-slate-700 tabular-nums">
+            {formatILS(calculatedWithVat)}
+          </span>
+        </div>
       </div>
     );
   }

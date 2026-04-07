@@ -98,6 +98,7 @@ export interface AmountDisplayProps {
   withVat?: number;
   showVatOnly?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  variant?: 'inline' | 'stacked';
   className?: string;
 }
 

@@ -123,44 +123,48 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-8">
       {/* Page Header with Year Selector */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 rtl:text-right ltr:text-left">
-            לוח בקרה
-          </h1>
-          <p className="text-sm text-muted-foreground/60 mt-0.5 italic">The Big Picture — Paint It Black</p>
-          <p className="text-gray-500 mt-1 rtl:text-right ltr:text-left">
-            סקירה כללית של המערכת
-          </p>
-        </div>
+      <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="text-right">
+            <div className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+              סקירה פיננסית
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 rtl:text-right ltr:text-left">
+              לוח בקרה
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-500 rtl:text-right ltr:text-left">
+              מבט על התקציב, הגבייה והתפלגות אמצעי התשלום לשנת המס הנבחרת.
+            </p>
+          </div>
 
-        {/* Tax Year Selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">שנת מס:</span>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => setSelectedYear(parseInt(value))}
-          >
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Tax Year Selector */}
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <span className="text-sm font-medium text-slate-700">שנת מס</span>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => setSelectedYear(parseInt(value))}
+            >
+              <SelectTrigger className="w-[130px] border-slate-200 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       {/* Loading State */}
       {isLoading && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">טוען נתונים...</p>
+        <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm">
+          <p className="text-slate-500">טוען נתונים...</p>
         </div>
       )}
 
@@ -187,25 +191,24 @@ export function DashboardPage() {
 
       {/* Empty State */}
       {!isLoading && !budgetBreakdown && (
-        <div className="text-center py-12">
-          <p className="text-gray-500">אין נתונים להצגה עבור שנת מס {selectedYear}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm">
+          <p className="text-slate-500">אין נתונים להצגה עבור שנת מס {selectedYear}</p>
         </div>
       )}
 
-      {/* Placeholder for Future Content */}
       {!isLoading && budgetBreakdown && (
-        <Card className="border-dashed border-2 border-gray-300">
+        <Card className="rounded-2xl border-slate-200 bg-slate-50/70 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-gray-400 rtl:text-right ltr:text-left">
-              מקום למודולים נוספים
+            <CardTitle className="text-slate-800 rtl:text-right ltr:text-left">
+              אזורים נוספים בדרך
             </CardTitle>
             <CardDescription className="rtl:text-right ltr:text-left">
-              כאן יתווספו גרפים וסטטיסטיקות נוספות בעתיד
+              בהמשך יתווספו לכאן גרפים, מגמות וכלי ניתוח משלימים עבור הדשבורד.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-32 flex items-center justify-center text-gray-400">
-              <p className="text-sm">שטח פנוי לתוספות עתידיות</p>
+            <div className="text-sm text-slate-500 rtl:text-right ltr:text-left">
+              כרגע הדשבורד מתמקד בתקציב, גבייה והתפלגות אמצעי תשלום.
             </div>
           </CardContent>
         </Card>
