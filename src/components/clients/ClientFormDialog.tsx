@@ -898,7 +898,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   </Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: 'active' | 'inactive' | 'pending') =>
+                    onValueChange={(value: 'active' | 'inactive' | 'pending' | 'unknown') =>
                       handleFormChange('status', value)
                     }
                   >
@@ -909,6 +909,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                       <SelectItem value="active">פעיל</SelectItem>
                       <SelectItem value="inactive">לא פעיל</SelectItem>
                       <SelectItem value="pending">ממתין</SelectItem>
+                      <SelectItem value="unknown">לא ידוע</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

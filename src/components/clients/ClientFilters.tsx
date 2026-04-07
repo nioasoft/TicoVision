@@ -91,6 +91,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
             <SelectItem value="adhoc">חריגים</SelectItem>
             <SelectItem value="inactive">לא פעילים</SelectItem>
             <SelectItem value="pending">ממתינים</SelectItem>
+            <SelectItem value="unknown">לא ידוע</SelectItem>
           </SelectContent>
         </Select>
       </div>

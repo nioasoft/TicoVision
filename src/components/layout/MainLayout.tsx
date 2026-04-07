@@ -336,7 +336,7 @@ export function MainLayout() {
                           className={({ isActive }) =>
                             cn(
                               "flex items-center rounded-xl transition-colors",
-                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3 border border-white/15 shadow-sm shadow-black/10 bg-white/10",
+                              sidebarCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-3",
                               isActive
                                 ? "bg-white text-[#395BF7] !border-white"
                                 : "text-white hover:bg-white/15"

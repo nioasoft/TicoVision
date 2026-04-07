@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>קורות חיים - סיגל נגר</title>
+<style>
+    :root {
+        --bg: #eef1f4;
+        --paper: #ffffff;
+        --ink: #1a2433;
+        --muted: #5f6b7a;
+        --line: #d8e0e8;
+        --accent: #1f3b5b;
+        --accent-soft: #f3f6fa;
+        --strong: #16283f;
+        --shadow: 0 18px 44px rgba(16, 28, 44, 0.08);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 32px 20px;
+        background: linear-gradient(180deg, #f7f9fb 0%, var(--bg) 100%);
+        font-family: "Assistant", "Heebo", "Segoe UI", sans-serif;
+        color: var(--ink);
+    }
+
+    .container {
+        max-width: 920px;
+        margin: 0 auto;
+        background: var(--paper);
+        border: 1px solid rgba(21, 62, 117, 0.10);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    .hero {
+        padding: 38px 44px 28px;
+        background: linear-gradient(180deg, #24384f 0%, #1f3147 100%);
+        color: #ffffff;
+    }
+
+    .hero-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.10);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-bottom: 14px;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: 40px;
+        line-height: 1.05;
+        font-weight: 800;
+    }
+
+    .headline {
+        margin: 12px 0 0;
+        font-size: 19px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    .summary {
+        margin: 18px 0 0;
+        max-width: 680px;
+        line-height: 1.9;
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .meta {
+        min-width: 180px;
+        padding: 16px 18px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .meta-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.72;
+    }
+
+    .meta-value {
+        margin-top: 8px;
+        font-size: 22px;
+        font-weight: 800;
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 28px;
+    }
+
+    .stat {
+        padding: 18px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.82);
+        line-height: 1.5;
+    }
+
+    .content {
+        padding: 34px 44px 42px;
+    }
+
+    .section {
+        margin-top: 28px;
+    }
+
+    .section:first-child {
+        margin-top: 0;
+    }
+
+    h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--strong);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    h2::before {
+        content: "";
+        width: 28px;
+        height: 2px;
+        border-radius: 999px;
+        background: var(--accent);
+    }
+
+    p {
+        margin: 0;
+        line-height: 1.85;
+        color: var(--ink);
+        font-size: 16px;
+    }
+
+    .experience-card {
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+        border-radius: 16px;
+        padding: 24px 24px 20px;
+    }
+
+    .role {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--strong);
+        margin-bottom: 6px;
+    }
+
+    .company {
+        color: var(--muted);
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
+
+    .experience-lead {
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: var(--accent-soft);
+        color: var(--strong);
+        font-weight: 700;
+        margin-bottom: 18px;
+        line-height: 1.85;
+    }
+
+    ul {
+        margin: 0;
+        padding-right: 20px;
+    }
+
+    li {
+        margin-bottom: 10px;
+        line-height: 1.8;
+        color: var(--ink);
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .panel {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px 22px;
+        background: #fcfdff;
+    }
+
+    .panel h3 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        color: var(--strong);
+    }
+
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .chip {
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #f5f7fa;
+        color: var(--strong);
+        border: 1px solid #e1e7ee;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .hero,
+    .experience-card,
+    .panel,
+    .chip,
+    .meta,
+    .stat,
+    .container {
+        transition: none;
+    }
+
+    @media (max-width: 760px) {
+        body {
+            padding: 16px;
+        }
+
+        .hero,
+        .content {
+            padding: 26px 22px;
+        }
+
+        .hero-top,
+        .grid,
+        .stats {
+            grid-template-columns: 1fr;
+            display: grid;
+        }
+
+        h1 {
+            font-size: 32px;
+        }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <section class="hero">
+        <div class="hero-top">
+            <div>
+                <div class="eyebrow">קורות חיים</div>
+                <h1>סיגל נגר</h1>
+                <p class="headline">מנהלת חשבונות בכירה | הנהלת חשבונות עד מאזן וחשבות שכר</p>
+                <p class="summary">
+                    מנהלת חשבונות בכירה בעלת למעלה מ־30 שנות ניסיון מקצועי במשרד רואי חשבון מוביל בתחום ההסעדה.
+                    מתמחה בהנהלת חשבונות מלאה עד מאזן, חשבות שכר, תזרים מזומנים, בקרה תקציבית וגבייה.
+                    מביאה ניסיון ניהולי רחב, דיוק גבוה ויכולת מוכחת להוביל עבודה מקצועית ורציפה מול לקוחות וממשקים רבים.
+                </p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <span class="stat-value">30+</span>
+                <span class="stat-label">שנות ניסיון בהנהלת חשבונות, שכר וליווי פיננסי</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">עד מאזן</span>
+                <span class="stat-label">אחריות מלאה על תהליכי הנה"ח מקצה לקצה</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">שכר מלא</span>
+                <span class="stat-label">ניהול מקצועי של מערך שכר וחשבות שכר מקצה לקצה</span>
+            </div>
+        </div>
+    </section>
+
+    <main class="content">
+        <section class="section">
+            <h2>ניסיון מקצועי מרכזי</h2>
+            <div class="experience-card">
+                <div class="role">מנהלת מחלקת הנהלת חשבונות</div>
+                <div class="company">משרד רואי חשבון מוביל בתחום ההסעדה | כ־30 שנות ניסיון</div>
+                <div class="experience-lead">
+                    תפקיד בכיר המתמקד בהנהלת חשבונות מלאה, חשבות שכר ובקרה פיננסית שוטפת,
+                    לצד הובלת מחלקה מקצועית ועבודה ישירה מול מגוון רחב של לקוחות.
+                </div>
+                <ul>
+                    <li>ניהול מחלקת הנהלת חשבונות והובלת צוות מקצועי בסביבת עבודה דינמית.</li>
+                    <li>אחריות כוללת על הנהלת חשבונות מלאה עד מאזן, לרבות בקרה, סדר ודיוק בתהליכי העבודה.</li>
+                    <li>ניהול תזרים מזומנים, תחזיות פיננסיות ובקרה על תקציב תקן מול ביצוע.</li>
+                    <li>ניהול מערך שכר מלא ומתן מענה מקצועי בתחום חשבות השכר.</li>
+                    <li>ניהול תחום הגבייה ושיפור תהליכים פיננסיים ותפעוליים.</li>
+                    <li>עבודה שוטפת מול מגוון רחב של לקוחות וגורמים מקצועיים.</li>
+                    <li>התנהלות יומיומית בסביבה מרובת משימות, תוך עמידה בסטנדרט מקצועי גבוה.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>תחומי ליבה מקצועיים</h2>
+            <div class="chips">
+                <span class="chip">הנהלת חשבונות עד מאזן</span>
+                <span class="chip">חשבות שכר</span>
+                <span class="chip">הכנת שכר מקצה לקצה</span>
+                <span class="chip">תזרים מזומנים</span>
+                <span class="chip">בקרה תקציבית</span>
+                <span class="chip">ניהול גבייה</span>
+                <span class="chip">ניהול עובדים וצוותים</span>
+                <span class="chip">עבודה מול לקוחות</span>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>מערכות וכלים מקצועיים</h2>
+            <div class="grid">
+                <div class="panel">
+                    <h3>מערכות פיננסיות</h3>
+                    <ul>
+                        <li>חשבשבת - הנהלת חשבונות מלאה עד מאזן</li>
+                        <li>מיכפל ושיקלולית - ניהול שכר ומערך שכר מלא</li>
+                    </ul>
+                </div>
+                <div class="panel">
+                    <h3>כלים משלימים</h3>
+                    <ul>
+                        <li>Microsoft Office - שליטה מלאה</li>
+                        <li>Monday - ניהול תהליכים ומשימות</li>
+                        <li>Google Drive - עבודה שיתופית וניהול מסמכים</li>
+                        <li>יישומי AI מתקדמים לעבודה שוטפת</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>חוזקות אישיות</h2>
+            <div class="grid">
+                <div class="panel">
+                    <h3>ניהול וביצוע</h3>
+                    <ul>
+                        <li>אחריות רחבה, סדר ויכולת הובלת תהליכים.</li>
+                        <li>עבודה מדויקת תחת עומס וריבוי משימות.</li>
+                        <li>חשיבה מערכתית וראייה פיננסית מעמיקה.</li>
+                    </ul>
+                </div>
+                <div class="panel">
+                    <h3>עבודה עם אנשים</h3>
+                    <ul>
+                        <li>יחסי אנוש מצוינים ויכולת עבודה מול לקוחות וממשקים רבים.</li>
+                        <li>גישה שירותית לצד סטנדרט מקצועי גבוה.</li>
+                        <li>יכולת הובלה, ליווי ושיתוף פעולה לאורך זמן.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+</body>
+</html>

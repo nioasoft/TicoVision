@@ -78,7 +78,7 @@ export interface UseClientsReturn {
   deleteClient: (client: Client) => Promise<boolean>;
 
   // Bulk Operations
-  bulkUpdateStatus: (status: 'active' | 'inactive' | 'pending') => Promise<boolean>;
+  bulkUpdateStatus: (status: 'active' | 'inactive' | 'pending' | 'unknown') => Promise<boolean>;
 
   // Selection & Pagination
   toggleClientSelection: (clientId: string) => void;
@@ -547,7 +547,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
 
   // Bulk update status
   const bulkUpdateStatus = useCallback(
-    async (status: 'active' | 'inactive' | 'pending'): Promise<boolean> => {
+    async (status: 'active' | 'inactive' | 'pending' | 'unknown'): Promise<boolean> => {
       if (selectedClients.length === 0) {
         toast({
           title: 'לא נבחרו לקוחות',

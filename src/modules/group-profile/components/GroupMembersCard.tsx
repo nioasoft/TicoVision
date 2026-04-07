@@ -63,9 +63,13 @@ export function GroupMembersCard({ members, onAddClients, onPaymentRoleChange }:
             <span className="text-xs text-muted-foreground font-normal">({members.length})</span>
           </CardTitle>
           {onAddClients && (
-            <Button size="sm" variant="outline" onClick={onAddClients}>
-              <Plus className="h-4 w-4 ms-1" />
-              הוסף לקוחות
+            <Button
+              variant="outline"
+              onClick={onAddClients}
+              className="border-[#395BF7] text-[#395BF7] hover:bg-[#395BF7]/10 rounded-full shadow-md"
+            >
+              <Plus className="ml-2 h-5 w-5" />
+              הוסף חברות לקבוצה
             </Button>
           )}
         </div>

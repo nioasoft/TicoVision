@@ -119,7 +119,7 @@ export interface Client {
     city?: string;
     postal_code?: string;
   };
-  status: 'active' | 'inactive' | 'pending' | 'adhoc';
+  status: 'active' | 'inactive' | 'pending' | 'adhoc' | 'unknown';
   // New classification fields
   client_type: ClientType;
   company_status: CompanyStatus;
@@ -177,7 +177,7 @@ export interface CreateClientDto {
     city?: string;
     postal_code?: string;
   };
-  status?: 'active' | 'inactive' | 'pending' | 'adhoc';
+  status?: 'active' | 'inactive' | 'pending' | 'adhoc' | 'unknown';
   // Classification fields
   client_type?: ClientType;
   company_status?: CompanyStatus;
@@ -813,13 +813,13 @@ export class ClientService extends BaseService {
     }
   }
 
-  async updateStatus(id: string, status: 'active' | 'inactive' | 'pending' | 'adhoc'): Promise<ServiceResponse<Client>> {
+  async updateStatus(id: string, status: 'active' | 'inactive' | 'pending' | 'adhoc' | 'unknown'): Promise<ServiceResponse<Client>> {
     return this.update(id, { status });
   }
 
   async bulkUpdateStatus(
     ids: string[],
-    status: 'active' | 'inactive' | 'pending' | 'adhoc'
+    status: 'active' | 'inactive' | 'pending' | 'adhoc' | 'unknown'
   ): Promise<ServiceResponse<boolean>> {
     try {
       const tenantId = await this.getTenantId();
@@ -870,6 +870,7 @@ export class ClientService extends BaseService {
           active: clients?.filter(c => c.status === 'active').length || 0,
           inactive: clients?.filter(c => c.status === 'inactive').length || 0,
           pending: clients?.filter(c => c.status === 'pending').length || 0,
+          unknown: clients?.filter(c => c.status === 'unknown').length || 0,
         };
 
         return { data: statistics, error: null };
