@@ -38,6 +38,9 @@ import {
 } from '@lexical/list';
 import { LinkNode, $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { HeadingNode, $createHeadingNode, $isHeadingNode, QuoteNode } from '@lexical/rich-text';
+import type { HeadingTagType, SerializedHeadingNode, SerializedQuoteNode } from '@lexical/rich-text';
+import type { SerializedListItemNode } from '@lexical/list';
+import type { SerializedTableCellNode } from '@lexical/table';
 import {
   TableNode,
   TableRowNode,
@@ -159,21 +162,53 @@ const theme = {
   tableCellHeader: 'border border-gray-300 p-2 min-w-[60px] text-right align-top bg-gray-100 font-bold',
 };
 
-// ========== Styled Paragraph Node ==========
-// Extends ParagraphNode to support block-level inline styles (background-color, padding, etc.)
-// This is needed because Lexical's built-in ParagraphNode only preserves text-align.
+// ========== Styled Block Nodes ==========
+// Every block-level Lexical node (paragraph, heading, quote, list item, table cell)
+// is extended to carry an opaque `__blockStyle` string — the verbatim contents of the
+// element's `style` attribute. This guarantees that any CSS the user applies to a
+// block (color, background, border, padding, font-family, font-size, etc.) survives
+// the HTML round-trip: $generateHtmlFromNodes → DB → $generateNodesFromDOM.
+//
+// No property whitelist. No deny-list.
 
-const BLOCK_STYLE_PROPS = ['background-color', 'padding', 'border-radius', 'margin'];
-
-function extractBlockStyles(el: HTMLElement): string {
-  const parts: string[] = [];
-  for (const prop of BLOCK_STYLE_PROPS) {
-    const val = el.style.getPropertyValue(prop);
-    if (val) parts.push(`${prop}: ${val}`);
+function parseStyleString(styleStr: string): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!styleStr) return map;
+  for (const part of styleStr.split(';')) {
+    const colonIdx = part.indexOf(':');
+    if (colonIdx > 0) {
+      const key = part.slice(0, colonIdx).trim();
+      const val = part.slice(colonIdx + 1).trim();
+      if (key && val) map.set(key, val);
+    }
   }
-  return parts.join('; ');
+  return map;
 }
 
+function applyStyleString(dom: HTMLElement, styleStr: string): void {
+  if (!styleStr) return;
+  for (const [prop, val] of parseStyleString(styleStr)) {
+    dom.style.setProperty(prop, val);
+  }
+}
+
+function syncStyleString(dom: HTMLElement, prev: string, next: string): void {
+  const prevMap = parseStyleString(prev);
+  const nextMap = parseStyleString(next);
+  for (const prop of prevMap.keys()) {
+    if (!nextMap.has(prop)) dom.style.removeProperty(prop);
+  }
+  for (const [prop, val] of nextMap) {
+    if (prevMap.get(prop) !== val) dom.style.setProperty(prop, val);
+  }
+}
+
+function extractBlockStyles(el: HTMLElement): string {
+  // Capture the full style attribute verbatim — no whitelist.
+  return el.getAttribute('style') || '';
+}
+
+// ---------- StyledParagraphNode ----------
 type SerializedStyledParagraphNode = Spread<{ blockStyle: string }, ReturnType<ParagraphNode['exportJSON']>>;
 
 class StyledParagraphNode extends ParagraphNode {
@@ -184,8 +219,7 @@ class StyledParagraphNode extends ParagraphNode {
   }
 
   static clone(node: StyledParagraphNode): StyledParagraphNode {
-    const clone = new StyledParagraphNode(node.__blockStyle, node.__key);
-    return clone;
+    return new StyledParagraphNode(node.__blockStyle, node.__key);
   }
 
   constructor(blockStyle?: string, key?: NodeKey) {
@@ -205,27 +239,14 @@ class StyledParagraphNode extends ParagraphNode {
 
   createDOM(config: EditorConfig): HTMLElement {
     const dom = super.createDOM(config);
-    if (this.__blockStyle) {
-      dom.style.cssText += (dom.style.cssText ? '; ' : '') + this.__blockStyle;
-    }
+    applyStyleString(dom, this.__blockStyle);
     return dom;
   }
 
   updateDOM(prevNode: StyledParagraphNode, dom: HTMLElement, config: EditorConfig): boolean {
     const parentUpdated = super.updateDOM(prevNode, dom, config);
     if (prevNode.__blockStyle !== this.__blockStyle) {
-      // Re-apply: clear existing block styles then set new ones
-      for (const prop of BLOCK_STYLE_PROPS) {
-        dom.style.removeProperty(prop);
-      }
-      if (this.__blockStyle) {
-        for (const part of this.__blockStyle.split('; ')) {
-          const colonIdx = part.indexOf(': ');
-          if (colonIdx > 0) {
-            dom.style.setProperty(part.slice(0, colonIdx).trim(), part.slice(colonIdx + 2).trim());
-          }
-        }
-      }
+      syncStyleString(dom, prevNode.__blockStyle, this.__blockStyle);
       return true;
     }
     return parentUpdated;
@@ -233,8 +254,8 @@ class StyledParagraphNode extends ParagraphNode {
 
   exportDOM(editor: LexicalEditorType): DOMExportOutput {
     const result = super.exportDOM(editor);
-    if (result.element && this.__blockStyle && result.element instanceof HTMLElement) {
-      result.element.style.cssText += (result.element.style.cssText ? '; ' : '') + this.__blockStyle;
+    if (result.element instanceof HTMLElement) {
+      applyStyleString(result.element, this.__blockStyle);
     }
     return result;
   }
@@ -243,25 +264,19 @@ class StyledParagraphNode extends ParagraphNode {
     return {
       p: () => ({
         conversion: (element: HTMLElement) => {
-          const blockStyle = extractBlockStyles(element);
-          const node = new StyledParagraphNode(blockStyle);
-          // Preserve text alignment from element
+          const node = new StyledParagraphNode(extractBlockStyles(element));
           if (element.style.textAlign) {
             node.setFormat(element.style.textAlign as ElementFormatType);
           }
           return { node };
         },
-        priority: 1, // Override default ParagraphNode handler (priority 0)
+        priority: 1,
       }),
     };
   }
 
   exportJSON(): SerializedStyledParagraphNode {
-    return {
-      ...super.exportJSON(),
-      type: 'styled-paragraph',
-      blockStyle: this.__blockStyle,
-    };
+    return { ...super.exportJSON(), type: 'styled-paragraph', blockStyle: this.__blockStyle };
   }
 
   static importJSON(json: SerializedStyledParagraphNode): StyledParagraphNode {
@@ -279,6 +294,355 @@ function $createStyledParagraphNode(blockStyle?: string): StyledParagraphNode {
 
 function $isStyledParagraphNode(node: LexicalNode | null | undefined): node is StyledParagraphNode {
   return node instanceof StyledParagraphNode;
+}
+
+// Union of every block node that understands __blockStyle. Used by the toolbar
+// so block-level styling commands (background color, padding, etc.) work on
+// paragraphs, headings, quotes, list items, and table cells uniformly.
+type StyledBlockNode =
+  | StyledParagraphNode
+  | StyledHeadingNode
+  | StyledQuoteNode
+  | StyledListItemNode
+  | StyledTableCellNode;
+
+function $isStyledBlockNode(node: LexicalNode | null | undefined): node is StyledBlockNode {
+  return (
+    node instanceof StyledParagraphNode ||
+    node instanceof StyledHeadingNode ||
+    node instanceof StyledQuoteNode ||
+    node instanceof StyledListItemNode ||
+    node instanceof StyledTableCellNode
+  );
+}
+
+// ---------- StyledHeadingNode ----------
+type SerializedStyledHeadingNode = Spread<{ blockStyle: string }, SerializedHeadingNode>;
+
+class StyledHeadingNode extends HeadingNode {
+  __blockStyle: string;
+
+  static getType(): string {
+    return 'styled-heading';
+  }
+
+  static clone(node: StyledHeadingNode): StyledHeadingNode {
+    return new StyledHeadingNode(node.getTag(), node.__blockStyle, node.__key);
+  }
+
+  constructor(tag: HeadingTagType, blockStyle?: string, key?: NodeKey) {
+    super(tag, key);
+    this.__blockStyle = blockStyle || '';
+  }
+
+  setBlockStyle(style: string): this {
+    const self = this.getWritable() as StyledHeadingNode;
+    self.__blockStyle = style;
+    return self as this;
+  }
+
+  getBlockStyle(): string {
+    return this.__blockStyle;
+  }
+
+  createDOM(config: EditorConfig): HTMLElement {
+    const dom = super.createDOM(config);
+    applyStyleString(dom, this.__blockStyle);
+    return dom;
+  }
+
+  updateDOM(prevNode: StyledHeadingNode, dom: HTMLElement, config: EditorConfig): boolean {
+    const parentUpdated = super.updateDOM(prevNode, dom, config);
+    if (prevNode.__blockStyle !== this.__blockStyle) {
+      syncStyleString(dom, prevNode.__blockStyle, this.__blockStyle);
+      return true;
+    }
+    return parentUpdated;
+  }
+
+  exportDOM(editor: LexicalEditorType): DOMExportOutput {
+    const result = super.exportDOM(editor);
+    if (result.element instanceof HTMLElement) {
+      applyStyleString(result.element, this.__blockStyle);
+    }
+    return result;
+  }
+
+  static importDOM(): DOMConversionMap | null {
+    const conversion = (element: HTMLElement) => {
+      const tag = element.tagName.toLowerCase() as HeadingTagType;
+      const node = new StyledHeadingNode(tag, extractBlockStyles(element));
+      if (element.style.textAlign) {
+        node.setFormat(element.style.textAlign as ElementFormatType);
+      }
+      return { node };
+    };
+    return {
+      h1: () => ({ conversion, priority: 1 }),
+      h2: () => ({ conversion, priority: 1 }),
+      h3: () => ({ conversion, priority: 1 }),
+      h4: () => ({ conversion, priority: 1 }),
+      h5: () => ({ conversion, priority: 1 }),
+      h6: () => ({ conversion, priority: 1 }),
+    };
+  }
+
+  exportJSON(): SerializedStyledHeadingNode {
+    return { ...super.exportJSON(), type: 'styled-heading', blockStyle: this.__blockStyle };
+  }
+
+  static importJSON(json: SerializedStyledHeadingNode): StyledHeadingNode {
+    const node = new StyledHeadingNode(json.tag, json.blockStyle);
+    node.setFormat(json.format);
+    node.setIndent(json.indent);
+    node.setDirection(json.direction);
+    return node;
+  }
+}
+
+// ---------- StyledQuoteNode ----------
+type SerializedStyledQuoteNode = Spread<{ blockStyle: string }, SerializedQuoteNode>;
+
+class StyledQuoteNode extends QuoteNode {
+  __blockStyle: string;
+
+  static getType(): string {
+    return 'styled-quote';
+  }
+
+  static clone(node: StyledQuoteNode): StyledQuoteNode {
+    return new StyledQuoteNode(node.__blockStyle, node.__key);
+  }
+
+  constructor(blockStyle?: string, key?: NodeKey) {
+    super(key);
+    this.__blockStyle = blockStyle || '';
+  }
+
+  setBlockStyle(style: string): this {
+    const self = this.getWritable() as StyledQuoteNode;
+    self.__blockStyle = style;
+    return self as this;
+  }
+
+  getBlockStyle(): string {
+    return this.__blockStyle;
+  }
+
+  createDOM(config: EditorConfig): HTMLElement {
+    const dom = super.createDOM(config);
+    applyStyleString(dom, this.__blockStyle);
+    return dom;
+  }
+
+  updateDOM(prevNode: StyledQuoteNode, dom: HTMLElement): boolean {
+    const parentUpdated = super.updateDOM(prevNode, dom);
+    if (prevNode.__blockStyle !== this.__blockStyle) {
+      syncStyleString(dom, prevNode.__blockStyle, this.__blockStyle);
+      return true;
+    }
+    return parentUpdated;
+  }
+
+  exportDOM(editor: LexicalEditorType): DOMExportOutput {
+    const result = super.exportDOM(editor);
+    if (result.element instanceof HTMLElement) {
+      applyStyleString(result.element, this.__blockStyle);
+    }
+    return result;
+  }
+
+  static importDOM(): DOMConversionMap | null {
+    return {
+      blockquote: () => ({
+        conversion: (element: HTMLElement) => {
+          const node = new StyledQuoteNode(extractBlockStyles(element));
+          if (element.style.textAlign) {
+            node.setFormat(element.style.textAlign as ElementFormatType);
+          }
+          return { node };
+        },
+        priority: 1,
+      }),
+    };
+  }
+
+  exportJSON(): SerializedStyledQuoteNode {
+    return { ...super.exportJSON(), type: 'styled-quote', blockStyle: this.__blockStyle };
+  }
+
+  static importJSON(json: SerializedStyledQuoteNode): StyledQuoteNode {
+    const node = new StyledQuoteNode(json.blockStyle);
+    node.setFormat(json.format);
+    node.setIndent(json.indent);
+    node.setDirection(json.direction);
+    return node;
+  }
+}
+
+// ---------- StyledListItemNode ----------
+type SerializedStyledListItemNode = Spread<{ blockStyle: string }, SerializedListItemNode>;
+
+class StyledListItemNode extends ListItemNode {
+  __blockStyle: string;
+
+  static getType(): string {
+    return 'styled-listitem';
+  }
+
+  static clone(node: StyledListItemNode): StyledListItemNode {
+    const clone = new StyledListItemNode(node.getValue(), node.getChecked(), node.__blockStyle, node.__key);
+    return clone;
+  }
+
+  constructor(value?: number, checked?: boolean, blockStyle?: string, key?: NodeKey) {
+    super(value, checked, key);
+    this.__blockStyle = blockStyle || '';
+  }
+
+  setBlockStyle(style: string): this {
+    const self = this.getWritable() as StyledListItemNode;
+    self.__blockStyle = style;
+    return self as this;
+  }
+
+  getBlockStyle(): string {
+    return this.__blockStyle;
+  }
+
+  createDOM(config: EditorConfig): HTMLElement {
+    const dom = super.createDOM(config);
+    applyStyleString(dom, this.__blockStyle);
+    return dom;
+  }
+
+  updateDOM(prevNode: StyledListItemNode, dom: HTMLElement, config: EditorConfig): boolean {
+    const parentUpdated = super.updateDOM(prevNode, dom, config);
+    if (prevNode.__blockStyle !== this.__blockStyle) {
+      syncStyleString(dom, prevNode.__blockStyle, this.__blockStyle);
+      return true;
+    }
+    return parentUpdated;
+  }
+
+  static importDOM(): DOMConversionMap | null {
+    return {
+      li: () => ({
+        conversion: (element: HTMLElement) => {
+          const node = new StyledListItemNode(undefined, undefined, extractBlockStyles(element));
+          return { node };
+        },
+        priority: 1,
+      }),
+    };
+  }
+
+  exportJSON(): SerializedStyledListItemNode {
+    return { ...super.exportJSON(), type: 'styled-listitem', blockStyle: this.__blockStyle };
+  }
+
+  static importJSON(json: SerializedStyledListItemNode): StyledListItemNode {
+    const node = new StyledListItemNode(json.value, json.checked, json.blockStyle);
+    node.setFormat(json.format);
+    node.setIndent(json.indent);
+    node.setDirection(json.direction);
+    return node;
+  }
+}
+
+// ---------- StyledTableCellNode ----------
+type SerializedStyledTableCellNode = Spread<{ blockStyle: string }, SerializedTableCellNode>;
+
+class StyledTableCellNode extends TableCellNode {
+  __blockStyle: string;
+
+  static getType(): string {
+    return 'styled-tablecell';
+  }
+
+  static clone(node: StyledTableCellNode): StyledTableCellNode {
+    return new StyledTableCellNode(
+      node.__headerState,
+      node.__colSpan,
+      node.__width ?? undefined,
+      node.__blockStyle,
+      node.__key,
+    );
+  }
+
+  constructor(headerState?: number, colSpan?: number, width?: number, blockStyle?: string, key?: NodeKey) {
+    super(headerState, colSpan, width, key);
+    this.__blockStyle = blockStyle || '';
+  }
+
+  setBlockStyle(style: string): this {
+    const self = this.getWritable() as StyledTableCellNode;
+    self.__blockStyle = style;
+    return self as this;
+  }
+
+  getBlockStyle(): string {
+    return this.__blockStyle;
+  }
+
+  createDOM(config: EditorConfig): HTMLElement {
+    const dom = super.createDOM(config);
+    applyStyleString(dom, this.__blockStyle);
+    return dom;
+  }
+
+  updateDOM(prevNode: StyledTableCellNode, dom: HTMLElement, config: EditorConfig): boolean {
+    // TableCellNode's .d.ts only types `prevNode`, but the runtime passes all
+    // three ElementNode arguments. Forward them explicitly.
+    const parentUpdated = (super.updateDOM as unknown as (
+      p: StyledTableCellNode, d: HTMLElement, c: EditorConfig,
+    ) => boolean).call(this, prevNode, dom, config);
+    if (prevNode.__blockStyle !== this.__blockStyle) {
+      syncStyleString(dom, prevNode.__blockStyle, this.__blockStyle);
+      return true;
+    }
+    return parentUpdated;
+  }
+
+  exportDOM(editor: LexicalEditorType): DOMExportOutput {
+    const result = super.exportDOM(editor);
+    if (result.element instanceof HTMLElement) {
+      applyStyleString(result.element, this.__blockStyle);
+    }
+    return result;
+  }
+
+  static importDOM(): DOMConversionMap | null {
+    const conversion = (element: HTMLElement) => {
+      const isHeader = element.tagName.toLowerCase() === 'th';
+      const colSpan = Number(element.getAttribute('colspan')) || 1;
+      const widthAttr = element.getAttribute('width');
+      const width = widthAttr ? Number(widthAttr) : undefined;
+      const node = new StyledTableCellNode(isHeader ? 1 : 0, colSpan, width, extractBlockStyles(element));
+      return { node };
+    };
+    return {
+      td: () => ({ conversion, priority: 1 }),
+      th: () => ({ conversion, priority: 1 }),
+    };
+  }
+
+  exportJSON(): SerializedStyledTableCellNode {
+    return { ...super.exportJSON(), type: 'styled-tablecell', blockStyle: this.__blockStyle };
+  }
+
+  static importJSON(json: SerializedStyledTableCellNode): StyledTableCellNode {
+    const node = new StyledTableCellNode(
+      json.headerState,
+      json.colSpan,
+      json.width ?? undefined,
+      json.blockStyle,
+    );
+    node.setFormat(json.format);
+    node.setIndent(json.indent);
+    node.setDirection(json.direction);
+    return node;
+  }
 }
 
 // ========== Image Node ==========
@@ -579,24 +943,23 @@ function preprocessTipTapHtml(html: string): string {
 }
 
 /**
- * Inline style properties to preserve during HTML import.
- * Lexical's default span handler only preserves bold/italic/underline/strikethrough.
- * We need to also preserve color, background-color, font-size, etc.
- */
-const PRESERVED_STYLE_PROPS = ['color', 'background-color', 'font-size', 'line-height', 'letter-spacing', 'text-transform'];
-
-/**
- * Extract preserved inline style properties from a DOM element.
+ * Extract the full inline style attribute from a <span> verbatim.
+ * No property whitelist — any CSS the user applied survives the round-trip.
+ * Format flags (bold/italic/underline/strike/sub/super) are handled separately
+ * below in the span importer (forChild) so they don't duplicate into the style
+ * string; everything else is passed through to TextNode.__style.
  */
 function extractPreservedStyles(el: HTMLElement): string {
-  const parts: string[] = [];
-  for (const prop of PRESERVED_STYLE_PROPS) {
-    const val = el.style.getPropertyValue(prop);
-    if (val) {
-      parts.push(`${prop}: ${val}`);
-    }
-  }
-  return parts.join('; ');
+  const raw = el.getAttribute('style');
+  if (!raw) return '';
+  // Strip the properties that Lexical already models as text format flags,
+  // so they don't double up when re-exported.
+  const map = parseStyleString(raw);
+  map.delete('font-weight');
+  map.delete('font-style');
+  map.delete('text-decoration');
+  map.delete('vertical-align');
+  return Array.from(map.entries()).map(([k, v]) => `${k}: ${v}`).join('; ');
 }
 
 /**
@@ -1577,8 +1940,9 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
       });
 
       blockNodes.forEach(blockNode => {
-        // Use StyledParagraphNode's setBlockStyle for proper persistence
-        if ($isStyledParagraphNode(blockNode)) {
+        // Any styled block node (paragraph, heading, quote, list-item, cell)
+        // supports setBlockStyle → style persists through the HTML round-trip.
+        if ($isStyledBlockNode(blockNode)) {
           if (color) {
             blockNode.setBlockStyle(`background-color: ${color}; padding: 8px 12px; border-radius: 4px`);
           } else {
@@ -2362,9 +2726,25 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
     onError,
     nodes: [
       StyledParagraphNode,
+      { replace: ParagraphNode, with: () => new StyledParagraphNode() },
+      StyledHeadingNode,
+      { replace: HeadingNode, with: (node: HeadingNode) => new StyledHeadingNode(node.getTag()) },
+      StyledQuoteNode,
+      { replace: QuoteNode, with: () => new StyledQuoteNode() },
+      StyledListItemNode,
       {
-        replace: ParagraphNode,
-        with: () => new StyledParagraphNode(),
+        replace: ListItemNode,
+        with: (node: ListItemNode) => new StyledListItemNode(node.getValue(), node.getChecked()),
+      },
+      StyledTableCellNode,
+      {
+        replace: TableCellNode,
+        with: (node: TableCellNode) =>
+          new StyledTableCellNode(
+            node.__headerState,
+            node.__colSpan,
+            node.__width ?? undefined,
+          ),
       },
       HeadingNode,
       QuoteNode,
@@ -2384,40 +2764,11 @@ const LexicalEditorComponent: React.FC<LexicalEditorProps> = ({
   const handleChange = useCallback(
     (editorState: EditorState, editor: LexicalEditorType) => {
       editorState.read(() => {
+        // Every block node (paragraph, heading, quote, list-item, table-cell)
+        // now exports its own inline `style` via its Styled* variant, so the
+        // HTML produced here already contains the full formatting. No post-
+        // processing needed.
         const html = $generateHtmlFromNodes(editor, null);
-
-        // Enrich exported HTML with block-level styles from the actual DOM.
-        // Lexical's ParagraphNode.exportDOM/createDOM don't output __style,
-        // so we inject background-color/padding/border-radius from live DOM.
-        const root = $getRoot();
-        const children = root.getChildren();
-        if (children.length > 0) {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
-          const htmlElements = doc.body.firstElementChild?.children;
-          if (htmlElements && htmlElements.length === children.length) {
-            let modified = false;
-            for (let i = 0; i < children.length; i++) {
-              const node = children[i];
-              const htmlEl = htmlElements[i] as HTMLElement;
-              const dom = editor.getElementByKey(node.getKey());
-              if (dom && htmlEl) {
-                const bg = dom.style.backgroundColor;
-                if (bg) {
-                  htmlEl.style.backgroundColor = bg;
-                  htmlEl.style.padding = dom.style.padding || '8px 12px';
-                  htmlEl.style.borderRadius = dom.style.borderRadius || '4px';
-                  modified = true;
-                }
-              }
-            }
-            if (modified) {
-              onChange?.(doc.body.firstElementChild?.innerHTML || html);
-              return;
-            }
-          }
-        }
-
         onChange?.(html);
       });
     },
