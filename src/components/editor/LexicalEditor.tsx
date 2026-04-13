@@ -1416,31 +1416,56 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, data.url);
   };
 
-  // Format Painter state
+  // Format Painter state — captures every inline style so the brush behaves like Word / Google Docs.
+  // Lexical splits inline formatting across two channels: format flags (bold/italic/…) stored in
+  // TextNode.__format, and CSS properties stored in TextNode.__style. We capture both.
+  const TEXT_FORMAT_FLAGS = ['bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript', 'code'] as const;
+  type TextFormatFlag = typeof TEXT_FORMAT_FLAGS[number];
+
+  // Full list of inline-text CSS props our editor emits. $getSelectionStyleValueForProperty only
+  // returns a value when every text node in the selection shares it, so extras are harmless.
+  const INLINE_STYLE_PROPS = [
+    'font-family',
+    'font-size',
+    'font-weight',
+    'font-style',
+    'color',
+    'background-color',
+    'text-decoration',
+    'text-decoration-line',
+    'text-decoration-style',
+    'text-decoration-color',
+    'text-transform',
+    'letter-spacing',
+    'line-height',
+    'vertical-align',
+  ] as const;
+
   interface CopiedStyle {
-    format: number; // bitmask for bold, italic, underline, etc.
-    styles: Record<string, string>; // CSS properties
+    formats: Record<TextFormatFlag, boolean>;
+    styles: Record<string, string>;
   }
   const [copiedStyle, setCopiedStyle] = useState<CopiedStyle | null>(null);
 
   const copyStyle = () => {
     editor.getEditorState().read(() => {
       const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        const format = selection.format;
-        const styles: Record<string, string> = {};
+      if (!$isRangeSelection(selection)) return;
 
-        // Read all CSS style properties from selection
-        const styleProps = ['font-size', 'line-height', 'color', 'background-color', 'text-transform', 'letter-spacing'];
-        for (const prop of styleProps) {
-          const val = $getSelectionStyleValueForProperty(selection, prop, '');
-          if (val) {
-            styles[prop] = val;
-          }
+      const formats = TEXT_FORMAT_FLAGS.reduce((acc, flag) => {
+        acc[flag] = selection.hasFormat(flag);
+        return acc;
+      }, {} as Record<TextFormatFlag, boolean>);
+
+      const styles: Record<string, string> = {};
+      for (const prop of INLINE_STYLE_PROPS) {
+        const val = $getSelectionStyleValueForProperty(selection, prop, '');
+        if (val) {
+          styles[prop] = val;
         }
-
-        setCopiedStyle({ format, styles });
       }
+
+      setCopiedStyle({ formats, styles });
     });
   };
 
@@ -1448,13 +1473,21 @@ function Toolbar({ stickyTop }: { stickyTop?: string }) {
     if (!copiedStyle) return;
     editor.update(() => {
       const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        // Apply text format (bold, italic, underline, etc.)
-        selection.setFormat(copiedStyle.format);
+      if (!$isRangeSelection(selection)) return;
 
-        // Apply CSS styles
-        if (Object.keys(copiedStyle.styles).length > 0) {
-          $patchStyleText(selection, copiedStyle.styles);
+      // Apply CSS first so width-affecting changes (font-size, font-family) settle before
+      // format toggles rewrite the text nodes.
+      if (Object.keys(copiedStyle.styles).length > 0) {
+        $patchStyleText(selection, copiedStyle.styles);
+      }
+
+      // Re-read selection after $patchStyleText; toggle each format flag where the target
+      // differs from the source. FORMAT_TEXT_COMMAND toggles — it's the same path B/I/U use.
+      const currentSelection = $getSelection();
+      if (!$isRangeSelection(currentSelection)) return;
+      for (const flag of TEXT_FORMAT_FLAGS) {
+        if (currentSelection.hasFormat(flag) !== copiedStyle.formats[flag]) {
+          editor.dispatchCommand(FORMAT_TEXT_COMMAND, flag);
         }
       }
     });
