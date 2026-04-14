@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, getCurrentTenantId } from '@/lib/supabase';
 import type { UserRole } from '@/types/user-role';
 import { logger } from '@/lib/logger';
 
@@ -164,13 +164,8 @@ class RegistrationService {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (!currentUser) throw new Error('Not authenticated');
 
-      const { data: tenantUser } = await supabase
-        .from('user_tenant_access')
-        .select('tenant_id')
-        .eq('user_id', currentUser.id)
-        .single();
-
-      if (!tenantUser) throw new Error('Tenant not found');
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Tenant not found');
 
       const roleToAssign = role || registration.requested_role;
       let authData;
@@ -238,7 +233,7 @@ class RegistrationService {
           .from('clients')
           .select('id')
           .eq('tax_id', registration.tax_id)
-          .eq('tenant_id', tenantUser.tenant_id)
+          .eq('tenant_id', tenantId)
           .single();
 
         if (client) {
@@ -251,7 +246,7 @@ class RegistrationService {
         const assignments = assignedClientIds.map((clientId, index) => ({
           user_id: authData.user_id,
           client_id: clientId,
-          tenant_id: tenantUser.tenant_id,
+          tenant_id: tenantId,
           assigned_by: currentUser.id,
           is_primary: index === 0
         }));
@@ -397,13 +392,8 @@ class RegistrationService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data: tenantUser } = await supabase
-        .from('user_tenant_access')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!tenantUser) throw new Error('Tenant not found');
+      const tenantId = await getCurrentTenantId();
+      if (!tenantId) throw new Error('Tenant not found');
 
       // Remove existing assignments
       await supabase
@@ -415,7 +405,7 @@ class RegistrationService {
       const assignments = clientIds.map(clientId => ({
         user_id: userId,
         client_id: clientId,
-        tenant_id: tenantUser.tenant_id,
+        tenant_id: tenantId,
         assigned_by: user.id,
         is_primary: clientId === primaryClientId
       }));
