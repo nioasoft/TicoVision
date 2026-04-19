@@ -82,6 +82,7 @@ export function ProtocolPreview({
   const { toast } = useToast();
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [savingToFileManager, setSavingToFileManager] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
@@ -140,7 +141,7 @@ export function ProtocolPreview({
     }
   };
 
-  // Download PDF
+  // Download PDF (from the dialog, after handleGeneratePdf)
   const handleDownloadPdf = () => {
     if (!pdfUrl) return;
     const link = document.createElement('a');
@@ -150,6 +151,39 @@ export function ProtocolPreview({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Quick download: always regenerates a fresh PDF via the same flow as "ייצוא PDF",
+  // then downloads it directly without opening the options dialog.
+  const handleQuickDownloadPdf = async () => {
+    if (downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      const { data, error } = await protocolService.generateProtocolPdf(protocol.id);
+      if (error || !data) {
+        toast({
+          title: 'שגיאה',
+          description: error?.message || 'הורדת PDF נכשלה',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = data.pdfUrl;
+      link.download = data.fileName || 'protocol.pdf';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch {
+      toast({
+        title: 'שגיאה',
+        description: 'הורדת PDF נכשלה',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   // Save to file manager
@@ -274,25 +308,20 @@ export function ProtocolPreview({
           </div>
           {/* Left side - Actions */}
           <div className="flex items-center gap-2">
-            {/* Quick download if PDF already exists */}
-            {protocol.pdf_url && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = protocol.pdf_url!;
-                  link.download = `protocol-${recipientName}.pdf`;
-                  link.target = '_blank';
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
-                className="flex items-center gap-2"
-              >
+            {/* Quick download: regenerates fresh and downloads directly */}
+            <Button
+              variant="outline"
+              onClick={handleQuickDownloadPdf}
+              disabled={downloadingPdf}
+              className="flex items-center gap-2"
+            >
+              {downloadingPdf ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <Download className="h-4 w-4" />
-                הורד PDF
-              </Button>
-            )}
+              )}
+              {downloadingPdf ? 'מוריד...' : 'הורד PDF'}
+            </Button>
             {/* Primary action: Export PDF */}
             <Button
               variant="brand"
@@ -306,6 +335,15 @@ export function ProtocolPreview({
                 <FileDown className="h-4 w-4" />
               )}
               {generatingPdf ? 'יוצר PDF...' : 'ייצוא PDF'}
+            </Button>
+            {/* Send email directly (regenerates PDF internally if needed) */}
+            <Button
+              variant="outline"
+              onClick={() => setEmailDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              שלח במייל
             </Button>
             {/* Print button - visible */}
             <Button
