@@ -2798,6 +2798,61 @@ export class TemplateService extends BaseService {
     `).join('');
   }
 
+  /**
+   * Format a shekel amount for state-backed loans tables.
+   * @returns "₪1,234,567" (no decimals, no rounding — raw number)
+   */
+  private formatStateLoanCurrency(value: unknown): string {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return '';
+    }
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  /**
+   * Build a single row HTML for the state-backed loans financial tables.
+   */
+  private buildStateLoanTableRow(label: string, figures: { y1: number; y2: number; y3: number } | undefined): string {
+    const safe = figures || { y1: 0, y2: 0, y3: 0 };
+    const cellStyle = "border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px;";
+    return `
+      <tr>
+        <td style="${cellStyle} text-align: right;">${label}</td>
+        <td style="${cellStyle} text-align: center;" dir="ltr">${this.formatStateLoanCurrency(safe.y1)}</td>
+        <td style="${cellStyle} text-align: center;" dir="ltr">${this.formatStateLoanCurrency(safe.y2)}</td>
+        <td style="${cellStyle} text-align: center;" dir="ltr">${this.formatStateLoanCurrency(safe.y3)}</td>
+      </tr>
+    `;
+  }
+
+  /**
+   * Build Table 1 rows for Directors' Declaration - owners/related-parties costs & current-account balances.
+   */
+  private buildDirectorsFinancialTable1Rows(variables: Record<string, unknown>): string {
+    const rows: string[] = [];
+    rows.push(this.buildStateLoanTableRow('עלות שכר בעלים*', variables.owners_salary_cost as { y1: number; y2: number; y3: number } | undefined));
+    rows.push(this.buildStateLoanTableRow('עלות שכר בעלי עניין*', variables.related_parties_salary_cost as { y1: number; y2: number; y3: number } | undefined));
+    rows.push(this.buildStateLoanTableRow('יתרת חו"ז בעלים*', variables.owners_current_account_balance as { y1: number; y2: number; y3: number } | undefined));
+    rows.push(this.buildStateLoanTableRow('יתרת חו"ז צדדים קשורים', variables.related_parties_current_account_balance as { y1: number; y2: number; y3: number } | undefined));
+    return rows.join('');
+  }
+
+  /**
+   * Build Table 2 rows for Directors' Declaration - manager/family salaries & other benefits.
+   */
+  private buildDirectorsFinancialTable2Rows(variables: Record<string, unknown>): string {
+    const rows: string[] = [];
+    rows.push(this.buildStateLoanTableRow('שכר מנהל', variables.manager_salary as { y1: number; y2: number; y3: number } | undefined));
+    rows.push(this.buildStateLoanTableRow('שכר בני משפחה', variables.family_members_salary as { y1: number; y2: number; y3: number } | undefined));
+    rows.push(this.buildStateLoanTableRow('הטבות אחרות (דיבידנד/דמי ניהול/אחר)', variables.other_benefits as { y1: number; y2: number; y3: number } | undefined));
+    return rows.join('');
+  }
+
   // ============================================================================
   // COMPANY ONBOARDING DOCUMENTS
   // ============================================================================
@@ -3442,7 +3497,7 @@ export class TemplateService extends BaseService {
       fullHtml = this.processMustacheSections(fullHtml, processedVariables);
 
       // 6. Replace all variables - WHITELIST HTML VARIABLES for recipient line
-      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section', 'days_text', 'strong_text_section', 'urgent_banner_section', 'closing_text', 'group_name'];
+      const htmlVariables = ['custom_header_lines', 'missing_documents_html', 'deadline_section', 'additional_notes_section', 'google_drive_section', 'income_table_rows', 'shareholders_table', 'subjects_section', 'attendees_list', 'paragraph2_section', 'days_text', 'strong_text_section', 'urgent_banner_section', 'closing_text', 'group_name', 'financial_table_1_rows', 'financial_table_2_rows'];
       fullHtml = TemplateParser.replaceVariables(fullHtml, processedVariables, htmlVariables);
       const plainText = TemplateParser.htmlToText(fullHtml);
 
@@ -3601,7 +3656,10 @@ export class TemplateService extends BaseService {
       // Tax Advances
       'tax_advances_rate_notification': 'bodies/tax-advances/rate-notification.html',
       // Tax Refund
-      'tax_refund_request': 'bodies/tax-refund/request.html'
+      'tax_refund_request': 'bodies/tax-refund/request.html',
+      // State-Backed Loans
+      'state_backed_loans_directors_declaration': 'bodies/state-backed-loans/directors-declaration.html',
+      'state_backed_loans_accountants_opinion': 'bodies/state-backed-loans/accountants-opinion.html'
     };
 
     return bodyMap[templateType] || null;
@@ -3636,7 +3694,10 @@ export class TemplateService extends BaseService {
       // Tax Advances
       'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס',
       // Tax Refund
-      'tax_refund_request': 'בקשה להחזר מס'
+      'tax_refund_request': 'בקשה להחזר מס',
+      // State-Backed Loans
+      'state_backed_loans_directors_declaration': 'הצהרת מנהלים לצורך בקשת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה',
+      'state_backed_loans_accountants_opinion': 'חוות דעת רואה חשבון בדבר הנתונים הכספיים הכלולים בהצהרת הנהלת החברה'
     };
 
     return subjectMap[templateType] || 'מכתב';
@@ -3676,7 +3737,10 @@ export class TemplateService extends BaseService {
       // Tax Advances
       'tax_advances_rate_notification': 'הודעה על שיעור מקדמות מס',
       // Tax Refund
-      'tax_refund_request': 'בקשה להחזר מס'
+      'tax_refund_request': 'בקשה להחזר מס',
+      // State-Backed Loans
+      'state_backed_loans_directors_declaration': 'הצהרת מנהלים - הלוואות בערבות מדינה',
+      'state_backed_loans_accountants_opinion': 'חוות דעת רואה חשבון - הלוואות בערבות מדינה'
     };
 
     const title = titleMap[templateType] || 'מכתב';
@@ -4209,6 +4273,32 @@ export class TemplateService extends BaseService {
         </table>
     </td>
 </tr>`;
+        }
+        break;
+
+      case 'state_backed_loans_directors_declaration':
+        // Format tax debt cutoff date to Israeli DD/MM/YYYY
+        if (processed.tax_debt_cutoff_date && typeof processed.tax_debt_cutoff_date === 'string') {
+          processed.tax_debt_cutoff_date_formatted = this.formatIsraeliDate(new Date(processed.tax_debt_cutoff_date as string));
+        } else {
+          processed.tax_debt_cutoff_date_formatted = '';
+        }
+        // Build both financial tables' rows
+        processed.financial_table_1_rows = this.buildDirectorsFinancialTable1Rows(processed);
+        processed.financial_table_2_rows = this.buildDirectorsFinancialTable2Rows(processed);
+        break;
+
+      case 'state_backed_loans_accountants_opinion':
+        // Format declaration_date and signature_date to Israeli DD/MM/YYYY
+        if (processed.declaration_date && typeof processed.declaration_date === 'string') {
+          processed.declaration_date_formatted = this.formatIsraeliDate(new Date(processed.declaration_date as string));
+        } else {
+          processed.declaration_date_formatted = '';
+        }
+        if (processed.signature_date && typeof processed.signature_date === 'string') {
+          processed.signature_date_formatted = this.formatIsraeliDate(new Date(processed.signature_date as string));
+        } else {
+          processed.signature_date_formatted = '';
         }
         break;
     }

@@ -25,6 +25,8 @@ import type {
   AccountantAppointmentVariables,
   TaxAdvancesRateNotificationVariables,
   TaxRefundVariables,
+  DirectorsDeclarationVariables,
+  AccountantsOpinionVariables,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -76,6 +78,12 @@ import { TaxAdvancesRateNotificationForm } from './forms/tax-advances';
 // Tax Refund forms
 import { TaxRefundForm } from './forms/tax-refund';
 
+// State-Backed Loans forms
+import {
+  DirectorsDeclarationForm,
+  AccountantsOpinionForm,
+} from './forms/state-backed-loans';
+
 interface FormRendererProps {
   category: AutoLetterCategory;
   letterTypeId: string | null;
@@ -84,6 +92,7 @@ interface FormRendererProps {
   disabled?: boolean;
   companyName?: string;  // For bank_approvals forms
   companyId?: string;    // For bank_approvals forms
+  documentDate?: string; // For forms that default signature_date to document_date
 }
 
 export function FormRenderer({
@@ -94,6 +103,7 @@ export function FormRenderer({
   disabled,
   companyName,
   companyId,
+  documentDate,
 }: FormRendererProps) {
   // Show placeholder if no letter type selected
   if (!letterTypeId) {
@@ -143,6 +153,9 @@ export function FormRenderer({
 
     case 'tax_refund':
       return renderTaxRefundForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+
+    case 'state_backed_loans':
+      return renderStateBackedLoansForm(letterTypeId, value, onChange, disabled, companyName, companyId, documentDate);
 
     default:
       return null;
@@ -582,4 +595,48 @@ function renderTaxRefundForm(
       companyId={companyId}
     />
   );
+}
+
+function renderStateBackedLoansForm(
+  letterTypeId: string,
+  value: Record<string, unknown>,
+  onChange: (data: Record<string, unknown>) => void,
+  disabled?: boolean,
+  companyName?: string,
+  companyId?: string,
+  documentDate?: string,
+) {
+  switch (letterTypeId) {
+    case 'directors_declaration':
+      return (
+        <DirectorsDeclarationForm
+          value={value as Partial<DirectorsDeclarationVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+        />
+      );
+
+    case 'accountants_opinion':
+      return (
+        <AccountantsOpinionForm
+          value={value as Partial<AccountantsOpinionVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyName={companyName}
+          companyId={companyId}
+          documentDate={documentDate}
+        />
+      );
+
+    default:
+      return (
+        <Card className="mb-6">
+          <CardContent className="py-8 text-center text-gray-500">
+            סוג מכתב לא מוכר
+          </CardContent>
+        </Card>
+      );
+  }
 }

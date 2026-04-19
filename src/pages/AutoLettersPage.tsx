@@ -63,6 +63,8 @@ import {
   validateVatFileOpened,
   validateTaxAdvancesRateNotification,
   validateTaxRefund,
+  validateDirectorsDeclaration,
+  validateAccountantsOpinion,
   type AutoLetterCategory,
   type AutoLetterFormState,
   type AutoLetterTemplateType,
@@ -363,6 +365,15 @@ export function AutoLettersPage() {
       return formState.documentData.tax_refund.request;
     }
 
+    if (selectedCategory === 'state_backed_loans') {
+      switch (selectedLetterTypeId) {
+        case 'directors_declaration':
+          return formState.documentData.state_backed_loans.directorsDeclaration;
+        case 'accountants_opinion':
+          return formState.documentData.state_backed_loans.accountantsOpinion;
+      }
+    }
+
     return {};
   };
 
@@ -495,6 +506,15 @@ export function AutoLettersPage() {
 
     if (selectedCategory === 'tax_refund') {
       return validateTaxRefund(mergedData);
+    }
+
+    if (selectedCategory === 'state_backed_loans') {
+      switch (selectedLetterTypeId) {
+        case 'directors_declaration':
+          return validateDirectorsDeclaration(mergedData);
+        case 'accountants_opinion':
+          return validateAccountantsOpinion(mergedData);
+      }
     }
 
     return false;
@@ -1094,6 +1114,32 @@ export function AutoLettersPage() {
         },
       }));
     }
+
+    if (selectedCategory === 'state_backed_loans') {
+      if (selectedLetterTypeId === 'directors_declaration') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            state_backed_loans: {
+              ...prev.documentData.state_backed_loans,
+              directorsDeclaration: data,
+            },
+          },
+        }));
+      } else if (selectedLetterTypeId === 'accountants_opinion') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            state_backed_loans: {
+              ...prev.documentData.state_backed_loans,
+              accountantsOpinion: data,
+            },
+          },
+        }));
+      }
+    }
   };
 
   // Combobox options for clients
@@ -1427,6 +1473,7 @@ export function AutoLettersPage() {
         disabled={generating}
         companyName={selectedClient?.company_name}
         companyId={selectedClient?.tax_id}
+        documentDate={formState.sharedData.document_date}
       />
 
       {/* Action Buttons - Compact */}

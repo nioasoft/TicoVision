@@ -1,0 +1,196 @@
+<!-- Letter Body: State-Backed Loans - Directors' Declaration -->
+<!-- Template Type: state_backed_loans_directors_declaration -->
+<!-- Variables: {{company_name}}, {{company_id}}, {{letter_date}}, {{fiscal_year}}, -->
+<!--            {{tax_debt_cutoff_date_formatted}}, {{financial_table_year_1/2/3}}, -->
+<!--            {{financial_table_1_rows}}, {{financial_table_2_rows}}, -->
+<!--            {{financial_responsible_manager_name}}, {{acting_manager_name}} -->
+
+<!-- BODY: Ministry & Fund sub-header -->
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: center;">
+            משרד האוצר – אגף החשב הכללי
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; line-height: 1.4; color: #09090b; text-align: center;">
+            הקרן להלוואות בערבות מדינה לעסקים קטנים ובינוניים
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Title Box -->
+<tr>
+    <td style="padding-top: 18px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; line-height: 1.3; font-weight: 700; color: #000000; text-align: center; text-decoration: underline;">
+            הצהרת מנהלים
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signatories explanatory box -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.5; color: #09090b; text-align: center; border: 1px solid #000000; padding: 8px;">
+            אותם נושאי משרה החותמים על הדוחות הכספיים<sup>1</sup> חותמים על הצהרה מול גורם שנקבע על ידי הקרן.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Addressing block -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.6; color: #09090b; text-align: right;">
+            לכבוד,<br>
+            קרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Subject Line (הנדון) -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 15px; line-height: 1.5; font-weight: 700; color: #000000; text-align: right; text-decoration: underline;">
+            הנדון: חברת {{company_name}} (ח.פ. {{company_id}}) – הצהרת מנהלים לצורך בקשת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Opening paragraph -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.7; color: #09090b; text-align: justify;">
+            בקשר להגשת בקשתנו לקבלת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה (להלן: "<strong>הקרן</strong>"), ולצרכים אלה בלבד, הננו להצהיר לפי מיטב ידיעתנו ואמונתנו, כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Clause 1 - Revenue -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.7; color: #09090b; text-align: justify;">
+            <strong>1.</strong> מחזור המכירות של החברה (לא כולל מס ערך מוסף) נכון ליום 31 בדצמבר <strong>{{fiscal_year}}</strong> ולשנה שהסתיימה באותו תאריך, אינו עולה על 100 מיליון ש"ח.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Clause 2 - No outstanding tax debt -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.7; color: #09090b; text-align: justify;">
+            <strong>2.</strong> נכון למועד הצהרתנו זאת, אין לחברה כל חוב שוטף לרשויות המס שמועד היווצרותו היה לפני יום <strong>{{tax_debt_cutoff_date_formatted}}</strong><sup>2</sup>, שהגיע מועד פירעונו והוא טרם הוסדר.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Clause 3 - Tables header -->
+<tr>
+    <td style="padding-top: 12px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.7; color: #09090b; text-align: justify;">
+            <strong>3.</strong> במהלך שלוש השנים האחרונות המשיכות הכספיות שבוצעו הן כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Financial Table 1 -->
+<tr>
+    <td style="padding-top: 8px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;" dir="rtl">
+            <tr style="background-color: #f0f0f0;">
+                <td width="40%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: right;">
+                    &nbsp;
+                </td>
+                <td width="20%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
+                    שנת {{financial_table_year_1}}
+                </td>
+                <td width="20%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
+                    שנת {{financial_table_year_2}}
+                </td>
+                <td width="20%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
+                    שנת {{financial_table_year_3}}
+                </td>
+            </tr>
+            {{financial_table_1_rows}}
+        </table>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 11px; line-height: 1.5; color: #09090b; text-align: right; padding-top: 4px;">
+            * בעלים הוא מי שמחזיק 5% או יותר ממניות החברה. בעל עניין הוא מי שמחזיק פחות מ-5%.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Intro for Table 2 -->
+<tr>
+    <td style="padding-top: 12px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.7; color: #09090b; text-align: justify;">
+            במהלך שלוש השנים האחרונות סך <strong>עלות השכר</strong> והמשיכות הכספיות שבוצעו על ידנו או על ידי מי מטעמנו היינו כדלקמן:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Financial Table 2 -->
+<tr>
+    <td style="padding-top: 8px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;" dir="rtl">
+            <tr style="background-color: #f0f0f0;">
+                <td width="40%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: right;">
+                    &nbsp;
+                </td>
+                <td width="20%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
+                    שנת {{financial_table_year_1}}
+                </td>
+                <td width="20%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
+                    שנת {{financial_table_year_2}}
+                </td>
+                <td width="20%" style="border: 1px solid #000000; padding: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; font-weight: 700; text-align: center;">
+                    שנת {{financial_table_year_3}}
+                </td>
+            </tr>
+            {{financial_table_2_rows}}
+        </table>
+    </td>
+</tr>
+
+<!-- BODY: Clause 4 - Closing -->
+<tr>
+    <td style="padding-top: 14px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.7; color: #09090b; text-align: justify;">
+            <strong>4.</strong> ידוע לנו כי הנכם מסתמכים על הצהרה זו לצורך בחינת בקשתנו לקבלת ההלוואה מהקרן.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signatures -->
+<tr>
+    <td style="padding-top: 28px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" dir="rtl">
+            <tr>
+                <td width="50%" style="vertical-align: top; text-align: center; padding: 0 8px;">
+                    <div style="border-top: 1px solid #000000; padding-top: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.5; color: #09090b;">
+                        {{financial_responsible_manager_name}}
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 12px; line-height: 1.4; color: #09090b; padding-top: 2px;">
+                        שם המנהל האחראי לענייני כספים ותוארו
+                    </div>
+                </td>
+                <td width="50%" style="vertical-align: top; text-align: center; padding: 0 8px;">
+                    <div style="border-top: 1px solid #000000; padding-top: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.5; color: #09090b;">
+                        {{acting_manager_name}}
+                    </div>
+                    <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 12px; line-height: 1.4; color: #09090b; padding-top: 2px;">
+                        שם המנהל בפועל ותוארו
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+
+<!-- BODY: Footnotes -->
+<tr>
+    <td style="padding-top: 22px;">
+        <div style="border-top: 1px solid #09090b; padding-top: 6px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 11px; line-height: 1.5; color: #09090b; text-align: justify;">
+            <sup>1</sup> המונח "אותם נושאי משרה" מתייחס לאנשים שחתומים (בכפוף ובהתאם לכל דין) על הדוחות הכספיים השנתיים האחרונים או אלה שהחליפו אותם בתפקידם. אם מדובר בישות שאינה מגישה דוחות כספיים מבוקרים אלא דוחות לצרכי מס בלבד, כי אם המונה יתייחס לאדם אשר חתום על הדיווח השנתי האחרון למס הכנסה.
+        </div>
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 11px; line-height: 1.5; color: #09090b; text-align: justify; padding-top: 4px;">
+            <sup>2</sup> כאן יובא יום סוף חודש שקדים במועד עד 60 ימים למועד הצהרתנו זאת.
+        </div>
+    </td>
+</tr>

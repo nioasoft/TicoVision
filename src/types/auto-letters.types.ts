@@ -34,7 +34,8 @@ export type AutoLetterCategory =
   | 'audit_completion'     // סיום ביקורת דוחות כספיים
   | 'tax_advances'         // מקדמות מ"ה
   | 'protocols'            // פרוטוקולים
-  | 'tax_refund';          // החזרי מס
+  | 'tax_refund'           // החזרי מס
+  | 'state_backed_loans';  // הלוואות בערבות מדינה
 
 /** Configuration for a letter category */
 export interface CategoryConfig {
@@ -131,6 +132,13 @@ export const AUTO_LETTER_CATEGORIES: CategoryConfig[] = [
     icon: 'ReceiptText',
     enabled: true,
   },
+  {
+    id: 'state_backed_loans',
+    label: 'הלוואות בערבות מדינה',
+    description: 'מכתבים לצורך בקשת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה',
+    icon: 'Landmark',
+    enabled: true,
+  },
 ];
 
 /** Maps category ID to its permission key for access control */
@@ -147,6 +155,7 @@ export const CATEGORY_PERMISSION_MAP: Record<AutoLetterCategory, string> = {
   tax_advances: 'documents:auto-letters:tax_advances',
   protocols: 'documents:auto-letters:protocols',
   tax_refund: 'documents:auto-letters:tax_refund',
+  state_backed_loans: 'documents:auto-letters:state_backed_loans',
 } as const;
 
 // ============================================================================
@@ -187,7 +196,10 @@ export type AutoLetterTemplateType =
   // Protocols (פרוטוקולים)
   | 'protocols_accountant_appointment'  // פרוטוקול מינוי רואה חשבון
   // Tax Refund (החזרי מס)
-  | 'tax_refund_request';              // פנייה לפקיד שומה - החזר מס
+  | 'tax_refund_request'               // פנייה לפקיד שומה - החזר מס
+  // State-Backed Loans (הלוואות בערבות מדינה)
+  | 'state_backed_loans_directors_declaration'  // הצהרת מנהלים
+  | 'state_backed_loans_accountants_opinion';   // חוות דעת רואה חשבון
 
 // ============================================================================
 // LETTER TYPE DEFINITIONS
@@ -387,6 +399,22 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'פנייה לפקיד שומה בבקשה להחזר מס - עם אפשרויות דחיפות וטקסט מחמיר',
       templateType: 'tax_refund_request',
       icon: 'FileText',
+    },
+  ],
+  state_backed_loans: [
+    {
+      id: 'directors_declaration',
+      label: 'הצהרת מנהלים',
+      description: 'הצהרת מנהלים לצורך בקשת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה',
+      templateType: 'state_backed_loans_directors_declaration',
+      icon: 'FileSignature',
+    },
+    {
+      id: 'accountants_opinion',
+      label: 'חוות דעת רואה חשבון',
+      description: 'דוח מיוחד של רואה החשבון לצורך בקשת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה',
+      templateType: 'state_backed_loans_accountants_opinion',
+      icon: 'FileCheck',
     },
   ],
 };
@@ -751,6 +779,61 @@ export interface TaxRefundVariables extends AutoLetterSharedData {
 }
 
 // ============================================================================
+// STATE-BACKED LOANS VARIABLES (הלוואות בערבות מדינה)
+// ============================================================================
+
+/** Yearly figures for 3 consecutive years used in state-backed loan tables */
+export interface YearlyFigures {
+  y1: number;
+  y2: number;
+  y3: number;
+}
+
+/** Variables for State-Backed Loans - Directors' Declaration (הצהרת מנהלים) */
+export interface DirectorsDeclarationVariables extends AutoLetterSharedData {
+  /** שנה פיסקלית: "נכון ליום 31 בדצמבר ____" */
+  fiscal_year: number;
+  /** תאריך סף לחוב מס: "שמועד היווצרותו היה לפני יום ___" (YYYY-MM-DD) */
+  tax_debt_cutoff_date: string;
+  /** השנה המופיעה בעמודה הראשונה של הטבלאות (למשל 2023) */
+  financial_table_year_1: number;
+  /** השנה המופיעה בעמודה השנייה (למשל 2024) */
+  financial_table_year_2: number;
+  /** השנה המופיעה בעמודה השלישית (למשל 2025) */
+  financial_table_year_3: number;
+  /** טבלה 1, שורה 1: עלות שכר בעלים */
+  owners_salary_cost: YearlyFigures;
+  /** טבלה 1, שורה 2: עלות שכר בעלי עניין */
+  related_parties_salary_cost: YearlyFigures;
+  /** טבלה 1, שורה 3: יתרת חו"ז בעלים */
+  owners_current_account_balance: YearlyFigures;
+  /** טבלה 1, שורה 4: יתרת חו"ז צדדים קשורים */
+  related_parties_current_account_balance: YearlyFigures;
+  /** טבלה 2, שורה 1: שכר מנהל */
+  manager_salary: YearlyFigures;
+  /** טבלה 2, שורה 2: שכר בני משפחה */
+  family_members_salary: YearlyFigures;
+  /** טבלה 2, שורה 3: הטבות אחרות (דיבידנד/דמי ניהול/אחר) */
+  other_benefits: YearlyFigures;
+  /** שם המנהל האחראי לענייני כספים ותוארו */
+  financial_responsible_manager_name: string;
+  /** שם המנהל בפועל ותוארו */
+  acting_manager_name: string;
+}
+
+/** Variables for State-Backed Loans - Accountant's Opinion (חוות דעת רואה חשבון) */
+export interface AccountantsOpinionVariables extends AutoLetterSharedData {
+  /** תאריך הצהרת המנהלים המצורפת (YYYY-MM-DD) */
+  declaration_date: string;
+  /** תאריך החתימה של חוות הדעת (YYYY-MM-DD) */
+  signature_date: string;
+  /** שם העיר (לצד חתימת רואה החשבון) */
+  city_name: string;
+  /** שם רואה החשבון */
+  accountant_name: string;
+}
+
+// ============================================================================
 // DEFAULT VALUES
 // ============================================================================
 
@@ -781,6 +864,9 @@ export const DEFAULT_SUBJECTS = {
   protocols_accountant_appointment: 'פרוטוקול מאסיפת בעלי המניות',
   // Tax Refund (החזרי מס)
   tax_refund_request: 'בקשה להחזר מס',
+  // State-Backed Loans (הלוואות בערבות מדינה)
+  state_backed_loans_directors_declaration: 'הצהרת מנהלים לצורך בקשת הלוואה מקרן ההלוואות לעסקים קטנים ובינוניים בערבות מדינה',
+  state_backed_loans_accountants_opinion: 'חוות דעת רואה חשבון בדבר הנתונים הכספיים הכלולים בהצהרת הנהלת החברה',
 } as const;
 
 // ============================================================================
@@ -857,6 +943,12 @@ export interface TaxRefundDocumentData {
   request: Partial<TaxRefundVariables>;
 }
 
+/** Document data for State-Backed Loans letters */
+export interface StateBackedLoansDocumentData {
+  directorsDeclaration: Partial<DirectorsDeclarationVariables>;
+  accountantsOpinion: Partial<AccountantsOpinionVariables>;
+}
+
 /** Adhoc contact (not saved in system) */
 export interface AdhocContact {
   name: string;
@@ -905,6 +997,7 @@ export interface AutoLetterFormState {
     tax_advances: TaxAdvancesDocumentData;
     protocols: ProtocolsDocumentData;
     tax_refund: TaxRefundDocumentData;
+    state_backed_loans: StateBackedLoansDocumentData;
   };
 }
 
@@ -1116,6 +1209,30 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           days_since_filing: 30,
           is_urgent: false,
           show_strong_text: false,
+        },
+      },
+      state_backed_loans: {
+        directorsDeclaration: {
+          fiscal_year: new Date().getFullYear() - 1,
+          tax_debt_cutoff_date: '',
+          financial_table_year_1: new Date().getFullYear() - 2,
+          financial_table_year_2: new Date().getFullYear() - 1,
+          financial_table_year_3: new Date().getFullYear(),
+          owners_salary_cost: { y1: 0, y2: 0, y3: 0 },
+          related_parties_salary_cost: { y1: 0, y2: 0, y3: 0 },
+          owners_current_account_balance: { y1: 0, y2: 0, y3: 0 },
+          related_parties_current_account_balance: { y1: 0, y2: 0, y3: 0 },
+          manager_salary: { y1: 0, y2: 0, y3: 0 },
+          family_members_salary: { y1: 0, y2: 0, y3: 0 },
+          other_benefits: { y1: 0, y2: 0, y3: 0 },
+          financial_responsible_manager_name: '',
+          acting_manager_name: '',
+        },
+        accountantsOpinion: {
+          declaration_date: '',
+          signature_date: '',
+          city_name: '',
+          accountant_name: '',
         },
       },
     },
@@ -1527,5 +1644,54 @@ export function validateTaxRefund(data: Partial<TaxRefundVariables>): boolean {
     data.tax_office_address?.trim() &&
     data.days_since_filing !== undefined &&
     data.days_since_filing > 0
+  );
+}
+
+// ============================================================================
+// STATE-BACKED LOANS VALIDATION
+// ============================================================================
+
+const isValidYear = (year: number | undefined): year is number =>
+  typeof year === 'number' && year >= 2000 && year <= 2100;
+
+const isValidYearlyFigures = (fig: YearlyFigures | undefined): fig is YearlyFigures =>
+  !!fig &&
+  typeof fig.y1 === 'number' && Number.isFinite(fig.y1) &&
+  typeof fig.y2 === 'number' && Number.isFinite(fig.y2) &&
+  typeof fig.y3 === 'number' && Number.isFinite(fig.y3);
+
+/** Validate State-Backed Loans - Directors' Declaration */
+export function validateDirectorsDeclaration(data: Partial<DirectorsDeclarationVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    isValidYear(data.fiscal_year) &&
+    data.tax_debt_cutoff_date &&
+    isValidYear(data.financial_table_year_1) &&
+    isValidYear(data.financial_table_year_2) &&
+    isValidYear(data.financial_table_year_3) &&
+    isValidYearlyFigures(data.owners_salary_cost) &&
+    isValidYearlyFigures(data.related_parties_salary_cost) &&
+    isValidYearlyFigures(data.owners_current_account_balance) &&
+    isValidYearlyFigures(data.related_parties_current_account_balance) &&
+    isValidYearlyFigures(data.manager_salary) &&
+    isValidYearlyFigures(data.family_members_salary) &&
+    isValidYearlyFigures(data.other_benefits) &&
+    data.financial_responsible_manager_name?.trim() &&
+    data.acting_manager_name?.trim()
+  );
+}
+
+/** Validate State-Backed Loans - Accountant's Opinion */
+export function validateAccountantsOpinion(data: Partial<AccountantsOpinionVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.company_id?.trim() &&
+    data.declaration_date &&
+    data.signature_date &&
+    data.city_name?.trim() &&
+    data.accountant_name?.trim()
   );
 }
