@@ -1204,7 +1204,7 @@ export function AutoLettersPage() {
               <RadioGroupItem value="client" id="mode-client" />
               <Label htmlFor="mode-client" className="flex items-center gap-1.5 cursor-pointer text-sm">
                 <User className="h-3.5 w-3.5" />
-                לקוח בודד
+                חברה
               </Label>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -1218,7 +1218,7 @@ export function AutoLettersPage() {
               <RadioGroupItem value="contact" id="mode-contact" />
               <Label htmlFor="mode-contact" className="flex items-center gap-1.5 cursor-pointer text-sm">
                 <Contact className="h-3.5 w-3.5" />
-                איש קשר מהמערכת
+                בעל מניות
               </Label>
             </div>
             <div className="flex items-center space-x-2 space-x-reverse">

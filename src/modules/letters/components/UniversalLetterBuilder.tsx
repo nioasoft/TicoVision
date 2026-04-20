@@ -3096,7 +3096,7 @@ export const UniversalLetterBuilder = forwardRef<LetterBuilderHandle, UniversalL
                       />
                       {selectedManualContact && (
                         <p className="text-xs text-blue-600 mt-1 text-right">
-                          ✓ נבחר איש קשר מהמערכת{selectedManualContact.email ? ` (${selectedManualContact.email})` : ' - ללא מייל'}
+                          ✓ נבחר בעל מניות{selectedManualContact.email ? ` (${selectedManualContact.email})` : ' - ללא מייל'}
                         </p>
                       )}
                     </div>
