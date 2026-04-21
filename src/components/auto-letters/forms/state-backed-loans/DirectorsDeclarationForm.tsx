@@ -258,7 +258,7 @@ export function DirectorsDeclarationForm({
 
           {/* Table 2 - Wages / Benefits */}
           <div className="space-y-3">
-            <Label className="text-right block font-medium">טבלה 2 – עלות השכר והטבות (בש"ח)</Label>
+            <Label className="text-right block font-medium">טבלה 2 – עלות שכר ומשיכות (בש"ח)</Label>
             <div className="space-y-3">
               {TABLE_2_ROWS.map((row) => {
                 const figures = getFigures(value, row.key);
