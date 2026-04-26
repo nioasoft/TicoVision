@@ -445,7 +445,7 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
     return (
       <>
         <Dialog open={open} onOpenChange={handleClose}>
-          <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto border-border/90 bg-slate-50/40" dir="rtl">
+          <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto border-border/90 bg-slate-50" dir="rtl">
             <UnsavedChangesIndicator show={hasUnsavedChanges} />
             <DialogHeader>
               <DialogTitle className="rtl:text-right">
