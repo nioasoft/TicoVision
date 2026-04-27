@@ -53,6 +53,8 @@ import {
   validateIncomeConfirmation,
   validateMortgageIncome,
   validateTaxPaymentNotice,
+  validateControllingShareholder3T1,
+  validateCapitalGains,
   validateAnnualFeeNotice,
   validateMortgageAuditedCompany,
   validateMortgageUnauditedCompany,
@@ -322,6 +324,12 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return formState.documentData.tax_notices.taxPaymentNotice;
       }
+      if (selectedLetterTypeId === 'controlling_shareholder_3t1') {
+        return formState.documentData.tax_notices.controllingShareholder3T1;
+      }
+      if (selectedLetterTypeId === 'capital_gains') {
+        return formState.documentData.tax_notices.capitalGains;
+      }
     }
 
     if (selectedCategory === 'company_registrar') {
@@ -464,6 +472,12 @@ export function AutoLettersPage() {
     if (selectedCategory === 'tax_notices') {
       if (selectedLetterTypeId === 'tax_payment_notice') {
         return validateTaxPaymentNotice(mergedData);
+      }
+      if (selectedLetterTypeId === 'controlling_shareholder_3t1') {
+        return validateControllingShareholder3T1(mergedData);
+      }
+      if (selectedLetterTypeId === 'capital_gains') {
+        return validateCapitalGains(mergedData);
       }
     }
 
@@ -983,6 +997,30 @@ export function AutoLettersPage() {
             tax_notices: {
               ...prev.documentData.tax_notices,
               taxPaymentNotice: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'controlling_shareholder_3t1') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            tax_notices: {
+              ...prev.documentData.tax_notices,
+              controllingShareholder3T1: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'capital_gains') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            tax_notices: {
+              ...prev.documentData.tax_notices,
+              capitalGains: data,
             },
           },
         }));

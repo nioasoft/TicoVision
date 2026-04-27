@@ -15,6 +15,8 @@ import type {
   BookkeeperBalanceReminderVariables,
   IncomeConfirmationVariables,
   TaxPaymentNoticeVariables,
+  ControllingShareholder3T1Variables,
+  CapitalGainsVariables,
   AnnualFeeNoticeVariables,
   MortgageAuditedCompanyVariables,
   MortgageUnauditedCompanyVariables,
@@ -64,7 +66,12 @@ import {
 } from './forms/mortgage-approvals';
 
 // Tax Notices forms
-import { TaxPaymentNoticeForm, AnnualFeeNoticeForm } from './forms/tax-notices';
+import {
+  TaxPaymentNoticeForm,
+  AnnualFeeNoticeForm,
+  ControllingShareholder3T1Form,
+  CapitalGainsForm,
+} from './forms/tax-notices';
 
 // Audit Completion forms
 import { AuditCompletionForm } from './forms/audit-completion';
@@ -443,6 +450,24 @@ function renderTaxNoticesForm(
       return (
         <TaxPaymentNoticeForm
           value={value as Partial<TaxPaymentNoticeVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    case 'controlling_shareholder_3t1':
+      return (
+        <ControllingShareholder3T1Form
+          value={value as Partial<ControllingShareholder3T1Variables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+        />
+      );
+
+    case 'capital_gains':
+      return (
+        <CapitalGainsForm
+          value={value as Partial<CapitalGainsVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
         />

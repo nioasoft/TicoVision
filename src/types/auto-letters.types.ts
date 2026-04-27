@@ -187,6 +187,8 @@ export type AutoLetterTemplateType =
   | 'mortgage_approvals_osek_unsubmitted'      // עוסק - טרם הוגש
   // Tax Notices (הודעות מס)
   | 'tax_notices_payment_notice'
+  | 'tax_notices_controlling_shareholder_3t1'
+  | 'tax_notices_capital_gains'
   // Company Registrar (רשם החברות)
   | 'company_registrar_annual_fee'
   // Audit Completion (סיום ביקורת דוחות כספיים)
@@ -350,9 +352,23 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
   tax_notices: [
     {
       id: 'tax_payment_notice',
-      label: 'הודעה על יתרת מס לתשלום',
+      label: 'הודעה על יתרת מס לתשלום - חברה',
       description: 'הודעה ללקוח על יתרת מס לאחר שידור דוחות כספיים',
       templateType: 'tax_notices_payment_notice',
+      icon: 'FileText',
+    },
+    {
+      id: 'controlling_shareholder_3t1',
+      label: 'תשלום חוב מס בעל שליטה בגין 3(ט)(1)',
+      description: 'הודעה לבעל שליטה על חבות מס דיבידנד בגין משיכות מהחברה',
+      templateType: 'tax_notices_controlling_shareholder_3t1',
+      icon: 'FileText',
+    },
+    {
+      id: 'capital_gains',
+      label: 'הודעה על מס רווח הון',
+      description: 'הודעה ליחיד על מס רווח הון בגין מכירת מניות בחברה',
+      templateType: 'tax_notices_capital_gains',
       icon: 'FileText',
     },
   ],
@@ -855,6 +871,8 @@ export const DEFAULT_SUBJECTS = {
   mortgage_osek_submitted: 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
   mortgage_osek_unsubmitted: 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
   tax_payment_notice: 'יתרת מס לתשלום בגין שנת המס',
+  controlling_shareholder_3t1: 'תשלום חוב מס בעל שליטה בגין סעיף 3(ט)(1)',
+  capital_gains: 'הודעה על מס רווח הון',
   annual_fee_notice: 'חיוב אגרה שנתית לרשם החברות',
   // Audit Completion (סיום ביקורת דוחות כספיים)
   audit_completion_general: 'סיום ביקורת ועריכת דוח כספי',
@@ -910,6 +928,8 @@ export interface MortgageApprovalsDocumentData {
 /** Document data for Tax Notices letters */
 export interface TaxNoticesDocumentData {
   taxPaymentNotice: Partial<TaxPaymentNoticeVariables>;
+  controllingShareholder3T1: Partial<ControllingShareholder3T1Variables>;
+  capitalGains: Partial<CapitalGainsVariables>;
 }
 
 /** Document data for Company Registrar letters */
@@ -1166,6 +1186,20 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
           greeting_name: '',
           tax_amount: undefined,
           tax_payment_link: '',
+        },
+        controllingShareholder3T1: {
+          gender: 'male',
+          greeting_name: '',
+          tax_year: String(new Date().getFullYear() - 1),
+          tax_amount: undefined,
+          tax_payment_link: '',
+        },
+        capitalGains: {
+          gender: 'male',
+          greeting_name: '',
+          sold_company_name: '',
+          sale_amount: undefined,
+          tax_amount: undefined,
         },
       },
       company_registrar: {
@@ -1436,6 +1470,40 @@ export interface TaxPaymentNoticeVariables extends AutoLetterSharedData {
 /** Default subject for Tax Payment Notice */
 export const TAX_PAYMENT_NOTICE_DEFAULT_SUBJECT = 'יתרת מס לתשלום בגין שנת המס';
 
+/** Variables for Controlling Shareholder 3(ט)(1) Tax Debt letter (תשלום חוב מס בעל שליטה) */
+export interface ControllingShareholder3T1Variables extends AutoLetterSharedData {
+  /** מין הנמען (זכר/נקבה) - משפיע על ניסוח גוף המכתב */
+  gender: 'male' | 'female';
+  /** שם פרטי לפנייה אישית */
+  greeting_name: string;
+  /** שנת המס */
+  tax_year: string;
+  /** סכום חבות המס לתשלום */
+  tax_amount?: number;
+  /** קישור לתשלום באזור האישי של רשות המסים (אופציונלי) */
+  tax_payment_link?: string;
+}
+
+/** Default subject for Controlling Shareholder 3(ט)(1) letter */
+export const CONTROLLING_SHAREHOLDER_3T1_DEFAULT_SUBJECT = 'תשלום חוב מס בעל שליטה בגין סעיף 3(ט)(1)';
+
+/** Variables for Capital Gains Tax Notice letter (הודעה על מס רווח הון) */
+export interface CapitalGainsVariables extends AutoLetterSharedData {
+  /** מין הנמען (זכר/נקבה) - משפיע על ניסוח גוף המכתב */
+  gender: 'male' | 'female';
+  /** שם פרטי לפנייה אישית */
+  greeting_name: string;
+  /** שם החברה שמניותיה נמכרו */
+  sold_company_name: string;
+  /** סכום עסקת המכירה */
+  sale_amount?: number;
+  /** סכום מס רווח ההון לתשלום */
+  tax_amount?: number;
+}
+
+/** Default subject for Capital Gains Tax Notice */
+export const CAPITAL_GAINS_DEFAULT_SUBJECT = 'הודעה על מס רווח הון';
+
 /** Variables for Annual Fee Notice letter (אגרה שנתית לרשם החברות) */
 export interface AnnualFeeNoticeVariables extends AutoLetterSharedData {
   /** שנת האגרה */
@@ -1456,6 +1524,34 @@ export function validateTaxPaymentNotice(data: Partial<TaxPaymentNoticeVariables
     data.company_name?.trim() &&
     data.tax_year?.trim() &&
     data.greeting_name?.trim() &&
+    data.tax_amount !== undefined &&
+    data.tax_amount > 0
+  );
+}
+
+/** Validate Controlling Shareholder 3(ט)(1) letter */
+export function validateControllingShareholder3T1(data: Partial<ControllingShareholder3T1Variables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    (data.gender === 'male' || data.gender === 'female') &&
+    data.greeting_name?.trim() &&
+    data.tax_year?.trim() &&
+    data.tax_amount !== undefined &&
+    data.tax_amount > 0
+  );
+}
+
+/** Validate Capital Gains Tax Notice letter */
+export function validateCapitalGains(data: Partial<CapitalGainsVariables>): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    (data.gender === 'male' || data.gender === 'female') &&
+    data.greeting_name?.trim() &&
+    data.sold_company_name?.trim() &&
+    data.sale_amount !== undefined &&
+    data.sale_amount > 0 &&
     data.tax_amount !== undefined &&
     data.tax_amount > 0
   );

@@ -1,0 +1,137 @@
+<!-- Letter Body: Capital Gains Tax Notice (הודעה על מס רווח הון) -->
+<!-- Template Type: tax_notices_capital_gains -->
+<!-- Variables: {{subjects_section}}, {{greeting_name}}, {{honor_suffix}}, {{sold_company_name}}, {{sale_amount_formatted}}, {{tax_amount_formatted}}, {{you_may_choose}} -->
+
+<!-- BODY: Subject -->
+<tr>
+    <td style="padding-top: 10px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 20px; line-height: 1.25; font-weight: 700; color: #395BF7; text-align: right; letter-spacing: -0.3px; border-bottom: 1px solid #000000; padding-bottom: 8px;">
+            {{subjects_section}}
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Greeting -->
+<tr>
+    <td style="padding-top: 8px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; line-height: 1.4; color: #09090b; text-align: right;">
+            {{greeting_name}} {{honor_suffix}},
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Main Content - Introduction -->
+<tr>
+    <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            אנו מוצאים לנכון להזכיר לך להסדיר את תשלום חובך למס הכנסה, בתיק האישי שלך, בהמשך לעיסקת מכירת מניותייך בחברת <strong>{{sold_company_name}}</strong> שנחתמה לאחרונה.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Sale Details -->
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            כידוע לך, נחתמה עיסקה למכירת מניותייך בחברת <strong>{{sold_company_name}}</strong> בסכום של <strong>{{sale_amount_formatted}}</strong>.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Tax Amount (inline, highlighted) -->
+<tr>
+    <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: right;">
+            סכום מס רווח ההון לתשלום הוא: <strong style="font-size: 15px; color: #92400E; background-color: #FEF3C7; padding: 1px 8px; border-radius: 4px;">{{tax_amount_formatted}}</strong>
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: 30 Days Deadline -->
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            את תשלום המס יש לבצע תוך 30 יום, וכל זאת כאמור בפקודת מס הכנסה, חלק ה' לפקודה - מס רווח הון.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Advance Payment Note -->
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            למעשה מדובר במקדמה שאמורה להיות בקירוב כמעט מלא לסכום המס המלא והסופי שיחושב בעת הכנת הדוח האישי השנתי שלך.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: No Installments Note -->
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            <strong>לא ניתן לפרוס כלל מס רווח הון.</strong> שהרי מבחינת מס הכנסה קיבלת את מלוא התמורה. ואם התמורה תשתלם בתשלומים, הרי שפקודת מס הכנסה ועמדת רשות המיסים היא לקבל את מקדמת המס מייד, ובצדק, תוך 30 יום.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Payment Instructions Header -->
+<tr>
+    <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: right; font-weight: 600;">
+            אופן הסדרת התשלום:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Payment Instructions Intro -->
+<tr>
+    <td style="padding-top: 2px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            {{you_may_choose}} באחת מהאפשרויות הבאות:
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Payment Option - Voucher (single option) -->
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: justify;">
+            <strong>תשלום באמצעות שובר</strong> – משרדנו יפיק עבור היחיד שובר תשלום אשר יועבר למנהל/ת החשבונות לצורך ביצוע התשלום.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Closing -->
+<tr>
+    <td style="padding-top: 6px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: right;">
+            אנו עומדים לשירותך מקדמת מס רווח הון יחיד לכל שאלה והבהרה.
+        </div>
+    </td>
+</tr>
+
+<!-- BODY: Signature Section -->
+<tr>
+    <td style="padding-top: 8px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.4; color: #09090b; text-align: right;">
+            בכבוד רב,
+        </div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding-top: 4px;">
+        <div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 13px; line-height: 1.3; color: #09090b; text-align: right;">
+            <strong>תיקו פרנקו</strong><br>
+            רואה חשבון<br>
+            תיקו פרנקו ושות' | רואי חשבון
+        </div>
+    </td>
+</tr>
+
+<!-- Border at end -->
+<tr>
+    <td style="padding-top: 8px;">
+        <div style="border-top: 1px solid #000000;"></div>
+    </td>
+</tr>

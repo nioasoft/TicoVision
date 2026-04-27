@@ -3648,6 +3648,8 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_submitted': 'bodies/mortgage-approvals/osek-submitted.html',
       'mortgage_approvals_osek_unsubmitted': 'bodies/mortgage-approvals/osek-unsubmitted.html',
       'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html',
+      'tax_notices_controlling_shareholder_3t1': 'bodies/tax-notices/controlling-shareholder-3t1.html',
+      'tax_notices_capital_gains': 'bodies/tax-notices/capital-gains.html',
       'company_registrar_annual_fee': 'bodies/tax-notices/annual-fee-notice.html',
       // Audit Completion
       'audit_completion_general': 'bodies/audit-completion/general.html',
@@ -3686,6 +3688,8 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_submitted': 'אישור רו"ח למשכנתא - עוסק (דוח הוגש)',
       'mortgage_approvals_osek_unsubmitted': 'אישור רו"ח למשכנתא - עוסק (דוח בלתי מבוקר)',
       'tax_notices_payment_notice': 'יתרת מס לתשלום בגין שנת המס',
+      'tax_notices_controlling_shareholder_3t1': 'תשלום חוב מס בעל שליטה בגין סעיף 3(ט)(1)',
+      'tax_notices_capital_gains': 'הודעה על מס רווח הון',
       'company_registrar_annual_fee': 'חיוב אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
@@ -3729,6 +3733,8 @@ export class TemplateService extends BaseService {
       'mortgage_approvals_osek_submitted': 'אישור משכנתא - עוסק',
       'mortgage_approvals_osek_unsubmitted': 'אישור משכנתא - עוסק',
       'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום',
+      'tax_notices_controlling_shareholder_3t1': 'תשלום חוב מס בעל שליטה (3ט1)',
+      'tax_notices_capital_gains': 'הודעה על מס רווח הון',
       'company_registrar_annual_fee': 'אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת דוחות כספיים',
@@ -4116,6 +4122,48 @@ export class TemplateService extends BaseService {
         const companyName = processed.company_name || '';
         processed.subjects_section = `הנדון:<br>הודעה על יתרת מס שנותרה לתשלום בגין שנת המס ${taxYear}<br>${companyName}`;
         break;
+
+      case 'tax_notices_controlling_shareholder_3t1': {
+        const isFemale = processed.gender === 'female';
+        processed.honor_suffix = isFemale ? 'היקרה' : 'היקר';
+        processed.you_may_choose = isFemale ? 'את רשאית לבחור' : 'אתה רשאי לבחור';
+        if (processed.tax_amount !== undefined && typeof processed.tax_amount === 'number') {
+          processed.tax_amount_formatted = new Intl.NumberFormat('he-IL', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(processed.tax_amount as number) + ' ₪';
+        } else {
+          processed.tax_amount_formatted = '';
+        }
+        const sh3t1Year = processed.tax_year || '';
+        processed.subjects_section = `הנדון:<br>הודעה על יתרת מס שנותרה לתשלום, בתיקך האישי, בגין שנת מס ${sh3t1Year}`;
+        break;
+      }
+
+      case 'tax_notices_capital_gains': {
+        const isFemale = processed.gender === 'female';
+        processed.honor_suffix = isFemale ? 'היקרה' : 'היקר';
+        processed.you_may_choose = isFemale ? 'את רשאית לבחור' : 'אתה רשאי לבחור';
+        if (processed.tax_amount !== undefined && typeof processed.tax_amount === 'number') {
+          processed.tax_amount_formatted = new Intl.NumberFormat('he-IL', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(processed.tax_amount as number) + ' ₪';
+        } else {
+          processed.tax_amount_formatted = '';
+        }
+        if (processed.sale_amount !== undefined && typeof processed.sale_amount === 'number') {
+          processed.sale_amount_formatted = new Intl.NumberFormat('he-IL', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          }).format(processed.sale_amount as number) + ' ₪';
+        } else {
+          processed.sale_amount_formatted = '';
+        }
+        const soldCompany = processed.sold_company_name || '';
+        processed.subjects_section = `הנדון:<br>הודעה על מס רווח הון שעלייך לשלם בגין מכירת מניותייך בחברת ${soldCompany}`;
+        break;
+      }
 
       case 'company_registrar_annual_fee':
         // Format fee_amount to currency format
