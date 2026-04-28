@@ -11,7 +11,13 @@ import type { UserRole } from '@/types/user-role';
 export interface UserPermissions {
   /** If true, user can see all clients in the tenant. If false, only assigned clients. */
   see_all_clients?: boolean;
-  // Additional per-user permissions can be added here
+  /**
+   * Per-user menu/route additions on top of role defaults.
+   * Each value MUST be a valid menu key from ALL_PERMISSIONS — invalid keys are ignored.
+   * Use to grant a single user access to a feature without changing their role
+   * or affecting other users with the same role.
+   */
+  extra_menus?: string[];
 }
 
 export interface User {

@@ -20,6 +20,7 @@ interface UsePermissionsReturn {
   permissions: RolePermissions | null;
   matrix: PermissionsMatrix | null;
   isSuperAdmin: boolean;
+  extraMenus: string[];
 
   // Check functions
   isMenuVisible: (menuKey: string) => boolean;
@@ -38,6 +39,7 @@ export function usePermissions(): UsePermissionsReturn {
   const [permissions, setPermissions] = useState<RolePermissions | null>(null);
   const [matrix, setMatrix] = useState<PermissionsMatrix | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [extraMenus, setExtraMenus] = useState<string[]>([]);
 
   /**
    * Load permissions for current user's role
@@ -51,9 +53,10 @@ export function usePermissions(): UsePermissionsReturn {
 
     setLoading(true);
     try {
-      const [permResult, superAdminResult] = await Promise.all([
+      const [permResult, superAdminResult, extraMenusResult] = await Promise.all([
         permissionsService.getRolePermissions(role),
         authService.isSuperAdmin(),
+        permissionsService.getCurrentUserExtraMenus(),
       ]);
 
       console.log('🔐 [Permissions] Loaded:', {
@@ -61,12 +64,14 @@ export function usePermissions(): UsePermissionsReturn {
         isSuperAdmin: superAdminResult,
         hiddenMenus: permResult.data?.hiddenMenus,
         addedMenus: permResult.data?.addedMenus,
+        extraMenus: extraMenusResult,
       });
 
       if (permResult.data) {
         setPermissions(permResult.data);
       }
       setIsSuperAdmin(superAdminResult);
+      setExtraMenus(extraMenusResult);
     } catch (error) {
       console.error('Error loading permissions:', error);
     } finally {
@@ -102,6 +107,11 @@ export function usePermissions(): UsePermissionsReturn {
         return false;
       }
 
+      // 0. Per-user extra menus (highest priority after super admin)
+      if (extraMenus.includes(menuKey)) {
+        return true;
+      }
+
       // 1. Check if explicitly added (DB override to EXPAND)
       if (permissions?.addedMenus.includes(menuKey)) {
         return true;
@@ -121,7 +131,7 @@ export function usePermissions(): UsePermissionsReturn {
       }
       return visible;
     },
-    [role, permissions, isSuperAdmin]
+    [role, permissions, isSuperAdmin, extraMenus]
   );
 
   /**
@@ -139,6 +149,11 @@ export function usePermissions(): UsePermissionsReturn {
       const permission = ALL_PERMISSIONS.find(p => p.route === route);
       if (!permission) return true; // Unknown route, allow
 
+      // 0. Per-user extra menus grant route access too
+      if (extraMenus.includes(permission.menu)) {
+        return true;
+      }
+
       // 1. Check if explicitly added (DB override to EXPAND)
       if (permissions?.addedRoutes.includes(route)) {
         return true;
@@ -153,7 +168,7 @@ export function usePermissions(): UsePermissionsReturn {
       const defaultPerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
       return defaultPerms.includes(permission.menu);
     },
-    [role, permissions, isSuperAdmin]
+    [role, permissions, isSuperAdmin, extraMenus]
   );
 
   /**
@@ -213,6 +228,7 @@ export function usePermissions(): UsePermissionsReturn {
     permissions,
     matrix,
     isSuperAdmin,
+    extraMenus,
     isMenuVisible,
     isRouteAccessible,
     loadMatrix,

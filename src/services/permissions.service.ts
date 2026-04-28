@@ -69,6 +69,7 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'documents', route: '/documents', label: 'מכתבים ואישורים' },
   { menu: 'documents:foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים', parent: 'documents' },
   { menu: 'documents:tzlul-approvals', route: '/tzlul-approvals', label: 'אישורים חברת צלול', parent: 'documents' },
+  { menu: 'documents:yael-approvals', route: '/yael-approvals', label: 'אישורים לחברת יעל מערכות תוכנה', parent: 'documents' },
   { menu: 'documents:tax-approvals', route: '/documents/tax-approvals', label: 'אישורי מס', parent: 'documents' },
   { menu: 'documents:bank-approvals', route: '/documents/bank-approvals', label: 'אישורים לבנקים/מוסדות', parent: 'documents' },
   { menu: 'documents:commitment-letters', route: '/documents/commitment-letters', label: 'מכתבי התחייבות', parent: 'documents' },
@@ -86,6 +87,7 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'documents:auto-letters:audit_completion', route: '/auto-letters', label: 'סיום ביקורת דוחות', parent: 'documents:auto-letters' },
   { menu: 'documents:auto-letters:tax_advances', route: '/auto-letters', label: 'מקדמות מ"ה', parent: 'documents:auto-letters' },
   { menu: 'documents:auto-letters:protocols', route: '/auto-letters', label: 'פרוטוקולים', parent: 'documents:auto-letters' },
+  { menu: 'documents:auto-letters:state_backed_loans', route: '/auto-letters', label: 'הלוואות בערבות מדינה', parent: 'documents:auto-letters' },
   { menu: 'documents:follow-ups', route: '/follow-ups', label: 'פניות/זירוז/דחיפה', parent: 'documents' },
   // Legacy route for backward compatibility
   { menu: 'foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים (ישן)' },
@@ -112,13 +114,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     'fees', 'fees:tracking', 'fees:calculate', 'fees:collections',
     'letters', 'letters:templates', 'letters:simulator', 'letters:history',
     // Documents System
-    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
+    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:yael-approvals', 'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
     'documents:tax-advances', 'documents:auto-letters', 'documents:follow-ups',
     // Auto-Letters Categories
     'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates', 'documents:auto-letters:missing_documents',
     'documents:auto-letters:reminder_letters', 'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
     'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar', 'documents:auto-letters:audit_completion',
-    'documents:auto-letters:tax_advances', 'documents:auto-letters:protocols',
+    'documents:auto-letters:tax_advances', 'documents:auto-letters:protocols', 'documents:auto-letters:state_backed_loans',
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
@@ -129,13 +131,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   ],
   accountant: [
     // Documents System
-    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:tax-approvals', 'documents:bank-approvals',
+    'documents', 'documents:foreign-workers', 'documents:tzlul-approvals', 'documents:yael-approvals', 'documents:tax-approvals', 'documents:bank-approvals',
     'documents:auto-letters',
     // Auto-Letters Categories
     'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates', 'documents:auto-letters:missing_documents',
     'documents:auto-letters:reminder_letters', 'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
     'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar', 'documents:auto-letters:audit_completion',
-    'documents:auto-letters:tax_advances', 'documents:auto-letters:protocols',
+    'documents:auto-letters:tax_advances', 'documents:auto-letters:protocols', 'documents:auto-letters:state_backed_loans',
     'foreign-workers', // Legacy
     // Capital Declaration System
     'capital-declaration', 'capital-declaration:create', 'capital-declaration:manage',
@@ -145,7 +147,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   bookkeeper: [
     'clients', 'clients:list', 'clients:create', 'clients:edit',
     // Documents System
-    'documents', 'documents:foreign-workers', 'documents:commitment-letters',
+    'documents', 'documents:foreign-workers', 'documents:yael-approvals', 'documents:commitment-letters',
     'foreign-workers', // Legacy
     'files',
     'annual-balance',
@@ -164,9 +166,68 @@ class PermissionsService extends BaseService {
   private cache: Map<string, RolePermissions> = new Map();
   private cacheExpiry: number = 0;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private extraMenusCache: { userId: string; menus: string[]; expiry: number } | null = null;
 
   constructor() {
     super('tenant_settings');
+  }
+
+  /**
+   * Get per-user extra menus from user_tenant_access.permissions.extra_menus.
+   * Only menu keys that exist in ALL_PERMISSIONS are returned (defense-in-depth).
+   * Returns [] if no overrides set.
+   */
+  async getCurrentUserExtraMenus(): Promise<string[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // Cache for 5 minutes per user
+      const now = Date.now();
+      if (
+        this.extraMenusCache &&
+        this.extraMenusCache.userId === user.id &&
+        this.extraMenusCache.expiry > now
+      ) {
+        return this.extraMenusCache.menus;
+      }
+
+      const tenantId = await this.getTenantId();
+      const { data, error } = await supabase
+        .from('user_tenant_access')
+        .select('permissions')
+        .eq('user_id', user.id)
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error || !data) {
+        this.extraMenusCache = { userId: user.id, menus: [], expiry: now + this.CACHE_DURATION };
+        return [];
+      }
+
+      const raw = (data.permissions as { extra_menus?: unknown } | null)?.extra_menus;
+      if (!Array.isArray(raw)) {
+        this.extraMenusCache = { userId: user.id, menus: [], expiry: now + this.CACHE_DURATION };
+        return [];
+      }
+
+      // Whitelist: only allow keys that exist in ALL_PERMISSIONS
+      const validKeys = new Set(ALL_PERMISSIONS.map(p => p.menu));
+      const filtered = raw.filter((m): m is string => typeof m === 'string' && validKeys.has(m));
+
+      this.extraMenusCache = { userId: user.id, menus: filtered, expiry: now + this.CACHE_DURATION };
+      return filtered;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Clear extra_menus cache (call after updating a user's permissions).
+   */
+  clearExtraMenusCache(): void {
+    this.extraMenusCache = null;
   }
 
   /**
@@ -474,6 +535,7 @@ class PermissionsService extends BaseService {
   clearCache(): void {
     this.cache.clear();
     this.cacheExpiry = 0;
+    this.extraMenusCache = null;
   }
 }
 
