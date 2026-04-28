@@ -22,6 +22,7 @@ const LetterHistoryPage = lazy(() => import('@/pages/LetterHistoryPage').then(m 
 const ComponentSimulatorPage = lazy(() => import('@/pages/ComponentSimulatorPage').then(m => ({ default: m.ComponentSimulatorPage })));
 const ForeignWorkersPage = lazy(() => import('@/pages/ForeignWorkersPage').then(m => ({ default: m.ForeignWorkersPage })));
 const TzlulApprovalsPage = lazy(() => import('@/pages/TzlulApprovalsPage').then(m => ({ default: m.TzlulApprovalsPage })));
+const YaelApprovalsPage = lazy(() => import('@/pages/YaelApprovalsPage').then(m => ({ default: m.YaelApprovalsPage })));
 const CompanyOnboardingPage = lazy(() => import('@/pages/CompanyOnboardingPage'));
 const AutoLettersPage = lazy(() => import('@/pages/AutoLettersPage'));
 const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })));
@@ -298,6 +299,13 @@ function App() {
                     <Route path="/tzlul-approvals" element={
                       <ErrorBoundary>
                         <TzlulApprovalsPage />
+                      </ErrorBoundary>
+                    } />
+
+                    {/* Yael Software Systems approvals - handles own permission check */}
+                    <Route path="/yael-approvals" element={
+                      <ErrorBoundary>
+                        <YaelApprovalsPage />
                       </ErrorBoundary>
                     } />
 

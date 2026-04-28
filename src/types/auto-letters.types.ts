@@ -189,6 +189,8 @@ export type AutoLetterTemplateType =
   | 'tax_notices_payment_notice'
   | 'tax_notices_controlling_shareholder_3t1'
   | 'tax_notices_capital_gains'
+  // Yael Software Systems Approvals (אישורים לחברת יעל מערכות תוכנה) — standalone module, not in LETTER_TYPES_BY_CATEGORY
+  | 'yael_cpa_national_insurance_approval'
   // Company Registrar (רשם החברות)
   | 'company_registrar_annual_fee'
   // Audit Completion (סיום ביקורת דוחות כספיים)
@@ -542,9 +544,10 @@ export interface BookkeeperBalanceReminderVariables extends AutoLetterSharedData
 
 /** Single income entry for income confirmation letter */
 export interface IncomeEntry {
-  month: string;    // חודש בעברית (ינואר, פברואר...)
-  year: number;     // שנה
-  amount: number;   // סכום (לפני מע"מ)
+  type?: 'month' | 'year';  // סוג השורה - חודשית או שנתית. ברירת מחדל: 'month' (לתאימות אחורה)
+  month?: string;           // חודש בעברית (ינואר, פברואר...) - חובה רק כש-type='month'
+  year: number;             // שנה
+  amount: number;           // סכום (לפני מע"מ)
 }
 
 /** Variables for Bank Approvals - Income Confirmation letter */

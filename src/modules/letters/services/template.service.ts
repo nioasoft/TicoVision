@@ -2756,23 +2756,36 @@ export class TemplateService extends BaseService {
   }
 
   /**
-   * Build HTML table rows for income confirmation letter
+   * Build HTML table rows for income confirmation letter.
+   * Each entry can be a monthly row ({month, year, amount}) or a yearly summary row ({type:'year', year, amount}).
+   * Legacy entries without `type` are treated as monthly rows.
    */
-  private buildIncomeTableRows(entries: Array<{ month: string; year: number; amount: number }>): string {
+  private buildIncomeTableRows(
+    entries: Array<{ type?: 'month' | 'year'; month?: string; year: number; amount: number }>
+  ): string {
     if (!entries || entries.length === 0) {
       return '';
     }
 
-    return entries.map(entry => `
+    return entries.map(entry => {
+      const periodLabel = entry.type === 'year'
+        ? `שנת ${entry.year}`
+        : `${entry.month ?? ''} ${entry.year}`;
+      const formattedAmount = typeof entry.amount === 'number'
+        ? entry.amount.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : entry.amount;
+
+      return `
       <tr>
         <td style="border: 1px solid #000000; padding: 10px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;">
-          ${entry.month} ${entry.year}
+          ${periodLabel}
         </td>
         <td style="border: 1px solid #000000; padding: 10px; font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 14px; text-align: center;" dir="ltr">
-          ${typeof entry.amount === 'number' ? entry.amount.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : entry.amount} ₪
+          ${formattedAmount} ₪
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   /**
@@ -3650,6 +3663,7 @@ export class TemplateService extends BaseService {
       'tax_notices_payment_notice': 'bodies/tax-notices/tax-payment-notice.html',
       'tax_notices_controlling_shareholder_3t1': 'bodies/tax-notices/controlling-shareholder-3t1.html',
       'tax_notices_capital_gains': 'bodies/tax-notices/capital-gains.html',
+      'yael_cpa_national_insurance_approval': 'bodies/yael-approvals/cpa-national-insurance-approval.html',
       'company_registrar_annual_fee': 'bodies/tax-notices/annual-fee-notice.html',
       // Audit Completion
       'audit_completion_general': 'bodies/audit-completion/general.html',
@@ -3690,6 +3704,7 @@ export class TemplateService extends BaseService {
       'tax_notices_payment_notice': 'יתרת מס לתשלום בגין שנת המס',
       'tax_notices_controlling_shareholder_3t1': 'תשלום חוב מס בעל שליטה בגין סעיף 3(ט)(1)',
       'tax_notices_capital_gains': 'הודעה על מס רווח הון',
+      'yael_cpa_national_insurance_approval': 'דוח תקורות שוטף לגבי כלל נותני השירותים בביטוח לאומי',
       'company_registrar_annual_fee': 'חיוב אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
@@ -3735,6 +3750,7 @@ export class TemplateService extends BaseService {
       'tax_notices_payment_notice': 'הודעה על יתרת מס לתשלום',
       'tax_notices_controlling_shareholder_3t1': 'תשלום חוב מס בעל שליטה (3ט1)',
       'tax_notices_capital_gains': 'הודעה על מס רווח הון',
+      'yael_cpa_national_insurance_approval': 'אישור רו"ח - דוח תקורות יעל',
       'company_registrar_annual_fee': 'אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת דוחות כספיים',
@@ -4137,6 +4153,33 @@ export class TemplateService extends BaseService {
         }
         const sh3t1Year = processed.tax_year || '';
         processed.subjects_section = `הנדון:<br>הודעה על יתרת מס שנותרה לתשלום, בתיקך האישי, בגין שנת מס ${sh3t1Year}`;
+        break;
+      }
+
+      case 'yael_cpa_national_insurance_approval': {
+        // Format period_end_date to Hebrew long format: "31 בדצמבר, 2024"
+        if (processed.period_end_date && typeof processed.period_end_date === 'string') {
+          const dateParts = (processed.period_end_date as string).split('-');
+          if (dateParts.length === 3) {
+            const dateObj = new Date(
+              parseInt(dateParts[0], 10),
+              parseInt(dateParts[1], 10) - 1,
+              parseInt(dateParts[2], 10)
+            );
+            if (!isNaN(dateObj.getTime())) {
+              const day = dateObj.getDate();
+              const year = dateObj.getFullYear();
+              const monthName = new Intl.DateTimeFormat('he-IL', { month: 'long' }).format(dateObj);
+              processed.period_end_date_formatted = `${day} ב${monthName}, ${year}`;
+            } else {
+              processed.period_end_date_formatted = '';
+            }
+          } else {
+            processed.period_end_date_formatted = '';
+          }
+        } else {
+          processed.period_end_date_formatted = '';
+        }
         break;
       }
 

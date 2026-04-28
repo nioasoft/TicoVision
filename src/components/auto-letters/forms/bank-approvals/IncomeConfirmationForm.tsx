@@ -31,11 +31,21 @@ const HEBREW_MONTHS = [
   'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
 ];
 
-const emptyEntry: IncomeEntry = {
+const emptyMonthEntry: IncomeEntry = {
+  type: 'month',
   month: '',
   year: new Date().getFullYear(),
   amount: 0,
 };
+
+const emptyYearEntry: IncomeEntry = {
+  type: 'year',
+  year: new Date().getFullYear(),
+  amount: 0,
+};
+
+const getEntryType = (entry: IncomeEntry): 'month' | 'year' =>
+  entry.type ?? 'month';
 
 export function IncomeConfirmationForm({
   value,
@@ -46,10 +56,17 @@ export function IncomeConfirmationForm({
 }: IncomeConfirmationFormProps) {
   const entries = value.income_entries || [];
 
-  const handleAddEntry = () => {
+  const handleAddMonthEntry = () => {
     onChange({
       ...value,
-      income_entries: [...entries, { ...emptyEntry }],
+      income_entries: [...entries, { ...emptyMonthEntry }],
+    });
+  };
+
+  const handleAddYearEntry = () => {
+    onChange({
+      ...value,
+      income_entries: [...entries, { ...emptyYearEntry }],
     });
   };
 
@@ -62,7 +79,11 @@ export function IncomeConfirmationForm({
     });
   };
 
-  const handleEntryChange = (index: number, field: keyof IncomeEntry, fieldValue: string | number) => {
+  const handleEntryChange = (
+    index: number,
+    field: 'month' | 'year' | 'amount',
+    fieldValue: string | number
+  ) => {
     const newEntries = [...entries];
     newEntries[index] = { ...newEntries[index], [field]: fieldValue };
     onChange({
@@ -72,28 +93,42 @@ export function IncomeConfirmationForm({
     });
   };
 
-  // Calculate period text from entries
+  // Format a single entry for display (used in period text)
+  const formatEntryLabel = (entry: IncomeEntry): string => {
+    if (getEntryType(entry) === 'year') return `שנת ${entry.year}`;
+    return `${entry.month} ${entry.year}`;
+  };
+
+  // Sort key for an entry (for chronological ordering of mixed types)
+  const entrySortKey = (entry: IncomeEntry): number => {
+    if (getEntryType(entry) === 'year') {
+      // Year entry sorts just before any month of the same year
+      return entry.year * 12 - 1;
+    }
+    return entry.year * 12 + HEBREW_MONTHS.indexOf(entry.month ?? '');
+  };
+
+  // Calculate period text from entries (handles both month and year entries)
   const calculatePeriodText = (entriesList: IncomeEntry[]): string => {
     if (entriesList.length === 0) return '';
 
-    // Sort entries by year and month
     const sorted = [...entriesList]
-      .filter(e => e.month && e.year)
-      .sort((a, b) => {
-        if (a.year !== b.year) return a.year - b.year;
-        return HEBREW_MONTHS.indexOf(a.month) - HEBREW_MONTHS.indexOf(b.month);
-      });
+      .filter(e => {
+        if (getEntryType(e) === 'year') return e.year > 0;
+        return e.month && e.year;
+      })
+      .sort((a, b) => entrySortKey(a) - entrySortKey(b));
 
     if (sorted.length === 0) return '';
 
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
 
-    if (sorted.length === 1) {
-      return `${first.month} ${first.year}`;
+    if (sorted.length === 1 || entrySortKey(first) === entrySortKey(last)) {
+      return formatEntryLabel(first);
     }
 
-    return `${first.month} ${first.year} - ${last.month} ${last.year}`;
+    return `${formatEntryLabel(first)} - ${formatEntryLabel(last)}`;
   };
 
   // Update period text when entries change
@@ -108,9 +143,10 @@ export function IncomeConfirmationForm({
   // Check if form has minimum required data
   const hasCompany = !!companyName?.trim();
   const hasRecipient = !!value.recipient_name?.trim();
-  const hasEntries = entries.length > 0 && entries.every(e =>
-    e.month?.trim() && e.year > 0 && e.amount > 0
-  );
+  const hasEntries = entries.length > 0 && entries.every(e => {
+    if (getEntryType(e) === 'year') return e.year > 0 && e.amount > 0;
+    return !!e.month?.trim() && e.year > 0 && e.amount > 0;
+  });
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -174,101 +210,121 @@ export function IncomeConfirmationForm({
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <Label className="text-right font-medium">טבלת הכנסות</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddEntry}
-                disabled={disabled}
-                className="gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                הוסף חודש
-              </Button>
+              <div className="flex gap-2 rtl:flex-row-reverse">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddMonthEntry}
+                  disabled={disabled}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  הוסף חודש
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddYearEntry}
+                  disabled={disabled}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  הוסף שנה
+                </Button>
+              </div>
             </div>
 
             {entries.length === 0 ? (
               <div className="p-4 border border-dashed rounded-md text-center text-gray-500">
-                לחץ על "הוסף חודש" כדי להתחיל להזין נתונים
+                לחץ על "הוסף חודש" או "הוסף שנה" כדי להתחיל להזין נתונים
               </div>
             ) : (
               <div className="space-y-3">
-                {entries.map((entry, index) => (
-                  <div key={index} className="p-4 border rounded-md space-y-3 bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium text-sm">שורה {index + 1}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveEntry(index)}
-                        disabled={disabled}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {/* Month */}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">חודש</Label>
-                        <Select
-                          value={entry.month}
-                          onValueChange={(val) => handleEntryChange(index, 'month', val)}
+                {entries.map((entry, index) => {
+                  const entryType = getEntryType(entry);
+                  const isYear = entryType === 'year';
+                  return (
+                    <div key={index} className="p-4 border rounded-md space-y-3 bg-gray-50">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">
+                          שורה {index + 1} ({isYear ? 'שנה' : 'חודש'})
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveEntry(index)}
                           disabled={disabled}
-                          dir="rtl"
+                          className="text-red-500 hover:text-red-700"
                         >
-                          <SelectTrigger className="text-right" dir="rtl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent dir="rtl">
-                            {HEBREW_MONTHS.map((month) => (
-                              <SelectItem key={month} value={month}>
-                                {month}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
+                      <div className={isYear ? 'grid grid-cols-2 gap-3' : 'grid grid-cols-3 gap-3'}>
+                        {/* Month - only for month-type entries */}
+                        {!isYear && (
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-500">חודש</Label>
+                            <Select
+                              value={entry.month ?? ''}
+                              onValueChange={(val) => handleEntryChange(index, 'month', val)}
+                              disabled={disabled}
+                              dir="rtl"
+                            >
+                              <SelectTrigger className="text-right" dir="rtl">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent dir="rtl">
+                                {HEBREW_MONTHS.map((month) => (
+                                  <SelectItem key={month} value={month}>
+                                    {month}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
 
-                      {/* Year */}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">שנה</Label>
-                        <Select
-                          value={String(entry.year)}
-                          onValueChange={(val) => handleEntryChange(index, 'year', parseInt(val))}
-                          disabled={disabled}
-                          dir="rtl"
-                        >
-                          <SelectTrigger className="text-right" dir="rtl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent dir="rtl">
-                            {yearOptions.map((year) => (
-                              <SelectItem key={year} value={String(year)}>
-                                {year}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                        {/* Year */}
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-500">שנה</Label>
+                          <Select
+                            value={String(entry.year)}
+                            onValueChange={(val) => handleEntryChange(index, 'year', parseInt(val))}
+                            disabled={disabled}
+                            dir="rtl"
+                          >
+                            <SelectTrigger className="text-right" dir="rtl">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent dir="rtl">
+                              {yearOptions.map((year) => (
+                                <SelectItem key={year} value={String(year)}>
+                                  {year}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                      {/* Amount */}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-gray-500">סכום (₪)</Label>
-                        <Input
-                          type="number"
-                          value={entry.amount || ''}
-                          onChange={(e) => handleEntryChange(index, 'amount', parseFloat(e.target.value) || 0)}
-                          disabled={disabled}
-                          className="text-right"
-                          dir="ltr"
-
-                        />
+                        {/* Amount */}
+                        <div className="space-y-1">
+                          <Label className="text-xs text-gray-500">סכום (₪)</Label>
+                          <Input
+                            type="number"
+                            value={entry.amount || ''}
+                            onChange={(e) => handleEntryChange(index, 'amount', parseFloat(e.target.value) || 0)}
+                            disabled={disabled}
+                            className="text-right"
+                            dir="ltr"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -277,7 +333,7 @@ export function IncomeConfirmationForm({
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <h4 className="font-medium text-blue-900 mb-2 text-right">תוכן המכתב:</h4>
             <ul className="space-y-1 text-sm text-blue-800 text-right list-disc list-inside">
-              <li>אישור הכנסות עם פירוט לפי חודשים</li>
+              <li>אישור הכנסות עם פירוט לפי חודשים ו/או שנים</li>
               <li>סכומים לפני מע"מ</li>
               <li>חתימת פרנקו ושות' רואי חשבון</li>
             </ul>

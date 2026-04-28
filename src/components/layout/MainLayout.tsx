@@ -119,6 +119,7 @@ const navigation: NavigationItem[] = [
     submenu: [
       { name: 'אישורי עובדים זרים', href: '/foreign-workers', menuKey: 'documents:foreign-workers' },
       { name: 'אישורים חברת צלול', href: '/tzlul-approvals', menuKey: 'documents:tzlul-approvals' },
+      { name: 'אישורים לחברת יעל מערכות תוכנה', href: '/yael-approvals', menuKey: 'documents:yael-approvals' },
       { name: 'מכתבים אוטומטיים', href: '/auto-letters', menuKey: 'documents:auto-letters' },
     ]
   },
