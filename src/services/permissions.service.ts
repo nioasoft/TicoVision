@@ -41,6 +41,59 @@ export interface PermissionsMatrix {
 // ============================================
 
 /**
+ * Permission groups for display in admin UIs (matches the layout of /permissions page).
+ * Used by both PermissionsPage (role matrix) and EditUserDialog (per-user extra_menus).
+ */
+export const PERMISSION_GROUPS: { key: string; label: string; permissions: string[] }[] = [
+  {
+    key: 'general',
+    label: 'כללי',
+    permissions: ['dashboard'],
+  },
+  {
+    key: 'clients',
+    label: 'לקוחות',
+    permissions: ['clients', 'clients:list', 'clients:groups'],
+  },
+  {
+    key: 'fees',
+    label: 'שכר טרחה',
+    permissions: ['fees', 'fees:tracking', 'fees:calculate', 'fees:collections'],
+  },
+  {
+    key: 'letters',
+    label: 'מכתבים',
+    permissions: ['letters', 'letters:templates', 'letters:simulator', 'letters:history'],
+  },
+  {
+    key: 'capital-declaration',
+    label: 'הצהרת הון',
+    permissions: ['capital-declaration', 'capital-declaration:create', 'capital-declaration:manage'],
+  },
+  {
+    key: 'documents',
+    label: 'מכתבים ואישורים',
+    permissions: [
+      'documents', 'documents:foreign-workers', 'documents:tzlul-approvals',
+      'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
+      'documents:tax-advances', 'documents:auto-letters',
+      'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates',
+      'documents:auto-letters:missing_documents', 'documents:auto-letters:reminder_letters',
+      'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
+      'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar',
+      'documents:auto-letters:audit_completion', 'documents:auto-letters:tax_advances',
+      'documents:auto-letters:protocols', 'documents:auto-letters:state_backed_loans',
+      'documents:follow-ups',
+    ],
+  },
+  {
+    key: 'other',
+    label: 'נוסף',
+    permissions: ['foreign-workers', 'files', 'users', 'settings'],
+  },
+];
+
+/**
  * All available permissions in the system
  * This defines what CAN be configured
  */

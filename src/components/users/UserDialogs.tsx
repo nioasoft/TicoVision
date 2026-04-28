@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -28,8 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { User, CreateUserData, UpdateUserData, UserPermissions } from '@/services/user.service';
+import type { User, CreateUserData, UpdateUserData } from '@/services/user.service';
 import type { UserRole } from '@/types/user-role';
+import {
+  ALL_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS,
+  PERMISSION_GROUPS,
+} from '@/services/permissions.service';
+import { authService } from '@/services/auth.service';
 
 // Add User Dialog Props
 interface AddUserDialogProps {
@@ -80,6 +87,7 @@ const INITIAL_EDIT_FORM: UpdateUserData = {
   is_active: true,
   permissions: {
     see_all_clients: false,
+    extra_menus: [],
   },
 };
 
@@ -267,6 +275,14 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  // Check super admin status when dialog opens
+  useEffect(() => {
+    if (open) {
+      authService.isSuperAdmin().then(setIsSuperAdmin).catch(() => setIsSuperAdmin(false));
+    }
+  }, [open]);
 
   useEffect(() => {
     if (user && open) {
@@ -277,6 +293,9 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
         is_active: user.is_active,
         permissions: {
           see_all_clients: user.permissions?.see_all_clients ?? false,
+          extra_menus: Array.isArray(user.permissions?.extra_menus)
+            ? [...user.permissions!.extra_menus!]
+            : [],
         },
       });
       setHasUnsavedChanges(false);
@@ -285,6 +304,34 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
       setHasUnsavedChanges(false);
     }
   }, [user, open]);
+
+  // Default menus for the currently-selected role (auto-granted, not toggleable per-user)
+  const roleDefaultMenus = useMemo(
+    () => new Set(formData.role ? DEFAULT_ROLE_PERMISSIONS[formData.role] || [] : []),
+    [formData.role]
+  );
+
+  const extraMenus = formData.permissions?.extra_menus ?? [];
+
+  const toggleExtraMenu = useCallback(
+    (menuKey: string) => {
+      setFormData(prev => {
+        const currentExtras = prev.permissions?.extra_menus ?? [];
+        const next = currentExtras.includes(menuKey)
+          ? currentExtras.filter(m => m !== menuKey)
+          : [...currentExtras, menuKey];
+        return {
+          ...prev,
+          permissions: {
+            ...prev.permissions,
+            extra_menus: next,
+          },
+        };
+      });
+      setHasUnsavedChanges(true);
+    },
+    []
+  );
 
   const handleClose = useCallback(() => {
     if (hasUnsavedChanges) {
@@ -440,6 +487,74 @@ export const EditUserDialog = React.memo<EditUserDialogProps>(({ open, user, onC
                     }
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Per-user extra menus — Super Admin only, not for admins (admins have everything anyway) */}
+            {isSuperAdmin && formData.role !== 'admin' && (
+              <div className="border rounded-lg p-4 bg-amber-50/50">
+                <div className="mb-3">
+                  <Label className="text-right block rtl:text-right ltr:text-left font-medium">
+                    הרשאות נוספות פר-משתמש
+                  </Label>
+                  <p className="text-xs text-muted-foreground rtl:text-right ltr:text-left mt-1">
+                    הרשאות שניתנות למשתמש זה ספציפית, מעבר לברירת המחדל של תפקידו.
+                    אפור = כבר ניתן דרך התפקיד. מסומן בכתום = הרשאה אישית מוספת.
+                  </p>
+                </div>
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                  {PERMISSION_GROUPS.map(group => {
+                    // Skip empty groups for this role
+                    const visibleInGroup = group.permissions.filter(p =>
+                      ALL_PERMISSIONS.some(ap => ap.menu === p)
+                    );
+                    if (visibleInGroup.length === 0) return null;
+
+                    return (
+                      <div key={group.key} className="border-t pt-2 first:border-t-0 first:pt-0">
+                        <div className="text-xs font-semibold text-muted-foreground mb-1.5 rtl:text-right">
+                          {group.label}
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {visibleInGroup.map(menuKey => {
+                            const perm = ALL_PERMISSIONS.find(p => p.menu === menuKey);
+                            if (!perm) return null;
+                            const isFromRole = roleDefaultMenus.has(menuKey);
+                            const isExtra = extraMenus.includes(menuKey);
+                            const checked = isFromRole || isExtra;
+
+                            return (
+                              <label
+                                key={menuKey}
+                                className={`flex items-center gap-2 rounded px-2 py-1 text-sm rtl:flex-row-reverse ${
+                                  isFromRole
+                                    ? 'bg-gray-100 text-muted-foreground cursor-not-allowed'
+                                    : isExtra
+                                      ? 'bg-amber-100 cursor-pointer'
+                                      : 'hover:bg-amber-50 cursor-pointer'
+                                }`}
+                                title={isFromRole ? 'הרשאה ניתנת אוטומטית דרך התפקיד' : ''}
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  disabled={isFromRole}
+                                  onCheckedChange={() => !isFromRole && toggleExtraMenu(menuKey)}
+                                  className={isExtra && !isFromRole ? 'border-amber-500 data-[state=checked]:bg-amber-500' : ''}
+                                />
+                                <span className="flex-1 rtl:text-right">{perm.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {extraMenus.length > 0 && (
+                  <div className="mt-3 pt-2 border-t text-xs text-amber-700 rtl:text-right">
+                    {extraMenus.length} הרשאות נוספות הוגדרו עבור משתמש זה
+                  </div>
+                )}
               </div>
             )}
           </div>

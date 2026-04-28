@@ -32,7 +32,7 @@ import {
 import { Loader2, Shield, Save, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermissionsAdmin } from '@/hooks/usePermissions';
-import { ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS } from '@/services/permissions.service';
+import { ALL_PERMISSIONS, DEFAULT_ROLE_PERMISSIONS, PERMISSION_GROUPS } from '@/services/permissions.service';
 import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 import { cn } from '@/lib/utils';
@@ -43,55 +43,6 @@ const ROLES: { key: UserRole; label: string; description: string; color: string;
   { key: 'accountant', label: 'רואה חשבון', description: 'עובדים זרים בלבד', color: 'border border-primary/20 bg-primary/10 text-primary', cardBorder: 'border-primary/20' },
   { key: 'bookkeeper', label: 'מנהלת חשבונות', description: 'לקוחות וקבצים', color: 'border border-sky-200 bg-sky-50 text-sky-700', cardBorder: 'border-sky-200' },
   { key: 'client', label: 'לקוח', description: 'צפייה בלבד', color: 'border border-border bg-muted/60 text-foreground', cardBorder: 'border-border/80' },
-];
-
-// Group permissions by category for display
-const PERMISSION_GROUPS = [
-  {
-    key: 'general',
-    label: 'כללי',
-    permissions: ['dashboard'],
-  },
-  {
-    key: 'clients',
-    label: 'לקוחות',
-    permissions: ['clients', 'clients:list', 'clients:groups'],
-  },
-  {
-    key: 'fees',
-    label: 'שכר טרחה',
-    permissions: ['fees', 'fees:tracking', 'fees:calculate', 'fees:collections'],
-  },
-  {
-    key: 'letters',
-    label: 'מכתבים',
-    permissions: ['letters', 'letters:templates', 'letters:simulator', 'letters:history'],
-  },
-  {
-    key: 'capital-declaration',
-    label: 'הצהרת הון',
-    permissions: ['capital-declaration', 'capital-declaration:create', 'capital-declaration:manage'],
-  },
-  {
-    key: 'documents',
-    label: 'מכתבים ואישורים',
-    permissions: [
-      'documents', 'documents:foreign-workers', 'documents:tzlul-approvals',
-      'documents:tax-approvals', 'documents:bank-approvals', 'documents:commitment-letters',
-      'documents:tax-advances', 'documents:auto-letters',
-      'documents:auto-letters:company_onboarding', 'documents:auto-letters:setting_dates',
-      'documents:auto-letters:missing_documents', 'documents:auto-letters:reminder_letters',
-      'documents:auto-letters:bank_approvals', 'documents:auto-letters:mortgage_approvals',
-      'documents:auto-letters:tax_notices', 'documents:auto-letters:company_registrar',
-      'documents:auto-letters:audit_completion', 'documents:auto-letters:tax_advances',
-      'documents:auto-letters:protocols', 'documents:follow-ups',
-    ],
-  },
-  {
-    key: 'other',
-    label: 'נוסף',
-    permissions: ['foreign-workers', 'files', 'users', 'settings'],
-  },
 ];
 
 export default function PermissionsPage() {

@@ -4,6 +4,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
 import { toast } from 'sonner';
 import { userService, type User, type CreateUserData, type UpdateUserData } from '@/services/user.service';
+import { permissionsService } from '@/services/permissions.service';
 import { registrationService, type PendingRegistration, type UserClientAssignment } from '@/services/registration.service';
 import { clientService, type Client } from '@/services/client.service';
 import { userClientAssignmentService, type AssignableGroup } from '@/services/user-client-assignment.service';
@@ -196,6 +197,12 @@ export function useUsers(): UseUsersReturn {
       title: 'משתמש עודכן בהצלחה',
       description: 'פרטי המשתמש עודכנו',
     });
+
+    // If permissions changed, clear the extra_menus cache so the affected user
+    // sees the new permissions on their next page navigation (or next login).
+    if (data.permissions !== undefined) {
+      permissionsService.clearExtraMenusCache();
+    }
 
     await loadUsers();
     return true;
