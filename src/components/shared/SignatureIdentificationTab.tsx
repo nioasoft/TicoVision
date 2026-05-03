@@ -1,6 +1,8 @@
 /**
- * Signature Identification Tab for Tzlul
+ * Signature Identification Tab
  * Allows uploading a PDF and adding signatures and dates
+ *
+ * Shared component - no client-specific logic. Used by Tzlul, Yael, and any other approval pages.
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -12,7 +14,6 @@ import { PdfSignatureViewer } from './PdfSignatureViewer';
 import { usePdfSignature, type PdfElement } from '@/hooks/usePdfSignature';
 import { cn } from '@/lib/utils';
 
-// Signature URL - using the public brand folder
 const SIGNATURE_URL = '/brand/tico_signature.png';
 
 export function SignatureIdentificationTab() {
@@ -83,27 +84,21 @@ export function SignatureIdentificationTab() {
     }
 
     try {
-      // Read the PDF file
       const pdfBytes = await pdfFile.arrayBuffer();
 
-      // Fetch the signature image
       const signatureResponse = await fetch(SIGNATURE_URL);
       if (!signatureResponse.ok) {
         throw new Error('Failed to fetch signature image');
       }
       const signatureBytes = await signatureResponse.arrayBuffer();
 
-      // Add all elements to PDF
       const signedPdfBytes = await addElementsToPdf(pdfBytes, signatureBytes, elements);
 
-      // Generate filename
       const originalName = pdfFile.name.replace(/\.pdf$/i, '');
       const signedFilename = `${originalName}-signed.pdf`;
 
-      // Save to storage
       await savePdfToStorage(signedPdfBytes, pdfFile.name);
 
-      // Download
       downloadPdf(signedPdfBytes, signedFilename);
 
       const sigCount = elements.filter(e => e.type === 'signature').length;
@@ -125,7 +120,6 @@ export function SignatureIdentificationTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload area */}
           {!pdfFile && (
             <div
               className={cn(
@@ -162,10 +156,8 @@ export function SignatureIdentificationTab() {
             </div>
           )}
 
-          {/* PDF Viewer */}
           {pdfFile && (
             <div className="space-y-4">
-              {/* File info */}
               <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
                 <Button
                   variant="ghost"
@@ -182,7 +174,6 @@ export function SignatureIdentificationTab() {
                 </div>
               </div>
 
-              {/* Viewer */}
               <PdfSignatureViewer
                 pdfFile={pdfFile}
                 signatureUrl={SIGNATURE_URL}
@@ -190,7 +181,6 @@ export function SignatureIdentificationTab() {
                 onElementsChange={setElements}
               />
 
-              {/* Actions */}
               <div className="flex justify-center gap-4">
                 <Button
                   onClick={handleSaveAndDownload}
@@ -215,7 +205,6 @@ export function SignatureIdentificationTab() {
         </CardContent>
       </Card>
 
-      {/* Instructions */}
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
           <h3 className="font-medium text-blue-900 mb-3">הוראות שימוש:</h3>

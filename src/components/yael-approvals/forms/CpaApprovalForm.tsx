@@ -1,26 +1,23 @@
 /**
  * CpaApprovalForm - Yael Software Systems CPA National Insurance Approval form
  * אישור רו"ח - דוח תקורות שוטף לביטוח לאומי
+ *
+ * Document date is managed by the parent page (shared data), so this form
+ * only manages the letter-specific fields: recipient_name and period_end_date.
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import type { YaelCpaApprovalVariables } from '@/types/yael-approvals.types';
+import { YAEL_DEFAULT_RECIPIENT, type YaelCpaApprovalSpecificVariables } from '@/types/yael-approvals.types';
 
 interface CpaApprovalFormProps {
-  value: Partial<YaelCpaApprovalVariables>;
-  onChange: (data: Partial<YaelCpaApprovalVariables>) => void;
+  value: Partial<YaelCpaApprovalSpecificVariables>;
+  onChange: (data: Partial<YaelCpaApprovalSpecificVariables>) => void;
   disabled?: boolean;
 }
 
 export function CpaApprovalForm({ value, onChange, disabled }: CpaApprovalFormProps) {
-  const isValid = !!(
-    value.document_date &&
-    value.recipient_name?.trim() &&
-    value.period_end_date
-  );
-
   return (
     <div className="space-y-6" dir="rtl">
       <Card>
@@ -31,22 +28,6 @@ export function CpaApprovalForm({ value, onChange, disabled }: CpaApprovalFormPr
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Document Date */}
-          <div className="space-y-2">
-            <Label htmlFor="yael-document-date" className="text-right block">
-              תאריך מסמך
-            </Label>
-            <Input
-              id="yael-document-date"
-              type="date"
-              value={value.document_date || ''}
-              onChange={(e) => onChange({ ...value, document_date: e.target.value })}
-              disabled={disabled}
-              className="text-right w-48"
-              dir="ltr"
-            />
-          </div>
-
           {/* Recipient Name */}
           <div className="space-y-2">
             <Label htmlFor="yael-recipient-name" className="text-right block">
@@ -62,7 +43,7 @@ export function CpaApprovalForm({ value, onChange, disabled }: CpaApprovalFormPr
               dir="rtl"
             />
             <p className="text-xs text-gray-500 text-right">
-              ניתן לערוך לפי הצורך. ברירת המחדל: יעל מערכות תוכנה בע"מ
+              ניתן לערוך לפי הצורך. ברירת המחדל: {YAEL_DEFAULT_RECIPIENT}
             </p>
           </div>
 
@@ -84,15 +65,6 @@ export function CpaApprovalForm({ value, onChange, disabled }: CpaApprovalFormPr
               יוטמע במשפט "...לשנה שנסתיימה ביום [תאריך]". פורמט בעברית: "31 בדצמבר, 2024"
             </p>
           </div>
-
-          {/* Validation */}
-          {!isValid && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p className="text-sm text-yellow-800 text-right">
-                יש למלא תאריך מסמך, שם נמען, ותאריך סיום תקופה
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

@@ -3664,6 +3664,7 @@ export class TemplateService extends BaseService {
       'tax_notices_controlling_shareholder_3t1': 'bodies/tax-notices/controlling-shareholder-3t1.html',
       'tax_notices_capital_gains': 'bodies/tax-notices/capital-gains.html',
       'yael_cpa_national_insurance_approval': 'bodies/yael-approvals/cpa-national-insurance-approval.html',
+      'yael_overhead_rate_compliance': 'bodies/yael-approvals/overhead-rate-compliance.html',
       'company_registrar_annual_fee': 'bodies/tax-notices/annual-fee-notice.html',
       // Audit Completion
       'audit_completion_general': 'bodies/audit-completion/general.html',
@@ -3705,6 +3706,7 @@ export class TemplateService extends BaseService {
       'tax_notices_controlling_shareholder_3t1': 'תשלום חוב מס בעל שליטה בגין סעיף 3(ט)(1)',
       'tax_notices_capital_gains': 'הודעה על מס רווח הון',
       'yael_cpa_national_insurance_approval': 'דוח תקורות שוטף לגבי כלל נותני השירותים בביטוח לאומי',
+      'yael_overhead_rate_compliance': 'אישור רו"ח בדבר עמידה בשיעור תקורה לנותני השירותים',
       'company_registrar_annual_fee': 'חיוב אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת ועריכת דוח כספי',
@@ -3751,6 +3753,7 @@ export class TemplateService extends BaseService {
       'tax_notices_controlling_shareholder_3t1': 'תשלום חוב מס בעל שליטה (3ט1)',
       'tax_notices_capital_gains': 'הודעה על מס רווח הון',
       'yael_cpa_national_insurance_approval': 'אישור רו"ח - דוח תקורות יעל',
+      'yael_overhead_rate_compliance': 'אישור רו"ח - עמידה בשיעור תקורה',
       'company_registrar_annual_fee': 'אגרה שנתית לרשם החברות',
       // Audit Completion
       'audit_completion_general': 'סיום ביקורת דוחות כספיים',

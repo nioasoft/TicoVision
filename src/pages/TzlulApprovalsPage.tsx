@@ -16,7 +16,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Eye, Download, Loader2, AlertTriangle, ShieldAlert, PenTool } from 'lucide-react';
+import { FileText, Eye, Download, Loader2, ShieldAlert, PenTool } from 'lucide-react';
 import { TzlulLetterTypeSelector } from '@/components/tzlul-approvals/TzlulLetterTypeSelector';
 import { ViolationCorrectionForm } from '@/components/tzlul-approvals/forms/ViolationCorrectionForm';
 import { SummerBonusForm } from '@/components/tzlul-approvals/forms/SummerBonusForm';
@@ -28,7 +28,7 @@ import { HealthBenefitsForm } from '@/components/tzlul-approvals/forms/HealthBen
 import { SalaryPaymentConfirmationForm } from '@/components/tzlul-approvals/forms/SalaryPaymentConfirmationForm';
 import { ManagementGeneralCostsForm } from '@/components/tzlul-approvals/forms/ManagementGeneralCostsForm';
 import { FinanceCostsForm } from '@/components/tzlul-approvals/forms/FinanceCostsForm';
-import { SignatureIdentificationTab } from '@/components/tzlul-approvals/SignatureIdentificationTab';
+import { SignatureIdentificationTab } from '@/components/shared/SignatureIdentificationTab';
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';

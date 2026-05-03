@@ -1,6 +1,8 @@
 /**
  * PDF Viewer with draggable signature and date overlays
  * Displays a PDF and allows the user to position multiple signatures and dates by dragging
+ *
+ * Shared component - no client-specific logic. Used by Tzlul, Yael, and any other approval pages.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -24,7 +26,7 @@ interface PdfSignatureViewerProps {
 const DEFAULT_SIGNATURE_WIDTH = 15;
 const DEFAULT_SIGNATURE_HEIGHT = 7;
 const DEFAULT_SIGNATURE_WITH_ADDRESS_WIDTH = 18;
-const DEFAULT_SIGNATURE_WITH_ADDRESS_HEIGHT = 10; // Taller to fit address below
+const DEFAULT_SIGNATURE_WITH_ADDRESS_HEIGHT = 10;
 const DEFAULT_DATE_WIDTH = 12;
 const DEFAULT_DATE_HEIGHT = 3;
 
@@ -50,7 +52,6 @@ export function PdfSignatureViewer({
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLDivElement>(null);
 
-  // Create object URL for the PDF file
   useEffect(() => {
     if (pdfFile) {
       const url = URL.createObjectURL(pdfFile);
@@ -60,7 +61,6 @@ export function PdfSignatureViewer({
     setPdfUrl(null);
   }, [pdfFile]);
 
-  // Reset when file changes
   useEffect(() => {
     setCurrentPage(1);
     setScale(1);
@@ -71,7 +71,6 @@ export function PdfSignatureViewer({
     setNumPages(numPages);
   }, []);
 
-  // Add signature to current page
   const handleAddSignature = useCallback(() => {
     const newElement: PdfElement = {
       id: generateId(),
@@ -85,7 +84,6 @@ export function PdfSignatureViewer({
     onElementsChange([...elements, newElement]);
   }, [currentPage, elements, onElementsChange]);
 
-  // Add signature with address to current page
   const handleAddSignatureWithAddress = useCallback(() => {
     const newElement: PdfElement = {
       id: generateId(),
@@ -99,7 +97,6 @@ export function PdfSignatureViewer({
     onElementsChange([...elements, newElement]);
   }, [currentPage, elements, onElementsChange]);
 
-  // Add date to current page
   const handleAddDate = useCallback(() => {
     const today = new Date().toLocaleDateString('he-IL');
     const newElement: PdfElement = {
@@ -115,7 +112,6 @@ export function PdfSignatureViewer({
     onElementsChange([...elements, newElement]);
   }, [currentPage, elements, onElementsChange]);
 
-  // Remove element
   const handleRemoveElement = useCallback((id: string) => {
     onElementsChange(elements.filter(el => el.id !== id));
   }, [elements, onElementsChange]);
@@ -136,7 +132,6 @@ export function PdfSignatureViewer({
     setScale((prev) => Math.max(prev - 0.25, 0.5));
   };
 
-  // Handle element dragging
   const handleMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
@@ -155,15 +150,12 @@ export function PdfSignatureViewer({
 
     const pageRect = pageRef.current.getBoundingClientRect();
 
-    // Calculate new position as percentage
     const newX = ((e.clientX - pageRect.left - dragOffset.x) / pageRect.width) * 100;
     const newY = ((e.clientY - pageRect.top - dragOffset.y) / pageRect.height) * 100;
 
-    // Clamp values to keep element within page bounds
     const clampedX = Math.max(0, Math.min(100 - element.width, newX));
     const clampedY = Math.max(0, Math.min(100 - element.height, newY));
 
-    // Update the element position
     const updatedElements = elements.map(el =>
       el.id === draggingId
         ? { ...el, x: clampedX, y: clampedY }
@@ -176,7 +168,6 @@ export function PdfSignatureViewer({
     setDraggingId(null);
   }, []);
 
-  // Add global mouse up listener to handle drag end outside the component
   useEffect(() => {
     const handleGlobalMouseUp = () => setDraggingId(null);
     window.addEventListener('mouseup', handleGlobalMouseUp);
@@ -191,22 +182,18 @@ export function PdfSignatureViewer({
     );
   }
 
-  // Elements on current page
   const elementsOnCurrentPage = elements.filter(el => el.page === currentPage - 1);
   const signaturesOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'signature').length;
   const signaturesWithAddressOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'signature_with_address').length;
   const datesOnCurrentPage = elementsOnCurrentPage.filter(el => el.type === 'date').length;
 
-  // Summary of all elements
   const totalSignatures = elements.filter(el => el.type === 'signature').length;
   const totalSignaturesWithAddress = elements.filter(el => el.type === 'signature_with_address').length;
   const totalDates = elements.filter(el => el.type === 'date').length;
 
   return (
     <div className="space-y-4">
-      {/* Controls */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        {/* Page navigation */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -229,7 +216,6 @@ export function PdfSignatureViewer({
           </Button>
         </div>
 
-        {/* Add Elements Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="default"
@@ -275,7 +261,6 @@ export function PdfSignatureViewer({
           </Button>
         </div>
 
-        {/* Zoom controls */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -299,7 +284,6 @@ export function PdfSignatureViewer({
         </div>
       </div>
 
-      {/* PDF Viewer with elements overlay */}
       <div
         ref={containerRef}
         className="relative overflow-auto bg-muted/30 rounded-lg border max-h-[85vh]"
@@ -330,7 +314,6 @@ export function PdfSignatureViewer({
               />
             </Document>
 
-            {/* Elements overlay */}
             {elementsOnCurrentPage.map((element) => (
               <div
                 key={element.id}
@@ -381,7 +364,6 @@ export function PdfSignatureViewer({
                   </div>
                 )}
 
-                {/* Label */}
                 <div className={cn(
                   'absolute -top-6 left-1/2 -translate-x-1/2 text-primary-foreground text-xs px-2 py-0.5 rounded flex items-center gap-1 whitespace-nowrap',
                   element.type === 'signature' ? 'bg-primary' : element.type === 'signature_with_address' ? 'bg-green-600' : 'bg-orange-500'
@@ -390,7 +372,6 @@ export function PdfSignatureViewer({
                   <span>{element.type === 'signature' ? 'חתימה' : element.type === 'signature_with_address' ? 'חתימה+כתובת' : 'תאריך'}</span>
                 </div>
 
-                {/* Delete button */}
                 <button
                   className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
@@ -406,7 +387,6 @@ export function PdfSignatureViewer({
         </div>
       </div>
 
-      {/* Info text */}
       <div className="text-sm text-muted-foreground text-center space-y-1">
         <p>
           {elements.length === 0
