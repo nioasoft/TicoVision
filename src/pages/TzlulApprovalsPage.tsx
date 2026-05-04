@@ -32,9 +32,9 @@ import { SignatureIdentificationTab } from '@/components/shared/SignatureIdentif
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
-import { permissionsService } from '@/services/permissions.service';
 import { userClientAssignmentService } from '@/services/user-client-assignment.service';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   TZLUL_CLIENT_NAME,
   TZLUL_CLIENT_ID,
@@ -61,6 +61,7 @@ const templateService = new TemplateService();
 export function TzlulApprovalsPage() {
   // Auth and access control
   const { user, role, isRestrictedUser } = useAuth();
+  const { isMenuVisible, loading: permissionsLoading } = usePermissions();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [tzlulClientId, setTzlulClientId] = useState<string | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
@@ -135,9 +136,13 @@ export function TzlulApprovalsPage() {
           return;
         }
 
-        // Check permission
-        const hasPermission = await permissionsService.hasPermission('documents:tzlul-approvals');
-        if (!hasPermission) {
+        // Wait for permissions to load (extra_menus + role overrides)
+        if (permissionsLoading) {
+          return;
+        }
+
+        // Check permission (honours per-user extra_menus, role overrides, defaults)
+        if (!isMenuVisible('documents:tzlul-approvals')) {
           setHasAccess(false);
           setIsCheckingAccess(false);
           return;
@@ -157,7 +162,7 @@ export function TzlulApprovalsPage() {
     };
 
     checkAccess();
-  }, [user, role, isRestrictedUser]);
+  }, [user, role, isRestrictedUser, permissionsLoading, isMenuVisible]);
 
   // Validate current document data
   const isCurrentDocumentValid = (): boolean => {
