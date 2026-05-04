@@ -18,7 +18,7 @@ const supabase = createClient(
 
 const TIKO = 'baa88f3b-5998-4440-952f-9fd661a28598';
 const DAVID_EMAIL = 'davidsi@yaelsoft.com';
-const YAEL_CLIENT_ID = 'f742db38-aae0-4a9f-bd17-4dee58ad9765'; // יעל תוכנה ומערכות בע"מ
+const YAEL_CLIENT_ID = 'f742db38-aae0-4a9f-bd17-4dee58ad9765'; // יעל תכנה ומערכות בע"מ
 
 async function main() {
   // Find David

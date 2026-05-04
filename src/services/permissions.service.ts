@@ -122,7 +122,7 @@ export const ALL_PERMISSIONS: PermissionConfig[] = [
   { menu: 'documents', route: '/documents', label: 'מכתבים ואישורים' },
   { menu: 'documents:foreign-workers', route: '/foreign-workers', label: 'אישורי עובדים זרים', parent: 'documents' },
   { menu: 'documents:tzlul-approvals', route: '/tzlul-approvals', label: 'אישורים חברת צלול', parent: 'documents' },
-  { menu: 'documents:yael-approvals', route: '/yael-approvals', label: 'אישורים לחברת יעל מערכות תוכנה', parent: 'documents' },
+  { menu: 'documents:yael-approvals', route: '/yael-approvals', label: 'אישורים לחברת יעל תכנה ומערכות', parent: 'documents' },
   { menu: 'documents:tax-approvals', route: '/documents/tax-approvals', label: 'אישורי מס', parent: 'documents' },
   { menu: 'documents:bank-approvals', route: '/documents/bank-approvals', label: 'אישורים לבנקים/מוסדות', parent: 'documents' },
   { menu: 'documents:commitment-letters', route: '/documents/commitment-letters', label: 'מכתבי התחייבות', parent: 'documents' },

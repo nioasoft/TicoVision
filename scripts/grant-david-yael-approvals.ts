@@ -1,6 +1,6 @@
 /**
  * Grant David (davidsi@yaelsoft.com) per-user access to yael-approvals
- * (אישורים לחברת יעל מערכות תוכנה) via the extra_menus mechanism in
+ * (אישורים לחברת יעל תכנה ומערכות) via the extra_menus mechanism in
  * user_tenant_access.permissions.
  *
  * Usage: npx tsx scripts/grant-david-yael-approvals.ts

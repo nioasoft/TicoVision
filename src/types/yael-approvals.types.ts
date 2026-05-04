@@ -1,6 +1,6 @@
 /**
  * Yael Software Systems Approvals - Type Definitions
- * אישורים לחברת יעל מערכות תוכנה
+ * אישורים לחברת יעל תכנה ומערכות
  *
  * This file mirrors the Tzlul approvals structure to support multiple letter types.
  * Currently supports:
@@ -23,7 +23,7 @@ import type { AutoLetterTemplateType } from './auto-letters.types';
 // ============================================================================
 
 /** Yael client company name - used to find client ID */
-export const YAEL_CLIENT_NAME = 'יעל מערכות תוכנה בע"מ';
+export const YAEL_CLIENT_NAME = 'יעל תכנה ומערכות בע"מ';
 
 /** Yael company tax ID */
 export const YAEL_TAX_ID = '510378771';

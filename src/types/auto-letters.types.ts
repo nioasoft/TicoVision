@@ -189,7 +189,7 @@ export type AutoLetterTemplateType =
   | 'tax_notices_payment_notice'
   | 'tax_notices_controlling_shareholder_3t1'
   | 'tax_notices_capital_gains'
-  // Yael Software Systems Approvals (אישורים לחברת יעל מערכות תוכנה) — standalone module, not in LETTER_TYPES_BY_CATEGORY
+  // Yael Software Systems Approvals (אישורים לחברת יעל תכנה ומערכות) — standalone module, not in LETTER_TYPES_BY_CATEGORY
   | 'yael_cpa_national_insurance_approval'
   | 'yael_overhead_rate_compliance'           // נספח י - אישור עמידה בשיעור תקורה לנותני השירותים
   // Company Registrar (רשם החברות)

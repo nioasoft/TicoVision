@@ -1,6 +1,6 @@
 /**
  * YaelApprovalsPage - Approvals page for Yael Software Systems
- * אישורים לחברת יעל מערכות תוכנה
+ * אישורים לחברת יעל תכנה ומערכות
  *
  * Mirrors TzlulApprovalsPage structure (Tabs: Approvals + Signature for Identification,
  * shared data card, letter type selector, per-letter form switch, preview, generate, share).
@@ -441,10 +441,10 @@ export function YaelApprovalsPage() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <FileText className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-right">אישורים לחברת יעל מערכות תוכנה</h1>
+          <h1 className="text-3xl font-bold text-right">אישורים לחברת יעל תכנה ומערכות</h1>
         </div>
         <p className="text-gray-600 text-right">
-          מערכת ליצירת אישורים עבור חברת יעל מערכות תוכנה בע"מ וגופים קשורים
+          מערכת ליצירת אישורים עבור חברת יעל תכנה ומערכות בע"מ וגופים קשורים
         </p>
       </div>
 
