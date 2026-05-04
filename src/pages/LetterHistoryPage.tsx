@@ -1146,7 +1146,8 @@ export function LetterHistoryPage() {
         open={viewDialogOpen}
         onOpenChange={setViewDialogOpen}
         letterId={selectedLetterId}
-        onResend={() => {
+        onResend={(recipients) => {
+          setSelectedRecipients(recipients);
           setViewDialogOpen(false);
           setResendDialogOpen(true);
         }}

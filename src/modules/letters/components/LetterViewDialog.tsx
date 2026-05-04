@@ -22,7 +22,7 @@ export interface LetterViewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   letterId: string | null;
-  onResend?: () => void;
+  onResend?: (recipients: string[]) => void;
 }
 
 interface GeneratedLetter {
@@ -275,10 +275,10 @@ export function LetterViewDialog({
 
           <Button
             onClick={async () => {
+              if (!letter) return;
               setIsResending(true);
               try {
-                // Trigger resend callback
-                onResend?.();
+                onResend?.(letter.recipient_emails ?? []);
 
                 // Give user visual feedback before closing
                 await new Promise(resolve => setTimeout(resolve, 300));
@@ -288,7 +288,7 @@ export function LetterViewDialog({
                 setIsResending(false);
               }
             }}
-            disabled={!letter || isResending}
+            disabled={!letter || isResending || !onResend}
           >
             {isResending ? (
               <>

@@ -33,6 +33,7 @@ import type {
 import type { PaymentMethod } from '@/types/payment.types';
 import { LetterViewDialog } from '@/modules/letters/components/LetterViewDialog';
 import { LetterPreviewDialog } from '@/modules/letters/components/LetterPreviewDialog';
+import { ResendLetterDialog } from '@/modules/letters/components/ResendLetterDialog';
 import { FeeTrackingKPICards } from '@/components/fee-tracking/FeeTrackingKPICards';
 import { FeeTrackingFilters } from '@/components/fee-tracking/FeeTrackingFilters';
 import { FeeTrackingTable } from '@/components/fee-tracking/FeeTrackingTable';
@@ -78,6 +79,10 @@ export function FeeTrackingPage() {
   // Letter view dialog
   const [viewLetterDialogOpen, setViewLetterDialogOpen] = useState(false);
   const [selectedLetterId, setSelectedLetterId] = useState<string | null>(null);
+
+  // Resend letter dialog
+  const [resendDialogOpen, setResendDialogOpen] = useState(false);
+  const [resendRecipients, setResendRecipients] = useState<string[]>([]);
 
   // Letter preview dialog (for sending)
   const [letterDialogOpen, setLetterDialogOpen] = useState(false);
@@ -337,9 +342,51 @@ export function FeeTrackingPage() {
   };
 
   const handleSendReminder = async (letterId: string) => {
+    const client = clients.find((c) => c.letter_id === letterId);
+    if (!client) {
+      toast({
+        title: 'שגיאה',
+        description: 'לא נמצא לקוח עבור המכתב',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({ title: 'שולח תזכורת...', description: client.client_name_hebrew || client.client_name });
+
+    const { data, error } = await reminderService.sendBatchReminders(selectedYear, [client.client_id]);
+
+    if (error || !data) {
+      console.error('Error sending reminder:', error);
+      toast({
+        title: 'שגיאה בשליחת התזכורת',
+        description: error?.message || 'שליחת התזכורת נכשלה',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (data.sent > 0) {
+      toast({ title: 'התזכורת נשלחה בהצלחה' });
+      loadTrackingData();
+      return;
+    }
+
+    const skippedReason =
+      data.skipped_no_letter > 0
+        ? 'לא נמצא מכתב מקורי ללקוח'
+        : data.skipped_no_email > 0
+          ? 'אין כתובת אימייל ללקוח'
+          : data.skipped_already_reminded > 0
+            ? 'כבר נשלחה תזכורת ללקוח לאחרונה'
+            : data.failed > 0
+              ? data.errors[0] || 'שליחה נכשלה'
+              : 'התזכורת לא נשלחה';
+
     toast({
-      title: 'שליחת תזכורת',
-      description: 'פונקציה זו תיושם בשלב הבא',
+      title: 'התזכורת לא נשלחה',
+      description: skippedReason,
+      variant: 'destructive',
     });
   };
 
@@ -724,11 +771,21 @@ export function FeeTrackingPage() {
         open={viewLetterDialogOpen}
         onOpenChange={setViewLetterDialogOpen}
         letterId={selectedLetterId}
-        onResend={() => {
-          toast({
-            title: 'שליחה מחדש',
-            description: 'פונקציה זו תיושם בשלב הבא',
-          });
+        onResend={(recipients) => {
+          setResendRecipients(recipients);
+          setViewLetterDialogOpen(false);
+          setResendDialogOpen(true);
+        }}
+      />
+
+      {/* Resend Letter Dialog */}
+      <ResendLetterDialog
+        open={resendDialogOpen}
+        onOpenChange={setResendDialogOpen}
+        letterId={selectedLetterId}
+        originalRecipients={resendRecipients}
+        onSuccess={() => {
+          loadTrackingData();
         }}
       />
 
