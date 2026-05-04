@@ -104,6 +104,14 @@ export function LetterViewDialog({
       'cid:tagline': `${baseUrl}/storage/v1/object/public/${bucket}/tagline.png`,
       'cid:tico_logo': `${baseUrl}/storage/v1/object/public/${bucket}/tico_logo_240.png`,
       'cid:franco_logo': `${baseUrl}/storage/v1/object/public/${bucket}/franco-logo-hires.png`,
+      'cid:bullet_star': `${baseUrl}/storage/v1/object/public/${bucket}/bullet-star.png`,
+      'cid:bullet_star_blue': `${baseUrl}/storage/v1/object/public/${bucket}/Bullet_star_blue.png`,
+      'cid:bullet_star_darkred': `${baseUrl}/storage/v1/object/public/${bucket}/Bullet_star_darkred.png`,
+      'cid:tico_signature': `${baseUrl}/storage/v1/object/public/${bucket}/tico_signature.png`,
+      'cid:icon_star': `${baseUrl}/storage/v1/object/public/${bucket}/icon-star.png`,
+      'cid:icon_building': `${baseUrl}/storage/v1/object/public/${bucket}/icon-building.png`,
+      'cid:icon_phone': `${baseUrl}/storage/v1/object/public/${bucket}/icon-phone.png`,
+      'cid:icon_email': `${baseUrl}/storage/v1/object/public/${bucket}/icon-email.png`,
     };
 
     let result = html;

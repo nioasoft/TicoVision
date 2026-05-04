@@ -384,7 +384,9 @@ export function FeeTrackingPage() {
             ? 'כבר נשלחה תזכורת ללקוח היום'
             : data.failed > 0
               ? data.errors[0] || 'שליחה נכשלה'
-              : 'התזכורת לא נשלחה';
+              : data.total_pending === 0
+                ? `שכר הטרחה של הלקוח אינו במצב 'נשלח/שולם חלקית' לשנת ${selectedYear}`
+                : 'התזכורת לא נשלחה';
 
     toast({ title: 'התזכורת לא נשלחה', description: skippedReason, variant: 'destructive' });
   };

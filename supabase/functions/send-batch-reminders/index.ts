@@ -188,7 +188,7 @@ serve(async (req) => {
       .select('id, client_id, total_amount, reminder_count')
       .eq('tenant_id', TIKO_TENANT_ID)
       .eq('year', tax_year)
-      .eq('status', 'sent');
+      .in('status', ['sent', 'partial_paid']);
 
     if (client_ids?.length) {
       query = query.in('client_id', client_ids);
