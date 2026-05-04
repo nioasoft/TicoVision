@@ -1,4 +1,5 @@
 import { supabase, getCurrentTenantId } from '@/lib/supabase';
+import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 import { logger } from '@/lib/logger';
 
@@ -217,10 +218,7 @@ class RegistrationService {
         authData = data;
 
         // Send password reset email
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          registration.email,
-          { redirectTo: `${window.location.origin}/set-password` }
-        );
+        const { error: resetError } = await authService.resetPassword(registration.email);
 
         if (resetError) {
           logger.error('Failed to send password reset email:', resetError);

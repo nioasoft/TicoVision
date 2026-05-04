@@ -35,13 +35,6 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface SignUpData extends LoginCredentials {
-  fullName: string;
-  phone?: string;
-  tenantId?: string;
-  role?: UserRole;
-}
-
 export class AuthService {
   private static instance: AuthService;
 
@@ -137,55 +130,6 @@ export class AuthService {
 
       const user = await this.getCurrentUser();
       return { user, error: null };
-    } catch (error) {
-      return { user: null, error: error as Error };
-    }
-  }
-
-  /**
-   * Sign up new user
-   */
-  async signUp(data: SignUpData): Promise<{
-    user: User | null;
-    error: Error | null;
-  }> {
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.fullName,
-            phone: data.phone
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      // If tenant ID provided, create tenant access
-      if (authData.user && data.tenantId) {
-        const { error: accessError } = await supabase
-          .from('user_tenant_access')
-          .insert({
-            user_id: authData.user.id,
-            tenant_id: data.tenantId,
-            role: data.role || 'bookkeeper',
-            is_primary: true
-          });
-
-        if (accessError) {
-          logger.error('Error creating tenant access:', accessError);
-        }
-      }
-
-      // Log the signup
-      await this.logActivity('user_signup', {
-        user_id: authData.user?.id,
-        email: data.email
-      });
-
-      return { user: authData.user, error: null };
     } catch (error) {
       return { user: null, error: error as Error };
     }

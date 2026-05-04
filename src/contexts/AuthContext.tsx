@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 import { logger } from '@/lib/logger';
 
@@ -26,7 +27,6 @@ interface AuthContextType {
   isRestrictedUser: boolean;
   restrictedRoute: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -144,26 +144,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, metadata?: Record<string, unknown>) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: metadata,
-      },
-    });
-    if (error) throw error;
-  };
-
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/set-password`,
-    });
+    const { error } = await authService.resetPassword(email);
     if (error) throw error;
   };
 
@@ -176,7 +163,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isRestrictedUser,
     restrictedRoute,
     signIn,
-    signUp,
     signOut,
     resetPassword,
   };

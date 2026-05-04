@@ -9,7 +9,6 @@ import { Loader2 } from 'lucide-react';
 
 // Lazy load all pages for better performance
 const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
-const SetupPage = lazy(() => import('@/pages/SetupPage').then(m => ({ default: m.SetupPage })));
 const SetPasswordPage = lazy(() => import('@/pages/SetPasswordPage').then(m => ({ default: m.SetPasswordPage })));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const ClientsPage = lazy(() => import('@/pages/ClientsPage'));
@@ -148,11 +147,6 @@ function App() {
                 <Route path="/login" element={
                   <ErrorBoundary>
                     <LoginPage />
-                  </ErrorBoundary>
-                } />
-                <Route path="/setup" element={
-                  <ErrorBoundary>
-                    <SetupPage />
                   </ErrorBoundary>
                 } />
                 <Route path="/set-password" element={

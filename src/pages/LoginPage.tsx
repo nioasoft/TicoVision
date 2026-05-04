@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { registrationService } from '@/services/registration.service';
-import { supabase } from '@/lib/supabase';
+import { authService } from '@/services/auth.service';
 import type { UserRole } from '@/types/user-role';
 
 export function LoginPage() {
@@ -57,9 +57,7 @@ export function LoginPage() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/set-password`
-      });
+      const { error } = await authService.resetPassword(email);
 
       if (error) throw error;
 
