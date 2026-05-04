@@ -36,9 +36,9 @@ import { SignatureIdentificationTab } from '@/components/shared/SignatureIdentif
 import { SharePdfPanel } from '@/components/foreign-workers/SharePdfPanel';
 import { TemplateService } from '@/modules/letters/services/template.service';
 import { fileUploadService } from '@/services/file-upload.service';
-import { permissionsService } from '@/services/permissions.service';
 import { userClientAssignmentService } from '@/services/user-client-assignment.service';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   YAEL_CLIENT_NAME,
   YAEL_CLIENT_ID,
@@ -56,6 +56,7 @@ const templateService = new TemplateService();
 export function YaelApprovalsPage() {
   // Auth and access control
   const { user, role, isRestrictedUser } = useAuth();
+  const { isMenuVisible, loading: permissionsLoading } = usePermissions();
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [yaelClientId, setYaelClientId] = useState<string | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
@@ -125,8 +126,12 @@ export function YaelApprovalsPage() {
           return;
         }
 
-        const hasPermission = await permissionsService.hasPermission('documents:yael-approvals');
-        if (!hasPermission) {
+        // Wait for permissions to load (extra_menus + role overrides)
+        if (permissionsLoading) {
+          return;
+        }
+
+        if (!isMenuVisible('documents:yael-approvals')) {
           setHasAccess(false);
           setIsCheckingAccess(false);
           return;
@@ -145,7 +150,7 @@ export function YaelApprovalsPage() {
     };
 
     checkAccess();
-  }, [user, role, isRestrictedUser]);
+  }, [user, role, isRestrictedUser, permissionsLoading, isMenuVisible]);
 
   // Get current document data based on selected letter type
   const getDocumentData = () => {
