@@ -244,13 +244,14 @@ export function UsersPage() {
           {activeTab === 'users' && (
             <div className="flex gap-3 items-center flex-row-reverse flex-1 min-w-0">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+                <Search className="absolute right-3 top-[calc(50%+16px)] transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
+                  className="search-box pr-10"
                   dir="rtl"
-                  placeholder="חפש משתמשים..."
+                  aria-label="חיפוש"
                 />
               </div>
               <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole | 'all')}>

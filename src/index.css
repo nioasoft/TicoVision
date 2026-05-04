@@ -754,3 +754,9 @@ input[type="number"] {
 .tico-kanban-card:hover {
   box-shadow: none;
 }
+
+.search-box {
+  background-color: #fef9c3 !important;
+  border: 2px solid #facc15 !important;
+  outline: 2px solid #facc15;
+}

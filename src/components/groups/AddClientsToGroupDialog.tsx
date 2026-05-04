@@ -213,12 +213,14 @@ export function AddClientsToGroupDialog({
         <div className="space-y-4 py-4">
           <div className="flex items-center gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+              <Search className="absolute right-3 top-[calc(50%+16px)] -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10 rtl:text-right ltr:text-left"
+                aria-label="חיפוש"
+                className="search-box pr-10 rtl:text-right ltr:text-left"
                 dir="rtl"
               />
             </div>

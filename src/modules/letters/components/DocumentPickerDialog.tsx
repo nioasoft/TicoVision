@@ -164,12 +164,13 @@ export function DocumentPickerDialog({
 
         {/* Search input */}
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+          <Search className="absolute right-3 top-[calc(50%+16px)] -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="חיפוש לפי שם, נושא או לקוח..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pe-10 text-right"
+            aria-label="חיפוש"
+            className="search-box pe-10 text-right"
           />
         </div>
 

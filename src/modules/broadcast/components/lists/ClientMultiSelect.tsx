@@ -107,12 +107,13 @@ export const ClientMultiSelect: React.FC<ClientMultiSelectProps> = ({
       {/* Search and Actions */}
       <div className="p-3 border-b space-y-2">
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+          <Search className="absolute right-3 top-[calc(50%+16px)] -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-
-            className="pr-9 rtl:text-right"
+            aria-label="חיפוש"
+            className="search-box pr-9 rtl:text-right"
           />
         </div>
         <div className="flex items-center justify-between">

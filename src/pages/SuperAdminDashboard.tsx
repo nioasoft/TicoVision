@@ -189,11 +189,13 @@ export default function SuperAdminDashboard() {
           {/* Search Bar */}
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute right-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+              <Search className="absolute right-2 top-[calc(50%+16px)] h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
 
-                className="w-full pr-8 p-2 border rounded-md"
+                aria-label="חיפוש"
+                className="search-box w-full pr-8 p-2 rounded-md text-right"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

@@ -34,12 +34,14 @@ export function FreelancerFilters({
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       {/* Search */}
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+        <Search className="absolute right-3 top-[calc(50%+16px)] h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
 
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pr-10 rtl:text-right"
+          aria-label="חיפוש"
+          className="search-box pr-10 rtl:text-right"
         />
       </div>
 

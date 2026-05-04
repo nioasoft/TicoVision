@@ -137,7 +137,8 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
     <div className={cn('relative', className)}>
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+        <Search className="absolute right-3 top-[calc(50%+16px)] -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           type="text"
 
@@ -145,7 +146,8 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-          className="pr-10 pl-10 rtl:text-right"
+          aria-label="חיפוש"
+          className="search-box pr-10 pl-10 rtl:text-right"
         />
         {query && (
           <button

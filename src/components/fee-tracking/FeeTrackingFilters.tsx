@@ -65,12 +65,13 @@ export const FeeTrackingFilters: React.FC<FeeTrackingFiltersProps> = ({
     <div className="flex flex-wrap items-center gap-2" dir="rtl">
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+        <label className="mb-1.5 block text-sm font-semibold text-foreground rtl:text-right">חיפוש</label>
+        <Search className="absolute right-2 top-[calc(50%+12px)] -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
         <Input
-          placeholder="חיפוש לקוח..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-8 w-[180px] text-xs pr-8 pl-7 !border-blue-400 bg-white rtl:text-right"
+          aria-label="חיפוש"
+          className="search-box h-8 w-[180px] text-xs pr-8 pl-7 rtl:text-right"
         />
         {searchQuery && (
           <button

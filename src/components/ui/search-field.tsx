@@ -9,6 +9,7 @@ interface SearchFieldProps extends Omit<React.ComponentProps<typeof Input>, 'val
   value: string;
   onChange: (value: string) => void;
   label?: string;
+  labelClassName?: string;
   wrapperClassName?: string;
   showClearButton?: boolean;
 }
@@ -19,21 +20,23 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
       value,
       onChange,
       label,
+      labelClassName,
       className,
       wrapperClassName,
+      style,
       showClearButton = true,
-      placeholder = 'חיפוש',
+      placeholder = '',
       ...props
     },
     ref
   ) => {
+    const visibleLabel = label ?? 'חיפוש';
+
     return (
       <div className={cn('space-y-2', wrapperClassName)}>
-        {label ? (
-          <label className="block text-xs font-medium text-muted-foreground rtl:text-right">
-            {label}
-          </label>
-        ) : null}
+        <label className={cn('block text-base font-semibold text-foreground rtl:text-right', labelClassName)}>
+          {visibleLabel}
+        </label>
 
         <div className="relative">
           <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/80" />
@@ -42,7 +45,11 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
             value={value}
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
-            className={cn('pr-10 pl-10', className)}
+            className={cn(
+              'search-box pr-10 pl-10 border-2 border-yellow-400 !bg-yellow-100 ![background-color:#fef9c3] outline outline-2 outline-yellow-400',
+              className
+            )}
+            style={{ backgroundColor: '#fef9c3', ...style }}
             dir="rtl"
             {...props}
           />

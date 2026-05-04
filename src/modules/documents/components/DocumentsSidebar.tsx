@@ -115,10 +115,12 @@ export function DocumentsSidebar({ currentFolder, onSelectFolder, className }: S
           <p className="text-xs text-muted-foreground/60 italic">Keep On Rockin' in the Archive</p>
         </div>
         <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+          <Search className="absolute left-2.5 top-[calc(50%+16px)] h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
 
-            className="pl-9 pr-3 bg-white shadow-sm text-right"
+            aria-label="חיפוש"
+            className="search-box pl-9 pr-3 shadow-sm text-right"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

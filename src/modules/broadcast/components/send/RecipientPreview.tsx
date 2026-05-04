@@ -54,12 +54,13 @@ export const RecipientPreview: React.FC<RecipientPreviewProps> = ({ summary }) =
       <CardContent className="space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <label className="mb-1.5 block text-sm font-semibold text-foreground rtl:text-right">חיפוש</label>
+          <Search className="absolute right-3 top-[calc(50%+12px)] -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-
-            className="pr-9 h-8 text-sm rtl:text-right"
+            aria-label="חיפוש"
+            className="search-box pr-9 h-8 text-sm rtl:text-right"
           />
         </div>
 

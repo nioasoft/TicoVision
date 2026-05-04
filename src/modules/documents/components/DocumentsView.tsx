@@ -92,13 +92,15 @@ export function DocumentsView({
         <div className="flex items-center gap-2">
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <label className="mb-1.5 block text-sm font-semibold text-foreground rtl:text-right">חיפוש</label>
+            <Search className="absolute right-2.5 top-[calc(50%+12px)] -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               type="text"
 
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-[220px] h-8 text-sm pr-8 pl-8 text-right"
+              aria-label="חיפוש"
+              className="search-box w-[220px] h-8 text-sm pr-8 pl-8 text-right"
               dir="rtl"
             />
             {searchQuery && (

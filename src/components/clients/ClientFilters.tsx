@@ -55,25 +55,27 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
     filters.tab !== 'all';
 
   const labelClassName = 'mr-1 mb-2 block text-xs font-medium text-muted-foreground';
+  const filterRowClassName = 'flex flex-wrap items-end gap-x-4 gap-y-4';
+  const filterItemClassName = 'w-full sm:w-auto';
   const filterTriggerClass =
     'h-10 min-w-[108px] rounded-xl border-border bg-background text-sm shadow-xs hover:bg-background data-[state=open]:bg-background [&>span]:truncate';
 
   return (
     <div className="rounded-2xl border border-border/90 bg-card p-4 shadow-sm">
-      <div className="flex flex-wrap items-end gap-3">
-        {/* Search Bar */}
-        <div className="min-w-[260px] max-w-[420px] flex-1">
-          <SearchField
-            label="חיפוש"
-            value={searchQuery}
-            onChange={onSearchChange}
-            placeholder="חיפוש לפי שם חברה, ח.פ, איש קשר או מייל"
-            className="h-10"
-          />
-        </div>
+      <div className="space-y-4">
+        <div className={filterRowClassName}>
+          {/* Search Bar */}
+          <div className="w-full min-w-[300px] flex-1 lg:max-w-[560px]">
+            <SearchField
+              label="חיפוש"
+              value={searchQuery}
+              onChange={onSearchChange}
+              className="h-10"
+            />
+          </div>
 
         {/* Client Status Filter */}
-        <div>
+        <div className={filterItemClassName}>
           <label className={labelClassName}>סטטוס לקוח</label>
           <Select
             value={filters.status || 'all'}
@@ -94,7 +96,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         </div>
 
         {/* Company Status Filter */}
-        <div>
+        <div className={filterItemClassName}>
           <label className={labelClassName}>סטטוס חברה</label>
           <Select
             value={filters.companyStatus}
@@ -112,7 +114,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         </div>
 
         {/* Client Type Filter */}
-        <div>
+        <div className={filterItemClassName}>
           <label className={labelClassName}>סוג לקוח</label>
           <Select
             value={filters.clientType}
@@ -131,7 +133,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         </div>
 
         {/* Company Subtype Filter */}
-        <div>
+        <div className={filterItemClassName}>
           <label className={labelClassName}>תת-סוג</label>
           <Select
             value={filters.companySubtype}
@@ -151,7 +153,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         </div>
 
         {/* Group Filter */}
-        <div>
+        <div className={filterItemClassName}>
           <label className={labelClassName}>קבוצה</label>
           <Select
             value={filters.groupId}
@@ -173,7 +175,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         </div>
 
         {/* Balance Status Filter */}
-        <div>
+        <div className={filterItemClassName}>
           <label className={labelClassName}>סטטוס מאזן</label>
           <Select
             value={filters.balanceStatus || 'all'}
@@ -197,56 +199,60 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
         </div>
 
         {/* Accountant Name Filter */}
-        {accountantNames.length > 0 && (
-          <div>
-            <label className={labelClassName}>מנהל חשבונות</label>
+        </div>
+
+        <div className={filterRowClassName}>
+          {accountantNames.length > 0 && (
+            <div className={filterItemClassName}>
+              <label className={labelClassName}>מנהל חשבונות</label>
+              <Select
+                value={filters.accountantName || 'all'}
+                onValueChange={(value) => onFilterChange({ accountantName: value })}
+              >
+                <SelectTrigger className={`w-[150px] ${filterTriggerClass}`}>
+                  <SelectValue placeholder="כל מנהלי החשבונות" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל מנהלי החשבונות</SelectItem>
+                  {accountantNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Internal/External Bookkeeping Filter */}
+          <div className={filterItemClassName}>
+            <label className={labelClassName}>הנה&quot;ח</label>
             <Select
-              value={filters.accountantName || 'all'}
-              onValueChange={(value) => onFilterChange({ accountantName: value })}
+              value={filters.internalExternal || 'all'}
+              onValueChange={(value) => onFilterChange({ internalExternal: value })}
             >
-              <SelectTrigger className={`w-[150px] ${filterTriggerClass}`}>
-                <SelectValue placeholder="כל מנהלי החשבונות" />
+              <SelectTrigger className={`w-[116px] ${filterTriggerClass}`}>
+                <SelectValue placeholder={'כל הנה"ח'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">כל מנהלי החשבונות</SelectItem>
-                {accountantNames.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">כל הנה&quot;ח</SelectItem>
+                <SelectItem value="internal">פנימי</SelectItem>
+                <SelectItem value="external">חיצוני</SelectItem>
               </SelectContent>
             </Select>
           </div>
-        )}
 
-        {/* Internal/External Bookkeeping Filter */}
-        <div>
-          <label className={labelClassName}>הנה&quot;ח</label>
-          <Select
-            value={filters.internalExternal || 'all'}
-            onValueChange={(value) => onFilterChange({ internalExternal: value })}
+          {/* Reset Filters Button */}
+          <Button
+            variant={hasActiveFilters ? 'brandOutline' : 'soft'}
+            size="sm"
+            onClick={onReset}
+            className="h-10 rounded-xl px-4 text-sm"
+            disabled={!hasActiveFilters}
           >
-            <SelectTrigger className={`w-[116px] ${filterTriggerClass}`}>
-              <SelectValue placeholder={'כל הנה"ח'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">כל הנה&quot;ח</SelectItem>
-              <SelectItem value="internal">פנימי</SelectItem>
-              <SelectItem value="external">חיצוני</SelectItem>
-            </SelectContent>
-          </Select>
+            איפוס
+          </Button>
         </div>
-
-        {/* Reset Filters Button */}
-        <Button
-          variant={hasActiveFilters ? 'brandOutline' : 'soft'}
-          size="sm"
-          onClick={onReset}
-          className="h-10 rounded-xl px-4 text-sm"
-          disabled={!hasActiveFilters}
-        >
-          איפוס
-        </Button>
       </div>
     </div>
   );

@@ -69,13 +69,14 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
     <div className="flex flex-wrap items-center gap-2" dir="rtl">
       {/* Search Input */}
       <div className="relative flex-1 max-w-xs">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <label className="mb-2 block text-base font-semibold text-foreground rtl:text-right">חיפוש</label>
+        <Search className="absolute right-3 top-[calc(50%+16px)] -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="חיפוש לפי שם חברה או ח.פ."
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="h-9 text-sm pr-9 pl-9 rounded-lg border-gray-200 bg-white rtl:text-right"
+          aria-label="חיפוש"
+          className="search-box h-9 text-sm pr-9 pl-9 rounded-lg rtl:text-right"
         />
         {searchValue && (
           <button

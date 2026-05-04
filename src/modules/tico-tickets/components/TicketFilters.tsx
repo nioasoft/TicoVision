@@ -123,12 +123,13 @@ export function TicketFiltersComponent({
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        <label className="mb-1.5 block text-sm font-semibold text-foreground rtl:text-right">חיפוש</label>
+        <Search className="absolute right-2.5 top-[calc(50%+12px)] -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
-          placeholder="חיפוש..."
           value={filters.search}
           onChange={(e) => updateFilter('search', e.target.value)}
-          className="pr-8 h-8 text-sm w-[160px] bg-background"
+          aria-label="חיפוש"
+          className="search-box pr-8 h-8 text-sm w-[160px]"
         />
       </div>
 

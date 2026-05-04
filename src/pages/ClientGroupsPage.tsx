@@ -493,7 +493,6 @@ export default function ClientGroupsPage() {
       <SearchField
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="חיפוש לפי שם קבוצה, בעל שליטה או הערות"
         wrapperClassName="rounded-2xl border border-border/90 bg-card p-4 shadow-sm"
       />
 
