@@ -80,6 +80,10 @@ export function FeeTrackingPage() {
   const [viewLetterDialogOpen, setViewLetterDialogOpen] = useState(false);
   const [selectedLetterId, setSelectedLetterId] = useState<string | null>(null);
 
+  // Reminder preview dialog
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderLetterId, setReminderLetterId] = useState<string | null>(null);
+
   // Resend letter dialog
   const [resendDialogOpen, setResendDialogOpen] = useState(false);
   const [resendRecipients, setResendRecipients] = useState<string[]>([]);
@@ -341,18 +345,17 @@ export function FeeTrackingPage() {
     navigate(`/fees/calculate?client=${clientId}&year=${selectedYear}&edit=${calculationId}`);
   };
 
-  const handleSendReminder = async (letterId: string) => {
+  const handleSendReminder = (letterId: string) => {
+    setReminderLetterId(letterId);
+    setReminderDialogOpen(true);
+  };
+
+  const handleConfirmReminder = async (letterId: string) => {
     const client = clients.find((c) => c.letter_id === letterId);
     if (!client) {
-      toast({
-        title: 'שגיאה',
-        description: 'לא נמצא לקוח עבור המכתב',
-        variant: 'destructive',
-      });
+      toast({ title: 'שגיאה', description: 'לא נמצא לקוח עבור המכתב', variant: 'destructive' });
       return;
     }
-
-    toast({ title: 'שולח תזכורת...', description: client.client_name_hebrew || client.client_name });
 
     const { data, error } = await reminderService.sendBatchReminders(selectedYear, [client.client_id]);
 
@@ -378,16 +381,12 @@ export function FeeTrackingPage() {
         : data.skipped_no_email > 0
           ? 'אין כתובת אימייל ללקוח'
           : data.skipped_already_reminded > 0
-            ? 'כבר נשלחה תזכורת ללקוח לאחרונה'
+            ? 'כבר נשלחה תזכורת ללקוח היום'
             : data.failed > 0
               ? data.errors[0] || 'שליחה נכשלה'
               : 'התזכורת לא נשלחה';
 
-    toast({
-      title: 'התזכורת לא נשלחה',
-      description: skippedReason,
-      variant: 'destructive',
-    });
+    toast({ title: 'התזכורת לא נשלחה', description: skippedReason, variant: 'destructive' });
   };
 
   const handleViewLetter = (letterId: string) => {
@@ -775,6 +774,20 @@ export function FeeTrackingPage() {
           setResendRecipients(recipients);
           setViewLetterDialogOpen(false);
           setResendDialogOpen(true);
+        }}
+      />
+
+      {/* Reminder Preview Dialog */}
+      <LetterViewDialog
+        open={reminderDialogOpen}
+        onOpenChange={(open) => {
+          setReminderDialogOpen(open);
+          if (!open) setReminderLetterId(null);
+        }}
+        letterId={reminderLetterId}
+        reminderMode
+        onConfirmReminder={async (letterId) => {
+          await handleConfirmReminder(letterId);
         }}
       />
 

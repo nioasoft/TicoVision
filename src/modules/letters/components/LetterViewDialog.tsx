@@ -15,14 +15,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Mail, Printer, Loader2, Download } from 'lucide-react';
+import { Mail, Printer, Loader2, Download, BellRing } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { buildReminderHtml } from '@/lib/letter-reminder';
 
 export interface LetterViewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   letterId: string | null;
   onResend?: (recipients: string[]) => void;
+  /** Show the letter as a reminder preview (red banner + today's date). */
+  reminderMode?: boolean;
+  /** Called when the user confirms sending the reminder. */
+  onConfirmReminder?: (letterId: string, recipients: string[]) => Promise<void> | void;
 }
 
 interface GeneratedLetter {
@@ -43,6 +48,8 @@ export function LetterViewDialog({
   onOpenChange,
   letterId,
   onResend,
+  reminderMode = false,
+  onConfirmReminder,
 }: LetterViewDialogProps) {
   const [letter, setLetter] = useState<GeneratedLetter | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,7 +132,10 @@ export function LetterViewDialog({
 
     document.body.appendChild(iframe);
 
-    const displayHtml = convertHtmlForDisplay(letter.generated_content_html);
+    const sourceHtml = reminderMode
+      ? buildReminderHtml(letter.generated_content_html)
+      : letter.generated_content_html;
+    const displayHtml = convertHtmlForDisplay(sourceHtml);
 
     iframe.contentDocument?.open();
     iframe.contentDocument?.write(`
@@ -191,15 +201,25 @@ export function LetterViewDialog({
     return null;
   }
 
+  const displayedHtml = letter
+    ? convertHtmlForDisplay(
+        reminderMode
+          ? buildReminderHtml(letter.generated_content_html)
+          : letter.generated_content_html
+      )
+    : '';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl h-[90vh] flex flex-col rtl:text-right ltr:text-left">
         <DialogHeader className="rtl:text-right ltr:text-left">
           <DialogTitle className="rtl:text-right ltr:text-left">
-            {letter?.subject || 'צפייה במכתב'}
+            {reminderMode ? `תזכורת: ${letter?.subject || 'מכתב שכר טרחה'}` : (letter?.subject || 'צפייה במכתב')}
           </DialogTitle>
           <DialogDescription className="rtl:text-right ltr:text-left">
-            {letter?.sent_at ? (
+            {reminderMode ? (
+              <span>תצוגה מקדימה לתזכורת — נמענים: {letter?.recipient_emails.join(', ')}</span>
+            ) : letter?.sent_at ? (
               <span>
                 נשלח ב-{new Date(letter.sent_at).toLocaleString('he-IL')}
                 {' • '}
@@ -219,9 +239,7 @@ export function LetterViewDialog({
             </div>
           ) : letter ? (
             <div
-              dangerouslySetInnerHTML={{
-                __html: convertHtmlForDisplay(letter.generated_content_html),
-              }}
+              dangerouslySetInnerHTML={{ __html: displayedHtml }}
               className="select-text p-4"
               style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
             />
@@ -273,35 +291,60 @@ export function LetterViewDialog({
             )}
           </Button>
 
-          <Button
-            onClick={async () => {
-              if (!letter) return;
-              setIsResending(true);
-              try {
-                onResend?.(letter.recipient_emails ?? []);
-
-                // Give user visual feedback before closing
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-                onOpenChange(false);
-              } finally {
-                setIsResending(false);
-              }
-            }}
-            disabled={!letter || isResending || !onResend}
-          >
-            {isResending ? (
-              <>
-                <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
-                שולח...
-              </>
-            ) : (
-              <>
-                <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
-                שלח מחדש
-              </>
-            )}
-          </Button>
+          {reminderMode ? (
+            <Button
+              onClick={async () => {
+                if (!letter || !letterId) return;
+                setIsResending(true);
+                try {
+                  await onConfirmReminder?.(letterId, letter.recipient_emails ?? []);
+                  onOpenChange(false);
+                } finally {
+                  setIsResending(false);
+                }
+              }}
+              disabled={!letter || isResending || !onConfirmReminder}
+            >
+              {isResending ? (
+                <>
+                  <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                  שולח תזכורת...
+                </>
+              ) : (
+                <>
+                  <BellRing className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                  שלח תזכורת
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              onClick={async () => {
+                if (!letter) return;
+                setIsResending(true);
+                try {
+                  onResend?.(letter.recipient_emails ?? []);
+                  await new Promise(resolve => setTimeout(resolve, 300));
+                  onOpenChange(false);
+                } finally {
+                  setIsResending(false);
+                }
+              }}
+              disabled={!letter || isResending || !onResend}
+            >
+              {isResending ? (
+                <>
+                  <Loader2 className="h-4 w-4 rtl:ml-2 ltr:mr-2 animate-spin" />
+                  שולח...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 rtl:ml-2 ltr:mr-2" />
+                  שלח מחדש
+                </>
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
