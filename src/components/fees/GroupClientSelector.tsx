@@ -271,10 +271,9 @@ export function GroupClientSelector({
             }))}
             value={selectedClientId || undefined}
             onValueChange={handleClientSelect}
-
-
             emptyText="לא נמצא לקוח"
             disabled={disabled}
+            searchStyle
           />
         ) : (
           /* Group Selector */
@@ -286,10 +285,9 @@ export function GroupClientSelector({
               }))}
               value={selectedGroupId || undefined}
               onValueChange={handleGroupSelect}
-
-
               emptyText="לא נמצאה קבוצה"
               disabled={disabled}
+              searchStyle
             />
 
             {groups.length === 0 && !isLoadingGroups && (

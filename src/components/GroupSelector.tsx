@@ -80,9 +80,8 @@ export function GroupSelector({
           }))}
           value={value || undefined}
           onValueChange={handleValueChange}
-
-
           emptyText="לא נמצאה קבוצה"
+          searchStyle
         />
       )}
     </div>

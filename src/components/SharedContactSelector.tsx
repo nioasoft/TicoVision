@@ -87,9 +87,8 @@ export function SharedContactSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 rtl:text-right" align="start">
-        <Command shouldFilter={false}>
+        <Command shouldFilter={false} className="search-box-command">
           <CommandInput
-
             value={searchQuery}
             onValueChange={setSearchQuery}
             className="rtl:text-right"

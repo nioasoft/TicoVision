@@ -173,6 +173,7 @@ export function ClientSelector({
           value={value || undefined}
           onValueChange={handleValueChange}
           emptyText="לא נמצא לקוח"
+          searchStyle
         />
       )}
     </div>

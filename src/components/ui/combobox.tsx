@@ -32,6 +32,8 @@ export interface ComboboxProps {
   allowCustomValue?: boolean
   /** Custom label for the "add custom value" option. Use {value} as placeholder for the typed text. Default: 'הוסף: "{value}"' */
   customValueLabel?: string
+  /** When true, renders trigger and search input with the project's yellow search-box styling */
+  searchStyle?: boolean
 }
 
 export function Combobox({
@@ -43,6 +45,7 @@ export function Combobox({
   disabled = false,
   allowCustomValue = false,
   customValueLabel,
+  searchStyle = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [searchValue, setSearchValue] = React.useState("")
@@ -65,6 +68,7 @@ export function Combobox({
           className={cn(
             "w-full justify-between rtl:text-right ltr:text-left h-11 rounded-md border !border-[color:var(--form-border)] !bg-[color:var(--form-bg)] px-3 py-2 text-[17px] shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:!ring-[color:var(--form-ring)] focus:ring-offset-2 hover:!bg-[color:var(--form-bg)]",
             value ? "text-foreground" : "text-muted-foreground",
+            searchStyle && "search-box-trigger",
             className
           )}
           disabled={disabled}
@@ -76,7 +80,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
-        <Command>
+        <Command className={cn(searchStyle && "search-box-command")}>
           <CommandInput
             className="rtl:text-right ltr:text-left"
             value={searchValue}
