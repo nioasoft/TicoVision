@@ -313,7 +313,12 @@ export function SignatureUpload({
                 image={imageToCrop}
                 crop={crop}
                 zoom={zoom}
-                aspect={undefined} // Free aspect ratio
+                aspect={3 / 1}
+                minZoom={0.1}
+                maxZoom={3}
+                objectFit="contain"
+                restrictPosition={false}
+                showGrid={false}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
@@ -326,13 +331,17 @@ export function SignatureUpload({
             <ZoomOut className="h-4 w-4 text-gray-500" />
             <Slider
               value={[zoom]}
-              min={0.5}
+              min={0.1}
               max={3}
-              step={0.1}
+              step={0.05}
               onValueChange={(values) => setZoom(values[0])}
               className="flex-1"
             />
             <ZoomIn className="h-4 w-4 text-gray-500" />
+          </div>
+
+          <div className="px-4 text-xs text-muted-foreground text-right">
+            השתמש בסליידר להקטנת התמונה כך שכל החותמת תיכנס למסגרת הבהירה. ניתן גם לגרור את התמונה.
           </div>
 
           {error && (
