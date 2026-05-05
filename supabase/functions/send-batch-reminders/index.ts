@@ -33,10 +33,10 @@ function buildReminderHtml(originalHtml: string, taxYear?: number, today: Date =
   const dd = String(today.getDate()).padStart(2, '0');
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const yyyy = today.getFullYear();
-  const todayStr = `${dd}/${mm}/${yyyy}`;
+  const todayStr = `${dd}.${mm}.${yyyy}`;
 
   let result = originalHtml.replace(
-    /(תל אביב\s*\|\s*)\d{1,2}\/\d{1,2}\/\d{4}/g,
+    /(תל אביב\s*\|\s*)\d{1,2}[./]\d{1,2}[./]\d{4}/g,
     `$1${todayStr}`
   );
 

@@ -1,6 +1,6 @@
 /**
  * Transform an original letter HTML into a "reminder" version:
- *  - Replaces the letter date in the header ("תל אביב | DD/MM/YYYY") with today's date.
+ *  - Replaces the letter date in the header ("תל אביב | DD.MM.YYYY") with today's date.
  *  - Injects a red "תזכורת" banner above the subject ("הנדון:") row.
  *
  * Pure string transformation — used by both the client preview dialog and the
@@ -14,10 +14,10 @@ export function buildReminderHtml(
   const dd = String(today.getDate()).padStart(2, '0');
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const yyyy = today.getFullYear();
-  const todayStr = `${dd}/${mm}/${yyyy}`;
+  const todayStr = `${dd}.${mm}.${yyyy}`;
 
   let result = originalHtml.replace(
-    /(תל אביב\s*\|\s*)\d{1,2}\/\d{1,2}\/\d{4}/g,
+    /(תל אביב\s*\|\s*)\d{1,2}[./]\d{1,2}[./]\d{4}/g,
     `$1${todayStr}`
   );
 
