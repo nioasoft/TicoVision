@@ -755,28 +755,46 @@ input[type="number"] {
   box-shadow: none;
 }
 
-.search-box,
-.search-box:hover,
-.search-box:focus,
-.search-box:focus-visible {
-  background-color: #fef9c3 !important;
-  border: 2px solid #facc15 !important;
-  outline: 2px solid #facc15 !important;
-  outline-offset: 0 !important;
-}
+/* Yellow search/select styling.
+   Wrapped in @layer base so the !important rules WIN against Tailwind v4 utilities
+   in @layer utilities (cascade rule for !important: earlier layer beats later layer
+   beats unlayered). Combobox triggers use Tailwind arbitrary !important utilities
+   like `!bg-[color:var(--form-bg)]` that would otherwise win.
 
-.search-box-trigger,
-.search-box-trigger:hover,
-.search-box-trigger:focus,
-.search-box-trigger:focus-visible {
-  background-color: #fef9c3 !important;
-  border: 2px solid #facc15 !important;
-}
+   For inputs, specificity must also match the global input override at line 230 (0,3,1)
+   so we mirror its selector and add .search-box → (0,4,1). */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]).search-box,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]).search-box:hover,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]).search-box:focus,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]).search-box:focus-visible,
+  .search-box,
+  .search-box:hover,
+  .search-box:focus,
+  .search-box:focus-visible {
+    background-color: #fef9c3 !important;
+    border: 2px solid #facc15 !important;
+    outline: 2px solid #facc15 !important;
+    outline-offset: 0 !important;
+  }
 
-.search-box-command [cmdk-input-wrapper] {
-  background-color: #fef9c3 !important;
-  border: 2px solid #facc15 !important;
-}
-.search-box-command [cmdk-input] {
-  background-color: transparent !important;
+  button.search-box-trigger,
+  button.search-box-trigger:hover,
+  button.search-box-trigger:focus,
+  button.search-box-trigger:focus-visible,
+  .search-box-trigger,
+  .search-box-trigger:hover,
+  .search-box-trigger:focus,
+  .search-box-trigger:focus-visible {
+    background-color: #fef9c3 !important;
+    border: 2px solid #facc15 !important;
+  }
+
+  .search-box-command [cmdk-input-wrapper] {
+    background-color: #fef9c3 !important;
+    border: 2px solid #facc15 !important;
+  }
+  .search-box-command [cmdk-input] {
+    background-color: transparent !important;
+  }
 }
