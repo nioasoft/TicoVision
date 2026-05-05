@@ -540,7 +540,7 @@ function ForeignWorkersPageContent({
             <SelectTrigger className="w-[220px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-60">
               {range.months.map((month, index) => (
                 <SelectItem key={index} value={String(index)}>
                   {MonthlyDataService.dateToHebrew(month)}
