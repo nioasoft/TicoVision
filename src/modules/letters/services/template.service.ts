@@ -2104,7 +2104,7 @@ export class TemplateService extends BaseService {
           ? `<img src="${salaryVars.finance_manager_signature}" style="max-height: 50px; max-width: 100%; width: auto; height: auto;" alt="חתימה" />`
           : '';
         processed.company_stamp_display = salaryVars.company_stamp_signature
-          ? `<img src="${salaryVars.company_stamp_signature}" style="max-height: 60px; max-width: 100%; width: auto; height: auto;" alt="חותמת" />`
+          ? `<img src="${salaryVars.company_stamp_signature}" style="max-height: 120px; max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;" alt="חותמת" />`
           : '';
         break;
 
