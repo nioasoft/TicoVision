@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Eye, Download, Loader2, AlertTriangle } from 'lucide-react';
+import { FileText, Eye, Download, Loader2, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { SharedDataForm } from '@/components/foreign-workers/SharedDataForm';
 import { LivingBusinessTab } from '@/components/foreign-workers/tabs/LivingBusinessTab';
 import { AccountantTurnoverTab, type AccountantTurnoverTabRef } from '@/components/foreign-workers/tabs/AccountantTurnoverTab';
@@ -502,24 +502,38 @@ function ForeignWorkersPageContent({
       {range && range.monthCount > 0 && (
         <div className="flex gap-3 mb-6 items-center justify-end">
           <span className="text-sm font-medium">תצוגת חודשים החל מ:</span>
+          {/* Step backward (older month). In RTL the right-pointing chevron means "previous" */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            disabled={isLoadingRange}
+            onClick={async () => {
+              if (displayStartIndex > 0) {
+                setDisplayStartIndex(displayStartIndex - 1);
+              } else {
+                // At the earliest known month — extend range one month into the past
+                await extendRange('past', 1, 0);
+              }
+            }}
+            aria-label="חודש קודם"
+            title="חודש קודם"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <Select
             value={String(displayStartIndex)}
             onValueChange={async (v) => {
               const val = Number(v);
-              if (val < 0) {
-                // Extend range to the past and set start index to 0 (to view the new months)
-                const monthsToAdd = Math.abs(val);
-                await extendRange('past', monthsToAdd, 0);
+              // Check if selecting this month would show less than 12 months
+              const remainingMonths = range.monthCount - val;
+              if (remainingMonths < 12) {
+                // Automatically extend forward to maintain 12 months
+                const monthsToAdd = 12 - remainingMonths;
+                await extendRange('future', monthsToAdd, val);
               } else {
-                // Check if selecting this month would show less than 12 months
-                const remainingMonths = range.monthCount - val;
-                if (remainingMonths < 12) {
-                  // Automatically extend forward to maintain 12 months
-                  const monthsToAdd = 12 - remainingMonths;
-                  await extendRange('future', monthsToAdd, val);
-                } else {
-                  setDisplayStartIndex(val);
-                }
+                setDisplayStartIndex(val);
               }
             }}
           >
@@ -527,19 +541,6 @@ function ForeignWorkersPageContent({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {/* Previous 3 months options */}
-              {Array.from({ length: 3 }).map((_, i) => {
-                const monthsBack = 3 - i; // 3, 2, 1
-                const date = new Date(range.startMonth);
-                date.setMonth(date.getMonth() - monthsBack);
-                return (
-                  <SelectItem key={`prev-${monthsBack}`} value={String(-monthsBack)} className="text-muted-foreground italic">
-                    Load {MonthlyDataService.dateToHebrew(date)} (+{monthsBack})
-                  </SelectItem>
-                );
-              })}
-              
-              {/* Existing months options */}
               {range.months.map((month, index) => (
                 <SelectItem key={index} value={String(index)}>
                   {MonthlyDataService.dateToHebrew(month)}
@@ -547,6 +548,28 @@ function ForeignWorkersPageContent({
               ))}
             </SelectContent>
           </Select>
+          {/* Step forward (newer month). In RTL the left-pointing chevron means "next" */}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            disabled={isLoadingRange}
+            onClick={async () => {
+              const nextIndex = displayStartIndex + 1;
+              const remainingMonths = range.monthCount - nextIndex;
+              if (remainingMonths < 12) {
+                const monthsToAdd = 12 - remainingMonths;
+                await extendRange('future', monthsToAdd, nextIndex);
+              } else {
+                setDisplayStartIndex(nextIndex);
+              }
+            }}
+            aria-label="חודש הבא"
+            title="חודש הבא"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
           <span className="text-sm text-muted-foreground">
             עד: <strong>{displayMonths ? MonthlyDataService.dateToHebrew(displayMonths[displayMonths.length - 1]) : '-'}</strong>
             ({displayMonths ? displayMonths.length : 0} חודשים)
