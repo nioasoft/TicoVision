@@ -29,7 +29,7 @@ interface Stats {
 
 // ── Reminder HTML transformation (mirrors src/lib/letter-reminder.ts) ──
 
-function buildReminderHtml(originalHtml: string, today: Date = new Date()): string {
+function buildReminderHtml(originalHtml: string, taxYear?: number, today: Date = new Date()): string {
   const dd = String(today.getDate()).padStart(2, '0');
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const yyyy = today.getFullYear();
@@ -40,7 +40,9 @@ function buildReminderHtml(originalHtml: string, today: Date = new Date()): stri
     `$1${todayStr}`
   );
 
-  const reminderBannerRow = `<tr><td style="padding-top: 16px;"><div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: right; padding: 10px 14px; border: 2px solid #dc2626; background-color: #fef2f2; border-radius: 4px;">תזכורת — הואלו נא לטפל בהקדם</div></td></tr>`;
+  const yearText = taxYear ? ` ${taxYear}` : '';
+  const bannerText = `תזכורת - טרם שולם שכ"ט לשנת מס${yearText}`;
+  const reminderBannerRow = `<tr><td style="padding-top: 16px;"><div style="font-family: 'David Libre', 'Heebo', 'Assistant', sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: right; padding: 10px 14px; border: 2px solid #dc2626; background-color: #fef2f2; border-radius: 4px;">${bannerText}</div></td></tr>`;
 
   const subjectIdx = result.indexOf('הנדון:');
   if (subjectIdx > -1) {
@@ -50,7 +52,7 @@ function buildReminderHtml(originalHtml: string, today: Date = new Date()): stri
     }
   }
 
-  const fallbackBanner = `<div style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: right; padding: 10px 14px; margin: 12px; border: 2px solid #dc2626; background-color: #fef2f2;">תזכורת — הואלו נא לטפל בהקדם</div>`;
+  const fallbackBanner = `<div style="font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #dc2626; text-align: right; padding: 10px 14px; margin: 12px; border: 2px solid #dc2626; background-color: #fef2f2;">${bannerText}</div>`;
   const bodyMatch = result.match(/<body[^>]*>/i);
   if (bodyMatch && bodyMatch.index !== undefined) {
     const insertAt = bodyMatch.index + bodyMatch[0].length;
@@ -336,7 +338,7 @@ serve(async (req) => {
           personalizations: emails.map((email) => ({ to: [{ email }], subject })),
           from: { email: emailSettings.sender_email, name: emailSettings.sender_name },
           reply_to: { email: emailSettings.reply_to_email, name: 'סיגל נגר' },
-          content: [{ type: 'text/html', value: buildReminderHtml(letter.generated_content_html) }],
+          content: [{ type: 'text/html', value: buildReminderHtml(letter.generated_content_html, tax_year) }],
           attachments,
           tracking_settings: { click_tracking: { enable: false } },
         };

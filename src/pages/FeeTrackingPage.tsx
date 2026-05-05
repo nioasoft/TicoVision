@@ -788,6 +788,7 @@ export function FeeTrackingPage() {
         }}
         letterId={reminderLetterId}
         reminderMode
+        reminderTaxYear={selectedYear}
         onConfirmReminder={async (letterId) => {
           await handleConfirmReminder(letterId);
         }}

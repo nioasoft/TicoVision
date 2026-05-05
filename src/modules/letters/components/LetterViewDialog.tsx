@@ -26,6 +26,8 @@ export interface LetterViewDialogProps {
   onResend?: (recipients: string[]) => void;
   /** Show the letter as a reminder preview (red banner + today's date). */
   reminderMode?: boolean;
+  /** Tax year shown in the reminder banner (e.g. 2026). */
+  reminderTaxYear?: number;
   /** Called when the user confirms sending the reminder. */
   onConfirmReminder?: (letterId: string, recipients: string[]) => Promise<void> | void;
 }
@@ -49,6 +51,7 @@ export function LetterViewDialog({
   letterId,
   onResend,
   reminderMode = false,
+  reminderTaxYear,
   onConfirmReminder,
 }: LetterViewDialogProps) {
   const [letter, setLetter] = useState<GeneratedLetter | null>(null);
@@ -141,7 +144,7 @@ export function LetterViewDialog({
     document.body.appendChild(iframe);
 
     const sourceHtml = reminderMode
-      ? buildReminderHtml(letter.generated_content_html)
+      ? buildReminderHtml(letter.generated_content_html, { taxYear: reminderTaxYear })
       : letter.generated_content_html;
     const displayHtml = convertHtmlForDisplay(sourceHtml);
 
@@ -212,7 +215,7 @@ export function LetterViewDialog({
   const displayedHtml = letter
     ? convertHtmlForDisplay(
         reminderMode
-          ? buildReminderHtml(letter.generated_content_html)
+          ? buildReminderHtml(letter.generated_content_html, { taxYear: reminderTaxYear })
           : letter.generated_content_html
       )
     : '';
