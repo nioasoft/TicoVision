@@ -150,7 +150,7 @@ export interface FixedExpensesInput {
   compensationRate: number;
   /** Number of months to average over — default 12, may be less for new businesses */
   inputsMonths: number;
-  /** Whether to apply the ×1.5 enhanced rate multiplier */
+  /** Whether to apply the ×2 enhanced rate multiplier (was ×1.5 before May 2026) */
   useEnhancedRate: boolean;
 }
 

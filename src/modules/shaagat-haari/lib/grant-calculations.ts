@@ -163,7 +163,7 @@ export function calculateFixedExpensesGrant(
   // Monthly average inputs — full precision
   const monthlyAvgInputs = (vatInputs + zeroVatInputs) / inputsMonths;
 
-  // Effective rate — optionally enhanced ×1.5
+  // Effective rate — optionally enhanced ×2 (was ×1.5; updated May 2026)
   const effectiveRate = useEnhancedRate
     ? compensationRate * GRANT_CONSTANTS.ENHANCED_RATE_MULTIPLIER
     : compensationRate;

@@ -411,7 +411,7 @@ describe('calculateFixedExpensesGrant', () => {
     expect(result.fixedExpensesGrant).toBe(15_000);
   });
 
-  it('should apply x1.5 enhanced rate multiplier when enabled', () => {
+  it('should apply x2 enhanced rate multiplier when enabled', () => {
     const input = makeFixedExpensesInput({
       vatInputs: 1_200_000,
       compensationRate: 15,
@@ -419,8 +419,10 @@ describe('calculateFixedExpensesGrant', () => {
       useEnhancedRate: true,
     });
     const result = calculateFixedExpensesGrant(input);
-    expect(result.effectiveRate).toBe(22.5);
-    expect(result.fixedExpensesGrant).toBe(22_500);
+    // Enhanced rate × 2 (May 2026 letter): 15 × 2 = 30
+    expect(result.effectiveRate).toBe(30);
+    // 100,000 monthly avg × 30% = 30,000
+    expect(result.fixedExpensesGrant).toBe(30_000);
   });
 
   it('should include zero-rate VAT inputs in calculation', () => {
@@ -492,7 +494,7 @@ describe('calculateFixedExpensesGrant', () => {
     expect(result.fixedExpensesGrant).toBe(22_555);
   });
 
-  it('should handle x1.5 with rate 22 giving effective rate 33', () => {
+  it('should handle x2 with rate 22 giving effective rate 44', () => {
     const input = makeFixedExpensesInput({
       vatInputs: 120_000,
       compensationRate: 22,
@@ -500,8 +502,10 @@ describe('calculateFixedExpensesGrant', () => {
       useEnhancedRate: true,
     });
     const result = calculateFixedExpensesGrant(input);
-    expect(result.effectiveRate).toBe(33);
-    expect(result.fixedExpensesGrant).toBe(3_300);
+    // Enhanced rate × 2 (May 2026 letter): 22 × 2 = 44
+    expect(result.effectiveRate).toBe(44);
+    // 10,000 monthly avg × 44% = 4,400
+    expect(result.fixedExpensesGrant).toBe(4_400);
   });
 });
 
@@ -600,8 +604,8 @@ describe('calculateSalaryGrant', () => {
       declinePercentage: 50,
     });
     const result = calculateSalaryGrant(input);
-    // Cap = round(5 × 13,773 × 1.25 × 0.50) = round(43,040.625) = 43,041
-    expect(result.salaryCap).toBe(43_041);
+    // Cap = round(5 × 13,967 × 1.25 × 0.50) = round(43,646.875) = 43,647
+    expect(result.salaryCap).toBe(43_647);
   });
 
   it('should calculate salary cap with NGO multiplier 1.325', () => {
@@ -612,8 +616,8 @@ describe('calculateSalaryGrant', () => {
       declinePercentage: 50,
     });
     const result = calculateSalaryGrant(input);
-    // Cap = round(5 × 13,773 × 1.325 × 0.50) = round(45,623.0625) = 45,623
-    expect(result.salaryCap).toBe(45_623);
+    // Cap = round(5 × 13,967 × 1.325 × 0.50) = round(46,265.6875) = 46,266
+    expect(result.salaryCap).toBe(46_266);
   });
 
   // --- Employee deductions from cap ---
@@ -861,70 +865,70 @@ describe('calculateGrantCap', () => {
 describe('lookupSmallBusinessGrant', () => {
   // --- First three rows: uniform amounts ---
 
-  it('should return 1,833 for revenue 12,000 at 25% decline', () => {
-    expect(lookupSmallBusinessGrant(12_000, 25)).toBe(1_833);
+  it('should return 1,864 for revenue 12,000 at 25% decline', () => {
+    expect(lookupSmallBusinessGrant(12_000, 25)).toBe(1_864);
   });
 
-  it('should return 1,833 for revenue 12,000 at 90% decline (uniform tier)', () => {
-    expect(lookupSmallBusinessGrant(12_000, 90)).toBe(1_833);
+  it('should return 1,864 for revenue 12,000 at 90% decline (uniform tier)', () => {
+    expect(lookupSmallBusinessGrant(12_000, 90)).toBe(1_864);
   });
 
-  it('should return 1,833 for revenue 49,999 at 50% decline', () => {
-    expect(lookupSmallBusinessGrant(49_999, 50)).toBe(1_833);
+  it('should return 1,864 for revenue 49,999 at 50% decline', () => {
+    expect(lookupSmallBusinessGrant(49_999, 50)).toBe(1_864);
   });
 
-  it('should return 3,300 for revenue 50,000 at 30% decline', () => {
-    expect(lookupSmallBusinessGrant(50_000, 30)).toBe(3_300);
+  it('should return 3,356 for revenue 50,000 at 30% decline', () => {
+    expect(lookupSmallBusinessGrant(50_000, 30)).toBe(3_356);
   });
 
-  it('should return 3,300 for revenue 89,999 at 70% decline', () => {
-    expect(lookupSmallBusinessGrant(89_999, 70)).toBe(3_300);
+  it('should return 3,356 for revenue 89,999 at 70% decline', () => {
+    expect(lookupSmallBusinessGrant(89_999, 70)).toBe(3_356);
   });
 
-  it('should return 4,400 for revenue 90,000 at 25% decline', () => {
-    expect(lookupSmallBusinessGrant(90_000, 25)).toBe(4_400);
+  it('should return 4,475 for revenue 90,000 at 25% decline', () => {
+    expect(lookupSmallBusinessGrant(90_000, 25)).toBe(4_475);
   });
 
-  it('should return 4,400 for revenue 119,999 at 90% decline', () => {
-    expect(lookupSmallBusinessGrant(119_999, 90)).toBe(4_400);
+  it('should return 4,475 for revenue 119,999 at 90% decline', () => {
+    expect(lookupSmallBusinessGrant(119_999, 90)).toBe(4_475);
   });
 
   // --- Rows 4-7: varied by tier ---
 
-  it('should return 2,776 for revenue 120,000 at 30% decline (tier 1)', () => {
-    expect(lookupSmallBusinessGrant(120_000, 30)).toBe(2_776);
+  it('should return 2,823 for revenue 120,000 at 30% decline (tier 1)', () => {
+    expect(lookupSmallBusinessGrant(120_000, 30)).toBe(2_823);
   });
 
-  it('should return 4,164 for revenue 130,000 at 45% decline (tier 2)', () => {
-    expect(lookupSmallBusinessGrant(130_000, 45)).toBe(4_164);
+  it('should return 4,235 for revenue 130,000 at 45% decline (tier 2)', () => {
+    expect(lookupSmallBusinessGrant(130_000, 45)).toBe(4_235);
   });
 
-  it('should return 6,662 for revenue 140,000 at 70% decline (tier 3)', () => {
-    expect(lookupSmallBusinessGrant(140_000, 70)).toBe(6_662);
+  it('should return 6,775 for revenue 140,000 at 70% decline (tier 3)', () => {
+    expect(lookupSmallBusinessGrant(140_000, 70)).toBe(6_775);
   });
 
-  it('should return 8,328 for revenue 149,999 at 85% decline (tier 4)', () => {
-    expect(lookupSmallBusinessGrant(149_999, 85)).toBe(8_328);
+  it('should return 8,469 for revenue 149,999 at 85% decline (tier 4)', () => {
+    expect(lookupSmallBusinessGrant(149_999, 85)).toBe(8_469);
   });
 
-  it('should return 3,273 for revenue 150,000 at 30% decline (tier 1)', () => {
-    expect(lookupSmallBusinessGrant(150_000, 30)).toBe(3_273);
+  it('should return 3,325 for revenue 150,000 at 30% decline (tier 1)', () => {
+    expect(lookupSmallBusinessGrant(150_000, 30)).toBe(3_325);
   });
 
-  it('should return 10,056 for revenue 200,000 at 65% decline (tier 3)', () => {
-    expect(lookupSmallBusinessGrant(200_000, 65)).toBe(10_056);
+  it('should return 10,226 for revenue 200,000 at 65% decline (tier 3)', () => {
+    expect(lookupSmallBusinessGrant(200_000, 65)).toBe(10_226);
   });
 
-  it('should return 14,691 for revenue 299,999 at 95% decline (tier 4)', () => {
-    expect(lookupSmallBusinessGrant(299_999, 95)).toBe(14_691);
+  it('should return 14,940 for revenue 299,999 at 95% decline (tier 4)', () => {
+    expect(lookupSmallBusinessGrant(299_999, 95)).toBe(14_940);
   });
 
-  it('should return 4,897 for revenue 250,000 at 25% decline (tier 1)', () => {
-    expect(lookupSmallBusinessGrant(250_000, 25)).toBe(4_897);
+  it('should return 4,980 for revenue 250,000 at 25% decline (tier 1)', () => {
+    expect(lookupSmallBusinessGrant(250_000, 25)).toBe(4_980);
   });
 
-  it('should return 7,346 for revenue 280,000 at 50% decline (tier 2)', () => {
-    expect(lookupSmallBusinessGrant(280_000, 50)).toBe(7_346);
+  it('should return 7,470 for revenue 280,000 at 50% decline (tier 2)', () => {
+    expect(lookupSmallBusinessGrant(280_000, 50)).toBe(7_470);
   });
 
   // --- Edge / out of range ---
@@ -954,9 +958,9 @@ describe('maybeCompareWithSmallBusiness', () => {
 
   it('should return small business amount when it is higher', () => {
     const result = maybeCompareWithSmallBusiness(2_000, 260_000, 30, 'standard', 'monthly');
-    // lookup 250K-300K, 25-40% → 4,897
-    expect(result.smallBusinessGrant).toBe(4_897);
-    expect(result.recommendedAmount).toBe(4_897);
+    // lookup 250K-300K, 25-40% → 4,980 (May 2026 letter)
+    expect(result.smallBusinessGrant).toBe(4_980);
+    expect(result.recommendedAmount).toBe(4_980);
   });
 
   it('should skip comparison when revenue > 300,000', () => {
@@ -980,9 +984,9 @@ describe('maybeCompareWithSmallBusiness', () => {
   it('should double decline for bimonthly before lookup', () => {
     // 15% bimonthly → 30% effective → tier 1 (25-40%)
     const result = maybeCompareWithSmallBusiness(1_000, 130_000, 15, 'standard', 'bimonthly');
-    // 120K-150K, tier1 → 2,776
-    expect(result.smallBusinessGrant).toBe(2_776);
-    expect(result.recommendedAmount).toBe(2_776);
+    // 120K-150K, tier1 → 2,823 (May 2026 letter)
+    expect(result.smallBusinessGrant).toBe(2_823);
+    expect(result.recommendedAmount).toBe(2_823);
   });
 
   it('should return null smallBusinessGrant for decline below threshold', () => {
@@ -1103,9 +1107,9 @@ describe('calculateGrant — integration', () => {
       annualRevenue2022: 260_000,
     }));
 
-    // Standard = 137,538. Lookup 250K-300K at 68% decline → tier 60-80% → 11,752
-    // 137,538 > 11,752 → recommended = 137,538
-    expect(result.smallBusinessGrant).toBe(11_752);
+    // Standard = 137,538. Lookup 250K-300K at 68% decline → tier 60-80% → 11,952 (May 2026 letter)
+    // 137,538 > 11,952 → recommended = 137,538
+    expect(result.smallBusinessGrant).toBe(11_952);
     expect(result.recommendedAmount).toBe(137_538);
   });
 
@@ -1369,7 +1373,7 @@ describe('Rounding behavior', () => {
       declinePercentage: 50,
     });
     const result = calculateSalaryGrant(input);
-    expect(result.salaryCap).toBe(43_041);
+    expect(result.salaryCap).toBe(43_647);
     expect(Number.isInteger(result.salaryCap)).toBe(true);
   });
 
@@ -1424,7 +1428,7 @@ describe('GRANT_CONSTANTS', () => {
     expect(GRANT_CONSTANTS.SALARY.REGULAR_MULTIPLIER).toBe(1.25);
     expect(GRANT_CONSTANTS.SALARY.NGO_MULTIPLIER).toBe(1.325);
     expect(GRANT_CONSTANTS.SALARY.GRANT_FACTOR).toBe(0.75);
-    expect(GRANT_CONSTANTS.SALARY.CAP_PER_EMPLOYEE).toBe(13_773);
+    expect(GRANT_CONSTANTS.SALARY.CAP_PER_EMPLOYEE).toBe(13_967);
   });
 
   it('should have correct grant cap constants', () => {

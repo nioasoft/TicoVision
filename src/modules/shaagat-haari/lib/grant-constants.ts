@@ -46,8 +46,9 @@ export const GRANT_CONSTANTS = {
     NGO_MULTIPLIER: 1.325,
     /** Salary grant factor — 75% of adjusted salary */
     GRANT_FACTOR: 0.75,
-    /** Average national salary (₪) — base for per-employee salary cap */
-    CAP_PER_EMPLOYEE: 13_773,
+    /** Average national salary (₪) — base for per-employee salary cap.
+     *  Source: Tax Consultants Institute professional letter, May 2026. */
+    CAP_PER_EMPLOYEE: 13_967,
   },
 
   // ────────────── Overall grant caps ──────────────
@@ -80,8 +81,9 @@ export const GRANT_CONSTANTS = {
   BIMONTHLY_DECLINE_CAP: 100,
   /** Contractor track final grant multiplier */
   CONTRACTOR_MULTIPLIER: 0.68,
-  /** Enhanced rate multiplier for fixed expenses — when actual fixed costs exceed calculated grant */
-  ENHANCED_RATE_MULTIPLIER: 1.5,
+  /** Enhanced rate multiplier for fixed expenses — when actual fixed costs exceed calculated grant.
+   *  Updated to ×2 per Tax Consultants Institute professional letter (May 2026). Was ×1.5. */
+  ENHANCED_RATE_MULTIPLIER: 2,
 
   // ────────────── Direct damage grant ──────────────
 
@@ -114,11 +116,13 @@ export const GRANT_CONSTANTS = {
  * Columns: tier1=25-40%, tier2=40-60%, tier3=60-80%, tier4=80-100%
  */
 export const SMALL_BUSINESS_LOOKUP: SmallBusinessLookupEntry[] = [
-  { minRevenue: 12_000,  maxRevenue: 50_000,  tier1: 1_833, tier2: 1_833,  tier3: 1_833,  tier4: 1_833  },
-  { minRevenue: 50_000,  maxRevenue: 90_000,  tier1: 3_300, tier2: 3_300,  tier3: 3_300,  tier4: 3_300  },
-  { minRevenue: 90_000,  maxRevenue: 120_000, tier1: 4_400, tier2: 4_400,  tier3: 4_400,  tier4: 4_400  },
-  { minRevenue: 120_000, maxRevenue: 150_000, tier1: 2_776, tier2: 4_164,  tier3: 6_662,  tier4: 8_328  },
-  { minRevenue: 150_000, maxRevenue: 200_000, tier1: 3_273, tier2: 4_910,  tier3: 7_855,  tier4: 9_819  },
-  { minRevenue: 200_000, maxRevenue: 250_000, tier1: 4_190, tier2: 6_285,  tier3: 10_056, tier4: 12_570 },
-  { minRevenue: 250_000, maxRevenue: 300_000, tier1: 4_897, tier2: 7_346,  tier3: 11_752, tier4: 14_691 },
+  // Updated per Tax Consultants Institute professional letter (May 2026).
+  // All amounts increased ~1.7% relative to the prior presentation.
+  { minRevenue: 12_000,  maxRevenue: 50_000,  tier1: 1_864, tier2: 1_864,  tier3: 1_864,  tier4: 1_864  },
+  { minRevenue: 50_000,  maxRevenue: 90_000,  tier1: 3_356, tier2: 3_356,  tier3: 3_356,  tier4: 3_356  },
+  { minRevenue: 90_000,  maxRevenue: 120_000, tier1: 4_475, tier2: 4_475,  tier3: 4_475,  tier4: 4_475  },
+  { minRevenue: 120_000, maxRevenue: 150_000, tier1: 2_823, tier2: 4_235,  tier3: 6_775,  tier4: 8_469  },
+  { minRevenue: 150_000, maxRevenue: 200_000, tier1: 3_325, tier2: 4_993,  tier3: 7_990,  tier4: 9_987  },
+  { minRevenue: 200_000, maxRevenue: 250_000, tier1: 4_261, tier2: 6_392,  tier3: 10_226, tier4: 12_783 },
+  { minRevenue: 250_000, maxRevenue: 300_000, tier1: 4_980, tier2: 7_470,  tier3: 11_952, tier4: 14_940 },
 ];

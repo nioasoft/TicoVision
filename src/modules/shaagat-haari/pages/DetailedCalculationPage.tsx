@@ -586,7 +586,7 @@ export function DetailedCalculationPage() {
               </div>
               <div className="flex items-center gap-2 pt-6">
                 <Checkbox checked={useEnhancedRate} onCheckedChange={(c) => setUseEnhancedRate(c === true)} id="enhanced" />
-                <Label htmlFor="enhanced" className="cursor-pointer">מכפיל x1.5 (הוצאות קבועות בפועל גבוהות)</Label>
+                <Label htmlFor="enhanced" className="cursor-pointer">מכפיל x2 (הוצאות קבועות בפועל גבוהות)</Label>
               </div>
             </div>
 
@@ -595,7 +595,7 @@ export function DetailedCalculationPage() {
             {/* 7 Expense Categories */}
             <h3 className="font-semibold text-right">פירוט הוצאות קבועות (7 סוגים)</h3>
             <p className="text-xs text-muted-foreground text-right">
-              פירוט ההוצאות משמש להחלטה האם להפעיל מכפיל x1.5. הנוסחה עצמה משתמשת בתשומות הממוצעות.
+              פירוט ההוצאות משמש להחלטה האם להפעיל מכפיל x2. הנוסחה עצמה משתמשת בתשומות הממוצעות.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-1">
