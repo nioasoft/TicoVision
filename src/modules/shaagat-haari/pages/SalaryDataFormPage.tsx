@@ -34,8 +34,17 @@ import {
   FileText,
 } from 'lucide-react';
 import { shaagatPublicService } from '../services/shaagat-public.service';
+import { cardcomService } from '@/services/cardcom.service';
+import { GRANT_CONSTANTS } from '../lib/grant-constants';
 
-type FormStep = 'loading' | 'error' | 'verify' | 'data' | 'summary' | 'success';
+type FormStep =
+  | 'loading'
+  | 'error'
+  | 'verify'
+  | 'data'
+  | 'summary'
+  | 'redirecting_to_payment'
+  | 'success';
 
 interface SalaryFormData {
   salary_gross: number | '';
@@ -151,13 +160,38 @@ export function SalaryDataFormPage() {
         return;
       }
 
-      setStep('success');
+      // After successful salary data submit, charge the Shaagat HaAri service
+      // fee via Cardcom hosted page. Webhook updates payment status server-side
+      // so the accountant can see it in the dashboard.
+      setStep('redirecting_to_payment');
+      const fee = GRANT_CONSTANTS.SERVICE_FEE.AMOUNT;
+      const vat = Math.round(fee * GRANT_CONSTANTS.SERVICE_FEE.VAT_RATE);
+      const totalAmount = fee + vat;
+
+      const payment = await cardcomService.createPaymentPage({
+        amount: totalAmount,
+        productName: `שכ"ט שאגת הארי — ${clientName}`,
+        customerName: clientName,
+        customerEmail: formData.submitted_by_email.trim(),
+        invoiceHead: clientName,
+        invoiceDescription: 'שכר טרחה לטיפול במענק שאגת הארי',
+        documentType: 1,
+      });
+
+      if (payment.error || !payment.data?.url) {
+        toast.error('יצירת קישור התשלום נכשלה — שמרנו את הנתונים, ניצור קשר.');
+        setStep('success');
+        return;
+      }
+
+      // Redirect to Cardcom hosted page
+      window.location.assign(payment.data.url);
     } catch {
       toast.error('שגיאה בשמירת הנתונים');
     } finally {
       setIsSubmitting(false);
     }
-  }, [token, formData]);
+  }, [token, formData, clientName]);
 
   const formatMoney = (val: number | ''): string => {
     if (val === '' || val === 0) return '—';
@@ -198,6 +232,23 @@ export function SalaryDataFormPage() {
               נתוני השכר עבור <strong>{clientName}</strong> התקבלו.
               <br />
               המשרד יעבד את הנתונים ויצור קשר בהמשך.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (step === 'redirecting_to_payment') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4" dir="rtl">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 text-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+            <h2 className="text-xl font-bold">מעבירים אותך לתשלום…</h2>
+            <p className="text-muted-foreground">
+              נתוני השכר נשמרו. כעת תועברו לעמוד התשלום של Cardcom להסדרת
+              שכר הטרחה לטיפול במענק.
             </p>
           </CardContent>
         </Card>

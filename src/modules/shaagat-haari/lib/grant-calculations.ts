@@ -63,13 +63,55 @@ function getCompensationRate(
     return { status: 'ELIGIBLE', rate: thresholds.TIER_1.rate };
   }
 
-  // Below minimum threshold — check gray area
-  const grayAreaMin = thresholds.MIN_THRESHOLD * thresholds.GRAY_AREA_FACTOR;
+  // Below minimum threshold — check gray area (1.5%-points buffer below threshold)
+  const grayAreaMin = thresholds.MIN_THRESHOLD - GRANT_CONSTANTS.GRAY_ZONE_BUFFER_PERCENT;
   if (declinePercentage >= grayAreaMin) {
     return { status: 'GRAY_AREA', rate: 0 };
   }
 
   return { status: 'NOT_ELIGIBLE', rate: 0 };
+}
+
+/**
+ * Quick eligibility helper for the internal initial-filter screen.
+ * Always uses bimonthly Mar–Apr 2026 vs Mar–Apr 2025 (no track-specific config).
+ *
+ * @param baseRevenue - Revenue for Mar–Apr 2025 (comparison/baseline)
+ * @param comparisonRevenue - Revenue for Mar–Apr 2026 (current)
+ * @returns Status, decline %, and the gray-zone bounds for display
+ */
+export function quickBimonthlyEligibility(
+  baseRevenue: number,
+  comparisonRevenue: number,
+): {
+  declinePercentage: number;
+  status: EligibilityStatus;
+  grayAreaMin: number;
+  minThreshold: number;
+} {
+  const minThreshold = GRANT_CONSTANTS.BIMONTHLY_THRESHOLDS.MIN_THRESHOLD;
+  const grayAreaMin = minThreshold - GRANT_CONSTANTS.GRAY_ZONE_BUFFER_PERCENT;
+
+  if (baseRevenue <= 0) {
+    return {
+      declinePercentage: 0,
+      status: 'NOT_ELIGIBLE',
+      grayAreaMin,
+      minThreshold,
+    };
+  }
+
+  const declinePercentage =
+    ((baseRevenue - comparisonRevenue) / baseRevenue) * 100;
+
+  const { status } = getCompensationRate(declinePercentage, false);
+
+  return {
+    declinePercentage,
+    status,
+    grayAreaMin,
+    minThreshold,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

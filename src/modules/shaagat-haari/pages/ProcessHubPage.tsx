@@ -8,7 +8,7 @@
  * NOTE: Stats are stubbed — wire up via useShaagatStore() when ready.
  */
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,27 +16,29 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Award } from 'lucide-react';
 import { ProcessStepCard, type ProcessStepCardProps } from '../components/ProcessStepCard';
 import { formatILSInteger } from '@/lib/formatters';
+import { useShaagatStore } from '../store/shaagatStore';
+import { countByStage, IN_PROCESS_STAGES } from '../lib/stage-derivation';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mock stats — replace with useShaagatStore() when ready
+// Stats shape used locally (some derived from rows, some from RPC)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MOCK = {
-  total_clients: 87,
-  email_sent: 72,
-  feasibility_completed: 54,
-  eligible: 41,
-  fee_paid: 38,
-  calculation_completed: 29,
-  client_approved: 24,
-  submitted: 18,
-  in_review: 12,
-  advance_received: 7,
-  total_expected: 4_230_000,
-  total_received: 1_150_000,
-  open_objections: 2,
-  upcoming_deadlines: 5,
-};
+interface HubStats {
+  total_clients: number;
+  email_sent: number;
+  feasibility_completed: number;
+  eligible: number;
+  fee_paid: number;
+  calculation_completed: number;
+  client_approved: number;
+  submitted: number;
+  in_review: number;
+  advance_received: number;
+  total_expected: number;
+  total_received: number;
+  open_objections: number;
+  upcoming_deadlines: number;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Step definitions
@@ -44,35 +46,35 @@ const MOCK = {
 
 type StepDef = Omit<ProcessStepCardProps, 'onClick'> & { route: string };
 
-function buildSteps(): StepDef[] {
+function buildSteps(s: HubStats): StepDef[] {
   return [
     {
       step: 1,
-      title: 'גיוס וסריקה',
-      description: 'שליחת מיילים ללקוחות, איסוף נתוני היתכנות ראשוניים, בדיקת רלוונטיות',
-      icon: '📧',
-      route: '/shaagat-haari?step=outreach',
+      title: 'סינון ראשוני',
+      description: 'מעבר על כל הלקוחות הפעילים, הזנת מחזור 03-04/26 מול 03-04/25, סיווג זכאי / תחום אפור / לא זכאי',
+      icon: '📋',
+      route: '/shaagat-haari',
       status: 'active',
       metrics: [
-        { label: 'כל הלקוחות',     value: MOCK.total_clients },
-        { label: 'נשלח מייל',      value: MOCK.email_sent, highlight: 'blue' },
-        { label: 'ביצעו היתכנות',  value: MOCK.feasibility_completed },
-        { label: 'ביקשו טיפול',    value: MOCK.eligible, highlight: 'green' },
+        { label: 'כל הלקוחות',     value: s.total_clients },
+        { label: 'נשלח מייל',      value: s.email_sent, highlight: 'blue' },
+        { label: 'ביצעו היתכנות',  value: s.feasibility_completed },
+        { label: 'ביקשו טיפול',    value: s.eligible, highlight: 'green' },
       ],
       showArrow: true,
     },
     {
       step: 2,
-      title: 'בדיקת זכאות',
-      description: 'סיווג עסק, הזנת מחזורים, בדיקת סף ירידה, שליחת מייל תוצאה',
+      title: 'בדיקת זכאות מלאה',
+      description: 'סיווג מסלול, נתונים מורחבים, שליחת מייל תוצאה',
       icon: '✅',
       route: '/shaagat-haari/eligibility',
       status: 'active',
       metrics: [
-        { label: 'זכאים',         value: MOCK.eligible,   highlight: 'green' },
-        { label: 'לא זכאים',      value: MOCK.total_clients - MOCK.eligible - 8 },
-        { label: 'תחום אפור',     value: 8, highlight: 'orange' },
-        { label: 'שילמו שכ״ט',   value: MOCK.fee_paid, highlight: 'blue' },
+        { label: 'זכאים',         value: s.eligible,   highlight: 'green' },
+        { label: 'לא זכאים',      value: Math.max(s.total_clients - s.eligible - 0, 0) },
+        { label: 'תחום אפור',     value: 0, highlight: 'orange' },
+        { label: 'שילמו שכ״ט',   value: s.fee_paid, highlight: 'blue' },
       ],
       showArrow: true,
     },
@@ -84,10 +86,10 @@ function buildSteps(): StepDef[] {
       route: '/shaagat-haari/calculations',
       status: 'active',
       metrics: [
-        { label: 'נוצרו חישובים',   value: MOCK.fee_paid },
-        { label: 'הושלמו',          value: MOCK.calculation_completed, highlight: 'blue' },
-        { label: 'אישרו',           value: MOCK.client_approved, highlight: 'green' },
-        { label: 'צפי ממוצע',       value: `${formatILSInteger(MOCK.total_expected / MOCK.calculation_completed || 1)}` },
+        { label: 'נוצרו חישובים',   value: s.fee_paid },
+        { label: 'הושלמו',          value: s.calculation_completed, highlight: 'blue' },
+        { label: 'אישרו',           value: s.client_approved, highlight: 'green' },
+        { label: 'צפי ממוצע',       value: `${formatILSInteger(s.total_expected / Math.max(s.calculation_completed, 1))}` },
       ],
       showArrow: true,
     },
@@ -97,12 +99,12 @@ function buildSteps(): StepDef[] {
       description: 'שידור מקוון, תיעוד מספר אישור וצילום, מעקב קבלת מקדמה',
       icon: '📋',
       route: '/shaagat-haari/submissions',
-      status: MOCK.submitted > 0 ? 'active' : 'pending',
+      status: s.submitted > 0 ? 'active' : 'pending',
       metrics: [
-        { label: 'שודרו',            value: MOCK.submitted, highlight: 'blue' },
-        { label: 'בבדיקה',           value: MOCK.in_review },
-        { label: 'מקדמה התקבלה',    value: MOCK.advance_received, highlight: 'green' },
-        { label: 'דדליינים קרובים', value: MOCK.upcoming_deadlines, highlight: MOCK.upcoming_deadlines > 0 ? 'orange' : undefined },
+        { label: 'שודרו',            value: s.submitted, highlight: 'blue' },
+        { label: 'בבדיקה',           value: s.in_review },
+        { label: 'מקדמה התקבלה',    value: s.advance_received, highlight: 'green' },
+        { label: 'דדליינים קרובים', value: s.upcoming_deadlines, highlight: s.upcoming_deadlines > 0 ? 'orange' : undefined },
       ],
       showArrow: true,
     },
@@ -112,11 +114,11 @@ function buildSteps(): StepDef[] {
       description: 'מעקב קבלת תשלום מלא, ניהול השגות וערעורים, סגירת תיק',
       icon: '💰',
       route: '/shaagat-haari/tracking',
-      status: MOCK.open_objections > 0 ? 'warning' : 'pending',
+      status: s.open_objections > 0 ? 'warning' : 'pending',
       metrics: [
-        { label: 'צפי כולל',          value: formatILSInteger(MOCK.total_expected) },
-        { label: 'התקבל',             value: formatILSInteger(MOCK.total_received), highlight: 'green' },
-        { label: 'השגות פתוחות',      value: MOCK.open_objections, highlight: MOCK.open_objections > 0 ? 'red' : undefined },
+        { label: 'צפי כולל',          value: formatILSInteger(s.total_expected) },
+        { label: 'התקבל',             value: formatILSInteger(s.total_received), highlight: 'green' },
+        { label: 'השגות פתוחות',      value: s.open_objections, highlight: s.open_objections > 0 ? 'red' : undefined },
         { label: 'תשלום מלא',        value: '—' },
       ],
       showArrow: false,
@@ -128,40 +130,46 @@ function buildSteps(): StepDef[] {
 // Summary bar
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SummaryBar: React.FC = () => (
-  <Card className="border-gray-200">
-    <CardContent className="py-3 px-4" dir="rtl">
-      <div className="flex flex-wrap items-center gap-6 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-500">סה״כ מענקים צפויים:</span>
-          <span className="font-bold text-blue-700 text-base tabular-nums">
-            {formatILSInteger(MOCK.total_expected)}
-          </span>
+const SummaryBar: React.FC<{ stats: HubStats }> = ({ stats }) => {
+  const collectionRate =
+    stats.total_expected > 0
+      ? Math.round((stats.total_received / stats.total_expected) * 100)
+      : 0;
+  return (
+    <Card className="border-gray-200">
+      <CardContent className="py-3 px-4" dir="rtl">
+        <div className="flex flex-wrap items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">סה״כ מענקים צפויים:</span>
+            <span className="font-bold text-blue-700 text-base tabular-nums">
+              {formatILSInteger(stats.total_expected)}
+            </span>
+          </div>
+          <Separator orientation="vertical" className="h-5" />
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">התקבל עד כה:</span>
+            <span className="font-bold text-green-700 text-base tabular-nums">
+              {formatILSInteger(stats.total_received)}
+            </span>
+          </div>
+          <Separator orientation="vertical" className="h-5" />
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">שיעור גבייה:</span>
+            <span className="font-bold text-gray-800 text-base">
+              {collectionRate}%
+            </span>
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-xs">
+              {stats.submitted} לקוחות שודרו מתוך {stats.eligible} זכאים
+            </span>
+          </div>
         </div>
-        <Separator orientation="vertical" className="h-5" />
-        <div className="flex items-center gap-2">
-          <span className="text-gray-500">התקבל עד כה:</span>
-          <span className="font-bold text-green-700 text-base tabular-nums">
-            {formatILSInteger(MOCK.total_received)}
-          </span>
-        </div>
-        <Separator orientation="vertical" className="h-5" />
-        <div className="flex items-center gap-2">
-          <span className="text-gray-500">שיעור גבייה:</span>
-          <span className="font-bold text-gray-800 text-base">
-            {Math.round((MOCK.total_received / MOCK.total_expected) * 100)}%
-          </span>
-        </div>
-        <div className="flex-1" />
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xs">
-            {MOCK.submitted} לקוחות שודרו מתוך {MOCK.eligible} זכאים
-          </span>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page
@@ -169,7 +177,78 @@ const SummaryBar: React.FC = () => (
 
 export const ProcessHubPage: React.FC = () => {
   const navigate = useNavigate();
-  const steps = buildSteps();
+
+  const initialFilterRows = useShaagatStore((s) => s.initialFilterRows);
+  const fetchInitialFilterRows = useShaagatStore(
+    (s) => s.fetchInitialFilterRows
+  );
+
+  useEffect(() => {
+    void fetchInitialFilterRows();
+  }, [fetchInitialFilterRows]);
+
+  const stats = useMemo<HubStats>(() => {
+    const counts = countByStage(initialFilterRows);
+    const inProcess = [...IN_PROCESS_STAGES].reduce(
+      (sum, stage) => sum + counts[stage],
+      0
+    );
+    const advanceReceived = initialFilterRows.filter(
+      (r) => r.advance_received === true
+    ).length;
+    const totalExpected = initialFilterRows.reduce(
+      (sum, r) => sum + (r.expected_amount ?? 0),
+      0
+    );
+    const totalReceived = initialFilterRows.reduce(
+      (sum, r) => sum + (r.received_amount ?? 0),
+      0
+    );
+    return {
+      total_clients: initialFilterRows.length,
+      email_sent: initialFilterRows.filter((r) => r.email_sent).length,
+      feasibility_completed: counts.eligible_pending_email + counts.eligible_pending_form + inProcess,
+      eligible:
+        counts.eligible_pending_email +
+        counts.eligible_pending_form +
+        counts.pending_payment +
+        counts.in_calculation +
+        counts.awaiting_approval +
+        counts.approved_pending_submission +
+        counts.submitted +
+        counts.paid_out,
+      fee_paid:
+        counts.in_calculation +
+        counts.awaiting_approval +
+        counts.approved_pending_submission +
+        counts.submitted +
+        counts.paid_out,
+      calculation_completed:
+        counts.awaiting_approval +
+        counts.approved_pending_submission +
+        counts.submitted +
+        counts.paid_out,
+      client_approved:
+        counts.approved_pending_submission +
+        counts.submitted +
+        counts.paid_out,
+      submitted: counts.submitted + counts.paid_out,
+      in_review: initialFilterRows.filter(
+        (r) => r.submission_status === 'IN_REVIEW'
+      ).length,
+      advance_received: advanceReceived,
+      total_expected: totalExpected,
+      total_received: totalReceived,
+      open_objections: initialFilterRows.filter(
+        (r) => r.submission_status === 'OBJECTIONS'
+      ).length,
+      // Pending deadlines is best shown when we wire submission deadline data;
+      // for now, keep it 0 — the dashboard already surfaces the warning row by row.
+      upcoming_deadlines: 0,
+    };
+  }, [initialFilterRows]);
+
+  const steps = useMemo(() => buildSteps(stats), [stats]);
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -197,7 +276,7 @@ export const ProcessHubPage: React.FC = () => {
         </div>
 
         {/* Summary bar */}
-        <SummaryBar />
+        <SummaryBar stats={stats} />
 
         {/* Process steps — horizontal scrollable on mobile, grid on desktop */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">

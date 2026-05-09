@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -74,6 +74,7 @@ import { formatILSInteger, formatIsraeliDate, formatPercentage } from '@/lib/for
 import { cn } from '@/lib/utils';
 import { DeadlineTimeline, type SubmissionDeadlines } from '../components/DeadlineTimeline';
 import { TaxLettersDrawer, type TaxLetter, type NewLetterForm } from '../components/TaxLettersDrawer';
+import { NextDeadlineBadge } from '../components/NextDeadlineBadge';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -259,40 +260,8 @@ const STATUS_CONFIG: Record<SubmissionStatus, { label: string; className: string
   CLOSED:          { label: 'סגור',            className: 'bg-gray-100 text-gray-600' },
 };
 
-function daysUntil(dateStr: string | null): number | null {
-  if (!dateStr) return null;
-  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86_400_000);
-}
-
-function NextDeadlineBadge({ row }: { row: TaxSubmissionRow }) {
-  const candidates = [
-    { label: 'מקדמה',   date: row.advance_due_date,       done: row.advance_received },
-    { label: 'מסמכים',  date: row.documents_due_date,     done: false },
-    { label: 'זכאות',   date: row.determination_due_date, done: false },
-    { label: 'תשלום',   date: row.full_payment_due_date,  done: false },
-  ].filter((c) => !c.done && c.date !== null);
-
-  if (candidates.length === 0) return null;
-
-  // Sort by date and pick nearest
-  candidates.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime());
-  const next = candidates[0];
-  const days = daysUntil(next.date);
-  if (days === null) return null;
-
-  const color =
-    days < 0 ? 'text-red-600 bg-red-50' :
-    days <= 7 ? 'text-red-600 bg-red-50' :
-    days <= 21 ? 'text-orange-600 bg-orange-50' :
-    'text-gray-500 bg-gray-50';
-
-  return (
-    <span className={cn('inline-flex items-center gap-1 text-xs rounded px-1.5 py-0.5', color)}>
-      <Clock className="h-3 w-3" />
-      {next.label}: {days < 0 ? `פג` : `${days}י׳`}
-    </span>
-  );
-}
+// `NextDeadlineBadge` lives in components/NextDeadlineBadge.tsx (shared with
+// the unified dashboard's StageDetailsCell).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status update dialog
@@ -534,6 +503,10 @@ const SubmissionKPICards: React.FC<{
 
 export const TaxSubmissionsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Optional deep-link from the unified dashboard: filter to a single client.
+  const clientIdFilter = searchParams.get('clientId');
 
   // TODO: Replace with useShaagatStore()
   const [loading] = useState(false);
@@ -542,6 +515,19 @@ export const TaxSubmissionsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<SubmissionStatus | 'all'>('all');
 
+  // Resolve the client name for the banner (best-effort from rows we have).
+  const focusedClient = useMemo(() => {
+    if (!clientIdFilter) return null;
+    const row = submissions.find((r) => r.client_id === clientIdFilter);
+    return row ? { id: row.client_id, name: row.company_name } : { id: clientIdFilter, name: null };
+  }, [clientIdFilter, submissions]);
+
+  const clearClientFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('clientId');
+    setSearchParams(next);
+  };
+
   // Dialog states
   const [statusDialog, setStatusDialog] = useState<{ open: boolean; row: TaxSubmissionRow | null }>({ open: false, row: null });
   const [deadlineSheet, setDeadlineSheet] = useState<{ open: boolean; row: TaxSubmissionRow | null }>({ open: false, row: null });
@@ -549,6 +535,7 @@ export const TaxSubmissionsPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     let result = [...submissions];
+    if (clientIdFilter) result = result.filter((r) => r.client_id === clientIdFilter);
     if (activeTab !== 'all') result = result.filter((r) => r.status === activeTab);
     if (search) {
       const q = search.toLowerCase();
@@ -557,7 +544,7 @@ export const TaxSubmissionsPage: React.FC = () => {
       );
     }
     return result;
-  }, [submissions, activeTab, search]);
+  }, [submissions, activeTab, search, clientIdFilter]);
 
   // Stub handlers
   const handleStatusSave = async (id: string, status: SubmissionStatus, receivedAmount: number, notes: string) => {
@@ -602,6 +589,28 @@ export const TaxSubmissionsPage: React.FC = () => {
               רענן
             </Button>
           </div>
+
+          {/* Single-client filter banner (deep-linked from dashboard) */}
+          {focusedClient && (
+            <Alert className="border-blue-200 bg-blue-50" dir="rtl">
+              <AlertDescription className="flex items-center justify-between gap-3 text-sm">
+                <span>
+                  מציג שידור עבור:{' '}
+                  <strong>
+                    {focusedClient.name ?? `לקוח ${focusedClient.id.slice(0, 8)}`}
+                  </strong>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-blue-700 hover:bg-blue-100"
+                  onClick={clearClientFilter}
+                >
+                  חזור לכל השידורים
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* KPI cards + tabs */}
           <SubmissionKPICards
@@ -748,7 +757,7 @@ export const TaxSubmissionsPage: React.FC = () => {
 
                             {/* Next deadline */}
                             <TableCell>
-                              <NextDeadlineBadge row={row} />
+                              <NextDeadlineBadge data={row} />
                             </TableCell>
 
                             {/* Letters */}

@@ -561,19 +561,20 @@ class ShaagatEmailService extends BaseService {
   async sendSalaryDataRequestEmail(params: {
     clientId: string;
     eligibilityCheckId?: string;
-    recipientEmail: string;
-    recipientName: string;
     submissionToken: string;
   }): Promise<ServiceResponse<SendEmailResult>> {
     try {
-      const { clientName } = await this.getClientEmails(params.clientId);
+      const { emails, clientName } = await this.getClientEmails(params.clientId);
+      if (emails.length === 0) {
+        return { data: null, error: new Error('לא נמצאו כתובות מייל ללקוח') };
+      }
       const firmName = await this.getFirmName();
       const appUrl = this.getAppUrl();
 
       const vars: SalaryDataRequestEmailVariables = {
         clientName,
         firmName,
-        recipientName: params.recipientName,
+        recipientName: clientName,
         formUrl: `${appUrl}/shaagat-haari/salary-form`,
         submissionToken: params.submissionToken,
       };
@@ -581,8 +582,8 @@ class ShaagatEmailService extends BaseService {
       const { subject, body } = getSalaryDataRequestEmail(vars);
 
       const { error } = await this.sendViaEdgeFunction({
-        recipientEmails: [params.recipientEmail],
-        recipientName: params.recipientName,
+        recipientEmails: emails,
+        recipientName: clientName,
         subject,
         body,
         clientId: params.clientId,
@@ -590,23 +591,25 @@ class ShaagatEmailService extends BaseService {
 
       const status = error ? 'FAILED' : 'SENT';
 
-      await this.logEmail({
-        clientId: params.clientId,
-        eligibilityCheckId: params.eligibilityCheckId,
-        emailType: 'SALARY_DATA_REQUEST',
-        recipientEmail: params.recipientEmail,
-        subject,
-        htmlContent: body,
-        status,
-        errorMessage: error?.message,
-      });
+      for (const email of emails) {
+        await this.logEmail({
+          clientId: params.clientId,
+          eligibilityCheckId: params.eligibilityCheckId,
+          emailType: 'SALARY_DATA_REQUEST',
+          recipientEmail: email,
+          subject,
+          htmlContent: body,
+          status,
+          errorMessage: error?.message,
+        });
+      }
 
       if (!error) {
         await this.saveToGeneratedLetters({
           clientId: params.clientId,
           subject,
           body,
-          recipientEmails: [params.recipientEmail],
+          recipientEmails: emails,
           emailType: 'SALARY_DATA_REQUEST',
         });
       }
@@ -614,7 +617,7 @@ class ShaagatEmailService extends BaseService {
       if (error) throw error;
 
       return {
-        data: { success: true, recipientEmails: [params.recipientEmail], emailType: 'SALARY_DATA_REQUEST' },
+        data: { success: true, recipientEmails: emails, emailType: 'SALARY_DATA_REQUEST' },
         error: null,
       };
     } catch (error) {

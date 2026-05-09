@@ -17,9 +17,15 @@ import type { SmallBusinessLookupEntry } from '../types/shaagat.types';
 export const GRANT_CONSTANTS = {
   // ────────────── Eligibility thresholds ──────────────
 
-  /** Monthly reporting — eligibility tiers and gray-area factor */
+  /**
+   * Gray zone buffer in absolute percentage points below MIN_THRESHOLD.
+   * Example: monthly threshold = 25%, buffer = 1.5 → gray zone is 23.5%–24.99%.
+   * Below the buffer → NOT_ELIGIBLE.
+   */
+  GRAY_ZONE_BUFFER_PERCENT: 1.5,
+
+  /** Monthly reporting — eligibility tiers */
   MONTHLY_THRESHOLDS: {
-    GRAY_AREA_FACTOR: 0.92,
     MIN_THRESHOLD: 25,
     TIER_1: { min: 25, max: 40, rate: 7 },
     TIER_2: { min: 40, max: 60, rate: 11 },
@@ -27,14 +33,24 @@ export const GRANT_CONSTANTS = {
     TIER_4: { min: 80, max: 100, rate: 22 },
   },
 
-  /** Bimonthly reporting — eligibility tiers and gray-area factor */
+  /** Bimonthly reporting — eligibility tiers */
   BIMONTHLY_THRESHOLDS: {
-    GRAY_AREA_FACTOR: 0.92,
     MIN_THRESHOLD: 12.5,
     TIER_1: { min: 12.5, max: 20, rate: 7 },
     TIER_2: { min: 20, max: 30, rate: 11 },
     TIER_3: { min: 30, max: 40, rate: 15 },
     TIER_4: { min: 40, max: 50, rate: 22 },
+  },
+
+  /**
+   * Initial-filter screen always uses bimonthly Mar–Apr 2026 vs Mar–Apr 2025.
+   * Track-specific periods (standard/northern/contractor/...) are applied later
+   * in the detailed eligibility/calculation flow.
+   */
+  INITIAL_FILTER_PERIOD: {
+    currentLabel: '03-04/2026',
+    comparisonLabel: '03-04/2025',
+    reportingType: 'bimonthly' as const,
   },
 
   // ────────────── Salary constants ──────────────

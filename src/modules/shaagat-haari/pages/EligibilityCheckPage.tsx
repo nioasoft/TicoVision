@@ -30,10 +30,8 @@ import { supabase } from '@/lib/supabase';
 import { getCurrentTenantId } from '@/lib/supabase';
 import { formatILSInteger, formatPercentage } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import {
-  calculateEligibility,
-  GRANT_CONSTANTS,
-} from '../lib/grant-calculations';
+import { calculateEligibility } from '../lib/grant-calculations';
+import { GRANT_CONSTANTS } from '../lib/grant-constants';
 import { useShaagatStore } from '../store/shaagatStore';
 import type { TrackType, BusinessType, ReportingType, EligibilityStatus } from '../types/shaagat.types';
 
@@ -528,7 +526,7 @@ const Step3Result: React.FC<Step3Props> = ({
   const thresholds = step1.reportingType === 'monthly'
     ? GRANT_CONSTANTS.MONTHLY_THRESHOLDS
     : GRANT_CONSTANTS.BIMONTHLY_THRESHOLDS;
-  const grayAreaMin = thresholds.MIN_THRESHOLD * thresholds.GRAY_AREA_FACTOR;
+  const grayAreaMin = thresholds.MIN_THRESHOLD - GRANT_CONSTANTS.GRAY_ZONE_BUFFER_PERCENT;
 
   return (
     <div className="space-y-5" dir="rtl">

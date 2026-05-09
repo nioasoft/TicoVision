@@ -1,0 +1,154 @@
+-- ============================================================================
+-- Migration: shaagat_initial_filter_view v2 — unified dashboard
+-- Date: 2026-05-09
+-- Purpose: Extend the initial filter view to include calculation + submission
+-- stage data so the unified dashboard can derive the per-client lifecycle stage
+-- with a single query.
+--
+-- Backwards compatible: same view name; existing columns unchanged.
+-- New columns added at the end.
+-- ============================================================================
+
+CREATE OR REPLACE VIEW shaagat_initial_filter_view
+WITH (security_invoker = true)
+AS
+WITH latest_eligibility AS (
+  SELECT DISTINCT ON (ec.client_id)
+    ec.id                          AS eligibility_check_id,
+    ec.client_id,
+    ec.tenant_id,
+    ec.eligibility_status,
+    ec.decline_percentage,
+    ec.compensation_rate,
+    ec.payment_status               AS shaagat_fee_payment_status,
+    ec.email_sent,
+    ec.is_relevant,
+    ec.created_at                   AS check_created_at,
+    ec.track_type,
+    ec.reporting_type,
+    ec.business_type
+  FROM shaagat_eligibility_checks ec
+  WHERE ec.is_active = true
+  ORDER BY ec.client_id, ec.created_at DESC
+),
+latest_accounting AS (
+  -- Latest submitted accounting form per client (any with submitted_by_email IS NOT NULL).
+  SELECT DISTINCT ON (acs.client_id)
+    acs.id                          AS accounting_submission_id,
+    acs.client_id,
+    acs.tenant_id,
+    acs.submitted_by_email,
+    acs.created_at                  AS accounting_created_at,
+    acs.updated_at                  AS accounting_updated_at
+  FROM shaagat_accounting_submissions acs
+  WHERE acs.submitted_by_email IS NOT NULL
+  ORDER BY acs.client_id, acs.updated_at DESC
+),
+latest_calculation AS (
+  SELECT DISTINCT ON (dc.client_id)
+    dc.id                           AS calculation_id,
+    dc.client_id,
+    dc.tenant_id,
+    dc.calculation_step,
+    dc.is_completed                 AS calculation_completed,
+    dc.client_approved,
+    dc.client_approved_at,
+    dc.final_grant_amount
+  FROM shaagat_detailed_calculations dc
+  WHERE dc.is_active = true
+  ORDER BY dc.client_id, dc.created_at DESC
+),
+latest_submission AS (
+  SELECT DISTINCT ON (ts.client_id)
+    ts.id                           AS submission_id,
+    ts.client_id,
+    ts.tenant_id,
+    ts.status                       AS submission_status,
+    ts.submission_number,
+    ts.expected_amount,
+    ts.received_amount,
+    ts.advance_received,
+    ts.is_closed                    AS submission_is_closed
+  FROM shaagat_tax_submissions ts
+  ORDER BY ts.client_id, ts.submission_date DESC NULLS LAST, ts.created_at DESC
+),
+annual_retainer_status AS (
+  SELECT
+    fc.client_id,
+    fc.tenant_id,
+    bool_or(fc.status NOT IN ('paid', 'cancelled')) AS has_unpaid_annual_retainer,
+    count(*) > 0                                     AS has_any_current_year_fee
+  FROM fee_calculations fc
+  WHERE fc.year = EXTRACT(YEAR FROM CURRENT_DATE)::int
+  GROUP BY fc.client_id, fc.tenant_id
+)
+SELECT
+  c.id                                                       AS client_id,
+  c.tenant_id,
+  c.company_name,
+  c.company_name_hebrew,
+  c.tax_id,
+  c.status                                                   AS client_status,
+
+  -- Eligibility
+  le.eligibility_check_id,
+  le.eligibility_status,
+  le.decline_percentage,
+  le.compensation_rate,
+  le.shaagat_fee_payment_status,
+  le.email_sent,
+  le.is_relevant,
+  le.check_created_at,
+  le.track_type,
+  le.reporting_type,
+  le.business_type,
+
+  -- Annual retainer
+  COALESCE(ar.has_unpaid_annual_retainer, false)             AS has_unpaid_annual_retainer,
+  COALESCE(ar.has_any_current_year_fee, false)               AS has_any_current_year_fee,
+
+  -- Accounting submission (salary form filled by client)
+  la.accounting_submission_id,
+  la.accounting_updated_at                                   AS accounting_submitted_at,
+
+  -- Detailed calculation
+  lc.calculation_id,
+  lc.calculation_step,
+  lc.calculation_completed,
+  lc.client_approved,
+  lc.client_approved_at,
+  lc.final_grant_amount,
+
+  -- Tax submission
+  ls.submission_id,
+  ls.submission_status,
+  ls.submission_number,
+  ls.expected_amount,
+  ls.received_amount,
+  ls.advance_received,
+  ls.submission_is_closed
+FROM clients c
+LEFT JOIN latest_eligibility le
+       ON le.client_id  = c.id
+      AND le.tenant_id  = c.tenant_id
+LEFT JOIN annual_retainer_status ar
+       ON ar.client_id  = c.id
+      AND ar.tenant_id  = c.tenant_id
+LEFT JOIN latest_accounting la
+       ON la.client_id  = c.id
+      AND la.tenant_id  = c.tenant_id
+LEFT JOIN latest_calculation lc
+       ON lc.client_id  = c.id
+      AND lc.tenant_id  = c.tenant_id
+LEFT JOIN latest_submission ls
+       ON ls.client_id  = c.id
+      AND ls.tenant_id  = c.tenant_id
+-- Two layers of "active":
+--   c.status = 'active'         → relationship-with-firm is active
+--   c.company_status = 'active' → the company itself is active at the registrar
+-- Both must hold; otherwise there's no point checking eligibility for the grant.
+WHERE c.status = 'active'
+  AND c.company_status = 'active';
+
+COMMENT ON VIEW shaagat_initial_filter_view IS
+  'Active clients + their latest Shaagat HaAri lifecycle data (eligibility, accounting form, calculation, submission, retainer). Backs the unified dashboard.';

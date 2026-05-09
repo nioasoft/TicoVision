@@ -307,6 +307,80 @@ export interface EligibilityFilters {
   is_relevant?: boolean;
 }
 
+// ─── Initial filter screen ───
+
+/**
+ * Row from `shaagat_initial_filter_view` — every active client plus their
+ * latest Shaagat HaAri lifecycle data (eligibility / salary form / calculation
+ * / submission). All stage-related fields are NULL when the client has not
+ * reached that stage yet.
+ *
+ * The unified dashboard derives a per-row Stage from these fields via
+ * `lib/stage-derivation.ts`.
+ */
+export interface InitialFilterRow {
+  client_id: string;
+  tenant_id: string;
+  company_name: string | null;
+  company_name_hebrew: string | null;
+  tax_id: string;
+  client_status: string;
+
+  // Latest eligibility check (NULL when never checked)
+  eligibility_check_id: string | null;
+  eligibility_status: EligibilityStatus | null;
+  decline_percentage: number | null;
+  compensation_rate: number | null;
+  shaagat_fee_payment_status: EligibilityPaymentStatus | null;
+  email_sent: boolean | null;
+  is_relevant: boolean | null;
+  check_created_at: string | null;
+  track_type: TrackType | null;
+  reporting_type: ReportingType | null;
+  business_type: BusinessType | null;
+
+  // Annual retainer (current calendar year)
+  has_unpaid_annual_retainer: boolean;
+  has_any_current_year_fee: boolean;
+
+  // Accounting submission (the salary form filled out by the client)
+  accounting_submission_id: string | null;
+  accounting_submitted_at: string | null;
+
+  // Detailed calculation (4-step wizard)
+  calculation_id: string | null;
+  calculation_step: number | null;
+  calculation_completed: boolean | null;
+  client_approved: boolean | null;
+  client_approved_at: string | null;
+  final_grant_amount: number | null;
+
+  // Tax submission
+  submission_id: string | null;
+  submission_status: SubmissionStatus | null;
+  submission_number: string | null;
+  submission_date: string | null;
+  expected_amount: number | null;
+  received_amount: number | null;
+  advance_received: boolean | null;
+  advance_due_date: string | null;
+  determination_due_date: string | null;
+  full_payment_due_date: string | null;
+  submission_is_closed: boolean | null;
+}
+
+export type InitialFilterEligibilityStatus =
+  | 'all'
+  | 'not_checked'
+  | EligibilityStatus;
+
+export interface InitialFilterFilters {
+  search?: string;
+  eligibilityStatus?: InitialFilterEligibilityStatus;
+  /** undefined = show all, true = only with unpaid retainer, false = only paid/none */
+  unpaidRetainerOnly?: boolean;
+}
+
 // ─── Create inputs ───
 
 export interface CreateEligibilityCheckInput {
@@ -459,6 +533,66 @@ class ShaagatService extends BaseService {
         },
         error: null,
       };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
+
+  // ──────────────────────────── Initial Filter ────────────────────────────
+
+  /**
+   * Fetch the initial filter rows: every active client for the tenant plus
+   * their latest Shaagat HaAri eligibility check (if any) plus a flag
+   * indicating unpaid annual retainer for the current calendar year.
+   *
+   * Backed by `shaagat_initial_filter_view`.
+   *
+   * Filtering is done client-side in the UI for now (small dataset). Search
+   * is applied here for performance over Hebrew/English/tax_id columns.
+   */
+  async getInitialFilterRows(
+    filters: InitialFilterFilters = {}
+  ): Promise<ServiceResponse<InitialFilterRow[]>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      let query = supabase
+        .from('shaagat_initial_filter_view')
+        .select('*')
+        .eq('tenant_id', tenantId);
+
+      if (filters.search) {
+        const term = filters.search.trim();
+        if (term.length > 0) {
+          query = query.or(
+            `company_name.ilike.%${term}%,company_name_hebrew.ilike.%${term}%,tax_id.ilike.%${term}%`
+          );
+        }
+      }
+
+      if (filters.unpaidRetainerOnly === true) {
+        query = query.eq('has_unpaid_annual_retainer', true);
+      }
+
+      // eligibilityStatus is filtered client-side because 'not_checked' maps to
+      // NULL eligibility_check_id which is awkward in PostgREST `or` clauses.
+
+      query = query.order('company_name_hebrew', { ascending: true });
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      let rows = (data ?? []) as InitialFilterRow[];
+
+      if (filters.eligibilityStatus && filters.eligibilityStatus !== 'all') {
+        rows = rows.filter((r) =>
+          filters.eligibilityStatus === 'not_checked'
+            ? r.eligibility_check_id === null
+            : r.eligibility_status === filters.eligibilityStatus
+        );
+      }
+
+      return { data: rows, error: null };
     } catch (error) {
       return { data: null, error: this.handleError(error as Error) };
     }
@@ -1239,6 +1373,44 @@ class ShaagatService extends BaseService {
   }
 
   // ──────────────────────────── Accounting submissions ────────────────────────────
+
+  /**
+   * Create an empty accounting submission row with a unique public token so the
+   * client can fill it out via the public salary-data form. Returns the token
+   * (NOT the full row — the row only gets populated when the client submits).
+   *
+   * Used by the unified dashboard when the accountant clicks "send salary form".
+   */
+  async createAccountingSubmissionToken(
+    clientId: string
+  ): Promise<ServiceResponse<{ token: string; expiresAt: string }>> {
+    try {
+      const tenantId = await this.getTenantId();
+
+      // Generate a 36-char hex token (matches the feasibility token style).
+      const arr = new Uint8Array(18);
+      crypto.getRandomValues(arr);
+      const token = Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
+
+      // 7-day expiry
+      const expiresAt = new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000
+      ).toISOString();
+
+      const { error } = await supabase.from('shaagat_accounting_submissions').insert({
+        tenant_id: tenantId,
+        client_id: clientId,
+        submission_token: token,
+        token_expires_at: expiresAt,
+      });
+
+      if (error) throw error;
+
+      return { data: { token, expiresAt }, error: null };
+    } catch (error) {
+      return { data: null, error: this.handleError(error as Error) };
+    }
+  }
 
   /**
    * Get the most recent accounting submission for a client (salary data from external form).

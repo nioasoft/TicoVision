@@ -143,8 +143,6 @@ const navigation: NavigationItem[] = [
     submenu: [
       { name: 'לוח בקרה',            href: '/shaagat-haari',             menuKey: 'shaagat-haari:dashboard'    },
       { name: 'מפת תהליך',           href: '/shaagat-haari/process',      menuKey: 'shaagat-haari:process'      },
-      { name: 'בדיקת זכאות',         href: '/shaagat-haari/eligibility',  menuKey: 'shaagat-haari:eligibility'  },
-      { name: 'חישובי מענק',         href: '/shaagat-haari/calculations', menuKey: 'shaagat-haari:calculations' },
       { name: 'שידורים לרשות המסים', href: '/shaagat-haari/submissions',  menuKey: 'shaagat-haari:submissions'  },
     ],
   },

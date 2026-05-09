@@ -100,30 +100,30 @@ describe('calculateEligibility', () => {
     expect(result.compensationRate).toBe(0);
   });
 
-  it('should return NOT_ELIGIBLE at 22.5% decline (monthly, below gray area min of 23%)', () => {
+  it('should return NOT_ELIGIBLE at 22.5% decline (monthly, below gray area min of 23.5%)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
-      revenueComparison: 77_500, // 22.5% decline — below gray area (< 23%)
+      revenueComparison: 77_500, // 22.5% decline — below gray area (< 23.5%)
     });
     const result = calculateEligibility(input);
     expect(result.eligibilityStatus).toBe('NOT_ELIGIBLE');
     expect(result.compensationRate).toBe(0);
   });
 
-  it('should return GRAY_AREA at 23% decline (monthly)', () => {
+  it('should return GRAY_AREA at exactly 23.5% decline (monthly, gray area floor)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
-      revenueComparison: 77_000,
+      revenueComparison: 76_500, // 23.5% decline — bottom of gray area (1.5% below 25%)
     });
     const result = calculateEligibility(input);
     expect(result.eligibilityStatus).toBe('GRAY_AREA');
     expect(result.compensationRate).toBe(0);
   });
 
-  it('should return NOT_ELIGIBLE at 22.99% decline (monthly, below gray area)', () => {
+  it('should return NOT_ELIGIBLE at 23.49% decline (monthly, just below gray area)', () => {
     const input = makeEligibilityInput({
-      revenueBase: 10_000,
-      revenueComparison: 7_701, // 22.99% decline
+      revenueBase: 100_000,
+      revenueComparison: 76_510, // 23.49% decline — below gray area (< 23.5%)
     });
     const result = calculateEligibility(input);
     expect(result.eligibilityStatus).toBe('NOT_ELIGIBLE');
@@ -251,17 +251,17 @@ describe('calculateEligibility', () => {
     expect(result.eligibilityStatus).toBe('GRAY_AREA');
   });
 
-  it('should return NOT_ELIGIBLE at 11% decline (bimonthly, below gray area min of 11.5%)', () => {
+  it('should return GRAY_AREA at exactly 11% decline (bimonthly, gray area floor of 12.5−1.5)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
-      revenueComparison: 89_000, // 11% decline — below gray area
+      revenueComparison: 89_000, // 11% decline — bottom of gray area
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
-    expect(result.eligibilityStatus).toBe('NOT_ELIGIBLE');
+    expect(result.eligibilityStatus).toBe('GRAY_AREA');
   });
 
-  it('should return GRAY_AREA at 11.5% decline (bimonthly)', () => {
+  it('should return GRAY_AREA at 11.5% decline (bimonthly, within gray area)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 88_500,
@@ -271,10 +271,10 @@ describe('calculateEligibility', () => {
     expect(result.eligibilityStatus).toBe('GRAY_AREA');
   });
 
-  it('should return NOT_ELIGIBLE at 11.49% decline (bimonthly, below gray area)', () => {
+  it('should return NOT_ELIGIBLE at 10.99% decline (bimonthly, below gray area floor of 11%)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
-      revenueComparison: 88_510,
+      revenueComparison: 89_010, // 10.99% decline
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
@@ -1457,19 +1457,19 @@ describe('Edge cases', () => {
     expect(result.compensationRate).toBe(7);
   });
 
-  it('should handle gray area boundary at exactly 23% (92% of 25)', () => {
+  it('should handle gray area boundary at exactly 23.5% (25 − 1.5)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
-      revenueComparison: 77_000,
+      revenueComparison: 76_500,
     });
     const result = calculateEligibility(input);
     expect(result.eligibilityStatus).toBe('GRAY_AREA');
   });
 
-  it('should handle bimonthly gray area at exactly 11.5% (92% of 12.5)', () => {
+  it('should handle bimonthly gray area at exactly 11% (12.5 − 1.5)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
-      revenueComparison: 88_500,
+      revenueComparison: 89_000,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);

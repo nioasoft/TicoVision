@@ -8,8 +8,6 @@
 import { create } from 'zustand';
 import { shaagatService } from '../services/shaagat.service';
 import type {
-  DashboardViewRow,
-  DashboardStats,
   EligibilityFilters,
   EligibilityCheckWithClient,
   EligibilityPaymentStatus,
@@ -21,6 +19,8 @@ import type {
   CreateTaxSubmissionInput,
   DetailedCalculation,
   TaxSubmission,
+  InitialFilterRow,
+  InitialFilterFilters,
 } from '../services/shaagat.service';
 import type { EligibilityStatus } from '../types/shaagat.types';
 
@@ -29,12 +29,6 @@ import type { EligibilityStatus } from '../types/shaagat.types';
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ShaagatState {
-  // ── Dashboard data ──
-  dashboardRows: DashboardViewRow[];
-  dashboardStats: DashboardStats | null;
-  dashboardLoading: boolean;
-  dashboardError: Error | null;
-
   // ── Eligibility checks list ──
   eligibilityChecks: EligibilityCheckWithClient[];
   eligibilityLoading: boolean;
@@ -53,6 +47,12 @@ interface ShaagatState {
   taxSubmissions: TaxSubmission[];
   submissionsLoading: boolean;
 
+  // ── Initial filter screen ──
+  initialFilterRows: InitialFilterRow[];
+  initialFilterLoading: boolean;
+  initialFilterError: Error | null;
+  initialFilterFilters: InitialFilterFilters;
+
   // ── Filters & pagination ──
   filters: EligibilityFilters;
   pagination: { page: number; pageSize: number; total: number };
@@ -63,12 +63,13 @@ interface ShaagatState {
   // ─────────── Actions ───────────
 
   // Data fetching
-  fetchDashboard: () => Promise<void>;
-  fetchDashboardStats: () => Promise<void>;
   fetchEligibilityChecks: () => Promise<void>;
   fetchFeasibilityChecks: () => Promise<void>;
   fetchTaxSubmissions: () => Promise<void>;
   fetchCalculationForEligibility: (eligibilityCheckId: string) => Promise<void>;
+  fetchInitialFilterRows: () => Promise<void>;
+  setInitialFilterFilters: (filters: Partial<InitialFilterFilters>) => void;
+  resetInitialFilterFilters: () => void;
   refreshAll: () => Promise<void>;
 
   // Filters & pagination
@@ -116,11 +117,6 @@ interface ShaagatState {
   ) => Promise<TaxSubmission | null>;
   updateSubmissionStatus: (id: string, status: SubmissionStatus) => Promise<boolean>;
   recordAdvancePayment: (id: string, amount: number) => Promise<boolean>;
-
-  // Optimistic updates
-  optimisticUpdateEligibilityPayment: (id: string, status: EligibilityPaymentStatus) => void;
-  optimisticUpdateEmailSent: (id: string) => void;
-  optimisticUpdateRelevance: (id: string, isRelevant: boolean) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,10 +131,6 @@ const DEFAULT_FILTERS: EligibilityFilters = {};
 
 export const useShaagatStore = create<ShaagatState>((set, get) => ({
   // Initial state
-  dashboardRows: [],
-  dashboardStats: null,
-  dashboardLoading: false,
-  dashboardError: null,
   eligibilityChecks: [],
   eligibilityLoading: false,
   eligibilityError: null,
@@ -149,55 +141,15 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
   calculationError: null,
   taxSubmissions: [],
   submissionsLoading: false,
+  initialFilterRows: [],
+  initialFilterLoading: false,
+  initialFilterError: null,
+  initialFilterFilters: { eligibilityStatus: 'all' },
   filters: DEFAULT_FILTERS,
   pagination: { page: 1, pageSize: 20, total: 0 },
   activeTab: 'process_hub',
 
   // ──────────────────────────── Data fetching ────────────────────────────
-
-  fetchDashboard: async () => {
-    set({ dashboardLoading: true, dashboardError: null });
-
-    try {
-      const { filters, pagination } = get();
-      const result = await shaagatService.getDashboardRows(
-        filters,
-        pagination.page,
-        pagination.pageSize
-      );
-
-      if (result.error) {
-        set({ dashboardError: result.error, dashboardLoading: false });
-        return;
-      }
-
-      set({
-        dashboardRows: result.data?.data ?? [],
-        pagination: {
-          ...get().pagination,
-          total: result.data?.total ?? 0,
-        },
-        dashboardLoading: false,
-      });
-    } catch (error) {
-      set({ dashboardError: error as Error, dashboardLoading: false });
-    }
-  },
-
-  fetchDashboardStats: async () => {
-    try {
-      const result = await shaagatService.getDashboardStats();
-
-      if (result.error) {
-        console.error('[shaagatStore] Failed to fetch stats:', result.error);
-        return;
-      }
-
-      set({ dashboardStats: result.data });
-    } catch (error) {
-      console.error('[shaagatStore] Failed to fetch stats:', error);
-    }
-  },
 
   fetchEligibilityChecks: async () => {
     set({ eligibilityLoading: true, eligibilityError: null });
@@ -291,11 +243,42 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
     }
   },
 
+  fetchInitialFilterRows: async () => {
+    set({ initialFilterLoading: true, initialFilterError: null });
+
+    try {
+      const result = await shaagatService.getInitialFilterRows(
+        get().initialFilterFilters
+      );
+
+      if (result.error) {
+        set({ initialFilterError: result.error, initialFilterLoading: false });
+        return;
+      }
+
+      set({
+        initialFilterRows: result.data ?? [],
+        initialFilterLoading: false,
+      });
+    } catch (error) {
+      set({ initialFilterError: error as Error, initialFilterLoading: false });
+    }
+  },
+
+  setInitialFilterFilters: (filters: Partial<InitialFilterFilters>) => {
+    set((state) => ({
+      initialFilterFilters: { ...state.initialFilterFilters, ...filters },
+    }));
+    void get().fetchInitialFilterRows();
+  },
+
+  resetInitialFilterFilters: () => {
+    set({ initialFilterFilters: { eligibilityStatus: 'all' } });
+    void get().fetchInitialFilterRows();
+  },
+
   refreshAll: async () => {
-    await Promise.all([
-      get().fetchDashboard(),
-      get().fetchDashboardStats(),
-    ]);
+    await get().fetchInitialFilterRows();
   },
 
   // ──────────────────────────── Filters & pagination ────────────────────────────
@@ -307,12 +290,9 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
     }));
 
     const { activeTab } = get();
-    if (activeTab === 'process_hub') {
-      get().fetchDashboard();
-    } else if (activeTab === 'eligibility') {
+    if (activeTab === 'eligibility') {
       get().fetchEligibilityChecks();
     }
-    get().fetchDashboardStats();
   },
 
   resetFilters: () => {
@@ -320,15 +300,13 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
       filters: DEFAULT_FILTERS,
       pagination: { page: 1, pageSize: 20, total: 0 },
     });
-    get().fetchDashboard();
-    get().fetchDashboardStats();
+    get().fetchInitialFilterRows();
   },
 
   setPagination: (newPagination: Partial<{ page: number; pageSize: number }>) => {
     set((state) => ({
       pagination: { ...state.pagination, ...newPagination },
     }));
-    get().fetchDashboard();
   },
 
   setActiveTab: (tab) => {
@@ -350,14 +328,10 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
   },
 
   updateEligibilityPayment: async (id, status, paymentLink) => {
-    // Optimistic update on dashboard rows
-    get().optimisticUpdateEligibilityPayment(id, status);
-
     const result = await shaagatService.updateEligibilityPayment(id, status, paymentLink);
 
     if (result.error) {
-      // Revert — refetch to get accurate state
-      void get().fetchDashboard();
+      void get().fetchInitialFilterRows();
       return false;
     }
 
@@ -368,16 +342,15 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
       ),
     }));
 
+    void get().fetchInitialFilterRows();
     return true;
   },
 
   markEligibilityEmailSent: async (id) => {
-    get().optimisticUpdateEmailSent(id);
-
     const result = await shaagatService.markEligibilityEmailSent(id);
 
     if (result.error) {
-      void get().fetchDashboard();
+      void get().fetchInitialFilterRows();
       return false;
     }
 
@@ -387,19 +360,19 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
       ),
     }));
 
+    void get().fetchInitialFilterRows();
     return true;
   },
 
   setEligibilityRelevance: async (id, isRelevant) => {
-    get().optimisticUpdateRelevance(id, isRelevant);
-
     const result = await shaagatService.setEligibilityRelevance(id, isRelevant);
 
     if (result.error) {
-      void get().fetchDashboard();
+      void get().fetchInitialFilterRows();
       return false;
     }
 
+    void get().fetchInitialFilterRows();
     return true;
   },
 
@@ -471,7 +444,7 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
     if (result.error) return false;
 
     set({ activeCalculation: result.data });
-    void get().fetchDashboard();
+    void get().fetchInitialFilterRows();
 
     return true;
   },
@@ -482,7 +455,7 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
     if (result.error) return false;
 
     set({ activeCalculation: result.data });
-    void get().fetchDashboard();
+    void get().fetchInitialFilterRows();
 
     return true;
   },
@@ -518,7 +491,7 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
       return false;
     }
 
-    void get().fetchDashboardStats();
+    void get().fetchInitialFilterRows();
 
     return true;
   },
@@ -534,37 +507,9 @@ export const useShaagatStore = create<ShaagatState>((set, get) => ({
       ),
     }));
 
-    void get().fetchDashboardStats();
+    void get().fetchInitialFilterRows();
 
     return true;
   },
 
-  // ──────────────────────────── Optimistic updates ────────────────────────────
-
-  optimisticUpdateEligibilityPayment: (id, status) => {
-    set((state) => ({
-      dashboardRows: state.dashboardRows.map((row) =>
-        row.eligibility_check_id === id ? { ...row, payment_status: status } : row
-      ),
-    }));
-  },
-
-  optimisticUpdateEmailSent: (id) => {
-    set((state) => ({
-      dashboardRows: state.dashboardRows.map((row) =>
-        row.eligibility_check_id === id ? { ...row, email_sent: true } : row
-      ),
-    }));
-  },
-
-  optimisticUpdateRelevance: (id, isRelevant) => {
-    set((state) => ({
-      dashboardRows: state.dashboardRows.map((row) =>
-        row.eligibility_check_id === id ? { ...row, is_relevant: isRelevant } : row
-      ),
-      eligibilityChecks: state.eligibilityChecks.map((ec) =>
-        ec.id === id ? { ...ec, is_relevant: isRelevant } : ec
-      ),
-    }));
-  },
 }));

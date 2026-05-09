@@ -1,301 +1,358 @@
 /**
- * Shaagat HaAri Dashboard — Main Page
+ * Shaagat HaAri Dashboard — Unified Page
  * Route: /shaagat-haari
  *
- * NOTE: Service and store imports are stubbed — wire up when shaagatStore is ready.
+ * Single page for the entire Shaagat HaAri lifecycle. Lists every active client
+ * for the tenant alongside their current pipeline Stage. Each row exposes a
+ * single primary action that changes based on the stage:
+ *
+ *   טרם נבדק                  → "בדוק זכאות"           (QuickEligibilityDialog)
+ *   זכאי – לא נשלח מייל       → "שלח טופס שכר"         (token + email)
+ *   ממתין למילוי טופס שכר    → "תזכורת ללקוח"
+ *   ממתין תשלום שכ"ט שאגתי  → "תזכורת תשלום"
+ *   בחישוב מפורט             → "פתח חישוב"            (DetailedCalculationPage)
+ *   חישוב הושלם              → "שלח לאישור הלקוח"
+ *   אושר ע"י לקוח            → "שדר לרשות"
+ *   שודר                       → "פתח שידור"            (TaxSubmissionsPage)
+ *   שולם במלואו              → "פרטים"
+ *
+ * Secondary actions per row (⋯ menu):
+ *   - סיווגי סיווג אחרים   → /shaagat-haari/eligibility/:clientId  (deep wizard)
+ *   - היסטוריה              → /shaagat-haari/client/:clientId/history
+ *   - סמן לא רלוונטי / החזר רלוונטיות
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RefreshCw, Award, Map, AlertTriangle } from 'lucide-react';
-import { GrantKPICards, type GrantDashboardStats, type GrantKPIFilter } from '../components/GrantKPICards';
-import { GrantFilters, type GrantFiltersState, type EligibilityFilterStatus } from '../components/GrantFilters';
-import { GrantTable, type GrantTableRow, type GrantTableActions } from '../components/GrantTable';
-import type { TrackType, ReportingType } from '../types/shaagat.types';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Mock data — replace with useShaagatStore() when store is ready
-// ─────────────────────────────────────────────────────────────────────────────
-
-const MOCK_STATS: GrantDashboardStats = {
-  total_clients: 87,
-  email_sent: 72,
-  requested_check: 54,
-  eligible: 41,
-  fee_paid: 38,
-  calculation_completed: 29,
-  client_approved: 24,
-  submitted: 18,
-  total_expected_grants: 4_230_000,
-  total_received_grants: 1_150_000,
-  upcoming_deadlines: 5,
-  unpaid_advances: 3,
-  open_objections: 2,
-};
-
-const MOCK_ROWS: GrantTableRow[] = [
-  {
-    eligibility_check_id: '1',
-    client_id: 'c1',
-    company_name: 'מסעדות כהן בע"מ',
-    tax_id: '514123456',
-    track_type: 'standard',
-    reporting_type: 'monthly',
-    eligibility_status: 'ELIGIBLE',
-    decline_percentage: 38.5,
-    payment_status: 'PAID',
-    email_sent: true,
-    calculation_id: 'calc1',
-    calculation_completed: true,
-    final_grant_amount: 124_800,
-    client_approved: true,
-    calculation_step: 4,
-    submission_id: 'sub1',
-    submission_status: 'IN_REVIEW',
-    submission_number: '2026-1234567',
-    is_relevant: true,
-  },
-  {
-    eligibility_check_id: '2',
-    client_id: 'c2',
-    company_name: 'גרין טק מוצרים ירוקים',
-    tax_id: '302456789',
-    track_type: 'northern',
-    reporting_type: 'bimonthly',
-    eligibility_status: 'ELIGIBLE',
-    decline_percentage: 65.2,
-    payment_status: 'PAID',
-    email_sent: true,
-    calculation_id: 'calc2',
-    calculation_completed: false,
-    final_grant_amount: null,
-    client_approved: null,
-    calculation_step: 2,
-    submission_id: null,
-    submission_status: null,
-    submission_number: null,
-    is_relevant: true,
-  },
-  {
-    eligibility_check_id: '3',
-    client_id: 'c3',
-    company_name: 'מרכז יופי ורדה',
-    tax_id: '215987654',
-    track_type: 'small',
-    reporting_type: 'monthly',
-    eligibility_status: 'NOT_ELIGIBLE',
-    decline_percentage: 18.3,
-    payment_status: null,
-    email_sent: true,
-    calculation_id: null,
-    calculation_completed: null,
-    final_grant_amount: null,
-    client_approved: null,
-    calculation_step: null,
-    submission_id: null,
-    submission_status: null,
-    submission_number: null,
-    is_relevant: true,
-  },
-  {
-    eligibility_check_id: '4',
-    client_id: 'c4',
-    company_name: 'קבלני צפון שמואלי',
-    tax_id: '511234567',
-    track_type: 'contractor',
-    reporting_type: 'monthly',
-    eligibility_status: 'GRAY_AREA',
-    decline_percentage: 22.8,
-    payment_status: null,
-    email_sent: false,
-    calculation_id: null,
-    calculation_completed: null,
-    final_grant_amount: null,
-    client_approved: null,
-    calculation_step: null,
-    submission_id: null,
-    submission_status: null,
-    submission_number: null,
-    is_relevant: true,
-  },
-  {
-    eligibility_check_id: '5',
-    client_id: 'c5',
-    company_name: 'מחסני דרום פריסה',
-    tax_id: '514765432',
-    track_type: 'standard',
-    reporting_type: 'bimonthly',
-    eligibility_status: 'ELIGIBLE',
-    decline_percentage: 47.1,
-    payment_status: 'UNPAID',
-    email_sent: true,
-    calculation_id: null,
-    calculation_completed: null,
-    final_grant_amount: null,
-    client_approved: null,
-    calculation_step: null,
-    submission_id: null,
-    submission_status: null,
-    submission_number: null,
-    is_relevant: false,
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Deadline Alerts Strip
-// ─────────────────────────────────────────────────────────────────────────────
-
-interface DeadlineItem {
-  company_name: string;
-  type: string;
-  due_date: string;
-}
-
-const MOCK_DEADLINES: DeadlineItem[] = [
-  { company_name: 'מסעדות כהן', type: 'קביעת זכאות', due_date: '25/04/2026' },
-  { company_name: 'גרין טק', type: 'מקדמה 60%', due_date: '28/04/2026' },
-  { company_name: 'אופטיקה לוי', type: 'תשלום מלא', due_date: '03/05/2026' },
-];
-
-const DeadlineAlertsStrip: React.FC<{ deadlines: DeadlineItem[] }> = ({ deadlines }) => {
-  if (deadlines.length === 0) return null;
-  return (
-    <Alert className="border-yellow-200 bg-yellow-50" dir="rtl">
-      <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-      <AlertDescription>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          <span className="font-semibold text-yellow-800">דדליינים קרובים:</span>
-          {deadlines.map((d, i) => (
-            <span key={i} className="text-yellow-700">
-              {d.company_name} — {d.type}{' '}
-              <span className="font-medium">{d.due_date}</span>
-            </span>
-          ))}
-        </div>
-      </AlertDescription>
-    </Alert>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────────────────────────────────────
-
-const DEFAULT_FILTERS: GrantFiltersState = {
-  search: '',
-  eligibilityStatus: 'all',
-  trackType: 'all',
-  reportingType: 'all',
-  showIrrelevant: false,
-};
+import { SearchField } from '@/components/ui/search-field';
+import { Separator } from '@/components/ui/separator';
+import {
+  Award,
+  Filter,
+  Loader2,
+  Map,
+  RefreshCw,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useShaagatStore } from '../store/shaagatStore';
+import { shaagatService } from '../services/shaagat.service';
+import { shaagatEmailService } from '../services/shaagat-email.service';
+import { GRANT_CONSTANTS } from '../lib/grant-constants';
+import { calculateEligibility } from '../lib/grant-calculations';
+import {
+  IN_PROCESS_STAGES,
+  deriveStage,
+} from '../lib/stage-derivation';
+import {
+  UnifiedClientsTable,
+  type UnifiedClientsTableActions,
+} from '../components/UnifiedClientsTable';
+import {
+  StageKPICards,
+  type KPICardKey,
+} from '../components/StageKPICards';
+import {
+  QuickEligibilityDialog,
+  type QuickEligibilitySaveInput,
+} from '../components/QuickEligibilityDialog';
+import {
+  AlphaFilterBar,
+  type AlphaFilterValue,
+  countsByAlpha,
+  firstAlphaKey,
+} from '../components/AlphaFilterBar';
+import type { InitialFilterRow } from '../services/shaagat.service';
+import type { StageActionKind } from '../lib/stage-derivation';
 
 export const ShaagatDashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
-  // TODO: Replace with useShaagatStore() when available
-  const [loading] = useState(false);
-  const [statsLoading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const initialFilterRows = useShaagatStore((s) => s.initialFilterRows);
+  const initialFilterLoading = useShaagatStore((s) => s.initialFilterLoading);
+  const fetchInitialFilterRows = useShaagatStore(
+    (s) => s.fetchInitialFilterRows
+  );
+  const markEligibilityEmailSent = useShaagatStore(
+    (s) => s.markEligibilityEmailSent
+  );
+  const setEligibilityRelevance = useShaagatStore(
+    (s) => s.setEligibilityRelevance
+  );
 
-  const stats = MOCK_STATS;
-  const allRows = MOCK_ROWS;
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [kpiSelection, setKpiSelection] = useState<KPICardKey>('all');
+  const [selectedLetter, setSelectedLetter] = useState<AlphaFilterValue>(null);
+  const [dialogClient, setDialogClient] = useState<InitialFilterRow | null>(
+    null
+  );
+  const [busyClientId, setBusyClientId] = useState<string | null>(null);
+  const [showIrrelevant, setShowIrrelevant] = useState(false);
 
-  const [filters, setFilters] = useState<GrantFiltersState>(DEFAULT_FILTERS);
-  const [kpiFilter, setKpiFilter] = useState<GrantKPIFilter>('all');
+  // Debounce search input
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(searchInput), 250);
+    return () => clearTimeout(handle);
+  }, [searchInput]);
 
-  // Apply filters client-side (replace with server-side when store ready)
+  useEffect(() => {
+    void fetchInitialFilterRows();
+  }, [fetchInitialFilterRows]);
+
+  // ─── Filtering ────────────────────────────────────────────────────────────
   const filteredRows = useMemo(() => {
-    let result = [...allRows];
+    let result = initialFilterRows;
 
-    // Relevance
-    if (!filters.showIrrelevant) {
-      result = result.filter((r) => r.is_relevant);
+    if (!showIrrelevant) {
+      result = result.filter((r) => r.is_relevant !== false);
     }
 
-    // KPI funnel filter
-    if (kpiFilter === 'email_sent')            result = result.filter((r) => r.email_sent);
-    else if (kpiFilter === 'eligible')         result = result.filter((r) => r.eligibility_status === 'ELIGIBLE');
-    else if (kpiFilter === 'fee_paid')         result = result.filter((r) => r.payment_status === 'PAID');
-    else if (kpiFilter === 'calculation_completed') result = result.filter((r) => r.calculation_completed);
-    else if (kpiFilter === 'client_approved')  result = result.filter((r) => r.client_approved === true);
-    else if (kpiFilter === 'submitted')        result = result.filter((r) => Boolean(r.submission_id));
-
-    // Text search
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
+    if (debouncedSearch.trim().length > 0) {
+      const q = debouncedSearch.trim().toLowerCase();
       result = result.filter(
         (r) =>
-          r.company_name.toLowerCase().includes(q) ||
-          r.tax_id.includes(q),
+          (r.company_name_hebrew?.toLowerCase().includes(q) ?? false) ||
+          (r.company_name?.toLowerCase().includes(q) ?? false) ||
+          r.tax_id.includes(q)
       );
     }
 
-    // Status filter
-    if (filters.eligibilityStatus !== 'all') {
-      const s = filters.eligibilityStatus as EligibilityFilterStatus;
-      if (s === 'ELIGIBLE' || s === 'NOT_ELIGIBLE' || s === 'GRAY_AREA') {
-        result = result.filter((r) => r.eligibility_status === s);
-      } else if (s === 'fee_pending') {
-        result = result.filter((r) => r.payment_status === 'UNPAID');
-      } else if (s === 'fee_paid') {
-        result = result.filter((r) => r.payment_status === 'PAID');
-      } else if (s === 'calculation_done') {
-        result = result.filter((r) => r.calculation_completed === true);
-      } else if (s === 'submitted') {
-        result = result.filter((r) => Boolean(r.submission_id));
-      }
+    if (kpiSelection !== 'all') {
+      result = result.filter((row) => {
+        const stage = deriveStage(row).stage;
+        switch (kpiSelection) {
+          case 'not_checked':
+            return stage === 'not_checked';
+          case 'in_process':
+            return IN_PROCESS_STAGES.has(stage);
+          case 'submitted':
+            return stage === 'submitted';
+          case 'paid_out':
+            return stage === 'paid_out';
+          case 'unpaid_retainer':
+            return row.has_unpaid_annual_retainer;
+          default:
+            return true;
+        }
+      });
     }
 
-    // Track filter
-    if (filters.trackType !== 'all') {
-      result = result.filter((r) => r.track_type === (filters.trackType as TrackType));
-    }
-
-    // Reporting type filter
-    if (filters.reportingType !== 'all') {
-      result = result.filter((r) => r.reporting_type === (filters.reportingType as ReportingType));
+    if (selectedLetter !== null) {
+      result = result.filter(
+        (row) =>
+          firstAlphaKey(row.company_name_hebrew ?? row.company_name) ===
+          selectedLetter
+      );
     }
 
     return result;
-  }, [allRows, filters, kpiFilter]);
+  }, [
+    initialFilterRows,
+    debouncedSearch,
+    kpiSelection,
+    showIrrelevant,
+    selectedLetter,
+  ]);
 
-  const handleKpiFilterClick = useCallback((filter: GrantKPIFilter) => {
-    setKpiFilter((prev) => (prev === filter ? 'all' : filter));
-  }, []);
+  // Counts for the alpha bar are computed against everything visible BEFORE
+  // the alpha filter is applied (otherwise the only highlighted letter would
+  // be the currently-selected one).
+  const alphaCounts = useMemo(() => {
+    const base = showIrrelevant
+      ? initialFilterRows
+      : initialFilterRows.filter((r) => r.is_relevant !== false);
+    return countsByAlpha(base);
+  }, [initialFilterRows, showIrrelevant]);
 
-  const handleExport = useCallback(() => {
-    // TODO: implement Excel export via XLSX
-    console.log('Export', filteredRows);
-  }, [filteredRows]);
+  // ─── QuickEligibility save → DB ───────────────────────────────────────────
+  const handleSaveEligibility = useCallback(
+    async (input: QuickEligibilitySaveInput): Promise<boolean> => {
+      const period = GRANT_CONSTANTS.INITIAL_FILTER_PERIOD;
 
-  const tableActions: GrantTableActions = {
-    onEligibilityCheck: (row) => navigate(`/shaagat-haari/eligibility/${row.client_id}`),
-    onCalculate: (row) => navigate(`/shaagat-haari/calculation/${row.eligibility_check_id}`),
-    onSendEmail: (row) => {
-      // TODO: open send email dialog
-      console.log('Send email to', row.company_name);
+      const eligibilityResult = calculateEligibility({
+        revenueBase: input.baseRevenue,
+        revenueComparison: input.comparisonRevenue,
+        capitalRevenuesBase: 0,
+        capitalRevenuesComparison: 0,
+        selfAccountingRevenuesBase: 0,
+        selfAccountingRevenuesComparison: 0,
+        reportingType: period.reportingType,
+        annualRevenue: GRANT_CONSTANTS.ANNUAL_REVENUE.MIN,
+      });
+
+      const result = await shaagatService.createEligibilityCheck({
+        client_id: input.clientId,
+        track_type: 'standard',
+        business_type: 'regular',
+        reporting_type: period.reportingType,
+        annual_revenue: 0,
+        revenue_base_period: input.baseRevenue,
+        revenue_comparison_period: input.comparisonRevenue,
+        revenue_base_period_label: period.comparisonLabel,
+        revenue_comparison_period_label: period.currentLabel,
+        net_revenue_base: eligibilityResult.netRevenueBase,
+        net_revenue_comparison: eligibilityResult.netRevenueComparison,
+        decline_percentage: eligibilityResult.declinePercentage,
+        eligibility_status: input.status,
+        compensation_rate: eligibilityResult.compensationRate,
+      });
+
+      if (result.error || !result.data) {
+        toast.error('שמירת בדיקת הזכאות נכשלה', {
+          description: result.error?.message,
+        });
+        return false;
+      }
+
+      toast.success('בדיקת הזכאות נשמרה');
+      void fetchInitialFilterRows();
+      return true;
     },
-    onViewHistory: (row) => navigate(`/shaagat-haari/client/${row.client_id}/history`),
-    onToggleRelevance: (row) => {
-      // TODO: call store toggleRelevance()
-      console.log('Toggle relevance for', row.company_name);
+    [fetchInitialFilterRows]
+  );
+
+  // ─── Send salary form (token + email) ─────────────────────────────────────
+  const handleSendSalaryForm = useCallback(
+    async (row: InitialFilterRow) => {
+      if (!row.eligibility_check_id) {
+        toast.error('יש לבדוק זכאות לפני שליחת מייל');
+        return;
+      }
+
+      setBusyClientId(row.client_id);
+
+      const tokenResult = await shaagatService.createAccountingSubmissionToken(
+        row.client_id
+      );
+      if (tokenResult.error || !tokenResult.data) {
+        toast.error('יצירת קישור הטופס נכשלה', {
+          description: tokenResult.error?.message,
+        });
+        setBusyClientId(null);
+        return;
+      }
+
+      const sendResult = await shaagatEmailService.sendSalaryDataRequestEmail({
+        clientId: row.client_id,
+        eligibilityCheckId: row.eligibility_check_id,
+        submissionToken: tokenResult.data.token,
+      });
+
+      if (sendResult.error) {
+        toast.error('שליחת המייל נכשלה', {
+          description: sendResult.error.message,
+        });
+        setBusyClientId(null);
+        return;
+      }
+
+      await markEligibilityEmailSent(row.eligibility_check_id);
+      toast.success('המייל נשלח ללקוח');
+      setBusyClientId(null);
+      void fetchInitialFilterRows();
     },
-  };
+    [fetchInitialFilterRows, markEligibilityEmailSent]
+  );
+
+  // ─── Stage primary action dispatcher ──────────────────────────────────────
+  const handlePrimaryAction = useCallback(
+    (kind: StageActionKind, row: InitialFilterRow) => {
+      switch (kind) {
+        case 'check_eligibility':
+        case 'recheck':
+          setDialogClient(row);
+          return;
+
+        case 'send_salary_form':
+          void handleSendSalaryForm(row);
+          return;
+
+        case 'send_form_reminder':
+          void handleSendSalaryForm(row); // reuses the same email/token flow for now
+          return;
+
+        case 'send_payment_reminder':
+          // Payment reminder is handled in the existing collection flow.
+          // For now route the accountant to the client history so they can
+          // see the status and follow up manually.
+          toast.info('פתח את היסטוריית הלקוח כדי לטפל בתזכורת תשלום');
+          navigate(`/shaagat-haari/client/${row.client_id}/history`);
+          return;
+
+        case 'open_calculation':
+          if (row.eligibility_check_id) {
+            navigate(`/shaagat-haari/calculation/${row.eligibility_check_id}`);
+          }
+          return;
+
+        case 'send_for_client_approval':
+          // Existing functionality lives in DetailedCalculationPage step 4.
+          if (row.eligibility_check_id) {
+            navigate(`/shaagat-haari/calculation/${row.eligibility_check_id}`);
+          }
+          return;
+
+        case 'submit_to_tax_authority':
+          navigate(`/shaagat-haari/submissions?clientId=${row.client_id}`);
+          return;
+
+        case 'open_submission':
+          navigate(`/shaagat-haari/submissions?clientId=${row.client_id}`);
+          return;
+
+        case 'view_details':
+          navigate(`/shaagat-haari/client/${row.client_id}/history`);
+          return;
+      }
+    },
+    [handleSendSalaryForm, navigate]
+  );
+
+  // ─── Secondary actions ────────────────────────────────────────────────────
+  const tableActions: UnifiedClientsTableActions = useMemo(
+    () => ({
+      onPrimaryAction: handlePrimaryAction,
+      onOpenDeepWizard: (row) =>
+        navigate(`/shaagat-haari/eligibility/${row.client_id}`),
+      onViewHistory: (row) =>
+        navigate(`/shaagat-haari/client/${row.client_id}/history`),
+      onToggleRelevance: async (row) => {
+        if (!row.eligibility_check_id) {
+          toast.error('יש לבדוק זכאות לפני שניתן לסמן רלוונטיות');
+          return;
+        }
+        const next = row.is_relevant === false;
+        await setEligibilityRelevance(row.eligibility_check_id, next);
+        toast.success(
+          next ? 'הלקוח חזר לרשימה הפעילה' : 'הלקוח סומן כלא רלוונטי'
+        );
+        void fetchInitialFilterRows();
+      },
+    }),
+    [
+      handlePrimaryAction,
+      navigate,
+      setEligibilityRelevance,
+      fetchInitialFilterRows,
+    ]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-4">
-
-        {/* Page header */}
-        <div className="flex items-center justify-between" dir="rtl">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <Award className="h-6 w-6 text-blue-600" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">מענקי שאגת הארי</h1>
-              <p className="text-sm text-gray-500">ניהול תהליך מענקי פיצוי — כל לקוחות המשרד</p>
+              <h1 className="text-xl font-bold text-gray-900">
+                מענקי שאגת הארי
+              </h1>
+              <p className="text-sm text-gray-500">
+                כל לקוחות המשרד — שלב נוכחי לכל לקוח ופעולה אחת מומלצת
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -311,59 +368,93 @@ export const ShaagatDashboardPage: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { /* TODO: refresh */ }}
-              disabled={loading}
+              onClick={() => fetchInitialFilterRows()}
+              disabled={initialFilterLoading}
               className="gap-1.5"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              {initialFilterLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
               רענן
             </Button>
           </div>
         </div>
 
-        {/* Error */}
-        {error && (
-          <Alert variant="destructive" dir="rtl">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         {/* KPI Cards */}
-        <GrantKPICards
-          stats={stats}
-          loading={statsLoading}
-          selectedFilter={kpiFilter}
-          onFilterClick={handleKpiFilterClick}
+        <StageKPICards
+          rows={initialFilterRows}
+          selected={kpiSelection}
+          onSelect={setKpiSelection}
         />
 
-        {/* Deadline alerts */}
-        <DeadlineAlertsStrip deadlines={MOCK_DEADLINES} />
-
-        {/* Filters + Table */}
+        {/* Search + filters bar */}
         <Card className="border-gray-200">
-          <CardContent className="pt-4 pb-2 px-4 space-y-3">
-            <GrantFilters
-              filters={filters}
-              onChange={(f) => {
-                setFilters(f);
-                setKpiFilter('all');
-              }}
-              onExport={handleExport}
-              resultCount={filteredRows.length}
-            />
-            <GrantTable
-              rows={filteredRows}
-              loading={loading}
-              actions={tableActions}
-            />
+          <CardContent className="py-3 px-4" dir="rtl">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[260px]">
+                <SearchField
+                  value={searchInput}
+                  onChange={setSearchInput}
+                  label="חיפוש"
+                  placeholder="שם חברה או ח.פ."
+                />
+              </div>
 
-            {/* Pagination placeholder */}
-            <div className="flex items-center justify-center py-2 text-xs text-gray-400">
-              {filteredRows.length} תוצאות מוצגות
+              <label className="flex items-center gap-2 text-sm text-gray-700 self-center">
+                <input
+                  type="checkbox"
+                  checked={showIrrelevant}
+                  onChange={(e) => setShowIrrelevant(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                הצג גם לקוחות לא רלוונטיים
+              </label>
+
+              <div className="text-xs text-gray-400 self-center flex items-center gap-1">
+                <Filter className="h-3 w-3" />
+                {filteredRows.length} מתוך {initialFilterRows.length}
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Alphabet filter bar */}
+        <AlphaFilterBar
+          counts={alphaCounts}
+          selected={selectedLetter}
+          onSelect={setSelectedLetter}
+          total={Object.values(alphaCounts).reduce((s, n) => s + n, 0)}
+        />
+
+        {/* Table */}
+        <UnifiedClientsTable
+          rows={filteredRows}
+          loading={initialFilterLoading || busyClientId !== null}
+          actions={tableActions}
+        />
+        <div className="mt-1 flex justify-center">
+          <Separator className="max-w-[150px]" />
+        </div>
       </div>
+
+      {/* Quick eligibility dialog */}
+      {dialogClient && (
+        <QuickEligibilityDialog
+          open={dialogClient !== null}
+          onOpenChange={(open) => {
+            if (!open) setDialogClient(null);
+          }}
+          clientId={dialogClient.client_id}
+          clientLabel={
+            dialogClient.company_name_hebrew ||
+            dialogClient.company_name ||
+            dialogClient.tax_id
+          }
+          onSave={handleSaveEligibility}
+        />
+      )}
     </div>
   );
 };

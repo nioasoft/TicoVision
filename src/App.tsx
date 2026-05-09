@@ -493,12 +493,6 @@ function App() {
                           <TaxSubmissionsPage />
                         </ErrorBoundary>
                       } />
-                      {/* /calculations = dashboard filtered to ELIGIBLE — reuses ShaagatDashboardPage */}
-                      <Route path="/shaagat-haari/calculations" element={
-                        <ErrorBoundary>
-                          <ShaagatDashboardPage />
-                        </ErrorBoundary>
-                      } />
                       <Route path="/shaagat-haari/calculation/:checkId" element={
                         <ErrorBoundary>
                           <DetailedCalculationPage />
