@@ -32,6 +32,7 @@ import {
   Scale,
   MessageCircle,
   Contact,
+  Award,
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -134,6 +135,17 @@ const navigation: NavigationItem[] = [
     ]
   },
   { name: 'מערכת שליטה בדוחות', href: '/annual-balance', icon: Scale, menuKey: 'annual-balance', allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[] },
+  {
+    name: 'מענקי שאגת הארי',
+    icon: Award,
+    menuKey: 'shaagat-haari',
+    allowedRoles: ['admin', 'accountant', 'bookkeeper'] as UserRole[],
+    submenu: [
+      { name: 'לוח בקרה',            href: '/shaagat-haari',             menuKey: 'shaagat-haari:dashboard'    },
+      { name: 'מפת תהליך',           href: '/shaagat-haari/process',      menuKey: 'shaagat-haari:process'      },
+      { name: 'שידורים לרשות המסים', href: '/shaagat-haari/submissions',  menuKey: 'shaagat-haari:submissions'  },
+    ],
+  },
   { name: 'רשימות תפוצה', href: '/broadcast', icon: ListFilter, menuKey: 'broadcast', allowedRoles: ['admin'] as UserRole[] },
   { name: 'Tico Tickets', href: '/tico-tickets', icon: Ticket, menuKey: 'tico-tickets', allowedRoles: ['admin', 'accountant'] as UserRole[] },
   { name: 'מנהל הקבצים', href: '/files', icon: FolderOpen, menuKey: 'files', allowedRoles: ['admin', 'bookkeeper'] as UserRole[] },

@@ -86,6 +86,19 @@ const PublicTicketStatus = lazy(() => import('@/modules/tico-tickets/pages/Publi
 const TicketDashboard = lazy(() => import('@/modules/tico-tickets/pages/TicketDashboard').then(m => ({ default: m.TicketDashboard })));
 const TicketSettings = lazy(() => import('@/modules/tico-tickets/pages/TicketSettings').then(m => ({ default: m.TicketSettings })));
 
+// Shaagat HaAri — Public external forms (no auth, token-based)
+const FeasibilityFormPage = lazy(() => import('@/modules/shaagat-haari/pages/FeasibilityFormPage'));
+const SalaryDataFormPage = lazy(() => import('@/modules/shaagat-haari/pages/SalaryDataFormPage'));
+const GrantApprovalFormPage = lazy(() => import('@/modules/shaagat-haari/pages/GrantApprovalFormPage'));
+
+// Shaagat HaAri — Internal (protected) pages
+const ShaagatDashboardPage = lazy(() => import('@/modules/shaagat-haari/pages/ShaagatDashboardPage'));
+const EligibilityCheckPage = lazy(() => import('@/modules/shaagat-haari/pages/EligibilityCheckPage'));
+const ProcessHubPage = lazy(() => import('@/modules/shaagat-haari/pages/ProcessHubPage'));
+const TaxSubmissionsPage = lazy(() => import('@/modules/shaagat-haari/pages/TaxSubmissionsPage'));
+const DetailedCalculationPage = lazy(() => import('@/modules/shaagat-haari/pages/DetailedCalculationPage'));
+const ClientTimelinePage = lazy(() => import('@/modules/shaagat-haari/pages/ClientTimelinePage').then(m => ({ default: m.ClientTimelinePage })));
+
 // Loading component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -142,6 +155,22 @@ function App() {
                 <Route path="/tico-tickets/track/:token" element={
                   <ErrorBoundary>
                     <PublicTicketStatus />
+                  </ErrorBoundary>
+                } />
+                {/* Shaagat HaAri - Public external forms */}
+                <Route path="/shaagat-haari/feasibility" element={
+                  <ErrorBoundary>
+                    <FeasibilityFormPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/shaagat-haari/salary-form" element={
+                  <ErrorBoundary>
+                    <SalaryDataFormPage />
+                  </ErrorBoundary>
+                } />
+                <Route path="/shaagat-haari/approval" element={
+                  <ErrorBoundary>
+                    <GrantApprovalFormPage />
                   </ErrorBoundary>
                 } />
                 <Route path="/login" element={
@@ -435,6 +464,43 @@ function App() {
                       <Route path="/tico-tickets/settings" element={
                         <ErrorBoundary>
                           <TicketSettings />
+                        </ErrorBoundary>
+                      } />
+
+                      {/* Shaagat HaAri — Internal protected pages */}
+                      <Route path="/shaagat-haari" element={
+                        <ErrorBoundary>
+                          <ShaagatDashboardPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/shaagat-haari/eligibility" element={
+                        <ErrorBoundary>
+                          <EligibilityCheckPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/shaagat-haari/eligibility/:clientId" element={
+                        <ErrorBoundary>
+                          <EligibilityCheckPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/shaagat-haari/process" element={
+                        <ErrorBoundary>
+                          <ProcessHubPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/shaagat-haari/submissions" element={
+                        <ErrorBoundary>
+                          <TaxSubmissionsPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/shaagat-haari/calculation/:checkId" element={
+                        <ErrorBoundary>
+                          <DetailedCalculationPage />
+                        </ErrorBoundary>
+                      } />
+                      <Route path="/shaagat-haari/client/:clientId/history" element={
+                        <ErrorBoundary>
+                          <ClientTimelinePage />
                         </ErrorBoundary>
                       } />
 
