@@ -13,6 +13,9 @@ export type PdfElementType = 'signature' | 'signature_with_address' | 'date';
 // Address text for signature with address
 const SIGNATURE_ADDRESS = "רח' שד\"ל 3, תל אביב";
 
+// License number text - appears under both clean signature and signature with address
+const SIGNATURE_LICENSE = "מספר רשיון 10392";
+
 // Hebrew font URL (Heebo Regular from Google Fonts)
 const HEBREW_FONT_URL = 'https://fonts.gstatic.com/s/heebo/v28/NGSpv5_NC0k9P_v6ZUCbLRAHxK1EiSyccg.ttf';
 
@@ -198,34 +201,64 @@ export function usePdfSignature(): UsePdfSignatureReturn {
           const y = pageHeight - (element.y / 100) * pageHeight - elemHeight;
 
           if (element.type === 'signature') {
-            // Draw signature image
-            page.drawImage(signatureImage, {
-              x,
-              y,
-              width: elemWidth,
-              height: elemHeight,
-            });
-          } else if (element.type === 'signature_with_address') {
-            // Draw signature image (upper portion)
-            const signatureHeight = elemHeight * 0.80; // 80% for signature
-            const addressHeight = elemHeight * 0.20; // 20% for address (closer to signature)
+            // Layout: signature image (top 85%) + license number (bottom 15%)
+            const signatureHeight = elemHeight * 0.85;
+            const licenseHeight = elemHeight * 0.15;
 
             page.drawImage(signatureImage, {
               x,
-              y: y + addressHeight, // Signature goes above the address
+              y: y + licenseHeight, // Signature goes above the license line
               width: elemWidth,
               height: signatureHeight,
             });
 
-            // Draw address text directly below signature
-            const fontSize = Math.min(elemHeight * 0.12, 9);
-            const textWidth = font.widthOfTextAtSize(SIGNATURE_ADDRESS, fontSize);
-            const textX = x + (elemWidth - textWidth) / 2; // Center the text
+            // Draw license number directly below signature
+            const licenseFontSize = Math.min(elemHeight * 0.10, 8);
+            const licenseTextWidth = font.widthOfTextAtSize(SIGNATURE_LICENSE, licenseFontSize);
+            const licenseTextX = x + (elemWidth - licenseTextWidth) / 2;
+
+            page.drawText(SIGNATURE_LICENSE, {
+              x: licenseTextX,
+              y: y + licenseHeight * 0.35,
+              size: licenseFontSize,
+              font,
+              color: rgb(0, 0, 0),
+            });
+          } else if (element.type === 'signature_with_address') {
+            // Layout: signature image (70%) + address (15%) + license (15%)
+            const signatureHeight = elemHeight * 0.70;
+            const addressHeight = elemHeight * 0.15;
+            const licenseHeight = elemHeight * 0.15;
+
+            page.drawImage(signatureImage, {
+              x,
+              y: y + addressHeight + licenseHeight, // Signature on top
+              width: elemWidth,
+              height: signatureHeight,
+            });
+
+            const textFontSize = Math.min(elemHeight * 0.08, 8);
+
+            // Draw address text below signature
+            const addressTextWidth = font.widthOfTextAtSize(SIGNATURE_ADDRESS, textFontSize);
+            const addressTextX = x + (elemWidth - addressTextWidth) / 2;
 
             page.drawText(SIGNATURE_ADDRESS, {
-              x: textX,
-              y: y + addressHeight * 0.5, // Closer to signature
-              size: fontSize,
+              x: addressTextX,
+              y: y + licenseHeight + addressHeight * 0.25,
+              size: textFontSize,
+              font,
+              color: rgb(0, 0, 0),
+            });
+
+            // Draw license number below address
+            const licenseTextWidth = font.widthOfTextAtSize(SIGNATURE_LICENSE, textFontSize);
+            const licenseTextX = x + (elemWidth - licenseTextWidth) / 2;
+
+            page.drawText(SIGNATURE_LICENSE, {
+              x: licenseTextX,
+              y: y + licenseHeight * 0.25,
+              size: textFontSize,
               font,
               color: rgb(0, 0, 0),
             });

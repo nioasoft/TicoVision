@@ -23,15 +23,18 @@ interface PdfSignatureViewerProps {
 }
 
 // Default sizes as percentage of page
-const DEFAULT_SIGNATURE_WIDTH = 15;
-const DEFAULT_SIGNATURE_HEIGHT = 7;
-const DEFAULT_SIGNATURE_WITH_ADDRESS_WIDTH = 18;
-const DEFAULT_SIGNATURE_WITH_ADDRESS_HEIGHT = 10;
+const DEFAULT_SIGNATURE_WIDTH = 18;
+const DEFAULT_SIGNATURE_HEIGHT = 8;
+const DEFAULT_SIGNATURE_WITH_ADDRESS_WIDTH = 20;
+const DEFAULT_SIGNATURE_WITH_ADDRESS_HEIGHT = 11;
 const DEFAULT_DATE_WIDTH = 12;
 const DEFAULT_DATE_HEIGHT = 3;
 
 // Address text for display
 const SIGNATURE_ADDRESS = "רח' שד\"ל 3, תל אביב";
+
+// License number text - appears under both signature variants
+const SIGNATURE_LICENSE = "מספר רשיון 10392";
 
 // Generate unique ID
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -340,22 +343,30 @@ export function PdfSignatureViewer({
                 onMouseDown={(e) => handleMouseDown(e, element.id)}
               >
                 {element.type === 'signature' ? (
-                  <img
-                    src={signatureUrl}
-                    alt="Signature"
-                    className="w-full h-full object-contain pointer-events-none"
-                    draggable={false}
-                  />
+                  <div className="w-full h-full flex flex-col pointer-events-none">
+                    <img
+                      src={signatureUrl}
+                      alt="Signature"
+                      className="w-full h-[85%] object-contain"
+                      draggable={false}
+                    />
+                    <div className="h-[15%] flex items-center justify-center text-[9px] leading-none font-medium text-gray-700" dir="rtl">
+                      {SIGNATURE_LICENSE}
+                    </div>
+                  </div>
                 ) : element.type === 'signature_with_address' ? (
                   <div className="w-full h-full flex flex-col pointer-events-none">
                     <img
                       src={signatureUrl}
                       alt="Signature"
-                      className="w-full h-[65%] object-contain"
+                      className="w-full h-[70%] object-contain"
                       draggable={false}
                     />
-                    <div className="h-[35%] flex items-center justify-center text-xs font-medium text-gray-700" dir="rtl">
+                    <div className="h-[15%] flex items-center justify-center text-[9px] leading-none font-medium text-gray-700" dir="rtl">
                       {SIGNATURE_ADDRESS}
+                    </div>
+                    <div className="h-[15%] flex items-center justify-center text-[9px] leading-none font-medium text-gray-700" dir="rtl">
+                      {SIGNATURE_LICENSE}
                     </div>
                   </div>
                 ) : (
