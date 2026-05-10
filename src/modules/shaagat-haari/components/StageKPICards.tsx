@@ -148,10 +148,11 @@ export function StageKPICards({
             key={config.key}
             onClick={() => onSelect(config.key)}
             className={cn(
-              'flex flex-col items-start gap-1 rounded-lg border bg-white px-3 py-2.5 text-right transition-colors hover:bg-gray-50',
+              'flex flex-col items-start gap-1 rounded-lg border bg-white px-3 py-2.5 text-right transition-colors',
+              !isActive && 'hover:bg-gray-50',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
               isActive && config.activeClass,
-              isActive && 'hover:bg-current'
+              isActive && 'hover:opacity-95'
             )}
           >
             <div className="flex items-center justify-between w-full">

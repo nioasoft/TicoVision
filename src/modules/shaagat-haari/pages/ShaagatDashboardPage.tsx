@@ -63,6 +63,7 @@ import {
   countsByAlpha,
   firstAlphaKey,
 } from '../components/AlphaFilterBar';
+import { ClientDrawerSheet } from '../components/ClientDrawerSheet';
 import type { InitialFilterRow } from '../services/shaagat.service';
 import type { StageActionKind } from '../lib/stage-derivation';
 
@@ -86,6 +87,9 @@ export const ShaagatDashboardPage: React.FC = () => {
   const [kpiSelection, setKpiSelection] = useState<KPICardKey>('all');
   const [selectedLetter, setSelectedLetter] = useState<AlphaFilterValue>(null);
   const [dialogClient, setDialogClient] = useState<InitialFilterRow | null>(
+    null
+  );
+  const [drawerClient, setDrawerClient] = useState<InitialFilterRow | null>(
     null
   );
   const [busyClientId, setBusyClientId] = useState<string | null>(null);
@@ -166,6 +170,67 @@ export const ShaagatDashboardPage: React.FC = () => {
     return countsByAlpha(base);
   }, [initialFilterRows, showIrrelevant]);
 
+  // ─── Send salary form (token + email) ─────────────────────────────────────
+  // Core helper: works with plain IDs so it can be invoked from a row click
+  // (post-eligibility) OR auto-called immediately after a successful save.
+  const sendSalaryFormForClient = useCallback(
+    async (params: {
+      clientId: string;
+      eligibilityCheckId: string;
+      silentSuccess?: boolean;
+    }): Promise<boolean> => {
+      setBusyClientId(params.clientId);
+
+      const tokenResult = await shaagatService.createAccountingSubmissionToken(
+        params.clientId
+      );
+      if (tokenResult.error || !tokenResult.data) {
+        toast.error('יצירת קישור הטופס נכשלה', {
+          description: tokenResult.error?.message,
+        });
+        setBusyClientId(null);
+        return false;
+      }
+
+      const sendResult = await shaagatEmailService.sendSalaryDataRequestEmail({
+        clientId: params.clientId,
+        eligibilityCheckId: params.eligibilityCheckId,
+        submissionToken: tokenResult.data.token,
+      });
+
+      if (sendResult.error) {
+        toast.error('שליחת המייל נכשלה', {
+          description: sendResult.error.message,
+        });
+        setBusyClientId(null);
+        return false;
+      }
+
+      await markEligibilityEmailSent(params.eligibilityCheckId);
+      if (!params.silentSuccess) {
+        toast.success('המייל נשלח ללקוח');
+      }
+      setBusyClientId(null);
+      void fetchInitialFilterRows();
+      return true;
+    },
+    [fetchInitialFilterRows, markEligibilityEmailSent]
+  );
+
+  const handleSendSalaryForm = useCallback(
+    async (row: InitialFilterRow) => {
+      if (!row.eligibility_check_id) {
+        toast.error('יש לבדוק זכאות לפני שליחת מייל');
+        return;
+      }
+      await sendSalaryFormForClient({
+        clientId: row.client_id,
+        eligibilityCheckId: row.eligibility_check_id,
+      });
+    },
+    [sendSalaryFormForClient]
+  );
+
   // ─── QuickEligibility save → DB ───────────────────────────────────────────
   const handleSaveEligibility = useCallback(
     async (input: QuickEligibilitySaveInput): Promise<boolean> => {
@@ -207,53 +272,26 @@ export const ShaagatDashboardPage: React.FC = () => {
       }
 
       toast.success('בדיקת הזכאות נשמרה');
+
+      // Auto-send the salary form email when the client is ELIGIBLE — saves
+      // the accountant a manual click and gets the request to the client
+      // immediately. Stage `eligible_pending_email` becomes effectively
+      // transient.
+      if (input.status === 'ELIGIBLE') {
+        const sent = await sendSalaryFormForClient({
+          clientId: input.clientId,
+          eligibilityCheckId: result.data.id,
+          silentSuccess: true,
+        });
+        if (sent) {
+          toast.success('המייל ללקוח נשלח אוטומטית');
+        }
+      }
+
       void fetchInitialFilterRows();
       return true;
     },
-    [fetchInitialFilterRows]
-  );
-
-  // ─── Send salary form (token + email) ─────────────────────────────────────
-  const handleSendSalaryForm = useCallback(
-    async (row: InitialFilterRow) => {
-      if (!row.eligibility_check_id) {
-        toast.error('יש לבדוק זכאות לפני שליחת מייל');
-        return;
-      }
-
-      setBusyClientId(row.client_id);
-
-      const tokenResult = await shaagatService.createAccountingSubmissionToken(
-        row.client_id
-      );
-      if (tokenResult.error || !tokenResult.data) {
-        toast.error('יצירת קישור הטופס נכשלה', {
-          description: tokenResult.error?.message,
-        });
-        setBusyClientId(null);
-        return;
-      }
-
-      const sendResult = await shaagatEmailService.sendSalaryDataRequestEmail({
-        clientId: row.client_id,
-        eligibilityCheckId: row.eligibility_check_id,
-        submissionToken: tokenResult.data.token,
-      });
-
-      if (sendResult.error) {
-        toast.error('שליחת המייל נכשלה', {
-          description: sendResult.error.message,
-        });
-        setBusyClientId(null);
-        return;
-      }
-
-      await markEligibilityEmailSent(row.eligibility_check_id);
-      toast.success('המייל נשלח ללקוח');
-      setBusyClientId(null);
-      void fetchInitialFilterRows();
-    },
-    [fetchInitialFilterRows, markEligibilityEmailSent]
+    [fetchInitialFilterRows, sendSalaryFormForClient]
   );
 
   // ─── Stage primary action dispatcher ──────────────────────────────────────
@@ -318,6 +356,7 @@ export const ShaagatDashboardPage: React.FC = () => {
         navigate(`/shaagat-haari/eligibility/${row.client_id}`),
       onViewHistory: (row) =>
         navigate(`/shaagat-haari/client/${row.client_id}/history`),
+      onClientClick: (row) => setDrawerClient(row),
       onToggleRelevance: async (row) => {
         if (!row.eligibility_check_id) {
           toast.error('יש לבדוק זכאות לפני שניתן לסמן רלוונטיות');
@@ -338,6 +377,15 @@ export const ShaagatDashboardPage: React.FC = () => {
       fetchInitialFilterRows,
     ]
   );
+
+  // Keep drawer in sync with the latest row from the store (e.g. after refresh).
+  const drawerRow = useMemo<InitialFilterRow | null>(() => {
+    if (!drawerClient) return null;
+    return (
+      initialFilterRows.find((r) => r.client_id === drawerClient.client_id) ??
+      drawerClient
+    );
+  }, [drawerClient, initialFilterRows]);
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -455,6 +503,14 @@ export const ShaagatDashboardPage: React.FC = () => {
           onSave={handleSaveEligibility}
         />
       )}
+
+      {/* Client detail drawer */}
+      <ClientDrawerSheet
+        row={drawerRow}
+        open={drawerClient !== null}
+        onClose={() => setDrawerClient(null)}
+        onPrimaryAction={handlePrimaryAction}
+      />
     </div>
   );
 };

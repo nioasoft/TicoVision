@@ -3,13 +3,12 @@
  *
  * "Soft" progress hint per row on the unified dashboard. Shows a short, stage-
  * specific bit of context that does NOT duplicate the dedicated columns
- * (`סטטוס שידור`, `מענק מבוקש`, `מענק מאושר`, `% ירידה`).
+ * (`% ירידה`, `סטטוס שידור`, `מענק מבוקש`, `מענק מאושר`).
  *
  * Pure function of the row's derived stage. Returns just enough text to
  * answer "what's the next thing happening with this client?".
  */
 
-import React from 'react';
 import type { InitialFilterRow } from '../services/shaagat.service';
 import { deriveStage } from '../lib/stage-derivation';
 import { NextDeadlineBadge } from './NextDeadlineBadge';
@@ -50,7 +49,9 @@ export function StageDetailsCell({ row }: StageDetailsCellProps) {
 
     case 'pending_payment':
       return (
-        <span className="text-xs text-yellow-800">טופס מולא • ממתין שכ&quot;ט</span>
+        <span className="text-xs text-yellow-800">
+          טופס מולא • ממתין שכ&quot;ט הגשה
+        </span>
       );
 
     case 'in_calculation':
@@ -62,15 +63,11 @@ export function StageDetailsCell({ row }: StageDetailsCellProps) {
 
     case 'awaiting_approval':
       return (
-        <span className="text-xs text-purple-700">
-          ממתין לאישור הלקוח
-        </span>
+        <span className="text-xs text-purple-700">ממתין לאישור הלקוח</span>
       );
 
     case 'approved_pending_submission':
-      return (
-        <span className="text-xs text-teal-700">מוכן לשידור</span>
-      );
+      return <span className="text-xs text-teal-700">מוכן לשידור</span>;
 
     case 'submitted':
       // Deadline only — submission # + status + amounts are in their own columns.

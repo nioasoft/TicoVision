@@ -1402,6 +1402,10 @@ class ShaagatService extends BaseService {
         client_id: clientId,
         submission_token: token,
         token_expires_at: expiresAt,
+        // Two-month submission: primary = 03/2026, secondary = 04/2026.
+        // Public form will collect both before redirecting to payment.
+        salary_period: '03/2026',
+        secondary_period: '04/2026',
       });
 
       if (error) throw error;
@@ -1415,6 +1419,11 @@ class ShaagatService extends BaseService {
   /**
    * Get the most recent accounting submission for a client (salary data from external form).
    * Used to auto-load salary data into the calculation wizard step 3.
+   *
+   * Per the law (חוק התוכנית לסיוע כלכלי, פרק 6.ב), the salary period is
+   * 3-4/2026 (March + April). The public form collects the two months
+   * separately — the primary month sits on the row's top-level columns and
+   * the secondary month on the `secondary_month` JSONB column.
    */
   async getAccountingSubmissionByClient(
     clientId: string
@@ -1432,6 +1441,19 @@ class ShaagatService extends BaseService {
     fruit_vegetable_purchases_annual: number;
     monthly_fixed_expenses: number;
     salary_period: string | null;
+    secondary_period: string | null;
+    secondary_month: {
+      salary_gross?: number | null;
+      num_employees?: number | null;
+      miluim_deductions?: number | null;
+      miluim_count?: number | null;
+      tips_deductions?: number | null;
+      tips_count?: number | null;
+      chalat_deductions?: number | null;
+      chalat_count?: number | null;
+      vacation_deductions?: number | null;
+      vacation_count?: number | null;
+    } | null;
     notes: string | null;
   } | null>> {
     try {
@@ -1439,7 +1461,9 @@ class ShaagatService extends BaseService {
 
       const { data, error } = await supabase
         .from('shaagat_accounting_submissions')
-        .select('salary_gross, num_employees, miluim_deductions, miluim_count, tips_deductions, tips_count, chalat_deductions, chalat_count, vacation_deductions, vacation_count, fruit_vegetable_purchases_annual, monthly_fixed_expenses, salary_period, notes')
+        .select(
+          'salary_gross, num_employees, miluim_deductions, miluim_count, tips_deductions, tips_count, chalat_deductions, chalat_count, vacation_deductions, vacation_count, fruit_vegetable_purchases_annual, monthly_fixed_expenses, salary_period, secondary_period, secondary_month, notes'
+        )
         .eq('tenant_id', tenantId)
         .eq('client_id', clientId)
         .not('submitted_by_email', 'is', null) // only submitted forms

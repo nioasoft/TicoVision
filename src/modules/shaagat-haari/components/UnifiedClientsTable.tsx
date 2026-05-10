@@ -7,12 +7,14 @@
  * menu for secondary actions.
  *
  * Column order (RTL):
- *   לקוח | שלב | מידע הקשר לשלב | % ירידה | שכ"ט שנתי | פעולות
+ *   לקוח | שלב | פעולה | מידע | % ירידה | סטטוס שידור | מענק מבוקש | מענק מאושר | ⋯
+ *
+ * The client cell is clickable — opens the side drawer with full details.
+ * Annual + Shaagat fee statuses live as small chips inside the client cell.
  *
  * Row density: compact (py-1.5) so 14–16 rows fit on a 1080p screen.
  */
 
-import React from 'react';
 import {
   Table,
   TableBody,
@@ -32,13 +34,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  AlertOctagon,
   Building2,
   Calculator,
   CheckCircle2,
@@ -52,20 +47,26 @@ import {
 } from 'lucide-react';
 import { formatILSInteger, formatPercentage } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import type { InitialFilterRow } from '../services/shaagat.service';
-import type { SubmissionStatus } from '../services/shaagat.service';
+import type {
+  InitialFilterRow,
+  SubmissionStatus,
+} from '../services/shaagat.service';
 import {
   deriveStage,
   type StageActionKind,
   type StageInfo,
 } from '../lib/stage-derivation';
 import { StageDetailsCell } from './StageDetailsCell';
+import { FeeChip, type FeeChipStatus } from './FeeChip';
+import { daysUntil } from './NextDeadlineBadge';
+import { Clock } from 'lucide-react';
 
 export interface UnifiedClientsTableActions {
   onPrimaryAction: (kind: StageActionKind, row: InitialFilterRow) => void;
   onOpenDeepWizard: (row: InitialFilterRow) => void;
   onViewHistory: (row: InitialFilterRow) => void;
   onToggleRelevance: (row: InitialFilterRow) => void;
+  onClientClick: (row: InitialFilterRow) => void;
 }
 
 interface UnifiedClientsTableProps {
@@ -78,47 +79,66 @@ interface UnifiedClientsTableProps {
 // Cells
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ClientCell({ row }: { row: InitialFilterRow }) {
+function shaagatChipStatus(row: InitialFilterRow): FeeChipStatus | null {
+  if (!row.eligibility_check_id) return null;
+  switch (row.shaagat_fee_payment_status) {
+    case 'PAID':
+      return 'paid';
+    case 'EXEMPT':
+      return 'exempt';
+    case 'UNPAID':
+    default:
+      return 'unpaid';
+  }
+}
+
+function ClientCell({
+  row,
+  onClick,
+}: {
+  row: InitialFilterRow;
+  onClick: () => void;
+}) {
   const display = row.company_name_hebrew || row.company_name || '—';
+  const annualStatus: FeeChipStatus = row.has_unpaid_annual_retainer
+    ? 'unpaid'
+    : row.has_any_current_year_fee
+      ? 'paid'
+      : 'exempt';
+  const shaagatStatus = shaagatChipStatus(row);
+
   return (
-    <div className="flex flex-col gap-0">
-      <div className="flex items-center gap-1 font-medium text-gray-900 text-sm leading-tight">
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col gap-0 text-right w-full group focus:outline-none"
+    >
+      <div className="flex items-center gap-1 font-medium text-gray-900 text-sm leading-tight group-hover:text-blue-700 group-hover:underline underline-offset-2">
         <Building2 className="h-3 w-3 text-gray-400 flex-shrink-0" />
         <span className="truncate">{display}</span>
       </div>
-      <span
-        className="text-[11px] text-gray-500 font-mono ltr:inline leading-tight ms-4"
-        dir="ltr"
-      >
-        {row.tax_id}
-      </span>
-    </div>
-  );
-}
-
-function RetainerIcon({ row }: { row: InitialFilterRow }) {
-  if (!row.has_unpaid_annual_retainer) {
-    return <span className="text-gray-300 text-xs">—</span>;
-  }
-  return (
-    <TooltipProvider delayDuration={200}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex items-center justify-center rounded-full bg-amber-50 border border-amber-300 h-6 w-6">
-            <AlertOctagon className="h-3.5 w-3.5 text-amber-700" />
-          </span>
-        </TooltipTrigger>
-        <TooltipContent dir="rtl" side="top">
-          שכ&quot;ט שנתי לא שולם — הסדר תשלום במשרד
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+      <div className="flex items-center gap-1.5 ms-4 mt-0.5 flex-wrap">
+        <span
+          className="text-[11px] text-gray-500 font-mono leading-tight"
+          dir="ltr"
+        >
+          {row.tax_id}
+        </span>
+        <FeeChip kind="annual" status={annualStatus} />
+        {shaagatStatus && <FeeChip kind="shaagat" status={shaagatStatus} />}
+      </div>
+    </button>
   );
 }
 
 function StageBadge({ stageInfo }: { stageInfo: StageInfo }) {
   return (
-    <Badge className={cn('gap-1 text-[11px] px-2 py-0.5 font-medium', stageInfo.badgeClassName)}>
+    <Badge
+      className={cn(
+        'gap-1 text-[11px] px-2 py-0.5 font-medium',
+        stageInfo.badgeClassName
+      )}
+    >
       {stageInfo.label}
     </Badge>
   );
@@ -134,10 +154,6 @@ function DeclineCell({ row }: { row: InitialFilterRow }) {
     </span>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Submission-related cells (always present, may show empty placeholders)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const SUBMISSION_STATUS_LABEL: Record<SubmissionStatus, string> = {
   SUBMITTED: 'שודר',
@@ -180,11 +196,6 @@ function SubmissionStatusCell({ row }: { row: InitialFilterRow }) {
   );
 }
 
-/**
- * "מענק מבוקש" — the amount we're claiming. Comes from `expected_amount` once a
- * submission exists; falls back to the calculated `final_grant_amount` while
- * still in the calculation/approval stage.
- */
 function RequestedGrantCell({ row }: { row: InitialFilterRow }) {
   const amount =
     row.expected_amount !== null && row.expected_amount !== undefined
@@ -200,10 +211,6 @@ function RequestedGrantCell({ row }: { row: InitialFilterRow }) {
   );
 }
 
-/**
- * "מענק מאושר/התקבל" — what the tax authority actually paid. Stays empty until
- * the first advance / final payment lands in `received_amount`.
- */
 function ApprovedGrantCell({ row }: { row: InitialFilterRow }) {
   const amount = row.received_amount;
   if (amount === null || amount === undefined || amount === 0) {
@@ -216,6 +223,31 @@ function ApprovedGrantCell({ row }: { row: InitialFilterRow }) {
   );
 }
 
+function nextDeadline(row: InitialFilterRow): {
+  label: string;
+  days: number;
+} | null {
+  const candidates = [
+    {
+      label: 'מקדמה',
+      date: row.advance_due_date,
+      done: !!row.advance_received,
+    },
+    { label: 'זכאות', date: row.determination_due_date, done: false },
+    { label: 'תשלום', date: row.full_payment_due_date, done: false },
+  ].filter((c) => !c.done && c.date);
+
+  if (candidates.length === 0) return null;
+  candidates.sort(
+    (a, b) =>
+      new Date(a.date as string).getTime() -
+      new Date(b.date as string).getTime()
+  );
+  const days = daysUntil(candidates[0].date as string);
+  if (days === null) return null;
+  return { label: candidates[0].label, days };
+}
+
 function PrimaryActionButton({
   stageInfo,
   row,
@@ -226,12 +258,42 @@ function PrimaryActionButton({
   onClick: (kind: StageActionKind, row: InitialFilterRow) => void;
 }) {
   const action = stageInfo.primaryAction;
+
+  // Stages 10–11: replace "פתח שידור" / "פרטים" with deadline-as-action.
+  // The action still routes to the submission page, but the label tells the
+  // accountant the most urgent deadline at a glance.
+  if (stageInfo.stage === 'submitted' || stageInfo.stage === 'paid_out') {
+    const deadline = nextDeadline(row);
+    if (deadline) {
+      const colorClass =
+        deadline.days < 0 || deadline.days <= 7
+          ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+          : deadline.days <= 21
+            ? 'border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100'
+            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50';
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onClick(action.kind, row)}
+          className={cn(
+            'h-7 w-full justify-center gap-1 text-xs px-2.5 tabular-nums',
+            colorClass
+          )}
+        >
+          <Clock className="h-3 w-3" />
+          {deadline.label}: {deadline.days < 0 ? 'פג' : `${deadline.days}י׳`}
+        </Button>
+      );
+    }
+  }
+
   return (
     <Button
       size="sm"
       variant={action.variant ?? 'default'}
       onClick={() => onClick(action.kind, row)}
-      className="h-7 gap-1 text-xs px-2.5"
+      className="h-7 w-full justify-center gap-1 text-xs px-2.5"
     >
       <ActionIcon kind={action.kind} />
       {action.label}
@@ -277,6 +339,10 @@ function RowActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" dir="rtl">
+        <DropdownMenuItem onClick={() => actions.onClientClick(row)}>
+          <Eye className="ms-2 h-4 w-4" />
+          פרטים מלאים
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => actions.onOpenDeepWizard(row)}>
           <Settings2 className="ms-2 h-4 w-4" />
           סיווג מסלול אחר
@@ -311,15 +377,15 @@ function RowActionsMenu({
 function LoadingRow() {
   return (
     <TableRow>
-      <TableCell className="py-1.5"><Skeleton className="h-4 w-40" /></TableCell>
-      <TableCell className="py-1.5"><Skeleton className="h-4 w-24" /></TableCell>
-      <TableCell className="py-1.5"><Skeleton className="h-4 w-32" /></TableCell>
-      <TableCell className="py-1.5"><Skeleton className="h-4 w-12" /></TableCell>
+      <TableCell className="py-1.5"><Skeleton className="h-8 w-44" /></TableCell>
       <TableCell className="py-1.5"><Skeleton className="h-4 w-20" /></TableCell>
+      <TableCell className="py-1.5"><Skeleton className="h-7 w-24" /></TableCell>
+      <TableCell className="py-1.5"><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell className="py-1.5"><Skeleton className="h-4 w-12" /></TableCell>
       <TableCell className="py-1.5"><Skeleton className="h-4 w-16" /></TableCell>
       <TableCell className="py-1.5"><Skeleton className="h-4 w-16" /></TableCell>
-      <TableCell className="py-1.5"><Skeleton className="h-4 w-6" /></TableCell>
-      <TableCell className="py-1.5"><Skeleton className="h-7 w-32" /></TableCell>
+      <TableCell className="py-1.5"><Skeleton className="h-4 w-16" /></TableCell>
+      <TableCell className="py-1.5"><Skeleton className="h-7 w-7" /></TableCell>
     </TableRow>
   );
 }
@@ -327,6 +393,10 @@ function LoadingRow() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
+
+const TD_DIVIDER =
+  '[&>td]:border-l [&>td]:border-l-gray-100 [&>td:last-child]:border-l-0 ' +
+  '[&>th]:border-l [&>th]:border-l-gray-100 [&>th:last-child]:border-l-0';
 
 export function UnifiedClientsTable({
   rows,
@@ -337,16 +407,16 @@ export function UnifiedClientsTable({
     <div className="rounded-md border bg-white" dir="rtl">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="text-right w-[200px]">לקוח</TableHead>
-            <TableHead className="text-right w-[140px]">שלב</TableHead>
-            <TableHead className="text-right w-[170px]">מידע</TableHead>
+          <TableRow className={TD_DIVIDER}>
+            <TableHead className="text-right w-[220px]">לקוח</TableHead>
+            <TableHead className="text-right w-[110px]">שלב</TableHead>
+            <TableHead className="text-right w-[150px]">פעולה</TableHead>
+            <TableHead className="text-right w-[160px]">מידע</TableHead>
             <TableHead className="text-right w-[70px]">% ירידה</TableHead>
             <TableHead className="text-right w-[110px]">סטטוס שידור</TableHead>
-            <TableHead className="text-right w-[100px]">מענק מבוקש</TableHead>
-            <TableHead className="text-right w-[100px]">מענק מאושר</TableHead>
-            <TableHead className="text-right w-[80px]">שכ&quot;ט שנתי</TableHead>
-            <TableHead className="text-right w-[200px]">פעולות</TableHead>
+            <TableHead className="text-right w-[110px]">מענק מבוקש</TableHead>
+            <TableHead className="text-right w-[110px]">מענק מאושר</TableHead>
+            <TableHead className="text-right w-[50px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -374,13 +444,26 @@ export function UnifiedClientsTable({
             return (
               <TableRow
                 key={row.client_id}
-                className={cn(row.is_relevant === false && 'opacity-50')}
+                className={cn(
+                  TD_DIVIDER,
+                  row.is_relevant === false && 'opacity-50'
+                )}
               >
                 <TableCell className="py-1.5">
-                  <ClientCell row={row} />
+                  <ClientCell
+                    row={row}
+                    onClick={() => actions.onClientClick(row)}
+                  />
                 </TableCell>
                 <TableCell className="py-1.5">
                   <StageBadge stageInfo={stageInfo} />
+                </TableCell>
+                <TableCell className="py-1.5">
+                  <PrimaryActionButton
+                    stageInfo={stageInfo}
+                    row={row}
+                    onClick={actions.onPrimaryAction}
+                  />
                 </TableCell>
                 <TableCell className="py-1.5">
                   <StageDetailsCell row={row} />
@@ -398,17 +481,7 @@ export function UnifiedClientsTable({
                   <ApprovedGrantCell row={row} />
                 </TableCell>
                 <TableCell className="py-1.5 text-center">
-                  <RetainerIcon row={row} />
-                </TableCell>
-                <TableCell className="py-1.5">
-                  <div className="flex items-center gap-1.5 rtl:flex-row-reverse">
-                    <PrimaryActionButton
-                      stageInfo={stageInfo}
-                      row={row}
-                      onClick={actions.onPrimaryAction}
-                    />
-                    <RowActionsMenu row={row} actions={actions} />
-                  </div>
+                  <RowActionsMenu row={row} actions={actions} />
                 </TableCell>
               </TableRow>
             );

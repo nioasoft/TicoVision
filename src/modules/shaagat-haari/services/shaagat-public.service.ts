@@ -25,7 +25,10 @@ interface FeasibilityFormData {
 interface AccountingFormData {
   id: string;
   client_name: string;
+  client_tax_id: string;
   salary_period: string;
+  /** Optional second period collected by the public form (e.g. "04/2026"). */
+  secondary_period: string | null;
   is_submitted: boolean;
 }
 
@@ -216,6 +219,7 @@ class ShaagatPublicService {
   async submitAccountingData(
     token: string,
     formData: {
+      // Primary month (e.g. 03/2026) — top-level columns on the table.
       salary_gross: number;
       num_employees: number;
       miluim_deductions?: number;
@@ -231,6 +235,19 @@ class ShaagatPublicService {
       submitted_by_email: string;
       submitted_by_business_id?: string;
       notes?: string;
+      // Optional secondary month (e.g. 04/2026) — stored as JSONB.
+      secondary_month?: {
+        salary_gross: number;
+        num_employees: number;
+        miluim_deductions?: number;
+        miluim_count?: number;
+        tips_deductions?: number;
+        tips_count?: number;
+        chalat_deductions?: number;
+        chalat_count?: number;
+        vacation_deductions?: number;
+        vacation_count?: number;
+      };
     }
   ): Promise<{ success: boolean; error?: string }> {
     const { error } = await supabase
@@ -251,6 +268,7 @@ class ShaagatPublicService {
         submitted_by_email: formData.submitted_by_email,
         submitted_by_business_id: formData.submitted_by_business_id ?? null,
         notes: formData.notes ?? null,
+        secondary_month: formData.secondary_month ?? null,
       })
       .eq('submission_token', token);
 
