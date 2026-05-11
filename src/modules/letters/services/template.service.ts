@@ -3561,15 +3561,23 @@ export class TemplateService extends BaseService {
 
       // 8. Update existing or insert new
       if (existingLetterId) {
-        const { data, error: updateError } = await supabase
+        const { data, error: updateError, count } = await supabase
           .from('generated_letters')
-          .update(letterData)
+          .update(letterData, { count: 'exact' })
           .eq('id', existingLetterId)
           .eq('tenant_id', tenantId)
           .select()
           .single();
 
         if (updateError) throw updateError;
+        // Defensive: RLS USING violations don't raise errors — they silently filter
+        // the row to 0-affected. Without this check the UI claims success while the
+        // DB is unchanged. See migration 20260511_fix_restricted_users_letter_policies.
+        if (count !== 1 || !data) {
+          throw new Error(
+            `Update affected ${count ?? 0} rows for letter ${existingLetterId} — likely RLS policy mismatch`
+          );
+        }
         generatedLetter = data;
 
         await this.logAction('update_auto_letter_document', generatedLetter.id, {

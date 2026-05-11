@@ -205,8 +205,9 @@ serve(async (req) => {
     // generated_content_html is an email-ready document with nested outer tables.
     // For PDF we need just the content rows in a flat table — the deep nesting
     // prevents Chromium from splitting the body <td> across pages.
+    // Width-agnostic: auto-letters use 750, legacy/manual letters use 800.
     html = html.replace(
-      /<!DOCTYPE[^>]*>[\s\S]*?<table\s+width="800"[^>]*>/i,
+      /<!DOCTYPE[^>]*>[\s\S]*?<table\s+width="\d+"[^>]*>/i,
       '<table width="100%" cellpadding="0" cellspacing="0" border="0">'
     );
     html = html.replace(
