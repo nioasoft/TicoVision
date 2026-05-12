@@ -94,7 +94,12 @@ export type CompanyOnboardingTemplateType =
   | 'company_onboarding_vat_file_opened'            // Document #1b - VAT File Opened Notification
   | 'company_onboarding_price_quote_small'          // Document #2a - Small Company
   | 'company_onboarding_price_quote_restaurant'     // Document #2b - Restaurant
-  | 'company_onboarding_previous_accountant';       // Document #3 - Previous Accountant Request
+  | 'company_onboarding_previous_accountant'        // Document #3 - Previous Accountant Request
+  | 'company_onboarding_income_tax_file_opened'                     // Income Tax file opening
+  | 'company_onboarding_income_tax_withholding_file_opened'         // Income Tax withholding file opening
+  | 'company_onboarding_social_security_withholding_file_opened'    // Social Security withholding file opening
+  | 'company_onboarding_tax_withholding_certificate'                // Tax withholding at source certificate
+  | 'company_onboarding_all_tax_files_opened';                      // Combined letter
 
 /** Union type of all possible Company Onboarding document variables */
 export type CompanyOnboardingVariables =

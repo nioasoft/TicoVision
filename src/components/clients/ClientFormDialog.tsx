@@ -127,6 +127,8 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   tax_coding_status: 'regular', // טופס 1214 - ברירת מחדל לכל לקוח חדש
   tax_withholding_status: null, // ניכוי מס במקור - המשתמש מסמן ידנית
   tax_withholding_percentage: null,
+  income_tax_withholding_file_number: null,
+  social_security_withholding_file_number: null,
 };
 
 export const ClientFormDialog = React.memo<ClientFormDialogProps>(
@@ -204,6 +206,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           tax_coding_status: client.tax_coding_status ?? (client.status === 'active' ? 'regular' : null),
           tax_withholding_status: client.tax_withholding_status ?? null,
           tax_withholding_percentage: client.tax_withholding_percentage ?? null,
+          income_tax_withholding_file_number: client.income_tax_withholding_file_number ?? null,
+          social_security_withholding_file_number: client.social_security_withholding_file_number ?? null,
         });
         // Load signature path
         setSignaturePath(client.signature_path || null);
@@ -668,9 +672,50 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                 </div>
               )}
 
-              {/* Empty divs for grid alignment */}
-              <div></div>
-              <div></div>
+              {/* Income Tax Withholding File Number */}
+              <div>
+                <Label htmlFor="income_tax_withholding_file_number" className="text-right block mb-2">
+                  מספר תיק ניכויים - מס הכנסה
+                </Label>
+                <Input
+                  id="income_tax_withholding_file_number"
+                  type="text"
+                  value={formData.income_tax_withholding_file_number ?? ''}
+                  onChange={(e) =>
+                    handleFormChange(
+                      'income_tax_withholding_file_number',
+                      e.target.value.trim() === '' ? null : e.target.value
+                    )
+                  }
+                  onKeyDown={handleKeyDown}
+                  className="rtl:text-right"
+                  dir="rtl"
+                />
+              </div>
+
+              {/* Social Security Withholding File Number */}
+              <div>
+                <Label htmlFor="social_security_withholding_file_number" className="text-right block mb-2">
+                  מספר תיק ניכויים - ביטוח לאומי
+                </Label>
+                <Input
+                  id="social_security_withholding_file_number"
+                  type="text"
+                  value={formData.social_security_withholding_file_number ?? ''}
+                  onChange={(e) =>
+                    handleFormChange(
+                      'social_security_withholding_file_number',
+                      e.target.value.trim() === '' ? null : e.target.value
+                    )
+                  }
+                  onKeyDown={handleKeyDown}
+                  className="rtl:text-right"
+                  dir="rtl"
+                />
+              </div>
+
+              {/* Empty div for grid alignment when percentage is shown */}
+              {formData.tax_withholding_status !== 'yes' && <div></div>}
 
               {/* Category Header: Address Details */}
               <div className="col-span-3 mt-4 mb-2">

@@ -168,6 +168,11 @@ export type AutoLetterTemplateType =
   | 'company_onboarding_vat_registration'
   | 'company_onboarding_vat_file_opened'
   | 'company_onboarding_previous_accountant'
+  | 'company_onboarding_income_tax_file_opened'
+  | 'company_onboarding_income_tax_withholding_file_opened'
+  | 'company_onboarding_social_security_withholding_file_opened'
+  | 'company_onboarding_tax_withholding_certificate'
+  | 'company_onboarding_all_tax_files_opened'
   // Setting Dates
   | 'setting_dates_cutoff'
   | 'setting_dates_meeting_reminder'
@@ -256,6 +261,41 @@ export const LETTER_TYPES_BY_CATEGORY: Record<AutoLetterCategory, LetterTypeConf
       description: 'בקשת מסמכים ותיקים מרואה חשבון קודם',
       templateType: 'company_onboarding_previous_accountant',
       icon: 'UserMinus',
+    },
+    {
+      id: 'income_tax_file_opened',
+      label: 'הודעה על פתיחת תיק מס הכנסה',
+      description: 'הודעה ללקוח על פתיחת תיק מס הכנסה - שנת הגשת דוח ושיעור מקדמות',
+      templateType: 'company_onboarding_income_tax_file_opened',
+      icon: 'FileCheck',
+    },
+    {
+      id: 'income_tax_withholding_file_opened',
+      label: 'הודעה על פתיחת תיק מס הכנסה - ניכויים',
+      description: 'הודעה ללקוח על פתיחת תיק ניכויים במס הכנסה (עובדים)',
+      templateType: 'company_onboarding_income_tax_withholding_file_opened',
+      icon: 'FileCheck',
+    },
+    {
+      id: 'social_security_withholding_file_opened',
+      label: 'הודעה על פתיחת תיק ביטוח לאומי - ניכויים',
+      description: 'הודעה ללקוח על פתיחת תיק ניכויים בביטוח לאומי',
+      templateType: 'company_onboarding_social_security_withholding_file_opened',
+      icon: 'FileCheck',
+    },
+    {
+      id: 'tax_withholding_certificate',
+      label: 'אישור ניכוי מס במקור וניהול ספרים',
+      description: 'הודעה ללקוח על אישור ניכוי מס במקור ואישור ניהול ספרים בתוקף',
+      templateType: 'company_onboarding_tax_withholding_certificate',
+      icon: 'FileCheck',
+    },
+    {
+      id: 'all_tax_files_opened',
+      label: 'פתיחת תיקי ניכויים - מכתב מאוחד',
+      description: 'מכתב מאוחד הכולל את כל פתיחות התיקים: מס הכנסה, ניכויים מ"ה, ניכויים ב"ל, אישור ניכוי מס במקור',
+      templateType: 'company_onboarding_all_tax_files_opened',
+      icon: 'FileCheck',
     },
   ],
   setting_dates: [
@@ -475,6 +515,91 @@ export interface VatFileOpenedVariables extends AutoLetterSharedData {
   vat_first_report_period: string;
   /** קישור לתעודת עוסק מורשה (אופציונלי) */
   certificate_link?: string;
+}
+
+// ----------------------------------------------------------------------------
+// Tax authority file opening - section data (shared across individual & combined letters)
+// ----------------------------------------------------------------------------
+
+/** Subset of client fields used to pre-fill the tax-authority letter forms */
+export interface ClientTaxPrefill {
+  income_tax_withholding_file_number?: string | null;
+  social_security_withholding_file_number?: string | null;
+  tax_withholding_percentage?: number | null;
+}
+
+/** סעיף - מס הכנסה (חברה) */
+export interface IncomeTaxSectionData {
+  /** שנת הגשת הדוח (לדוגמה: "2024") */
+  tax_filing_year: string;
+  /** שיעור מקדמות נוכחי (טקסט חופשי - "מבוטל" / "2.5%") */
+  advance_payment_rate: string;
+}
+
+/** סעיף - מס הכנסה ניכויים (עובדים) */
+export interface IncomeTaxWithholdingSectionData {
+  /** מספר תיק ניכויים במס הכנסה */
+  income_tax_withholding_file_number: string;
+  /** חודש ושנת תחילת ההעסקה (לדוגמה: "יוני 2024") */
+  employment_start_month_year: string;
+  /** מועד דיווח ראשון (DD/MM/YYYY) */
+  income_tax_withholding_first_report_date: string;
+  /** תדירות דיווח */
+  income_tax_withholding_frequency: 'חודשי' | 'דו-חודשי';
+}
+
+/** סעיף - ביטוח לאומי ניכויים */
+export interface SocialSecurityWithholdingSectionData {
+  /** מספר תיק ניכויים בביטוח לאומי */
+  social_security_withholding_file_number: string;
+  /** מועד דיווח ראשון (DD/MM/YYYY) */
+  social_security_withholding_first_report_date: string;
+  /** תדירות דיווח */
+  social_security_withholding_frequency: 'חודשי' | 'דו-חודשי';
+}
+
+/** סעיף - אישור ניכוי מס במקור וניהול ספרים */
+export interface TaxWithholdingCertificateSectionData {
+  /** שיעור ניכוי מס במקור (0-100) */
+  tax_withholding_percentage: number;
+  /** תוקף האישור (DD/MM/YYYY) */
+  certificate_valid_until: string;
+}
+
+/** Variables for: הודעה על פתיחת תיק מס הכנסה */
+export interface IncomeTaxFileOpenedVariables extends AutoLetterSharedData, IncomeTaxSectionData {
+  subject: string;
+  /** מספר ח.פ */
+  company_id: string;
+}
+
+/** Variables for: הודעה על פתיחת תיק מס הכנסה ניכויים */
+export interface IncomeTaxWithholdingFileOpenedVariables extends AutoLetterSharedData, IncomeTaxWithholdingSectionData {
+  subject: string;
+  company_id: string;
+}
+
+/** Variables for: הודעה על פתיחת תיק ביטוח לאומי ניכויים */
+export interface SocialSecurityWithholdingFileOpenedVariables extends AutoLetterSharedData, SocialSecurityWithholdingSectionData {
+  subject: string;
+  company_id: string;
+}
+
+/** Variables for: אישור ניכוי מס במקור וניהול ספרים */
+export interface TaxWithholdingCertificateVariables extends AutoLetterSharedData, TaxWithholdingCertificateSectionData {
+  subject: string;
+  company_id: string;
+}
+
+/** Variables for: מכתב מאוחד - פתיחת תיקי ניכויים (כולל את 4 הסעיפים) */
+export interface AllTaxFilesOpenedVariables extends
+  AutoLetterSharedData,
+  IncomeTaxSectionData,
+  IncomeTaxWithholdingSectionData,
+  SocialSecurityWithholdingSectionData,
+  TaxWithholdingCertificateSectionData {
+  subject: string;
+  company_id: string;
 }
 
 // ============================================================================
@@ -860,6 +985,11 @@ export interface AccountantsOpinionVariables extends AutoLetterSharedData {
 export const DEFAULT_SUBJECTS = {
   // Company Onboarding
   vat_file_opened: 'פתיחת תיק מס ערך מוסף (מע"מ)',
+  income_tax_file_opened: 'פתיחת תיק במס הכנסה',
+  income_tax_withholding_file_opened: 'פתיחת תיק ניכויים במס הכנסה',
+  social_security_withholding_file_opened: 'פתיחת תיק ניכויים בביטוח לאומי',
+  tax_withholding_certificate: 'אישור ניכוי מס במקור וניהול ספרים',
+  all_tax_files_opened: 'פתיחת תיקי ניכויים (מס הכנסה וביטוח לאומי) ומס הכנסה חברה',
   // Setting Dates
   cutoff_date: 'קביעת מועד חיתוך לדו"חות',
   meeting_reminder: 'תזכורת לפגישה',
@@ -901,6 +1031,11 @@ export interface CompanyOnboardingDocumentData {
   vatFileOpened: Partial<VatFileOpenedVariables>;
   priceQuote: Partial<PriceQuoteVariables>;
   previousAccountantRequest: Partial<PreviousAccountantRequestVariables>;
+  incomeTaxFileOpened: Partial<IncomeTaxFileOpenedVariables>;
+  incomeTaxWithholdingFileOpened: Partial<IncomeTaxWithholdingFileOpenedVariables>;
+  socialSecurityWithholdingFileOpened: Partial<SocialSecurityWithholdingFileOpenedVariables>;
+  taxWithholdingCertificate: Partial<TaxWithholdingCertificateVariables>;
+  allTaxFilesOpened: Partial<AllTaxFilesOpenedVariables>;
 }
 
 /** Document data for Setting Dates letters */
@@ -1070,6 +1205,48 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
         previousAccountantRequest: {
           subjects: [''],
           email_for_documents: 'helli@franco.co.il',
+        },
+        incomeTaxFileOpened: {
+          subject: DEFAULT_SUBJECTS.income_tax_file_opened,
+          company_id: '',
+          tax_filing_year: String(new Date().getFullYear()),
+          advance_payment_rate: 'מבוטל',
+        },
+        incomeTaxWithholdingFileOpened: {
+          subject: DEFAULT_SUBJECTS.income_tax_withholding_file_opened,
+          company_id: '',
+          income_tax_withholding_file_number: '',
+          employment_start_month_year: '',
+          income_tax_withholding_first_report_date: '',
+          income_tax_withholding_frequency: 'דו-חודשי',
+        },
+        socialSecurityWithholdingFileOpened: {
+          subject: DEFAULT_SUBJECTS.social_security_withholding_file_opened,
+          company_id: '',
+          social_security_withholding_file_number: '',
+          social_security_withholding_first_report_date: '',
+          social_security_withholding_frequency: 'חודשי',
+        },
+        taxWithholdingCertificate: {
+          subject: DEFAULT_SUBJECTS.tax_withholding_certificate,
+          company_id: '',
+          tax_withholding_percentage: 5,
+          certificate_valid_until: '',
+        },
+        allTaxFilesOpened: {
+          subject: DEFAULT_SUBJECTS.all_tax_files_opened,
+          company_id: '',
+          tax_filing_year: String(new Date().getFullYear()),
+          advance_payment_rate: 'מבוטל',
+          income_tax_withholding_file_number: '',
+          employment_start_month_year: '',
+          income_tax_withholding_first_report_date: '',
+          income_tax_withholding_frequency: 'דו-חודשי',
+          social_security_withholding_file_number: '',
+          social_security_withholding_first_report_date: '',
+          social_security_withholding_frequency: 'חודשי',
+          tax_withholding_percentage: 5,
+          certificate_valid_until: '',
         },
       },
       setting_dates: {
@@ -1325,6 +1502,92 @@ export function validateVatFileOpened(data: Partial<VatFileOpenedVariables>): bo
     data.vat_report_frequency &&
     data.vat_first_report_date?.trim() &&
     data.vat_first_report_period?.trim()
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Section validators - reused by individual letters and the combined letter
+// ----------------------------------------------------------------------------
+
+function validateSharedAndSubject(
+  data: Partial<AutoLetterSharedData & { subject?: string; company_id?: string }>
+): boolean {
+  return !!(
+    data.document_date &&
+    data.company_name?.trim() &&
+    data.subject?.trim() &&
+    data.company_id?.trim()
+  );
+}
+
+function validateIncomeTaxSection(data: Partial<IncomeTaxSectionData>): boolean {
+  return !!(data.tax_filing_year?.trim() && data.advance_payment_rate?.trim());
+}
+
+function validateIncomeTaxWithholdingSection(data: Partial<IncomeTaxWithholdingSectionData>): boolean {
+  return !!(
+    data.income_tax_withholding_file_number?.trim() &&
+    data.employment_start_month_year?.trim() &&
+    data.income_tax_withholding_first_report_date?.trim() &&
+    data.income_tax_withholding_frequency
+  );
+}
+
+function validateSocialSecurityWithholdingSection(
+  data: Partial<SocialSecurityWithholdingSectionData>
+): boolean {
+  return !!(
+    data.social_security_withholding_file_number?.trim() &&
+    data.social_security_withholding_first_report_date?.trim() &&
+    data.social_security_withholding_frequency
+  );
+}
+
+function validateTaxWithholdingCertificateSection(
+  data: Partial<TaxWithholdingCertificateSectionData>
+): boolean {
+  return (
+    typeof data.tax_withholding_percentage === 'number' &&
+    data.tax_withholding_percentage >= 0 &&
+    data.tax_withholding_percentage <= 100 &&
+    !!data.certificate_valid_until?.trim()
+  );
+}
+
+/** Validate Income Tax File Opened letter */
+export function validateIncomeTaxFileOpened(data: Partial<IncomeTaxFileOpenedVariables>): boolean {
+  return validateSharedAndSubject(data) && validateIncomeTaxSection(data);
+}
+
+/** Validate Income Tax Withholding File Opened letter */
+export function validateIncomeTaxWithholdingFileOpened(
+  data: Partial<IncomeTaxWithholdingFileOpenedVariables>
+): boolean {
+  return validateSharedAndSubject(data) && validateIncomeTaxWithholdingSection(data);
+}
+
+/** Validate Social Security Withholding File Opened letter */
+export function validateSocialSecurityWithholdingFileOpened(
+  data: Partial<SocialSecurityWithholdingFileOpenedVariables>
+): boolean {
+  return validateSharedAndSubject(data) && validateSocialSecurityWithholdingSection(data);
+}
+
+/** Validate Tax Withholding Certificate letter */
+export function validateTaxWithholdingCertificate(
+  data: Partial<TaxWithholdingCertificateVariables>
+): boolean {
+  return validateSharedAndSubject(data) && validateTaxWithholdingCertificateSection(data);
+}
+
+/** Validate Combined All Tax Files Opened letter (covers all 4 sections) */
+export function validateAllTaxFilesOpened(data: Partial<AllTaxFilesOpenedVariables>): boolean {
+  return (
+    validateSharedAndSubject(data) &&
+    validateIncomeTaxSection(data) &&
+    validateIncomeTaxWithholdingSection(data) &&
+    validateSocialSecurityWithholdingSection(data) &&
+    validateTaxWithholdingCertificateSection(data)
   );
 }
 

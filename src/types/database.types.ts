@@ -2068,6 +2068,7 @@ export type Database = {
           google_drive_link: string | null
           group_id: string | null
           id: string
+          income_tax_withholding_file_number: string | null
           incorporation_date: string | null
           internal_external: string | null
           is_passive_income: boolean | null
@@ -2085,6 +2086,7 @@ export type Database = {
           receives_letters: boolean | null
           shareholders: string[] | null
           signature_path: string | null
+          social_security_withholding_file_number: string | null
           status: string
           tags: string[] | null
           tax_coding_status: string | null
@@ -2124,6 +2126,7 @@ export type Database = {
           google_drive_link?: string | null
           group_id?: string | null
           id?: string
+          income_tax_withholding_file_number?: string | null
           incorporation_date?: string | null
           internal_external?: string | null
           is_passive_income?: boolean | null
@@ -2141,6 +2144,7 @@ export type Database = {
           receives_letters?: boolean | null
           shareholders?: string[] | null
           signature_path?: string | null
+          social_security_withholding_file_number?: string | null
           status?: string
           tags?: string[] | null
           tax_coding_status?: string | null
@@ -2180,6 +2184,7 @@ export type Database = {
           google_drive_link?: string | null
           group_id?: string | null
           id?: string
+          income_tax_withholding_file_number?: string | null
           incorporation_date?: string | null
           internal_external?: string | null
           is_passive_income?: boolean | null
@@ -2197,6 +2202,7 @@ export type Database = {
           receives_letters?: boolean | null
           shareholders?: string[] | null
           signature_path?: string | null
+          social_security_withholding_file_number?: string | null
           status?: string
           tags?: string[] | null
           tax_coding_status?: string | null

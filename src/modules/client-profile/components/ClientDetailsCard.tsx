@@ -4,7 +4,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Building2, FileText } from 'lucide-react';
+import { MapPin, Building2, FileText, Landmark } from 'lucide-react';
 import type { Client } from '@/services';
 
 interface ClientDetailsCardProps {
@@ -21,8 +21,11 @@ export function ClientDetailsCard({ client }: ClientDetailsCardProps) {
   const hasAddress = client.address?.street || client.address?.city;
   const hasGroup = !!client.group;
   const hasNotes = !!client.notes;
+  const hasTaxFiles = Boolean(
+    client.income_tax_withholding_file_number || client.social_security_withholding_file_number
+  );
 
-  if (!hasAddress && !hasGroup && !hasNotes) return null;
+  if (!hasAddress && !hasGroup && !hasNotes && !hasTaxFiles) return null;
 
   return (
     <Card className="rounded-xl">
@@ -58,6 +61,34 @@ export function ClientDetailsCard({ client }: ClientDetailsCardProps) {
                 <span className="text-xs text-muted-foreground">
                   {PAYMENT_ROLE_LABELS[client.payment_role] || client.payment_role}
                 </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tax authority file numbers */}
+        {hasTaxFiles && (
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Landmark className="h-3.5 w-3.5" />
+              תיקי רשויות מס
+            </div>
+            <div className="space-y-1 text-sm">
+              {client.income_tax_withholding_file_number && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">מס הכנסה ניכויים:</span>
+                  <span className="font-medium" dir="ltr">
+                    {client.income_tax_withholding_file_number}
+                  </span>
+                </div>
+              )}
+              {client.social_security_withholding_file_number && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">ביטוח לאומי ניכויים:</span>
+                  <span className="font-medium" dir="ltr">
+                    {client.social_security_withholding_file_number}
+                  </span>
+                </div>
               )}
             </div>
           </div>

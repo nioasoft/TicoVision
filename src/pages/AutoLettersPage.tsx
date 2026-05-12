@@ -63,6 +63,11 @@ import {
   validateAuditCompletion,
   validateAccountantAppointment,
   validateVatFileOpened,
+  validateIncomeTaxFileOpened,
+  validateIncomeTaxWithholdingFileOpened,
+  validateSocialSecurityWithholdingFileOpened,
+  validateTaxWithholdingCertificate,
+  validateAllTaxFilesOpened,
   validateTaxAdvancesRateNotification,
   validateTaxRefund,
   validateDirectorsDeclaration,
@@ -80,9 +85,55 @@ import {
 } from '@/types/company-onboarding.types';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import type { Client } from '@/services/client.service';
+import type { Client, UpdateClientDto } from '@/services/client.service';
 
 const templateService = new TemplateService();
+
+/**
+ * For tax-authority onboarding letters, derive the subset of client fields
+ * that should be persisted back to `clients` after letter generation, so the
+ * data shows up on the client profile and pre-fills future letters.
+ */
+function buildClientTaxUpdates(
+  templateType: string,
+  variables: Record<string, unknown>
+): Partial<UpdateClientDto> {
+  const updates: Partial<UpdateClientDto> = {};
+
+  const incomeTaxFile = variables.income_tax_withholding_file_number;
+  if (
+    typeof incomeTaxFile === 'string' &&
+    incomeTaxFile.trim() !== '' &&
+    (templateType === 'company_onboarding_income_tax_withholding_file_opened' ||
+      templateType === 'company_onboarding_all_tax_files_opened')
+  ) {
+    updates.income_tax_withholding_file_number = incomeTaxFile.trim();
+  }
+
+  const socialSecurityFile = variables.social_security_withholding_file_number;
+  if (
+    typeof socialSecurityFile === 'string' &&
+    socialSecurityFile.trim() !== '' &&
+    (templateType === 'company_onboarding_social_security_withholding_file_opened' ||
+      templateType === 'company_onboarding_all_tax_files_opened')
+  ) {
+    updates.social_security_withholding_file_number = socialSecurityFile.trim();
+  }
+
+  const withholdingPct = variables.tax_withholding_percentage;
+  if (
+    typeof withholdingPct === 'number' &&
+    Number.isFinite(withholdingPct) &&
+    (templateType === 'company_onboarding_tax_withholding_certificate' ||
+      templateType === 'company_onboarding_all_tax_files_opened')
+  ) {
+    updates.tax_withholding_percentage = withholdingPct;
+    // Issuing a certificate implies status='yes'
+    updates.tax_withholding_status = 'yes';
+  }
+
+  return updates;
+}
 
 export function AutoLettersPage() {
   // Permissions
@@ -281,6 +332,21 @@ export function AutoLettersPage() {
       if (selectedLetterTypeId === 'previous_accountant_request') {
         return formState.documentData.company_onboarding.previousAccountantRequest;
       }
+      if (selectedLetterTypeId === 'income_tax_file_opened') {
+        return formState.documentData.company_onboarding.incomeTaxFileOpened;
+      }
+      if (selectedLetterTypeId === 'income_tax_withholding_file_opened') {
+        return formState.documentData.company_onboarding.incomeTaxWithholdingFileOpened;
+      }
+      if (selectedLetterTypeId === 'social_security_withholding_file_opened') {
+        return formState.documentData.company_onboarding.socialSecurityWithholdingFileOpened;
+      }
+      if (selectedLetterTypeId === 'tax_withholding_certificate') {
+        return formState.documentData.company_onboarding.taxWithholdingCertificate;
+      }
+      if (selectedLetterTypeId === 'all_tax_files_opened') {
+        return formState.documentData.company_onboarding.allTaxFilesOpened;
+      }
     }
 
     if (selectedCategory === 'setting_dates') {
@@ -429,6 +495,21 @@ export function AutoLettersPage() {
       }
       if (selectedLetterTypeId === 'previous_accountant_request') {
         return validatePreviousAccountantRequest(mergedData);
+      }
+      if (selectedLetterTypeId === 'income_tax_file_opened') {
+        return validateIncomeTaxFileOpened(mergedData);
+      }
+      if (selectedLetterTypeId === 'income_tax_withholding_file_opened') {
+        return validateIncomeTaxWithholdingFileOpened(mergedData);
+      }
+      if (selectedLetterTypeId === 'social_security_withholding_file_opened') {
+        return validateSocialSecurityWithholdingFileOpened(mergedData);
+      }
+      if (selectedLetterTypeId === 'tax_withholding_certificate') {
+        return validateTaxWithholdingCertificate(mergedData);
+      }
+      if (selectedLetterTypeId === 'all_tax_files_opened') {
+        return validateAllTaxFilesOpened(mergedData);
       }
     }
 
@@ -595,6 +676,20 @@ export function AutoLettersPage() {
 
       if (result.error) {
         throw result.error;
+      }
+
+      // Write-back: persist stable tax-authority identifiers to clients
+      // so they show up on the client profile and pre-fill future letters.
+      // Only applies when a single client is selected (not groups/contacts/adhoc).
+      if (formState.selectedClientId && formState.selectedCategory === 'company_onboarding') {
+        const clientUpdates = buildClientTaxUpdates(templateType, variables);
+        if (Object.keys(clientUpdates).length > 0) {
+          const updateRes = await clientService.update(formState.selectedClientId, clientUpdates);
+          if (updateRes.error) {
+            console.error('Failed to write back tax data to client:', updateRes.error);
+            // Non-blocking: the letter was generated successfully
+          }
+        }
       }
 
       const actionText = existingLetterId ? 'עודכן' : 'נוצר';
@@ -860,6 +955,66 @@ export function AutoLettersPage() {
             company_onboarding: {
               ...prev.documentData.company_onboarding,
               previousAccountantRequest: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'income_tax_file_opened') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              incomeTaxFileOpened: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'income_tax_withholding_file_opened') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              incomeTaxWithholdingFileOpened: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'social_security_withholding_file_opened') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              socialSecurityWithholdingFileOpened: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'tax_withholding_certificate') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              taxWithholdingCertificate: data,
+            },
+          },
+        }));
+      }
+      if (selectedLetterTypeId === 'all_tax_files_opened') {
+        setFormState(prev => ({
+          ...prev,
+          documentData: {
+            ...prev.documentData,
+            company_onboarding: {
+              ...prev.documentData.company_onboarding,
+              allTaxFilesOpened: data,
             },
           },
         }));
@@ -1512,6 +1667,7 @@ export function AutoLettersPage() {
         companyName={selectedClient?.company_name}
         companyId={selectedClient?.tax_id}
         documentDate={formState.sharedData.document_date}
+        clientTaxPrefill={selectedClient ?? undefined}
       />
 
       {/* Action Buttons - Compact */}

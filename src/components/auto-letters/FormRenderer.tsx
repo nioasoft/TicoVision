@@ -29,6 +29,12 @@ import type {
   TaxRefundVariables,
   DirectorsDeclarationVariables,
   AccountantsOpinionVariables,
+  IncomeTaxFileOpenedVariables,
+  IncomeTaxWithholdingFileOpenedVariables,
+  SocialSecurityWithholdingFileOpenedVariables,
+  TaxWithholdingCertificateVariables,
+  AllTaxFilesOpenedVariables,
+  ClientTaxPrefill,
 } from '@/types/auto-letters.types';
 
 // Company Onboarding forms
@@ -36,6 +42,11 @@ import { VatRegistrationForm } from '@/components/company-onboarding/forms/VatRe
 import { VatFileOpenedForm } from '@/components/company-onboarding/forms/VatFileOpenedForm';
 import { PriceQuoteForm } from '@/components/company-onboarding/forms/PriceQuoteForm';
 import { PreviousAccountantRequestForm } from '@/components/company-onboarding/forms/PreviousAccountantRequestForm';
+import { IncomeTaxFileOpenedForm } from '@/components/company-onboarding/forms/IncomeTaxFileOpenedForm';
+import { IncomeTaxWithholdingFileOpenedForm } from '@/components/company-onboarding/forms/IncomeTaxWithholdingFileOpenedForm';
+import { SocialSecurityWithholdingFileOpenedForm } from '@/components/company-onboarding/forms/SocialSecurityWithholdingFileOpenedForm';
+import { TaxWithholdingCertificateForm } from '@/components/company-onboarding/forms/TaxWithholdingCertificateForm';
+import { AllTaxFilesOpenedForm } from '@/components/company-onboarding/forms/AllTaxFilesOpenedForm';
 
 // Setting Dates forms
 import {
@@ -100,6 +111,8 @@ interface FormRendererProps {
   companyName?: string;  // For bank_approvals forms
   companyId?: string;    // For bank_approvals forms
   documentDate?: string; // For forms that default signature_date to document_date
+  /** Pre-fill data sourced from the selected client (tax-authority letters) */
+  clientTaxPrefill?: ClientTaxPrefill;
 }
 
 export function FormRenderer({
@@ -111,6 +124,7 @@ export function FormRenderer({
   companyName,
   companyId,
   documentDate,
+  clientTaxPrefill,
 }: FormRendererProps) {
   // Show placeholder if no letter type selected
   if (!letterTypeId) {
@@ -126,7 +140,7 @@ export function FormRenderer({
   // Render form based on category and letter type
   switch (category) {
     case 'company_onboarding':
-      return renderCompanyOnboardingForm(letterTypeId, value, onChange, disabled, companyName, companyId);
+      return renderCompanyOnboardingForm(letterTypeId, value, onChange, disabled, companyName, companyId, clientTaxPrefill);
 
     case 'setting_dates':
       return renderSettingDatesForm(letterTypeId, value, onChange, disabled);
@@ -174,8 +188,9 @@ function renderCompanyOnboardingForm(
   value: Record<string, unknown>,
   onChange: (data: Record<string, unknown>) => void,
   disabled?: boolean,
-  companyName?: string,
-  companyId?: string
+  _companyName?: string,
+  companyId?: string,
+  clientTaxPrefill?: ClientTaxPrefill
 ) {
   switch (letterTypeId) {
     case 'vat_registration':
@@ -213,6 +228,60 @@ function renderCompanyOnboardingForm(
           value={value as Partial<PreviousAccountantRequestVariables>}
           onChange={(data) => onChange(data as Record<string, unknown>)}
           disabled={disabled}
+        />
+      );
+
+    case 'income_tax_file_opened':
+      return (
+        <IncomeTaxFileOpenedForm
+          value={value as Partial<IncomeTaxFileOpenedVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyId={companyId}
+        />
+      );
+
+    case 'income_tax_withholding_file_opened':
+      return (
+        <IncomeTaxWithholdingFileOpenedForm
+          value={value as Partial<IncomeTaxWithholdingFileOpenedVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyId={companyId}
+          clientTaxPrefill={clientTaxPrefill}
+        />
+      );
+
+    case 'social_security_withholding_file_opened':
+      return (
+        <SocialSecurityWithholdingFileOpenedForm
+          value={value as Partial<SocialSecurityWithholdingFileOpenedVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyId={companyId}
+          clientTaxPrefill={clientTaxPrefill}
+        />
+      );
+
+    case 'tax_withholding_certificate':
+      return (
+        <TaxWithholdingCertificateForm
+          value={value as Partial<TaxWithholdingCertificateVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyId={companyId}
+          clientTaxPrefill={clientTaxPrefill}
+        />
+      );
+
+    case 'all_tax_files_opened':
+      return (
+        <AllTaxFilesOpenedForm
+          value={value as Partial<AllTaxFilesOpenedVariables>}
+          onChange={(data) => onChange(data as Record<string, unknown>)}
+          disabled={disabled}
+          companyId={companyId}
+          clientTaxPrefill={clientTaxPrefill}
         />
       );
 

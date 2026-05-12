@@ -2929,6 +2929,9 @@ export class TemplateService extends BaseService {
       const bodyFile = this.getCompanyOnboardingBodyFileName(templateType);
       let body = await this.loadTemplateFile(`bodies/company-onboarding/${bodyFile}`);
 
+      // 2.1 Inject tax-authority section partials (no-op for bodies that don't reference them)
+      body = await this.injectTaxFileSections(body);
+
       // 3. Handle conditional sections based on template type
       if (templateType === 'company_onboarding_vat_registration') {
         const vatVars = variables as VatRegistrationVariables;
@@ -3107,10 +3110,40 @@ export class TemplateService extends BaseService {
       'company_onboarding_vat_file_opened': 'vat-file-opened.html',
       'company_onboarding_price_quote_small': 'price-quote-small.html',
       'company_onboarding_price_quote_restaurant': 'price-quote-restaurant.html',
-      'company_onboarding_previous_accountant': 'previous-accountant-request.html'
+      'company_onboarding_previous_accountant': 'previous-accountant-request.html',
+      'company_onboarding_income_tax_file_opened': 'income-tax-file-opened.html',
+      'company_onboarding_income_tax_withholding_file_opened': 'income-tax-withholding-file-opened.html',
+      'company_onboarding_social_security_withholding_file_opened': 'social-security-withholding-file-opened.html',
+      'company_onboarding_tax_withholding_certificate': 'tax-withholding-certificate.html',
+      'company_onboarding_all_tax_files_opened': 'all-tax-files-opened.html'
     };
 
     return bodyMap[templateType];
+  }
+
+  /**
+   * Map from section placeholder → section partial filename for tax-authority letters
+   */
+  private static readonly TAX_FILE_SECTION_PARTIALS: Record<string, string> = {
+    '{{section_income_tax}}': 'bodies/company-onboarding/sections/income-tax-section.html',
+    '{{section_income_tax_withholding}}': 'bodies/company-onboarding/sections/income-tax-withholding-section.html',
+    '{{section_social_security_withholding}}': 'bodies/company-onboarding/sections/social-security-withholding-section.html',
+    '{{section_tax_withholding_certificate}}': 'bodies/company-onboarding/sections/tax-withholding-certificate-section.html'
+  };
+
+  /**
+   * Inject section partials into body for the 5 tax-authority letters.
+   * Any placeholder not used by the current body is left untouched (substitution is a no-op).
+   */
+  private async injectTaxFileSections(body: string): Promise<string> {
+    let result = body;
+    for (const [placeholder, partialPath] of Object.entries(TemplateService.TAX_FILE_SECTION_PARTIALS)) {
+      if (result.includes(placeholder)) {
+        const sectionHtml = await this.loadTemplateFile(partialPath);
+        result = result.split(placeholder).join(sectionHtml);
+      }
+    }
+    return result;
   }
 
   /**
@@ -3213,6 +3246,23 @@ export class TemplateService extends BaseService {
         const dateParts = vatFirstReportDate.split('-');
         if (dateParts.length === 3) {
           processed.vat_first_report_date = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        }
+      }
+    }
+
+    // Tax-authority letters: format date fields from YYYY-MM-DD to DD/MM/YYYY
+    // Applies to: 4 individual letters + the combined letter
+    const dateFieldsToFormat = [
+      'income_tax_withholding_first_report_date',
+      'social_security_withholding_first_report_date',
+      'certificate_valid_until'
+    ];
+    for (const field of dateFieldsToFormat) {
+      const raw = (variables as Record<string, unknown>)[field];
+      if (typeof raw === 'string' && raw) {
+        const parts = raw.split('-');
+        if (parts.length === 3) {
+          processed[field] = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
       }
     }

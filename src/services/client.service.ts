@@ -149,6 +149,8 @@ export interface Client {
   tax_coding_status?: 'regular' | 'zero' | null; // סטטוס טופס 1214
   tax_withholding_status?: 'yes' | 'no' | null; // ניכוי מס במקור
   tax_withholding_percentage?: number | null; // אחוז ניכוי מס במקור (0–100)
+  income_tax_withholding_file_number?: string | null; // מספר תיק ניכויים במס הכנסה (עובדים)
+  social_security_withholding_file_number?: string | null; // מספר תיק ניכויים בביטוח לאומי
   google_drive_link?: string; // Link to Google Drive folder (optional)
   canva_link?: string; // Link to Canva design (optional)
   tags?: string[];
@@ -207,6 +209,8 @@ export interface CreateClientDto {
   tax_coding_status?: 'regular' | 'zero' | null; // סטטוס טופס 1214
   tax_withholding_status?: 'yes' | 'no' | null; // ניכוי מס במקור
   tax_withholding_percentage?: number | null; // אחוז ניכוי מס במקור (0–100)
+  income_tax_withholding_file_number?: string | null; // מספר תיק ניכויים במס הכנסה (עובדים)
+  social_security_withholding_file_number?: string | null; // מספר תיק ניכויים בביטוח לאומי
   google_drive_link?: string; // Link to Google Drive folder (optional)
   canva_link?: string; // Link to Canva design (optional)
   tags?: string[];
