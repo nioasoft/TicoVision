@@ -53,7 +53,7 @@ interface Step1Data {
 
 interface Step2Data {
   annualRevenue: number | '';
-  annualRevenue2022: number | '';
+  annualRevenueBaseYear: number | '';
   revenueBase: number | '';
   revenueComparison: number | '';
   capitalRevenuesBase: number | '';
@@ -86,7 +86,7 @@ function getPeriodLabels(track: TrackType, reporting: ReportingType): PeriodLabe
       };
     case 'small':
       return {
-        baseLabel: 'מחזור 2022',
+        baseLabel: 'מחזור שנת בסיס',
         comparisonLabel: m ? '03/2026' : '3-4/2026',
         inputsLabel: '—',
         salaryLabel: '03/2026',
@@ -363,11 +363,11 @@ const Step2RevenueData: React.FC<Step2Props> = ({ data, step1, onChange, onNext,
           />
           {(isSmall || (typeof data.annualRevenue === 'number' && data.annualRevenue <= 300_000)) && (
             <RevenueField
-              label="מחזור שנתי 2022"
+              label="מחזור שנת בסיס (לקביעת גודל עסק)"
               periodLabel="לטבלת מסלול קטנים"
-              value={data.annualRevenue2022}
-              onChange={(v) => onChange({ ...data, annualRevenue2022: v })}
-              hint="נדרש אם המחזור עד 300,000 ₪ בשנת 2022"
+              value={data.annualRevenueBaseYear}
+              onChange={(v) => onChange({ ...data, annualRevenueBaseYear: v })}
+              hint="עסק שנפתח לפני 1.1.2025 — מחזור שנת 2025. עסק שנפתח אחרי — ממוצע 25/26 מנורמל ל-12 חודשים"
             />
           )}
         </div>
@@ -679,7 +679,7 @@ const EMPTY_STEP1: Step1Data = {
 
 const EMPTY_STEP2: Step2Data = {
   annualRevenue: '',
-  annualRevenue2022: '',
+  annualRevenueBaseYear: '',
   revenueBase: '',
   revenueComparison: '',
   capitalRevenuesBase: '',
@@ -822,7 +822,10 @@ export const EligibilityCheckPage: React.FC = () => {
         business_type: step1.businessType,
         reporting_type: step1.reportingType,
         annual_revenue: typeof step2.annualRevenue === 'number' ? step2.annualRevenue : 0,
-        annual_revenue_2022: typeof step2.annualRevenue2022 === 'number' ? step2.annualRevenue2022 : undefined,
+        annual_revenue_base_year:
+          typeof step2.annualRevenueBaseYear === 'number'
+            ? step2.annualRevenueBaseYear
+            : undefined,
         revenue_base_period: typeof step2.revenueBase === 'number' ? step2.revenueBase : 0,
         revenue_comparison_period: typeof step2.revenueComparison === 'number' ? step2.revenueComparison : 0,
         revenue_base_period_label: periods.baseLabel,

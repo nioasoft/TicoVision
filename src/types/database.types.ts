@@ -4927,7 +4927,7 @@ export type Database = {
       shaagat_eligibility_checks: {
         Row: {
           annual_revenue: number
-          annual_revenue_2022: number | null
+          annual_revenue_base_year: number | null
           business_type: string
           capital_revenues_base: number | null
           capital_revenues_comparison: number | null
@@ -4961,7 +4961,7 @@ export type Database = {
         }
         Insert: {
           annual_revenue?: number
-          annual_revenue_2022?: number | null
+          annual_revenue_base_year?: number | null
           business_type?: string
           capital_revenues_base?: number | null
           capital_revenues_comparison?: number | null
@@ -4995,7 +4995,7 @@ export type Database = {
         }
         Update: {
           annual_revenue?: number
-          annual_revenue_2022?: number | null
+          annual_revenue_base_year?: number | null
           business_type?: string
           capital_revenues_base?: number | null
           capital_revenues_comparison?: number | null

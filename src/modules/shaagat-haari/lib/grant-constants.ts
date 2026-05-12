@@ -63,8 +63,10 @@ export const GRANT_CONSTANTS = {
     /** Salary grant factor — 75% of adjusted salary */
     GRANT_FACTOR: 0.75,
     /** Average national salary (₪) — base for per-employee salary cap.
-     *  Source: Tax Consultants Institute professional letter, May 2026. */
-    CAP_PER_EMPLOYEE: 13_967,
+     *  Source: official Q&A (Q16) per Bituach Leumi §2(b), effective 1.1.2026.
+     *  Updated from 13,967 → 13,769 (12.5.2026) after cross-check with
+     *  haravot-barzel.org.il/ari_qa/ — see DOCS/SHAAGAT_HAARI_OFFICIAL_QA_111.md. */
+    CAP_PER_EMPLOYEE: 13_769,
   },
 
   // ────────────── Overall grant caps ──────────────
@@ -138,7 +140,7 @@ export const SMALL_BUSINESS_LOOKUP: SmallBusinessLookupEntry[] = [
   { minRevenue: 50_000,  maxRevenue: 90_000,  tier1: 3_356, tier2: 3_356,  tier3: 3_356,  tier4: 3_356  },
   { minRevenue: 90_000,  maxRevenue: 120_000, tier1: 4_475, tier2: 4_475,  tier3: 4_475,  tier4: 4_475  },
   { minRevenue: 120_000, maxRevenue: 150_000, tier1: 2_823, tier2: 4_235,  tier3: 6_775,  tier4: 8_469  },
-  { minRevenue: 150_000, maxRevenue: 200_000, tier1: 3_325, tier2: 4_993,  tier3: 7_990,  tier4: 9_987  },
+  { minRevenue: 150_000, maxRevenue: 200_000, tier1: 3_329, tier2: 4_994,  tier3: 7_990,  tier4: 9_987  },
   { minRevenue: 200_000, maxRevenue: 250_000, tier1: 4_261, tier2: 6_392,  tier3: 10_226, tier4: 12_783 },
   { minRevenue: 250_000, maxRevenue: 300_000, tier1: 4_980, tier2: 7_470,  tier3: 11_952, tier4: 14_940 },
 ];

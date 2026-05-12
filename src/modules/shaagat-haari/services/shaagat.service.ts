@@ -102,7 +102,7 @@ export interface EligibilityCheck {
   business_type: BusinessType;
   reporting_type: ReportingType;
   annual_revenue: number;
-  annual_revenue_2022: number | null;
+  annual_revenue_base_year: number | null;
   revenue_base_period: number;
   revenue_comparison_period: number;
   revenue_base_period_label: string | null;
@@ -389,7 +389,7 @@ export interface CreateEligibilityCheckInput {
   business_type: BusinessType;
   reporting_type: ReportingType;
   annual_revenue: number;
-  annual_revenue_2022?: number;
+  annual_revenue_base_year?: number;
   revenue_base_period: number;
   revenue_comparison_period: number;
   revenue_base_period_label?: string;
@@ -846,7 +846,7 @@ class ShaagatService extends BaseService {
           business_type: input.business_type,
           reporting_type: input.reporting_type,
           annual_revenue: input.annual_revenue,
-          annual_revenue_2022: input.annual_revenue_2022 ?? null,
+          annual_revenue_base_year: input.annual_revenue_base_year ?? null,
           revenue_base_period: input.revenue_base_period,
           revenue_comparison_period: input.revenue_comparison_period,
           revenue_base_period_label: input.revenue_base_period_label ?? null,

@@ -334,17 +334,19 @@ export function calculateGrantCap(annualRevenue: number): number {
  *
  * Implements formula section 4 from SHAAGAT_HAARI_FORMULAS.md.
  *
- * @param annualRevenue2022 - Annual revenue in 2022 (must be 12,000-300,000)
+ * @param annualRevenueBaseYear - Annual revenue in the base year (must be 12,000-300,000).
+ *   Pre-1.1.2025 businesses: full year 2025. Post-1.1.2025: annualized 25/26 average.
  * @param declinePercentage - Decline percentage (used for monthly tiers: 25-40, 40-60, 60-80, 80-100)
  * @returns Fixed grant amount, or null if revenue is out of lookup range
  */
 export function lookupSmallBusinessGrant(
-  annualRevenue2022: number,
+  annualRevenueBaseYear: number,
   declinePercentage: number,
 ): number | null {
   const row = SMALL_BUSINESS_LOOKUP.find(
     (entry) =>
-      annualRevenue2022 >= entry.minRevenue && annualRevenue2022 < entry.maxRevenue,
+      annualRevenueBaseYear >= entry.minRevenue &&
+      annualRevenueBaseYear < entry.maxRevenue,
   );
 
   if (!row) return null;
@@ -371,13 +373,14 @@ export function lookupSmallBusinessGrant(
  * Implements formula section 3.6 from SHAAGAT_HAARI_FORMULAS.md.
  *
  * Only applies when:
- *   - annualRevenue2022 ≤ 300,000
+ *   - annualRevenueBaseYear ≤ 300,000
  *   - trackType !== 'small'
  *
  * For bimonthly clients: uses effectiveDecline (already ×2) for the lookup.
  *
  * @param finalGrantAmount - Already-capped grant from the main calculation
- * @param annualRevenue2022 - Annual revenue in 2022
+ * @param annualRevenueBaseYear - Annual revenue in the base year for size determination
+ *   (pre-1.1.2025: 2025 full year; post-1.1.2025: annualized 25/26 average).
  * @param declinePercentage - Raw decline percentage (before bimonthly multiplier)
  * @param trackType - Current track — skipped if already 'small'
  * @param reportingType - Determines whether to double the decline for the lookup
@@ -385,7 +388,7 @@ export function lookupSmallBusinessGrant(
  */
 export function maybeCompareWithSmallBusiness(
   finalGrantAmount: number,
-  annualRevenue2022: number | undefined,
+  annualRevenueBaseYear: number | undefined,
   declinePercentage: number,
   trackType: TrackType,
   reportingType: 'monthly' | 'bimonthly',
@@ -394,8 +397,8 @@ export function maybeCompareWithSmallBusiness(
 
   if (
     trackType === 'small' ||
-    annualRevenue2022 === undefined ||
-    annualRevenue2022 > SMALL_BUSINESS_MAX_REVENUE
+    annualRevenueBaseYear === undefined ||
+    annualRevenueBaseYear > SMALL_BUSINESS_MAX_REVENUE
   ) {
     return { smallBusinessGrant: null, recommendedAmount: finalGrantAmount };
   }
@@ -409,7 +412,10 @@ export function maybeCompareWithSmallBusiness(
         )
       : declinePercentage;
 
-  const smallBusinessGrant = lookupSmallBusinessGrant(annualRevenue2022, lookupDecline);
+  const smallBusinessGrant = lookupSmallBusinessGrant(
+    annualRevenueBaseYear,
+    lookupDecline,
+  );
 
   if (smallBusinessGrant === null) {
     return { smallBusinessGrant: null, recommendedAmount: finalGrantAmount };
@@ -435,8 +441,14 @@ export function maybeCompareWithSmallBusiness(
  * @returns Complete grant breakdown with all intermediates and final recommended amount
  */
 export function calculateGrant(input: GrantCalculationInput): GrantBreakdown {
-  const { trackType, reportingType, eligibility, fixedExpenses, salary, annualRevenue2022 } =
-    input;
+  const {
+    trackType,
+    reportingType,
+    eligibility,
+    fixedExpenses,
+    salary,
+    annualRevenueBaseYear,
+  } = input;
 
   // 1 — Eligibility
   const eligibilityResult = calculateEligibility(eligibility);
@@ -477,7 +489,7 @@ export function calculateGrant(input: GrantCalculationInput): GrantBreakdown {
   // 7 — Small business comparison ("take the higher")
   const { smallBusinessGrant, recommendedAmount } = maybeCompareWithSmallBusiness(
     finalGrantAmount,
-    annualRevenue2022,
+    annualRevenueBaseYear,
     eligibilityResult.declinePercentage,
     trackType,
     reportingType,

@@ -604,8 +604,8 @@ describe('calculateSalaryGrant', () => {
       declinePercentage: 50,
     });
     const result = calculateSalaryGrant(input);
-    // Cap = round(5 × 13,967 × 1.25 × 0.50) = round(43,646.875) = 43,647
-    expect(result.salaryCap).toBe(43_647);
+    // Cap = round(5 × 13,769 × 1.25 × 0.50) = round(43,028.125) = 43,028
+    expect(result.salaryCap).toBe(43_028);
   });
 
   it('should calculate salary cap with NGO multiplier 1.325', () => {
@@ -616,8 +616,8 @@ describe('calculateSalaryGrant', () => {
       declinePercentage: 50,
     });
     const result = calculateSalaryGrant(input);
-    // Cap = round(5 × 13,967 × 1.325 × 0.50) = round(46,265.6875) = 46,266
-    expect(result.salaryCap).toBe(46_266);
+    // Cap = round(5 × 13,769 × 1.325 × 0.50) = round(45,609.8125) = 45,610
+    expect(result.salaryCap).toBe(45_610);
   });
 
   // --- Employee deductions from cap ---
@@ -911,8 +911,8 @@ describe('lookupSmallBusinessGrant', () => {
     expect(lookupSmallBusinessGrant(149_999, 85)).toBe(8_469);
   });
 
-  it('should return 3,325 for revenue 150,000 at 30% decline (tier 1)', () => {
-    expect(lookupSmallBusinessGrant(150_000, 30)).toBe(3_325);
+  it('should return 3,329 for revenue 150,000 at 30% decline (tier 1)', () => {
+    expect(lookupSmallBusinessGrant(150_000, 30)).toBe(3_329);
   });
 
   it('should return 10,226 for revenue 200,000 at 65% decline (tier 3)', () => {
@@ -975,7 +975,7 @@ describe('maybeCompareWithSmallBusiness', () => {
     expect(result.recommendedAmount).toBe(5_000);
   });
 
-  it('should skip comparison when annualRevenue2022 is undefined', () => {
+  it('should skip comparison when annualRevenueBaseYear is undefined', () => {
     const result = maybeCompareWithSmallBusiness(10_000, undefined, 50, 'standard', 'monthly');
     expect(result.smallBusinessGrant).toBeNull();
     expect(result.recommendedAmount).toBe(10_000);
@@ -1102,9 +1102,9 @@ describe('calculateGrant — integration', () => {
     expect(result.recommendedAmount).toBe(Math.round(137_538 * 0.68));
   });
 
-  it('should compare with small business track when annualRevenue2022 <= 300K', () => {
+  it('should compare with small business track when annualRevenueBaseYear <= 300K', () => {
     const result = calculateGrant(makeFullInput({
-      annualRevenue2022: 260_000,
+      annualRevenueBaseYear: 260_000,
     }));
 
     // Standard = 137,538. Lookup 250K-300K at 68% decline → tier 60-80% → 11,952 (May 2026 letter)
@@ -1373,7 +1373,7 @@ describe('Rounding behavior', () => {
       declinePercentage: 50,
     });
     const result = calculateSalaryGrant(input);
-    expect(result.salaryCap).toBe(43_647);
+    expect(result.salaryCap).toBe(43_028);
     expect(Number.isInteger(result.salaryCap)).toBe(true);
   });
 
@@ -1428,7 +1428,7 @@ describe('GRANT_CONSTANTS', () => {
     expect(GRANT_CONSTANTS.SALARY.REGULAR_MULTIPLIER).toBe(1.25);
     expect(GRANT_CONSTANTS.SALARY.NGO_MULTIPLIER).toBe(1.325);
     expect(GRANT_CONSTANTS.SALARY.GRANT_FACTOR).toBe(0.75);
-    expect(GRANT_CONSTANTS.SALARY.CAP_PER_EMPLOYEE).toBe(13_967);
+    expect(GRANT_CONSTANTS.SALARY.CAP_PER_EMPLOYEE).toBe(13_769);
   });
 
   it('should have correct grant cap constants', () => {

@@ -109,7 +109,7 @@ export function DetailedCalculationPage() {
     compensation_rate: number;
     decline_percentage: number;
     annual_revenue: number;
-    annual_revenue_2022: number | null;
+    annual_revenue_base_year: number | null;
     revenue_base_period: number;
     revenue_comparison_period: number;
     client: { company_name: string; tax_id: string };
@@ -208,7 +208,7 @@ export function DetailedCalculationPage() {
         compensation_rate: ec.compensation_rate,
         decline_percentage: ec.decline_percentage,
         annual_revenue: ec.annual_revenue,
-        annual_revenue_2022: ec.annual_revenue_2022,
+        annual_revenue_base_year: ec.annual_revenue_base_year,
         revenue_base_period: ec.revenue_base_period,
         revenue_comparison_period: ec.revenue_comparison_period,
         client: ec.client,
@@ -457,7 +457,7 @@ export function DetailedCalculationPage() {
           declinePercentage: eligibilityCheck.decline_percentage,
           reportingType: eligibilityCheck.reporting_type as 'monthly' | 'bimonthly',
         },
-        annualRevenue2022: eligibilityCheck.annual_revenue_2022 ?? undefined,
+        annualRevenueBaseYear: eligibilityCheck.annual_revenue_base_year ?? undefined,
       });
 
       setBreakdown(result);

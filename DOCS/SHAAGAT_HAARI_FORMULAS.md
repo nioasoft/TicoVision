@@ -40,7 +40,7 @@
 | מכפיל עלות מעביד — רגיל | 1.25 | עסקים רגילים |
 | מכפיל עלות מעביד — עמותה / מלכ"ר | 1.325 | עמותות/מלכ"רים |
 | מכפיל מענק שכר | 0.75 | 75% מהשכר המותאם |
-| **שכר ממוצע במשק** | **13,967 ₪** | בסיס לתקרת שכר *(עודכן מ-13,773 ₪ באיגרת מאי 2026)* |
+| **שכר ממוצע במשק** | **13,769 ₪** | בסיס לתקרת שכר *(מקור: Q&A רשמי, סעיף 2(ב) לחוק ב"ל החל מ-1.1.2026)* |
 
 ### 1.3 תקרות מענק
 | מחזור שנתי | תקרה |
@@ -143,7 +143,7 @@ fixedExpensesGrant = round(monthlyAvgInputs × (compensationRate / 100))
   employeesAfterDeductions = max(totalEmployees − employeeDeductions, 1)
 
   ⚠️ נוסחת תקרה (לפי האיגרת — ללא ×0.75!):
-  salaryCap = round(employeesAfterDeductions × 13_967 × multiplier × (effectiveDecline / 100))
+  salaryCap = round(employeesAfterDeductions × 13_769 × multiplier × (effectiveDecline / 100))
 
 שלב 5 — מענק שכר סופי:
   salaryGrant = min(salaryGrantBeforeCap, salaryCap)
@@ -151,7 +151,7 @@ fixedExpensesGrant = round(monthlyAvgInputs × (compensationRate / 100))
 
 > **שגיאה היסטורית נפוצה #1:** `(salary × 1.25) − deductions` במקום `(salary − deductions) × 1.25`
 > **שגיאה היסטורית נפוצה #2:** תקרה כוללת ×0.75 — לפי האיגרת התקרה היא **ללא** ×0.75
-> **שגיאה היסטורית נפוצה #3:** שימוש ב-13,773 ₪ — הערך עודכן ל-**13,967 ₪** באיגרת מאי 2026
+> **שגיאה היסטורית נפוצה #3:** ערך השכר הממוצע — **13,769 ₪** ע"פ Q&A רשמי (haravot-barzel.org.il, 12.5.2026). היו ערכים קודמים בשימוש (13,773 / 13,967).
 
 **הגדרת "עובד מזכה" (איגרת מאי 2026):**
 - ✅ עובד שלא יצא לחל"ת ועבד ברצף מרץ–אפריל 2026
@@ -194,14 +194,23 @@ contractorFinalGrant = round(finalGrantAmount × 0.68)
 ### 3.6 השוואה עם מסלול קטנים ("הגבוה מבין השניים")
 
 ```
-אם annualRevenue2022 <= 300,000:
-  smallTrackAmount = lookupSmallBusinessGrant(annualRevenue2022, declinePercentage)
+אם annualRevenueBaseYear <= 300,000:
+  smallTrackAmount = lookupSmallBusinessGrant(annualRevenueBaseYear, declinePercentage)
   finalAmount = max(finalGrantAmount, smallTrackAmount)
 ```
+
+**שנת הבסיס לקביעת גודל העסק** (מקור: איתי מנור, 4.5.2026):
+- עסקים שנפתחו **לפני 1.1.2025** → מחזור **שנת 2025** המלאה
+- עסקים שנפתחו **מ-1.1.2025 ואילך** → ממוצע מחזור החל מ-**1.7.2025** (או מועד הפתיחה לפי המאוחר) עד **28.2.2026**, מנורמל ל-12 חודשים
+
+> **שינוי קוד 4.5.2026:** השדה `annualRevenue2022` שונה ל-`annualRevenueBaseYear` (DB: `annual_revenue_base_year`). הסמנטיקה השתנתה — אין יותר התייחסות לשנת 2022.
 
 ---
 
 ## 4. מסלול עסקים קטנים — טבלת Lookup
+
+> **שנת הבסיס למחזור** (קביעת גודל עסק, איתי מנור 4.5.2026):
+> עסק שנפתח לפני 1.1.2025 → מחזור שנת 2025 המלאה. עסק שנפתח אחרי → ממוצע 1.7.2025-28.2.2026 מנורמל לשנה.
 
 **עסקים עם מחזור שנת הבסיס עד 300,000 ₪ — סכומים קבועים:**
 *(עודכן באיגרת מאי 2026 — עלייה אחידה של ~1.7% בכל הסכומים)*

@@ -60,8 +60,16 @@ export interface StandardTrackConfig extends BaseTrackConfig {
 
 export interface SmallBusinessTrackConfig extends BaseTrackConfig {
   trackType: 'small';
-  /** Annual revenue 2022 — key for lookup table (must be ≤ 300,000) */
-  annualRevenue2022: number;
+  /**
+   * Annual revenue in the base year used for the small-business lookup
+   * (must be ≤ 300,000).
+   *
+   * Per the Tax Consultants Institute clarification (May 2026):
+   *   • Businesses opened before 1.1.2025 → full year 2025 revenue
+   *   • Businesses opened on/after 1.1.2025 → annualized average
+   *     from 1.7.2025 (or opening date if later) to 28.2.2026
+   */
+  annualRevenueBaseYear: number;
 }
 
 export interface CashBasisTrackConfig extends BaseTrackConfig {
@@ -247,8 +255,13 @@ export interface GrantCalculationInput {
   eligibility: EligibilityInput;
   fixedExpenses: FixedExpensesInput;
   salary: SalaryInput;
-  /** Annual revenue 2022 — required for small business comparison */
-  annualRevenue2022?: number;
+  /**
+   * Annual revenue in the base year for business-size determination — required
+   * for the small-business "take-the-higher" comparison (≤ 300,000 ₪).
+   * Pre-1.1.2025 businesses: full year 2025 revenue.
+   * Post-1.1.2025 businesses: annualized average from 1.7.2025.
+   */
+  annualRevenueBaseYear?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -295,7 +308,7 @@ export interface GrantApplicationRow {
   business_type: BusinessType;
   status: GrantApplicationStatus;
   annual_revenue: number | null;
-  annual_revenue_2022: number | null;
+  annual_revenue_base_year: number | null;
   revenue_base: number | null;
   revenue_comparison: number | null;
   capital_revenues_base: number | null;

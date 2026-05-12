@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>שאגת הארי — דוח אימות מערכת לאישור רואה חשבון</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Heebo", "Assistant", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 32px 24px;
+    line-height: 1.7;
+    direction: rtl;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header.top {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+    color: white;
+    padding: 32px 28px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  header.top h1 { margin: 0 0 8px; font-size: 26px; }
+  header.top p { margin: 4px 0; opacity: 0.92; font-size: 14px; }
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+    font-size: 13px;
+  }
+  .meta div { background: rgba(255,255,255,0.12); padding: 10px 14px; border-radius: 8px; }
+  .meta strong { display: block; opacity: 0.85; font-weight: normal; font-size: 12px; margin-bottom: 2px; }
+
+  .tldr {
+    background: var(--amber-bg);
+    border: 1px solid #fcd34d;
+    border-right: 5px solid var(--amber);
+    padding: 18px 22px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+  .tldr h2 { margin: 0 0 8px; color: var(--amber); font-size: 18px; }
+
+  .source-conflict {
+    background: var(--blue-bg);
+    border: 1px solid #93c5fd;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 28px;
+  }
+  .source-conflict h3 { margin: 0 0 10px; color: var(--blue); }
+  .source-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 12px;
+  }
+  .source-grid .src {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 14px;
+    border-radius: 8px;
+  }
+  .source-grid .src h4 { margin: 0 0 6px; font-size: 14px; }
+  .source-grid .src .num { font-size: 22px; font-weight: bold; color: var(--text); margin: 6px 0; }
+  .source-grid .src.gold { border-top: 3px solid var(--green); }
+  .source-grid .src.silver { border-top: 3px solid var(--amber); }
+
+  h2.section { margin-top: 32px; padding-bottom: 8px; border-bottom: 2px solid var(--border); font-size: 22px; }
+
+  .finding {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-right: 5px solid var(--red);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .finding.ok { border-right-color: var(--green); }
+  .finding.warn { border-right-color: var(--amber); }
+
+  .finding h3 { margin: 0 0 12px; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    background: var(--red);
+  }
+  .badge.severity-high { background: var(--red); }
+  .badge.severity-medium { background: var(--amber); }
+  .badge.severity-info { background: var(--blue); }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 14px 0;
+  }
+  .compare .col {
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .compare .col.ours { background: var(--red-bg); border-color: #fecaca; }
+  .compare .col.official { background: var(--green-bg); border-color: #a7f3d0; }
+  .compare h5 { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+  .compare code, .compare .val {
+    display: block;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-family: "SF Mono", "Cascadia Code", monospace;
+    font-size: 13px;
+    direction: ltr;
+    text-align: right;
+  }
+  .compare .val.hebrew { direction: rtl; font-family: inherit; text-align: right; font-size: 14px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  th, td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--border); font-size: 14px; }
+  th { background: #f3f4f6; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: "SF Mono", monospace; direction: ltr; text-align: right; }
+  .strike { text-decoration: line-through; color: var(--muted); }
+  .highlight { background: #fef08a; padding: 1px 4px; border-radius: 3px; }
+
+  .source-ref {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .source-ref strong { color: var(--text); }
+
+  .impact {
+    background: #fafafa;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .impact strong { color: var(--red); }
+
+  .question-box {
+    background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+    border: 1px solid #8b5cf6;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-top: 14px;
+    font-size: 14px;
+  }
+  .question-box strong { display: block; margin-bottom: 4px; color: #5b21b6; }
+
+  .example-box {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin: 12px 0;
+    font-size: 13.5px;
+  }
+  .example-box .label { font-weight: bold; color: var(--blue); margin-bottom: 4px; }
+  .example-box pre {
+    direction: ltr;
+    text-align: right;
+    font-family: "SF Mono", monospace;
+    font-size: 13px;
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    margin: 6px 0;
+    border: 1px solid var(--border);
+    white-space: pre-wrap;
+  }
+
+  .summary-table th { background: #1e3a8a; color: white; }
+  .summary-table tr.severity-high { background: var(--red-bg); }
+  .summary-table tr.severity-medium { background: var(--amber-bg); }
+  .summary-table tr.severity-info { background: var(--blue-bg); }
+
+  .clients-stat {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .clients-stat div {
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+  .clients-stat .num { font-size: 22px; font-weight: bold; color: var(--blue); }
+  .clients-stat .lbl { font-size: 12px; color: var(--muted); }
+
+  footer {
+    margin-top: 40px;
+    padding: 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 768px) {
+    .compare, .source-grid { grid-template-columns: 1fr; }
+    body { padding: 16px 12px; }
+  }
+
+  @media print {
+    body { background: white; padding: 10px; }
+    .finding { box-shadow: none; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="top">
+  <h1>שאגת הארי — דוח אימות לאישור רו"ח</h1>
+  <p>השוואה בין הקוד הקיים במערכת CRM של טיקו לבין ה-Q&amp;A הרשמיות של חוק שאגת הארי (4.5.2026)</p>
+  <div class="meta">
+    <div><strong>תאריך</strong>12 במאי 2026</div>
+    <div><strong>מקור רשמי</strong>haravot-barzel.org.il/ari_qa/</div>
+    <div><strong>מקור פנימי</strong>איגרת לשכת יועצי המס (ירון גינדי, מאי 2026)</div>
+    <div><strong>מטרת הדוח</strong>אישור רו"ח על הפרשנות הנכונה</div>
+  </div>
+</header>
+
+<div class="tldr">
+  <h2>שורה תחתונה לרואה החשבון</h2>
+  <p>
+    קיימת <strong>סתירה משמעותית</strong> בין שני מקורות מקצועיים שאמורים לפרש את אותו חוק.
+    האתר הרשמי מציג נוסחאות שנותנות פיצוי <strong>גדול פי שניים בערך</strong> מהאיגרת של לשכת יועצי המס.
+    אנו זקוקים להחלטה מי הנכון, כדי שלקוחותינו יקבלו את המגיע להם.
+  </p>
+  <p style="margin-top:8px;">
+    <strong>היקף הלקוחות שלנו:</strong>
+  </p>
+  <div class="clients-stat">
+    <div><div class="num">161</div><div class="lbl">מסעדות</div></div>
+    <div><div class="num">37</div><div class="lbl">מסחרי אחר</div></div>
+    <div><div class="num">19</div><div class="lbl">חברות החזקה</div></div>
+    <div><div class="num">9</div><div class="lbl">נדל"ן</div></div>
+    <div><div class="num">535</div><div class="lbl">לא מסווג</div></div>
+  </div>
+  <p style="margin-top:10px; font-size: 13.5px;">
+    <em>הדוח הזה ממוקד רק בפערים הרלוונטיים ללקוחותינו (מסעדות וחברות מסחריות).
+    סעיפי חוק עבור סיטונאי דלק, חקלאות, ועוסקים פטורים §33 — הושמטו כיוון שאין לנו לקוחות כאלה.</em>
+  </p>
+</div>
+
+<div class="source-conflict">
+  <h3>הסתירה המרכזית בין שני מקורות</h3>
+  <p>שני מקורות מקצועיים — שתי דוגמאות חישוב, שתי תוצאות שונות מאותו חוק:</p>
+  <div class="source-grid">
+    <div class="src silver">
+      <h4>איגרת לשכת יועצי המס — ירון גינדי (מאי 2026)</h4>
+      <p>על בסיסה בנינו את המערכת.</p>
+      <p>דוגמה: תשומות 1.8M, ירידה 68%, שכר 180K</p>
+      <div class="num">137,538 ₪</div>
+      <small>נוסחה: חלוקה ב-12, ללא × 2 סופי, תקרה 600,000 ₪</small>
+    </div>
+    <div class="src gold">
+      <h4>אתר רשמי haravot-barzel.org.il (4.5.2026)</h4>
+      <p>נטען שמבוסס על נוסח החוק עצמו. כולל 111 שאלות ותשובות.</p>
+      <p>דוגמה (Q97): תשומות 600K, ירידה 50%, שכר 80K</p>
+      <div class="num">102,000 ₪</div>
+      <small>נוסחה: חלוקה ב-6, × 2 בסוף, תקרה 1,200,000 ₪</small>
+    </div>
+  </div>
+  <div class="question-box">
+    <strong>השאלה לרואה החשבון:</strong>
+    איזה מהשניים הוא הפרשנות הסמכותית? האם כדאי להסתמך על נוסח החוק עצמו (PDF "ספר חוק שאגת הארי 4.5.2026" שמקושר באתר הרשמי)?
+  </div>
+</div>
+
+<h2 class="section">טבלת סיכום הפערים</h2>
+
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>הנושא</th>
+      <th>הקוד שלנו</th>
+      <th>רשמי (Q&amp;A)</th>
+      <th>חומרה</th>
+      <th>מקור Q&amp;A</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="severity-high">
+      <td>1</td>
+      <td>טבלת סכומים אחידים לעסקים קטנים</td>
+      <td>1,864 / 3,356 / 4,475 …</td>
+      <td>כפול (× 2)</td>
+      <td><span class="badge severity-high">קריטי</span></td>
+      <td>Q11, Q98, Q99</td>
+    </tr>
+    <tr class="severity-high">
+      <td>2</td>
+      <td>תקרת מענק (&lt; 100M מחזור)</td>
+      <td>600,000 ₪</td>
+      <td>1,200,000 ₪</td>
+      <td><span class="badge severity-high">קריטי</span></td>
+      <td>Q40</td>
+    </tr>
+    <tr class="severity-high">
+      <td>3</td>
+      <td>תקרת מענק (300–400M מחזור)</td>
+      <td>1,200,000 ₪</td>
+      <td>2,400,000 ₪</td>
+      <td><span class="badge severity-high">קריטי</span></td>
+      <td>Q41, Q42</td>
+    </tr>
+    <tr class="severity-high">
+      <td>4</td>
+      <td>חישוב הוצאות קבועות (מחלק)</td>
+      <td>תשומות ÷ 12</td>
+      <td>תשומות ÷ 6</td>
+      <td><span class="badge severity-high">קריטי</span></td>
+      <td>Q97</td>
+    </tr>
+    <tr class="severity-high">
+      <td>5</td>
+      <td>מכפיל × 2 סופי על הוצאות מזכות</td>
+      <td>אין</td>
+      <td>× 2 בסוף</td>
+      <td><span class="badge severity-high">קריטי</span></td>
+      <td>Q97</td>
+    </tr>
+    <tr class="severity-high">
+      <td>6</td>
+      <td>תקופת שכר לקבלן ביצוע / מזומן</td>
+      <td>5-6/2026 (לקבלן)</td>
+      <td>תמיד 3-4/2026</td>
+      <td><span class="badge severity-high">קריטי</span></td>
+      <td>Q9</td>
+    </tr>
+    <tr class="severity-medium">
+      <td>7</td>
+      <td>תקופת בסיס לעוסק רגיל חודשי</td>
+      <td>03/2025 חודש בודד</td>
+      <td>3-4/2025 דו-חודשי</td>
+      <td><span class="badge severity-medium">בינוני</span></td>
+      <td>Q7</td>
+    </tr>
+    <tr class="severity-medium">
+      <td>8</td>
+      <td>שנת בסיס לעוסק מיוחד</td>
+      <td>2025 (לפי איגרת ייעוץ המס)</td>
+      <td>2022 (לפי האתר)</td>
+      <td><span class="badge severity-medium">בינוני</span></td>
+      <td>Q8</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 class="section">פירוט פער-פער</h2>
+
+<!-- FINDING 1 -->
+<div class="finding">
+  <h3><span class="badge severity-high">קריטי</span> #1 — סכומי עסקים קטנים חסרים × 2</h3>
+  <p>הסכומים בטבלת ה-lookup לעסקים קטנים (מחזור 12K-300K) — הקוד שלנו משלם <strong>חצי</strong> ממה שצריך לפי האתר הרשמי. רלוונטי מאוד למסעדות קטנות.</p>
+
+  <div class="compare">
+    <div class="col ours">
+      <h5>הקוד שלנו</h5>
+      <table>
+        <tr><th>מחזור</th><th>סכום</th></tr>
+        <tr><td>12K–50K</td><td class="num">1,864 ₪</td></tr>
+        <tr><td>50K–90K</td><td class="num">3,356 ₪</td></tr>
+        <tr><td>90K–120K</td><td class="num">4,475 ₪</td></tr>
+        <tr><td>150K–200K (tier1)</td><td class="num">3,325 ₪</td></tr>
+      </table>
+    </div>
+    <div class="col official">
+      <h5>הסכומים הרשמיים (Q11) — אחרי × 2</h5>
+      <table>
+        <tr><th>מחזור</th><th>סכום סופי</th></tr>
+        <tr><td>12K–50K</td><td class="num"><strong>3,728 ₪</strong></td></tr>
+        <tr><td>50K–90K</td><td class="num"><strong>6,712 ₪</strong></td></tr>
+        <tr><td>90K–120K</td><td class="num"><strong>8,950 ₪</strong></td></tr>
+        <tr><td>150K–200K (tier1)</td><td class="num"><strong>6,658 ₪</strong> (base = 3,329)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <p style="color: var(--green); font-weight: 500;"><strong>✓ תוקן (12.5.2026):</strong> ה-base של מדרגת 150-200K עודכן ל-3,329 (ערך התואם לאתר הרשמי).</p>
+
+  <p><strong>מקדם נזק לעסקים 120K-300K</strong> (Q12) — חל בנוסף ל-×2:</p>
+  <table>
+    <tr><th>שיעור ירידה</th><th>מקדם נזק</th></tr>
+    <tr><td>25-40%</td><td>1</td></tr>
+    <tr><td>40-60%</td><td>1.5</td></tr>
+    <tr><td>60-80%</td><td>2.4</td></tr>
+    <tr><td>80%+</td><td>3</td></tr>
+  </table>
+
+  <div class="example-box">
+    <div class="label">דוגמה רשמית (Q98) — מסעדה עם מחזור 180,000 ₪ וירידה 70%</div>
+    <pre>מדרגה 150-200K, מקדם נזק 2.4 (60-80% ירידה)
+חישוב רשמי: 3,329 × 2.4 × 2 = 15,979 ₪
+הקוד שלנו (לאחר תיקון base): 3,329 × 2.4 = 7,990 ₪  (חסר רק × 2)</pre>
+  </div>
+
+  <div class="example-box">
+    <div class="label">דוגמה רשמית נוספת (Q99) — עסק קטן 70,000 ₪</div>
+    <pre>מדרגה 50-90K (סכום אחיד, ללא קשר לאחוז ירידה כל עוד מעל 25%)
+חישוב רשמי: 3,356 × 2 = 6,712 ₪
+הקוד שלנו: 3,356     = 3,356 ₪  (חצי)</pre>
+  </div>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong>
+    האם הסכומים בחוק עצמו כוללים את × 2 או לא? האם רשות המסים אכן מחשבת על פי האתר הרשמי?
+  </div>
+
+  <div class="source-ref">
+    <strong>מקור Q&amp;A:</strong> Q11 (טבלת סכומים), Q12 (מקדם נזק), Q98 + Q99 (דוגמאות מספריות).
+    <strong>חוק:</strong> §38לז(ב), §38לז(ה).
+  </div>
+</div>
+
+<!-- FINDING 2 -->
+<div class="finding">
+  <h3><span class="badge severity-high">קריטי</span> #2 — תקרת המענק (&lt;100M) חסרה × 2</h3>
+  <p>תקרת המענק הכוללת לעסקים שמחזורם פחות מ-100 מיליון — חצי מהאמיתי לפי האתר.</p>
+
+  <div class="compare">
+    <div class="col ours">
+      <h5>הקוד שלנו</h5>
+      <p style="font-size:14px; margin-top:0;">תקרה (מחזור &lt; 100M) = <strong>600,000 ₪</strong></p>
+    </div>
+    <div class="col official">
+      <h5>אתר רשמי (Q40)</h5>
+      <p style="font-size:14px; margin-top:0;">תקרה (מחזור &lt; 100M) = 600,000 × 2 = <strong>1,200,000 ₪</strong></p>
+    </div>
+  </div>
+
+  <div class="impact"><strong>השפעה:</strong> רוב מסעדותינו בטווח זה. עסק שמענקו אמור להגיע ל-1M ש"ח — אצלנו יקבל רק 600K (תקרה חוסמת ב-50%).</div>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong> האם התקרה האמיתית של המענק היא 600K (פר חוק טקסטואלי) או 1.2M (כפי שמוצג באתר הרשמי)?
+  </div>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q40. ציטוט: "התקרה היא 600,000 ₪ × 2 = 1,200,000 ₪". §38לו, §38לז(א)(1).</div>
+</div>
+
+<!-- FINDING 3 -->
+<div class="finding">
+  <h3><span class="badge severity-high">קריטי</span> #3 — תקרת המענק (300-400M) חסרה × 2</h3>
+
+  <div class="compare">
+    <div class="col ours">
+      <h5>הקוד שלנו</h5>
+      <p style="font-size:14px; margin-top:0;">תקרה (מחזור 300-400M) = <strong>1,200,000 ₪</strong></p>
+    </div>
+    <div class="col official">
+      <h5>אתר רשמי (Q41, Q42)</h5>
+      <p style="font-size:14px; margin-top:0;">תקרה (מחזור 300-400M) = 1.2M × 2 = <strong>2,400,000 ₪</strong></p>
+      <p style="font-size:13px;">100M-300M: (600,000 + 0.3% × עודף) × 2</p>
+    </div>
+  </div>
+
+  <p style="font-size:13.5px; color: var(--muted);">פחות רלוונטי ללקוחותינו (אין הרבה עסקים בטווח 300-400M), אבל חלק מאותו דפוס × 2 על כל הערכים.</p>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q41, Q42.</div>
+</div>
+
+<!-- FINDING 4 -->
+<div class="finding">
+  <h3><span class="badge severity-high">קריטי</span> #4 — חישוב הוצאות קבועות: חלוקה ב-12 במקום ב-6</h3>
+  <p>גם זה מקטין את הפיצוי בחצי.</p>
+
+  <div class="compare">
+    <div class="col ours">
+      <h5>הקוד שלנו</h5>
+      <code>monthlyAvg = annualInputs / 12</code>
+      <code>fixedGrant = monthlyAvg × rate%</code>
+    </div>
+    <div class="col official">
+      <h5>נוסחה רשמית (Q97)</h5>
+      <code>fixedGrant = (annualInputs / 6) × rate%</code>
+    </div>
+  </div>
+
+  <div class="example-box">
+    <div class="label">דוגמה רשמית מ-Q97</div>
+    <pre>נתון: תשומות שנתיות = 600,000 ₪, ירידה 50% → מקדם 11%
+
+רשמי: (600,000 ÷ 6)  × 11% = 100,000 × 11% = 11,000 ₪
+שלנו: (600,000 ÷ 12) × 11% =  50,000 × 11% =  5,500 ₪  (חצי)</pre>
+  </div>
+
+  <p style="font-size:13.5px;">
+    <strong>ההסבר ההגיוני:</strong> החוק מחשב פיצוי לתקופה דו-חודשית (מרץ-אפריל).
+    תשומות שנתיות ÷ 6 = שווה ערך תשומות לתקופה דו-חודשית (12 חודשים ÷ 6 = 2 חודשים).
+  </p>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong> האם החוק אכן מחלק תשומות שנתיות ב-6 (תקופה דו-חודשית)? או חלוקה ב-12 (ממוצע חודשי) כפי שעשתה לשכת יועצי המס?
+  </div>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q97 — דוגמה מספרית מלאה. §38לו פסקה (1).</div>
+</div>
+
+<!-- FINDING 5 -->
+<div class="finding">
+  <h3><span class="badge severity-high">קריטי</span> #5 — חסר מכפיל × 2 על הסכום הסופי</h3>
+
+  <div class="example-box" style="background: var(--green-bg); border-color: #a7f3d0;">
+    <div class="label" style="color: var(--green);">📖 הסבר מהאתר הרשמי — Q88</div>
+    <pre style="background: white; direction: rtl; text-align: right; font-family: inherit;">"הוצאות מזכות = (הוצאות קבועות + חלק השכר המזכה) × 2
+
+ההכפלה ב-2 מייצגת את שני חודשי הזכאות (מרץ ואפריל 2026)."</pre>
+  </div>
+
+  <p>כלומר ה-× 2 מייצג את העובדה שתקופת הזכאות היא 2 חודשים (מרץ-אפריל). זה מסביר מה הסיבה.</p>
+
+  <p style="background: var(--amber-bg); padding: 10px; border-radius: 6px; font-size: 13.5px;">
+    ⚠️ <strong>מבחינה מתמטית יש כאן עניין שדורש בירור:</strong>
+    אם ÷ 6 כבר נותן "תשומות לתקופה דו-חודשית" (12 חודש ÷ 6 = 2 חודש), אז למה צריך לכפול ב-2 שוב? Q89 רשמי מנסה להסביר זאת אבל הניסוח לא ברור — אולי יש פה ספירה כפולה מכוונת בחוק (גורם נדיבות), אולי טעות בתיעוד באתר.
+  </p>
+
+  <div class="example-box">
+    <div class="label">תהליך החישוב המלא לפי Q97 (האתר הרשמי)</div>
+    <pre>נתונים:
+  מחזור שנת בסיס: 2,000,000 ₪
+  ירידה במחזור:   50%
+  תשומות שנתיות:  600,000 ₪
+  שכר מזכה 3-4:   80,000 ₪
+
+שלבי החישוב:
+  1. מקדם הוצאות קבועות (40-60% ירידה)         = 11%
+  2. הוצאות קבועות  = 600,000 ÷ 6 × 11%        = 11,000
+  3. חלק שכר מזכה   = 80,000 × 50%             = 40,000
+  4. סכום ביניים    = 11,000 + 40,000          = 51,000
+  5. × 2 (2 חודשי זכאות)                        = 102,000
+  6. תקרה (<100M)   = 1,200,000  ✓  לא חוסם
+  ────────────────────────────────────────────────────
+  פיצוי סופי                                     = 102,000 ₪</pre>
+  </div>
+
+  <p>הקוד שלנו עוצר בשלב 4 (51,000) — חסר ה-× 2.</p>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong>
+    הסבר Q88 ברור — ×2 מייצג 2 חודשי זכאות.
+    <strong>אבל שאלה מתמטית:</strong> אם ÷ 6 כבר נותן בסיס דו-חודשי, האם × 2 הסופי לא יוצר ספירה כפולה? איזו פרשנות נכונה?
+    <ul style="margin-top: 6px;">
+      <li><strong>פרשנות א':</strong> נוסחה שלמה (÷ 6 ו-× 2) — שני אלמנטים שונים, ככה החוק מנוסח, תוצאה 102,000 ✓</li>
+      <li><strong>פרשנות ב':</strong> צריך לעשות רק אחד מהשניים — ÷ 12 ו-× 2 (תוצאה 51,000) או ÷ 6 בלי × 2 (תוצאה 51,000)</li>
+    </ul>
+  </div>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q88 (הגדרת הוצאות מזכות), Q89 (הסבר ÷ 6), Q97 (דוגמה).</div>
+</div>
+
+<!-- FINDING 6 -->
+<div class="finding">
+  <h3><span class="badge severity-high">קריטי</span> #6 — תקופת השכר תמיד 3-4/2026 (גם לקבלן/מזומן)</h3>
+  <p>נחוץ ללקוחות במסלולים מיוחדים (מזומן). אם יש מסעדה שמדווחת על בסיס מזומן — לפי האתר השכר נמדד תמיד 3-4/2026, לא 5-6.</p>
+
+  <div class="compare">
+    <div class="col ours">
+      <h5>אצלנו</h5>
+      <p>מסלול קבלן ביצוע / מזומן → שכר נמדד לפי 5-6/2026</p>
+    </div>
+    <div class="col official">
+      <h5>רשמי (Q9)</h5>
+      <p>
+        "חודשים מרץ ואפריל 2026 — וזה חל על <strong>כל סוגי הניזוקים ללא יוצא מן הכלל</strong>,
+        כולל עוסק מדווח על בסיס מזומן וקבלן ביצוע."
+      </p>
+    </div>
+  </div>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong> האם תקופת השכר לחישוב הפיצוי תמיד 3-4/2026 גם אם תקופת הזכאות העיקרית של העסק היא מאי-יוני?
+  </div>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q9. §38לו (הגדרת "התקופה המזכה לעניין שכר").</div>
+</div>
+
+<!-- FINDING 7 -->
+<div class="finding warn">
+  <h3><span class="badge severity-medium">בינוני</span> #7 — תקופת בסיס לעוסק חודשי דו-חודשית?</h3>
+
+  <div class="compare">
+    <div class="col ours">
+      <h5>אצלנו</h5>
+      <p>עוסק רגיל חודשי משווה <code>03/2025 ↔ 03/2026</code> (חודש בודד)</p>
+    </div>
+    <div class="col official">
+      <h5>רשמי (Q5, Q6, Q7)</h5>
+      <p>התקופה הקובעת = <strong>2 חודשים</strong> (1.3-30.4.2026).<br>
+      תקופת בסיס = "התקופה המקבילה ב-2025" = <strong>3-4/2025</strong>.</p>
+    </div>
+  </div>
+
+  <p>נראה שהחוק מתייחס לתקופה הדו-חודשית 3-4 בלי קשר לסוג הדיווח של העסק.</p>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong> גם עסק שמדווח על בסיס חודשי בודד למע"מ — האם הוא בוחן ירידה לפי 3-4/2026 מול 3-4/2025 (2 חודשים) או לפי 03/2026 מול 03/2025 (חודש בודד)?
+  </div>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q5 (התקופה הקובעת), Q7 (תקופת בסיס).</div>
+</div>
+
+<!-- FINDING 8 -->
+<div class="finding warn">
+  <h3><span class="badge severity-medium">בינוני</span> #8 — שנת בסיס לעוסק מיוחד</h3>
+
+  <p>איגרת לשכת יועצי המס אומרת "עסק שפתח לפני 1.1.25 → שנת 2025". האתר הרשמי מפרט עוסק מיוחד שונה:</p>
+
+  <table>
+    <thead>
+      <tr><th>סוג עוסק</th><th>שנת בסיס</th><th>הערה</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>רגיל שפתח לפני 1.1.2025</td><td><strong>2025</strong></td><td>תואם איגרת לשכה ✓</td></tr>
+      <tr><td>"עוסק מיוחד" (אזור נפגע / מארח מפונים) שפתח לפני 1.1.2022</td><td><strong>2022</strong></td><td>שונה מהאיגרת!</td></tr>
+      <tr><td>שפתח אחרי המועדים</td><td>מיום הפתיחה / 1.7.2025 — עד 28.2.2026</td><td>תואם</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:13.5px;">
+    <em>"עוסק מיוחד" — לפי האתר: עסק באזור שנפגע מהלחימה (צפון), או עסק שאירח מפונים. ייתכן שיש לנו לקוחות כאלה בצפון.</em>
+  </p>
+
+  <div class="question-box">
+    <strong>שאלה לרו"ח:</strong> איך מזהים "עוסק מיוחד" לעניין הזה? האם יש רשימה רשמית של ישובים/אזורים?
+  </div>
+
+  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q8.</div>
+</div>
+
+<!-- FINDING OK -->
+<div class="finding ok">
+  <h3><span class="badge severity-info">תקין</span> #9 — דברים שאומתו וקיימים נכון בקוד</h3>
+
+  <table>
+    <tr><th>נושא</th><th>ערך</th><th>מקור Q&amp;A</th></tr>
+    <tr><td>סף ירידה לזכאות</td><td>25% (ירידה במחזור)</td><td>Q1</td></tr>
+    <tr><td>מקדמי הוצאות קבועות</td><td>25-40% → 7%, 40-60% → 11%, 60-80% → 15%, 80%+ → 22%</td><td>Q14</td></tr>
+    <tr><td>קבלן ביצוע — מקדם</td><td>× 0.68 על המקדם הרגיל</td><td>Q14</td></tr>
+    <tr><td>תקופת זכאות לקבלן/מזומן</td><td>מאי-יוני 2026</td><td>Q6</td></tr>
+    <tr><td>הגדרת "עובד מזכה"</td><td>עבד ברצף 3-4 או יצא לחל"ת ≤ 10 ימים במרץ + דווח עד 28.4</td><td>Q15</td></tr>
+    <tr><td>תקרת שכר ממוצע במשק (תוקן)</td><td>13,769 ₪ × 1.25 = 17,211 ₪ לעובד</td><td>Q16</td></tr>
+    <tr><td>שני מסלולי חישוב — קטנים מול גדולים</td><td>12K-300K vs 300K+; סעיף הגנה "הגבוה מבין השניים"</td><td>Q10</td></tr>
+    <tr><td>מחזור מקסימלי לזכאות</td><td>400,000,000 ₪</td><td>Q42</td></tr>
+  </table>
+</div>
+
+<h2 class="section">הדרך קדימה</h2>
+
+<div class="finding">
+  <h3>השאלה העיקרית לרואה החשבון</h3>
+  <p style="font-size: 15px;">
+    אנחנו זקוקים לאישור/הכחשה של 8 הפערים שלעיל. במיוחד:
+  </p>
+  <ol style="font-size: 14.5px; line-height: 2;">
+    <li>האם המכפיל <strong>× 2</strong> אכן חל באופן רוחבי על כל סכומי החוק (תקרות, סכומים אחידים, סכום סופי)?</li>
+    <li>האם נוסחת חישוב הוצאות הקבועות אכן מחלקת תשומות שנתיות <strong>ב-6</strong> (ולא ב-12)?</li>
+    <li>האם תקופת השכר לחישוב היא <strong>תמיד 3-4/2026</strong> גם עבור עוסקים במסלולים מיוחדים?</li>
+    <li>האם לפי החוק — עוסק שמדווח חודשי משווה <strong>חודש בודד</strong> או <strong>3+4 משולבים</strong> בכל מקרה?</li>
+  </ol>
+
+  <p style="font-size: 14.5px; margin-top: 20px;">
+    ברגע שתאשר לי את הפרשנות הנכונה — אבצע את השינויים בקוד, אעדכן את הבדיקות (tests),
+    ואעדכן את הדוקומנטציה הפנימית.
+  </p>
+</div>
+
+<footer>
+  טיקו · CRM משרד רואי חשבון · דוח אימות פנימי<br>
+  <span style="font-size:11px;">המקורות המלאים שהדוח נשען עליהם: <code>DOCS/SHAAGAT_HAARI_FORMULAS.md</code>, <code>DOCS/SHAAGAT_HAARI_OFFICIAL_QA_111.md</code>, וקוד <code>src/modules/shaagat-haari/</code></span>
+</footer>
+
+</div>
+</body>
+</html>
