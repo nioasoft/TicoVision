@@ -132,7 +132,7 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
                 {client.group.group_name_hebrew}
               </Badge>
             )}
-            <Form1214Indicator taxCoding={client.tax_coding} />
+            <Form1214Indicator status={client.tax_coding_status} />
           </div>
 
           {/* Row 3: Accountant name */}

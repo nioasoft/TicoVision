@@ -433,16 +433,16 @@ export const BalanceTable: React.FC<BalanceTableProps> = ({
                   </div>
                 </TableCell>
 
-                {/* Company (two-line: name + tax_id) + tax_coding badge + inactive badge - RIGHTMOST (primary) */}
+                {/* Company (two-line: name + tax_id) + 1214-zero badge + inactive badge - RIGHTMOST (primary) */}
                 <TableCell className="py-3 px-3">
                   <div className="text-right">
                     <div className="flex items-center gap-1.5 justify-end">
                       <div className="font-medium text-sm leading-tight truncate">
                         {row.client?.company_name || '--'}
                       </div>
-                      {(row.tax_coding || row.client?.tax_coding) && (row.tax_coding || row.client?.tax_coding) !== '0' && (
+                      {row.client?.tax_coding_status === 'zero' && (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0 font-mono">
-                          1214: {row.tax_coding || row.client?.tax_coding}
+                          1214: אפס
                         </Badge>
                       )}
                       {!row.is_active && (

@@ -77,7 +77,7 @@ export const ClientProfileHeader: React.FC<ClientProfileHeaderProps> = ({ client
           {client.group && (
             <Badge variant="outline">{client.group.group_name_hebrew}</Badge>
           )}
-          <Form1214Indicator taxCoding={client.tax_coding} />
+          <Form1214Indicator status={client.tax_coding_status} />
         </div>
       </div>
 

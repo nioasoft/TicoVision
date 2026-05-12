@@ -21,7 +21,7 @@ import type {
 import { BALANCE_STATUSES, BALANCE_STATUS_CONFIG, isValidTransition } from '../types/annual-balance.types';
 import { balanceChatService } from './balance-chat.service';
 
-const CLIENT_SELECT = 'id, company_name, company_name_hebrew, tax_id, client_type, tax_coding';
+const CLIENT_SELECT = 'id, company_name, company_name_hebrew, tax_id, client_type, tax_coding_status';
 
 class AnnualBalanceService extends BaseService {
   constructor() {
@@ -59,7 +59,7 @@ class AnnualBalanceService extends BaseService {
       if (filters.auditor_id) {
         query = query.eq('auditor_id', filters.auditor_id);
       }
-      if (filters.search || filters.hasTaxCoding !== undefined) {
+      if (filters.search || filters.taxCodingStatus !== undefined) {
         // Filter by client properties - two-step approach since PostgREST
         // .or() doesn't reliably filter on embedded/joined resource fields
         let clientQuery = supabase
@@ -73,13 +73,8 @@ class AnnualBalanceService extends BaseService {
           );
         }
 
-        if (filters.hasTaxCoding === true) {
-          clientQuery = clientQuery
-            .not('tax_coding', 'is', null)
-            .neq('tax_coding', '')
-            .neq('tax_coding', '0');
-        } else if (filters.hasTaxCoding === false) {
-          clientQuery = clientQuery.or('tax_coding.is.null,tax_coding.eq.,tax_coding.eq.0');
+        if (filters.taxCodingStatus) {
+          clientQuery = clientQuery.eq('tax_coding_status', filters.taxCodingStatus);
         }
 
         const { data: matchingClients } = await clientQuery;

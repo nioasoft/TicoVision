@@ -100,6 +100,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "actual_payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "actual_payments_fee_calculation_id_fkey"
             columns: ["fee_calculation_id"]
             isOneToOne: false
@@ -246,6 +253,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "annual_balance_sheets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "annual_balance_sheets_debt_letter_id_fkey"
@@ -571,6 +585,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "billing_letters_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "billing_letters_generated_letter_id_fkey"
             columns: ["generated_letter_id"]
             isOneToOne: false
@@ -649,6 +670,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_recipients_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "broadcast_recipients_contact_id_fkey"
@@ -1191,6 +1219,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "capital_declarations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "capital_declarations_contact_id_fkey"
             columns: ["contact_id"]
             isOneToOne: false
@@ -1262,6 +1297,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_channels_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "chat_channels_tenant_id_fkey"
@@ -1426,6 +1468,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_attachments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "client_attachments_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -1491,6 +1540,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_branches_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "client_branches_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1543,6 +1599,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contact_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "client_contact_assignments_contact_id_fkey"
@@ -1612,6 +1675,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "client_contacts_tenant_id_fkey"
@@ -1736,6 +1806,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_interactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "client_interactions_fee_calculation_id_fkey"
             columns: ["fee_calculation_id"]
             isOneToOne: false
@@ -1808,6 +1885,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_month_range_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "client_month_range_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1875,6 +1959,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_monthly_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "client_monthly_reports_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -1930,6 +2021,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_phones_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "client_phones_tenant_id_fkey"
@@ -1989,7 +2087,7 @@ export type Database = {
           signature_path: string | null
           status: string
           tags: string[] | null
-          tax_coding: string | null
+          tax_coding_status: string | null
           tax_id: string | null
           tenant_id: string
           type: Database["public"]["Enums"]["client_type"] | null
@@ -2043,7 +2141,7 @@ export type Database = {
           signature_path?: string | null
           status?: string
           tags?: string[] | null
-          tax_coding?: string | null
+          tax_coding_status?: string | null
           tax_id?: string | null
           tenant_id: string
           type?: Database["public"]["Enums"]["client_type"] | null
@@ -2097,7 +2195,7 @@ export type Database = {
           signature_path?: string | null
           status?: string
           tags?: string[] | null
-          tax_coding?: string | null
+          tax_coding_status?: string | null
           tax_id?: string | null
           tenant_id?: string
           type?: Database["public"]["Enums"]["client_type"] | null
@@ -2119,11 +2217,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clients_linked_company_id_fkey"
+            columns: ["linked_company_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "clients_payer_client_id_fkey"
             columns: ["payer_client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_payer_client_id_fkey"
+            columns: ["payer_client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "fk_clients_tenant_id"
@@ -2213,6 +2325,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribution_list_members_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "distribution_list_members_list_id_fkey"
@@ -2549,6 +2668,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fee_calculations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "fee_calculations_fee_type_id_fkey"
             columns: ["fee_type_id"]
             isOneToOne: false
@@ -2708,6 +2834,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "foreign_worker_monthly_data_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "foreign_worker_monthly_data_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -2780,6 +2913,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "foreign_workers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "foreign_workers_tenant_id_fkey"
@@ -2934,6 +3074,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_letters_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "generated_letters_group_calculation_id_fkey"
@@ -3485,6 +3632,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payment_deviations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "payment_deviations_fee_calculation_id_fkey"
             columns: ["fee_calculation_id"]
             isOneToOne: false
@@ -3563,6 +3717,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_disputes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "payment_disputes_fee_calculation_id_fkey"
@@ -3703,6 +3864,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payment_method_selections_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "payment_method_selections_fee_calculation_id_fkey"
             columns: ["fee_calculation_id"]
             isOneToOne: false
@@ -3789,6 +3957,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_reminders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "payment_reminders_fee_calculation_id_fkey"
@@ -4115,6 +4290,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "protocols_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "protocols_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -4177,6 +4359,1137 @@ export type Database = {
           },
         ]
       }
+      shaagat_accounting_submissions: {
+        Row: {
+          chalat_count: number | null
+          chalat_deductions: number | null
+          client_id: string
+          created_at: string | null
+          fruit_vegetable_purchases_annual: number | null
+          id: string
+          miluim_count: number | null
+          miluim_deductions: number | null
+          monthly_fixed_expenses: number | null
+          notes: string | null
+          num_employees: number | null
+          salary_gross: number | null
+          salary_period: string | null
+          secondary_month: Json | null
+          secondary_period: string | null
+          submission_token: string | null
+          submitted_by_business_id: string | null
+          submitted_by_email: string | null
+          tenant_id: string
+          tips_count: number | null
+          tips_deductions: number | null
+          token_expires_at: string | null
+          updated_at: string | null
+          vacation_count: number | null
+          vacation_deductions: number | null
+        }
+        Insert: {
+          chalat_count?: number | null
+          chalat_deductions?: number | null
+          client_id: string
+          created_at?: string | null
+          fruit_vegetable_purchases_annual?: number | null
+          id?: string
+          miluim_count?: number | null
+          miluim_deductions?: number | null
+          monthly_fixed_expenses?: number | null
+          notes?: string | null
+          num_employees?: number | null
+          salary_gross?: number | null
+          salary_period?: string | null
+          secondary_month?: Json | null
+          secondary_period?: string | null
+          submission_token?: string | null
+          submitted_by_business_id?: string | null
+          submitted_by_email?: string | null
+          tenant_id: string
+          tips_count?: number | null
+          tips_deductions?: number | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          vacation_count?: number | null
+          vacation_deductions?: number | null
+        }
+        Update: {
+          chalat_count?: number | null
+          chalat_deductions?: number | null
+          client_id?: string
+          created_at?: string | null
+          fruit_vegetable_purchases_annual?: number | null
+          id?: string
+          miluim_count?: number | null
+          miluim_deductions?: number | null
+          monthly_fixed_expenses?: number | null
+          notes?: string | null
+          num_employees?: number | null
+          salary_gross?: number | null
+          salary_period?: string | null
+          secondary_month?: Json | null
+          secondary_period?: string | null
+          submission_token?: string | null
+          submitted_by_business_id?: string | null
+          submitted_by_email?: string | null
+          tenant_id?: string
+          tips_count?: number | null
+          tips_deductions?: number | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          vacation_count?: number | null
+          vacation_deductions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_accounting_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_accounting_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_accounting_submissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_additional_periods: {
+        Row: {
+          calculated_amount: number | null
+          client_id: string
+          compensation_type: string
+          created_at: string | null
+          decline_percentage: number | null
+          id: string
+          last_rent_amount: number | null
+          min_days_unused_met: boolean | null
+          monthly_taxable_income: number | null
+          notes: string | null
+          period_end: string
+          period_label: string | null
+          period_start: string
+          property_unusable_until: string | null
+          qualifying_expenses: number | null
+          status: string | null
+          submission_id: string | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          calculated_amount?: number | null
+          client_id: string
+          compensation_type: string
+          created_at?: string | null
+          decline_percentage?: number | null
+          id?: string
+          last_rent_amount?: number | null
+          min_days_unused_met?: boolean | null
+          monthly_taxable_income?: number | null
+          notes?: string | null
+          period_end: string
+          period_label?: string | null
+          period_start: string
+          property_unusable_until?: string | null
+          qualifying_expenses?: number | null
+          status?: string | null
+          submission_id?: string | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          calculated_amount?: number | null
+          client_id?: string
+          compensation_type?: string
+          created_at?: string | null
+          decline_percentage?: number | null
+          id?: string
+          last_rent_amount?: number | null
+          min_days_unused_met?: boolean | null
+          monthly_taxable_income?: number | null
+          notes?: string | null
+          period_end?: string
+          period_label?: string | null
+          period_start?: string
+          property_unusable_until?: string | null
+          qualifying_expenses?: number | null
+          status?: string | null
+          submission_id?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_additional_periods_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_additional_periods_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_additional_periods_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_dashboard_view"
+            referencedColumns: ["submission_id"]
+          },
+          {
+            foreignKeyName: "shaagat_additional_periods_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["submission_id"]
+          },
+          {
+            foreignKeyName: "shaagat_additional_periods_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_tax_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_additional_periods_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_bank_details: {
+        Row: {
+          access_token: string
+          account_holder_name: string
+          account_number: string
+          bank_number: string
+          branch_number: string
+          client_id: string
+          created_at: string | null
+          id: string
+          is_verified: boolean | null
+          submitted_at: string | null
+          tenant_id: string
+          token_expires_at: string
+          updated_at: string | null
+          verification_tax_id: string | null
+        }
+        Insert: {
+          access_token: string
+          account_holder_name: string
+          account_number: string
+          bank_number: string
+          branch_number: string
+          client_id: string
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          submitted_at?: string | null
+          tenant_id: string
+          token_expires_at: string
+          updated_at?: string | null
+          verification_tax_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          account_holder_name?: string
+          account_number?: string
+          bank_number?: string
+          branch_number?: string
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          is_verified?: boolean | null
+          submitted_at?: string | null
+          tenant_id?: string
+          token_expires_at?: string
+          updated_at?: string | null
+          verification_tax_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_bank_details_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_bank_details_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_bank_details_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_detailed_calculations: {
+        Row: {
+          adjusted_salary: number | null
+          annual_revenue: number
+          approval_token: string | null
+          approval_token_expires_at: string | null
+          business_type: string
+          calculation_step: number | null
+          chalat_count: number | null
+          chalat_deductions: number | null
+          client_approved: boolean | null
+          client_approved_at: string | null
+          client_id: string
+          client_rejection_reason: string | null
+          compensation_rate: number
+          constants_version: string | null
+          contractor_multiplier_applied: boolean | null
+          created_at: string | null
+          created_by: string | null
+          decline_percentage: number
+          effective_compensation_rate: number | null
+          effective_decline: number | null
+          eligibility_check_id: string
+          employees_after_deductions: number | null
+          employer_cost_multiplier: number | null
+          expense_electricity: number | null
+          expense_insurance: number | null
+          expense_maintenance: number | null
+          expense_other_description: string | null
+          expense_other_fixed: number | null
+          expense_phone_internet: number | null
+          expense_rent: number | null
+          expense_water: number | null
+          final_grant_amount: number | null
+          fixed_expenses_grant: number | null
+          grant_before_contractor_multiplier: number | null
+          grant_cap: number | null
+          id: string
+          inputs_months: number | null
+          is_active: boolean | null
+          is_completed: boolean | null
+          is_sent_to_client: boolean | null
+          manual_approval: boolean | null
+          manual_approval_note: string | null
+          manual_approved_by: string | null
+          miluim_count: number | null
+          miluim_deductions: number | null
+          monthly_avg_inputs: number | null
+          num_employees: number | null
+          reporting_type: string
+          revenue_base_period: number
+          revenue_comparison_period: number
+          salary_after_deductions: number | null
+          salary_grant: number | null
+          salary_grant_before_cap: number | null
+          salary_grant_cap: number | null
+          salary_gross: number | null
+          sent_at: string | null
+          small_track_amount: number | null
+          tenant_id: string
+          tips_count: number | null
+          tips_deductions: number | null
+          total_actual_fixed_expenses: number | null
+          total_calculated_grant: number | null
+          total_deductions: number | null
+          track_type: string
+          updated_at: string | null
+          use_enhanced_rate: boolean | null
+          used_small_track: boolean | null
+          vacation_count: number | null
+          vacation_deductions: number | null
+          vat_inputs: number | null
+          zero_vat_inputs: number | null
+        }
+        Insert: {
+          adjusted_salary?: number | null
+          annual_revenue: number
+          approval_token?: string | null
+          approval_token_expires_at?: string | null
+          business_type: string
+          calculation_step?: number | null
+          chalat_count?: number | null
+          chalat_deductions?: number | null
+          client_approved?: boolean | null
+          client_approved_at?: string | null
+          client_id: string
+          client_rejection_reason?: string | null
+          compensation_rate: number
+          constants_version?: string | null
+          contractor_multiplier_applied?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          decline_percentage: number
+          effective_compensation_rate?: number | null
+          effective_decline?: number | null
+          eligibility_check_id: string
+          employees_after_deductions?: number | null
+          employer_cost_multiplier?: number | null
+          expense_electricity?: number | null
+          expense_insurance?: number | null
+          expense_maintenance?: number | null
+          expense_other_description?: string | null
+          expense_other_fixed?: number | null
+          expense_phone_internet?: number | null
+          expense_rent?: number | null
+          expense_water?: number | null
+          final_grant_amount?: number | null
+          fixed_expenses_grant?: number | null
+          grant_before_contractor_multiplier?: number | null
+          grant_cap?: number | null
+          id?: string
+          inputs_months?: number | null
+          is_active?: boolean | null
+          is_completed?: boolean | null
+          is_sent_to_client?: boolean | null
+          manual_approval?: boolean | null
+          manual_approval_note?: string | null
+          manual_approved_by?: string | null
+          miluim_count?: number | null
+          miluim_deductions?: number | null
+          monthly_avg_inputs?: number | null
+          num_employees?: number | null
+          reporting_type?: string
+          revenue_base_period: number
+          revenue_comparison_period: number
+          salary_after_deductions?: number | null
+          salary_grant?: number | null
+          salary_grant_before_cap?: number | null
+          salary_grant_cap?: number | null
+          salary_gross?: number | null
+          sent_at?: string | null
+          small_track_amount?: number | null
+          tenant_id: string
+          tips_count?: number | null
+          tips_deductions?: number | null
+          total_actual_fixed_expenses?: number | null
+          total_calculated_grant?: number | null
+          total_deductions?: number | null
+          track_type: string
+          updated_at?: string | null
+          use_enhanced_rate?: boolean | null
+          used_small_track?: boolean | null
+          vacation_count?: number | null
+          vacation_deductions?: number | null
+          vat_inputs?: number | null
+          zero_vat_inputs?: number | null
+        }
+        Update: {
+          adjusted_salary?: number | null
+          annual_revenue?: number
+          approval_token?: string | null
+          approval_token_expires_at?: string | null
+          business_type?: string
+          calculation_step?: number | null
+          chalat_count?: number | null
+          chalat_deductions?: number | null
+          client_approved?: boolean | null
+          client_approved_at?: string | null
+          client_id?: string
+          client_rejection_reason?: string | null
+          compensation_rate?: number
+          constants_version?: string | null
+          contractor_multiplier_applied?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          decline_percentage?: number
+          effective_compensation_rate?: number | null
+          effective_decline?: number | null
+          eligibility_check_id?: string
+          employees_after_deductions?: number | null
+          employer_cost_multiplier?: number | null
+          expense_electricity?: number | null
+          expense_insurance?: number | null
+          expense_maintenance?: number | null
+          expense_other_description?: string | null
+          expense_other_fixed?: number | null
+          expense_phone_internet?: number | null
+          expense_rent?: number | null
+          expense_water?: number | null
+          final_grant_amount?: number | null
+          fixed_expenses_grant?: number | null
+          grant_before_contractor_multiplier?: number | null
+          grant_cap?: number | null
+          id?: string
+          inputs_months?: number | null
+          is_active?: boolean | null
+          is_completed?: boolean | null
+          is_sent_to_client?: boolean | null
+          manual_approval?: boolean | null
+          manual_approval_note?: string | null
+          manual_approved_by?: string | null
+          miluim_count?: number | null
+          miluim_deductions?: number | null
+          monthly_avg_inputs?: number | null
+          num_employees?: number | null
+          reporting_type?: string
+          revenue_base_period?: number
+          revenue_comparison_period?: number
+          salary_after_deductions?: number | null
+          salary_grant?: number | null
+          salary_grant_before_cap?: number | null
+          salary_grant_cap?: number | null
+          salary_gross?: number | null
+          sent_at?: string | null
+          small_track_amount?: number | null
+          tenant_id?: string
+          tips_count?: number | null
+          tips_deductions?: number | null
+          total_actual_fixed_expenses?: number | null
+          total_calculated_grant?: number | null
+          total_deductions?: number | null
+          track_type?: string
+          updated_at?: string | null
+          use_enhanced_rate?: boolean | null
+          used_small_track?: boolean | null
+          vacation_count?: number | null
+          vacation_deductions?: number | null
+          vat_inputs?: number | null
+          zero_vat_inputs?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_detailed_calculations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_detailed_calculations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_detailed_calculations_eligibility_check_id_fkey"
+            columns: ["eligibility_check_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_dashboard_view"
+            referencedColumns: ["eligibility_check_id"]
+          },
+          {
+            foreignKeyName: "shaagat_detailed_calculations_eligibility_check_id_fkey"
+            columns: ["eligibility_check_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_eligibility_checks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_detailed_calculations_eligibility_check_id_fkey"
+            columns: ["eligibility_check_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["eligibility_check_id"]
+          },
+          {
+            foreignKeyName: "shaagat_detailed_calculations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_eligibility_checks: {
+        Row: {
+          annual_revenue: number
+          annual_revenue_2022: number | null
+          business_type: string
+          capital_revenues_base: number | null
+          capital_revenues_comparison: number | null
+          client_id: string
+          compensation_rate: number | null
+          created_at: string | null
+          created_by: string | null
+          decline_percentage: number | null
+          eligibility_status: string
+          email_sent: boolean | null
+          id: string
+          is_active: boolean | null
+          is_relevant: boolean | null
+          net_revenue_base: number | null
+          net_revenue_comparison: number | null
+          notes: string | null
+          payment_link: string | null
+          payment_received_at: string | null
+          payment_status: string
+          reporting_type: string
+          revenue_base_period: number
+          revenue_base_period_label: string | null
+          revenue_comparison_period: number
+          revenue_comparison_period_label: string | null
+          self_accounting_revenues_base: number | null
+          self_accounting_revenues_comparison: number | null
+          tenant_id: string
+          track_type: string
+          updated_at: string | null
+          version: number
+        }
+        Insert: {
+          annual_revenue?: number
+          annual_revenue_2022?: number | null
+          business_type?: string
+          capital_revenues_base?: number | null
+          capital_revenues_comparison?: number | null
+          client_id: string
+          compensation_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          decline_percentage?: number | null
+          eligibility_status?: string
+          email_sent?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_relevant?: boolean | null
+          net_revenue_base?: number | null
+          net_revenue_comparison?: number | null
+          notes?: string | null
+          payment_link?: string | null
+          payment_received_at?: string | null
+          payment_status?: string
+          reporting_type?: string
+          revenue_base_period?: number
+          revenue_base_period_label?: string | null
+          revenue_comparison_period?: number
+          revenue_comparison_period_label?: string | null
+          self_accounting_revenues_base?: number | null
+          self_accounting_revenues_comparison?: number | null
+          tenant_id: string
+          track_type?: string
+          updated_at?: string | null
+          version?: number
+        }
+        Update: {
+          annual_revenue?: number
+          annual_revenue_2022?: number | null
+          business_type?: string
+          capital_revenues_base?: number | null
+          capital_revenues_comparison?: number | null
+          client_id?: string
+          compensation_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          decline_percentage?: number | null
+          eligibility_status?: string
+          email_sent?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_relevant?: boolean | null
+          net_revenue_base?: number | null
+          net_revenue_comparison?: number | null
+          notes?: string | null
+          payment_link?: string | null
+          payment_received_at?: string | null
+          payment_status?: string
+          reporting_type?: string
+          revenue_base_period?: number
+          revenue_base_period_label?: string | null
+          revenue_comparison_period?: number
+          revenue_comparison_period_label?: string | null
+          self_accounting_revenues_base?: number | null
+          self_accounting_revenues_comparison?: number | null
+          tenant_id?: string
+          track_type?: string
+          updated_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_eligibility_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_eligibility_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_eligibility_checks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_email_logs: {
+        Row: {
+          client_id: string
+          eligibility_check_id: string | null
+          email_type: string
+          error_message: string | null
+          html_content: string | null
+          id: string
+          recipient_email: string
+          sent_at: string | null
+          status: string | null
+          subject: string | null
+          tenant_id: string
+        }
+        Insert: {
+          client_id: string
+          eligibility_check_id?: string | null
+          email_type: string
+          error_message?: string | null
+          html_content?: string | null
+          id?: string
+          recipient_email: string
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          tenant_id: string
+        }
+        Update: {
+          client_id?: string
+          eligibility_check_id?: string | null
+          email_type?: string
+          error_message?: string | null
+          html_content?: string | null
+          id?: string
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_email_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_email_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_email_logs_eligibility_check_id_fkey"
+            columns: ["eligibility_check_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_dashboard_view"
+            referencedColumns: ["eligibility_check_id"]
+          },
+          {
+            foreignKeyName: "shaagat_email_logs_eligibility_check_id_fkey"
+            columns: ["eligibility_check_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_eligibility_checks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_email_logs_eligibility_check_id_fkey"
+            columns: ["eligibility_check_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["eligibility_check_id"]
+          },
+          {
+            foreignKeyName: "shaagat_email_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_feasibility_checks: {
+        Row: {
+          accessed_at: string | null
+          client_id: string
+          client_interested: boolean | null
+          created_at: string | null
+          decline_percentage: number | null
+          has_feasibility: boolean | null
+          id: string
+          interested_at: string | null
+          is_relevant: boolean | null
+          payment_received_at: string | null
+          payment_status: string | null
+          public_token: string
+          revenue_base: number | null
+          revenue_comparison: number | null
+          submitted_at: string | null
+          submitted_from_ip: string | null
+          tenant_id: string
+          token_expires_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accessed_at?: string | null
+          client_id: string
+          client_interested?: boolean | null
+          created_at?: string | null
+          decline_percentage?: number | null
+          has_feasibility?: boolean | null
+          id?: string
+          interested_at?: string | null
+          is_relevant?: boolean | null
+          payment_received_at?: string | null
+          payment_status?: string | null
+          public_token: string
+          revenue_base?: number | null
+          revenue_comparison?: number | null
+          submitted_at?: string | null
+          submitted_from_ip?: string | null
+          tenant_id: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accessed_at?: string | null
+          client_id?: string
+          client_interested?: boolean | null
+          created_at?: string | null
+          decline_percentage?: number | null
+          has_feasibility?: boolean | null
+          id?: string
+          interested_at?: string | null
+          is_relevant?: boolean | null
+          payment_received_at?: string | null
+          payment_status?: string | null
+          public_token?: string
+          revenue_base?: number | null
+          revenue_comparison?: number | null
+          submitted_at?: string | null
+          submitted_from_ip?: string | null
+          tenant_id?: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_feasibility_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_feasibility_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_feasibility_checks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_status_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string | null
+          changed_by: string | null
+          entity_id: string
+          entity_type: string
+          field_name: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          tenant_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          entity_id: string
+          entity_type: string
+          field_name: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          tenant_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          entity_id?: string
+          entity_type?: string
+          field_name?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_status_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_tax_letters: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          direction: string
+          file_url: string | null
+          id: string
+          notes: string | null
+          received_date: string
+          reference_number: string | null
+          response_due_date: string | null
+          response_notes: string | null
+          response_reference_number: string | null
+          response_sent_date: string | null
+          status: string
+          submission_id: string
+          tenant_id: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          direction?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          received_date: string
+          reference_number?: string | null
+          response_due_date?: string | null
+          response_notes?: string | null
+          response_reference_number?: string | null
+          response_sent_date?: string | null
+          status?: string
+          submission_id: string
+          tenant_id: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          direction?: string
+          file_url?: string | null
+          id?: string
+          notes?: string | null
+          received_date?: string
+          reference_number?: string | null
+          response_due_date?: string | null
+          response_notes?: string | null
+          response_reference_number?: string | null
+          response_sent_date?: string | null
+          status?: string
+          submission_id?: string
+          tenant_id?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_tax_letters_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_dashboard_view"
+            referencedColumns: ["submission_id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_letters_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["submission_id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_letters_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_tax_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_letters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_tax_submissions: {
+        Row: {
+          advance_amount: number | null
+          advance_due_date: string | null
+          advance_received: boolean | null
+          advance_received_at: string | null
+          appeal_due_date: string | null
+          calculation_id: string
+          client_id: string
+          closed_at: string | null
+          closure_notes: string | null
+          closure_reason: string | null
+          corrections: Json | null
+          created_at: string | null
+          created_by: string | null
+          determination_due_date: string | null
+          documents_due_date: string | null
+          expected_amount: number | null
+          full_payment_due_date: string | null
+          id: string
+          is_closed: boolean | null
+          objection_determination_date: string | null
+          objection_due_date: string | null
+          payment_info: Json | null
+          received_amount: number | null
+          responses: Json | null
+          status: string
+          submission_date: string | null
+          submission_number: string
+          submission_screenshot_url: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          advance_amount?: number | null
+          advance_due_date?: string | null
+          advance_received?: boolean | null
+          advance_received_at?: string | null
+          appeal_due_date?: string | null
+          calculation_id: string
+          client_id: string
+          closed_at?: string | null
+          closure_notes?: string | null
+          closure_reason?: string | null
+          corrections?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          determination_due_date?: string | null
+          documents_due_date?: string | null
+          expected_amount?: number | null
+          full_payment_due_date?: string | null
+          id?: string
+          is_closed?: boolean | null
+          objection_determination_date?: string | null
+          objection_due_date?: string | null
+          payment_info?: Json | null
+          received_amount?: number | null
+          responses?: Json | null
+          status?: string
+          submission_date?: string | null
+          submission_number: string
+          submission_screenshot_url: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          advance_amount?: number | null
+          advance_due_date?: string | null
+          advance_received?: boolean | null
+          advance_received_at?: string | null
+          appeal_due_date?: string | null
+          calculation_id?: string
+          client_id?: string
+          closed_at?: string | null
+          closure_notes?: string | null
+          closure_reason?: string | null
+          corrections?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          determination_due_date?: string | null
+          documents_due_date?: string | null
+          expected_amount?: number | null
+          full_payment_due_date?: string | null
+          id?: string
+          is_closed?: boolean | null
+          objection_determination_date?: string | null
+          objection_due_date?: string | null
+          payment_info?: Json | null
+          received_amount?: number | null
+          responses?: Json | null
+          status?: string
+          submission_date?: string | null
+          submission_number?: string
+          submission_screenshot_url?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_tax_submissions_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_dashboard_view"
+            referencedColumns: ["calculation_id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_submissions_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_detailed_calculations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_submissions_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["calculation_id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_submissions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_tax_submissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       short_links: {
         Row: {
           click_count: number | null
@@ -4227,6 +5540,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_links_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "short_links_fee_calculation_id_fkey"
@@ -4766,6 +6086,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "support_tickets_matched_client_id_fkey"
+            columns: ["matched_client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "support_tickets_status_id_fkey"
             columns: ["status_id"]
             isOneToOne: false
@@ -5258,6 +6585,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_client_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "user_client_assignments_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -5515,7 +6849,121 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fee_calculations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
             foreignKeyName: "fk_fee_calculations_tenant_id"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_dashboard_view: {
+        Row: {
+          advance_due_date: string | null
+          business_type: string | null
+          calculation_completed: boolean | null
+          calculation_id: string | null
+          calculation_step: number | null
+          check_date: string | null
+          client_approved: boolean | null
+          client_id: string | null
+          company_name: string | null
+          compensation_rate: number | null
+          decline_percentage: number | null
+          determination_due_date: string | null
+          eligibility_check_id: string | null
+          eligibility_status: string | null
+          email_sent: boolean | null
+          expected_amount: number | null
+          final_grant_amount: number | null
+          full_payment_due_date: string | null
+          is_relevant: boolean | null
+          payment_status: string | null
+          pending_letters_count: number | null
+          received_amount: number | null
+          reporting_type: string | null
+          submission_id: string | null
+          submission_number: string | null
+          submission_status: string | null
+          tax_id: string | null
+          tenant_id: string | null
+          track_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shaagat_eligibility_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shaagat_eligibility_checks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shaagat_initial_filter_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "shaagat_eligibility_checks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shaagat_initial_filter_view: {
+        Row: {
+          accounting_submission_id: string | null
+          accounting_submitted_at: string | null
+          advance_due_date: string | null
+          advance_received: boolean | null
+          business_type: string | null
+          calculation_completed: boolean | null
+          calculation_id: string | null
+          calculation_step: number | null
+          check_created_at: string | null
+          client_approved: boolean | null
+          client_approved_at: string | null
+          client_id: string | null
+          client_status: string | null
+          company_name: string | null
+          company_name_hebrew: string | null
+          compensation_rate: number | null
+          decline_percentage: number | null
+          determination_due_date: string | null
+          eligibility_check_id: string | null
+          eligibility_status: string | null
+          email_sent: boolean | null
+          expected_amount: number | null
+          final_grant_amount: number | null
+          full_payment_due_date: string | null
+          has_any_current_year_fee: boolean | null
+          has_unpaid_annual_retainer: boolean | null
+          is_relevant: boolean | null
+          received_amount: number | null
+          reporting_type: string | null
+          shaagat_fee_payment_status: string | null
+          submission_date: string | null
+          submission_id: string | null
+          submission_is_closed: boolean | null
+          submission_number: string | null
+          submission_status: string | null
+          tax_id: string | null
+          tenant_id: string | null
+          track_type: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_clients_tenant_id"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -5553,6 +7001,7 @@ export type Database = {
       }
     }
     Functions: {
+      backup_shaagat_tables: { Args: never; Returns: Json }
       calculate_payment_deviation: {
         Args: { p_actual_amount: number; p_fee_calculation_id: string }
         Returns: Json
@@ -6105,6 +7554,22 @@ export type Database = {
           sender_name: string
         }[]
       }
+      get_shaagat_accounting_form_by_token: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      get_shaagat_approval_by_token: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      get_shaagat_bank_form_by_token: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      get_shaagat_dashboard_stats: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_ticket_by_public_token: {
         Args: { p_token: string }
         Returns: {
@@ -6314,6 +7779,17 @@ export type Database = {
           p_tax_id?: string
         }
         Returns: string
+      }
+      submit_shaagat_bank_details: {
+        Args: {
+          p_account_holder: string
+          p_account_number: string
+          p_bank_number: string
+          p_branch_number: string
+          p_token: string
+          p_verification_tax_id: string
+        }
+        Returns: Json
       }
       track_declaration_portal_access: {
         Args: { p_token: string }

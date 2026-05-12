@@ -58,7 +58,7 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
     filters.status ||
     filters.auditor_id ||
     filters.showInactive ||
-    filters.hasTaxCoding !== undefined ||
+    filters.taxCodingStatus !== undefined ||
     filters.hasUnread;
 
   // Generate year options: current year down to 5 years ago
@@ -151,12 +151,12 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
         </Select>
       )}
 
-      {/* Tax Coding (1214) Filter */}
+      {/* Tax Coding Status (טופס 1214) Filter */}
       <Select
-        value={filters.hasTaxCoding === undefined ? 'all' : filters.hasTaxCoding ? 'yes' : 'no'}
+        value={filters.taxCodingStatus ?? 'all'}
         onValueChange={(value) =>
           onFiltersChange({
-            hasTaxCoding: value === 'all' ? undefined : value === 'yes',
+            taxCodingStatus: value === 'all' ? undefined : (value as 'regular' | 'zero'),
           })
         }
       >
@@ -165,8 +165,8 @@ export const BalanceFilters: React.FC<BalanceFiltersProps> = ({
         </SelectTrigger>
         <SelectContent className="rtl:text-right">
           <SelectItem value="all">1214: הכל</SelectItem>
-          <SelectItem value="yes">יש קידוד מס</SelectItem>
-          <SelectItem value="no">ללא קידוד מס</SelectItem>
+          <SelectItem value="regular">רגיל</SelectItem>
+          <SelectItem value="zero">אפס</SelectItem>
         </SelectContent>
       </Select>
 

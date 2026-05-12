@@ -162,7 +162,7 @@ export interface AnnualBalanceSheetWithClient extends AnnualBalanceSheet {
     company_name_hebrew: string | null;
     tax_id: string;
     client_type: string;
-    tax_coding: string | null;
+    tax_coding_status: 'regular' | 'zero' | null;
   };
 }
 
@@ -217,7 +217,7 @@ export interface BalanceFilters {
   year: number;
   search?: string;
   showInactive?: boolean;
-  hasTaxCoding?: boolean;
+  taxCodingStatus?: 'regular' | 'zero';
   hasUnread?: boolean;
 }
 

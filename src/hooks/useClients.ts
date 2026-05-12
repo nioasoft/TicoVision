@@ -25,6 +25,7 @@ export interface ClientFilters {
   tab: WorkflowTab; // Workflow tab
   accountantName: string; // Accountant name filter
   internalExternal: string; // Internal/external bookkeeping filter
+  taxCodingStatus: string; // טופס 1214 - all | regular | zero
 }
 
 export interface TabCounts {
@@ -107,6 +108,7 @@ const DEFAULT_FILTERS: ClientFilters = {
   tab: 'all',
   accountantName: 'all',
   internalExternal: 'all',
+  taxCodingStatus: 'all',
 };
 
 const PAGE_SIZE = 20;
@@ -245,6 +247,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
       if (filters.status !== 'all') query = query.eq('status', filters.status);
       if (filters.accountantName !== 'all') query = query.eq('accountant_name', filters.accountantName);
       if (filters.internalExternal !== 'all') query = query.eq('internal_external', filters.internalExternal);
+      if (filters.taxCodingStatus !== 'all') query = query.eq('tax_coding_status', filters.taxCodingStatus);
 
       // Apply search filter for counts too
       if (debouncedSearchQuery) {
@@ -261,7 +264,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
     } catch (error) {
       logger.error('Error loading clients for counts:', error);
     }
-  }, [excludeFreelancers, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, filters.accountantName, filters.internalExternal, debouncedSearchQuery]);
+  }, [excludeFreelancers, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, filters.accountantName, filters.internalExternal, filters.taxCodingStatus, debouncedSearchQuery]);
 
   // Load status summary for all clients
   const loadClientStatusSummary = useCallback(async () => {
@@ -349,7 +352,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
   // Load clients whenever search/filters/page/sort changes
   useEffect(() => {
     loadClients();
-  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, filters.tab, filters.balanceStatus, filters.accountantName, filters.internalExternal, currentPage, sortField, sortOrder]);
+  }, [debouncedSearchQuery, filters.companyStatus, filters.clientType, filters.companySubtype, filters.groupId, filters.status, filters.tab, filters.balanceStatus, filters.accountantName, filters.internalExternal, filters.taxCodingStatus, currentPage, sortField, sortOrder]);
 
   // Load clients
   const loadClients = useCallback(async () => {
@@ -376,6 +379,7 @@ export function useClients(options: UseClientsOptions = {}): UseClientsReturn {
         if (filters.status !== 'all') apiFilters.status = filters.status;
         if (filters.accountantName !== 'all') apiFilters.accountant_name = filters.accountantName;
         if (filters.internalExternal !== 'all') apiFilters.internal_external = filters.internalExternal;
+        if (filters.taxCodingStatus !== 'all') apiFilters.tax_coding_status = filters.taxCodingStatus;
 
         // Exclude freelancers if requested (used on Companies page)
         if (excludeFreelancers) apiFilters.client_type_neq = 'freelancer';

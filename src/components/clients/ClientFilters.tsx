@@ -52,6 +52,7 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
     (filters.balanceStatus && filters.balanceStatus !== 'all') ||
     (filters.accountantName && filters.accountantName !== 'all') ||
     (filters.internalExternal && filters.internalExternal !== 'all') ||
+    (filters.taxCodingStatus && filters.taxCodingStatus !== 'all') ||
     filters.tab !== 'all';
 
   const labelClassName = 'mr-1 mb-2 block text-xs font-medium text-muted-foreground';
@@ -238,6 +239,24 @@ export const ClientFilters = React.memo<ClientFiltersProps>(({
                 <SelectItem value="all">כל הנה&quot;ח</SelectItem>
                 <SelectItem value="internal">פנימי</SelectItem>
                 <SelectItem value="external">חיצוני</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tax Coding Status (טופס 1214) Filter */}
+          <div className={filterItemClassName}>
+            <label className={labelClassName}>טופס 1214</label>
+            <Select
+              value={filters.taxCodingStatus || 'all'}
+              onValueChange={(value) => onFilterChange({ taxCodingStatus: value })}
+            >
+              <SelectTrigger className={`w-[124px] ${filterTriggerClass}`}>
+                <SelectValue placeholder="1214: הכל" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">1214: הכל</SelectItem>
+                <SelectItem value="regular">רגיל</SelectItem>
+                <SelectItem value="zero">אפס</SelectItem>
               </SelectContent>
             </Select>
           </div>
