@@ -8,6 +8,7 @@ import {
   type AllTaxFilesOpenedVariables,
   type ClientTaxPrefill,
 } from '@/types/auto-letters.types';
+import { VatFileSection } from './sections/VatFileSection';
 import { IncomeTaxSection } from './sections/IncomeTaxSection';
 import { IncomeTaxWithholdingSection } from './sections/IncomeTaxWithholdingSection';
 import { SocialSecurityWithholdingSection } from './sections/SocialSecurityWithholdingSection';
@@ -30,13 +31,22 @@ export function AllTaxFilesOpenedForm({
 }: AllTaxFilesOpenedFormProps) {
   useEffect(() => {
     if (companyId && !value.company_id) {
-      onChange({ ...value, company_id: companyId });
+      // Auto-populate both company_id and vat_number (typical case: same as ח.פ.)
+      onChange({
+        ...value,
+        company_id: companyId,
+        vat_number: value.vat_number || companyId,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
   const isMissing =
     !value.company_id?.trim() ||
+    !value.vat_number?.trim() ||
+    !value.vat_report_frequency ||
+    !value.vat_first_report_date?.trim() ||
+    !value.vat_first_report_period?.trim() ||
     !value.tax_filing_year?.trim() ||
     !value.advance_payment_rate?.trim() ||
     !value.income_tax_withholding_file_number?.trim() ||
@@ -58,7 +68,7 @@ export function AllTaxFilesOpenedForm({
             פתיחת תיקי ניכויים - מכתב מאוחד
           </CardTitle>
           <CardDescription className="text-right text-sm">
-            מכתב אחד הכולל את כל פתיחות התיקים: מס הכנסה, ניכויים מ"ה, ניכויים ב"ל, אישור ניכוי מס במקור
+            מכתב אחד הכולל את כל פתיחות התיקים: מע"מ, מס הכנסה, ניכויים מ"ה, ניכויים ב"ל, אישור ניכוי מס במקור
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 px-4 pb-4 pt-0">
@@ -93,6 +103,13 @@ export function AllTaxFilesOpenedForm({
           </div>
 
           <Separator />
+          <VatFileSection
+            value={value}
+            onChange={(data) => onChange({ ...value, ...data })}
+            disabled={disabled}
+          />
+
+          <Separator />
           <IncomeTaxSection
             value={value}
             onChange={(data) => onChange({ ...value, ...data })}
@@ -124,7 +141,7 @@ export function AllTaxFilesOpenedForm({
           />
 
           {isMissing && (
-            <p className="text-xs text-amber-600 text-right">יש למלא את כל השדות בכל ארבעת הסעיפים</p>
+            <p className="text-xs text-amber-600 text-right">יש למלא את כל השדות בכל חמשת הסעיפים</p>
           )}
         </CardContent>
       </Card>

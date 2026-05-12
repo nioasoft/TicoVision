@@ -3125,6 +3125,7 @@ export class TemplateService extends BaseService {
    * Map from section placeholder → section partial filename for tax-authority letters
    */
   private static readonly TAX_FILE_SECTION_PARTIALS: Record<string, string> = {
+    '{{section_vat_file}}': 'bodies/company-onboarding/sections/vat-file-section.html',
     '{{section_income_tax}}': 'bodies/company-onboarding/sections/income-tax-section.html',
     '{{section_income_tax_withholding}}': 'bodies/company-onboarding/sections/income-tax-withholding-section.html',
     '{{section_social_security_withholding}}': 'bodies/company-onboarding/sections/social-security-withholding-section.html',
@@ -3238,21 +3239,10 @@ export class TemplateService extends BaseService {
       }
     }
 
-    // Handle VAT file opened - format the first report date from YYYY-MM-DD to DD/MM/YYYY
-    if (templateType === 'company_onboarding_vat_file_opened') {
-      const vatFirstReportDate = (variables as { vat_first_report_date?: string }).vat_first_report_date;
-      if (vatFirstReportDate && typeof vatFirstReportDate === 'string') {
-        // Convert from YYYY-MM-DD to DD/MM/YYYY
-        const dateParts = vatFirstReportDate.split('-');
-        if (dateParts.length === 3) {
-          processed.vat_first_report_date = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        }
-      }
-    }
-
     // Tax-authority letters: format date fields from YYYY-MM-DD to DD/MM/YYYY
-    // Applies to: 4 individual letters + the combined letter
+    // Applies to: standalone VAT letter + 4 individual tax-authority letters + combined letter
     const dateFieldsToFormat = [
+      'vat_first_report_date',
       'income_tax_withholding_first_report_date',
       'social_security_withholding_first_report_date',
       'certificate_valid_until'

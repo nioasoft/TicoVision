@@ -500,11 +500,8 @@ export interface AutoLetterSharedData {
 // COMPANY ONBOARDING VARIABLES
 // ============================================================================
 
-/** Variables for Company Onboarding - VAT File Opened notification */
-export interface VatFileOpenedVariables extends AutoLetterSharedData {
-  subject: string;
-  /** מספר ח.פ (9 ספרות) */
-  company_id: string;
+/** סעיף - מע"מ (shared between standalone VAT letter and combined letter) */
+export interface VatFileSectionData {
   /** מספר עוסק מורשה */
   vat_number: string;
   /** תדירות דיווח (חודשי / דו-חודשי) */
@@ -513,6 +510,13 @@ export interface VatFileOpenedVariables extends AutoLetterSharedData {
   vat_first_report_date: string;
   /** בגין חודש (לדוגמה: אפריל 2025) */
   vat_first_report_period: string;
+}
+
+/** Variables for Company Onboarding - VAT File Opened notification */
+export interface VatFileOpenedVariables extends AutoLetterSharedData, VatFileSectionData {
+  subject: string;
+  /** מספר ח.פ (9 ספרות) */
+  company_id: string;
   /** קישור לתעודת עוסק מורשה (אופציונלי) */
   certificate_link?: string;
 }
@@ -591,9 +595,10 @@ export interface TaxWithholdingCertificateVariables extends AutoLetterSharedData
   company_id: string;
 }
 
-/** Variables for: מכתב מאוחד - פתיחת תיקי ניכויים (כולל את 4 הסעיפים) */
+/** Variables for: מכתב מאוחד - פתיחת תיקים ברשויות המס (כולל 5 הסעיפים) */
 export interface AllTaxFilesOpenedVariables extends
   AutoLetterSharedData,
+  VatFileSectionData,
   IncomeTaxSectionData,
   IncomeTaxWithholdingSectionData,
   SocialSecurityWithholdingSectionData,
@@ -989,7 +994,7 @@ export const DEFAULT_SUBJECTS = {
   income_tax_withholding_file_opened: 'פתיחת תיק ניכויים במס הכנסה',
   social_security_withholding_file_opened: 'פתיחת תיק ניכויים בביטוח לאומי',
   tax_withholding_certificate: 'אישור ניכוי מס במקור וניהול ספרים',
-  all_tax_files_opened: 'פתיחת תיקי ניכויים (מס הכנסה וביטוח לאומי) ומס הכנסה חברה',
+  all_tax_files_opened: 'פתיחת תיקים ברשויות המס (מע"מ, מס הכנסה וביטוח לאומי)',
   // Setting Dates
   cutoff_date: 'קביעת מועד חיתוך לדו"חות',
   meeting_reminder: 'תזכורת לפגישה',
@@ -1236,6 +1241,10 @@ export function createInitialAutoLetterFormState(): AutoLetterFormState {
         allTaxFilesOpened: {
           subject: DEFAULT_SUBJECTS.all_tax_files_opened,
           company_id: '',
+          vat_number: '',
+          vat_report_frequency: 'חודשי',
+          vat_first_report_date: '',
+          vat_first_report_period: '',
           tax_filing_year: String(new Date().getFullYear()),
           advance_payment_rate: 'מבוטל',
           income_tax_withholding_file_number: '',
@@ -1520,6 +1529,15 @@ function validateSharedAndSubject(
   );
 }
 
+function validateVatFileSection(data: Partial<VatFileSectionData>): boolean {
+  return !!(
+    data.vat_number?.trim() &&
+    data.vat_report_frequency &&
+    data.vat_first_report_date?.trim() &&
+    data.vat_first_report_period?.trim()
+  );
+}
+
 function validateIncomeTaxSection(data: Partial<IncomeTaxSectionData>): boolean {
   return !!(data.tax_filing_year?.trim() && data.advance_payment_rate?.trim());
 }
@@ -1580,10 +1598,11 @@ export function validateTaxWithholdingCertificate(
   return validateSharedAndSubject(data) && validateTaxWithholdingCertificateSection(data);
 }
 
-/** Validate Combined All Tax Files Opened letter (covers all 4 sections) */
+/** Validate Combined All Tax Files Opened letter (covers all 5 sections) */
 export function validateAllTaxFilesOpened(data: Partial<AllTaxFilesOpenedVariables>): boolean {
   return (
     validateSharedAndSubject(data) &&
+    validateVatFileSection(data) &&
     validateIncomeTaxSection(data) &&
     validateIncomeTaxWithholdingSection(data) &&
     validateSocialSecurityWithholdingSection(data) &&
