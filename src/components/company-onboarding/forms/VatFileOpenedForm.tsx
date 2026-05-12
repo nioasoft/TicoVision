@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import type { VatFileOpenedVariables } from '@/types/auto-letters.types';
 
 interface VatFileOpenedFormProps {
@@ -122,16 +123,13 @@ export function VatFileOpenedForm({ value, onChange, disabled, companyId }: VatF
 
             <div className="space-y-1">
               <Label htmlFor="first-report-date" className="text-right block text-sm">
-                מועד דיווח ראשון 
+                מועד דיווח ראשון
               </Label>
-              <Input
+              <DatePickerInput
                 id="first-report-date"
-                type="date"
                 value={value.vat_first_report_date || ''}
-                onChange={(e) => onChange({ ...value, vat_first_report_date: e.target.value })}
+                onChange={(val) => onChange({ ...value, vat_first_report_date: val })}
                 disabled={disabled}
-                className="text-right h-9"
-                dir="ltr"
               />
             </div>
 

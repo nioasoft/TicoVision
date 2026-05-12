@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import type { IncomeTaxWithholdingSectionData } from '@/types/auto-letters.types';
 
 interface IncomeTaxWithholdingSectionProps {
@@ -87,16 +88,13 @@ export function IncomeTaxWithholdingSection({
           <Label htmlFor="income-tax-first-report" className="text-right block text-sm">
             מועד דיווח ראשון
           </Label>
-          <Input
+          <DatePickerInput
             id="income-tax-first-report"
-            type="date"
             value={value.income_tax_withholding_first_report_date || ''}
-            onChange={(e) =>
-              onChange({ ...value, income_tax_withholding_first_report_date: e.target.value })
+            onChange={(val) =>
+              onChange({ ...value, income_tax_withholding_first_report_date: val })
             }
             disabled={disabled}
-            className="text-right h-9"
-            dir="ltr"
           />
         </div>
       </div>

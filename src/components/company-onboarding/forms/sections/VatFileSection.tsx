@@ -1,6 +1,7 @@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import type { VatFileSectionData } from '@/types/auto-letters.types';
 
 interface VatFileSectionProps {
@@ -58,14 +59,11 @@ export function VatFileSection({ value, onChange, disabled }: VatFileSectionProp
           <Label htmlFor="vat-first-report-date" className="text-right block text-sm">
             מועד דיווח ראשון
           </Label>
-          <Input
+          <DatePickerInput
             id="vat-first-report-date"
-            type="date"
             value={value.vat_first_report_date || ''}
-            onChange={(e) => onChange({ ...value, vat_first_report_date: e.target.value })}
+            onChange={(val) => onChange({ ...value, vat_first_report_date: val })}
             disabled={disabled}
-            className="text-right h-9"
-            dir="ltr"
           />
         </div>
 

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { DatePickerInput } from '@/components/ui/date-picker-input';
 import type { TaxWithholdingCertificateSectionData } from '@/types/auto-letters.types';
 
 interface TaxWithholdingCertificateSectionProps {
@@ -66,14 +67,11 @@ export function TaxWithholdingCertificateSection({
           <Label htmlFor="cert-valid-until" className="text-right block text-sm">
             תוקף האישור
           </Label>
-          <Input
+          <DatePickerInput
             id="cert-valid-until"
-            type="date"
             value={value.certificate_valid_until || ''}
-            onChange={(e) => onChange({ ...value, certificate_valid_until: e.target.value })}
+            onChange={(val) => onChange({ ...value, certificate_valid_until: val })}
             disabled={disabled}
-            className="text-right h-9"
-            dir="ltr"
           />
         </div>
       </div>
