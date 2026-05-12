@@ -719,15 +719,15 @@ export const EligibilityCheckPage: React.FC = () => {
         const tenantId = await getCurrentTenantId();
         if (!tenantId) return;
 
-        // Exclude clients flagged as 1214-zero — they have no relevant revenues
-        // for Shaagat HaAri eligibility (clients with NULL status pass through,
-        // so legacy/edge-case rows aren't accidentally hidden).
+        // Only clients explicitly flagged as 1214-regular are eligible for
+        // Shaagat HaAri. 'zero' = no qualifying revenue; NULL = not yet
+        // classified, equally unsafe for a revenue-based grant module.
         const { data } = await supabase
           .from('clients')
           .select('id, company_name, tax_id')
           .eq('tenant_id', tenantId)
           .eq('status', 'active')
-          .or('tax_coding_status.is.null,tax_coding_status.neq.zero')
+          .eq('tax_coding_status', 'regular')
           .order('company_name', { ascending: true })
           .limit(500);
 
