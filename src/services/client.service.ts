@@ -147,6 +147,8 @@ export interface Client {
   assigned_accountant?: string;
   notes?: string;
   tax_coding_status?: 'regular' | 'zero' | null; // סטטוס טופס 1214
+  tax_withholding_status?: 'yes' | 'no' | null; // ניכוי מס במקור
+  tax_withholding_percentage?: number | null; // אחוז ניכוי מס במקור (0–100)
   google_drive_link?: string; // Link to Google Drive folder (optional)
   canva_link?: string; // Link to Canva design (optional)
   tags?: string[];
@@ -203,6 +205,8 @@ export interface CreateClientDto {
   assigned_accountant?: string;
   notes?: string;
   tax_coding_status?: 'regular' | 'zero' | null; // סטטוס טופס 1214
+  tax_withholding_status?: 'yes' | 'no' | null; // ניכוי מס במקור
+  tax_withholding_percentage?: number | null; // אחוז ניכוי מס במקור (0–100)
   google_drive_link?: string; // Link to Google Drive folder (optional)
   canva_link?: string; // Link to Canva design (optional)
   tags?: string[];

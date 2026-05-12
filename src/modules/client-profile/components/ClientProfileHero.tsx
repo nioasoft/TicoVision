@@ -9,6 +9,7 @@ import { GoogleDriveIcon } from '@/components/icons/GoogleDriveIcon';
 import { useNavigate } from 'react-router-dom';
 import { formatIsraeliTaxId } from '@/lib/validators';
 import { Form1214Indicator } from './Form1214Indicator';
+import { TaxWithholdingIndicator } from './TaxWithholdingIndicator';
 import type { Client, ClientContact } from '@/services';
 
 interface ClientProfileHeroProps {
@@ -133,6 +134,10 @@ export function ClientProfileHero({ client, contacts, onEdit }: ClientProfileHer
               </Badge>
             )}
             <Form1214Indicator status={client.tax_coding_status} />
+            <TaxWithholdingIndicator
+              status={client.tax_withholding_status}
+              percentage={client.tax_withholding_percentage}
+            />
           </div>
 
           {/* Row 3: Accountant name */}

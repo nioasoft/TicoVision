@@ -125,6 +125,8 @@ const INITIAL_FORM_DATA: CreateClientDto = {
   payment_role: 'independent', // NEW: תפקיד תשלום - default independent
   payer_client_id: null, // NEW: לקוח שמשלם על לקוח זה
   tax_coding_status: 'regular', // טופס 1214 - ברירת מחדל לכל לקוח חדש
+  tax_withholding_status: null, // ניכוי מס במקור - המשתמש מסמן ידנית
+  tax_withholding_percentage: null,
 };
 
 export const ClientFormDialog = React.memo<ClientFormDialogProps>(
@@ -200,6 +202,8 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
           payment_role: client.payment_role || 'independent', // NEW: טעינת תפקיד תשלום
           payer_client_id: client.payer_client_id || null, // NEW: לקוח שמשלם
           tax_coding_status: client.tax_coding_status ?? (client.status === 'active' ? 'regular' : null),
+          tax_withholding_status: client.tax_withholding_status ?? null,
+          tax_withholding_percentage: client.tax_withholding_percentage ?? null,
         });
         // Load signature path
         setSignaturePath(client.signature_path || null);
@@ -303,6 +307,16 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (formData.contact_email?.trim() && !emailRegex.test(formData.contact_email)) {
         errors.push('אימייל איש קשר לא תקין');
+      }
+
+      // Tax withholding: when 'yes' is selected, percentage is mandatory
+      if (
+        formData.tax_withholding_status === 'yes' &&
+        (formData.tax_withholding_percentage === null ||
+          formData.tax_withholding_percentage === undefined ||
+          Number.isNaN(formData.tax_withholding_percentage))
+      ) {
+        errors.push('יש להזין אחוז ניכוי מס במקור כשבחרת "יש"');
       }
 
       return { valid: errors.length === 0, errors };
@@ -587,6 +601,72 @@ export const ClientFormDialog = React.memo<ClientFormDialogProps>(
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Tax Withholding at Source (ניכוי מס במקור) */}
+              <div>
+                <Label htmlFor="tax_withholding_status" className="text-right block mb-2">
+                  ניכוי מס במקור
+                </Label>
+                <Select
+                  value={formData.tax_withholding_status ?? 'unset'}
+                  onValueChange={(value) => {
+                    if (value === 'unset') {
+                      handleFormChange('tax_withholding_status', null);
+                      handleFormChange('tax_withholding_percentage', null);
+                    } else if (value === 'no') {
+                      handleFormChange('tax_withholding_status', 'no');
+                      handleFormChange('tax_withholding_percentage', null);
+                    } else {
+                      handleFormChange('tax_withholding_status', 'yes');
+                    }
+                  }}
+                >
+                  <SelectTrigger id="tax_withholding_status" className="rtl:text-right">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rtl:text-right">
+                    <SelectItem value="unset">לא הוגדר</SelectItem>
+                    <SelectItem value="yes">יש</SelectItem>
+                    <SelectItem value="no">אין</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Withholding percentage (only when 'יש') */}
+              {formData.tax_withholding_status === 'yes' && (
+                <div>
+                  <Label htmlFor="tax_withholding_percentage" className="text-right block mb-2">
+                    אחוז ניכוי מס במקור *
+                  </Label>
+                  <Input
+                    id="tax_withholding_percentage"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.01}
+                    value={
+                      formData.tax_withholding_percentage === null ||
+                      formData.tax_withholding_percentage === undefined
+                        ? ''
+                        : formData.tax_withholding_percentage
+                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') {
+                        handleFormChange('tax_withholding_percentage', null);
+                      } else {
+                        const num = Number(raw);
+                        handleFormChange(
+                          'tax_withholding_percentage',
+                          Number.isFinite(num) ? num : null
+                        );
+                      }
+                    }}
+                    onKeyDown={handleKeyDown}
+                    className="w-32 rtl:text-right"
+                  />
+                </div>
+              )}
 
               {/* Empty divs for grid alignment */}
               <div></div>

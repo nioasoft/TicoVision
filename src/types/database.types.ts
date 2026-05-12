@@ -2089,6 +2089,8 @@ export type Database = {
           tags: string[] | null
           tax_coding_status: string | null
           tax_id: string | null
+          tax_withholding_percentage: number | null
+          tax_withholding_status: string | null
           tenant_id: string
           type: Database["public"]["Enums"]["client_type"] | null
           updated_at: string | null
@@ -2143,6 +2145,8 @@ export type Database = {
           tags?: string[] | null
           tax_coding_status?: string | null
           tax_id?: string | null
+          tax_withholding_percentage?: number | null
+          tax_withholding_status?: string | null
           tenant_id: string
           type?: Database["public"]["Enums"]["client_type"] | null
           updated_at?: string | null
@@ -2197,6 +2201,8 @@ export type Database = {
           tags?: string[] | null
           tax_coding_status?: string | null
           tax_id?: string | null
+          tax_withholding_percentage?: number | null
+          tax_withholding_status?: string | null
           tenant_id?: string
           type?: Database["public"]["Enums"]["client_type"] | null
           updated_at?: string | null
