@@ -266,7 +266,10 @@
   <p>
     קיימת <strong>סתירה משמעותית</strong> בין שני מקורות מקצועיים שאמורים לפרש את אותו חוק.
     האתר הרשמי מציג נוסחאות שנותנות פיצוי <strong>גדול פי שניים בערך</strong> מהאיגרת של לשכת יועצי המס.
-    אנו זקוקים להחלטה מי הנכון, כדי שלקוחותינו יקבלו את המגיע להם.
+  </p>
+  <p style="background: var(--green-bg); padding: 10px; border-radius: 6px; margin-top: 10px;">
+    <strong>📖 עדכון (12.5.2026):</strong> עיון בנוסח החוק עצמו (ספר החוקים 3525) אישר חד-משמעית את ה-× 2
+    לעסקים קטנים — תוקן בקוד. נשארות לאישור רו"ח 3 שאלות נוספות (תקרה למסלול א', חלוקה ב-6, תקופת שכר לקבלן).
   </p>
   <p style="margin-top:8px;">
     <strong>היקף הלקוחות שלנו:</strong>
@@ -323,13 +326,13 @@
     </tr>
   </thead>
   <tbody>
-    <tr class="severity-high">
+    <tr style="background: var(--green-bg);">
       <td>1</td>
       <td>טבלת סכומים אחידים לעסקים קטנים</td>
-      <td>1,864 / 3,356 / 4,475 …</td>
-      <td>כפול (× 2)</td>
-      <td><span class="badge severity-high">קריטי</span></td>
-      <td>Q11, Q98, Q99</td>
+      <td>1,864 / 3,356 …</td>
+      <td>× 2 (אומת בחוק)</td>
+      <td><span class="badge severity-info">✅ תוקן</span></td>
+      <td>§38לז(ב)</td>
     </tr>
     <tr class="severity-high">
       <td>2</td>
@@ -392,37 +395,42 @@
 
 <h2 class="section">פירוט פער-פער</h2>
 
-<!-- FINDING 1 -->
-<div class="finding">
-  <h3><span class="badge severity-high">קריטי</span> #1 — סכומי עסקים קטנים חסרים × 2</h3>
-  <p>הסכומים בטבלת ה-lookup לעסקים קטנים (מחזור 12K-300K) — הקוד שלנו משלם <strong>חצי</strong> ממה שצריך לפי האתר הרשמי. רלוונטי מאוד למסעדות קטנות.</p>
+<!-- FINDING 1 - RESOLVED -->
+<div class="finding ok">
+  <h3><span class="badge severity-info">✅ נסגר</span> #1 — סכומי עסקים קטנים: × 2 הוחל (תוקן)</h3>
+  <p style="color: var(--green); font-weight: 500;">
+    אומת מנוסח החוק עצמו (ספר החוקים 3525, 4.5.2026, §38לז(ב)):
+  </p>
 
-  <div class="compare">
-    <div class="col ours">
-      <h5>הקוד שלנו</h5>
-      <table>
-        <tr><th>מחזור</th><th>סכום</th></tr>
-        <tr><td>12K–50K</td><td class="num">1,864 ₪</td></tr>
-        <tr><td>50K–90K</td><td class="num">3,356 ₪</td></tr>
-        <tr><td>90K–120K</td><td class="num">4,475 ₪</td></tr>
-        <tr><td>150K–200K (tier1)</td><td class="num">3,325 ₪</td></tr>
-      </table>
-    </div>
-    <div class="col official">
-      <h5>הסכומים הרשמיים (Q11) — אחרי × 2</h5>
-      <table>
-        <tr><th>מחזור</th><th>סכום סופי</th></tr>
-        <tr><td>12K–50K</td><td class="num"><strong>3,728 ₪</strong></td></tr>
-        <tr><td>50K–90K</td><td class="num"><strong>6,712 ₪</strong></td></tr>
-        <tr><td>90K–120K</td><td class="num"><strong>8,950 ₪</strong></td></tr>
-        <tr><td>150K–200K (tier1)</td><td class="num"><strong>6,658 ₪</strong> (base = 3,329)</td></tr>
-      </table>
-    </div>
+  <div class="example-box" style="background: var(--green-bg); border-color: #a7f3d0;">
+    <div class="label" style="color: var(--green);">📖 ציטוט ישיר מספר החוקים, עמ' 554</div>
+    <pre style="background: white; direction: rtl; text-align: right; font-family: inherit;">"ניזוק שמחזור עסקאותיו בשנת הבסיס עלה על 12 אלף שקלים חדשים ולא עלה על
+300 אלף שקלים חדשים, זכאי לפיצויים בסכום של פי 2 מהסכום המפורט בפסקאות
+שלהלן, לפי העניין, בעד נזק עקיף שנגרם לו במהלך התקופה הקובעת..."</pre>
   </div>
 
-  <p style="color: var(--green); font-weight: 500;"><strong>✓ תוקן (12.5.2026):</strong> ה-base של מדרגת 150-200K עודכן ל-3,329 (ערך התואם לאתר הרשמי).</p>
+  <p>הטבלה בקוד עודכנה לסכומים סופיים (כולל ×2):</p>
 
-  <p><strong>מקדם נזק לעסקים 120K-300K</strong> (Q12) — חל בנוסף ל-×2:</p>
+  <table>
+    <thead><tr><th>מחזור</th><th>25-40%</th><th>40-60%</th><th>60-80%</th><th>80%+</th></tr></thead>
+    <tbody>
+      <tr><td>12K-50K</td><td class="num">3,728</td><td class="num">3,728</td><td class="num">3,728</td><td class="num">3,728</td></tr>
+      <tr><td>50K-90K</td><td class="num">6,712</td><td class="num">6,712</td><td class="num">6,712</td><td class="num">6,712</td></tr>
+      <tr><td>90K-120K</td><td class="num">8,950</td><td class="num">8,950</td><td class="num">8,950</td><td class="num">8,950</td></tr>
+      <tr><td>120K-150K</td><td class="num">5,646</td><td class="num">8,469</td><td class="num">13,550</td><td class="num">16,938</td></tr>
+      <tr><td>150K-200K</td><td class="num">6,658</td><td class="num">9,987</td><td class="num">15,979</td><td class="num">19,974</td></tr>
+      <tr><td>200K-250K</td><td class="num">8,522</td><td class="num">12,783</td><td class="num">20,453</td><td class="num">25,566</td></tr>
+      <tr><td>250K-300K</td><td class="num">9,960</td><td class="num">14,940</td><td class="num">23,904</td><td class="num">29,880</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>אימות:</strong></p>
+  <ul>
+    <li>Q98: מסעדה 180K@70% → 3,329 × 2.4 × 2 = <strong>15,979 ₪</strong> ✓ (תואם)</li>
+    <li>Q99: מסעדה 70K → 3,356 × 2 = <strong>6,712 ₪</strong> ✓ (תואם)</li>
+  </ul>
+
+  <p><strong>מקדם הנזק לעסקים 120K-300K</strong> (אומת מהחוק עצמו, עמ' 555, §38לז(ה)):</p>
   <table>
     <tr><th>שיעור ירידה</th><th>מקדם נזק</th></tr>
     <tr><td>25-40%</td><td>1</td></tr>
@@ -431,28 +439,9 @@
     <tr><td>80%+</td><td>3</td></tr>
   </table>
 
-  <div class="example-box">
-    <div class="label">דוגמה רשמית (Q98) — מסעדה עם מחזור 180,000 ₪ וירידה 70%</div>
-    <pre>מדרגה 150-200K, מקדם נזק 2.4 (60-80% ירידה)
-חישוב רשמי: 3,329 × 2.4 × 2 = 15,979 ₪
-הקוד שלנו (לאחר תיקון base): 3,329 × 2.4 = 7,990 ₪  (חסר רק × 2)</pre>
-  </div>
-
-  <div class="example-box">
-    <div class="label">דוגמה רשמית נוספת (Q99) — עסק קטן 70,000 ₪</div>
-    <pre>מדרגה 50-90K (סכום אחיד, ללא קשר לאחוז ירידה כל עוד מעל 25%)
-חישוב רשמי: 3,356 × 2 = 6,712 ₪
-הקוד שלנו: 3,356     = 3,356 ₪  (חצי)</pre>
-  </div>
-
-  <div class="question-box">
-    <strong>שאלה לרו"ח:</strong>
-    האם הסכומים בחוק עצמו כוללים את × 2 או לא? האם רשות המסים אכן מחשבת על פי האתר הרשמי?
-  </div>
-
   <div class="source-ref">
-    <strong>מקור Q&amp;A:</strong> Q11 (טבלת סכומים), Q12 (מקדם נזק), Q98 + Q99 (דוגמאות מספריות).
-    <strong>חוק:</strong> §38לז(ב), §38לז(ה).
+    <strong>מקור החוק:</strong> ספר החוקים 3525, 4.5.2026, §38לז(ב) ו-§38לז(ה).
+    <strong>תיקון:</strong> בוצע בקוד 12.5.2026 (commit ac864b2 + עדכון בהמשך).
   </div>
 </div>
 

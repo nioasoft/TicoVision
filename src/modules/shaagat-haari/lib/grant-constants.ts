@@ -127,20 +127,30 @@ export const GRANT_CONSTANTS = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Fixed grant amounts for small businesses (annual revenue 2022 ≤ 300,000 ₪).
- * Businesses with revenue ≤ 120,000 receive a flat amount regardless of decline tier,
- * provided they meet the minimum eligibility threshold.
+ * Final grant amounts for small businesses (annual revenue ≤ 300,000 ₪).
+ *
+ * Per the law (ספר החוקים 3525, 4.5.2026, §38לז(ב)):
+ *   "ניזוק ... זכאי לפיצויים בסכום של פי 2 מהסכום המפורט בפסקאות שלהלן"
+ *
+ * The amounts in this table are the FINAL payable amounts (× 2 already applied).
+ * Base amounts in the law: 1,864 / 3,356 / 4,475 / 2,823 / 3,329 / 4,261 / 4,980.
+ *
+ * For tiers 120K-300K, damage coefficient applies (§38לז(ה)):
+ *   25-40% → ×1, 40-60% → ×1.5, 60-80% → ×2.4, 80%+ → ×3
+ * Formula: base × damage_coefficient × 2 (no intermediate rounding).
+ *
+ * For tiers 12K-120K, no damage coefficient — uniform amount regardless of decline.
  *
  * Columns: tier1=25-40%, tier2=40-60%, tier3=60-80%, tier4=80-100%
  */
 export const SMALL_BUSINESS_LOOKUP: SmallBusinessLookupEntry[] = [
-  // Updated per Tax Consultants Institute professional letter (May 2026).
-  // All amounts increased ~1.7% relative to the prior presentation.
-  { minRevenue: 12_000,  maxRevenue: 50_000,  tier1: 1_864, tier2: 1_864,  tier3: 1_864,  tier4: 1_864  },
-  { minRevenue: 50_000,  maxRevenue: 90_000,  tier1: 3_356, tier2: 3_356,  tier3: 3_356,  tier4: 3_356  },
-  { minRevenue: 90_000,  maxRevenue: 120_000, tier1: 4_475, tier2: 4_475,  tier3: 4_475,  tier4: 4_475  },
-  { minRevenue: 120_000, maxRevenue: 150_000, tier1: 2_823, tier2: 4_235,  tier3: 6_775,  tier4: 8_469  },
-  { minRevenue: 150_000, maxRevenue: 200_000, tier1: 3_329, tier2: 4_994,  tier3: 7_990,  tier4: 9_987  },
-  { minRevenue: 200_000, maxRevenue: 250_000, tier1: 4_261, tier2: 6_392,  tier3: 10_226, tier4: 12_783 },
-  { minRevenue: 250_000, maxRevenue: 300_000, tier1: 4_980, tier2: 7_470,  tier3: 11_952, tier4: 14_940 },
+  // Uniform amounts × 2:
+  { minRevenue: 12_000,  maxRevenue: 50_000,  tier1: 3_728,  tier2: 3_728,  tier3: 3_728,  tier4: 3_728  },
+  { minRevenue: 50_000,  maxRevenue: 90_000,  tier1: 6_712,  tier2: 6_712,  tier3: 6_712,  tier4: 6_712  },
+  { minRevenue: 90_000,  maxRevenue: 120_000, tier1: 8_950,  tier2: 8_950,  tier3: 8_950,  tier4: 8_950  },
+  // With damage coefficient: base × {1, 1.5, 2.4, 3} × 2
+  { minRevenue: 120_000, maxRevenue: 150_000, tier1: 5_646,  tier2: 8_469,  tier3: 13_550, tier4: 16_938 },
+  { minRevenue: 150_000, maxRevenue: 200_000, tier1: 6_658,  tier2: 9_987,  tier3: 15_979, tier4: 19_974 },
+  { minRevenue: 200_000, maxRevenue: 250_000, tier1: 8_522,  tier2: 12_783, tier3: 20_453, tier4: 25_566 },
+  { minRevenue: 250_000, maxRevenue: 300_000, tier1: 9_960,  tier2: 14_940, tier3: 23_904, tier4: 29_880 },
 ];
