@@ -189,12 +189,18 @@ export function calculateEligibility(input: EligibilityInput): EligibilityResult
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Calculates the fixed expenses grant.
+ * Calculates the fixed expenses grant (bimonthly equivalent).
  *
- * Implements formula section 3.2 from SHAAGAT_HAARI_FORMULAS.md.
+ * Implements formula section 3.2 from SHAAGAT_HAARI_FORMULAS.md, aligned with
+ * the law text (§38לח, p.546):
+ *   "סך כל התשומות השוטפות בשנה הקודמת, מחולק ב-6 ומוכפל במקדם הוצאות קבועות"
+ *
+ * The annual inputs are divided by 6 (equivalent to monthly average × 2, since
+ * the eligibility period is 2 months). For new businesses the same logic applies
+ * via the inputsMonths parameter — for N months of data, divisor is N/2.
  *
  * @param input - Annual inputs totals, compensation rate, months, enhanced flag
- * @returns Monthly average inputs, effective rate, and final grant (rounded)
+ * @returns Monthly average inputs (informational), effective rate, and bimonthly grant (rounded)
  */
 export function calculateFixedExpensesGrant(
   input: FixedExpensesInput,
@@ -202,7 +208,7 @@ export function calculateFixedExpensesGrant(
   const { vatInputs, zeroVatInputs, compensationRate, inputsMonths, useEnhancedRate } =
     input;
 
-  // Monthly average inputs — full precision
+  // Monthly average inputs — full precision (kept for diagnostic output)
   const monthlyAvgInputs = (vatInputs + zeroVatInputs) / inputsMonths;
 
   // Effective rate — optionally enhanced ×2 (was ×1.5; updated May 2026)
@@ -210,8 +216,11 @@ export function calculateFixedExpensesGrant(
     ? compensationRate * GRANT_CONSTANTS.ENHANCED_RATE_MULTIPLIER
     : compensationRate;
 
-  // Final grant — round only here
-  const fixedExpensesGrant = Math.round(monthlyAvgInputs * (effectiveRate / 100));
+  // Law's formula: annual inputs ÷ 6 × rate
+  // Equivalent: monthlyAvg × 2 × rate (× 2 because eligibility = 2 months)
+  const fixedExpensesGrant = Math.round(
+    monthlyAvgInputs * 2 * (effectiveRate / 100),
+  );
 
   return { monthlyAvgInputs, effectiveRate, fixedExpensesGrant };
 }

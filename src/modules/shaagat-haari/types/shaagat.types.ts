@@ -173,7 +173,14 @@ export interface FixedExpensesResult {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface SalaryInput {
-  /** Total gross salary March 2026 (form 102). April 2026 for contractors. */
+  /**
+   * Total gross salary for the eligible salary period (Form 102 sum).
+   *
+   * Per the law (§38לח, p.546): "התקופה המזכה לעניין שכר – חודשי מרץ ואפריל 2026".
+   * This is ALWAYS March + April 2026 — no exception for cash-basis reporters
+   * or executing contractors (their eligibility period for revenue is 5-6/2026,
+   * but the salary period stays 3-4/2026).
+   */
   salaryGross: number;
   tipsDeductions: number;
   miluimDeductions: number;

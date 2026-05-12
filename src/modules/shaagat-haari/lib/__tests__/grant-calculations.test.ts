@@ -399,6 +399,9 @@ describe('calculateEligibility', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('calculateFixedExpensesGrant', () => {
+  // Per §38לח (p.546): annual_inputs / 6 × rate
+  // Equivalent: monthlyAvg × 2 × rate (×2 = 2-month eligibility period).
+
   it('should calculate basic fixed expenses grant correctly', () => {
     const input = makeFixedExpensesInput({
       vatInputs: 1_200_000,
@@ -408,7 +411,8 @@ describe('calculateFixedExpensesGrant', () => {
     const result = calculateFixedExpensesGrant(input);
     expect(result.monthlyAvgInputs).toBe(100_000);
     expect(result.effectiveRate).toBe(15);
-    expect(result.fixedExpensesGrant).toBe(15_000);
+    // 1,200,000 / 6 × 15% = 200,000 × 15% = 30,000
+    expect(result.fixedExpensesGrant).toBe(30_000);
   });
 
   it('should apply x2 enhanced rate multiplier when enabled', () => {
@@ -419,10 +423,9 @@ describe('calculateFixedExpensesGrant', () => {
       useEnhancedRate: true,
     });
     const result = calculateFixedExpensesGrant(input);
-    // Enhanced rate × 2 (May 2026 letter): 15 × 2 = 30
     expect(result.effectiveRate).toBe(30);
-    // 100,000 monthly avg × 30% = 30,000
-    expect(result.fixedExpensesGrant).toBe(30_000);
+    // 1,200,000 / 6 × 30% = 200,000 × 30% = 60,000
+    expect(result.fixedExpensesGrant).toBe(60_000);
   });
 
   it('should include zero-rate VAT inputs in calculation', () => {
@@ -434,7 +437,8 @@ describe('calculateFixedExpensesGrant', () => {
     });
     const result = calculateFixedExpensesGrant(input);
     expect(result.monthlyAvgInputs).toBe(100_000);
-    expect(result.fixedExpensesGrant).toBe(7_000);
+    // 1,200,000 / 6 × 7% = 200,000 × 7% = 14,000
+    expect(result.fixedExpensesGrant).toBe(14_000);
   });
 
   it('should return 0 grant when inputs are zero', () => {
@@ -450,7 +454,8 @@ describe('calculateFixedExpensesGrant', () => {
       inputsMonths: 12,
     });
     const result = calculateFixedExpensesGrant(input);
-    expect(result.fixedExpensesGrant).toBe(10_525);
+    // 1,804,368 / 6 × 7% = 300,728 × 7% = 21,050.96 → 21,051
+    expect(result.fixedExpensesGrant).toBe(21_051);
   });
 
   it('should handle compensation rate 11%', () => {
@@ -460,7 +465,8 @@ describe('calculateFixedExpensesGrant', () => {
       inputsMonths: 12,
     });
     const result = calculateFixedExpensesGrant(input);
-    expect(result.fixedExpensesGrant).toBe(16_540);
+    // 1,804,368 / 6 × 11% = 300,728 × 11% = 33,080.08 → 33,080
+    expect(result.fixedExpensesGrant).toBe(33_080);
   });
 
   it('should handle compensation rate 22%', () => {
@@ -470,7 +476,8 @@ describe('calculateFixedExpensesGrant', () => {
       inputsMonths: 12,
     });
     const result = calculateFixedExpensesGrant(input);
-    expect(result.fixedExpensesGrant).toBe(33_080);
+    // 1,804,368 / 6 × 22% = 300,728 × 22% = 66,160.16 → 66,160
+    expect(result.fixedExpensesGrant).toBe(66_160);
   });
 
   it('should handle fewer months for new businesses (6 months)', () => {
@@ -481,17 +488,19 @@ describe('calculateFixedExpensesGrant', () => {
     });
     const result = calculateFixedExpensesGrant(input);
     expect(result.monthlyAvgInputs).toBe(100_000);
-    expect(result.fixedExpensesGrant).toBe(15_000);
+    // For 6 months data: monthlyAvg 100K × 2 × 15% = 30,000
+    expect(result.fixedExpensesGrant).toBe(30_000);
   });
 
-  it('should match presentation example: 150,364 avg × 15% = 22,555', () => {
+  it('should match official Q97 example: 600K @ 11% = 11,000 (with /6 divisor)', () => {
     const input = makeFixedExpensesInput({
-      vatInputs: 1_804_368,
-      compensationRate: 15,
+      vatInputs: 600_000,
+      compensationRate: 11,
       inputsMonths: 12,
     });
     const result = calculateFixedExpensesGrant(input);
-    expect(result.fixedExpensesGrant).toBe(22_555);
+    // 600,000 / 6 × 11% = 100,000 × 11% = 11,000  (Q97 official example)
+    expect(result.fixedExpensesGrant).toBe(11_000);
   });
 
   it('should handle x2 with rate 22 giving effective rate 44', () => {
@@ -502,10 +511,9 @@ describe('calculateFixedExpensesGrant', () => {
       useEnhancedRate: true,
     });
     const result = calculateFixedExpensesGrant(input);
-    // Enhanced rate × 2 (May 2026 letter): 22 × 2 = 44
     expect(result.effectiveRate).toBe(44);
-    // 10,000 monthly avg × 44% = 4,400
-    expect(result.fixedExpensesGrant).toBe(4_400);
+    // 120,000 / 6 × 44% = 20,000 × 44% = 8,800
+    expect(result.fixedExpensesGrant).toBe(8_800);
   });
 });
 
@@ -813,48 +821,54 @@ describe('calculateSalaryGrant', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('calculateGrantCap', () => {
-  it('should return 600,000 for revenue below 100M', () => {
-    expect(calculateGrantCap(50_000_000)).toBe(600_000);
+  // Per §38לח (p.546): listed amount × 2.
+  // Effective caps: 1.2M / sliding (1.2M-2.4M) / 2.4M.
+
+  it('should return 1,200,000 for revenue below 100M', () => {
+    expect(calculateGrantCap(50_000_000)).toBe(1_200_000);
   });
 
-  it('should return 600,000 for revenue at exactly 99,999,999', () => {
-    expect(calculateGrantCap(99_999_999)).toBe(600_000);
+  it('should return 1,200,000 for revenue at exactly 99,999,999', () => {
+    expect(calculateGrantCap(99_999_999)).toBe(1_200_000);
   });
 
-  it('should return 600,000 for revenue at exactly 100M (start of sliding scale)', () => {
-    expect(calculateGrantCap(100_000_000)).toBe(600_000);
+  it('should return 1,200,000 for revenue at exactly 100M (start of sliding scale)', () => {
+    expect(calculateGrantCap(100_000_000)).toBe(1_200_000);
   });
 
-  it('should return 750,000 for revenue of 150M', () => {
-    expect(calculateGrantCap(150_000_000)).toBe(750_000);
+  it('should return 1,500,000 for revenue of 150M', () => {
+    // (600K + 0.3% × 50M) × 2 = (600K + 150K) × 2 = 1,500,000
+    expect(calculateGrantCap(150_000_000)).toBe(1_500_000);
   });
 
-  it('should return 900,000 for revenue of 200M', () => {
-    expect(calculateGrantCap(200_000_000)).toBe(900_000);
+  it('should return 1,800,000 for revenue of 200M', () => {
+    // (600K + 0.3% × 100M) × 2 = (600K + 300K) × 2 = 1,800,000
+    expect(calculateGrantCap(200_000_000)).toBe(1_800_000);
   });
 
-  it('should return 1,200,000 for revenue at exactly 300M', () => {
-    expect(calculateGrantCap(300_000_000)).toBe(1_200_000);
+  it('should return 2,400,000 for revenue at exactly 300M', () => {
+    expect(calculateGrantCap(300_000_000)).toBe(2_400_000);
   });
 
-  it('should cap at 1,200,000 for revenue of 400M', () => {
-    expect(calculateGrantCap(400_000_000)).toBe(1_200_000);
+  it('should cap at 2,400,000 for revenue of 400M', () => {
+    expect(calculateGrantCap(400_000_000)).toBe(2_400_000);
   });
 
-  it('should cap at 1,200,000 for revenue of 350M (above tier end)', () => {
-    expect(calculateGrantCap(350_000_000)).toBe(1_200_000);
+  it('should cap at 2,400,000 for revenue of 350M (above tier end)', () => {
+    expect(calculateGrantCap(350_000_000)).toBe(2_400_000);
   });
 
-  it('should return 600,000 for very small revenue (12,000)', () => {
-    expect(calculateGrantCap(12_000)).toBe(600_000);
+  it('should return 1,200,000 for very small revenue (12,000)', () => {
+    expect(calculateGrantCap(12_000)).toBe(1_200_000);
   });
 
   it('should handle sliding scale at 250M', () => {
-    expect(calculateGrantCap(250_000_000)).toBe(1_050_000);
+    // (600K + 0.3% × 150M) × 2 = (600K + 450K) × 2 = 2,100,000
+    expect(calculateGrantCap(250_000_000)).toBe(2_100_000);
   });
 
-  it('should not exceed 1,200,000 within sliding formula range', () => {
-    expect(calculateGrantCap(299_999_999)).toBeLessThanOrEqual(1_200_000);
+  it('should not exceed 2,400,000 within sliding formula range', () => {
+    expect(calculateGrantCap(299_999_999)).toBeLessThanOrEqual(2_400_000);
   });
 });
 
@@ -1056,19 +1070,20 @@ describe('calculateGrant — integration', () => {
     };
   }
 
-  it('should match presentation example: total = 137,538', () => {
+  it('should match law-aligned example: fixed 45,109 + salary 114,983 = 160,092', () => {
     const result = calculateGrant(makeFullInput());
 
     // 68% decline → tier 60-80% → compensationRate = 15%
     expect(result.eligibility.compensationRate).toBe(15);
-    expect(result.fixedExpenses.fixedExpensesGrant).toBe(22_555);
+    // Fixed: 1,804,368 / 6 × 15% = 300,728 × 15% = 45,109 (per §38לח /6)
+    expect(result.fixedExpenses.fixedExpensesGrant).toBe(45_109);
     expect(result.salary.salaryGrantBeforeCap).toBe(114_983);
-    expect(result.totalGrant).toBe(137_538);
-    expect(result.finalGrantAmount).toBe(137_538); // below 600K cap
-    expect(result.recommendedAmount).toBe(137_538);
+    expect(result.totalGrant).toBe(160_092);
+    expect(result.finalGrantAmount).toBe(160_092); // below 1.2M cap
+    expect(result.recommendedAmount).toBe(160_092);
   });
 
-  it('should apply grant cap when total exceeds 600K', () => {
+  it('should apply grant cap when total exceeds 1.2M', () => {
     const result = calculateGrant(makeFullInput({
       eligibility: {
         revenueBase: 1_000_000,
@@ -1104,16 +1119,16 @@ describe('calculateGrant — integration', () => {
       },
     }));
 
-    expect(result.grantCap).toBe(600_000);
-    expect(result.finalGrantAmount).toBe(600_000);
+    expect(result.grantCap).toBe(1_200_000);
+    expect(result.finalGrantAmount).toBe(1_200_000);
   });
 
   it('should apply contractor multiplier (x0.68)', () => {
     const result = calculateGrant(makeFullInput({ trackType: 'contractor' }));
 
-    // Standard total = 137,538 → contractor = round(137,538 × 0.68) = 93,526
-    expect(result.contractorAdjustedGrant).toBe(Math.round(137_538 * 0.68));
-    expect(result.recommendedAmount).toBe(Math.round(137_538 * 0.68));
+    // Standard total = 160,092 → contractor = round(160,092 × 0.68) = 108,863
+    expect(result.contractorAdjustedGrant).toBe(Math.round(160_092 * 0.68));
+    expect(result.recommendedAmount).toBe(Math.round(160_092 * 0.68));
   });
 
   it('should compare with small business track when annualRevenueBaseYear <= 300K', () => {
@@ -1121,10 +1136,10 @@ describe('calculateGrant — integration', () => {
       annualRevenueBaseYear: 260_000,
     }));
 
-    // Standard = 137,538. Lookup 250K-300K at 68% decline → tier 60-80% → 4,980 × 2.4 × 2 = 23,904
-    // 137,538 > 23,904 → recommended = 137,538
+    // Standard = 160,092. Lookup 250K-300K at 68% decline → tier 60-80% → 4,980 × 2.4 × 2 = 23,904
+    // 160,092 > 23,904 → recommended = 160,092
     expect(result.smallBusinessGrant).toBe(23_904);
-    expect(result.recommendedAmount).toBe(137_538);
+    expect(result.recommendedAmount).toBe(160_092);
   });
 
   it('should handle zero salary (expenses-only grant)', () => {
@@ -1164,8 +1179,9 @@ describe('calculateGrant — integration', () => {
     }));
 
     expect(result.salary.salaryGrant).toBe(0);
-    expect(result.fixedExpenses.fixedExpensesGrant).toBe(5_500);
-    expect(result.totalGrant).toBe(5_500);
+    // 600,000 / 6 × 11% = 100,000 × 11% = 11,000 (Q97 official value)
+    expect(result.fixedExpenses.fixedExpensesGrant).toBe(11_000);
+    expect(result.totalGrant).toBe(11_000);
   });
 
   it('should handle zero inputs (salary-only grant)', () => {
@@ -1245,7 +1261,8 @@ describe('calculateGrant — integration', () => {
       },
     }));
 
-    expect(result.grantCap).toBe(900_000);
+    // (600K + 0.3% × 100M) × 2 = (600K + 300K) × 2 = 1,800,000
+    expect(result.grantCap).toBe(1_800_000);
   });
 
   it('should handle NOT_ELIGIBLE result with 0 grant', () => {
@@ -1324,8 +1341,8 @@ describe('calculateGrant — integration', () => {
       },
     }));
 
-    expect(result.grantCap).toBe(1_200_000);
-    expect(result.finalGrantAmount).toBeLessThanOrEqual(1_200_000);
+    expect(result.grantCap).toBe(2_400_000);
+    expect(result.finalGrantAmount).toBeLessThanOrEqual(2_400_000);
   });
 
   it('should use eligibility compensationRate for fixedExpenses (overrides input)', () => {
@@ -1345,8 +1362,9 @@ describe('calculateGrant — integration', () => {
 
     expect(result.eligibility.compensationRate).toBe(11);
     // Fixed expenses grant uses 11%, not the input's 15%
+    // Law formula: annual / 6 × rate (= monthlyAvg × 2 × rate)
     const monthlyAvg = 1_804_368 / 12;
-    expect(result.fixedExpenses.fixedExpensesGrant).toBe(Math.round(monthlyAvg * 0.11));
+    expect(result.fixedExpenses.fixedExpensesGrant).toBe(Math.round(monthlyAvg * 2 * 0.11));
   });
 });
 
@@ -1362,8 +1380,8 @@ describe('Rounding behavior', () => {
       inputsMonths: 12,
     });
     const result = calculateFixedExpensesGrant(input);
-    // 150,364 × 0.15 = 22,554.6 → 22,555
-    expect(result.fixedExpensesGrant).toBe(22_555);
+    // 1,804,368 / 6 × 0.15 = 300,728 × 0.15 = 45,109.2 → 45,109
+    expect(result.fixedExpensesGrant).toBe(45_109);
     expect(Number.isInteger(result.fixedExpensesGrant)).toBe(true);
   });
 
@@ -1445,10 +1463,10 @@ describe('GRANT_CONSTANTS', () => {
     expect(GRANT_CONSTANTS.SALARY.CAP_PER_EMPLOYEE).toBe(13_769);
   });
 
-  it('should have correct grant cap constants', () => {
-    expect(GRANT_CONSTANTS.GRANT_CAP.DEFAULT).toBe(600_000);
-    expect(GRANT_CONSTANTS.GRANT_CAP.MAX).toBe(1_200_000);
-    expect(GRANT_CONSTANTS.GRANT_CAP.RATE).toBe(0.003);
+  it('should have correct grant cap constants (with ×2 per law)', () => {
+    expect(GRANT_CONSTANTS.GRANT_CAP.DEFAULT).toBe(1_200_000);
+    expect(GRANT_CONSTANTS.GRANT_CAP.MAX).toBe(2_400_000);
+    expect(GRANT_CONSTANTS.GRANT_CAP.RATE).toBe(0.006);
   });
 
   it('should have 7 rows in small business lookup table', () => {

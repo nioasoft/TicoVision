@@ -72,16 +72,27 @@ export const GRANT_CONSTANTS = {
   // ────────────── Overall grant caps ──────────────
 
   GRANT_CAP: {
-    /** Default cap (₪) — annual revenue below 100M */
-    DEFAULT: 600_000,
-    /** Maximum cap (₪) — annual revenue ≥ 300M */
-    MAX: 1_200_000,
+    /**
+     * Default cap (₪) — annual revenue below 100M.
+     * Law text (§38לח, p.546): listed amount = 600,000 ₪ "כשהוא מוכפל ב-2".
+     * Final effective cap: 600K × 2 = 1,200,000 ₪.
+     */
+    DEFAULT: 1_200_000,
+    /**
+     * Maximum cap (₪) — annual revenue ≥ 300M.
+     * Law text (§38לח, p.546): listed amount = 1.2M ₪ "כשהוא מוכפל ב-2".
+     * Final effective cap: 1.2M × 2 = 2,400,000 ₪.
+     */
+    MAX: 2_400_000,
     /** Annual revenue threshold where progressive cap begins (₪) */
     TIER_START: 100_000_000,
     /** Annual revenue threshold where progressive cap ends (₪) */
     TIER_END: 300_000_000,
-    /** Progressive cap rate — 0.3% per ₪ above TIER_START */
-    RATE: 0.003,
+    /**
+     * Progressive cap rate — 0.6% per ₪ above TIER_START.
+     * Law states 0.3% on the listed amount, then × 2 → effective 0.6%.
+     */
+    RATE: 0.006,
   },
 
   // ────────────── Annual revenue range ──────────────
