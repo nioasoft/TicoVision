@@ -477,10 +477,14 @@ export function calculateGrant(input: GrantCalculationInput): GrantBreakdown {
   };
   const salaryResult = calculateSalaryGrant(salaryInput);
 
-  // 4 — Total grant
-  const totalGrant = fixedExpensesResult.fixedExpensesGrant + salaryResult.salaryGrant;
+  // 4 — Eligible expenses (הוצאות מזכות) per §38לח (p.546):
+  //   הוצאות מזכות = (הוצאות קבועות + חלק השכר המזכה) × 2
+  // The ×2 represents the 2-month eligibility period (March–April 2026).
+  // Per CPA guidance (12.5.2026): apply ×2 to the SUM, then compare to cap.
+  const subTotal = fixedExpensesResult.fixedExpensesGrant + salaryResult.salaryGrant;
+  const totalGrant = subTotal * 2;
 
-  // 5 — Overall grant cap
+  // 5 — Overall grant cap (cap is also based on listed amount × 2 per §38לח)
   const grantCap = calculateGrantCap(eligibility.annualRevenue);
   const cappedGrant = Math.min(totalGrant, grantCap);
 

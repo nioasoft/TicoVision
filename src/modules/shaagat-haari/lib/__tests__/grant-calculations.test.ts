@@ -1070,7 +1070,7 @@ describe('calculateGrant — integration', () => {
     };
   }
 
-  it('should match law-aligned example: fixed 45,109 + salary 114,983 = 160,092', () => {
+  it('should match law-aligned example: (45,109 + 114,983) × 2 = 320,184', () => {
     const result = calculateGrant(makeFullInput());
 
     // 68% decline → tier 60-80% → compensationRate = 15%
@@ -1078,9 +1078,10 @@ describe('calculateGrant — integration', () => {
     // Fixed: 1,804,368 / 6 × 15% = 300,728 × 15% = 45,109 (per §38לח /6)
     expect(result.fixedExpenses.fixedExpensesGrant).toBe(45_109);
     expect(result.salary.salaryGrantBeforeCap).toBe(114_983);
-    expect(result.totalGrant).toBe(160_092);
-    expect(result.finalGrantAmount).toBe(160_092); // below 1.2M cap
-    expect(result.recommendedAmount).toBe(160_092);
+    // Eligible expenses = (45,109 + 114,983) × 2 = 320,184 (×2 per §38לח)
+    expect(result.totalGrant).toBe(320_184);
+    expect(result.finalGrantAmount).toBe(320_184); // below 1.2M cap
+    expect(result.recommendedAmount).toBe(320_184);
   });
 
   it('should apply grant cap when total exceeds 1.2M', () => {
@@ -1126,9 +1127,9 @@ describe('calculateGrant — integration', () => {
   it('should apply contractor multiplier (x0.68)', () => {
     const result = calculateGrant(makeFullInput({ trackType: 'contractor' }));
 
-    // Standard total = 160,092 → contractor = round(160,092 × 0.68) = 108,863
-    expect(result.contractorAdjustedGrant).toBe(Math.round(160_092 * 0.68));
-    expect(result.recommendedAmount).toBe(Math.round(160_092 * 0.68));
+    // Standard total = 320,184 → contractor = round(320,184 × 0.68) = 217,725
+    expect(result.contractorAdjustedGrant).toBe(Math.round(320_184 * 0.68));
+    expect(result.recommendedAmount).toBe(Math.round(320_184 * 0.68));
   });
 
   it('should compare with small business track when annualRevenueBaseYear <= 300K', () => {
@@ -1136,10 +1137,10 @@ describe('calculateGrant — integration', () => {
       annualRevenueBaseYear: 260_000,
     }));
 
-    // Standard = 160,092. Lookup 250K-300K at 68% decline → tier 60-80% → 4,980 × 2.4 × 2 = 23,904
-    // 160,092 > 23,904 → recommended = 160,092
+    // Standard = 320,184. Lookup 250K-300K at 68% decline → tier 60-80% → 23,904
+    // 320,184 > 23,904 → recommended = 320,184
     expect(result.smallBusinessGrant).toBe(23_904);
-    expect(result.recommendedAmount).toBe(160_092);
+    expect(result.recommendedAmount).toBe(320_184);
   });
 
   it('should handle zero salary (expenses-only grant)', () => {
@@ -1181,7 +1182,8 @@ describe('calculateGrant — integration', () => {
     expect(result.salary.salaryGrant).toBe(0);
     // 600,000 / 6 × 11% = 100,000 × 11% = 11,000 (Q97 official value)
     expect(result.fixedExpenses.fixedExpensesGrant).toBe(11_000);
-    expect(result.totalGrant).toBe(11_000);
+    // Eligible expenses = (11,000 + 0) × 2 = 22,000 per §38לח
+    expect(result.totalGrant).toBe(22_000);
   });
 
   it('should handle zero inputs (salary-only grant)', () => {
@@ -1222,7 +1224,8 @@ describe('calculateGrant — integration', () => {
 
     expect(result.fixedExpenses.fixedExpensesGrant).toBe(0);
     expect(result.salary.salaryGrant).toBeGreaterThan(0);
-    expect(result.totalGrant).toBe(result.salary.salaryGrant);
+    // totalGrant = (0 + salary) × 2 per §38לח
+    expect(result.totalGrant).toBe(result.salary.salaryGrant * 2);
   });
 
   it('should use sliding cap for revenue between 100M and 300M', () => {
