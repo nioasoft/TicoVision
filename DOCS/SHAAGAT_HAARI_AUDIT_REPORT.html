@@ -268,11 +268,10 @@
     בשלב מתקדם הצלחנו לגשת לנוסח החוק עצמו (ספר החוקים 3525), שמאשר חד-משמעית את רוב הפערים שזוהו.
   </p>
   <p style="background: var(--green-bg); padding: 10px; border-radius: 6px; margin-top: 10px;">
-    <strong>📖 עדכון 13.5.2026 (עם פסיקת רואה החשבון):</strong>
-    <strong>6 מתוך 8</strong> פערים אומתו ו<strong>תוקנו בקוד</strong>:
-    סכומי עסקים קטנים × 2, תקרות × 2, חלוקה ב-6, × 2 על סכום הוצאות מזכות (פסיקת רו"ח), תקופת שכר.
-    133/133 בדיקות עוברות.
-    נשארות 2 שאלות בינוניות (תקופת בסיס חודשי + עוסק מיוחד) שלא משפיעות על רוב לקוחותינו.
+    <strong>📖 עדכון 13.5.2026 (לאחר אימות מ-4 מקורות עצמאיים):</strong>
+    <strong>כל 8 הפערים</strong> אומתו ו<strong>תוקנו בקוד</strong>.
+    132/132 בדיקות עוברות. TypeScript נקי. הקוד תואם לחלוטין את נוסח חוק שאגת הארי
+    (ספר החוקים 3525, 4.5.2026).
   </p>
   <p style="margin-top:8px;">
     <strong>היקף הלקוחות שלנו:</strong>
@@ -429,21 +428,21 @@
       <td><span class="badge severity-info">✅ תוקן (תיעוד)</span></td>
       <td>§38לח, עמ' 546</td>
     </tr>
-    <tr class="severity-medium">
+    <tr style="background: var(--green-bg);">
       <td>7</td>
       <td>תקופת בסיס לעוסק רגיל חודשי</td>
       <td>03/2025 חודש בודד</td>
-      <td>3-4/2025 דו-חודשי</td>
-      <td><span class="badge severity-medium">בינוני</span></td>
-      <td>Q7</td>
+      <td>3-4/2025 דו-חודשי (לכולם)</td>
+      <td><span class="badge severity-info">✅ תוקן</span></td>
+      <td>§38לח (אומת ע"י 4 מקורות)</td>
     </tr>
-    <tr class="severity-medium">
+    <tr style="background: var(--green-bg);">
       <td>8</td>
       <td>שנת בסיס לעוסק מיוחד</td>
-      <td>2025 (לפי איגרת ייעוץ המס)</td>
-      <td>2022 (לפי האתר)</td>
-      <td><span class="badge severity-medium">בינוני</span></td>
-      <td>Q8</td>
+      <td>2025</td>
+      <td>2022 (פתחו לפני 1.1.2022)</td>
+      <td><span class="badge severity-info">✅ תוקן</span></td>
+      <td>§38לח (אומת ע"י 4 מקורות)</td>
     </tr>
   </tbody>
 </table>
@@ -626,57 +625,71 @@
   <p><strong>פעולה נדרשת:</strong> תיקון הקומנט ב-<code>SalaryInput</code> ("April 2026 for contractors" — שגוי) ועדכון <code>SHAAGAT_HAARI_FORMULAS.md §6.4</code>.</p>
 </div>
 
-<!-- FINDING 7 -->
-<div class="finding warn">
-  <h3><span class="badge severity-medium">בינוני</span> #7 — תקופת בסיס לעוסק חודשי דו-חודשית?</h3>
+<!-- FINDING 7 - RESOLVED -->
+<div class="finding ok">
+  <h3><span class="badge severity-info">✅ תוקן (4 מקורות עצמאיים, 13.5.2026)</span> #7 — תקופת בסיס תמיד 2 חודשים</h3>
 
-  <div class="compare">
-    <div class="col ours">
-      <h5>אצלנו</h5>
-      <p>עוסק רגיל חודשי משווה <code>03/2025 ↔ 03/2026</code> (חודש בודד)</p>
-    </div>
-    <div class="col official">
-      <h5>רשמי (Q5, Q6, Q7)</h5>
-      <p>התקופה הקובעת = <strong>2 חודשים</strong> (1.3-30.4.2026).<br>
-      תקופת בסיס = "התקופה המקבילה ב-2025" = <strong>3-4/2025</strong>.</p>
-    </div>
+  <div class="example-box" style="background: var(--green-bg); border-color: #a7f3d0;">
+    <div class="label" style="color: var(--green);">📖 ציטוטים מ-§38לח (עמ' 553):</div>
+    <pre style="background: white; direction: rtl; text-align: right; font-family: inherit;">"התקופה הקובעת – התקופה שמיום י"ב באדר התשפ"ו (1 במרץ 2026)
+עד יום י"ג באייר התשפ"ו (30 באפריל 2026)"
+
+"תקופת הזכאות – אחת מאלה, לפי העניין:
+(1) לעניין ניזוק שאינו עוסק המדווח על בסיס מזומן –
+    חודשים מרץ ואפריל 2026"
+
+"תקופת הבסיס – התקופה המקבילה בשנת 2025 לתקופת הזכאות"</pre>
   </div>
 
-  <p>נראה שהחוק מתייחס לתקופה הדו-חודשית 3-4 בלי קשר לסוג הדיווח של העסק.</p>
+  <p>שלושת הסוכנים וגם Codex הסכימו פה אחד: <strong>החוק לא מבחין בין דיווח חודשי לדו-חודשי</strong>. תקופת הזכאות תמיד 2 חודשים (3-4/2026), ותקופת הבסיס המקבילה ב-2025 (3-4/2025). הסף 25% חל על הירידה במחזור על פני התקופה הדו-חודשית, ללא מכפילים.</p>
 
-  <div class="question-box">
-    <strong>שאלה לרו"ח:</strong> גם עסק שמדווח על בסיס חודשי בודד למע"מ — האם הוא בוחן ירידה לפי 3-4/2026 מול 3-4/2025 (2 חודשים) או לפי 03/2026 מול 03/2025 (חודש בודד)?
-  </div>
+  <p><strong>תוקן בקוד (13.5.2026):</strong></p>
+  <ul>
+    <li>הוסרה ההבחנה בין <code>MONTHLY_THRESHOLDS</code> ל-<code>BIMONTHLY_THRESHOLDS</code> — טבלה יחידה <code>ELIGIBILITY_THRESHOLDS</code></li>
+    <li>הוסר המכפיל <code>BIMONTHLY_DECLINE_MULTIPLIER × 2</code> מחישוב מענק שכר</li>
+    <li>UI מציג תמיד 3-4/2025 ו-3-4/2026 (לא משנה אם דיווח חודשי או דו-חודשי)</li>
+    <li>השדה <code>reportingType</code> נשמר ב-DB לצרכי תיעוד בלבד — לא משפיע על החישוב</li>
+  </ul>
 
-  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q5 (התקופה הקובעת), Q7 (תקופת בסיס).</div>
+  <div class="source-ref"><strong>מקור:</strong> §38לח עמ' 553. אומת ע"י 4 קריאות עצמאיות (3 סוכני LLM + Codex) ב-13.5.2026.</div>
 </div>
 
-<!-- FINDING 8 -->
-<div class="finding warn">
-  <h3><span class="badge severity-medium">בינוני</span> #8 — שנת בסיס לעוסק מיוחד</h3>
+<!-- FINDING 8 - RESOLVED -->
+<div class="finding ok">
+  <h3><span class="badge severity-info">✅ תוקן (4 מקורות, 13.5.2026)</span> #8 — עוסק מיוחד: 2022/3-4/2023</h3>
 
-  <p>איגרת לשכת יועצי המס אומרת "עסק שפתח לפני 1.1.25 → שנת 2025". האתר הרשמי מפרט עוסק מיוחד שונה:</p>
+  <div class="example-box" style="background: var(--green-bg); border-color: #a7f3d0;">
+    <div class="label" style="color: var(--green);">📖 ציטוטים מ-§38לח:</div>
+    <pre style="background: white; direction: rtl; text-align: right; font-family: inherit;">"עוסק מיוחד – עוסק שעסקו נמצא באזור שנפגע בחודשים מרץ עד יוני 2025
+                או עוסק שאירח תושבים מיישובים מפונים"  (עמ' 551)
+
+"שנת הבסיס – ... (2) לעניין ניזוק שהוא עוסק מיוחד, שפתח את עסקו
+                לפני יום כ"ח בטבת התשפ"ב (1 בינואר 2022) – שנת 2022"  (עמ' 552)
+
+"תקופת הבסיס – ... ולעניין ניזוק שהוא עוסק מיוחד –
+                התקופה המקבילה בשנת 2023 לתקופת הזכאות"  (עמ' 553)</pre>
+  </div>
 
   <table>
     <thead>
-      <tr><th>סוג עוסק</th><th>שנת בסיס</th><th>הערה</th></tr>
+      <tr><th>סוג עוסק</th><th>שנת בסיס</th><th>תקופת בסיס</th></tr>
     </thead>
     <tbody>
-      <tr><td>רגיל שפתח לפני 1.1.2025</td><td><strong>2025</strong></td><td>תואם איגרת לשכה ✓</td></tr>
-      <tr><td>"עוסק מיוחד" (אזור נפגע / מארח מפונים) שפתח לפני 1.1.2022</td><td><strong>2022</strong></td><td>שונה מהאיגרת!</td></tr>
-      <tr><td>שפתח אחרי המועדים</td><td>מיום הפתיחה / 1.7.2025 — עד 28.2.2026</td><td>תואם</td></tr>
+      <tr><td>רגיל שפתח לפני 1.1.2025</td><td><strong>2025</strong></td><td>3-4/2025</td></tr>
+      <tr><td>עוסק מיוחד שפתח לפני 1.1.2022</td><td><strong>2022</strong></td><td>3-4/2023</td></tr>
+      <tr><td>שפתח אחרי המועדים</td><td>ממוצע 1.7.2025 — 28.2.2026</td><td>אותו</td></tr>
     </tbody>
   </table>
 
-  <p style="font-size:13.5px;">
-    <em>"עוסק מיוחד" — לפי האתר: עסק באזור שנפגע מהלחימה (צפון), או עסק שאירח מפונים. ייתכן שיש לנו לקוחות כאלה בצפון.</em>
-  </p>
+  <p>"עוסק מיוחד" כולל <strong>שני סוגי עסקים</strong> (מחוברים ב-"או"): עסק באזור שנפגע במרץ-יוני 2025 (לפי החלטות ממשלה לפינוי), <strong>או</strong> עסק שאירח תושבים מיישובים מפונים ב-2025.</p>
 
-  <div class="question-box">
-    <strong>שאלה לרו"ח:</strong> איך מזהים "עוסק מיוחד" לעניין הזה? האם יש רשימה רשמית של ישובים/אזורים?
-  </div>
+  <p><strong>תוקן בקוד (13.5.2026):</strong></p>
+  <ul>
+    <li>תקופת בסיס למסלול 'northern' תמיד <strong>3-4/2023</strong> (לא 03/2023 לחודשי)</li>
+    <li>שנת בסיס לעוסק מיוחד שפתח לפני 1.1.2022 = <strong>2022</strong></li>
+  </ul>
 
-  <div class="source-ref"><strong>מקור Q&amp;A:</strong> Q8.</div>
+  <div class="source-ref"><strong>מקור:</strong> §38לח עמ' 551-553. אומת ע"י 4 קריאות עצמאיות.</div>
 </div>
 
 <!-- FINDING OK -->

@@ -228,93 +228,84 @@ describe('calculateEligibility', () => {
     expect(result.compensationRate).toBe(15);
   });
 
-  // --- Bimonthly threshold boundaries ---
+  // --- Bimonthly filer tests (now uses same threshold as monthly per §38לח) ---
+  // The law has a single threshold table applied to the 2-month period decline.
+  // These tests verify that bimonthly filers go through the same gate.
 
-  it('should return ELIGIBLE at exactly 12.5% decline (bimonthly)', () => {
+  it('should return NOT_ELIGIBLE at 12.5% decline (bimonthly, below 25% threshold)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 87_500,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
-    expect(result.eligibilityStatus).toBe('ELIGIBLE');
-    expect(result.compensationRate).toBe(7);
-  });
-
-  it('should return GRAY_AREA at 12.49% decline (bimonthly, within gray area)', () => {
-    const input = makeEligibilityInput({
-      revenueBase: 100_000,
-      revenueComparison: 87_510, // ~12.49% decline — in gray area (11.5-12.5%)
-      reportingType: 'bimonthly',
-    });
-    const result = calculateEligibility(input);
-    expect(result.eligibilityStatus).toBe('GRAY_AREA');
-  });
-
-  it('should return GRAY_AREA at exactly 11% decline (bimonthly, gray area floor of 12.5−1.5)', () => {
-    const input = makeEligibilityInput({
-      revenueBase: 100_000,
-      revenueComparison: 89_000, // 11% decline — bottom of gray area
-      reportingType: 'bimonthly',
-    });
-    const result = calculateEligibility(input);
-    expect(result.eligibilityStatus).toBe('GRAY_AREA');
-  });
-
-  it('should return GRAY_AREA at 11.5% decline (bimonthly, within gray area)', () => {
-    const input = makeEligibilityInput({
-      revenueBase: 100_000,
-      revenueComparison: 88_500,
-      reportingType: 'bimonthly',
-    });
-    const result = calculateEligibility(input);
-    expect(result.eligibilityStatus).toBe('GRAY_AREA');
-  });
-
-  it('should return NOT_ELIGIBLE at 10.99% decline (bimonthly, below gray area floor of 11%)', () => {
-    const input = makeEligibilityInput({
-      revenueBase: 100_000,
-      revenueComparison: 89_010, // 10.99% decline
-      reportingType: 'bimonthly',
-    });
-    const result = calculateEligibility(input);
     expect(result.eligibilityStatus).toBe('NOT_ELIGIBLE');
   });
 
-  it('should return rate 11 at exactly 20% decline (bimonthly)', () => {
+  it('should return NOT_ELIGIBLE at 20% decline (bimonthly, still below 25% threshold)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 80_000,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
-    expect(result.compensationRate).toBe(11);
+    expect(result.eligibilityStatus).toBe('NOT_ELIGIBLE');
   });
 
-  it('should return rate 15 at exactly 30% decline (bimonthly)', () => {
+  it('should return GRAY_AREA at 24% decline (bimonthly, within 1.5% buffer)', () => {
+    const input = makeEligibilityInput({
+      revenueBase: 100_000,
+      revenueComparison: 76_000,
+      reportingType: 'bimonthly',
+    });
+    const result = calculateEligibility(input);
+    expect(result.eligibilityStatus).toBe('GRAY_AREA');
+  });
+
+  it('should return rate 7 at 30% decline (bimonthly, tier 1)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 70_000,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
-    expect(result.compensationRate).toBe(15);
+    expect(result.compensationRate).toBe(7);
   });
 
-  it('should return rate 22 at exactly 40% decline (bimonthly)', () => {
+  it('should return rate 11 at 40% decline (bimonthly, tier 2)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 60_000,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
-    expect(result.compensationRate).toBe(22);
+    expect(result.compensationRate).toBe(11);
   });
 
-  it('should return rate 22 at 50% decline (bimonthly max tier)', () => {
+  it('should return rate 11 at 50% decline (bimonthly, tier 2)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 50_000,
+      reportingType: 'bimonthly',
+    });
+    const result = calculateEligibility(input);
+    expect(result.compensationRate).toBe(11);
+  });
+
+  it('should return rate 15 at 60% decline (bimonthly, tier 3)', () => {
+    const input = makeEligibilityInput({
+      revenueBase: 100_000,
+      revenueComparison: 40_000,
+      reportingType: 'bimonthly',
+    });
+    const result = calculateEligibility(input);
+    expect(result.compensationRate).toBe(15);
+  });
+
+  it('should return rate 22 at 80% decline (bimonthly, tier 4)', () => {
+    const input = makeEligibilityInput({
+      revenueBase: 100_000,
+      revenueComparison: 20_000,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
@@ -570,7 +561,8 @@ describe('calculateSalaryGrant', () => {
     expect(result.salaryGrantBeforeCap).toBe(93_750);
   });
 
-  it('should calculate effective decline for bimonthly (×2, capped at 100%)', () => {
+  it('should keep effectiveDecline = raw decline regardless of filing type', () => {
+    // Per §38לח (verified 13.5.2026): single 2-month period, no bimonthly doubling.
     const input = makeSalaryInput({
       salaryGross: 100_000,
       declinePercentage: 30,
@@ -578,10 +570,10 @@ describe('calculateSalaryGrant', () => {
       totalEmployees: 100,
     });
     const result = calculateSalaryGrant(input);
-    expect(result.effectiveDecline).toBe(60);
+    expect(result.effectiveDecline).toBe(30);
   });
 
-  it('should cap bimonthly effective decline at 100%', () => {
+  it('should keep effectiveDecline = raw decline at high values (no cap)', () => {
     const input = makeSalaryInput({
       salaryGross: 100_000,
       declinePercentage: 60,
@@ -589,7 +581,7 @@ describe('calculateSalaryGrant', () => {
       totalEmployees: 100,
     });
     const result = calculateSalaryGrant(input);
-    expect(result.effectiveDecline).toBe(100);
+    expect(result.effectiveDecline).toBe(60);
   });
 
   it('should NOT multiply decline for monthly reporting', () => {
@@ -729,9 +721,9 @@ describe('calculateSalaryGrant', () => {
     expect(result.salaryGrantBeforeCap).toBe(114_983);
   });
 
-  // --- NGO bimonthly ---
+  // --- NGO bimonthly (no doubling per §38לח) ---
 
-  it('should calculate NGO bimonthly salary grant correctly', () => {
+  it('should calculate NGO salary grant correctly (no doubling for bimonthly)', () => {
     const input = makeSalaryInput({
       salaryGross: 100_000,
       businessType: 'ngo',
@@ -741,8 +733,9 @@ describe('calculateSalaryGrant', () => {
     });
     const result = calculateSalaryGrant(input);
     expect(result.adjustedSalary).toBe(132_500);
-    expect(result.effectiveDecline).toBe(70);
-    expect(result.salaryGrantBeforeCap).toBe(69_563);
+    expect(result.effectiveDecline).toBe(35);
+    // 132,500 × 0.75 × 35% = 34,781.25 → 34,781
+    expect(result.salaryGrantBeforeCap).toBe(34_781);
   });
 
   // --- Individual deduction types ---
@@ -791,9 +784,9 @@ describe('calculateSalaryGrant', () => {
     expect(result.salaryAfterDeductions).toBe(95_000);
   });
 
-  // --- Bimonthly edge cases ---
+  // --- Decline passthrough (no bimonthly doubling) ---
 
-  it('should handle bimonthly decline just below 50% (capped at 100)', () => {
+  it('should pass through decline 49.99% (no doubling)', () => {
     const input = makeSalaryInput({
       salaryGross: 100_000,
       declinePercentage: 49.99,
@@ -801,10 +794,10 @@ describe('calculateSalaryGrant', () => {
       totalEmployees: 100,
     });
     const result = calculateSalaryGrant(input);
-    expect(result.effectiveDecline).toBe(99.98);
+    expect(result.effectiveDecline).toBe(49.99);
   });
 
-  it('should handle bimonthly decline at exactly 50% -> effectiveDecline = 100', () => {
+  it('should pass through decline exactly 50% (no doubling)', () => {
     const input = makeSalaryInput({
       salaryGross: 100_000,
       declinePercentage: 50,
@@ -812,7 +805,7 @@ describe('calculateSalaryGrant', () => {
       totalEmployees: 100,
     });
     const result = calculateSalaryGrant(input);
-    expect(result.effectiveDecline).toBe(100);
+    expect(result.effectiveDecline).toBe(50);
   });
 });
 
@@ -980,45 +973,51 @@ describe('lookupSmallBusinessGrant', () => {
 
 describe('maybeCompareWithSmallBusiness', () => {
   it('should return standard amount when it is higher', () => {
-    const result = maybeCompareWithSmallBusiness(50_000, 260_000, 30, 'standard', 'monthly');
+    const result = maybeCompareWithSmallBusiness(50_000, 260_000, 30, 'standard');
     expect(result.recommendedAmount).toBe(50_000);
   });
 
   it('should return small business amount when it is higher', () => {
-    const result = maybeCompareWithSmallBusiness(2_000, 260_000, 30, 'standard', 'monthly');
+    const result = maybeCompareWithSmallBusiness(2_000, 260_000, 30, 'standard');
     // lookup 250K-300K, 25-40% → 4,980 × 2 = 9,960
     expect(result.smallBusinessGrant).toBe(9_960);
     expect(result.recommendedAmount).toBe(9_960);
   });
 
   it('should skip comparison when revenue > 300,000', () => {
-    const result = maybeCompareWithSmallBusiness(10_000, 300_001, 50, 'standard', 'monthly');
+    const result = maybeCompareWithSmallBusiness(10_000, 300_001, 50, 'standard');
     expect(result.smallBusinessGrant).toBeNull();
     expect(result.recommendedAmount).toBe(10_000);
   });
 
   it('should skip comparison when trackType is small', () => {
-    const result = maybeCompareWithSmallBusiness(5_000, 200_000, 50, 'small', 'monthly');
+    const result = maybeCompareWithSmallBusiness(5_000, 200_000, 50, 'small');
     expect(result.smallBusinessGrant).toBeNull();
     expect(result.recommendedAmount).toBe(5_000);
   });
 
   it('should skip comparison when annualRevenueBaseYear is undefined', () => {
-    const result = maybeCompareWithSmallBusiness(10_000, undefined, 50, 'standard', 'monthly');
+    const result = maybeCompareWithSmallBusiness(10_000, undefined, 50, 'standard');
     expect(result.smallBusinessGrant).toBeNull();
     expect(result.recommendedAmount).toBe(10_000);
   });
 
-  it('should double decline for bimonthly before lookup', () => {
-    // 15% bimonthly → 30% effective → tier 1 (25-40%)
-    const result = maybeCompareWithSmallBusiness(1_000, 130_000, 15, 'standard', 'bimonthly');
-    // 120K-150K, tier1 → 2,823 × 1 × 2 = 5,646
+  it('should use raw 2-month decline (no bimonthly doubling per §38לח)', () => {
+    // 15% decline is below 25% threshold → null
+    const result = maybeCompareWithSmallBusiness(1_000, 130_000, 15, 'standard');
+    expect(result.smallBusinessGrant).toBeNull();
+    expect(result.recommendedAmount).toBe(1_000);
+  });
+
+  it('should return tier-1 amount at 30% decline (no doubling)', () => {
+    const result = maybeCompareWithSmallBusiness(1_000, 130_000, 30, 'standard');
+    // 120K-150K, tier1 (25-40%) → 2,823 × 1 × 2 = 5,646
     expect(result.smallBusinessGrant).toBe(5_646);
     expect(result.recommendedAmount).toBe(5_646);
   });
 
   it('should return null smallBusinessGrant for decline below threshold', () => {
-    const result = maybeCompareWithSmallBusiness(10_000, 200_000, 10, 'standard', 'monthly');
+    const result = maybeCompareWithSmallBusiness(10_000, 200_000, 10, 'standard');
     expect(result.smallBusinessGrant).toBeNull();
     expect(result.recommendedAmount).toBe(10_000);
   });
@@ -1443,20 +1442,14 @@ describe('Rounding behavior', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('GRANT_CONSTANTS', () => {
-  it('should have correct monthly thresholds', () => {
-    const mt = GRANT_CONSTANTS.MONTHLY_THRESHOLDS;
-    expect(mt.MIN_THRESHOLD).toBe(25);
-    expect(mt.TIER_1.rate).toBe(7);
-    expect(mt.TIER_2.rate).toBe(11);
-    expect(mt.TIER_3.rate).toBe(15);
-    expect(mt.TIER_4.rate).toBe(22);
-  });
-
-  it('should have correct bimonthly thresholds', () => {
-    const bt = GRANT_CONSTANTS.BIMONTHLY_THRESHOLDS;
-    expect(bt.MIN_THRESHOLD).toBe(12.5);
-    expect(bt.TIER_1.min).toBe(12.5);
-    expect(bt.TIER_4.max).toBe(50);
+  it('should have correct eligibility thresholds (single table per §38לח)', () => {
+    const t = GRANT_CONSTANTS.ELIGIBILITY_THRESHOLDS;
+    expect(t.MIN_THRESHOLD).toBe(25);
+    expect(t.TIER_1.rate).toBe(7);
+    expect(t.TIER_2.rate).toBe(11);
+    expect(t.TIER_3.rate).toBe(15);
+    expect(t.TIER_4.rate).toBe(22);
+    expect(t.TIER_4.max).toBe(100);
   });
 
   it('should have correct salary constants', () => {
@@ -1501,14 +1494,14 @@ describe('Edge cases', () => {
     expect(result.eligibilityStatus).toBe('GRAY_AREA');
   });
 
-  it('should handle bimonthly gray area at exactly 11% (12.5 − 1.5)', () => {
+  it('should treat bimonthly 11% as NOT_ELIGIBLE (single threshold per §38לח)', () => {
     const input = makeEligibilityInput({
       revenueBase: 100_000,
       revenueComparison: 89_000,
       reportingType: 'bimonthly',
     });
     const result = calculateEligibility(input);
-    expect(result.eligibilityStatus).toBe('GRAY_AREA');
+    expect(result.eligibilityStatus).toBe('NOT_ELIGIBLE');
   });
 
   it('should handle large numbers without overflow', () => {

@@ -35,14 +35,17 @@ import type {
 // Internal helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Returns the compensation rate (0, 7, 11, 15, 22) for a given decline% and reporting type. */
+/**
+ * Returns the compensation rate (0, 7, 11, 15, 22) for a given decline%.
+ *
+ * Per §38לח (verified 13.5.2026): single threshold table applies to the
+ * decline measured over the 2-month eligibility period, regardless of
+ * VAT filing frequency (monthly or bimonthly).
+ */
 function getCompensationRate(
   declinePercentage: number,
-  isMonthly: boolean,
 ): { status: EligibilityStatus; rate: number } {
-  const thresholds = isMonthly
-    ? GRANT_CONSTANTS.MONTHLY_THRESHOLDS
-    : GRANT_CONSTANTS.BIMONTHLY_THRESHOLDS;
+  const thresholds = GRANT_CONSTANTS.ELIGIBILITY_THRESHOLDS;
 
   // Below or no decline
   if (declinePercentage <= 0) {
@@ -74,10 +77,11 @@ function getCompensationRate(
 
 /**
  * Quick eligibility helper for the internal initial-filter screen.
- * Always uses bimonthly Mar–Apr 2026 vs Mar–Apr 2025 (no track-specific config).
+ * Uses the 2-month eligibility period Mar–Apr 2026 vs Mar–Apr 2025
+ * (the law's standard period — track-specific shifts apply later).
  *
- * @param baseRevenue - Revenue for Mar–Apr 2025 (comparison/baseline)
- * @param comparisonRevenue - Revenue for Mar–Apr 2026 (current)
+ * @param baseRevenue - Revenue for Mar–Apr 2025 (sum over 2 months)
+ * @param comparisonRevenue - Revenue for Mar–Apr 2026 (sum over 2 months)
  * @returns Status, decline %, and the gray-zone bounds for display
  */
 export function quickBimonthlyEligibility(
@@ -89,7 +93,7 @@ export function quickBimonthlyEligibility(
   grayAreaMin: number;
   minThreshold: number;
 } {
-  const minThreshold = GRANT_CONSTANTS.BIMONTHLY_THRESHOLDS.MIN_THRESHOLD;
+  const minThreshold = GRANT_CONSTANTS.ELIGIBILITY_THRESHOLDS.MIN_THRESHOLD;
   const grayAreaMin = minThreshold - GRANT_CONSTANTS.GRAY_ZONE_BUFFER_PERCENT;
 
   if (baseRevenue <= 0) {
@@ -104,7 +108,7 @@ export function quickBimonthlyEligibility(
   const declinePercentage =
     ((baseRevenue - comparisonRevenue) / baseRevenue) * 100;
 
-  const { status } = getCompensationRate(declinePercentage, false);
+  const { status } = getCompensationRate(declinePercentage);
 
   return {
     declinePercentage,
@@ -134,7 +138,6 @@ export function calculateEligibility(input: EligibilityInput): EligibilityResult
     capitalRevenuesComparison,
     selfAccountingRevenuesBase,
     selfAccountingRevenuesComparison,
-    reportingType,
     annualRevenue,
   } = input;
 
@@ -171,9 +174,8 @@ export function calculateEligibility(input: EligibilityInput): EligibilityResult
   const declinePercentage =
     ((netRevenueBase - netRevenueComparison) / netRevenueBase) * 100;
 
-  // Step 3 — Determine tier
-  const isMonthly = reportingType === 'monthly';
-  const { status, rate } = getCompensationRate(declinePercentage, isMonthly);
+  // Step 3 — Determine tier (single threshold table — same for monthly and bimonthly)
+  const { status, rate } = getCompensationRate(declinePercentage);
 
   return {
     netRevenueBase,
@@ -254,11 +256,9 @@ export function calculateSalaryGrant(input: SalaryInput): SalaryResult {
     vacationCount,
     businessType,
     declinePercentage,
-    reportingType,
   } = input;
 
-  const { SALARY, BIMONTHLY_DECLINE_MULTIPLIER, BIMONTHLY_DECLINE_CAP } =
-    GRANT_CONSTANTS;
+  const { SALARY } = GRANT_CONSTANTS;
 
   // Step 1 — Adjusted salary (deduct BEFORE multiplying)
   const totalDeductions =
@@ -268,11 +268,9 @@ export function calculateSalaryGrant(input: SalaryInput): SalaryResult {
     businessType === 'ngo' ? SALARY.NGO_MULTIPLIER : SALARY.REGULAR_MULTIPLIER;
   const adjustedSalary = salaryAfterDeductions * multiplier;
 
-  // Step 2 — Effective decline (bimonthly ×2, capped at 100%)
-  const effectiveDecline =
-    reportingType === 'bimonthly'
-      ? Math.min(declinePercentage * BIMONTHLY_DECLINE_MULTIPLIER, BIMONTHLY_DECLINE_CAP)
-      : declinePercentage;
+  // Step 2 — Effective decline = raw decline (single 2-month period per §38לח;
+  // no doubling for bimonthly filers — verified 13.5.2026).
+  const effectiveDecline = declinePercentage;
 
   // Step 3 — Grant before cap (round final only)
   const salaryGrantBeforeCap = Math.round(
@@ -360,14 +358,14 @@ export function lookupSmallBusinessGrant(
 
   if (!row) return null;
 
-  // Monthly tiers: 25-40 / 40-60 / 60-80 / 80-100
-  // NOTE: bimonthly clients have their decline doubled before calling this function
-  const { MONTHLY_THRESHOLDS: MT } = GRANT_CONSTANTS;
+  // Single tier table: 25-40 / 40-60 / 60-80 / 80-100 (applies to the
+  // decline measured over the 2-month eligibility period, per §38לח).
+  const { ELIGIBILITY_THRESHOLDS: T } = GRANT_CONSTANTS;
 
-  if (declinePercentage >= MT.TIER_4.min) return row.tier4;
-  if (declinePercentage >= MT.TIER_3.min) return row.tier3;
-  if (declinePercentage >= MT.TIER_2.min) return row.tier2;
-  if (declinePercentage >= MT.TIER_1.min) return row.tier1;
+  if (declinePercentage >= T.TIER_4.min) return row.tier4;
+  if (declinePercentage >= T.TIER_3.min) return row.tier3;
+  if (declinePercentage >= T.TIER_2.min) return row.tier2;
+  if (declinePercentage >= T.TIER_1.min) return row.tier1;
 
   return null;
 }
@@ -385,14 +383,12 @@ export function lookupSmallBusinessGrant(
  *   - annualRevenueBaseYear ≤ 300,000
  *   - trackType !== 'small'
  *
- * For bimonthly clients: uses effectiveDecline (already ×2) for the lookup.
+ * Uses raw 2-month-period decline (no bimonthly doubling — verified §38לח).
  *
  * @param finalGrantAmount - Already-capped grant from the main calculation
  * @param annualRevenueBaseYear - Annual revenue in the base year for size determination
- *   (pre-1.1.2025: 2025 full year; post-1.1.2025: annualized 25/26 average).
- * @param declinePercentage - Raw decline percentage (before bimonthly multiplier)
+ * @param declinePercentage - Decline percentage measured over the 2-month period
  * @param trackType - Current track — skipped if already 'small'
- * @param reportingType - Determines whether to double the decline for the lookup
  * @returns Object with smallBusinessGrant (or null) and recommendedAmount
  */
 export function maybeCompareWithSmallBusiness(
@@ -400,7 +396,6 @@ export function maybeCompareWithSmallBusiness(
   annualRevenueBaseYear: number | undefined,
   declinePercentage: number,
   trackType: TrackType,
-  reportingType: 'monthly' | 'bimonthly',
 ): { smallBusinessGrant: number | null; recommendedAmount: number } {
   const SMALL_BUSINESS_MAX_REVENUE = 300_000;
 
@@ -412,18 +407,12 @@ export function maybeCompareWithSmallBusiness(
     return { smallBusinessGrant: null, recommendedAmount: finalGrantAmount };
   }
 
-  // For bimonthly: use effective decline (×2, max 100) for the lookup tier
-  const lookupDecline =
-    reportingType === 'bimonthly'
-      ? Math.min(
-          declinePercentage * GRANT_CONSTANTS.BIMONTHLY_DECLINE_MULTIPLIER,
-          GRANT_CONSTANTS.BIMONTHLY_DECLINE_CAP,
-        )
-      : declinePercentage;
-
+  // Decline used for lookup = raw decline over the 2-month period.
+  // No bimonthly doubling — the law uses a single threshold table on the
+  // raw 2-month decline regardless of VAT filing frequency.
   const smallBusinessGrant = lookupSmallBusinessGrant(
     annualRevenueBaseYear,
-    lookupDecline,
+    declinePercentage,
   );
 
   if (smallBusinessGrant === null) {
@@ -452,7 +441,6 @@ export function maybeCompareWithSmallBusiness(
 export function calculateGrant(input: GrantCalculationInput): GrantBreakdown {
   const {
     trackType,
-    reportingType,
     eligibility,
     fixedExpenses,
     salary,
@@ -473,7 +461,6 @@ export function calculateGrant(input: GrantCalculationInput): GrantBreakdown {
   const salaryInput: SalaryInput = {
     ...salary,
     declinePercentage: eligibilityResult.declinePercentage,
-    reportingType,
   };
   const salaryResult = calculateSalaryGrant(salaryInput);
 
@@ -505,7 +492,6 @@ export function calculateGrant(input: GrantCalculationInput): GrantBreakdown {
     annualRevenueBaseYear,
     eligibilityResult.declinePercentage,
     trackType,
-    reportingType,
   );
 
   return {

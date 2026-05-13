@@ -130,6 +130,11 @@ export interface EligibilityInput {
   capitalRevenuesComparison: number;
   selfAccountingRevenuesBase: number;
   selfAccountingRevenuesComparison: number;
+  /**
+   * VAT filing frequency. Kept for informational/audit purposes only —
+   * the law (§38לח, verified 13.5.2026) uses a single 2-month eligibility
+   * period for all filers, so this no longer affects the calculation.
+   */
   reportingType: ReportingType;
   /** Used to validate 12,000 ≤ annualRevenue ≤ 400,000,000 */
   annualRevenue: number;
@@ -192,9 +197,8 @@ export interface SalaryInput {
   chalatCount: number;
   vacationCount: number;
   businessType: BusinessType;
-  /** Raw decline percentage (before bimonthly multiplier) */
+  /** Decline percentage measured over the 2-month eligibility period (§38לח) */
   declinePercentage: number;
-  reportingType: ReportingType;
 }
 
 export interface SalaryResult {

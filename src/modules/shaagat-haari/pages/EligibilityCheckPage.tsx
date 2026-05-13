@@ -73,51 +73,56 @@ interface PeriodLabels {
   salaryLabel: string;
 }
 
-function getPeriodLabels(track: TrackType, reporting: ReportingType): PeriodLabels {
-  const m = reporting === 'monthly';
+function getPeriodLabels(track: TrackType, _reporting: ReportingType): PeriodLabels {
+  // Per §38לח (verified 13.5.2026): the eligibility/base period is always 2 months,
+  // regardless of VAT filing frequency (monthly or bimonthly). The _reporting
+  // parameter is kept for backward compatibility but no longer affects labels.
+  // Salary period is also always 3-4/2026 for all tracks (§38לח).
 
   switch (track) {
     case 'standard':
       return {
-        baseLabel: m ? '03/2025' : '3-4/2025',
-        comparisonLabel: m ? '03/2026' : '3-4/2026',
+        baseLabel: '3-4/2025',
+        comparisonLabel: '3-4/2026',
         inputsLabel: 'ממוצע שנתי 2025',
-        salaryLabel: '03/2026',
+        salaryLabel: '3-4/2026',
       };
     case 'small':
       return {
         baseLabel: 'מחזור שנת בסיס',
-        comparisonLabel: m ? '03/2026' : '3-4/2026',
+        comparisonLabel: '3-4/2026',
         inputsLabel: '—',
-        salaryLabel: '03/2026',
+        salaryLabel: '3-4/2026',
       };
     case 'cash_basis':
       return {
-        baseLabel: m ? '04/2025' : '3-4/2025',
-        comparisonLabel: m ? '04/2026' : '3-4/2026',
+        baseLabel: '5-6/2025',
+        comparisonLabel: '5-6/2026',
         inputsLabel: 'ממוצע שנתי 2025',
-        salaryLabel: '03/2026',
+        salaryLabel: '3-4/2026',
       };
     case 'new_business':
       return {
         baseLabel: 'ממוצע 03/2025–02/2026',
-        comparisonLabel: m ? '03/2026' : '3-4/2026',
+        comparisonLabel: '3-4/2026',
         inputsLabel: 'ממוצע 03/2025–02/2026',
-        salaryLabel: '03/2026',
+        salaryLabel: '3-4/2026',
       };
     case 'northern':
+      // עוסק מיוחד — תקופת בסיס תמיד 3-4/2023 (§38לח)
       return {
-        baseLabel: m ? '03/2023' : '3-4/2023',
-        comparisonLabel: m ? '03/2026' : '3-4/2026',
+        baseLabel: '3-4/2023',
+        comparisonLabel: '3-4/2026',
         inputsLabel: 'ממוצע 09/2022–08/2023',
-        salaryLabel: '03/2026',
+        salaryLabel: '3-4/2026',
       };
     case 'contractor':
+      // קבלן ביצוע — מחזור 5-6/2025 מול 5-6/2026, שכר תמיד 3-4/2026
       return {
-        baseLabel: 'ממוצע 07/2025–02/2026',
-        comparisonLabel: m ? '04/2026' : '3-4/2026',
+        baseLabel: '5-6/2025',
+        comparisonLabel: '5-6/2026',
         inputsLabel: 'ממוצע שנתי 2025',
-        salaryLabel: '04/2026',
+        salaryLabel: '3-4/2026',
       };
   }
 }

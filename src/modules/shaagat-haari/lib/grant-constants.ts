@@ -19,13 +19,23 @@ export const GRANT_CONSTANTS = {
 
   /**
    * Gray zone buffer in absolute percentage points below MIN_THRESHOLD.
-   * Example: monthly threshold = 25%, buffer = 1.5 → gray zone is 23.5%–24.99%.
+   * Threshold = 25%, buffer = 1.5 → gray zone is 23.5%–24.99%.
    * Below the buffer → NOT_ELIGIBLE.
    */
   GRAY_ZONE_BUFFER_PERCENT: 1.5,
 
-  /** Monthly reporting — eligibility tiers */
-  MONTHLY_THRESHOLDS: {
+  /**
+   * Eligibility tiers — applied to decline measured over the 2-month
+   * eligibility period (Mar+Apr 2026 for regular, May+Jun 2026 for cash-basis).
+   *
+   * Per §38לח (4.5.2026 law) and verified by 4 independent legal-text reads
+   * (13.5.2026): the law defines ONE eligibility period (2 months) regardless
+   * of whether the business files monthly or bimonthly VAT reports. There is
+   * a single threshold table.
+   *
+   * Source: §38לט(ה) "מקדם הוצאות קבועות", p. 549.
+   */
+  ELIGIBILITY_THRESHOLDS: {
     MIN_THRESHOLD: 25,
     TIER_1: { min: 25, max: 40, rate: 7 },
     TIER_2: { min: 40, max: 60, rate: 11 },
@@ -33,24 +43,13 @@ export const GRANT_CONSTANTS = {
     TIER_4: { min: 80, max: 100, rate: 22 },
   },
 
-  /** Bimonthly reporting — eligibility tiers */
-  BIMONTHLY_THRESHOLDS: {
-    MIN_THRESHOLD: 12.5,
-    TIER_1: { min: 12.5, max: 20, rate: 7 },
-    TIER_2: { min: 20, max: 30, rate: 11 },
-    TIER_3: { min: 30, max: 40, rate: 15 },
-    TIER_4: { min: 40, max: 50, rate: 22 },
-  },
-
   /**
-   * Initial-filter screen always uses bimonthly Mar–Apr 2026 vs Mar–Apr 2025.
-   * Track-specific periods (standard/northern/contractor/...) are applied later
-   * in the detailed eligibility/calculation flow.
+   * Initial-filter screen uses Mar–Apr 2026 vs Mar–Apr 2025 (the standard
+   * eligibility/base periods per §38לח).
    */
   INITIAL_FILTER_PERIOD: {
     currentLabel: '03-04/2026',
     comparisonLabel: '03-04/2025',
-    reportingType: 'bimonthly' as const,
   },
 
   // ────────────── Salary constants ──────────────
@@ -104,10 +103,6 @@ export const GRANT_CONSTANTS = {
 
   // ────────────── Multipliers ──────────────
 
-  /** Bimonthly decline multiplier — applied to decline% for salary grant only */
-  BIMONTHLY_DECLINE_MULTIPLIER: 2,
-  /** Maximum effective decline after bimonthly multiplication */
-  BIMONTHLY_DECLINE_CAP: 100,
   /** Contractor track final grant multiplier */
   CONTRACTOR_MULTIPLIER: 0.68,
   /** Enhanced rate multiplier for fixed expenses — when actual fixed costs exceed calculated grant.
