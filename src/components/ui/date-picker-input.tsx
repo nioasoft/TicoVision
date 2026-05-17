@@ -10,8 +10,9 @@
  * but the installed version is v9 (keys like `weekdays`, `button_next`).
  * The mismatched defaults render weekday labels squished. We supply
  * v9-correct classNames here and use `fixedWeeks` so the calendar height
- * stays constant when navigating months — without it, Radix re-measures
- * and flips the popover side mid-interaction.
+ * stays constant when navigating months — this keeps Radix's collision
+ * detection stable (no mid-interaction side flips) while still letting
+ * it flip the popover above the trigger when near the viewport bottom.
  *
  * Value contract: ISO date string (YYYY-MM-DD) or empty string.
  */
@@ -151,7 +152,7 @@ export function DatePickerInput({
         align="start"
         side="bottom"
         sideOffset={4}
-        avoidCollisions={false}
+        collisionPadding={8}
         dir="ltr"
       >
         <div className="flex items-center gap-2 p-3 border-b" dir="rtl">
