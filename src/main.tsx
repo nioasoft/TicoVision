@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'sonner'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import './index.css'
 import App from './App.tsx'
 
@@ -14,5 +15,6 @@ createRoot(document.getElementById('root')!).render(
       expand={true}
       closeButton={true}
     />
+    <SpeedInsights />
   </>,
 )
