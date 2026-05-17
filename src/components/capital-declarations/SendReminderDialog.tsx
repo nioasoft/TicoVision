@@ -222,6 +222,7 @@ export function SendReminderDialog({
                   defaultSubject={`תזכורת הצהרת הון ${declaration.tax_year} - ${declaration.contact_name}`}
                   defaultEmail={declaration.contact_email || undefined}
                   defaultEmailType="html"
+                  fileCategory="letters"
                   onEmailSent={() => {
                     // Log email communication
                     capitalDeclarationService.logCommunication({
@@ -268,6 +269,7 @@ export function SendReminderDialog({
                 defaultSubject={`תזכורת הצהרת הון ${declaration.tax_year} - ${declaration.contact_name}`}
                 defaultEmail={declaration.contact_email || undefined}
                 defaultEmailType="html"
+                fileCategory="letters"
                 onEmailSent={() => {
                   capitalDeclarationService.logCommunication({
                     declaration_id: declaration.id,

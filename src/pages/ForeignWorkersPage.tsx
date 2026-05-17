@@ -740,6 +740,7 @@ function ForeignWorkersPageContent({
         htmlContent={generatedHtmlContent}
         letterId={generatedLetterId || undefined}
         defaultSubject={generatedSubject || FOREIGN_WORKER_TABS[formState.activeTab]?.label || 'מסמך עובדים זרים'}
+        fileCategory="foreign_worker_docs"
       />
 
       {/* Instructions */}

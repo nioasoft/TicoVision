@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight, Plus, X, FileText, Code } from 'lucide-react';
+import { Download, Mail, Copy, Share2, Loader2, Check, ArrowRight, Plus, X, FileText, Code, FolderInput } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import TenantContactService from '@/services/tenant-contact.service';
@@ -49,6 +49,7 @@ export function SharePdfPanel({
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [savingToFolder, setSavingToFolder] = useState(false);
 
   const [emailType, setEmailType] = useState<'pdf' | 'html'>('pdf');
   const [emailSubject, setEmailSubject] = useState('');
@@ -164,8 +165,12 @@ export function SharePdfPanel({
     }
   };
 
-  const savePdfToFileManager = async () => {
-    if (!savePdfToFolder || !clientId || !pdfUrl) return;
+  // Internal save logic — no toasts, no state. Returns an error if the save failed
+  // so callers can decide how to surface it.
+  const doSavePdfToFileManager = async (): Promise<{ error: unknown | null }> => {
+    if (!clientId || !pdfUrl) {
+      return { error: new Error('Missing clientId or pdfUrl') };
+    }
 
     try {
       const response = await fetch(pdfUrl);
@@ -183,11 +188,39 @@ export function SharePdfPanel({
         defaultSubject || pdfName.replace('.pdf', '')
       );
 
+      return { error: error ?? null };
+    } catch (error) {
+      return { error };
+    }
+  };
+
+  // Auto-save path used by email send flows — preserves the `savePdfToFolder` opt-in
+  // and stays silent (errors only go to console; email success is the user-facing signal).
+  const savePdfToFileManager = async () => {
+    if (!savePdfToFolder) return;
+    const { error } = await doSavePdfToFileManager();
+    if (error) {
+      console.error('Error saving PDF to folder:', error);
+    }
+  };
+
+  // Explicit-button path — user clicked "save to file manager", show toasts.
+  const handleSaveToFileManager = async () => {
+    if (!clientId) {
+      toast.error('לא ניתן לשמור — אין לקוח מקושר');
+      return;
+    }
+    setSavingToFolder(true);
+    try {
+      const { error } = await doSavePdfToFileManager();
       if (error) {
         console.error('Error saving PDF to folder:', error);
+        toast.error('שמירה במנהל הקבצים נכשלה');
+      } else {
+        toast.success('הקובץ נשמר במנהל הקבצים');
       }
-    } catch (error) {
-      console.error('Error saving PDF to folder:', error);
+    } finally {
+      setSavingToFolder(false);
     }
   };
 
@@ -413,7 +446,7 @@ export function SharePdfPanel({
 
         <CardContent>
           {!showEmailInput ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Button
                 onClick={handleDownload}
                 variant="outline"
@@ -430,6 +463,21 @@ export function SharePdfPanel({
               >
                 <Mail className="h-6 w-6" />
                 <span>שלח למייל</span>
+              </Button>
+
+              <Button
+                onClick={handleSaveToFileManager}
+                variant="outline"
+                disabled={!clientId || savingToFolder}
+                title={!clientId ? 'אין לקוח מקושר' : undefined}
+                className="h-20 flex flex-col items-center justify-center gap-2 bg-white hover:bg-gray-50"
+              >
+                {savingToFolder ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <FolderInput className="h-6 w-6" />
+                )}
+                <span>שמור במנהל הקבצים</span>
               </Button>
 
               <Button

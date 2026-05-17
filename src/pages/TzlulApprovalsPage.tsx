@@ -742,6 +742,7 @@ export function TzlulApprovalsPage() {
         htmlContent={generatedHtmlContent}
         letterId={generatedLetterId || undefined}
         defaultSubject={generatedSubject || TZLUL_LETTER_TYPES[formState.selectedLetterType].label}
+        fileCategory="letters"
       />
 
           {/* Instructions */}

@@ -580,6 +580,7 @@ export function YaelApprovalsPage() {
             htmlContent={generatedHtmlContent}
             letterId={generatedLetterId || undefined}
             defaultSubject={generatedSubject || YAEL_LETTER_TYPES[formState.selectedLetterType].defaultSubject}
+            fileCategory="letters"
           />
 
           {/* Instructions */}

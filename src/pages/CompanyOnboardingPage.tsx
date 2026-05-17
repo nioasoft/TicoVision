@@ -655,6 +655,7 @@ export function CompanyOnboardingPage() {
         htmlContent={generatedHtmlContent}
         letterId={generatedLetterId || undefined}
         defaultSubject={generatedSubject || formState.documentData.vatRegistration.subject || COMPANY_ONBOARDING_LETTER_TYPES[formState.selectedLetterType].label}
+        fileCategory="letters"
       />
 
       {/* Instructions */}

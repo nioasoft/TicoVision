@@ -1715,6 +1715,7 @@ export function AutoLettersPage() {
         letterId={generatedLetterId || undefined}
         defaultSubject={generatedSubject || getDefaultSubject()}
         defaultEmail={selectedContact?.email || formState.adhocContact?.email || undefined}
+        fileCategory="letters"
       />
 
       {/* Preview Dialog */}
